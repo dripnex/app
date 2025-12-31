@@ -23,13 +23,13 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 
 ## Personality (tension pairs)
 
-| Axis | Readied chooses |
-|------|-----------------|
-| Quietude vs Energy | Quietude |
-| Caution vs Ambition | Caution |
-| Humility vs Bravado | Humility |
-| Clarity vs Persuasion | Clarity |
-| Permanence vs Trend | Permanence |
+| Axis                  | Readied chooses |
+| --------------------- | --------------- |
+| Quietude vs Energy    | Quietude        |
+| Caution vs Ambition   | Caution         |
+| Humility vs Bravado   | Humility        |
+| Clarity vs Persuasion | Clarity         |
+| Permanence vs Trend   | Permanence      |
 
 **Rule:** If something "grabs attention", it's probably wrong.
 
@@ -48,12 +48,14 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 ## Writing Rules
 
 **Allowed:**
+
 - Short sentences
 - Clear statements
 - Consequences
 - Explicit trade-offs
 
 **Forbidden:**
+
 - Exclamations
 - Promises
 - Urgency
@@ -78,14 +80,15 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 ## Color System (light mode)
 
 ```css
---bg: #fafaf9;           /* off-white, not pure white */
+--bg: #fafaf9; /* off-white, not pure white */
 --text-primary: #1c1c1c; /* soft black */
 --text-secondary: #555555; /* editorial gray */
---border: #e5e5e5;       /* silent lines */
---accent: #6b7280;       /* muted blue-gray */
+--border: #e5e5e5; /* silent lines */
+--accent: #6b7280; /* muted blue-gray */
 ```
 
 **Rules:**
+
 - No gradients
 - No SaaS blue
 - No success green
@@ -100,6 +103,7 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 ## Hierarchy Without Color
 
 Use only:
+
 - Text size
 - Font weight
 - Space

@@ -51,9 +51,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
     // Filter by tag
     if (tag) {
       const lowerTag = tag.toLowerCase();
-      notes = notes.filter(n =>
-        n.metadata.tags.some(t => t.toLowerCase() === lowerTag)
-      );
+      notes = notes.filter(n => n.metadata.tags.some(t => t.toLowerCase() === lowerTag));
     }
 
     // Sort
@@ -109,9 +107,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
     );
 
     // Sort by updatedAt desc
-    notes.sort((a, b) =>
-      a.metadata.updatedAt > b.metadata.updatedAt ? -1 : 1
-    );
+    notes.sort((a, b) => (a.metadata.updatedAt > b.metadata.updatedAt ? -1 : 1));
 
     return notes.slice(0, limit);
   }
@@ -121,16 +117,12 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
     if (includeArchived) {
       return this.notes.size;
     }
-    return Array.from(this.notes.values()).filter(
-      n => n.metadata.archivedAt === null
-    ).length;
+    return Array.from(this.notes.values()).filter(n => n.metadata.archivedAt === null).length;
   }
 
   /** Get count of archived notes */
   async countArchived(): Promise<number> {
-    return Array.from(this.notes.values()).filter(
-      n => n.metadata.archivedAt !== null
-    ).length;
+    return Array.from(this.notes.values()).filter(n => n.metadata.archivedAt !== null).length;
   }
 
   /** Get all unique tags */

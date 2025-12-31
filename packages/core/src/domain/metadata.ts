@@ -38,7 +38,12 @@ export function extractTitle(content: string, fallback: string = 'Untitled'): st
   const firstLine = content.split('\n').find(line => line.trim().length > 0);
   if (firstLine) {
     // Remove any markdown formatting
-    return firstLine.replace(/^#+\s*/, '').trim().slice(0, 100) || fallback;
+    return (
+      firstLine
+        .replace(/^#+\s*/, '')
+        .trim()
+        .slice(0, 100) || fallback
+    );
   }
 
   return fallback;
@@ -64,9 +69,9 @@ export function extractTags(content: string): Tag[] {
 export function countWords(content: string): number {
   const text = content
     .replace(/```[\s\S]*?```/g, '') // Remove code blocks
-    .replace(/`[^`]+`/g, '')        // Remove inline code
+    .replace(/`[^`]+`/g, '') // Remove inline code
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Extract link text
-    .replace(/[#*_~`]/g, '');       // Remove markdown chars
+    .replace(/[#*_~`]/g, ''); // Remove markdown chars
 
   const words = text.split(/\s+/).filter(word => word.length > 0);
   return words.length;

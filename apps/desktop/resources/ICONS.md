@@ -18,6 +18,7 @@ Place the following icon files in this directory before building for release:
 ## Generating Icons
 
 You can use tools like:
+
 - [electron-icon-builder](https://www.npmjs.com/package/electron-icon-builder)
 - [iconutil](https://developer.apple.com/library/archive/documentation/GraphicsAnimation/Conceptual/HighResolutionOSX/Optimizing/Optimizing.html) (macOS)
 - Online converters for .ico files

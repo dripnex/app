@@ -27,6 +27,9 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Cache
+.eslintcache
+
 # Screenshots (root level only)
 /CleanShot*.png
 

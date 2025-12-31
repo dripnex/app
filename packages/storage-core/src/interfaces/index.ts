@@ -2,11 +2,7 @@
  * Interface exports
  */
 
-export type {
-  DatabaseAdapter,
-  PreparedStatement,
-  StatementResult,
-} from './DatabaseAdapter.js';
+export type { DatabaseAdapter, PreparedStatement, StatementResult } from './DatabaseAdapter.js';
 
 export type { Migration, MigrationRecord } from './Migration.js';
 

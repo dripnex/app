@@ -66,9 +66,7 @@ export function getPendingMigrations(db: DatabaseAdapter, migrations: Migration[
   ensureMigrationsTable(db);
   const applied = new Set(getAppliedMigrations(db));
 
-  return migrations
-    .filter(m => !applied.has(m.version))
-    .sort((a, b) => a.version - b.version);
+  return migrations.filter(m => !applied.has(m.version)).sort((a, b) => a.version - b.version);
 }
 
 /** Get current database version */

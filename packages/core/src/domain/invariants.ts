@@ -20,9 +20,7 @@ export type ValidationError =
   | { type: 'INVALID_CONTENT'; reason: string };
 
 /** Result of validating a note */
-export type ValidationResult =
-  | { valid: true }
-  | { valid: false; error: ValidationError };
+export type ValidationResult = { valid: true } | { valid: false; error: ValidationError };
 
 /** Validates that content size is within limits */
 export function validateContentSize(content: string): ValidationResult {

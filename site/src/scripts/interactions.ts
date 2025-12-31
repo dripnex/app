@@ -9,25 +9,28 @@
 function initScrollReveal() {
   const revealElements = document.querySelectorAll('[data-reveal]');
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const el = entry.target as HTMLElement;
-        const delay = el.dataset.revealDelay || '0';
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target as HTMLElement;
+          const delay = el.dataset.revealDelay || '0';
 
-        el.style.transitionDelay = `${delay}ms`;
-        el.classList.add('revealed');
+          el.style.transitionDelay = `${delay}ms`;
+          el.classList.add('revealed');
 
-        // Unobserve after reveal (one-time animation)
-        observer.unobserve(el);
-      }
-    });
-  }, {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-  });
+          // Unobserve after reveal (one-time animation)
+          observer.unobserve(el);
+        }
+      });
+    },
+    {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px',
+    }
+  );
 
-  revealElements.forEach((el) => observer.observe(el));
+  revealElements.forEach(el => observer.observe(el));
 }
 
 // ============================================
@@ -43,7 +46,7 @@ function initParallax() {
   function updateParallax() {
     const scrollY = window.scrollY;
 
-    parallaxElements.forEach((el) => {
+    parallaxElements.forEach(el => {
       const element = el as HTMLElement;
       const speed = parseFloat(element.dataset.parallax || '0.5');
       const rect = element.getBoundingClientRect();
@@ -59,12 +62,16 @@ function initParallax() {
     ticking = false;
   }
 
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      requestAnimationFrame(updateParallax);
-      ticking = true;
-    }
-  }, { passive: true });
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        requestAnimationFrame(updateParallax);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
 }
 
 // ============================================
@@ -73,7 +80,7 @@ function initParallax() {
 function initMouseGlow() {
   const glowContainers = document.querySelectorAll('[data-mouse-glow]');
 
-  glowContainers.forEach((container) => {
+  glowContainers.forEach(container => {
     const el = container as HTMLElement;
 
     // Create glow element
@@ -105,7 +112,7 @@ function initMouseGlow() {
 function initMagneticButtons() {
   const magneticElements = document.querySelectorAll('[data-magnetic]');
 
-  magneticElements.forEach((el) => {
+  magneticElements.forEach(el => {
     const element = el as HTMLElement;
     const strength = parseFloat(element.dataset.magnetic || '0.3');
 
@@ -137,7 +144,7 @@ function initMagneticButtons() {
 function initTiltCards() {
   const tiltElements = document.querySelectorAll('[data-tilt]');
 
-  tiltElements.forEach((el) => {
+  tiltElements.forEach(el => {
     const element = el as HTMLElement;
     const intensity = parseFloat(element.dataset.tilt || '10');
 
@@ -171,7 +178,7 @@ function initTiltCards() {
 function initTextSplit() {
   const splitElements = document.querySelectorAll('[data-split-text]');
 
-  splitElements.forEach((el) => {
+  splitElements.forEach(el => {
     const element = el as HTMLElement;
     const text = element.textContent || '';
     const type = element.dataset.splitText || 'chars'; // 'chars' or 'words'
@@ -209,25 +216,34 @@ function initTextSplit() {
 function initCounters() {
   const counters = document.querySelectorAll('[data-counter]');
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const el = entry.target as HTMLElement;
-        const target = parseInt(el.dataset.counter || '0', 10);
-        const duration = parseInt(el.dataset.counterDuration || '2000', 10);
-        const suffix = el.dataset.counterSuffix || '';
-        const prefix = el.dataset.counterPrefix || '';
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target as HTMLElement;
+          const target = parseInt(el.dataset.counter || '0', 10);
+          const duration = parseInt(el.dataset.counterDuration || '2000', 10);
+          const suffix = el.dataset.counterSuffix || '';
+          const prefix = el.dataset.counterPrefix || '';
 
-        animateCounter(el, target, duration, prefix, suffix);
-        observer.unobserve(el);
-      }
-    });
-  }, { threshold: 0.5 });
+          animateCounter(el, target, duration, prefix, suffix);
+          observer.unobserve(el);
+        }
+      });
+    },
+    { threshold: 0.5 }
+  );
 
-  counters.forEach((el) => observer.observe(el));
+  counters.forEach(el => observer.observe(el));
 }
 
-function animateCounter(el: HTMLElement, target: number, duration: number, prefix: string, suffix: string): void {
+function animateCounter(
+  el: HTMLElement,
+  target: number,
+  duration: number,
+  prefix: string,
+  suffix: string
+): void {
   const start = performance.now();
 
   function update(currentTime: number) {
@@ -257,13 +273,17 @@ function initScrollProgress() {
   const progressBar = document.querySelector('[data-scroll-progress]') as HTMLElement;
   if (!progressBar) return;
 
-  window.addEventListener('scroll', () => {
-    const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const progress = (scrollTop / docHeight) * 100;
+  window.addEventListener(
+    'scroll',
+    () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
 
-    progressBar.style.width = `${progress}%`;
-  }, { passive: true });
+      progressBar.style.width = `${progress}%`;
+    },
+    { passive: true }
+  );
 }
 
 // ============================================
@@ -272,25 +292,28 @@ function initScrollProgress() {
 function initStaggerChildren() {
   const staggerContainers = document.querySelectorAll('[data-stagger]');
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const container = entry.target as HTMLElement;
-        const children = container.children;
-        const delay = parseInt(container.dataset.stagger || '100', 10);
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const container = entry.target as HTMLElement;
+          const children = container.children;
+          const delay = parseInt(container.dataset.stagger || '100', 10);
 
-        Array.from(children).forEach((child, i) => {
-          const el = child as HTMLElement;
-          el.style.transitionDelay = `${i * delay}ms`;
-          el.classList.add('stagger-revealed');
-        });
+          Array.from(children).forEach((child, i) => {
+            const el = child as HTMLElement;
+            el.style.transitionDelay = `${i * delay}ms`;
+            el.classList.add('stagger-revealed');
+          });
 
-        observer.unobserve(container);
-      }
-    });
-  }, { threshold: 0.1 });
+          observer.unobserve(container);
+        }
+      });
+    },
+    { threshold: 0.1 }
+  );
 
-  staggerContainers.forEach((el) => observer.observe(el));
+  staggerContainers.forEach(el => observer.observe(el));
 }
 
 // ============================================
@@ -302,13 +325,16 @@ function initCursorTrail() {
 
   const dots: HTMLElement[] = [];
   const numDots = 12;
-  const positions: Array<{ x: number; y: number }> = Array.from({ length: numDots }, () => ({ x: 0, y: 0 }));
+  const positions: Array<{ x: number; y: number }> = Array.from({ length: numDots }, () => ({
+    x: 0,
+    y: 0,
+  }));
 
   for (let i = 0; i < numDots; i++) {
     const dot = document.createElement('div');
     dot.className = 'cursor-dot';
     dot.style.opacity = `${1 - i / numDots}`;
-    dot.style.transform = `scale(${1 - i / numDots * 0.5})`;
+    dot.style.transform = `scale(${1 - (i / numDots) * 0.5})`;
     document.body.appendChild(dot);
     dots.push(dot);
   }
@@ -316,7 +342,7 @@ function initCursorTrail() {
   let mouseX = 0;
   let mouseY = 0;
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('mousemove', e => {
     mouseX = e.clientX;
     mouseY = e.clientY;
   });

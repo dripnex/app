@@ -4,8 +4,11 @@
  * Implements the ExtendedNoteRepository interface from @readied/storage-core
  */
 
-import type { DatabaseConnection } from '../database.js';
-import type { ExtendedNoteRepository, ListNotesOptions, ArchivedFilter } from '@readied/storage-core';
+import type {
+  ExtendedNoteRepository,
+  ListNotesOptions,
+  ArchivedFilter,
+} from '@readied/storage-core';
 import {
   type Note,
   type NoteId,
@@ -15,6 +18,7 @@ import {
   createNoteId,
   createTag,
 } from '@readied/core';
+import type { DatabaseConnection } from '../database.js';
 
 /** Row type from SQLite */
 interface NoteRow {
@@ -140,7 +144,11 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   }
 
   /** Search notes by content (basic LIKE search, excludes archived by default) */
-  async search(query: string, limit: number = 20, includeArchived: boolean = false): Promise<Note[]> {
+  async search(
+    query: string,
+    limit: number = 20,
+    includeArchived: boolean = false
+  ): Promise<Note[]> {
     const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
 
     const stmt = this.db.prepare<NoteRow>(`
@@ -163,14 +171,18 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get total count of notes */
   async count(includeArchived: boolean = false): Promise<number> {
     const condition = includeArchived ? '' : 'WHERE archived_at IS NULL';
-    const stmt = this.db.prepare<{ count: number }>(`SELECT COUNT(*) as count FROM notes ${condition}`);
+    const stmt = this.db.prepare<{ count: number }>(
+      `SELECT COUNT(*) as count FROM notes ${condition}`
+    );
     const row = stmt.get() as { count: number };
     return row.count;
   }
 
   /** Get count of archived notes */
   async countArchived(): Promise<number> {
-    const stmt = this.db.prepare<{ count: number }>('SELECT COUNT(*) as count FROM notes WHERE archived_at IS NOT NULL');
+    const stmt = this.db.prepare<{ count: number }>(
+      'SELECT COUNT(*) as count FROM notes WHERE archived_at IS NOT NULL'
+    );
     const row = stmt.get() as { count: number };
     return row.count;
   }

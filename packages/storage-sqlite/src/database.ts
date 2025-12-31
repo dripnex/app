@@ -11,7 +11,7 @@ import type { DatabaseAdapter, PreparedStatement, StatementResult } from '@readi
 // Dynamic require for native module - this syntax prevents bundlers from
 // statically analyzing and bundling the native module. At runtime, this
 // evaluates to a regular require('better-sqlite3') call.
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+
 const Database = require('better-sqlite3') as typeof import('better-sqlite3');
 
 export interface DatabaseOptions {

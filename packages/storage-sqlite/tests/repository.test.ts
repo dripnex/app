@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runMigrations } from '@readied/storage-core';
+import { createNote, createNoteId } from '@readied/core';
 import { createInMemoryDatabase, type DatabaseConnection } from '../src/database.js';
 import { allMigrations } from '../src/migrations/index.js';
 import { SQLiteNoteRepository } from '../src/repositories/SQLiteNoteRepository.js';
-import { createNote, createNoteId } from '@readied/core';
 
 describe('SQLiteNoteRepository', () => {
   let db: DatabaseConnection;
@@ -96,15 +96,19 @@ describe('SQLiteNoteRepository', () => {
     });
 
     it('gets all unique tags', async () => {
-      await repository.save(createNote({
-        id: createNoteId('n1'),
-        content: '# Note 1 #javascript #react',
-      }));
+      await repository.save(
+        createNote({
+          id: createNoteId('n1'),
+          content: '# Note 1 #javascript #react',
+        })
+      );
 
-      await repository.save(createNote({
-        id: createNoteId('n2'),
-        content: '# Note 2 #javascript #vue',
-      }));
+      await repository.save(
+        createNote({
+          id: createNoteId('n2'),
+          content: '# Note 2 #javascript #vue',
+        })
+      );
 
       const tags = await repository.getAllTags();
       expect(tags).toContain('javascript');
@@ -178,20 +182,26 @@ describe('SQLiteNoteRepository', () => {
 
   describe('search', () => {
     beforeEach(async () => {
-      await repository.save(createNote({
-        id: createNoteId('js-note'),
-        content: '# JavaScript Guide\n\nLearn JavaScript basics.',
-      }));
+      await repository.save(
+        createNote({
+          id: createNoteId('js-note'),
+          content: '# JavaScript Guide\n\nLearn JavaScript basics.',
+        })
+      );
 
-      await repository.save(createNote({
-        id: createNoteId('ts-note'),
-        content: '# TypeScript Guide\n\nLearn TypeScript.',
-      }));
+      await repository.save(
+        createNote({
+          id: createNoteId('ts-note'),
+          content: '# TypeScript Guide\n\nLearn TypeScript.',
+        })
+      );
 
-      await repository.save(createNote({
-        id: createNoteId('python-note'),
-        content: '# Python Guide\n\nLearn Python basics.',
-      }));
+      await repository.save(
+        createNote({
+          id: createNoteId('python-note'),
+          content: '# Python Guide\n\nLearn Python basics.',
+        })
+      );
     });
 
     it('searches by content', async () => {

@@ -18,6 +18,7 @@ git push origin main --tags
 ```
 
 The workflow will:
+
 1. Build packages for all platforms
 2. Sign and notarize the macOS build (if secrets are configured)
 3. Create a draft GitHub release with all artifacts
@@ -26,13 +27,13 @@ The workflow will:
 
 ### macOS Code Signing and Notarization
 
-| Secret | Description |
-|--------|-------------|
-| `CSC_LINK` | Base64-encoded .p12 certificate file |
-| `CSC_KEY_PASSWORD` | Password for the .p12 certificate |
-| `APPLE_ID` | Apple ID email used for notarization |
-| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for Apple ID |
-| `APPLE_TEAM_ID` | Apple Developer Team ID |
+| Secret                        | Description                          |
+| ----------------------------- | ------------------------------------ |
+| `CSC_LINK`                    | Base64-encoded .p12 certificate file |
+| `CSC_KEY_PASSWORD`            | Password for the .p12 certificate    |
+| `APPLE_ID`                    | Apple ID email used for notarization |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for Apple ID   |
+| `APPLE_TEAM_ID`               | Apple Developer Team ID              |
 
 ### Setting Up macOS Secrets
 
@@ -72,6 +73,7 @@ base64 -i certificate.p12 | pbcopy
 Currently not configured. Windows builds will be unsigned.
 
 To add Windows signing:
+
 1. Obtain an EV code signing certificate
 2. Add `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` secrets
 3. Update `.github/workflows/release.yml` to include signing env vars
@@ -95,6 +97,7 @@ You should see "source=Notarized Developer ID".
 ### "The app is damaged and can't be opened"
 
 The app wasn't properly signed or notarized. Check:
+
 - CSC_LINK is valid and not expired
 - App-specific password is correct
 - Hardened runtime is enabled
@@ -103,6 +106,7 @@ The app wasn't properly signed or notarized. Check:
 ### Notarization Failed
 
 Check Apple's response for specific issues:
+
 - Missing entitlements
 - Unsigned binaries inside the app
 - Invalid code signature

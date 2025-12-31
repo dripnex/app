@@ -6,12 +6,12 @@
 
 ## Brand Voice
 
-| Attribute | Guideline |
-|-----------|-----------|
-| Tone | Calm, trustworthy, opinionated |
-| Avoid | Hype, "revolutionary", "game-changer", emojis, feature lists |
-| Focus | Decisions, durability, trade-offs |
-| Audience | Developers, writers, and anyone who's been burned by note apps before |
+| Attribute | Guideline                                                             |
+| --------- | --------------------------------------------------------------------- |
+| Tone      | Calm, trustworthy, opinionated                                        |
+| Avoid     | Hype, "revolutionary", "game-changer", emojis, feature lists          |
+| Focus     | Decisions, durability, trade-offs                                     |
+| Audience  | Developers, writers, and anyone who's been burned by note apps before |
 
 ---
 
@@ -20,9 +20,11 @@
 ### Hero Section
 
 **Headline:**
+
 > Built for people who don't trust note apps anymore.
 
 **Subhead:**
+
 > Local files. Standard Markdown. No platform to outgrow its purpose.
 
 **CTA Button:** "Download"
@@ -95,13 +97,13 @@ Three points:
 
 **Intro:** Readied is not trying to be a platform. Platforms optimize for extensibility. We optimize for survivability.
 
-| Feature | Readied | Why not |
-|---------|---------|---------|
-| Cloud sync | No | Servers die. Local files don't. |
-| Plugins | No | Plugin ecosystems break with updates. |
-| Mobile app | No | Mobile encourages cloud dependency. |
-| AI features | No | AI requires servers. Servers require trust. |
-| Real-time collab | No | Collab requires infrastructure we'd have to maintain. |
+| Feature          | Readied | Why not                                               |
+| ---------------- | ------- | ----------------------------------------------------- |
+| Cloud sync       | No      | Servers die. Local files don't.                       |
+| Plugins          | No      | Plugin ecosystems break with updates.                 |
+| Mobile app       | No      | Mobile encourages cloud dependency.                   |
+| AI features      | No      | AI requires servers. Servers require trust.           |
+| Real-time collab | No      | Collab requires infrastructure we'd have to maintain. |
 
 **Bottom note:** We'd rather do less and keep doing it for decades.
 
@@ -123,15 +125,18 @@ Three points:
 ### Footer
 
 **Links:**
+
 - Download
 - Pricing
 - Changelog
 - Documentation
 
 **Transparency:**
+
 - Source available on GitHub (for inspection, not as primary distribution)
 
 **Legal:**
+
 - Privacy Policy
 - Terms of Service
 
@@ -158,12 +163,14 @@ We chose a different model.
 **Price:** $79 one-time
 
 **What you get:**
+
 - The app, forever
 - 12 months of updates
 - No feature restrictions
 - No usage limits
 
 **After 12 months:**
+
 - App keeps working exactly the same
 - Renew for $39/year to get new versions
 - Don't renew? Keep using what you have
@@ -179,11 +186,13 @@ We chose a different model.
 **Heading:** What this model means
 
 **For you:**
+
 - No pressure to cancel before renewal
 - No lost access if you stop paying
 - Your notes don't depend on our business
 
 **For us:**
+
 - Less revenue than subscriptions
 - Slower feature development
 - More sustainable long-term
@@ -221,11 +230,13 @@ A: Both. Apple Silicon, Intel Mac, and Windows x64.
 ### Platforms
 
 **macOS:**
+
 - Apple Silicon (M1/M2/M3) — `Readied-x.x.x-arm64.dmg`
 - Intel — `Readied-x.x.x-x64.dmg`
 - Requires macOS 11+
 
 **Windows:**
+
 - Windows 10/11 (x64) — `Readied-x.x.x-win-x64.exe`
 - Portable version available (no install required)
 
@@ -233,12 +244,12 @@ A: Both. Apple Silicon, Intel Mac, and Windows x64.
 
 ### System Requirements
 
-| Platform | Minimum |
-|----------|---------|
-| macOS | 11 Big Sur or later |
-| Windows | Windows 10 (64-bit) |
-| RAM | 4 GB |
-| Disk | 200 MB |
+| Platform | Minimum             |
+| -------- | ------------------- |
+| macOS    | 11 Big Sur or later |
+| Windows  | Windows 10 (64-bit) |
+| RAM      | 4 GB                |
+| Disk     | 200 MB              |
 
 ---
 
@@ -319,11 +330,13 @@ Every section should read as a consequence of that principle.
 ## GitHub Policy
 
 GitHub is mentioned for:
+
 - Transparency (source inspection)
 - Issue tracking
 - Changelog source
 
 GitHub is NOT:
+
 - Primary download source
 - Alternative to buying a license
 - Positioned as "open source" selling point

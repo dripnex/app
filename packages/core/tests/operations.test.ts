@@ -42,10 +42,7 @@ describe('Operations', () => {
 
   describe('createNoteOperation', () => {
     it('creates a note successfully', async () => {
-      const result = await createNoteOperation(
-        { content: '# My First Note' },
-        repository
-      );
+      const result = await createNoteOperation({ content: '# My First Note' }, repository);
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -56,10 +53,7 @@ describe('Operations', () => {
     });
 
     it('creates note with custom ID', async () => {
-      const result = await createNoteOperation(
-        { content: '# Test', id: 'custom-id' },
-        repository
-      );
+      const result = await createNoteOperation({ content: '# Test', id: 'custom-id' }, repository);
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -69,10 +63,7 @@ describe('Operations', () => {
 
     it('fails when note with ID already exists', async () => {
       await createNoteOperation({ content: '# First', id: 'same-id' }, repository);
-      const result = await createNoteOperation(
-        { content: '# Second', id: 'same-id' },
-        repository
-      );
+      const result = await createNoteOperation({ content: '# Second', id: 'same-id' }, repository);
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -113,10 +104,7 @@ describe('Operations', () => {
 
     it('fails when note does not exist', async () => {
       const noteId = createNoteId('non-existent');
-      const result = await updateNoteOperation(
-        { id: noteId, content: '# Test' },
-        repository
-      );
+      const result = await updateNoteOperation({ id: noteId, content: '# Test' }, repository);
 
       expect(result.ok).toBe(false);
       if (!result.ok) {

@@ -28,16 +28,16 @@ If it fails ONE rule, it doesn't ship.
 
 These extend the editor without touching the format:
 
-| Plugin | Why it's allowed |
-|--------|------------------|
-| Word count | Read-only, derived from content |
-| Outline view | Visualization, not storage |
-| Backlinks panel | Computed index, not embedded |
-| Export to PDF | Output transformation, file unchanged |
-| Lint warnings | Visual feedback, no mutations |
-| Custom themes | Presentation only |
-| Keyboard shortcuts | Commands, not auto-transforms |
-| Explicit formatters | User-triggered, not implicit |
+| Plugin              | Why it's allowed                      |
+| ------------------- | ------------------------------------- |
+| Word count          | Read-only, derived from content       |
+| Outline view        | Visualization, not storage            |
+| Backlinks panel     | Computed index, not embedded          |
+| Export to PDF       | Output transformation, file unchanged |
+| Lint warnings       | Visual feedback, no mutations         |
+| Custom themes       | Presentation only                     |
+| Keyboard shortcuts  | Commands, not auto-transforms         |
+| Explicit formatters | User-triggered, not implicit          |
 
 ---
 
@@ -45,15 +45,15 @@ These extend the editor without touching the format:
 
 These create dependencies or modify the format:
 
-| Plugin | Why it's rejected |
-|--------|-------------------|
-| Custom block syntax | Requires plugin to render |
-| Auto-formatting on type | Implicit transformation |
-| Wikilinks `[[page]]` | Non-standard Markdown |
-| Embedded queries | Proprietary syntax |
-| Sync adapters | Creates cloud dependency |
-| AI writing assistants | Requires external servers |
-| Template expansion | Mutates text automatically |
+| Plugin                  | Why it's rejected          |
+| ----------------------- | -------------------------- |
+| Custom block syntax     | Requires plugin to render  |
+| Auto-formatting on type | Implicit transformation    |
+| Wikilinks `[[page]]`    | Non-standard Markdown      |
+| Embedded queries        | Proprietary syntax         |
+| Sync adapters           | Creates cloud dependency   |
+| AI writing assistants   | Requires external servers  |
+| Template expansion      | Mutates text automatically |
 
 ---
 
@@ -74,11 +74,11 @@ Same principle applies to internal features:
 
 The line between valid and invalid often comes down to this:
 
-| Type | Example | Verdict |
-|------|---------|---------|
-| Explicit | `Cmd+Shift+F` formats block | Valid |
-| Implicit | Typing `# ` auto-expands | Invalid |
-| Explicit | Click button to insert link | Valid |
+| Type     | Example                      | Verdict |
+| -------- | ---------------------------- | ------- |
+| Explicit | `Cmd+Shift+F` formats block  | Valid   |
+| Implicit | Typing `# ` auto-expands     | Invalid |
+| Explicit | Click button to insert link  | Valid   |
 | Implicit | Auto-correct Markdown syntax | Invalid |
 
 **User-triggered = allowed.**
@@ -95,6 +95,7 @@ Extensibility creates lock-in.
 Readied optimizes for **survivability**.
 
 Your notes should work:
+
 - Without the plugin
 - Without the app
 - In 10 years

@@ -1,17 +1,17 @@
-import { useState, useCallback } from 'react'
-import type { NoteSnapshot } from '../../preload/index'
+import { useState, useCallback } from 'react';
+import type { NoteSnapshot } from '../../preload/index';
 
 interface NoteListProps {
-  notes: NoteSnapshot[]
-  selectedId: string | null
-  onSelect: (id: string) => void
-  onDelete: (id: string) => void
-  onArchive: (id: string) => void
-  onDuplicate: (id: string) => void
-  onSearch: (query: string) => void
-  isLoading: boolean
-  viewMode: 'active' | 'archived'
-  onViewModeChange: (mode: 'active' | 'archived') => void
+  notes: NoteSnapshot[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onArchive: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onSearch: (query: string) => void;
+  isLoading: boolean;
+  viewMode: 'active' | 'archived';
+  onViewModeChange: (mode: 'active' | 'archived') => void;
 }
 
 export function NoteList({
@@ -26,18 +26,21 @@ export function NoteList({
   viewMode,
   onViewModeChange,
 }: NoteListProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value
-    setSearchQuery(query)
-    onSearch(query)
-  }, [onSearch])
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const query = e.target.value;
+      setSearchQuery(query);
+      onSearch(query);
+    },
+    [onSearch]
+  );
 
   const clearSearch = useCallback(() => {
-    setSearchQuery('')
-    onSearch('')
-  }, [onSearch])
+    setSearchQuery('');
+    onSearch('');
+  }, [onSearch]);
 
   return (
     <div className="note-list">
@@ -97,7 +100,7 @@ export function NoteList({
             )}
           </div>
         ) : (
-          notes.map((note) => (
+          notes.map(note => (
             <NoteListItem
               key={note.id}
               note={note}
@@ -112,17 +115,17 @@ export function NoteList({
         )}
       </div>
     </div>
-  )
+  );
 }
 
 interface NoteListItemProps {
-  note: NoteSnapshot
-  isSelected: boolean
-  onSelect: (id: string) => void
-  onDelete: (id: string) => void
-  onArchive: (id: string) => void
-  onDuplicate: (id: string) => void
-  isArchived: boolean
+  note: NoteSnapshot;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onArchive: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  isArchived: boolean;
 }
 
 function NoteListItem({
@@ -135,12 +138,12 @@ function NoteListItem({
   isArchived,
 }: NoteListItemProps) {
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
+    const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-    })
-  }
+    });
+  };
 
   return (
     <div
@@ -154,7 +157,9 @@ function NoteListItem({
         {note.tags.length > 0 && (
           <span className="tags">
             {note.tags.slice(0, 2).map(tag => (
-              <span key={tag} className="tag">#{tag}</span>
+              <span key={tag} className="tag">
+                #{tag}
+              </span>
             ))}
           </span>
         )}
@@ -162,9 +167,9 @@ function NoteListItem({
       <div className="note-list-item-actions">
         <button
           className="action-btn"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDuplicate(note.id)
+          onClick={e => {
+            e.stopPropagation();
+            onDuplicate(note.id);
           }}
           title="Duplicate"
         >
@@ -172,9 +177,9 @@ function NoteListItem({
         </button>
         <button
           className="action-btn"
-          onClick={(e) => {
-            e.stopPropagation()
-            onArchive(note.id)
+          onClick={e => {
+            e.stopPropagation();
+            onArchive(note.id);
           }}
           title={isArchived ? 'Restore' : 'Archive'}
         >
@@ -182,9 +187,9 @@ function NoteListItem({
         </button>
         <button
           className="action-btn danger"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(note.id)
+          onClick={e => {
+            e.stopPropagation();
+            onDelete(note.id);
           }}
           title="Delete"
         >
@@ -192,5 +197,5 @@ function NoteListItem({
         </button>
       </div>
     </div>
-  )
+  );
 }

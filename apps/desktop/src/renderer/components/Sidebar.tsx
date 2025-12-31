@@ -1,5 +1,5 @@
 interface SidebarProps {
-  onNewNote: () => void
+  onNewNote: () => void;
 }
 
 export function Sidebar({ onNewNote }: SidebarProps) {
@@ -18,5 +18,5 @@ export function Sidebar({ onNewNote }: SidebarProps) {
         <span className="version">v{window.readied.app.version()}</span>
       </div>
     </aside>
-  )
+  );
 }
