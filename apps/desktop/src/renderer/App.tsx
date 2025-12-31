@@ -50,7 +50,8 @@ function NotesApp() {
     return notesQuery.data ?? [];
   }, [debouncedSearch, searchNotesQuery.data, notesQuery.data, viewMode]);
 
-  const isLoading = notesQuery.isLoading || (debouncedSearch.trim() !== '' && searchNotesQuery.isLoading);
+  const isLoading =
+    notesQuery.isLoading || (debouncedSearch.trim() !== '' && searchNotesQuery.isLoading);
 
   // Handle search with debounce
   const handleSearch = useCallback((query: string) => {
