@@ -80,6 +80,24 @@ export interface DataPaths {
   logs: string;
 }
 
+/** License state (mirrored from @readied/licensing) */
+export type LicenseStatus = 'trial' | 'trial_expired' | 'licensed' | 'updates_expired';
+
+export interface LicenseState {
+  status: LicenseStatus;
+  trialDaysRemaining: number | null;
+  expiresAt: string | null;
+  updatesUntil: string | null;
+  hasUpdates: boolean;
+  capabilities: string[];
+}
+
+/** License activation result */
+export interface LicenseResult {
+  success: boolean;
+  error?: string;
+}
+
 /** The API exposed to the renderer */
 export interface ReadiedAPI {
   notes: {
@@ -126,6 +144,16 @@ export interface ReadiedAPI {
     /** Get app version */
     version: () => string;
   };
+  license: {
+    /** Get current license state */
+    getState: () => Promise<LicenseState>;
+    /** Activate license from JSON content */
+    activate: (content: string) => Promise<LicenseResult>;
+    /** Import license file via system dialog */
+    importFile: () => Promise<LicenseResult>;
+    /** Deactivate current license (for testing) */
+    deactivate: () => Promise<{ success: boolean }>;
+  };
 }
 
 // Expose the API
@@ -154,6 +182,12 @@ const api: ReadiedAPI = {
   },
   app: {
     version: () => '0.1.0',
+  },
+  license: {
+    getState: () => ipcRenderer.invoke('license:getState'),
+    activate: content => ipcRenderer.invoke('license:activate', content),
+    importFile: () => ipcRenderer.invoke('license:importFile'),
+    deactivate: () => ipcRenderer.invoke('license:deactivate'),
   },
 };
 

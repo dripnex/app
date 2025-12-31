@@ -5,6 +5,8 @@
  */
 
 import { join } from 'path';
+import { readFile, writeFile, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import {
@@ -29,11 +31,72 @@ import {
   duplicateNoteOperation,
 } from '@readied/core';
 import { createNoteId } from '@readied/core';
+import {
+  parseLicenseFile,
+  computeLicenseState,
+  startTrial,
+  needsTrialStart,
+  createStoredLicenseData,
+  type LicenseStorage,
+  type StoredTrialData,
+  type StoredLicenseData,
+  type AppLicenseState,
+} from '@readied/licensing';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
 let noteRepository: SQLiteNoteRepository | null = null;
 let dataPaths: DataPaths | null = null;
+let licenseStorage: FileLicenseStorage | null = null;
+
+/** File-based license storage implementation */
+class FileLicenseStorage implements LicenseStorage {
+  private licensePath: string;
+  private trialPath: string;
+
+  constructor(dataDir: string) {
+    this.licensePath = join(dataDir, 'license.json');
+    this.trialPath = join(dataDir, 'trial.json');
+  }
+
+  async readLicenseData(): Promise<StoredLicenseData | null> {
+    try {
+      if (!existsSync(this.licensePath)) {
+        return null;
+      }
+      const content = await readFile(this.licensePath, 'utf-8');
+      return JSON.parse(content) as StoredLicenseData;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeLicenseData(data: StoredLicenseData): Promise<void> {
+    await writeFile(this.licensePath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+
+  async removeLicenseData(): Promise<void> {
+    if (existsSync(this.licensePath)) {
+      await unlink(this.licensePath);
+    }
+  }
+
+  async readTrialData(): Promise<StoredTrialData | null> {
+    try {
+      if (!existsSync(this.trialPath)) {
+        return null;
+      }
+      const content = await readFile(this.trialPath, 'utf-8');
+      return JSON.parse(content) as StoredTrialData;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeTrialData(data: StoredTrialData): Promise<void> {
+    await writeFile(this.trialPath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+}
 
 /** Initialize data paths */
 function initDataPaths(): DataPaths {
@@ -339,6 +402,86 @@ function registerDataHandlers(): void {
   });
 }
 
+/** Register IPC handlers for licensing */
+function registerLicenseHandlers(): void {
+  if (!licenseStorage) {
+    throw new Error('License storage not initialized');
+  }
+
+  const storage = licenseStorage;
+
+  // Get current license state
+  ipcMain.handle('license:getState', async (): Promise<AppLicenseState> => {
+    let trialData = await storage.readTrialData();
+    const licenseData = await storage.readLicenseData();
+
+    // Auto-start trial if needed
+    if (needsTrialStart(trialData, licenseData)) {
+      trialData = startTrial();
+      await storage.writeTrialData(trialData);
+      console.log('[Main] Trial started automatically');
+    }
+
+    return computeLicenseState(trialData, licenseData);
+  });
+
+  // Activate license from content
+  ipcMain.handle(
+    'license:activate',
+    async (_event, content: string): Promise<{ success: boolean; error?: string }> => {
+      const result = await parseLicenseFile(content);
+
+      if (!result.valid || !result.license) {
+        return { success: false, error: result.error ?? 'Invalid license' };
+      }
+
+      const storedData = createStoredLicenseData(result.license);
+      await storage.writeLicenseData(storedData);
+
+      console.log('[Main] License activated:', result.license.licenseId);
+      return { success: true };
+    }
+  );
+
+  // Import license file via dialog
+  ipcMain.handle('license:importFile', async (): Promise<{ success: boolean; error?: string }> => {
+    const { filePaths, canceled } = await dialog.showOpenDialog({
+      title: 'Import License',
+      filters: [{ name: 'License Files', extensions: ['json'] }],
+      properties: ['openFile'],
+      buttonLabel: 'Import',
+    });
+
+    if (canceled || !filePaths[0]) {
+      return { success: false, error: 'Cancelled' };
+    }
+
+    try {
+      const content = await readFile(filePaths[0], 'utf-8');
+      const result = await parseLicenseFile(content);
+
+      if (!result.valid || !result.license) {
+        return { success: false, error: result.error ?? 'Invalid license' };
+      }
+
+      const storedData = createStoredLicenseData(result.license);
+      await storage.writeLicenseData(storedData);
+
+      console.log('[Main] License imported:', result.license.licenseId);
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Failed to read license file' };
+    }
+  });
+
+  // Deactivate license (for debug/testing)
+  ipcMain.handle('license:deactivate', async (): Promise<{ success: boolean }> => {
+    await storage.removeLicenseData();
+    console.log('[Main] License deactivated');
+    return { success: true };
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   // Only check for updates in production
@@ -417,6 +560,11 @@ app.whenReady().then(() => {
   initDatabase();
   registerIpcHandlers();
   registerDataHandlers();
+
+  // Initialize license storage and handlers
+  licenseStorage = new FileLicenseStorage(dataPaths.root);
+  registerLicenseHandlers();
+  console.log('[Main] License handlers registered');
 
   // Create window and start auto-updater
   createWindow();

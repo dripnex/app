@@ -3,6 +3,9 @@ import type { NoteSnapshot } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
 import { Sidebar } from './components/Sidebar';
+import { TrialBanner } from './components/TrialBanner';
+import { LicenseDialog } from './components/LicenseDialog';
+import { LicenseProvider } from './contexts/LicenseContext';
 
 export function App() {
   const [notes, setNotes] = useState<NoteSnapshot[]>([]);
@@ -202,21 +205,27 @@ export function App() {
   }, [handleNewNote, handleDuplicateNote, selectedNote, searchQuery, viewMode, loadNotes]);
 
   return (
-    <div className="app">
-      <Sidebar onNewNote={handleNewNote} />
-      <NoteList
-        notes={notes}
-        selectedId={selectedNote?.id ?? null}
-        onSelect={handleSelectNote}
-        onDelete={handleDeleteNote}
-        onArchive={handleArchiveNote}
-        onDuplicate={handleDuplicateNote}
-        onSearch={handleSearch}
-        isLoading={isLoading}
-        viewMode={viewMode}
-        onViewModeChange={handleViewModeChange}
-      />
-      <NoteEditor note={selectedNote} onUpdate={handleUpdateNote} />
-    </div>
+    <LicenseProvider>
+      <div className="app">
+        <TrialBanner />
+        <div className="app__content">
+          <Sidebar onNewNote={handleNewNote} />
+          <NoteList
+            notes={notes}
+            selectedId={selectedNote?.id ?? null}
+            onSelect={handleSelectNote}
+            onDelete={handleDeleteNote}
+            onArchive={handleArchiveNote}
+            onDuplicate={handleDuplicateNote}
+            onSearch={handleSearch}
+            isLoading={isLoading}
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+          />
+          <NoteEditor note={selectedNote} onUpdate={handleUpdateNote} />
+        </div>
+        <LicenseDialog />
+      </div>
+    </LicenseProvider>
   );
 }

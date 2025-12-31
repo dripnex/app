@@ -33,6 +33,8 @@
     "@codemirror/view": "^6.39.8",
     "@lezer/highlight": "^1.2.3",
     "@readied/core": "workspace:*",
+    "@readied/licensing": "workspace:*",
+    "@readied/product-config": "workspace:*",
     "@readied/storage-core": "workspace:*",
     "@readied/storage-sqlite": "workspace:*",
     "better-sqlite3": "^11.7.0",
