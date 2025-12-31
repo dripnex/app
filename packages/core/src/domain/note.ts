@@ -1,0 +1,88 @@
+/**
+ * Note Entity - The core domain object
+ *
+ * INVARIANT: Markdown text is the source of truth
+ * The Note entity wraps raw markdown with computed metadata
+ */
+
+import type { NoteId, Tag, Timestamp } from './types.js';
+import { createTimestamp, generateNoteId } from './types.js';
+import { extractTitle, extractTags, countWords, type NoteMetadata } from './metadata.js';
+
+/** The Note entity - immutable by design */
+export interface Note {
+  /** Unique identifier */
+  readonly id: NoteId;
+
+  /** Raw markdown content - NEVER auto-modified */
+  readonly content: string;
+
+  /** Computed metadata derived from content */
+  readonly metadata: NoteMetadata;
+}
+
+/** Options for creating a new note */
+export interface CreateNoteOptions {
+  /** Optional ID (generated if not provided) */
+  id?: NoteId;
+
+  /** Markdown content */
+  content: string;
+
+  /** Optional creation timestamp (defaults to now) */
+  createdAt?: Timestamp;
+}
+
+/** Creates a new Note from markdown content */
+export function createNote(options: CreateNoteOptions): Note {
+  const now = createTimestamp();
+
+  const metadata: NoteMetadata = {
+    title: extractTitle(options.content),
+    createdAt: options.createdAt ?? now,
+    updatedAt: now,
+    tags: extractTags(options.content),
+    wordCount: countWords(options.content),
+  };
+
+  return {
+    id: options.id ?? generateNoteId(),
+    content: options.content,
+    metadata,
+  };
+}
+
+/** Updates a note's content, preserving id and createdAt */
+export function updateNoteContent(note: Note, newContent: string): Note {
+  const now = createTimestamp();
+
+  const metadata: NoteMetadata = {
+    title: extractTitle(newContent),
+    createdAt: note.metadata.createdAt,
+    updatedAt: now,
+    tags: extractTags(newContent),
+    wordCount: countWords(newContent),
+  };
+
+  return {
+    id: note.id,
+    content: newContent,
+    metadata,
+  };
+}
+
+/** Checks if a note contains a specific tag */
+export function hasTag(note: Note, tag: Tag): boolean {
+  return note.metadata.tags.includes(tag);
+}
+
+/** Gets all unique tags from multiple notes */
+export function collectTags(notes: readonly Note[]): Tag[] {
+  const tags = new Set<Tag>();
+  for (const note of notes) {
+    for (const tag of note.metadata.tags) {
+      tags.add(tag);
+    }
+  }
+  return Array.from(tags);
+}
