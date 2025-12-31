@@ -19,9 +19,13 @@ export type { ExtendedNoteRepository } from './interfaces/ExtendedNoteRepository
 // Types
 export type { ArchivedFilter } from './types/ArchivedFilter.js';
 export type { ListNotesOptions } from './types/ListNotesOptions.js';
+export type { NoteSnapshot } from './types/NoteSnapshot.js';
 
 // Migrations
 export { runMigrations, getPendingMigrations, getCurrentVersion } from './migrations/runner.js';
 
 // Repositories
 export { InMemoryNoteRepository } from './repositories/InMemoryNoteRepository.js';
+
+// Data management (directories, backup, export, import)
+export * from './data/index.js';
