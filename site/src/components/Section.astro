@@ -1,0 +1,20 @@
+---
+interface Props {
+  variant?: 'default' | 'alt' | 'emphasis';
+  class?: string;
+}
+
+const { variant = 'default', class: className = '' } = Astro.props;
+
+const bgClass = {
+  default: '',
+  alt: 'section-alt',
+  emphasis: 'section-emphasis'
+}[variant];
+---
+
+<section class:list={['section', bgClass, className]}>
+  <div class="container">
+    <slot />
+  </div>
+</section>

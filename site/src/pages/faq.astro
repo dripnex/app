@@ -1,0 +1,253 @@
+---
+import Base from '../layouts/Base.astro';
+import Footer from '../components/Footer.astro';
+import { Icon } from 'astro-icon/components';
+
+const faqs = [
+  {
+    category: 'General',
+    questions: [
+      { q: 'What is Readied?', a: 'Readied is a Markdown editor designed for developers who want to own their notes. It works offline, stores files locally, and uses standard Markdown format.' },
+      { q: 'Is my data stored in the cloud?', a: 'No. All files stay on your local disk. We have no servers, no accounts, and no way to access your data.' },
+      { q: 'Does Readied work offline?', a: 'Yes, 100%. Readied works entirely offline. No internet connection required.' },
+      { q: 'What file format does Readied use?', a: 'Standard Markdown (.md files). You can open your notes with any text editor, now or 20 years from now.' },
+    ]
+  },
+  {
+    category: 'Features',
+    questions: [
+      { q: 'Can I sync between devices?', a: 'Not built-in. We intentionally avoid cloud features. You can use Dropbox, iCloud, Google Drive, or git to sync your folder.' },
+      { q: 'Does Readied support backlinks?', a: 'Yes. Backlinks are computed from your files on-the-fly. No database dependency.' },
+      { q: 'Can I use plugins?', a: 'No. Plugins that modify your files create lock-in. We keep the app simple and your Markdown standard.' },
+      { q: 'Does Readied have AI features?', a: 'No. AI features require servers and trust. We keep everything local.' },
+    ]
+  },
+  {
+    category: 'Pricing',
+    questions: [
+      { q: 'How much does Readied cost?', a: '$79 one-time payment. You own the app forever.' },
+      { q: 'Is there a subscription option?', a: 'No. One-time purchases align incentives better. We make money when you buy, not when you stay locked in.' },
+      { q: 'What about updates?', a: '12 months of updates included. After that, $39/year for continued updates. Your app keeps working regardless.' },
+      { q: 'What about refunds?', a: '14-day money-back guarantee, no questions asked.' },
+    ]
+  },
+  {
+    category: 'Technical',
+    questions: [
+      { q: 'What platforms are supported?', a: 'macOS 11+ (Apple Silicon and Intel) and Windows 10+ (64-bit).' },
+      { q: 'Can I export my data?', a: 'Your data is already Markdown files on your disk. Nothing to export. Open them with any editor.' },
+      { q: 'What if Readied stops being developed?', a: 'Your app keeps working. Your files are standard Markdown. You lose nothing.' },
+      { q: 'Is the source code available?', a: 'Yes, the source is available on GitHub for transparency. The license is source-available, not open-source.' },
+    ]
+  }
+];
+---
+
+<Base title="FAQ — Readied" description="Frequently asked questions about Readied.">
+  <main class="faq-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="label">FAQ</span>
+        <h1>Frequently asked <span class="text-gradient">questions</span></h1>
+        <p class="page-intro">Everything you need to know about Readied.</p>
+      </header>
+
+      <div class="faq-grid">
+        {faqs.map((section) => (
+          <section class="faq-section">
+            <h2 class="section-title">{section.category}</h2>
+            <div class="questions-list">
+              {section.questions.map((item) => (
+                <details class="faq-item glass">
+                  <summary class="faq-question">
+                    <span>{item.q}</span>
+                    <Icon name="lucide:chevron-down" size={20} class="chevron" />
+                  </summary>
+                  <p class="faq-answer">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div class="faq-cta glass">
+        <h3>Still have questions?</h3>
+        <p>Join our community forum or reach out on Twitter.</p>
+        <div class="cta-actions">
+          <a href="https://github.com/readied/readied/discussions" target="_blank" rel="noopener" class="btn btn-primary" data-magnetic="0.2">
+            <Icon name="simple-icons:github" size={16} />
+            Visit Forum
+          </a>
+          <a href="https://twitter.com/readiedapp" target="_blank" rel="noopener" class="btn btn-ghost" data-magnetic="0.2">
+            <Icon name="simple-icons:x" size={16} />
+            @readiedapp
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .faq-page {
+    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
+  }
+
+  .container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: var(--space-16);
+  }
+
+  .page-header .label {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
+
+  .page-header h1 {
+    font-size: var(--text-3xl);
+    line-height: 1.15;
+    margin-bottom: var(--space-4);
+  }
+
+  .page-intro {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+  }
+
+  .faq-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-10);
+    margin-bottom: var(--space-16);
+  }
+
+  .faq-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .section-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: var(--space-2);
+  }
+
+  .questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .faq-item {
+    overflow: hidden;
+  }
+
+  .faq-question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question span {
+    flex: 1;
+  }
+
+  .chevron {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .faq-item[open] .chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-item[open] .faq-question {
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .faq-answer {
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.7;
+    background: var(--glass-bg-dark);
+  }
+
+  .faq-cta {
+    text-align: center;
+    padding: var(--space-10);
+  }
+
+  .faq-cta h3 {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-2);
+  }
+
+  .faq-cta p {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-6);
+  }
+
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+  }
+
+  .cta-actions .btn {
+    gap: var(--space-2);
+  }
+
+  @media (max-width: 768px) {
+    .faq-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .faq-page {
+      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
+    }
+
+    .page-header h1 {
+      font-size: var(--text-2xl);
+    }
+
+    .faq-cta {
+      padding: var(--space-6);
+    }
+
+    .cta-actions {
+      flex-direction: column;
+    }
+
+    .cta-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

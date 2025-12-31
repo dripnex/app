@@ -1,0 +1,339 @@
+---
+import Base from '../layouts/Base.astro';
+import Footer from '../components/Footer.astro';
+import { Icon } from 'astro-icon/components';
+
+const lastUpdated = "December 2024";
+
+const sections = [
+  {
+    title: 'Overview',
+    content: [
+      'Readied is designed with privacy as a core principle. Your notes are stored locally on your device, not on our servers.',
+      'We believe your data belongs to you. This privacy policy explains what minimal information we collect and why.'
+    ]
+  },
+  {
+    title: 'Data We Do Not Collect',
+    content: [
+      'Readied does not collect, store, or transmit:'
+    ],
+    list: [
+      'Your notes or any content you create',
+      'Your files or file names',
+      'Personal information (name, email, address)',
+      'Usage analytics or behavioral data',
+      'Location data',
+      'Device identifiers for tracking'
+    ]
+  },
+  {
+    title: 'Data We Collect',
+    content: [
+      'When you purchase Readied, our payment processor (Gumroad/Stripe) collects standard transaction information:',
+    ],
+    list: [
+      'Email address (for license delivery)',
+      'Payment information (processed securely by Stripe)',
+      'Transaction records (for refunds and support)'
+    ],
+    footer: 'This information is handled by our payment processors according to their respective privacy policies.'
+  },
+  {
+    title: 'License Validation',
+    content: [
+      'When you activate your license, Readied performs a one-time validation check.',
+      'This check transmits only your license key to verify authenticity. No personal data or content is sent.',
+      'After initial activation, the app works entirely offline.'
+    ]
+  },
+  {
+    title: 'Updates',
+    content: [
+      'Readied may periodically check for software updates.',
+      'These update checks do not transmit any personal data or content from your device.',
+      'You can disable automatic update checks in settings.'
+    ]
+  },
+  {
+    title: 'Third-Party Services',
+    content: [
+      'Readied does not integrate with third-party analytics, advertising, or tracking services.',
+      'The only external services involved are:'
+    ],
+    list: [
+      'Payment processing (Stripe/Gumroad)',
+      'License validation server',
+      'Update server (optional)'
+    ]
+  },
+  {
+    title: 'Your Rights',
+    content: [
+      'Since we don\'t store your data, there\'s nothing to delete or export from our servers.',
+      'Your notes are standard Markdown files on your computer. You have complete control over them.',
+      'To delete your purchase data, contact us and we\'ll remove your records from our payment processor.'
+    ]
+  },
+  {
+    title: 'Changes to This Policy',
+    content: [
+      'We may update this privacy policy occasionally.',
+      'Significant changes will be announced through our changelog and blog.',
+      'Continued use of Readied after changes constitutes acceptance of the updated policy.'
+    ]
+  },
+  {
+    title: 'Contact',
+    content: [
+      'For privacy-related questions or concerns:'
+    ],
+    list: [
+      'Email: privacy@readied.app',
+      'GitHub: github.com/readied/readied'
+    ]
+  }
+];
+---
+
+<Base title="Privacy Policy — Readied" description="How Readied protects your privacy. Your notes stay on your device.">
+  <main class="legal-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="label">Legal</span>
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last updated: {lastUpdated}</p>
+      </header>
+
+      <div class="tldr glass">
+        <div class="tldr-icon">
+          <Icon name="lucide:shield" size={24} />
+        </div>
+        <div class="tldr-content">
+          <span class="tldr-label">TL;DR</span>
+          <p>Your notes never leave your device. We only collect payment info through Stripe to deliver your license.</p>
+        </div>
+      </div>
+
+      <article class="content">
+        {sections.map((section, i) => (
+          <section class="section glass">
+            <header class="section-header">
+              <span class="section-num">{String(i + 1).padStart(2, '0')}</span>
+              <h2>{section.title}</h2>
+            </header>
+            <div class="section-body">
+              {section.content.map(p => (
+                <p>{p}</p>
+              ))}
+              {section.list && (
+                <ul class="section-list">
+                  {section.list.map(item => (
+                    <li>
+                      <Icon name="lucide:check" size={14} class="icon-accent" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {section.footer && (
+                <p class="section-footer-text">{section.footer}</p>
+              )}
+            </div>
+          </section>
+        ))}
+      </article>
+
+      <footer class="page-footer">
+        <a href="/" class="back-link">
+          <Icon name="lucide:arrow-left" size={16} />
+          Back to home
+        </a>
+      </footer>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .legal-page {
+    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
+  }
+
+  .container {
+    max-width: var(--content-max);
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .page-header .label {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
+
+  .page-header h1 {
+    font-size: var(--text-3xl);
+    line-height: 1.15;
+    margin-bottom: var(--space-3);
+  }
+
+  .last-updated {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  /* TL;DR box */
+  .tldr {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    margin-bottom: var(--space-10);
+    border-left: 3px solid var(--accent);
+  }
+
+  .tldr-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg-accent);
+    border: 1px solid var(--glass-border-accent);
+    border-radius: var(--radius-md);
+    color: var(--accent);
+  }
+
+  .tldr-content {
+    flex: 1;
+  }
+
+  .tldr-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: var(--space-1);
+  }
+
+  .tldr-content p {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .section {
+    padding: var(--space-6);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .section-num {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+
+  .section-header h2 {
+    font-size: var(--text-lg);
+  }
+
+  .section-body p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: var(--space-2);
+  }
+
+  .section-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-list {
+    list-style: none;
+    margin: var(--space-4) 0;
+    padding: var(--space-4);
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+  }
+
+  .section-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .section-list li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .section-footer-text {
+    margin-top: var(--space-4) !important;
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--glass-border);
+    font-style: italic;
+    color: var(--text-muted) !important;
+  }
+
+  .page-footer {
+    margin-top: var(--space-10);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  @media (max-width: 640px) {
+    .legal-page {
+      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
+    }
+
+    .page-header h1 {
+      font-size: var(--text-2xl);
+    }
+
+    .tldr {
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .section {
+      padding: var(--space-5);
+    }
+  }
+</style>

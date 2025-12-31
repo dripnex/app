@@ -1,0 +1,280 @@
+---
+import Base from '../layouts/Base.astro';
+import Footer from '../components/Footer.astro';
+import { Icon } from 'astro-icon/components';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Get current version from CHANGELOG.md
+const changelogPath = path.join(process.cwd(), 'CHANGELOG.md');
+const changelogContent = fs.readFileSync(changelogPath, 'utf-8');
+const versionMatch = changelogContent.match(/^## \[([^\]]+)\]/m);
+const currentVersion = versionMatch ? versionMatch[1] : 'Unreleased';
+const isReleased = currentVersion !== 'Unreleased';
+---
+
+<Base title="Download — Readied" description="Download Readied for macOS or Windows. Try free for 14 days.">
+  <main class="download-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="label">Download</span>
+        <h1>Get <span class="text-gradient">Readied</span></h1>
+        {isReleased ? (
+          <>
+            <p class="intro">Try free for 14 days. No account required.</p>
+            <span class="version-badge glass-accent">v{currentVersion}</span>
+          </>
+        ) : (
+          <>
+            <p class="intro">We're building something good. Leave your email to get notified.</p>
+            <span class="version-badge glass">Coming Soon</span>
+          </>
+        )}
+      </header>
+
+      <div class={`platforms ${!isReleased ? 'disabled' : ''}`}>
+        <article class="platform glass">
+          <header class="platform-header">
+            <div class="platform-icon">
+              <Icon name="simple-icons:apple" size={32} />
+            </div>
+            <div>
+              <h2>macOS</h2>
+              <span class="requirement">macOS 11 Big Sur or later</span>
+            </div>
+          </header>
+          <div class="downloads">
+            <span class="btn btn-primary btn-disabled">
+              <Icon name="lucide:download" size={16} />
+              Apple Silicon
+            </span>
+            <span class="btn btn-ghost btn-disabled">Intel</span>
+          </div>
+        </article>
+
+        <article class="platform glass">
+          <header class="platform-header">
+            <div class="platform-icon">
+              <Icon name="simple-icons:windows" size={32} />
+            </div>
+            <div>
+              <h2>Windows</h2>
+              <span class="requirement">Windows 10 (64-bit) or later</span>
+            </div>
+          </header>
+          <div class="downloads">
+            <span class="btn btn-primary btn-disabled">
+              <Icon name="lucide:download" size={16} />
+              Windows x64
+            </span>
+            <span class="btn btn-ghost btn-disabled">Portable</span>
+          </div>
+        </article>
+      </div>
+
+      <section class="specs glass">
+        <h3>System requirements</h3>
+        <dl class="spec-list">
+          <div class="spec-row">
+            <dt>RAM</dt>
+            <dd>4 GB minimum</dd>
+          </div>
+          <div class="spec-row">
+            <dt>Disk</dt>
+            <dd>200 MB</dd>
+          </div>
+          <div class="spec-row">
+            <dt>Display</dt>
+            <dd>1280x720 minimum</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="verification">
+        <h3>Verification</h3>
+        <p>Each release includes SHA256 checksums. Source available on <a href="https://github.com/readied/readied" target="_blank" rel="noopener">GitHub</a>.</p>
+      </section>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .download-page {
+    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
+  }
+
+  .container {
+    max-width: var(--content-max);
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: var(--space-12);
+  }
+
+  .page-header .label {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
+
+  .page-header h1 {
+    font-size: var(--text-3xl);
+    line-height: 1.15;
+    margin-bottom: var(--space-3);
+  }
+
+  .intro {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-5);
+  }
+
+  .version-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+  }
+
+  .version-badge.glass-accent {
+    color: var(--accent);
+  }
+
+  .platforms.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .btn-disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .platforms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-6);
+    margin-bottom: var(--space-10);
+  }
+
+  .platform {
+    padding: var(--space-8);
+  }
+
+  .platform-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    margin-bottom: var(--space-6);
+  }
+
+  .platform-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg-accent);
+    border: 1px solid var(--glass-border-accent);
+    border-radius: var(--radius-md);
+    color: var(--accent);
+  }
+
+  .platform h2 {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-1);
+  }
+
+  .requirement {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  .downloads {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .downloads .btn {
+    gap: var(--space-2);
+  }
+
+  .specs {
+    padding: var(--space-6);
+    margin-bottom: var(--space-10);
+  }
+
+  .specs h3 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-5);
+  }
+
+  .spec-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .spec-row:last-child {
+    border-bottom: none;
+  }
+
+  .spec-row dt {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .spec-row dd {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+
+  .verification h3 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+  }
+
+  .verification p {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+  }
+
+  .verification a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .verification a:hover {
+    text-decoration: none;
+  }
+
+  @media (max-width: 640px) {
+    .download-page {
+      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
+    }
+
+    .page-header h1 {
+      font-size: var(--text-2xl);
+    }
+
+    .platforms {
+      grid-template-columns: 1fr;
+    }
+
+    .platform {
+      padding: var(--space-6);
+    }
+  }
+</style>

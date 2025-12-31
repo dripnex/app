@@ -1,0 +1,338 @@
+---
+import Base from '../layouts/Base.astro';
+import Footer from '../components/Footer.astro';
+import { Icon } from 'astro-icon/components';
+
+const sections = [
+  {
+    title: 'The pattern',
+    content: [
+      'Every successful note app follows the same arc.',
+      "It starts simple. Then it adds sync. Then it adds extensibility — not as optional tools, but as dependencies. Eventually, the app becomes a platform.",
+      'Somewhere along the way, exports break. Incentives shift. Trust erodes.',
+      'Readied was built to avoid that cycle.'
+    ]
+  },
+  {
+    title: 'Growth changes incentives',
+    content: [
+      'Growth demands features.',
+      'Features demand infrastructure.',
+      'Infrastructure demands revenue.',
+      'Revenue demands lock-in.',
+      "This isn't malice. It's gravity.",
+      'The only way to escape it is to stop optimizing for growth.'
+    ]
+  },
+  {
+    title: 'Our constraint',
+    content: [
+      'Readied is constrained by design.'
+    ],
+    list: [
+      'No servers to maintain',
+      'No ecosystem that your notes depend on',
+      'No dependency graph outside your disk'
+    ],
+    footer: "The app works entirely offline. Your files are standard Markdown. If we disappear tomorrow, your notes don't."
+  },
+  {
+    title: 'The trade',
+    content: [
+      "Readied is not ambitious software. It's careful software.",
+      'We optimize for decades, not quarters.',
+      'We ship less, not more.',
+      'We say no by default.'
+    ]
+  },
+  {
+    title: 'Features that are allowed',
+    content: [
+      "We're not against features. We're against features that create dependencies."
+    ],
+    list: [
+      'Backlinks — computed from your files',
+      'Search — an index rebuilt from your files',
+      'Graph view — visualization, not storage'
+    ],
+    footer: "The rule: if deleting our database doesn't lose your data, the feature is allowed."
+  }
+];
+---
+
+<Base title="Philosophy — Readied" description="Why Readied refuses to become a platform.">
+  <main class="philosophy-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="label">Philosophy</span>
+        <h1>Why Readied refuses to<br/><span class="text-gradient">become a platform</span></h1>
+      </header>
+
+      <!-- Video section -->
+      <section class="video-section glass">
+        <div class="video-embed">
+          <div class="video-placeholder-large">
+            <div class="video-play-btn-large">
+              <Icon name="lucide:play" size={32} />
+            </div>
+          </div>
+          <div class="video-overlay">
+            <span class="video-badge">Coming soon</span>
+          </div>
+        </div>
+        <div class="video-info">
+          <h2>Why I built Readied</h2>
+          <p>A personal video explaining the motivations behind building software that prioritizes longevity over growth.</p>
+        </div>
+      </section>
+
+      <article class="content">
+        {sections.map((section, i) => (
+          <section class="section glass">
+            <header class="section-header">
+              <span class="section-num">{String(i + 1).padStart(2, '0')}</span>
+              <h2>{section.title}</h2>
+            </header>
+            <div class="section-body">
+              {section.content.map(p => (
+                <p>{p}</p>
+              ))}
+              {section.list && (
+                <ul class="section-list">
+                  {section.list.map(item => (
+                    <li>
+                      <Icon name="lucide:check" size={14} class="icon-accent" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {section.footer && (
+                <p class="section-footer-text">{section.footer}</p>
+              )}
+            </div>
+          </section>
+        ))}
+      </article>
+
+      <footer class="page-footer">
+        <a href="/" class="back-link">
+          <Icon name="lucide:arrow-left" size={16} />
+          Back to home
+        </a>
+      </footer>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .philosophy-page {
+    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
+  }
+
+  .container {
+    max-width: var(--content-max);
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: var(--space-12);
+  }
+
+  .page-header .label {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
+
+  .page-header h1 {
+    font-size: var(--text-3xl);
+    line-height: 1.15;
+  }
+
+  /* Video section */
+  .video-section {
+    margin-bottom: var(--space-12);
+    overflow: hidden;
+  }
+
+  .video-embed {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: var(--bg-inset);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .video-placeholder-large {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-base) 100%);
+  }
+
+  .video-play-btn-large {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg-accent);
+    border: 2px solid var(--glass-border-accent);
+    border-radius: var(--radius-full);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--ease-out);
+  }
+
+  .video-play-btn-large svg {
+    margin-left: 4px;
+  }
+
+  .video-placeholder-large:hover .video-play-btn-large {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-base);
+    transform: scale(1.1);
+    box-shadow: var(--glow-accent-strong);
+  }
+
+  .video-overlay {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+  }
+
+  .video-badge {
+    display: inline-flex;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--glass-bg-solid);
+    backdrop-filter: var(--blur-sm);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+  }
+
+  .video-info {
+    padding: var(--space-6);
+  }
+
+  .video-info h2 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-2);
+  }
+
+  .video-info p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .section {
+    padding: var(--space-8);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .section-num {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+
+  .section-header h2 {
+    font-size: var(--text-xl);
+  }
+
+  .section-body p {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: var(--space-3);
+  }
+
+  .section-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-list {
+    list-style: none;
+    margin: var(--space-5) 0;
+    padding: var(--space-5);
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+  }
+
+  .section-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .section-list li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .section-footer-text {
+    margin-top: var(--space-5) !important;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--glass-border);
+    font-style: italic;
+    color: var(--text-muted) !important;
+  }
+
+  .page-footer {
+    margin-top: var(--space-12);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  @media (max-width: 640px) {
+    .philosophy-page {
+      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
+    }
+
+    .page-header h1 {
+      font-size: var(--text-2xl);
+    }
+
+    .section {
+      padding: var(--space-6);
+    }
+  }
+</style>

@@ -1,0 +1,349 @@
+---
+import Base from '../layouts/Base.astro';
+import Footer from '../components/Footer.astro';
+import { Icon } from 'astro-icon/components';
+
+const lastUpdated = "December 2024";
+
+const sections = [
+  {
+    title: 'Acceptance of Terms',
+    content: [
+      'By downloading, installing, or using Readied, you agree to be bound by these Terms of Service.',
+      'If you do not agree to these terms, do not use the software.'
+    ]
+  },
+  {
+    title: 'License Grant',
+    content: [
+      'Upon purchase, you are granted a perpetual, non-exclusive, non-transferable license to use Readied on your personal devices.',
+      'This license is for personal or commercial use by the licensee only.',
+      'You may install Readied on multiple devices that you own, but the license is tied to you as an individual, not to a device or organization.'
+    ]
+  },
+  {
+    title: 'Updates and Maintenance',
+    content: [
+      'Your initial purchase includes 12 months of software updates.',
+      'After the initial period, you may optionally renew for continued updates at the current renewal rate.',
+      'Regardless of update status, your existing version of Readied will continue to function indefinitely.'
+    ],
+    list: [
+      'Updates include bug fixes and new features',
+      'Renewal is optional and not required for continued use',
+      'No features are removed from purchased versions'
+    ]
+  },
+  {
+    title: 'Restrictions',
+    content: [
+      'You may not:'
+    ],
+    list: [
+      'Redistribute, sell, or sublicense the software',
+      'Reverse engineer, decompile, or disassemble the software',
+      'Remove or alter any proprietary notices or labels',
+      'Use the software to develop a competing product',
+      'Share your license key with others'
+    ]
+  },
+  {
+    title: 'Intellectual Property',
+    content: [
+      'Readied and its original content, features, and functionality are owned by Readied and are protected by international copyright, trademark, and other intellectual property laws.',
+      'Your content (notes, files, etc.) remains entirely yours. We claim no ownership or rights to anything you create.'
+    ]
+  },
+  {
+    title: 'Disclaimer of Warranties',
+    content: [
+      'Readied is provided "as is" and "as available" without warranties of any kind, either express or implied.',
+      'We do not warrant that the software will be uninterrupted, error-free, or completely secure.',
+      'You are responsible for backing up your data. While Readied stores files locally in standard formats, we recommend regular backups of important content.'
+    ]
+  },
+  {
+    title: 'Limitation of Liability',
+    content: [
+      'In no event shall Readied, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, profits, or goodwill.',
+      'Our total liability shall not exceed the amount you paid for the software.'
+    ]
+  },
+  {
+    title: 'Refund Policy',
+    content: [
+      'We offer a 14-day money-back guarantee from the date of purchase.',
+      'To request a refund, contact support with your order details.',
+      'Refunds are processed through the original payment method.'
+    ],
+    list: [
+      '14-day refund period from purchase date',
+      'No questions asked',
+      'Full refund of purchase price'
+    ]
+  },
+  {
+    title: 'Termination',
+    content: [
+      'We reserve the right to terminate or suspend your license immediately, without prior notice, for conduct that we believe violates these terms or is harmful to other users or to us.',
+      'Upon termination, your right to use the software ceases, but your existing files remain yours (they are standard Markdown files on your device).'
+    ]
+  },
+  {
+    title: 'Governing Law',
+    content: [
+      'These terms shall be governed by and construed in accordance with applicable laws, without regard to conflict of law provisions.',
+      'Any disputes arising under these terms shall be resolved through good-faith negotiation first.'
+    ]
+  },
+  {
+    title: 'Changes to Terms',
+    content: [
+      'We reserve the right to modify these terms at any time.',
+      'Significant changes will be announced through our changelog and blog.',
+      'Continued use of Readied after changes constitutes acceptance of the new terms.'
+    ]
+  },
+  {
+    title: 'Contact',
+    content: [
+      'For questions about these terms:'
+    ],
+    list: [
+      'Email: legal@readied.app',
+      'GitHub: github.com/readied/readied'
+    ]
+  }
+];
+---
+
+<Base title="Terms of Service — Readied" description="Terms of Service for Readied software.">
+  <main class="legal-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="label">Legal</span>
+        <h1>Terms of Service</h1>
+        <p class="last-updated">Last updated: {lastUpdated}</p>
+      </header>
+
+      <div class="tldr glass">
+        <div class="tldr-icon">
+          <Icon name="lucide:file-text" size={24} />
+        </div>
+        <div class="tldr-content">
+          <span class="tldr-label">TL;DR</span>
+          <p>Pay once, own forever. 12 months of updates included. Your files are yours. 14-day refund guarantee.</p>
+        </div>
+      </div>
+
+      <article class="content">
+        {sections.map((section, i) => (
+          <section class="section glass">
+            <header class="section-header">
+              <span class="section-num">{String(i + 1).padStart(2, '0')}</span>
+              <h2>{section.title}</h2>
+            </header>
+            <div class="section-body">
+              {section.content.map(p => (
+                <p>{p}</p>
+              ))}
+              {section.list && (
+                <ul class="section-list">
+                  {section.list.map(item => (
+                    <li>
+                      <Icon name="lucide:check" size={14} class="icon-accent" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+        ))}
+      </article>
+
+      <footer class="page-footer">
+        <a href="/" class="back-link">
+          <Icon name="lucide:arrow-left" size={16} />
+          Back to home
+        </a>
+      </footer>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .legal-page {
+    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
+  }
+
+  .container {
+    max-width: var(--content-max);
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .page-header .label {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
+
+  .page-header h1 {
+    font-size: var(--text-3xl);
+    line-height: 1.15;
+    margin-bottom: var(--space-3);
+  }
+
+  .last-updated {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  /* TL;DR box */
+  .tldr {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    margin-bottom: var(--space-10);
+    border-left: 3px solid var(--accent);
+  }
+
+  .tldr-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-bg-accent);
+    border: 1px solid var(--glass-border-accent);
+    border-radius: var(--radius-md);
+    color: var(--accent);
+  }
+
+  .tldr-content {
+    flex: 1;
+  }
+
+  .tldr-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: var(--space-1);
+  }
+
+  .tldr-content p {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .section {
+    padding: var(--space-6);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .section-num {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+
+  .section-header h2 {
+    font-size: var(--text-lg);
+  }
+
+  .section-body p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: var(--space-2);
+  }
+
+  .section-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-list {
+    list-style: none;
+    margin: var(--space-4) 0;
+    padding: var(--space-4);
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+  }
+
+  .section-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .section-list li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .page-footer {
+    margin-top: var(--space-10);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  @media (max-width: 640px) {
+    .legal-page {
+      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
+    }
+
+    .page-header h1 {
+      font-size: var(--text-2xl);
+    }
+
+    .tldr {
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .section {
+      padding: var(--space-5);
+    }
+  }
+</style>
