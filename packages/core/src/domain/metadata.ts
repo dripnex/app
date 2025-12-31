@@ -21,6 +21,9 @@ export interface NoteMetadata {
 
   /** Word count of the content */
   readonly wordCount: number;
+
+  /** Archive timestamp (null if not archived) */
+  readonly archivedAt: Timestamp | null;
 }
 
 /** Extracts the title from markdown content */

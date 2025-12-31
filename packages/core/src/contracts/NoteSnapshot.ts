@@ -16,6 +16,8 @@ export interface NoteSnapshot {
   readonly updatedAt: Timestamp;
   readonly tags: readonly Tag[];
   readonly wordCount: number;
+  readonly archivedAt: Timestamp | null;
+  readonly isArchived: boolean;
 }
 
 /** Converts a Note entity to a NoteSnapshot */
@@ -28,6 +30,8 @@ export function toSnapshot(note: Note): NoteSnapshot {
     updatedAt: note.metadata.updatedAt,
     tags: note.metadata.tags,
     wordCount: note.metadata.wordCount,
+    archivedAt: note.metadata.archivedAt,
+    isArchived: note.metadata.archivedAt !== null,
   };
 }
 
@@ -41,6 +45,8 @@ export interface NoteSummary {
   readonly wordCount: number;
   /** First ~200 chars of content for preview */
   readonly excerpt: string;
+  readonly archivedAt: Timestamp | null;
+  readonly isArchived: boolean;
 }
 
 /** Converts a Note to a NoteSummary */
@@ -58,5 +64,7 @@ export function toSummary(note: Note, excerptLength: number = 200): NoteSummary 
     tags: note.metadata.tags,
     wordCount: note.metadata.wordCount,
     excerpt: excerpt + (note.content.length > excerptLength ? '...' : ''),
+    archivedAt: note.metadata.archivedAt,
+    isArchived: note.metadata.archivedAt !== null,
   };
 }

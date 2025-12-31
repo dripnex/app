@@ -6,6 +6,9 @@ import { createNoteOperation, type NoteRepository } from '../src/operations/crea
 import { updateNoteOperation } from '../src/operations/updateNote.js';
 import { deleteNoteOperation } from '../src/operations/deleteNote.js';
 import { getNoteOperation } from '../src/operations/getNote.js';
+import { archiveNoteOperation } from '../src/operations/archiveNote.js';
+import { restoreNoteOperation } from '../src/operations/restoreNote.js';
+import { duplicateNoteOperation } from '../src/operations/duplicateNote.js';
 
 /** In-memory repository for testing */
 class InMemoryNoteRepository implements NoteRepository {
@@ -166,6 +169,134 @@ describe('Operations', () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.error.type).toBe('NOT_FOUND');
+      }
+    });
+  });
+
+  describe('archiveNoteOperation', () => {
+    it('archives a note successfully', async () => {
+      await createNoteOperation({ content: '# Archive Me', id: 'archive-me' }, repository);
+
+      const noteId = createNoteId('archive-me');
+      const result = await archiveNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data.isArchived).toBe(true);
+        expect(result.data.archivedAt).not.toBeNull();
+      }
+    });
+
+    it('fails when note does not exist', async () => {
+      const noteId = createNoteId('non-existent');
+      const result = await archiveNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('NOT_FOUND');
+      }
+    });
+
+    it('fails when note is already archived', async () => {
+      await createNoteOperation({ content: '# Test', id: 'already-archived' }, repository);
+      const noteId = createNoteId('already-archived');
+
+      // Archive once
+      await archiveNoteOperation({ id: noteId }, repository);
+
+      // Try to archive again
+      const result = await archiveNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('VALIDATION_ERROR');
+      }
+    });
+  });
+
+  describe('restoreNoteOperation', () => {
+    it('restores an archived note successfully', async () => {
+      await createNoteOperation({ content: '# Restore Me', id: 'restore-me' }, repository);
+      const noteId = createNoteId('restore-me');
+
+      // Archive first
+      await archiveNoteOperation({ id: noteId }, repository);
+
+      // Now restore
+      const result = await restoreNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data.isArchived).toBe(false);
+        expect(result.data.archivedAt).toBeNull();
+      }
+    });
+
+    it('fails when note does not exist', async () => {
+      const noteId = createNoteId('non-existent');
+      const result = await restoreNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('NOT_FOUND');
+      }
+    });
+
+    it('fails when note is not archived', async () => {
+      await createNoteOperation({ content: '# Not Archived', id: 'not-archived' }, repository);
+      const noteId = createNoteId('not-archived');
+
+      const result = await restoreNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('VALIDATION_ERROR');
+      }
+    });
+  });
+
+  describe('duplicateNoteOperation', () => {
+    it('duplicates a note successfully', async () => {
+      await createNoteOperation({ content: '# Original Note', id: 'original' }, repository);
+      const noteId = createNoteId('original');
+
+      const result = await duplicateNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data.id).not.toBe('original');
+        expect(result.data.content).toBe('# Original Note');
+        expect(result.data.title).toBe('Original Note (copy)');
+        expect(result.data.isArchived).toBe(false);
+      }
+
+      // Should have 2 notes now
+      expect(repository.size()).toBe(2);
+    });
+
+    it('fails when note does not exist', async () => {
+      const noteId = createNoteId('non-existent');
+      const result = await duplicateNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('NOT_FOUND');
+      }
+    });
+
+    it('can duplicate an archived note (copy is not archived)', async () => {
+      await createNoteOperation({ content: '# Archived', id: 'archived-note' }, repository);
+      const noteId = createNoteId('archived-note');
+
+      // Archive it
+      await archiveNoteOperation({ id: noteId }, repository);
+
+      // Duplicate it
+      const result = await duplicateNoteOperation({ id: noteId }, repository);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data.isArchived).toBe(false);
       }
     });
   });

@@ -23,11 +23,15 @@ interface NoteRow {
   created_at: string;
   updated_at: string;
   word_count: number;
+  archived_at: string | null;
 }
 
 interface TagRow {
   name: string;
 }
+
+/** Filter for archived status */
+export type ArchivedFilter = 'active' | 'archived' | 'all';
 
 /** Query options for listing notes */
 export interface ListNotesOptions {
@@ -36,16 +40,18 @@ export interface ListNotesOptions {
   tag?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'title';
   sortOrder?: 'asc' | 'desc';
+  /** Filter by archived status. Defaults to 'active' (non-archived) */
+  archived?: ArchivedFilter;
 }
 
 /** SQLite implementation of NoteRepository */
 export class SQLiteNoteRepository {
   constructor(private readonly db: DatabaseConnection) {}
 
-  /** Get a note by ID */
+  /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, content, title, created_at, updated_at, word_count
+      SELECT id, content, title, created_at, updated_at, word_count, archived_at
       FROM notes
       WHERE id = ?
     `);
@@ -62,13 +68,14 @@ export class SQLiteNoteRepository {
     this.db.transaction(() => {
       // Upsert note
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, content, title, created_at, updated_at, word_count)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (id, content, title, created_at, updated_at, word_count, archived_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           content = excluded.content,
           title = excluded.title,
           updated_at = excluded.updated_at,
-          word_count = excluded.word_count
+          word_count = excluded.word_count,
+          archived_at = excluded.archived_at
       `);
 
       stmt.run(
@@ -77,7 +84,8 @@ export class SQLiteNoteRepository {
         note.metadata.title,
         note.metadata.createdAt,
         note.metadata.updatedAt,
-        note.metadata.wordCount
+        note.metadata.wordCount,
+        note.metadata.archivedAt
       );
 
       // Update tags
@@ -85,7 +93,7 @@ export class SQLiteNoteRepository {
     });
   }
 
-  /** Delete a note by ID */
+  /** Delete a note by ID (hard delete) */
   async delete(id: NoteId): Promise<void> {
     const stmt = this.db.prepare('DELETE FROM notes WHERE id = ?');
     stmt.run(id);
@@ -100,6 +108,7 @@ export class SQLiteNoteRepository {
       tag,
       sortBy = 'updatedAt',
       sortOrder = 'desc',
+      archived = 'active',
     } = options;
 
     const sortColumn = {
@@ -108,24 +117,26 @@ export class SQLiteNoteRepository {
       title: 'title',
     }[sortBy];
 
+    const archivedCondition = this.getArchivedCondition(archived, 'n');
     let sql: string;
     let params: (string | number)[];
 
     if (tag) {
       sql = `
-        SELECT DISTINCT n.id, n.content, n.title, n.created_at, n.updated_at, n.word_count
+        SELECT DISTINCT n.id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
-        WHERE t.name = ?
+        WHERE t.name = ? ${archivedCondition}
         ORDER BY n.${sortColumn} ${sortOrder.toUpperCase()}
         LIMIT ? OFFSET ?
       `;
       params = [tag.toLowerCase(), limit, offset];
     } else {
       sql = `
-        SELECT id, content, title, created_at, updated_at, word_count
-        FROM notes
+        SELECT id, content, title, created_at, updated_at, word_count, archived_at
+        FROM notes n
+        WHERE 1=1 ${archivedCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
         LIMIT ? OFFSET ?
       `;
@@ -141,12 +152,14 @@ export class SQLiteNoteRepository {
     });
   }
 
-  /** Search notes by content (basic LIKE search) */
-  async search(query: string, limit: number = 20): Promise<Note[]> {
+  /** Search notes by content (basic LIKE search, excludes archived by default) */
+  async search(query: string, limit: number = 20, includeArchived: boolean = false): Promise<Note[]> {
+    const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
+
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, content, title, created_at, updated_at, word_count
+      SELECT id, content, title, created_at, updated_at, word_count, archived_at
       FROM notes
-      WHERE content LIKE ? OR title LIKE ?
+      WHERE (content LIKE ? OR title LIKE ?) ${archivedCondition}
       ORDER BY updated_at DESC
       LIMIT ?
     `);
@@ -161,20 +174,49 @@ export class SQLiteNoteRepository {
   }
 
   /** Get total count of notes */
-  async count(): Promise<number> {
-    const stmt = this.db.prepare<{ count: number }>('SELECT COUNT(*) as count FROM notes');
+  async count(includeArchived: boolean = false): Promise<number> {
+    const condition = includeArchived ? '' : 'WHERE archived_at IS NULL';
+    const stmt = this.db.prepare<{ count: number }>(`SELECT COUNT(*) as count FROM notes ${condition}`);
     const row = stmt.get() as { count: number };
     return row.count;
   }
 
-  /** Get all unique tags */
-  async getAllTags(): Promise<Tag[]> {
-    const stmt = this.db.prepare<TagRow>('SELECT name FROM tags ORDER BY name');
+  /** Get count of archived notes */
+  async countArchived(): Promise<number> {
+    const stmt = this.db.prepare<{ count: number }>('SELECT COUNT(*) as count FROM notes WHERE archived_at IS NOT NULL');
+    const row = stmt.get() as { count: number };
+    return row.count;
+  }
+
+  /** Get all unique tags (from non-archived notes by default) */
+  async getAllTags(includeArchived: boolean = false): Promise<Tag[]> {
+    const sql = includeArchived
+      ? 'SELECT DISTINCT t.name FROM tags t ORDER BY t.name'
+      : `SELECT DISTINCT t.name
+         FROM tags t
+         JOIN note_tags nt ON t.id = nt.tag_id
+         JOIN notes n ON nt.note_id = n.id
+         WHERE n.archived_at IS NULL
+         ORDER BY t.name`;
+
+    const stmt = this.db.prepare<TagRow>(sql);
     const rows = stmt.all() as TagRow[];
     return rows.map(r => createTag(r.name));
   }
 
   // Private helpers
+
+  private getArchivedCondition(filter: ArchivedFilter, tableAlias: string = ''): string {
+    const prefix = tableAlias ? `${tableAlias}.` : '';
+    switch (filter) {
+      case 'active':
+        return `AND ${prefix}archived_at IS NULL`;
+      case 'archived':
+        return `AND ${prefix}archived_at IS NOT NULL`;
+      case 'all':
+        return '';
+    }
+  }
 
   private getTagsForNote(noteId: NoteId): Tag[] {
     const stmt = this.db.prepare<TagRow>(`
@@ -232,6 +274,7 @@ export class SQLiteNoteRepository {
         updatedAt: row.updated_at as Timestamp,
         tags,
         wordCount: row.word_count,
+        archivedAt: row.archived_at as Timestamp | null,
       },
     };
   }
