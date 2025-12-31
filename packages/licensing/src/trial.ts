@@ -12,14 +12,9 @@ export const TRIAL_DURATION_DAYS = 14;
  * @param now - Current date (for testing)
  * @returns Number of days remaining (0 if expired)
  */
-export function calculateDaysRemaining(
-  startDate: Date,
-  now: Date = new Date()
-): number {
+export function calculateDaysRemaining(startDate: Date, now: Date = new Date()): number {
   const msPerDay = 24 * 60 * 60 * 1000;
-  const elapsedDays = Math.floor(
-    (now.getTime() - startDate.getTime()) / msPerDay
-  );
+  const elapsedDays = Math.floor((now.getTime() - startDate.getTime()) / msPerDay);
   const remaining = TRIAL_DURATION_DAYS - elapsedDays;
   return Math.max(0, remaining);
 }

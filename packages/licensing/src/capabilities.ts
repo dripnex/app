@@ -43,10 +43,7 @@ export const PRO_CAPABILITIES: readonly Capability[] = ALL_CAPABILITIES;
  * @param state - Current license state
  * @returns True if the capability is available
  */
-export function hasCapability(
-  capability: Capability,
-  state: AppLicenseState
-): boolean {
+export function hasCapability(capability: Capability, state: AppLicenseState): boolean {
   switch (state.status) {
     case 'trial':
       // Trial has all features
@@ -73,9 +70,7 @@ export function hasCapability(
  * @param state - Current license state
  * @returns Array of available capabilities
  */
-export function getAvailableCapabilities(
-  state: AppLicenseState
-): readonly Capability[] {
+export function getAvailableCapabilities(state: AppLicenseState): readonly Capability[] {
   switch (state.status) {
     case 'trial':
       return TRIAL_CAPABILITIES;
@@ -98,11 +93,9 @@ export function getAvailableCapabilities(
  * @param state - Current license state
  * @returns Array of capabilities that would be unlocked
  */
-export function getLockedCapabilities(
-  state: AppLicenseState
-): readonly Capability[] {
+export function getLockedCapabilities(state: AppLicenseState): readonly Capability[] {
   const available = getAvailableCapabilities(state);
-  return ALL_CAPABILITIES.filter((cap) => !available.includes(cap));
+  return ALL_CAPABILITIES.filter(cap => !available.includes(cap));
 }
 
 /**
@@ -112,11 +105,7 @@ export function getLockedCapabilities(
  * @returns True if user has full access
  */
 export function hasFullAccess(state: AppLicenseState): boolean {
-  return (
-    state.status === 'trial' ||
-    state.status === 'active' ||
-    state.status === 'active_expired'
-  );
+  return state.status === 'trial' || state.status === 'active' || state.status === 'active_expired';
 }
 
 /**

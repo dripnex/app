@@ -5,12 +5,7 @@ import type { AppLicenseState } from './types.js';
  */
 export interface UpdateEligibility {
   readonly eligible: boolean;
-  readonly reason:
-    | 'licensed'
-    | 'trial'
-    | 'updates_expired'
-    | 'unlicensed'
-    | 'release_after_expiry';
+  readonly reason: 'licensed' | 'trial' | 'updates_expired' | 'unlicensed' | 'release_after_expiry';
   readonly message?: string;
 }
 
@@ -106,9 +101,7 @@ export function isUpdatesExpiringSoon(
 
   const updatesUntil = new Date(state.license.updatesUntil);
   const msPerDay = 24 * 60 * 60 * 1000;
-  const daysRemaining = Math.floor(
-    (updatesUntil.getTime() - now.getTime()) / msPerDay
-  );
+  const daysRemaining = Math.floor((updatesUntil.getTime() - now.getTime()) / msPerDay);
 
   return daysRemaining > 0 && daysRemaining <= warningDays;
 }
@@ -124,10 +117,7 @@ export function getDaysUntilUpdatesExpire(
   state: AppLicenseState,
   now: Date = new Date()
 ): number | null {
-  if (
-    (state.status !== 'active' && state.status !== 'active_expired') ||
-    !state.license
-  ) {
+  if ((state.status !== 'active' && state.status !== 'active_expired') || !state.license) {
     return null;
   }
 
@@ -143,10 +133,7 @@ export function getDaysUntilUpdatesExpire(
  * @param now - Current date (for testing)
  * @returns Human-readable status message
  */
-export function getUpdateStatusMessage(
-  state: AppLicenseState,
-  now: Date = new Date()
-): string {
+export function getUpdateStatusMessage(state: AppLicenseState, now: Date = new Date()): string {
   switch (state.status) {
     case 'trial':
       return 'Trial mode - updates included';

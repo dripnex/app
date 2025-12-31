@@ -13,12 +13,7 @@ export type {
 } from './types.js';
 
 // Validation
-export {
-  validateLicense,
-  parseLicenseFile,
-  signLicense,
-  generateKeyPair,
-} from './validator.js';
+export { validateLicense, parseLicenseFile, signLicense, generateKeyPair } from './validator.js';
 
 // Trial
 export {

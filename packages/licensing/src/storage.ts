@@ -1,8 +1,4 @@
-import type {
-  StoredTrialData,
-  StoredLicenseData,
-  LicenseFile,
-} from './types.js';
+import type { StoredTrialData, StoredLicenseData, LicenseFile } from './types.js';
 
 /**
  * Interface for license storage operations

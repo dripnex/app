@@ -5,8 +5,7 @@ import type { LicenseFile, ValidationResult, PublicKeyConfig } from './types.js'
  * Default public key for production use
  * Replace with actual key in production
  */
-const DEFAULT_PUBLIC_KEY =
-  '0000000000000000000000000000000000000000000000000000000000000000';
+const DEFAULT_PUBLIC_KEY = '0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
  * Extracts the payload portion of a license for signature verification
@@ -36,15 +35,24 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 /**
- * Converts a base64 string to Uint8Array
+ * Converts a base64 string to Uint8Array (Node.js compatible)
  */
 function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
+  return new Uint8Array(Buffer.from(base64, 'base64'));
+}
+
+/**
+ * Converts Uint8Array to base64 string (Node.js compatible)
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+  return Buffer.from(bytes).toString('base64');
+}
+
+/**
+ * Converts string to Uint8Array (Node.js compatible)
+ */
+function stringToBytes(str: string): Uint8Array {
+  return new Uint8Array(Buffer.from(str, 'utf-8'));
 }
 
 /**
@@ -113,7 +121,7 @@ export async function validateLicense(
     const publicKeyHex = config?.publicKey ?? DEFAULT_PUBLIC_KEY;
     const publicKey = hexToBytes(publicKeyHex);
     const signature = base64ToBytes(license.signature);
-    const message = new TextEncoder().encode(getLicensePayload(license));
+    const message = stringToBytes(getLicensePayload(license));
 
     const isValid = await ed.verifyAsync(signature, message, publicKey);
 
@@ -172,11 +180,11 @@ export async function signLicense(
 ): Promise<LicenseFile> {
   const privateKey = hexToBytes(privateKeyHex);
   const payload = getLicensePayload(license as LicenseFile);
-  const message = new TextEncoder().encode(payload);
+  const message = stringToBytes(payload);
   const signature = await ed.signAsync(message, privateKey);
 
   // Convert signature to base64
-  const signatureBase64 = btoa(String.fromCharCode(...signature));
+  const signatureBase64 = bytesToBase64(signature);
 
   return {
     ...license,
@@ -199,7 +207,7 @@ export async function generateKeyPair(): Promise<{
 
   const toHex = (bytes: Uint8Array): string =>
     Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
+      .map(b => b.toString(16).padStart(2, '0'))
       .join('');
 
   return {

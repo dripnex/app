@@ -236,9 +236,7 @@ describe('updates', () => {
 
   describe('getUpdateStatusMessage', () => {
     it('trial message', () => {
-      expect(getUpdateStatusMessage({ status: 'trial' })).toBe(
-        'Trial mode - updates included'
-      );
+      expect(getUpdateStatusMessage({ status: 'trial' })).toBe('Trial mode - updates included');
     });
 
     it('unlicensed message', () => {

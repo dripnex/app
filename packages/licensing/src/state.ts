@@ -26,10 +26,7 @@ function areUpdatesExpired(updatesUntil: string, now: Date): boolean {
  * @param now - Current date (for testing)
  * @returns Active license info
  */
-function toActiveLicense(
-  data: StoredLicenseData,
-  now: Date
-): ActiveLicense {
+function toActiveLicense(data: StoredLicenseData, now: Date): ActiveLicense {
   const { license } = data;
   return {
     licenseId: license.licenseId,
