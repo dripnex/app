@@ -7,7 +7,7 @@
 
 import { join } from 'path';
 import { app } from 'electron';
-import pino, { type Logger } from 'pino';
+import pino, { type Logger, type TransportTargetOptions } from 'pino';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -27,7 +27,7 @@ export function initLogger(config: LoggerConfig): Logger {
   const { logsDir, level, isDevelopment } = config;
 
   // File transport configuration using pino-roll
-  const fileTransport = {
+  const fileTransport: TransportTargetOptions = {
     target: 'pino-roll',
     options: {
       file: join(logsDir, 'readied'),
@@ -41,7 +41,7 @@ export function initLogger(config: LoggerConfig): Logger {
   };
 
   // Console transport for development
-  const consoleTransport = {
+  const consoleTransport: TransportTargetOptions = {
     target: 'pino-pretty',
     options: {
       colorize: true,
