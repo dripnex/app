@@ -14,6 +14,57 @@ interface NoteListProps {
   onViewModeChange: (mode: 'active' | 'archived') => void;
 }
 
+/** Loading skeleton for note list */
+function NoteListSkeleton() {
+  return (
+    <div className="note-list-skeleton" aria-hidden="true">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="skeleton-item">
+          <div className="skeleton-title" />
+          <div className="skeleton-meta" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Empty state with icon and context-aware messaging */
+function EmptyState({
+  variant,
+}: {
+  variant: 'no-notes' | 'no-archived' | 'no-results';
+}) {
+  const content = {
+    'no-notes': {
+      icon: '✦',
+      title: 'No notes yet',
+      hint: 'Press ⌘N to create your first note',
+    },
+    'no-archived': {
+      icon: '📦',
+      title: 'No archived notes',
+      hint: 'Archived notes will appear here',
+    },
+    'no-results': {
+      icon: '🔍',
+      title: 'No matches found',
+      hint: 'Try a different search term',
+    },
+  };
+
+  const { icon, title, hint } = content[variant];
+
+  return (
+    <div className="note-list-empty" role="status" aria-live="polite">
+      <span className="empty-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <p className="empty-title">{title}</p>
+      <p className="empty-hint">{hint}</p>
+    </div>
+  );
+}
+
 export function NoteList({
   notes,
   selectedId,
@@ -42,33 +93,60 @@ export function NoteList({
     onSearch('');
   }, [onSearch]);
 
+  const getEmptyVariant = () => {
+    if (searchQuery) return 'no-results';
+    if (viewMode === 'archived') return 'no-archived';
+    return 'no-notes';
+  };
+
   return (
-    <div className="note-list">
+    <nav className="note-list" aria-label="Notes navigation">
       {/* Search bar */}
       <div className="note-list-search">
+        <label htmlFor="note-search" className="visually-hidden">
+          Search notes
+        </label>
         <input
-          type="text"
+          id="note-search"
+          type="search"
           placeholder="Search notes..."
           value={searchQuery}
           onChange={handleSearchChange}
           className="search-input"
+          aria-describedby={searchQuery ? 'search-status' : undefined}
         />
         {searchQuery && (
-          <button className="search-clear" onClick={clearSearch}>
+          <button
+            className="search-clear"
+            onClick={clearSearch}
+            aria-label="Clear search"
+            type="button"
+          >
             ×
           </button>
+        )}
+        {searchQuery && (
+          <span id="search-status" className="visually-hidden">
+            {isLoading ? 'Searching...' : `${notes.length} results`}
+          </span>
         )}
       </div>
 
       {/* View mode tabs */}
-      <div className="note-list-tabs">
+      <div className="note-list-tabs" role="tablist" aria-label="Note views">
         <button
+          role="tab"
+          aria-selected={viewMode === 'active'}
+          aria-controls="notes-panel"
           className={`tab ${viewMode === 'active' ? 'active' : ''}`}
           onClick={() => onViewModeChange('active')}
         >
           Notes
         </button>
         <button
+          role="tab"
+          aria-selected={viewMode === 'archived'}
+          aria-controls="notes-panel"
           className={`tab ${viewMode === 'archived' ? 'active' : ''}`}
           onClick={() => onViewModeChange('archived')}
         >
@@ -77,44 +155,34 @@ export function NoteList({
       </div>
 
       {/* Note list content */}
-      <div className="note-list-content">
+      <div
+        id="notes-panel"
+        role="tabpanel"
+        className="note-list-content"
+        aria-busy={isLoading}
+      >
         {isLoading ? (
-          <div className="note-list-loading">Loading...</div>
+          <NoteListSkeleton />
         ) : notes.length === 0 ? (
-          <div className="note-list-empty">
-            {searchQuery ? (
-              <>
-                <p>No matches</p>
-                <p className="hint">Try a different search</p>
-              </>
-            ) : viewMode === 'archived' ? (
-              <>
-                <p>No archived notes</p>
-                <p className="hint">Archived notes appear here</p>
-              </>
-            ) : (
-              <>
-                <p>No notes yet</p>
-                <p className="hint">Create your first note</p>
-              </>
-            )}
-          </div>
+          <EmptyState variant={getEmptyVariant()} />
         ) : (
-          notes.map(note => (
-            <NoteListItem
-              key={note.id}
-              note={note}
-              isSelected={note.id === selectedId}
-              onSelect={onSelect}
-              onDelete={onDelete}
-              onArchive={onArchive}
-              onDuplicate={onDuplicate}
-              isArchived={viewMode === 'archived'}
-            />
-          ))
+          <ul className="note-list-items" role="listbox" aria-label="Notes">
+            {notes.map(note => (
+              <NoteListItem
+                key={note.id}
+                note={note}
+                isSelected={note.id === selectedId}
+                onSelect={onSelect}
+                onDelete={onDelete}
+                onArchive={onArchive}
+                onDuplicate={onDuplicate}
+                isArchived={viewMode === 'archived'}
+              />
+            ))}
+          </ul>
         )}
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -146,9 +214,18 @@ function NoteListItem({
   };
 
   return (
-    <div
+    <li
+      role="option"
+      aria-selected={isSelected}
       className={`note-list-item ${isSelected ? 'selected' : ''}`}
       onClick={() => onSelect(note.id)}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(note.id);
+        }
+      }}
+      tabIndex={0}
     >
       <div className="note-list-item-title">{note.title || 'Untitled'}</div>
       <div className="note-list-item-meta">
@@ -164,38 +241,44 @@ function NoteListItem({
           </span>
         )}
       </div>
-      <div className="note-list-item-actions">
+      <div className="note-list-item-actions" role="group" aria-label="Note actions">
         <button
+          type="button"
           className="action-btn"
           onClick={e => {
             e.stopPropagation();
             onDuplicate(note.id);
           }}
+          aria-label="Duplicate note"
           title="Duplicate"
         >
           ⧉
         </button>
         <button
+          type="button"
           className="action-btn"
           onClick={e => {
             e.stopPropagation();
             onArchive(note.id);
           }}
+          aria-label={isArchived ? 'Restore note' : 'Archive note'}
           title={isArchived ? 'Restore' : 'Archive'}
         >
           {isArchived ? '↩' : '⊘'}
         </button>
         <button
+          type="button"
           className="action-btn danger"
           onClick={e => {
             e.stopPropagation();
             onDelete(note.id);
           }}
+          aria-label="Delete note permanently"
           title="Delete"
         >
           ×
         </button>
       </div>
-    </div>
+    </li>
   );
 }
