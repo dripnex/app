@@ -4,8 +4,9 @@
  * Initializes the app, database, and IPC handlers.
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { autoUpdater } from 'electron-updater'
 import { createDatabase, runMigrations, allMigrations } from '@readied/storage'
 import { SQLiteNoteRepository } from '@readied/storage'
 import {
@@ -177,11 +178,76 @@ function registerIpcHandlers(): void {
   })
 }
 
+/** Initialize auto-updater */
+function initAutoUpdater(): void {
+  // Only check for updates in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Main] Skipping auto-updater in development')
+    return
+  }
+
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[Updater] Checking for updates...')
+  })
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[Updater] Update available:', info.version)
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Available',
+      message: `A new version (${info.version}) is available.`,
+      detail: 'Would you like to download it now?',
+      buttons: ['Download', 'Later'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) {
+        autoUpdater.downloadUpdate()
+      }
+    })
+  })
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[Updater] No updates available')
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    console.log(`[Updater] Download progress: ${progress.percent.toFixed(1)}%`)
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[Updater] Update downloaded:', info.version)
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Ready',
+      message: 'Update downloaded. Restart to apply?',
+      buttons: ['Restart Now', 'Later'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) {
+        autoUpdater.quitAndInstall()
+      }
+    })
+  })
+
+  autoUpdater.on('error', (err) => {
+    console.error('[Updater] Error:', err)
+  })
+
+  // Check for updates after a short delay
+  setTimeout(() => {
+    autoUpdater.checkForUpdates()
+  }, 3000)
+}
+
 // App lifecycle
 app.whenReady().then(() => {
   initDatabase()
   registerIpcHandlers()
   createWindow()
+  initAutoUpdater()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
