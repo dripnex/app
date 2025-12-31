@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import type { NoteSnapshot } from '../../preload/index'
+import { MarkdownEditor } from './MarkdownEditor'
 
 interface NoteEditorProps {
   note: NoteSnapshot | null
@@ -7,44 +8,20 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
-  const [content, setContent] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Sync content when note changes
-  useEffect(() => {
-    setContent(note?.content ?? '')
-  }, [note?.id, note?.content])
-
-  // Auto-focus when note changes
-  useEffect(() => {
-    if (note && textareaRef.current) {
-      textareaRef.current.focus()
-    }
-  }, [note?.id])
-
   // Handle content change with debounce
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value
-    setContent(newContent)
-
-    // Debounce save
+  const handleChange = useCallback((content: string) => {
+    // Clear existing debounce
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
-    debounceRef.current = setTimeout(() => {
-      onUpdate(newContent)
-    }, 500)
-  }
 
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
-      }
-    }
-  }, [])
+    // Debounce save (500ms)
+    debounceRef.current = setTimeout(() => {
+      onUpdate(content)
+    }, 500)
+  }, [onUpdate])
 
   if (!note) {
     return (
@@ -64,14 +41,13 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
           {note.wordCount} words
         </span>
       </div>
-      <textarea
-        ref={textareaRef}
-        className="note-editor-content"
-        value={content}
-        onChange={handleChange}
-        placeholder="Start writing..."
-        spellCheck={false}
-      />
+      <div className="note-editor-body">
+        <MarkdownEditor
+          key={note.id}
+          initialContent={note.content}
+          onChange={handleChange}
+        />
+      </div>
     </div>
   )
 }

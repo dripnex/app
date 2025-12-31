@@ -273,22 +273,18 @@ body {
   color: var(--text-muted);
 }
 
-.note-editor-content {
+.note-editor-body {
   flex: 1;
-  width: 100%;
-  padding: 24px;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  line-height: 1.7;
-  resize: none;
-  outline: none;
+  overflow: hidden;
 }
 
-.note-editor-content::placeholder {
-  color: var(--text-faint);
+.markdown-editor {
+  height: 100%;
+}
+
+.markdown-editor .cm-editor {
+  height: 100%;
+  outline: none;
 }
 
 /* Scrollbar */
