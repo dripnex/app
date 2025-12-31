@@ -115,7 +115,8 @@
         }
       ],
       "icon": "resources/icons",
-      "category": "Office"
+      "category": "Office",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
