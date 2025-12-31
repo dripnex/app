@@ -156,7 +156,7 @@ function importFromObsidian(dir: string, recursive: boolean): ImportResult {
           tags: parsed.tags,
           createdAt: parsed.createdAt ?? stats.birthtime.toISOString(),
           updatedAt: parsed.updatedAt ?? stats.mtime.toISOString(),
-          originalMetadata: parsed.frontmatter,
+          originalMetadata: parsed.frontmatter ?? undefined,
         });
       } catch {
         skipped.push(filePath);
@@ -189,16 +189,24 @@ function importFromMarkdownFolder(dir: string, recursive: boolean): ImportResult
 
         // Parse frontmatter if present
         const parsed = parseFrontmatter(content);
-        const title = parsed.frontmatter?.title ?? filenameToTitle(filename);
+        const title = parsed.frontmatter?.title
+          ? String(parsed.frontmatter.title)
+          : filenameToTitle(filename);
+        const created = parsed.frontmatter?.created
+          ? String(parsed.frontmatter.created)
+          : stats.birthtime.toISOString();
+        const updated = parsed.frontmatter?.updated
+          ? String(parsed.frontmatter.updated)
+          : stats.mtime.toISOString();
 
         notes.push({
           filename,
           content: parsed.content,
           title,
           tags: extractTags(parsed.frontmatter, parsed.content),
-          createdAt: parsed.frontmatter?.created ?? stats.birthtime.toISOString(),
-          updatedAt: parsed.frontmatter?.updated ?? stats.mtime.toISOString(),
-          originalMetadata: parsed.frontmatter,
+          createdAt: created,
+          updatedAt: updated,
+          originalMetadata: parsed.frontmatter ?? undefined,
         });
       } catch {
         skipped.push(filePath);
@@ -217,11 +225,7 @@ function importFromMarkdownFolder(dir: string, recursive: boolean): ImportResult
 /**
  * Find all markdown files in a directory.
  */
-function findMarkdownFiles(
-  dir: string,
-  recursive: boolean,
-  excludeDirs: string[] = []
-): string[] {
+function findMarkdownFiles(dir: string, recursive: boolean, excludeDirs: string[] = []): string[] {
   const results: string[] = [];
 
   function scan(currentDir: string): void {
@@ -253,13 +257,14 @@ function parseFrontmatter(content: string): {
 } {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
 
-  if (!match) {
+  if (!match || !match[1] || !match[2]) {
     return { frontmatter: null, content };
   }
 
   try {
     // Simple YAML parsing (key: value pairs only)
     const yamlContent = match[1];
+    const bodyContent = match[2];
     const frontmatter: Record<string, unknown> = {};
 
     for (const line of yamlContent.split('\n')) {
@@ -280,7 +285,7 @@ function parseFrontmatter(content: string): {
       }
     }
 
-    return { frontmatter, content: match[2] };
+    return { frontmatter, content: bodyContent };
   } catch {
     return { frontmatter: null, content };
   }
@@ -314,12 +319,8 @@ function parseObsidianNote(
   const tags = extractTags(parsed.frontmatter, parsed.content);
 
   // Dates from frontmatter
-  const createdAt = parsed.frontmatter?.created
-    ? String(parsed.frontmatter.created)
-    : null;
-  const updatedAt = parsed.frontmatter?.updated
-    ? String(parsed.frontmatter.updated)
-    : null;
+  const createdAt = parsed.frontmatter?.created ? String(parsed.frontmatter.created) : null;
+  const updatedAt = parsed.frontmatter?.updated ? String(parsed.frontmatter.updated) : null;
 
   return {
     title,
@@ -334,10 +335,7 @@ function parseObsidianNote(
 /**
  * Extract tags from frontmatter and inline content.
  */
-function extractTags(
-  frontmatter: Record<string, unknown> | null,
-  content: string
-): string[] {
+function extractTags(frontmatter: Record<string, unknown> | null, content: string): string[] {
   const tags = new Set<string>();
 
   // From frontmatter
@@ -384,8 +382,5 @@ function convertWikilinks(content: string): string {
  * Convert filename to title.
  */
 function filenameToTitle(filename: string): string {
-  return basename(filename, extname(filename))
-    .replace(/[-_]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return basename(filename, extname(filename)).replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
 }

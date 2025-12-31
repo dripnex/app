@@ -80,9 +80,7 @@ export function exportNotes(notes: NoteSnapshot[], options: ExportOptions): Expo
 
   try {
     // Filter notes if needed
-    const notesToExport = includeArchived
-      ? notes
-      : notes.filter(n => n.archivedAt === null);
+    const notesToExport = includeArchived ? notes : notes.filter(n => n.archivedAt === null);
 
     // Create directory structure
     const notesDir = join(outputDir, 'notes');
@@ -127,11 +125,7 @@ export function exportNotes(notes: NoteSnapshot[], options: ExportOptions): Expo
       version: 1,
       notes: notesMetadata,
     };
-    writeFileSync(
-      join(outputDir, 'metadata.json'),
-      JSON.stringify(metadata, null, 2),
-      'utf-8'
-    );
+    writeFileSync(join(outputDir, 'metadata.json'), JSON.stringify(metadata, null, 2), 'utf-8');
 
     // Write manifest.json
     const manifest: ExportManifest = {
@@ -140,11 +134,7 @@ export function exportNotes(notes: NoteSnapshot[], options: ExportOptions): Expo
       appVersion,
       noteCount: notesToExport.length,
     };
-    writeFileSync(
-      join(outputDir, 'manifest.json'),
-      JSON.stringify(manifest, null, 2),
-      'utf-8'
-    );
+    writeFileSync(join(outputDir, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf-8');
 
     return {
       success: true,

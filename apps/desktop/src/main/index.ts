@@ -282,11 +282,11 @@ function registerDataHandlers(): void {
       buttonLabel: 'Import',
     });
 
-    if (canceled || filePaths.length === 0) {
+    const sourceDir = filePaths[0];
+    if (canceled || !sourceDir) {
       return { success: false, error: 'Import cancelled' };
     }
 
-    const sourceDir = filePaths[0];
     const importType = detectImportType(sourceDir);
 
     const result = importNotes({
