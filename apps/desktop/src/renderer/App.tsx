@@ -43,7 +43,7 @@ export function App() {
           setNotes(list);
         }
       } catch (error) {
-        console.error('Failed to load notes:', error);
+        window.readied.log.error('Failed to load notes', { error: String(error) });
       } finally {
         setIsLoading(false);
       }

@@ -42,7 +42,7 @@ import {
   type StoredLicenseData,
   type AppLicenseState,
 } from '@readied/licensing';
-import { initLogger, createChildLogger, type LogLevel } from './logger';
+import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from './logger';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -111,13 +111,14 @@ function initDatabase(): void {
     throw new Error('Data paths not initialized');
   }
 
-  console.log(`[Main] Database path: ${dataPaths.database}`);
+  const dbLog = loggers.database();
+  dbLog.info({ path: dataPaths.database }, 'Database path');
 
   db = createDatabase(dataPaths.database);
   runMigrations(db, allMigrations);
   noteRepository = new SQLiteNoteRepository(db);
 
-  console.log('[Main] Database initialized');
+  dbLog.info('Database initialized');
 }
 
 /** Create the main window */
@@ -420,7 +421,7 @@ function registerLicenseHandlers(): void {
     if (needsTrialStart(trialData, licenseData)) {
       trialData = startTrial();
       await storage.writeTrialData(trialData);
-      console.log('[Main] Trial started automatically');
+      loggers.license().info('Trial started automatically');
     }
 
     return computeLicenseState(trialData, licenseData);
@@ -439,7 +440,7 @@ function registerLicenseHandlers(): void {
       const storedData = createStoredLicenseData(result.license);
       await storage.writeLicenseData(storedData);
 
-      console.log('[Main] License activated:', result.license.licenseId);
+      loggers.license().info({ licenseId: result.license.licenseId }, 'License activated');
       return { success: true };
     }
   );
@@ -468,7 +469,7 @@ function registerLicenseHandlers(): void {
       const storedData = createStoredLicenseData(result.license);
       await storage.writeLicenseData(storedData);
 
-      console.log('[Main] License imported:', result.license.licenseId);
+      loggers.license().info({ licenseId: result.license.licenseId }, 'License imported');
       return { success: true };
     } catch {
       return { success: false, error: 'Failed to read license file' };
@@ -478,7 +479,7 @@ function registerLicenseHandlers(): void {
   // Deactivate license (for debug/testing)
   ipcMain.handle('license:deactivate', async (): Promise<{ success: boolean }> => {
     await storage.removeLicenseData();
-    console.log('[Main] License deactivated');
+    loggers.license().info('License deactivated');
     return { success: true };
   });
 }
@@ -525,9 +526,11 @@ function registerLogHandlers(): void {
 
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
+  const updateLog = loggers.updater();
+
   // Only check for updates in production
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Main] Skipping auto-updater in development');
+    updateLog.debug('Skipping auto-updater in development');
     return;
   }
 
@@ -535,11 +538,11 @@ function initAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('checking-for-update', () => {
-    console.log('[Updater] Checking for updates...');
+    updateLog.info('Checking for updates...');
   });
 
   autoUpdater.on('update-available', info => {
-    console.log('[Updater] Update available:', info.version);
+    updateLog.info({ version: info.version }, 'Update available');
     dialog
       .showMessageBox({
         type: 'info',
@@ -557,15 +560,15 @@ function initAutoUpdater(): void {
   });
 
   autoUpdater.on('update-not-available', () => {
-    console.log('[Updater] No updates available');
+    updateLog.info('No updates available');
   });
 
   autoUpdater.on('download-progress', progress => {
-    console.log(`[Updater] Download progress: ${progress.percent.toFixed(1)}%`);
+    updateLog.debug({ percent: progress.percent.toFixed(1) }, 'Download progress');
   });
 
   autoUpdater.on('update-downloaded', info => {
-    console.log('[Updater] Update downloaded:', info.version);
+    updateLog.info({ version: info.version }, 'Update downloaded');
     dialog
       .showMessageBox({
         type: 'info',
@@ -582,7 +585,7 @@ function initAutoUpdater(): void {
   });
 
   autoUpdater.on('error', err => {
-    console.error('[Updater] Error:', err);
+    updateLog.error({ error: err.message }, 'Updater error');
   });
 
   // Check for updates after a short delay
@@ -635,6 +638,6 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   if (db) {
     db.close();
-    console.log('[Main] Database closed');
+    getLogger().info('Database closed');
   }
 });

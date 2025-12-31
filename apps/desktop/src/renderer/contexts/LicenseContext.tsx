@@ -25,7 +25,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
       const licenseState = await window.readied.license.getState();
       setState(licenseState);
     } catch (error) {
-      console.error('Failed to get license state:', error);
+      window.readied.log.error('Failed to get license state', { error: String(error) });
     }
   }, []);
 
