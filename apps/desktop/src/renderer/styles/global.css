@@ -138,9 +138,94 @@ body {
   width: var(--list-width);
   min-width: var(--list-width);
   height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-inset);
   border-right: 1px solid var(--border);
+}
+
+/* Search bar */
+.note-list-search {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.search-input::placeholder {
+  color: var(--text-faint);
+}
+
+.search-clear {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.search-clear:hover {
+  color: var(--text-primary);
+}
+
+/* Tabs */
+.note-list-tabs {
+  display: flex;
+  padding: 8px 12px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tab {
+  flex: 1;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+
+.tab.active {
+  color: var(--accent);
+  background: var(--accent-muted);
+  border-color: rgba(94, 234, 212, 0.2);
+}
+
+/* Note list content */
+.note-list-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .note-list-loading,
@@ -189,9 +274,20 @@ body {
 
 .note-list-item-meta {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.note-list-item-meta .tags {
+  display: flex;
+  gap: 4px;
+}
+
+.note-list-item-meta .tag {
+  color: var(--accent);
+  opacity: 0.8;
 }
 
 .note-list-item-actions {
