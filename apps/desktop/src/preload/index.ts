@@ -98,6 +98,9 @@ export interface LicenseResult {
   error?: string;
 }
 
+/** Log level types */
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
 /** The API exposed to the renderer */
 export interface ReadiedAPI {
   notes: {
@@ -154,6 +157,18 @@ export interface ReadiedAPI {
     /** Deactivate current license (for testing) */
     deactivate: () => Promise<{ success: boolean }>;
   };
+  log: {
+    /** Log a debug message */
+    debug: (message: string, context?: Record<string, unknown>) => void;
+    /** Log an info message */
+    info: (message: string, context?: Record<string, unknown>) => void;
+    /** Log a warning message */
+    warn: (message: string, context?: Record<string, unknown>) => void;
+    /** Log an error message */
+    error: (message: string, context?: Record<string, unknown>) => void;
+    /** Get log directory path */
+    getLogPath: () => Promise<string | null>;
+  };
 }
 
 // Expose the API
@@ -188,6 +203,21 @@ const api: ReadiedAPI = {
     activate: content => ipcRenderer.invoke('license:activate', content),
     importFile: () => ipcRenderer.invoke('license:importFile'),
     deactivate: () => ipcRenderer.invoke('license:deactivate'),
+  },
+  log: {
+    debug: (message, context) => {
+      ipcRenderer.invoke('log:write', 'debug', message, context);
+    },
+    info: (message, context) => {
+      ipcRenderer.invoke('log:write', 'info', message, context);
+    },
+    warn: (message, context) => {
+      ipcRenderer.invoke('log:write', 'warn', message, context);
+    },
+    error: (message, context) => {
+      ipcRenderer.invoke('log:write', 'error', message, context);
+    },
+    getLogPath: () => ipcRenderer.invoke('log:getPath'),
   },
 };
 

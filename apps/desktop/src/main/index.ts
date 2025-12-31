@@ -42,6 +42,7 @@ import {
   type StoredLicenseData,
   type AppLicenseState,
 } from '@readied/licensing';
+import { initLogger, createChildLogger, type LogLevel } from './logger';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -482,6 +483,46 @@ function registerLicenseHandlers(): void {
   });
 }
 
+/** Register IPC handlers for renderer logging */
+function registerLogHandlers(): void {
+  const rendererLogger = createChildLogger({ component: 'renderer' });
+
+  // Log from renderer
+  ipcMain.handle(
+    'log:write',
+    async (
+      _event,
+      level: LogLevel,
+      message: string,
+      context?: Record<string, unknown>
+    ): Promise<{ success: boolean }> => {
+      const childLogger = context ? rendererLogger.child(context) : rendererLogger;
+
+      switch (level) {
+        case 'debug':
+          childLogger.debug(message);
+          break;
+        case 'info':
+          childLogger.info(message);
+          break;
+        case 'warn':
+          childLogger.warn(message);
+          break;
+        case 'error':
+          childLogger.error(message);
+          break;
+      }
+
+      return { success: true };
+    }
+  );
+
+  // Get log file path (for debugging/support)
+  ipcMain.handle('log:getPath', async (): Promise<string | null> => {
+    return dataPaths?.logs ?? null;
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   // Only check for updates in production
@@ -554,7 +595,14 @@ function initAutoUpdater(): void {
 app.whenReady().then(() => {
   // Initialize data paths first (creates directories)
   dataPaths = initDataPaths();
-  console.log(`[Main] Data directory: ${dataPaths.root}`);
+
+  // Initialize logger (must be after dataPaths)
+  const log = initLogger({
+    logsDir: dataPaths.logs,
+    level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+    isDevelopment: process.env.NODE_ENV === 'development',
+  });
+  log.info({ dataDir: dataPaths.root }, 'Application starting');
 
   // Initialize database and handlers
   initDatabase();
@@ -564,7 +612,8 @@ app.whenReady().then(() => {
   // Initialize license storage and handlers
   licenseStorage = new FileLicenseStorage(dataPaths.root);
   registerLicenseHandlers();
-  console.log('[Main] License handlers registered');
+  registerLogHandlers();
+  log.info('All IPC handlers registered');
 
   // Create window and start auto-updater
   createWindow();
