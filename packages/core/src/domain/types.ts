@@ -13,7 +13,9 @@ export function createNoteId(id: string): NoteId {
 
 /** Generates a new unique NoteId */
 export function generateNoteId(): NoteId {
-  return crypto.randomUUID() as NoteId;
+  // crypto is available in Node.js 19+, Electron, and all modern browsers
+  const cryptoModule = (globalThis as unknown as { crypto: { randomUUID(): string } }).crypto;
+  return cryptoModule.randomUUID() as NoteId;
 }
 
 /** ISO 8601 timestamp string */

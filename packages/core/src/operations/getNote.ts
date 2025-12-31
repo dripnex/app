@@ -4,7 +4,6 @@
  * Retrieves a note by ID
  */
 
-import type { NoteId } from '../domain/types.js';
 import { success, notFound, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
 import type { GetNoteInput } from '../contracts/NoteInput.js';

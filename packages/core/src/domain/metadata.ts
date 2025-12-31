@@ -30,7 +30,7 @@ export interface NoteMetadata {
 export function extractTitle(content: string, fallback: string = 'Untitled'): string {
   // Match first H1 heading: # Title
   const h1Match = content.match(/^#\s+(.+)$/m);
-  if (h1Match) {
+  if (h1Match?.[1]) {
     return h1Match[1].trim();
   }
 
@@ -52,7 +52,9 @@ export function extractTags(content: string): Tag[] {
 
   let match;
   while ((match = tagPattern.exec(content)) !== null) {
-    tags.add(match[1].toLowerCase());
+    if (match[1]) {
+      tags.add(match[1].toLowerCase());
+    }
   }
 
   return Array.from(tags) as Tag[];

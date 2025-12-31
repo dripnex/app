@@ -4,7 +4,6 @@
  * Deletes a note by ID
  */
 
-import type { NoteId } from '../domain/types.js';
 import { success, notFound, type Result } from '../contracts/CoreResult.js';
 import type { DeleteNoteInput } from '../contracts/NoteInput.js';
 import type { NoteRepository } from '../repositories/NoteRepository.js';

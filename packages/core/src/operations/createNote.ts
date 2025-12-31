@@ -4,8 +4,8 @@
  * Creates a new note from markdown content
  */
 
-import { createNote, type Note } from '../domain/note.js';
-import { createNoteId, type NoteId } from '../domain/types.js';
+import { createNote } from '../domain/note.js';
+import { createNoteId } from '../domain/types.js';
 import { validateContent, validateNoteId } from '../domain/invariants.js';
 import { success, validationError, alreadyExists, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';

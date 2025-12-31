@@ -4,8 +4,7 @@
  * Updates an existing note's content
  */
 
-import { updateNoteContent, type Note } from '../domain/note.js';
-import type { NoteId } from '../domain/types.js';
+import { updateNoteContent } from '../domain/note.js';
 import { validateContent } from '../domain/invariants.js';
 import { success, validationError, notFound, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
