@@ -653,13 +653,61 @@ import { Icon } from 'astro-icon/components';
   window.addEventListener('scroll', updateNavbar, { passive: true });
   updateNavbar();
 
-  // Dropdown accessibility
-  const dropdownTrigger = document.querySelector('.dropdown-trigger');
+  // Dropdown accessibility with keyboard navigation
+  const dropdownTrigger = document.querySelector('.dropdown-trigger') as HTMLElement;
   const dropdownMenu = document.querySelector('.dropdown-menu');
+  const dropdownItems = dropdownMenu?.querySelectorAll('.dropdown-item') as NodeListOf<HTMLElement>;
+
+  function openDropdown() {
+    dropdownTrigger?.setAttribute('aria-expanded', 'true');
+    dropdownItems?.[0]?.focus();
+  }
+
+  function closeDropdown() {
+    dropdownTrigger?.setAttribute('aria-expanded', 'false');
+    dropdownTrigger?.focus();
+  }
 
   dropdownTrigger?.addEventListener('click', () => {
     const expanded = dropdownTrigger.getAttribute('aria-expanded') === 'true';
-    dropdownTrigger.setAttribute('aria-expanded', String(!expanded));
+    if (expanded) {
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  });
+
+  // Arrow key navigation in dropdown
+  dropdownTrigger?.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openDropdown();
+    }
+  });
+
+  dropdownMenu?.addEventListener('keydown', (e) => {
+    const items = Array.from(dropdownItems || []);
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        items[nextIndex]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        items[prevIndex]?.focus();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closeDropdown();
+        break;
+      case 'Tab':
+        closeDropdown();
+        break;
+    }
   });
 
   // Mobile drawer
