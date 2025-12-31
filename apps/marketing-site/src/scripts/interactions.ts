@@ -319,7 +319,7 @@ function initStaggerChildren() {
 // ============================================
 // CURSOR TRAIL EFFECT
 // ============================================
-function initCursorTrail() {
+function _initCursorTrail() {
   const trailContainer = document.querySelector('[data-cursor-trail]');
   if (!trailContainer) return;
 
@@ -388,7 +388,7 @@ function init() {
   initCounters();
   initScrollProgress();
   initStaggerChildren();
-  // initCursorTrail(); // Uncomment if you want cursor trail
+  // _initCursorTrail(); // Uncomment if you want cursor trail
 }
 
 // Auto-init

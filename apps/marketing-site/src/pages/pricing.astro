@@ -2,19 +2,15 @@
 import Base from '../layouts/Base.astro';
 import Footer from '../components/Footer.astro';
 import { Icon } from 'astro-icon/components';
+import { PRICING, PLANS, TRIAL, GUARANTEES } from '@readied/product-config';
 
-const features = [
-  'The app, forever',
-  '12 months of updates',
-  'No feature restrictions',
-  'Mac & Windows'
-];
+const features = PLANS.pro.features;
 
 const faqs = [
-  { q: 'What if you stop developing Readied?', a: "Your app keeps working. Your files are standard Markdown." },
+  { q: 'What if you stop developing Readied?', a: GUARANTEES.perpetual.description },
   { q: 'Is there a subscription option?', a: "No. One-time purchases align incentives better." },
-  { q: 'Can I export my data?', a: "Your data is Markdown files on your disk. Nothing to export." },
-  { q: 'What about refunds?', a: "14-day money-back guarantee." }
+  { q: 'Can I export my data?', a: GUARANTEES.noLockIn.description },
+  { q: 'What about refunds?', a: GUARANTEES.refund.description }
 ];
 ---
 
@@ -30,8 +26,8 @@ const faqs = [
         <div class="pricing-card glass">
           <div class="card-header">
             <div class="price">
-              <span class="amount">$79</span>
-              <span class="period">one-time</span>
+              <span class="amount">{PRICING.license.label}</span>
+              <span class="period">{PRICING.license.type}</span>
             </div>
             <div class="price-badge glass-accent">Best value</div>
           </div>
@@ -47,12 +43,12 @@ const faqs = [
 
           <div class="renewal glass">
             <span class="renewal-label">Renewal</span>
-            <p>After 12 months: $39/year for updates. App keeps working regardless.</p>
+            <p>After {PRICING.updatesPeriodMonths} months: {PRICING.renewal.label} for updates. {PRICING.renewal.description}</p>
           </div>
 
           <a href="/download" class="btn btn-primary btn-lg" data-magnetic="0.2">
             <Icon name="lucide:download" size={20} />
-            Start 14-day trial
+            Start {TRIAL.durationDays}-day trial
           </a>
 
           <div class="card-glow"></div>

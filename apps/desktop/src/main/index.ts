@@ -5,6 +5,8 @@
  */
 
 import { join } from 'path';
+import { readFile, writeFile, unlink } from 'fs/promises';
+import { existsSync } from 'fs';
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import {
@@ -29,11 +31,73 @@ import {
   duplicateNoteOperation,
 } from '@readied/core';
 import { createNoteId } from '@readied/core';
+import {
+  parseLicenseFile,
+  computeLicenseState,
+  startTrial,
+  needsTrialStart,
+  createStoredLicenseData,
+  type LicenseStorage,
+  type StoredTrialData,
+  type StoredLicenseData,
+  type AppLicenseState,
+} from '@readied/licensing';
+import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from './logger';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
 let noteRepository: SQLiteNoteRepository | null = null;
 let dataPaths: DataPaths | null = null;
+let licenseStorage: FileLicenseStorage | null = null;
+
+/** File-based license storage implementation */
+class FileLicenseStorage implements LicenseStorage {
+  private licensePath: string;
+  private trialPath: string;
+
+  constructor(dataDir: string) {
+    this.licensePath = join(dataDir, 'license.json');
+    this.trialPath = join(dataDir, 'trial.json');
+  }
+
+  async readLicenseData(): Promise<StoredLicenseData | null> {
+    try {
+      if (!existsSync(this.licensePath)) {
+        return null;
+      }
+      const content = await readFile(this.licensePath, 'utf-8');
+      return JSON.parse(content) as StoredLicenseData;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeLicenseData(data: StoredLicenseData): Promise<void> {
+    await writeFile(this.licensePath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+
+  async removeLicenseData(): Promise<void> {
+    if (existsSync(this.licensePath)) {
+      await unlink(this.licensePath);
+    }
+  }
+
+  async readTrialData(): Promise<StoredTrialData | null> {
+    try {
+      if (!existsSync(this.trialPath)) {
+        return null;
+      }
+      const content = await readFile(this.trialPath, 'utf-8');
+      return JSON.parse(content) as StoredTrialData;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeTrialData(data: StoredTrialData): Promise<void> {
+    await writeFile(this.trialPath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+}
 
 /** Initialize data paths */
 function initDataPaths(): DataPaths {
@@ -47,13 +111,14 @@ function initDatabase(): void {
     throw new Error('Data paths not initialized');
   }
 
-  console.log(`[Main] Database path: ${dataPaths.database}`);
+  const dbLog = loggers.database();
+  dbLog.info({ path: dataPaths.database }, 'Database path');
 
   db = createDatabase(dataPaths.database);
   runMigrations(db, allMigrations);
   noteRepository = new SQLiteNoteRepository(db);
 
-  console.log('[Main] Database initialized');
+  dbLog.info('Database initialized');
 }
 
 /** Create the main window */
@@ -339,11 +404,133 @@ function registerDataHandlers(): void {
   });
 }
 
+/** Register IPC handlers for licensing */
+function registerLicenseHandlers(): void {
+  if (!licenseStorage) {
+    throw new Error('License storage not initialized');
+  }
+
+  const storage = licenseStorage;
+
+  // Get current license state
+  ipcMain.handle('license:getState', async (): Promise<AppLicenseState> => {
+    let trialData = await storage.readTrialData();
+    const licenseData = await storage.readLicenseData();
+
+    // Auto-start trial if needed
+    if (needsTrialStart(trialData, licenseData)) {
+      trialData = startTrial();
+      await storage.writeTrialData(trialData);
+      loggers.license().info('Trial started automatically');
+    }
+
+    return computeLicenseState(trialData, licenseData);
+  });
+
+  // Activate license from content
+  ipcMain.handle(
+    'license:activate',
+    async (_event, content: string): Promise<{ success: boolean; error?: string }> => {
+      const result = await parseLicenseFile(content);
+
+      if (!result.valid || !result.license) {
+        return { success: false, error: result.error ?? 'Invalid license' };
+      }
+
+      const storedData = createStoredLicenseData(result.license);
+      await storage.writeLicenseData(storedData);
+
+      loggers.license().info({ licenseId: result.license.licenseId }, 'License activated');
+      return { success: true };
+    }
+  );
+
+  // Import license file via dialog
+  ipcMain.handle('license:importFile', async (): Promise<{ success: boolean; error?: string }> => {
+    const { filePaths, canceled } = await dialog.showOpenDialog({
+      title: 'Import License',
+      filters: [{ name: 'License Files', extensions: ['json'] }],
+      properties: ['openFile'],
+      buttonLabel: 'Import',
+    });
+
+    if (canceled || !filePaths[0]) {
+      return { success: false, error: 'Cancelled' };
+    }
+
+    try {
+      const content = await readFile(filePaths[0], 'utf-8');
+      const result = await parseLicenseFile(content);
+
+      if (!result.valid || !result.license) {
+        return { success: false, error: result.error ?? 'Invalid license' };
+      }
+
+      const storedData = createStoredLicenseData(result.license);
+      await storage.writeLicenseData(storedData);
+
+      loggers.license().info({ licenseId: result.license.licenseId }, 'License imported');
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Failed to read license file' };
+    }
+  });
+
+  // Deactivate license (for debug/testing)
+  ipcMain.handle('license:deactivate', async (): Promise<{ success: boolean }> => {
+    await storage.removeLicenseData();
+    loggers.license().info('License deactivated');
+    return { success: true };
+  });
+}
+
+/** Register IPC handlers for renderer logging */
+function registerLogHandlers(): void {
+  const rendererLogger = createChildLogger({ component: 'renderer' });
+
+  // Log from renderer
+  ipcMain.handle(
+    'log:write',
+    async (
+      _event,
+      level: LogLevel,
+      message: string,
+      context?: Record<string, unknown>
+    ): Promise<{ success: boolean }> => {
+      const childLogger = context ? rendererLogger.child(context) : rendererLogger;
+
+      switch (level) {
+        case 'debug':
+          childLogger.debug(message);
+          break;
+        case 'info':
+          childLogger.info(message);
+          break;
+        case 'warn':
+          childLogger.warn(message);
+          break;
+        case 'error':
+          childLogger.error(message);
+          break;
+      }
+
+      return { success: true };
+    }
+  );
+
+  // Get log file path (for debugging/support)
+  ipcMain.handle('log:getPath', async (): Promise<string | null> => {
+    return dataPaths?.logs ?? null;
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
+  const updateLog = loggers.updater();
+
   // Only check for updates in production
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Main] Skipping auto-updater in development');
+    updateLog.debug('Skipping auto-updater in development');
     return;
   }
 
@@ -351,11 +538,11 @@ function initAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('checking-for-update', () => {
-    console.log('[Updater] Checking for updates...');
+    updateLog.info('Checking for updates...');
   });
 
   autoUpdater.on('update-available', info => {
-    console.log('[Updater] Update available:', info.version);
+    updateLog.info({ version: info.version }, 'Update available');
     dialog
       .showMessageBox({
         type: 'info',
@@ -373,15 +560,15 @@ function initAutoUpdater(): void {
   });
 
   autoUpdater.on('update-not-available', () => {
-    console.log('[Updater] No updates available');
+    updateLog.info('No updates available');
   });
 
   autoUpdater.on('download-progress', progress => {
-    console.log(`[Updater] Download progress: ${progress.percent.toFixed(1)}%`);
+    updateLog.debug({ percent: progress.percent.toFixed(1) }, 'Download progress');
   });
 
   autoUpdater.on('update-downloaded', info => {
-    console.log('[Updater] Update downloaded:', info.version);
+    updateLog.info({ version: info.version }, 'Update downloaded');
     dialog
       .showMessageBox({
         type: 'info',
@@ -398,7 +585,7 @@ function initAutoUpdater(): void {
   });
 
   autoUpdater.on('error', err => {
-    console.error('[Updater] Error:', err);
+    updateLog.error({ error: err.message }, 'Updater error');
   });
 
   // Check for updates after a short delay
@@ -411,12 +598,25 @@ function initAutoUpdater(): void {
 app.whenReady().then(() => {
   // Initialize data paths first (creates directories)
   dataPaths = initDataPaths();
-  console.log(`[Main] Data directory: ${dataPaths.root}`);
+
+  // Initialize logger (must be after dataPaths)
+  const log = initLogger({
+    logsDir: dataPaths.logs,
+    level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+    isDevelopment: process.env.NODE_ENV === 'development',
+  });
+  log.info({ dataDir: dataPaths.root }, 'Application starting');
 
   // Initialize database and handlers
   initDatabase();
   registerIpcHandlers();
   registerDataHandlers();
+
+  // Initialize license storage and handlers
+  licenseStorage = new FileLicenseStorage(dataPaths.root);
+  registerLicenseHandlers();
+  registerLogHandlers();
+  log.info('All IPC handlers registered');
 
   // Create window and start auto-updater
   createWindow();
@@ -438,6 +638,6 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   if (db) {
     db.close();
-    console.log('[Main] Database closed');
+    getLogger().info('Database closed');
   }
 });
