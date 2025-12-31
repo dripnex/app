@@ -8,7 +8,7 @@ import type { NoteId } from '../domain/types.js';
 import { success, notFound, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
 import type { GetNoteInput } from '../contracts/NoteInput.js';
-import type { NoteRepository } from './createNote.js';
+import type { NoteRepository } from '../repositories/NoteRepository.js';
 
 /** Gets a note by ID */
 export async function getNoteOperation(

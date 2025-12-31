@@ -1,15 +1,15 @@
 /**
- * All migrations in order
+ * Migration exports
  */
 
-import type { Migration } from './runner.js';
+import type { Migration } from '@readied/storage-core';
 import { initialSchema } from './001_initial_schema.js';
 import { addArchivedAt } from './002_add_archived_at.js';
 
-/** All available migrations */
+/** All migrations in order */
 export const allMigrations: Migration[] = [
   initialSchema,
   addArchivedAt,
 ];
 
-export * from './runner.js';
+export { initialSchema, addArchivedAt };

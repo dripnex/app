@@ -7,8 +7,8 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { autoUpdater } from 'electron-updater'
-import { createDatabase, runMigrations, allMigrations } from '@readied/storage'
-import { SQLiteNoteRepository } from '@readied/storage'
+import { runMigrations } from '@readied/storage-core'
+import { createDatabase, allMigrations, SQLiteNoteRepository } from '@readied/storage-sqlite'
 import {
   createNoteOperation,
   updateNoteOperation,

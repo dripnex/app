@@ -1,10 +1,11 @@
 /**
  * SQLite Note Repository
  *
- * Implements the NoteRepository interface from @readied/core
+ * Implements the ExtendedNoteRepository interface from @readied/storage-core
  */
 
 import type { DatabaseConnection } from '../database.js';
+import type { ExtendedNoteRepository, ListNotesOptions, ArchivedFilter } from '@readied/storage-core';
 import {
   type Note,
   type NoteId,
@@ -30,22 +31,8 @@ interface TagRow {
   name: string;
 }
 
-/** Filter for archived status */
-export type ArchivedFilter = 'active' | 'archived' | 'all';
-
-/** Query options for listing notes */
-export interface ListNotesOptions {
-  limit?: number;
-  offset?: number;
-  tag?: string;
-  sortBy?: 'createdAt' | 'updatedAt' | 'title';
-  sortOrder?: 'asc' | 'desc';
-  /** Filter by archived status. Defaults to 'active' (non-archived) */
-  archived?: ArchivedFilter;
-}
-
-/** SQLite implementation of NoteRepository */
-export class SQLiteNoteRepository {
+/** SQLite implementation of ExtendedNoteRepository */
+export class SQLiteNoteRepository implements ExtendedNoteRepository {
   constructor(private readonly db: DatabaseConnection) {}
 
   /** Get a note by ID (includes archived notes) */

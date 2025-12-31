@@ -10,7 +10,7 @@ import { validateContent } from '../domain/invariants.js';
 import { success, validationError, notFound, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
 import type { UpdateNoteInput } from '../contracts/NoteInput.js';
-import type { NoteRepository } from './createNote.js';
+import type { NoteRepository } from '../repositories/NoteRepository.js';
 
 /** Updates an existing note's content */
 export async function updateNoteOperation(

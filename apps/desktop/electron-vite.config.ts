@@ -11,6 +11,9 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
         },
+        output: {
+          format: 'cjs',
+        },
       },
     },
   },
@@ -21,6 +24,9 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/preload/index.ts'),
+        },
+        output: {
+          format: 'cjs',
         },
       },
     },

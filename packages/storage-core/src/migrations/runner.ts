@@ -1,30 +1,15 @@
 /**
  * Migration Runner
  *
- * Forward-only migrations for safe schema evolution
+ * Forward-only migrations for safe schema evolution.
+ * Works with any DatabaseAdapter implementation.
  */
 
-import type { DatabaseConnection } from '../database.js';
-
-/** A single migration */
-export interface Migration {
-  /** Unique version identifier (use timestamp format: 20241231120000) */
-  version: number;
-  /** Human-readable name */
-  name: string;
-  /** SQL to execute (forward only, no rollback) */
-  up: string;
-}
-
-/** Migration status record */
-interface MigrationRecord {
-  version: number;
-  name: string;
-  applied_at: string;
-}
+import type { DatabaseAdapter } from '../interfaces/DatabaseAdapter.js';
+import type { Migration, MigrationRecord } from '../interfaces/Migration.js';
 
 /** Ensure migrations table exists */
-function ensureMigrationsTable(db: DatabaseConnection): void {
+function ensureMigrationsTable(db: DatabaseAdapter): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
       version INTEGER PRIMARY KEY,
@@ -35,20 +20,20 @@ function ensureMigrationsTable(db: DatabaseConnection): void {
 }
 
 /** Get applied migrations */
-function getAppliedMigrations(db: DatabaseConnection): number[] {
+function getAppliedMigrations(db: DatabaseAdapter): number[] {
   const stmt = db.prepare<MigrationRecord>('SELECT version FROM _migrations ORDER BY version');
   const rows = stmt.all() as MigrationRecord[];
   return rows.map(r => r.version);
 }
 
 /** Record a migration as applied */
-function recordMigration(db: DatabaseConnection, migration: Migration): void {
+function recordMigration(db: DatabaseAdapter, migration: Migration): void {
   const stmt = db.prepare('INSERT INTO _migrations (version, name) VALUES (?, ?)');
   stmt.run(migration.version, migration.name);
 }
 
 /** Run pending migrations */
-export function runMigrations(db: DatabaseConnection, migrations: Migration[]): void {
+export function runMigrations(db: DatabaseAdapter, migrations: Migration[]): void {
   // Ensure migrations table exists
   ensureMigrationsTable(db);
 
@@ -77,7 +62,7 @@ export function runMigrations(db: DatabaseConnection, migrations: Migration[]): 
 }
 
 /** Get list of pending migrations */
-export function getPendingMigrations(db: DatabaseConnection, migrations: Migration[]): Migration[] {
+export function getPendingMigrations(db: DatabaseAdapter, migrations: Migration[]): Migration[] {
   ensureMigrationsTable(db);
   const applied = new Set(getAppliedMigrations(db));
 
@@ -87,7 +72,7 @@ export function getPendingMigrations(db: DatabaseConnection, migrations: Migrati
 }
 
 /** Get current database version */
-export function getCurrentVersion(db: DatabaseConnection): number {
+export function getCurrentVersion(db: DatabaseAdapter): number {
   ensureMigrationsTable(db);
   const applied = getAppliedMigrations(db);
   return applied.length > 0 ? Math.max(...applied) : 0;

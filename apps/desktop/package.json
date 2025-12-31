@@ -33,10 +33,14 @@
     "@codemirror/view": "^6.39.8",
     "@lezer/highlight": "^1.2.3",
     "@readied/core": "workspace:*",
-    "@readied/storage": "workspace:*",
+    "@readied/storage-core": "workspace:*",
+    "@readied/storage-sqlite": "workspace:*",
+    "better-sqlite3": "^11.7.0",
     "electron-updater": "^6.6.2"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.2",
+    "@types/better-sqlite3": "^7.6.12",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
     "@vitejs/plugin-react": "^4.2.1",
@@ -81,7 +85,10 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "resources/entitlements.mac.plist",
-      "entitlementsInherit": "resources/entitlements.mac.plist"
+      "entitlementsInherit": "resources/entitlements.mac.plist",
+      "notarize": {
+        "teamId": "${env.APPLE_TEAM_ID}"
+      }
     },
     "win": {
       "target": [

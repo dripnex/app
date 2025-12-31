@@ -80,9 +80,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages first
-        run: |
-          pnpm --filter @readied/core build
-          pnpm --filter @readied/storage build
+        run: pnpm build
 
       - name: Typecheck desktop
         working-directory: apps/desktop

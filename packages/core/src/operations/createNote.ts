@@ -10,13 +10,7 @@ import { validateContent, validateNoteId } from '../domain/invariants.js';
 import { success, validationError, alreadyExists, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
 import type { CreateNoteInput } from '../contracts/NoteInput.js';
-
-/** Repository interface for note storage (port) */
-export interface NoteRepository {
-  get(id: NoteId): Promise<Note | null>;
-  save(note: Note): Promise<void>;
-  delete(id: NoteId): Promise<void>;
-}
+import type { NoteRepository } from '../repositories/NoteRepository.js';
 
 /** Creates a new note and saves it to the repository */
 export async function createNoteOperation(

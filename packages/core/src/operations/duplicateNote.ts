@@ -8,7 +8,7 @@ import { duplicateNote as duplicateNoteFn } from '../domain/note.js';
 import type { NoteId } from '../domain/types.js';
 import { success, notFound, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
-import type { NoteRepository } from './createNote.js';
+import type { NoteRepository } from '../repositories/NoteRepository.js';
 
 /** Input for duplicating a note */
 export interface DuplicateNoteInput {

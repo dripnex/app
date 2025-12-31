@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { runMigrations } from '@readied/storage-core';
 import { createInMemoryDatabase, type DatabaseConnection } from '../src/database.js';
-import { runMigrations, allMigrations } from '../src/migrations/index.js';
-import { SQLiteNoteRepository } from '../src/repositories/NoteRepository.js';
-import { createNote, createNoteId, createTag } from '@readied/core';
+import { allMigrations } from '../src/migrations/index.js';
+import { SQLiteNoteRepository } from '../src/repositories/SQLiteNoteRepository.js';
+import { createNote, createNoteId } from '@readied/core';
 
 describe('SQLiteNoteRepository', () => {
   let db: DatabaseConnection;
