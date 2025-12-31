@@ -1,0 +1,61 @@
+# Architecture Decision Records
+
+This section documents significant architectural decisions made during Readied's development.
+
+## What is an ADR?
+
+An Architecture Decision Record (ADR) captures a single architectural decision along with its context and consequences. ADRs help future maintainers understand why decisions were made.
+
+## ADR Index
+
+| ADR                                            | Title            | Status   |
+| ---------------------------------------------- | ---------------- | -------- |
+| [ADR-001](/decisions/adr-001-runtime-contract) | Runtime Contract | Accepted |
+| [ADR-002](/decisions/adr-002-markdown-model)   | Markdown Model   | Accepted |
+| [ADR-003](/decisions/adr-003-storage)          | Storage Strategy | Accepted |
+
+## ADR Template
+
+When adding a new ADR, use this template:
+
+```markdown
+# ADR-XXX: [Title]
+
+## Status
+
+Accepted | Superseded | Deprecated
+
+## Context
+
+What problem are we solving?
+
+## Decision
+
+What did we decide?
+
+## Consequences
+
+### Positive
+
+- ...
+
+### Negative
+
+- ...
+
+### Risks
+
+- ...
+
+## Alternatives Considered
+
+1. Option A — rejected because...
+2. Option B — rejected because...
+```
+
+## Principles for ADRs
+
+1. **One decision per ADR** - Keep them focused
+2. **Immutable once accepted** - Create new ADR to supersede
+3. **Include context** - Future you won't remember why
+4. **Document alternatives** - Show due diligence
