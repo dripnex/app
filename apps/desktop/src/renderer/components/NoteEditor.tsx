@@ -1,6 +1,19 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, lazy, Suspense } from 'react';
 import type { NoteSnapshot } from '../../preload/index';
-import { MarkdownEditor } from './MarkdownEditor';
+
+// Lazy load the markdown editor for better initial load performance
+const MarkdownEditor = lazy(() =>
+  import('./MarkdownEditor').then(mod => ({ default: mod.MarkdownEditor }))
+);
+
+/** Loading spinner for editor */
+function EditorLoading() {
+  return (
+    <div className="note-editor-loading" aria-label="Loading editor">
+      <div className="editor-spinner" />
+    </div>
+  );
+}
 
 interface NoteEditorProps {
   note: NoteSnapshot | null;
@@ -28,23 +41,31 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
 
   if (!note) {
     return (
-      <div className="note-editor">
-        <div className="note-editor-empty">
-          <p>Select a note or create a new one</p>
+      <main className="note-editor" aria-label="Note editor">
+        <div className="note-editor-empty" role="status">
+          <span className="empty-icon" aria-hidden="true">
+            📝
+          </span>
+          <p className="empty-title">Select a note to edit</p>
+          <p className="empty-hint">Or press ⌘N to create a new one</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="note-editor">
-      <div className="note-editor-header">
+    <main className="note-editor" aria-label="Note editor">
+      <header className="note-editor-header">
         <span className="note-editor-title">{note.title || 'Untitled'}</span>
-        <span className="note-editor-meta">{note.wordCount} words</span>
-      </div>
+        <span className="note-editor-meta" aria-label={`${note.wordCount} words`}>
+          {note.wordCount} words
+        </span>
+      </header>
       <div className="note-editor-body">
-        <MarkdownEditor key={note.id} initialContent={note.content} onChange={handleChange} />
+        <Suspense fallback={<EditorLoading />}>
+          <MarkdownEditor key={note.id} initialContent={note.content} onChange={handleChange} />
+        </Suspense>
       </div>
-    </div>
+    </main>
   );
 }
