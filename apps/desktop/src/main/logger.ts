@@ -5,9 +5,9 @@
  * Log rotation is handled by pino-roll.
  */
 
-import pino, { type Logger } from 'pino';
 import { join } from 'path';
 import { app } from 'electron';
+import pino, { type Logger } from 'pino';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

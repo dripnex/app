@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { NoteSnapshot, ListOptions } from '../../preload/index';
+import type { ListOptions } from '../../preload/index';
 
 /** Query key factory for notes */
 export const noteKeys = {
@@ -82,7 +82,7 @@ export function useNoteMutations() {
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.setQueryData(noteKeys.detail(data.id), data);
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
     },

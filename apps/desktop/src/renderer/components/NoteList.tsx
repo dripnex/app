@@ -29,11 +29,7 @@ function NoteListSkeleton() {
 }
 
 /** Empty state with icon and context-aware messaging */
-function EmptyState({
-  variant,
-}: {
-  variant: 'no-notes' | 'no-archived' | 'no-results';
-}) {
+function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-results' }) {
   const content = {
     'no-notes': {
       icon: '✦',
@@ -155,12 +151,7 @@ export function NoteList({
       </div>
 
       {/* Note list content */}
-      <div
-        id="notes-panel"
-        role="tabpanel"
-        className="note-list-content"
-        aria-busy={isLoading}
-      >
+      <div id="notes-panel" role="tabpanel" className="note-list-content" aria-busy={isLoading}>
         {isLoading ? (
           <NoteListSkeleton />
         ) : notes.length === 0 ? (
