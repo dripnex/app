@@ -1,0 +1,15 @@
+{
+  "name": "@readied/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Technical documentation for Readied",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  }
+}
