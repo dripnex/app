@@ -37,6 +37,7 @@
     "@readied/product-config": "workspace:*",
     "@readied/storage-core": "workspace:*",
     "@readied/storage-sqlite": "workspace:*",
+    "@tanstack/react-query": "^5.90.16",
     "better-sqlite3": "^11.7.0",
     "electron-updater": "^6.6.2",
     "pino": "^10.1.0",

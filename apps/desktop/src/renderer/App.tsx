@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
@@ -7,75 +8,62 @@ import { TrialBanner } from './components/TrialBanner';
 import { LicenseDialog } from './components/LicenseDialog';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { useNotes, useSearchNotes, useNoteMutations } from './hooks/useNotes';
 
-export function App() {
-  const [notes, setNotes] = useState<NoteSnapshot[]>([]);
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // 1 minute
+      retry: 1,
+    },
+  },
+});
+
+function NotesApp() {
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load notes based on view mode and search query
-  const loadNotes = useCallback(
-    async (query?: string, archived?: 'active' | 'archived') => {
-      setIsLoading(true);
-      try {
-        const currentQuery = query ?? searchQuery;
-        const currentArchived = archived ?? viewMode;
+  // Queries
+  const notesQuery = useNotes({
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+    archived: viewMode,
+  });
 
-        if (currentQuery.trim()) {
-          // Search mode
-          const list = await window.readied.notes.search(currentQuery, 50);
-          // Filter by archive status
-          const filtered =
-            currentArchived === 'archived'
-              ? list.filter(n => n.isArchived)
-              : list.filter(n => !n.isArchived);
-          setNotes(filtered);
-        } else {
-          // Normal list mode
-          const list = await window.readied.notes.list({
-            sortBy: 'updatedAt',
-            sortOrder: 'desc',
-            archived: currentArchived,
-          });
-          setNotes(list);
-        }
-      } catch (error) {
-        window.readied.log.error('Failed to load notes', { error: String(error) });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [searchQuery, viewMode]
-  );
+  const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
 
-  // Initial load
-  useEffect(() => {
-    loadNotes();
-  }, []); // Only on mount
+  // Mutations
+  const { createNote, updateNote, deleteNote, archiveNote, restoreNote, duplicateNote } =
+    useNoteMutations();
 
-  // Reload when view mode changes
-  useEffect(() => {
-    loadNotes(searchQuery, viewMode);
-  }, [viewMode]);
+  // Compute displayed notes based on search
+  const notes = useMemo(() => {
+    if (debouncedSearch.trim()) {
+      const searchResults = searchNotesQuery.data ?? [];
+      return viewMode === 'archived'
+        ? searchResults.filter(n => n.isArchived)
+        : searchResults.filter(n => !n.isArchived);
+    }
+    return notesQuery.data ?? [];
+  }, [debouncedSearch, searchNotesQuery.data, notesQuery.data, viewMode]);
+
+  const isLoading = notesQuery.isLoading || (debouncedSearch.trim() && searchNotesQuery.isLoading);
 
   // Handle search with debounce
-  const handleSearch = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
 
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
 
-      searchDebounceRef.current = setTimeout(() => {
-        loadNotes(query, viewMode);
-      }, 300);
-    },
-    [viewMode, loadNotes]
-  );
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearch(query);
+    }, 300);
+  }, []);
 
   // Handle view mode change
   const handleViewModeChange = useCallback((mode: 'active' | 'archived') => {
@@ -85,15 +73,12 @@ export function App() {
 
   // Create new note
   const handleNewNote = useCallback(async () => {
-    const result = await window.readied.notes.create({ content: '# Untitled\n\n' });
-    if (result.ok) {
-      setSelectedNote(result.data);
-      // Switch to active view and clear search
-      setViewMode('active');
-      setSearchQuery('');
-      await loadNotes('', 'active');
-    }
-  }, [loadNotes]);
+    const newNote = await createNote.mutateAsync({ content: '# Untitled\n\n' });
+    setSelectedNote(newNote);
+    setViewMode('active');
+    setSearchQuery('');
+    setDebouncedSearch('');
+  }, [createNote]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {
@@ -107,63 +92,48 @@ export function App() {
   const handleUpdateNote = useCallback(
     async (content: string) => {
       if (!selectedNote) return;
-      const result = await window.readied.notes.update({ id: selectedNote.id, content });
-      if (result.ok) {
-        setSelectedNote(result.data);
-        await loadNotes();
-      }
+      const updated = await updateNote.mutateAsync({ id: selectedNote.id, content });
+      setSelectedNote(updated);
     },
-    [selectedNote, loadNotes]
+    [selectedNote, updateNote]
   );
 
   // Delete note
   const handleDeleteNote = useCallback(
     async (id: string) => {
-      const result = await window.readied.notes.delete(id);
-      if (result.ok) {
-        if (selectedNote?.id === id) {
-          setSelectedNote(null);
-        }
-        await loadNotes();
+      await deleteNote.mutateAsync(id);
+      if (selectedNote?.id === id) {
+        setSelectedNote(null);
       }
     },
-    [selectedNote, loadNotes]
+    [selectedNote, deleteNote]
   );
 
   // Archive or restore note based on view mode
   const handleArchiveNote = useCallback(
     async (id: string) => {
-      const result =
-        viewMode === 'archived'
-          ? await window.readied.notes.restore(id)
-          : await window.readied.notes.archive(id);
-
-      if (result.ok) {
-        if (selectedNote?.id === id) {
-          setSelectedNote(null);
-        }
-        await loadNotes();
+      if (viewMode === 'archived') {
+        await restoreNote.mutateAsync(id);
+      } else {
+        await archiveNote.mutateAsync(id);
+      }
+      if (selectedNote?.id === id) {
+        setSelectedNote(null);
       }
     },
-    [selectedNote, viewMode, loadNotes]
+    [selectedNote, viewMode, archiveNote, restoreNote]
   );
 
   // Duplicate note
   const handleDuplicateNote = useCallback(
     async (id: string) => {
-      const result = await window.readied.notes.duplicate(id);
-      if (result.ok) {
-        setSelectedNote(result.data);
-        // Switch to active view to see the duplicate
-        if (viewMode === 'archived') {
-          setViewMode('active');
-          await loadNotes('', 'active');
-        } else {
-          await loadNotes();
-        }
+      const duplicated = await duplicateNote.mutateAsync(id);
+      setSelectedNote(duplicated);
+      if (viewMode === 'archived') {
+        setViewMode('active');
       }
     },
-    [viewMode, loadNotes]
+    [viewMode, duplicateNote]
   );
 
   // Keyboard shortcuts
@@ -194,7 +164,7 @@ export function App() {
       if (e.key === 'Escape') {
         if (searchQuery) {
           setSearchQuery('');
-          loadNotes('', viewMode);
+          setDebouncedSearch('');
         } else if (selectedNote) {
           setSelectedNote(null);
         }
@@ -203,32 +173,40 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNewNote, handleDuplicateNote, selectedNote, searchQuery, viewMode, loadNotes]);
+  }, [handleNewNote, handleDuplicateNote, selectedNote, searchQuery]);
 
   return (
-    <ErrorBoundary>
-      <LicenseProvider>
-        <div className="app">
-          <TrialBanner />
-          <div className="app__content">
-            <Sidebar onNewNote={handleNewNote} />
-            <NoteList
-              notes={notes}
-              selectedId={selectedNote?.id ?? null}
-              onSelect={handleSelectNote}
-              onDelete={handleDeleteNote}
-              onArchive={handleArchiveNote}
-              onDuplicate={handleDuplicateNote}
-              onSearch={handleSearch}
-              isLoading={isLoading}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-            />
-            <NoteEditor note={selectedNote} onUpdate={handleUpdateNote} />
-          </div>
-          <LicenseDialog />
+    <LicenseProvider>
+      <div className="app">
+        <TrialBanner />
+        <div className="app__content">
+          <Sidebar onNewNote={handleNewNote} />
+          <NoteList
+            notes={notes}
+            selectedId={selectedNote?.id ?? null}
+            onSelect={handleSelectNote}
+            onDelete={handleDeleteNote}
+            onArchive={handleArchiveNote}
+            onDuplicate={handleDuplicateNote}
+            onSearch={handleSearch}
+            isLoading={isLoading}
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+          />
+          <NoteEditor note={selectedNote} onUpdate={handleUpdateNote} />
         </div>
-      </LicenseProvider>
+        <LicenseDialog />
+      </div>
+    </LicenseProvider>
+  );
+}
+
+export function App() {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <NotesApp />
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
