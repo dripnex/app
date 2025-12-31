@@ -41,6 +41,45 @@ export interface NoteCounts {
   total: number;
 }
 
+/** Backup info */
+export interface BackupInfo {
+  filename: string;
+  path: string;
+  createdAt: Date;
+  sizeBytes: number;
+}
+
+/** Backup result */
+export interface BackupResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+}
+
+/** Export result */
+export interface ExportResult {
+  success: boolean;
+  path?: string;
+  noteCount?: number;
+  error?: string;
+}
+
+/** Import result */
+export interface ImportResult {
+  success: boolean;
+  noteCount?: number;
+  skipped?: string[];
+  error?: string;
+}
+
+/** Data paths */
+export interface DataPaths {
+  root: string;
+  database: string;
+  backups: string;
+  logs: string;
+}
+
 /** The API exposed to the renderer */
 export interface ReadiedAPI {
   notes: {
@@ -67,6 +106,22 @@ export interface ReadiedAPI {
     /** Get note counts */
     count: () => Promise<NoteCounts>;
   };
+  data: {
+    /** Create a backup of the database */
+    backup: () => Promise<BackupResult>;
+    /** List all backups */
+    listBackups: () => Promise<BackupInfo[]>;
+    /** Restore from a backup */
+    restoreBackup: (backupPath: string) => Promise<BackupResult>;
+    /** Export notes to Markdown + JSON */
+    export: () => Promise<ExportResult>;
+    /** Import notes from folder (Obsidian, Markdown, or Readied export) */
+    import: () => Promise<ImportResult>;
+    /** Get data directory paths */
+    paths: () => Promise<DataPaths>;
+    /** Open data folder in system file manager */
+    openFolder: () => Promise<{ success: boolean }>;
+  };
   app: {
     /** Get app version */
     version: () => string;
@@ -87,6 +142,15 @@ const api: ReadiedAPI = {
     search: (query, limit) => ipcRenderer.invoke('notes:search', query, limit),
     tags: () => ipcRenderer.invoke('notes:tags'),
     count: () => ipcRenderer.invoke('notes:count'),
+  },
+  data: {
+    backup: () => ipcRenderer.invoke('data:backup'),
+    listBackups: () => ipcRenderer.invoke('data:backups:list'),
+    restoreBackup: path => ipcRenderer.invoke('data:backup:restore', path),
+    export: () => ipcRenderer.invoke('data:export'),
+    import: () => ipcRenderer.invoke('data:import'),
+    paths: () => ipcRenderer.invoke('data:paths'),
+    openFolder: () => ipcRenderer.invoke('data:openFolder'),
   },
   app: {
     version: () => '0.1.0',

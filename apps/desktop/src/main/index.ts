@@ -5,9 +5,19 @@
  */
 
 import { join } from 'path';
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import { runMigrations } from '@readied/storage-core';
+import {
+  runMigrations,
+  createDataPaths,
+  createBackup,
+  listBackups,
+  restoreBackup,
+  exportNotes,
+  importNotes,
+  detectImportType,
+  type DataPaths,
+} from '@readied/storage-core';
 import { createDatabase, allMigrations, SQLiteNoteRepository } from '@readied/storage-sqlite';
 import {
   createNoteOperation,
@@ -23,19 +33,23 @@ import { createNoteId } from '@readied/core';
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
 let noteRepository: SQLiteNoteRepository | null = null;
+let dataPaths: DataPaths | null = null;
 
-/** Get the database path based on OS */
-function getDatabasePath(): string {
+/** Initialize data paths */
+function initDataPaths(): DataPaths {
   const userDataPath = app.getPath('userData');
-  return join(userDataPath, 'readied.db');
+  return createDataPaths(userDataPath);
 }
 
 /** Initialize the database */
 function initDatabase(): void {
-  const dbPath = getDatabasePath();
-  console.log(`[Main] Database path: ${dbPath}`);
+  if (!dataPaths) {
+    throw new Error('Data paths not initialized');
+  }
 
-  db = createDatabase(dbPath);
+  console.log(`[Main] Database path: ${dataPaths.database}`);
+
+  db = createDatabase(dataPaths.database);
   runMigrations(db, allMigrations);
   noteRepository = new SQLiteNoteRepository(db);
 
@@ -181,6 +195,150 @@ function registerIpcHandlers(): void {
   });
 }
 
+/** Register IPC handlers for data management (backup, export, import) */
+function registerDataHandlers(): void {
+  if (!dataPaths || !noteRepository) {
+    throw new Error('Data paths or repository not initialized');
+  }
+
+  const paths = dataPaths;
+  const repo = noteRepository;
+
+  // Create backup
+  ipcMain.handle('data:backup', async () => {
+    return createBackup({
+      backupDir: paths.backups,
+      databasePath: paths.database,
+    });
+  });
+
+  // List backups
+  ipcMain.handle('data:backups:list', async () => {
+    return listBackups(paths.backups);
+  });
+
+  // Restore from backup
+  ipcMain.handle('data:backup:restore', async (_event, backupPath: string) => {
+    // Close current database connection
+    if (db) {
+      db.close();
+    }
+
+    const result = restoreBackup(backupPath, paths.database);
+
+    // Reconnect to database
+    db = createDatabase(paths.database);
+    runMigrations(db, allMigrations);
+
+    return result;
+  });
+
+  // Export notes
+  ipcMain.handle('data:export', async () => {
+    // Show save dialog
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: 'Export Notes',
+      defaultPath: join(app.getPath('documents'), 'readied-export'),
+      buttonLabel: 'Export',
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, error: 'Export cancelled' };
+    }
+
+    // Get all notes
+    const notes = await repo.list({ archived: 'all' });
+    const snapshots = notes.map(note => ({
+      id: note.id,
+      content: note.content,
+      title: note.metadata.title,
+      createdAt: note.metadata.createdAt,
+      updatedAt: note.metadata.updatedAt,
+      tags: [...note.metadata.tags],
+      wordCount: note.metadata.wordCount,
+      archivedAt: note.metadata.archivedAt,
+    }));
+
+    const result = exportNotes(snapshots, {
+      outputDir: filePath,
+      appVersion: app.getVersion(),
+      includeArchived: true,
+    });
+
+    if (result.success) {
+      // Open the export folder
+      shell.showItemInFolder(filePath);
+    }
+
+    return result;
+  });
+
+  // Import notes
+  ipcMain.handle('data:import', async () => {
+    // Show folder selection dialog
+    const { filePaths, canceled } = await dialog.showOpenDialog({
+      title: 'Import Notes',
+      properties: ['openDirectory'],
+      buttonLabel: 'Import',
+    });
+
+    const sourceDir = filePaths[0];
+    if (canceled || !sourceDir) {
+      return { success: false, error: 'Import cancelled' };
+    }
+
+    const importType = detectImportType(sourceDir);
+
+    const result = importNotes({
+      sourceDir,
+      type: importType,
+      recursive: true,
+    });
+
+    if (!result.success || !result.notes) {
+      return result;
+    }
+
+    // Import each note
+    let imported = 0;
+    for (const imported_note of result.notes) {
+      try {
+        await createNoteOperation(
+          {
+            content: imported_note.content,
+          },
+          repo
+        );
+        imported++;
+      } catch {
+        // Skip notes that fail to import
+      }
+    }
+
+    return {
+      success: true,
+      noteCount: imported,
+      skipped: result.skipped,
+    };
+  });
+
+  // Get data paths info
+  ipcMain.handle('data:paths', async () => {
+    return {
+      root: paths.root,
+      database: paths.database,
+      backups: paths.backups,
+      logs: paths.logs,
+    };
+  });
+
+  // Open data folder in system file manager
+  ipcMain.handle('data:openFolder', async () => {
+    shell.openPath(paths.root);
+    return { success: true };
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   // Only check for updates in production
@@ -251,8 +409,16 @@ function initAutoUpdater(): void {
 
 // App lifecycle
 app.whenReady().then(() => {
+  // Initialize data paths first (creates directories)
+  dataPaths = initDataPaths();
+  console.log(`[Main] Data directory: ${dataPaths.root}`);
+
+  // Initialize database and handlers
   initDatabase();
   registerIpcHandlers();
+  registerDataHandlers();
+
+  // Create window and start auto-updater
   createWindow();
   initAutoUpdater();
 
