@@ -74,6 +74,7 @@ Pattern for workspace packages with native deps:
 - **Why:** `better-sqlite3` binary compiled for Electron ≠ Node.js binary
 
 To test storage-sqlite locally (breaks Electron app until `pnpm dev`):
+
 ```bash
 cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 ```
