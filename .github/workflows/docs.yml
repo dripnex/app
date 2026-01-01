@@ -40,6 +40,8 @@ jobs:
 
       - name: Build docs
         run: pnpm --filter @readied/docs build
+        env:
+          VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
