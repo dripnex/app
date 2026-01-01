@@ -10,7 +10,13 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#0d9488' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Readied Documentation' }],
-    ['meta', { property: 'og:description', content: 'Markdown-first, offline-forever note app for developers' }],
+    [
+      'meta',
+      {
+        property: 'og:description',
+        content: 'Markdown-first, offline-forever note app for developers',
+      },
+    ],
     ['meta', { property: 'og:image', content: '/readide/logo.svg' }],
   ],
 
@@ -78,7 +84,8 @@ export default defineConfig({
     socialLinks: [{ icon: 'github', link: 'https://github.com/tomymaritano/readide' }],
 
     footer: {
-      message: 'Released under the MIT License. <a href="https://github.com/tomymaritano/readide/issues/new" target="_blank">Report an issue</a>',
+      message:
+        'Released under the MIT License. <a href="https://github.com/tomymaritano/readide/issues/new" target="_blank">Report an issue</a>',
       copyright: 'Copyright © 2025 Readied',
     },
 
