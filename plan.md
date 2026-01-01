@@ -874,66 +874,77 @@ Non-goals reviewed at major versions:
 
 ## 18. Monetization Strategy
 
-> Perpetual license + Maintenance. Offline validation. App works forever.
+> Freemium + Subscription. Free tier forever. Pro for sync and power features.
 
 ### 18.1 Pricing Model
 
-| Decision  | Choice                      | Rationale                        |
-| --------- | --------------------------- | -------------------------------- |
-| Model     | **Perpetual + Maintenance** | Best for offline-first indie app |
-| License   | $79 one-time                | Includes 12 months of updates    |
-| Renewal   | $39/year (optional)         | 12 more months of updates        |
-| Trial     | 14 days, full features      | Let users evaluate properly      |
-| Processor | Lemon Squeezy               | Handles VAT, license keys        |
+| Decision  | Choice                      | Rationale                                 |
+| --------- | --------------------------- | ----------------------------------------- |
+| Model     | **Freemium + Subscription** | Free tier guarantees app always works     |
+| Free      | $0 forever                  | Core features, unlimited notes, local-only|
+| Pro       | $2.99/mo or $29/year        | Sync, priority support, early access      |
+| Trial     | 14 days, Pro features       | Let users evaluate Pro properly           |
+| Processor | Lemon Squeezy               | Handles VAT, subscriptions                |
 
 **Why this model:**
 
-- Subscription + offline-only is contradictory (how does app know user renewed?)
-- Pure one-time isn't sustainable long-term
-- Perpetual + Maintenance: user pays once, app works forever, renewals fund continued development
+- Free tier ensures notes are never held hostage
+- Subscription funds continued development sustainably
+- Users upgrade for convenience (sync), not necessity (access to their data)
+- Aligns with offline-first principle: core functionality works without internet
 
 ### 18.2 How It Works
 
 ```
-User buys license ($79)
+User downloads Readied (free)
          ↓
-License includes 12 months of updates
+Free tier: unlimited notes, full editor, local backup
          ↓
-After 12 months:
-  - App keeps working forever ✅
-  - No more updates unless renewed
+Optional: Start 14-day Pro trial
          ↓
-Renewal ($39/year) → 12 more months of updates
+Subscribe to Pro: $2.99/mo or $29/year
+  - Cloud sync (coming soon)
+  - Priority support
+  - Early access to new features
+         ↓
+Cancel anytime → revert to Free tier
+  - Keep all notes (they're local files)
+  - Lose Pro-only features
 ```
 
 **Key rules:**
 
-- App NEVER stops working
-- App NEVER blocks editing or reading
-- Only auto-updates are gated by `updatesUntil`
-- No online validation required ever
+- Free tier NEVER stops working
+- Free tier NEVER blocks editing or reading
+- Notes are ALWAYS local Markdown files you control
+- Pro features require active subscription
 
-### 18.3 Update Gating Logic
+### 18.3 Feature Gating Logic
 
 ```typescript
-// In auto-updater (main process)
-function shouldInstallUpdate(
-  newVersion: { releaseDate: string },
-  license: { updatesUntil: string }
+// In capability check (renderer or main)
+function hasCapability(
+  capability: string,
+  license: LicenseState
 ): boolean {
-  const releaseDate = new Date(newVersion.releaseDate);
-  const updatesUntil = new Date(license.updatesUntil);
+  // Free tier capabilities are always available
+  const freeCapabilities = [
+    'notes.unlimited',
+    'notebooks.unlimited',
+    'search.basic',
+    'export.markdown',
+    'backup.local',
+  ];
 
-  if (releaseDate <= updatesUntil) {
-    return true; // Update is covered by license
+  if (freeCapabilities.includes(capability)) {
+    return true;
   }
 
-  // Update released after license coverage expired
-  showUpdatePrompt({
-    message: 'A new version is available. Renew to get updates.',
-    canDismiss: true,
-    renewUrl: 'https://readied.app/renew',
-  });
+  // Pro capabilities require active subscription
+  if (license.status === 'pro_active' || license.status === 'pro_trial') {
+    return license.capabilities.includes(capability);
+  }
+
   return false;
 }
 ```
@@ -943,13 +954,15 @@ function shouldInstallUpdate(
 ```json
 {
   "licenseVersion": 1,
-  "licenseId": "lic_8f3a1c",
+  "licenseId": "sub_8f3a1c",
   "issuedTo": "user@email.com",
-  "purchaseDate": "2025-01-15",
-  "updatesUntil": "2026-01-15",
   "plan": "pro",
+  "status": "pro_active",
+  "currentPeriodEnd": "2025-02-15",
+  "trialEnd": null,
   "capabilities": [
     "notes.unlimited",
+    "sync.cloud",
     "links.backlinks",
     "search.advanced",
     "export.structured",
@@ -963,53 +976,62 @@ function shouldInstallUpdate(
 
 **Fields:**
 
-- `purchaseDate`: When license was purchased
-- `updatesUntil`: Last date for receiving updates
-- `capabilities`: Features enabled (for future tiering)
+- `plan`: "free" | "pro"
+- `status`: "free" | "pro_trial" | "pro_active" | "pro_grace" | "pro_expired"
+- `currentPeriodEnd`: When current billing period ends (Pro only)
+- `trialEnd`: When trial ends (if on trial)
+- `capabilities`: Features enabled for current plan
 - `signature`: Ed25519 signature for offline validation
 
 ### 18.5 License States
 
 ```typescript
 type LicenseStatus =
-  | 'trial' // 14-day trial, all features
-  | 'active' // Valid license, updates included
-  | 'active_expired' // Valid license, updates expired (app works!)
-  | 'unlicensed'; // No license (after trial)
+  | 'free' // Free tier, core features
+  | 'pro_trial' // 14-day Pro trial
+  | 'pro_active' // Active Pro subscription
+  | 'pro_grace' // Subscription expired, grace period
+  | 'pro_expired'; // Grace period ended, reverts to free
 
 interface AppLicenseState {
   status: LicenseStatus;
+  plan: 'free' | 'pro';
   trial?: {
     startDate: string;
     daysRemaining: number;
   };
-  license?: {
-    purchaseDate: string;
-    updatesUntil: string;
-    plan: 'pro';
+  subscription?: {
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
     capabilities: Capability[];
-    updatesExpired: boolean; // updatesUntil < today
   };
 }
 ```
 
-### 18.6 Trial Mode
+### 18.6 Plan Tiers
 
-**Trial (14 days)**
+**Free Tier (forever):**
 
-- All features enabled
+- Unlimited notes and notebooks
+- Full Markdown editor
+- Local backup and export
+- Basic search
+- Updates included
+
+**Pro Trial (14 days):**
+
+- All Pro features enabled
 - No credit card required
-- Full offline functionality
-- After expiry: unlicensed mode
+- After expiry: reverts to Free tier
 
-**Unlicensed Mode:**
+**Pro Active:**
 
-- All features work (no arbitrary limits)
-- Shows persistent "Upgrade" banner
-- No auto-updates to newer versions
-- Export always allowed
+- Cloud sync (coming soon)
+- Advanced search
+- Priority support
+- Early access to new features
 
-**Rule:** Never punish users. No arbitrary limits. Banner, not blocks.
+**Rule:** Never punish users. Free tier is fully functional. Pro adds convenience, not essentials.
 
 ### 18.7 Capabilities System
 

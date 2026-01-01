@@ -67,13 +67,13 @@ Three columns, each explaining a decision and its trade-off.
 
 ---
 
-#### 3. No Subscription
+#### 3. Freemium + Pro
 
-**Decision:** One payment. You own it forever.
+**Decision:** Free tier forever. Pro subscription for sync and power features.
 
-**Trade-off:** Updates require annual renewal. But the app keeps working regardless.
+**Trade-off:** Core features are always free. Pro unlocks advanced capabilities.
 
-**Why:** Subscriptions create pressure to ship features. Features create complexity. Complexity breaks things.
+**Why:** Sustainable funding without locking you out. Free tier guarantees your notes always work.
 
 ---
 
@@ -150,34 +150,41 @@ Three points:
 
 **Intro:**
 
-Most note apps charge subscriptions because subscriptions fund growth. Growth demands features. Features create complexity. Complexity breaks things.
+Most note apps lock your data behind subscriptions. Stop paying? Lose access. We believe that's wrong.
 
-We chose a different model.
+Readied is free forever for core features. Pro unlocks sync and advanced capabilities.
 
 ---
 
-### Pricing Card
+### Pricing Cards
 
-**Plan Name:** Pro License
+**Free Tier:**
 
-**Price:** $79 one-time
+**Price:** Free forever
 
 **What you get:**
 
-- The app, forever
-- 12 months of updates
-- No feature restrictions
-- No usage limits
+- Unlimited notes and notebooks
+- Full Markdown editor
+- Local backup and export
+- Standard Markdown files (yours forever)
 
-**After 12 months:**
+**CTA Button:** "Download Free"
 
-- App keeps working exactly the same
-- Renew for $39/year to get new versions
-- Don't renew? Keep using what you have
+---
 
-**CTA Button:** "Buy License"
+**Pro Tier:**
 
-**Secondary:** "Try free for 14 days"
+**Price:** $2.99/month or $29/year (save 20%)
+
+**What you get:**
+
+- Everything in Free
+- Cloud sync (coming soon)
+- Priority support
+- Early access to new features
+
+**CTA Button:** "Start 14-day Free Trial"
 
 ---
 
@@ -187,38 +194,38 @@ We chose a different model.
 
 **For you:**
 
-- No pressure to cancel before renewal
-- No lost access if you stop paying
-- Your notes don't depend on our business
+- Free tier works forever, no strings attached
+- Upgrade when you need sync or want to support us
+- Cancel anytime, keep your notes (they're local files)
 
 **For us:**
 
-- Less revenue than subscriptions
-- Slower feature development
-- More sustainable long-term
+- Sustainable revenue from users who value Pro features
+- No pressure to paywall basic functionality
+- Long-term relationship over quick extraction
 
-**Bottom note:** We think that's a fair trade.
+**Bottom note:** Your notes are never held hostage.
 
-**Temporal anchor:** Most people use the same notes for 5-10 years. Over that time, Readied costs less than a single year of most subscriptions.
+**Guarantee:** Free tier users get the same core app. Pro adds convenience, not essentials.
 
 ---
 
 ### FAQ
 
 **Q: What if you stop developing Readied?**
-A: Your app keeps working. Your files are standard Markdown. Nothing depends on us existing.
+A: Your app keeps working. Your files are standard Markdown. Nothing depends on us existing. Free tier works forever.
 
 **Q: Why not open source?**
 A: Open source note apps struggle to sustain development. This model lets us work on Readied full-time without VC pressure.
 
-**Q: Is there a subscription option?**
-A: No. We believe one-time purchases align our incentives better. We only make money when we ship something worth paying for.
+**Q: Can I cancel my Pro subscription?**
+A: Yes, cancel anytime. You keep your notes (they're local files). You revert to Free tier features.
 
 **Q: Can I export my data?**
 A: Your data is already exported. It's Markdown files on your disk. There's nothing to export.
 
 **Q: What about refunds?**
-A: 14-day money-back guarantee. No questions asked.
+A: 14-day money-back guarantee on Pro. No questions asked.
 
 **Q: Mac and Windows?**
 A: Both. Apple Silicon, Intel Mac, and Windows x64.
