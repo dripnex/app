@@ -98,7 +98,7 @@ jobs:
             apps/desktop/release/*.exe
             apps/desktop/release/*.AppImage
             apps/desktop/release/*.deb
-            apps/desktop/release/*.yml
+            apps/desktop/release/latest*.yml
             apps/desktop/release/*.blockmap
           if-no-files-found: ignore
 
@@ -123,7 +123,7 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.AppImage
             artifacts/**/*.deb
-            artifacts/**/*.yml
+            artifacts/**/latest*.yml
             artifacts/**/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
