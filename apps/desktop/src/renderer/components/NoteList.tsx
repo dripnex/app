@@ -1,4 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  Sparkles,
+  Archive,
+  Search,
+  X,
+  FolderOpen,
+  Inbox,
+  Folder,
+  Check,
+  Copy,
+  ArchiveRestore,
+  Trash2,
+} from 'lucide-react';
 import type { NoteSnapshot, NotebookSnapshot } from '../../preload/index';
 import { useNotebookList } from '../hooks/useNotebooks';
 import { Breadcrumb } from './Breadcrumb';
@@ -37,17 +50,17 @@ function NoteListSkeleton() {
 function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-results' }) {
   const content = {
     'no-notes': {
-      icon: '✦',
+      icon: <Sparkles size={32} />,
       title: 'No notes yet',
       hint: 'Press ⌘N to create your first note',
     },
     'no-archived': {
-      icon: '📦',
+      icon: <Archive size={32} />,
       title: 'No archived notes',
       hint: 'Archived notes will appear here',
     },
     'no-results': {
-      icon: '🔍',
+      icon: <Search size={32} />,
       title: 'No matches found',
       hint: 'Try a different search term',
     },
@@ -127,7 +140,7 @@ export function NoteList({
             aria-label="Clear search"
             type="button"
           >
-            ×
+            <X size={14} />
           </button>
         )}
         {searchQuery && (
@@ -288,7 +301,7 @@ function NoteListItem({
             aria-haspopup="menu"
             title="Move"
           >
-            📂
+            <FolderOpen size={14} />
           </button>
           {showMoveDropdown && (
             <div className="move-dropdown" role="menu">
@@ -304,9 +317,15 @@ function NoteListItem({
                     handleMove(nb.id);
                   }}
                 >
-                  <span className="notebook-icon">{nb.id === 'inbox' ? '📥' : '📁'}</span>
+                  <span className="notebook-icon">
+                    {nb.id === 'inbox' ? <Inbox size={12} /> : <Folder size={12} />}
+                  </span>
                   <span className="notebook-name">{nb.name}</span>
-                  {nb.id === note.notebookId && <span className="current-mark">✓</span>}
+                  {nb.id === note.notebookId && (
+                    <span className="current-mark">
+                      <Check size={12} />
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -322,7 +341,7 @@ function NoteListItem({
           aria-label="Duplicate note"
           title="Duplicate"
         >
-          ⧉
+          <Copy size={14} />
         </button>
         <button
           type="button"
@@ -334,7 +353,7 @@ function NoteListItem({
           aria-label={isArchived ? 'Restore note' : 'Archive note'}
           title={isArchived ? 'Restore' : 'Archive'}
         >
-          {isArchived ? '↩' : '⊘'}
+          {isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
         </button>
         <button
           type="button"
@@ -346,7 +365,7 @@ function NoteListItem({
           aria-label="Delete note permanently"
           title="Delete"
         >
-          ×
+          <Trash2 size={14} />
         </button>
       </div>
     </li>

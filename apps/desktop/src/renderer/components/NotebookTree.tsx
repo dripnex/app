@@ -1,4 +1,12 @@
 import { useState, useCallback } from 'react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Inbox,
+  Folder,
+  Plus,
+  X,
+} from 'lucide-react';
 import type { NotebookTreeNode } from '../../preload/index';
 import { useNotebookTree, useNotebookMutations } from '../hooks/useNotebooks';
 
@@ -82,15 +90,17 @@ function TreeNode({ node, selectedId, onSelect, onRename, onDelete, onCreate }: 
             onClick={handleToggle}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
           >
-            <span className={`chevron ${isExpanded ? 'expanded' : ''}`}>
-              {isExpanded ? '▼' : '▶'}
-            </span>
+            {isExpanded ? (
+              <ChevronDown size={14} className="chevron" />
+            ) : (
+              <ChevronRight size={14} className="chevron" />
+            )}
           </button>
         )}
         {!hasChildren && <span className="notebook-tree-spacer" />}
 
         <span className="notebook-icon" aria-hidden="true">
-          {isInbox ? '📥' : '📁'}
+          {isInbox ? <Inbox size={14} /> : <Folder size={14} />}
         </span>
 
         {isEditing ? (
@@ -122,7 +132,7 @@ function TreeNode({ node, selectedId, onSelect, onRename, onDelete, onCreate }: 
                 title="Add sub-notebook"
                 aria-label="Add sub-notebook"
               >
-                +
+                <Plus size={12} />
               </button>
             )}
             <button
@@ -137,7 +147,7 @@ function TreeNode({ node, selectedId, onSelect, onRename, onDelete, onCreate }: 
               title="Delete notebook"
               aria-label="Delete notebook"
             >
-              ×
+              <X size={12} />
             </button>
           </div>
         )}
@@ -224,7 +234,7 @@ export function NotebookTree({ selectedNotebookId, onSelectNotebook }: NotebookT
           title="Create notebook"
           aria-label="Create new notebook"
         >
-          +
+          <Plus size={14} />
         </button>
       </div>
 

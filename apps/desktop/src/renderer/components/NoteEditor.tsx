@@ -1,4 +1,5 @@
 import { useRef, useCallback, lazy, Suspense } from 'react';
+import { FileText } from 'lucide-react';
 import type { NoteSnapshot } from '../../preload/index';
 
 // Lazy load the markdown editor for better initial load performance
@@ -44,7 +45,7 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
       <main className="note-editor" aria-label="Note editor">
         <div className="note-editor-empty" role="status">
           <span className="empty-icon" aria-hidden="true">
-            📝
+            <FileText size={48} />
           </span>
           <p className="empty-title">Select a note to edit</p>
           <p className="empty-hint">Or press ⌘N to create a new one</p>
