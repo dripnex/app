@@ -2,13 +2,17 @@
 import Base from '../layouts/Base.astro';
 import Footer from '../components/Footer.astro';
 import { Icon } from 'astro-icon/components';
-import { PRICING, PLANS, GUARANTEES } from '@readied/product-config';
+import { getProductConfig } from '@readied/product-config';
+
+const config = getProductConfig();
+const { plans, guarantees, trialDays, trialDescription } = config;
+const proPricing = plans.pro.pricing!;
 
 const faqs = [
-  { q: 'What if you stop developing Readied?', a: GUARANTEES.freeTierForever.description },
-  { q: 'Can I cancel my Pro subscription?', a: GUARANTEES.cancelAnytime.description },
-  { q: 'Can I export my data?', a: GUARANTEES.noLockIn.description },
-  { q: 'What about refunds?', a: GUARANTEES.refund.description }
+  { q: 'What if you stop developing Readied?', a: guarantees.freeTierForever.description },
+  { q: 'Can I cancel my Pro subscription?', a: guarantees.cancelAnytime.description },
+  { q: 'Can I export my data?', a: guarantees.noLockIn.description },
+  { q: 'What about refunds?', a: guarantees.refund.description }
 ];
 ---
 
@@ -25,17 +29,17 @@ const faqs = [
         <!-- Free Tier -->
         <div class="pricing-card glass">
           <div class="card-header">
-            <div class="plan-name">{PLANS.free.name}</div>
+            <div class="plan-name">{plans.free.name}</div>
             <div class="price">
-              <span class="amount">{PRICING.free.label}</span>
+              <span class="amount">Free</span>
               <span class="period">forever</span>
             </div>
           </div>
 
-          <p class="plan-description">{PLANS.free.description}</p>
+          <p class="plan-description">{plans.free.description}</p>
 
           <ul class="features">
-            {PLANS.free.features.map((f) => (
+            {plans.free.features.map((f) => (
               <li>
                 <Icon name="lucide:check" size={16} class="icon-check" />
                 {f}
@@ -52,23 +56,23 @@ const faqs = [
         <!-- Pro Tier -->
         <div class="pricing-card pricing-card-pro glass">
           <div class="card-header">
-            <div class="plan-name">{PLANS.pro.name}</div>
+            <div class="plan-name">{plans.pro.name}</div>
             <div class="price-options">
               <div class="price">
-                <span class="amount">{PRICING.pro.monthly.label}</span>
+                <span class="amount">{proPricing.intervals.monthly.label}</span>
               </div>
               <span class="price-or">or</span>
               <div class="price">
-                <span class="amount">{PRICING.pro.annual.label}</span>
-                <span class="savings">Save {PRICING.pro.annual.savings}</span>
+                <span class="amount">{proPricing.intervals.annual.label}</span>
+                <span class="savings">Save {proPricing.annualSavings}</span>
               </div>
             </div>
           </div>
 
-          <p class="plan-description">{PLANS.pro.description}</p>
+          <p class="plan-description">{plans.pro.description}</p>
 
           <ul class="features">
-            {PLANS.pro.features.map((f) => (
+            {plans.pro.features.map((f) => (
               <li>
                 <Icon name="lucide:check" size={16} class="icon-accent" />
                 {f}
@@ -78,12 +82,12 @@ const faqs = [
 
           <div class="trial-info glass">
             <Icon name="lucide:sparkles" size={16} class="icon-accent" />
-            <span>{PRICING.trial.description}</span>
+            <span>{trialDescription}</span>
           </div>
 
           <a href="/download" class="btn btn-primary btn-lg" data-magnetic="0.2">
             <Icon name="lucide:zap" size={20} />
-            Start {PRICING.trial.days}-day free trial
+            Start {trialDays}-day free trial
           </a>
 
           <div class="card-glow"></div>
