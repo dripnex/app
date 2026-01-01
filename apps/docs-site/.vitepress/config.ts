@@ -28,7 +28,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Architecture', link: '/architecture/overview' },
       { text: 'Decisions', link: '/decisions/' },
-      { text: 'Roadmap', link: '/roadmap/mvp' },
+      { text: 'Roadmap', link: '/roadmap/' },
       {
         text: 'Releases',
         link: 'https://github.com/tomymaritano/readide/releases',
@@ -72,11 +72,7 @@ export default defineConfig({
       '/roadmap/': [
         {
           text: 'Roadmap',
-          items: [
-            { text: 'MVP', link: '/roadmap/mvp' },
-            { text: 'v0.1', link: '/roadmap/v0.1' },
-            { text: 'v0.2+', link: '/roadmap/v0.2' },
-          ],
+          items: [{ text: 'Project Board', link: '/roadmap/' }],
         },
       ],
     },
