@@ -1,12 +1,5 @@
 import { useState, useCallback } from 'react';
-import {
-  ChevronDown,
-  ChevronRight,
-  Inbox,
-  Folder,
-  Plus,
-  X,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, Inbox, Folder, Plus, X } from 'lucide-react';
 import type { NotebookTreeNode } from '../../preload/index';
 import { useNotebookTree, useNotebookMutations } from '../hooks/useNotebooks';
 
