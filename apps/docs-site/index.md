@@ -6,7 +6,7 @@ hero:
   text: Developer Note-Taking
   tagline: Markdown-first, offline-forever note app built for developers who value their data
   image:
-    src: /logo.svg
+    src: /readide/logo.svg
     alt: Readied Logo
   actions:
     - theme: brand
