@@ -15,11 +15,11 @@
 ```
 apps/
   desktop/           # Electron app (main, preload, renderer)
-  docs-site/         # Documentation site
+  docs-site/         # VitePress documentation
 packages/
   core/              # Domain logic + markdown parsing
   storage-core/      # Storage interfaces (pure TS)
-  storage-sqlite/    # SQLite adapter (uses peerDep for better-sqlite3)
+  storage-sqlite/    # SQLite adapter (peerDep for better-sqlite3)
   licensing/         # License validation
   product-config/    # Product configuration
 ```
@@ -31,7 +31,9 @@ pnpm install                    # Install dependencies
 pnpm dev                        # Run desktop in dev mode
 pnpm test                       # Run tests (excludes storage-sqlite)
 pnpm build                      # Build for production
-pnpm --filter @readied/core test  # Test specific package
+pnpm typecheck                  # Validate TypeScript
+pnpm lint                       # Run ESLint
+pnpm format                     # Format with Prettier
 ```
 
 ## Key Rules
@@ -60,68 +62,34 @@ Pattern for workspace packages with native deps:
     "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {
-    "better-sqlite3": "^11.7.0" // For local dev/tests only
+    "better-sqlite3": "^11.7.0"
   }
 }
 ```
 
-```json
-// apps/desktop/package.json
-{
-  "dependencies": {
-    "better-sqlite3": "^11.7.0" // The actual dependency
-  }
-}
+## Testing
+
+- `pnpm test` runs all tests **except** storage-sqlite (safe to run always)
+- storage-sqlite tests run only in CI with clean Node.js environment
+- **Why:** `better-sqlite3` binary compiled for Electron ≠ Node.js binary
+
+To test storage-sqlite locally (breaks Electron app until `pnpm dev`):
+
+```bash
+cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 ```
-
-## Architecture Decisions
-
-All frozen decisions documented in `plan.md`. Key points:
-
-- Source of truth = raw Markdown text (not AST)
-- Monetization = Perpetual license + maintenance ($79 + updates)
-- 5 packages for v0.1 (simplified from 9)
 
 ## Development Workflow
 
-1. **Run dev mode**: `pnpm dev` from monorepo root
-2. **Test before commit**: `pnpm test` for all packages
-3. **Typecheck**: `pnpm typecheck` validates all TypeScript
-4. **Build for production**: `pnpm build` then `pnpm --filter @readied/desktop dist:mac`
+1. `pnpm dev` — Run desktop in development mode
+2. `pnpm test` — Test before committing
+3. `pnpm typecheck` — Validate TypeScript
+4. `pnpm build && pnpm --filter @readied/desktop dist:mac` — Build for production
 
-## Packaging
+## Documentation
 
-```bash
-# Build and package for macOS
-pnpm --filter @readied/desktop build
-pnpm --filter @readied/desktop dist:mac
-
-# The postinstall script handles native module rebuilding automatically
-```
-
-## Testing con Native Modules
-
-### Regla de Oro
-
-`@readied/storage-sqlite` NO se testea en Node después de compilar para Electron.
-
-### Comandos de test
-
-- `pnpm test` - Ejecuta todos los tests EXCEPTO storage-sqlite (seguro siempre)
-- Los tests de storage-sqlite se ejecutan solo en CI con Node.js limpio
-
-### Por que?
-
-`better-sqlite3` es un modulo nativo. El binario compilado para Electron != binario para Node.js.
-No hay forma de tener ambos en el mismo `node_modules`.
-
-### Si necesitas testear storage-sqlite localmente
-
-1. Acepta que la app Electron dejara de funcionar despues
-2. `cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test`
-3. `pnpm dev` para volver a compilar para Electron
-
-## Docs
-
-- `plan.md` — Full architecture document
-- `packages/*/README.md` — Package-specific docs
+- **Architecture decisions:** `plan.md`
+- **Package docs:** `packages/*/README.md`
+- **Technical docs:** `apps/docs-site/`
+- **Live docs:** https://tomymaritano.github.io/readide/
+- **GitHub:** https://github.com/tomymaritano/readide
