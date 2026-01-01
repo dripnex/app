@@ -1,285 +1,252 @@
 import { describe, it, expect } from 'vitest';
 import {
   checkUpdateEligibility,
+  isSubscriptionEndingSoon,
+  getDaysUntilPeriodEnd,
+  getUpdateStatusMessage,
   isUpdatesExpiringSoon,
   getDaysUntilUpdatesExpire,
-  getUpdateStatusMessage,
 } from '../src/updates.js';
-import type { AppLicenseState, Capability } from '../src/types.js';
+import type { AppLicenseState, SubscriptionInfo } from '../src/types.js';
 
-const ALL_CAPS: Capability[] = [
-  'notes.basic',
-  'notes.unlimited',
-  'links.backlinks',
-  'search.basic',
-  'search.advanced',
-  'export.markdown',
-  'export.structured',
-  'import.folder',
-  'import.obsidian',
-  'themes.custom',
-  'graph.view',
-];
+// Helper to create a subscription
+const createSubscription = (overrides: Partial<SubscriptionInfo> = {}): SubscriptionInfo => ({
+  subscriptionId: 'sub_123',
+  customerId: 'cus_123',
+  email: 'test@example.com',
+  plan: 'monthly',
+  status: 'active',
+  currentPeriodStart: '2025-01-01',
+  currentPeriodEnd: '2026-01-01',
+  cancelAtPeriodEnd: false,
+  ...overrides,
+});
 
 describe('updates', () => {
   describe('checkUpdateEligibility', () => {
+    const release = { version: '1.0.0', releaseDate: '2025-06-01' };
+
     it('trial is always eligible', () => {
       const state: AppLicenseState = { status: 'trial' };
-      const release = { version: '1.0.0', releaseDate: '2025-06-01' };
 
       const result = checkUpdateEligibility(release, state);
       expect(result.eligible).toBe(true);
       expect(result.reason).toBe('trial');
     });
 
-    it('unlicensed is not eligible', () => {
-      const state: AppLicenseState = { status: 'unlicensed' };
-      const release = { version: '1.0.0', releaseDate: '2025-06-01' };
+    it('free is not eligible', () => {
+      const state: AppLicenseState = { status: 'free' };
 
       const result = checkUpdateEligibility(release, state);
       expect(result.eligible).toBe(false);
-      expect(result.reason).toBe('unlicensed');
+      expect(result.reason).toBe('free');
     });
 
-    it('active license can update to release before updatesUntil', () => {
+    it('pro_active is always eligible', () => {
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription(),
       };
-      const release = { version: '1.0.0', releaseDate: '2025-06-01' };
 
       const result = checkUpdateEligibility(release, state);
       expect(result.eligible).toBe(true);
-      expect(result.reason).toBe('licensed');
+      expect(result.reason).toBe('subscribed');
     });
 
-    it('active license can update to release on updatesUntil date', () => {
+    it('pro_grace is still eligible', () => {
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
+        status: 'pro_grace',
+        subscription: createSubscription({ status: 'past_due' }),
       };
-      const release = { version: '1.0.0', releaseDate: '2026-01-01' };
 
       const result = checkUpdateEligibility(release, state);
       expect(result.eligible).toBe(true);
-      expect(result.reason).toBe('licensed');
+      expect(result.reason).toBe('grace_period');
     });
 
-    it('active license cannot update to release after updatesUntil', () => {
-      const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
-      };
-      const release = { version: '2.0.0', releaseDate: '2026-06-01' };
+    it('pro_expired is not eligible', () => {
+      const state: AppLicenseState = { status: 'pro_expired' };
 
       const result = checkUpdateEligibility(release, state);
       expect(result.eligible).toBe(false);
-      expect(result.reason).toBe('release_after_expiry');
-    });
-
-    it('active_expired can still update to releases before expiry', () => {
-      const state: AppLicenseState = {
-        status: 'active_expired',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: true,
-        },
-      };
-      const release = { version: '1.0.0', releaseDate: '2025-12-01' };
-
-      const result = checkUpdateEligibility(release, state);
-      expect(result.eligible).toBe(true);
-      expect(result.reason).toBe('licensed');
+      expect(result.reason).toBe('free');
     });
   });
 
-  describe('isUpdatesExpiringSoon', () => {
+  describe('isSubscriptionEndingSoon', () => {
+    it('returns false for free', () => {
+      expect(isSubscriptionEndingSoon({ status: 'free' })).toBe(false);
+    });
+
     it('returns false for trial', () => {
-      expect(isUpdatesExpiringSoon({ status: 'trial' })).toBe(false);
+      expect(isSubscriptionEndingSoon({ status: 'trial' })).toBe(false);
     });
 
-    it('returns false for unlicensed', () => {
-      expect(isUpdatesExpiringSoon({ status: 'unlicensed' })).toBe(false);
-    });
-
-    it('returns true when expiring within 30 days', () => {
-      const now = new Date('2025-12-15');
+    it('returns false when subscription is auto-renewing', () => {
+      const now = new Date('2025-12-28');
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription({
+          currentPeriodEnd: '2026-01-01',
+          cancelAtPeriodEnd: false, // Will auto-renew
+        }),
       };
 
-      expect(isUpdatesExpiringSoon(state, 30, now)).toBe(true);
+      expect(isSubscriptionEndingSoon(state, 7, now)).toBe(false);
     });
 
-    it('returns false when not expiring soon', () => {
+    it('returns true when subscription is canceling and within warning period', () => {
+      const now = new Date('2025-12-28');
+      const state: AppLicenseState = {
+        status: 'pro_active',
+        subscription: createSubscription({
+          currentPeriodEnd: '2026-01-01',
+          cancelAtPeriodEnd: true, // Set to cancel
+        }),
+      };
+
+      expect(isSubscriptionEndingSoon(state, 7, now)).toBe(true);
+    });
+
+    it('returns false when subscription is canceling but not within warning period', () => {
       const now = new Date('2025-06-01');
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription({
+          currentPeriodEnd: '2026-01-01',
+          cancelAtPeriodEnd: true,
+        }),
       };
 
-      expect(isUpdatesExpiringSoon(state, 30, now)).toBe(false);
-    });
-
-    it('returns false when already expired', () => {
-      const now = new Date('2026-02-01');
-      const state: AppLicenseState = {
-        status: 'active_expired',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: true,
-        },
-      };
-
-      expect(isUpdatesExpiringSoon(state, 30, now)).toBe(false);
+      expect(isSubscriptionEndingSoon(state, 7, now)).toBe(false);
     });
   });
 
-  describe('getDaysUntilUpdatesExpire', () => {
-    it('returns null for trial', () => {
-      expect(getDaysUntilUpdatesExpire({ status: 'trial' })).toBeNull();
+  describe('getDaysUntilPeriodEnd', () => {
+    it('returns null for free', () => {
+      expect(getDaysUntilPeriodEnd({ status: 'free' })).toBeNull();
     });
 
-    it('returns null for unlicensed', () => {
-      expect(getDaysUntilUpdatesExpire({ status: 'unlicensed' })).toBeNull();
+    it('returns null for trial without subscription', () => {
+      expect(getDaysUntilPeriodEnd({ status: 'trial' })).toBeNull();
     });
 
-    it('returns positive days when not expired', () => {
+    it('returns positive days when subscription is active', () => {
       const now = new Date('2025-06-01');
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription({
+          currentPeriodEnd: '2026-01-01',
+        }),
       };
 
-      const days = getDaysUntilUpdatesExpire(state, now);
+      const days = getDaysUntilPeriodEnd(state, now);
       expect(days).toBeGreaterThan(0);
     });
 
-    it('returns negative days when expired', () => {
+    it('returns negative days when period has ended', () => {
       const now = new Date('2026-02-01');
       const state: AppLicenseState = {
-        status: 'active_expired',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: true,
-        },
+        status: 'pro_active',
+        subscription: createSubscription({
+          currentPeriodEnd: '2026-01-01',
+        }),
       };
 
-      const days = getDaysUntilUpdatesExpire(state, now);
+      const days = getDaysUntilPeriodEnd(state, now);
       expect(days).toBeLessThan(0);
     });
   });
 
   describe('getUpdateStatusMessage', () => {
-    it('trial message', () => {
-      expect(getUpdateStatusMessage({ status: 'trial' })).toBe('Trial mode - updates included');
-    });
-
-    it('unlicensed message', () => {
-      expect(getUpdateStatusMessage({ status: 'unlicensed' })).toBe(
-        'Unlicensed - purchase to receive updates'
-      );
-    });
-
-    it('active_expired message', () => {
+    it('trial message shows days remaining', () => {
       const state: AppLicenseState = {
-        status: 'active_expired',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2025-06-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: true,
+        status: 'trial',
+        trial: {
+          startDate: '2025-01-01',
+          daysRemaining: 10,
+          isExpired: false,
         },
       };
-      expect(getUpdateStatusMessage(state)).toBe(
-        'Update coverage expired - renew to get latest versions'
+      expect(getUpdateStatusMessage(state)).toBe('Trial - 10 days remaining');
+    });
+
+    it('trial message handles singular day', () => {
+      const state: AppLicenseState = {
+        status: 'trial',
+        trial: {
+          startDate: '2025-01-01',
+          daysRemaining: 1,
+          isExpired: false,
+        },
+      };
+      expect(getUpdateStatusMessage(state)).toBe('Trial - 1 day remaining');
+    });
+
+    it('free message', () => {
+      expect(getUpdateStatusMessage({ status: 'free' })).toBe(
+        'Free tier - Subscribe to Pro for updates'
       );
     });
 
-    it('active with expiring soon shows days', () => {
+    it('pro_active message', () => {
+      const state: AppLicenseState = {
+        status: 'pro_active',
+        subscription: createSubscription(),
+      };
+      expect(getUpdateStatusMessage(state)).toBe('Pro - Updates included');
+    });
+
+    it('pro_active canceling shows days remaining', () => {
       const now = new Date('2025-12-25');
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ALL_CAPS,
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription({
+          currentPeriodEnd: '2026-01-01',
+          cancelAtPeriodEnd: true,
+        }),
       };
 
       const message = getUpdateStatusMessage(state, now);
-      expect(message).toMatch(/Updates expire in \d+ days?/);
+      expect(message).toMatch(/Pro \(canceling\) - \d+ days? remaining/);
+    });
+
+    it('pro_grace message', () => {
+      const state: AppLicenseState = {
+        status: 'pro_grace',
+        subscription: createSubscription({ status: 'past_due' }),
+      };
+      expect(getUpdateStatusMessage(state)).toBe('Pro - Payment required');
+    });
+
+    it('pro_expired message', () => {
+      expect(getUpdateStatusMessage({ status: 'pro_expired' })).toBe(
+        'Subscription ended - using Free tier'
+      );
+    });
+  });
+
+  describe('legacy functions (deprecated)', () => {
+    it('isUpdatesExpiringSoon always returns false', () => {
+      expect(isUpdatesExpiringSoon({ status: 'trial' })).toBe(false);
+      expect(isUpdatesExpiringSoon({ status: 'free' })).toBe(false);
+      expect(
+        isUpdatesExpiringSoon({
+          status: 'pro_active',
+          subscription: createSubscription(),
+        })
+      ).toBe(false);
+    });
+
+    it('getDaysUntilUpdatesExpire always returns null', () => {
+      expect(getDaysUntilUpdatesExpire({ status: 'trial' })).toBeNull();
+      expect(getDaysUntilUpdatesExpire({ status: 'free' })).toBeNull();
+      expect(
+        getDaysUntilUpdatesExpire({
+          status: 'pro_active',
+          subscription: createSubscription(),
+        })
+      ).toBeNull();
     });
   });
 });
