@@ -5,3 +5,4 @@
  */
 
 export type { NoteRepository } from './NoteRepository.js';
+export type { NotebookRepository } from './NotebookRepository.js';

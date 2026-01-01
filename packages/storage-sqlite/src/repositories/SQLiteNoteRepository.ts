@@ -16,6 +16,7 @@ import {
   type Timestamp,
   createNote,
   createNoteId,
+  createNotebookId,
   createTag,
 } from '@readied/core';
 import type { DatabaseConnection } from '../database.js';
@@ -23,6 +24,7 @@ import type { DatabaseConnection } from '../database.js';
 /** Row type from SQLite */
 interface NoteRow {
   id: string;
+  notebook_id: string;
   content: string;
   title: string;
   created_at: string;
@@ -42,7 +44,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, content, title, created_at, updated_at, word_count, archived_at
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
       FROM notes
       WHERE id = ?
     `);
@@ -59,9 +61,10 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     this.db.transaction(() => {
       // Upsert note
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, content, title, created_at, updated_at, word_count, archived_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
+          notebook_id = excluded.notebook_id,
           content = excluded.content,
           title = excluded.title,
           updated_at = excluded.updated_at,
@@ -71,6 +74,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
       stmt.run(
         note.id,
+        note.notebookId,
         note.content,
         note.metadata.title,
         note.metadata.createdAt,
@@ -114,7 +118,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     if (tag) {
       sql = `
-        SELECT DISTINCT n.id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at
+        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
@@ -125,7 +129,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       params = [tag.toLowerCase(), limit, offset];
     } else {
       sql = `
-        SELECT id, content, title, created_at, updated_at, word_count, archived_at
+        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
         FROM notes n
         WHERE 1=1 ${archivedCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
@@ -152,7 +156,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
 
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, content, title, created_at, updated_at, word_count, archived_at
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
       FROM notes
       WHERE (content LIKE ? OR title LIKE ?) ${archivedCondition}
       ORDER BY updated_at DESC
@@ -259,6 +263,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     // We use createNote to ensure proper structure, but override metadata
     const note = createNote({
       id: createNoteId(row.id),
+      notebookId: createNotebookId(row.notebook_id),
       content: row.content,
       createdAt: row.created_at as Timestamp,
     });
@@ -266,6 +271,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     // Return note with stored metadata (in case of any differences)
     return {
       ...note,
+      notebookId: createNotebookId(row.notebook_id),
       metadata: {
         ...note.metadata,
         title: row.title,

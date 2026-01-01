@@ -10,6 +10,7 @@
   "homepage": "https://readied.app",
   "main": "./out/main/index.js",
   "scripts": {
+    "postinstall": "electron-builder install-app-deps",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
@@ -44,7 +45,6 @@
     "pino-roll": "^4.0.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.0.2",
     "@types/better-sqlite3": "^7.6.12",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",

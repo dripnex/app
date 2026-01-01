@@ -8,8 +8,6 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test --filter=!@readied/storage-sqlite",
-    "test:all": "turbo test",
-    "test:sqlite": "pnpm --filter @readied/storage-sqlite test",
     "lint": "eslint packages apps --cache",
     "lint:fix": "eslint packages apps --fix --cache",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",

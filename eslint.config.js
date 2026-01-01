@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/release/**',
       '**/.astro/**',
       '**/coverage/**',
+      '**/.vitepress/cache/**',
     ],
   },
 

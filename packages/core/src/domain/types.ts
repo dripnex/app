@@ -34,3 +34,23 @@ export function createTag(raw: string): Tag {
   const normalized = raw.replace(/^#/, '').toLowerCase().trim();
   return normalized as Tag;
 }
+
+/** Branded type for Notebook IDs to prevent mixing with plain strings */
+export type NotebookId = string & { readonly __brand: 'NotebookId' };
+
+/** Creates a new NotebookId from a string */
+export function createNotebookId(id: string): NotebookId {
+  return id as NotebookId;
+}
+
+/** Generates a new unique NotebookId */
+export function generateNotebookId(): NotebookId {
+  const cryptoModule = (globalThis as unknown as { crypto: { randomUUID(): string } }).crypto;
+  return cryptoModule.randomUUID() as NotebookId;
+}
+
+/** Special Inbox notebook ID - all notes without a notebook go here */
+export const INBOX_NOTEBOOK_ID = createNotebookId('inbox');
+
+/** Maximum allowed nesting depth for notebooks (0, 1, 2 = 3 levels) */
+export const MAX_NOTEBOOK_DEPTH = 2;

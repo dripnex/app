@@ -1,13 +1,18 @@
-import { useState, useCallback } from 'react';
-import type { NoteSnapshot } from '../../preload/index';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import type { NoteSnapshot, NotebookSnapshot } from '../../preload/index';
+import { useNotebookList } from '../hooks/useNotebooks';
+import { Breadcrumb } from './Breadcrumb';
 
 interface NoteListProps {
   notes: NoteSnapshot[];
   selectedId: string | null;
+  selectedNotebookId: string | null;
   onSelect: (id: string) => void;
+  onSelectNotebook: (id: string) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onDuplicate: (id: string) => void;
+  onMove: (noteId: string, notebookId: string) => void;
   onSearch: (query: string) => void;
   isLoading: boolean;
   viewMode: 'active' | 'archived';
@@ -64,16 +69,20 @@ function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-res
 export function NoteList({
   notes,
   selectedId,
+  selectedNotebookId,
   onSelect,
+  onSelectNotebook,
   onDelete,
   onArchive,
   onDuplicate,
+  onMove,
   onSearch,
   isLoading,
   viewMode,
   onViewModeChange,
 }: NoteListProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: notebooks = [] } = useNotebookList();
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +137,12 @@ export function NoteList({
         )}
       </div>
 
+      {/* Breadcrumb navigation */}
+      <Breadcrumb
+        selectedNotebookId={selectedNotebookId}
+        onNavigate={onSelectNotebook}
+      />
+
       {/* View mode tabs */}
       <div className="note-list-tabs" role="tablist" aria-label="Note views">
         <button
@@ -167,6 +182,8 @@ export function NoteList({
                 onDelete={onDelete}
                 onArchive={onArchive}
                 onDuplicate={onDuplicate}
+                onMove={onMove}
+                notebooks={notebooks}
                 isArchived={viewMode === 'archived'}
               />
             ))}
@@ -184,6 +201,8 @@ interface NoteListItemProps {
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onDuplicate: (id: string) => void;
+  onMove: (noteId: string, notebookId: string) => void;
+  notebooks: NotebookSnapshot[];
   isArchived: boolean;
 }
 
@@ -194,14 +213,40 @@ function NoteListItem({
   onDelete,
   onArchive,
   onDuplicate,
+  onMove,
+  notebooks,
   isArchived,
 }: NoteListItemProps) {
+  const [showMoveDropdown, setShowMoveDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowMoveDropdown(false);
+      }
+    };
+
+    if (showMoveDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMoveDropdown]);
+
+  const handleMove = (notebookId: string) => {
+    if (notebookId !== note.notebookId) {
+      onMove(note.id, notebookId);
+    }
+    setShowMoveDropdown(false);
   };
 
   return (
@@ -233,6 +278,43 @@ function NoteListItem({
         )}
       </div>
       <div className="note-list-item-actions" role="group" aria-label="Note actions">
+        <div className="action-btn-container" ref={dropdownRef}>
+          <button
+            type="button"
+            className="action-btn"
+            onClick={e => {
+              e.stopPropagation();
+              setShowMoveDropdown(!showMoveDropdown);
+            }}
+            aria-label="Move to notebook"
+            aria-expanded={showMoveDropdown}
+            aria-haspopup="menu"
+            title="Move"
+          >
+            📂
+          </button>
+          {showMoveDropdown && (
+            <div className="move-dropdown" role="menu">
+              {notebooks.map(nb => (
+                <button
+                  key={nb.id}
+                  type="button"
+                  role="menuitem"
+                  className={`move-dropdown-item ${nb.id === note.notebookId ? 'current' : ''}`}
+                  style={{ paddingLeft: `${nb.depth * 12 + 8}px` }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleMove(nb.id);
+                  }}
+                >
+                  <span className="notebook-icon">{nb.id === 'inbox' ? '📥' : '📁'}</span>
+                  <span className="notebook-name">{nb.name}</span>
+                  {nb.id === note.notebookId && <span className="current-mark">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className="action-btn"

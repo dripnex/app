@@ -123,6 +123,15 @@ export function useNoteMutations() {
     onSuccess: () => invalidateNotes(),
   });
 
+  const moveNote = useMutation({
+    mutationFn: async ({ noteId, notebookId }: { noteId: string; notebookId: string }) => {
+      const result = await window.readied.notes.move(noteId, notebookId);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
   return {
     createNote,
     updateNote,
@@ -130,5 +139,6 @@ export function useNoteMutations() {
     archiveNote,
     restoreNote,
     duplicateNote,
+    moveNote,
   };
 }

@@ -9,6 +9,7 @@ import { LicenseDialog } from './components/LicenseDialog';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useNotes, useSearchNotes, useNoteMutations } from './hooks/useNotes';
+import { useNotebookTree } from './hooks/useNotebooks';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 
 function NotesApp() {
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
+  const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>('inbox');
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -34,21 +36,32 @@ function NotesApp() {
   });
 
   const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
+  const { data: _notebookTree } = useNotebookTree();
 
   // Mutations
-  const { createNote, updateNote, deleteNote, archiveNote, restoreNote, duplicateNote } =
+  const { createNote, updateNote, deleteNote, archiveNote, restoreNote, duplicateNote, moveNote } =
     useNoteMutations();
 
-  // Compute displayed notes based on search
+  // Compute displayed notes based on search and notebook filter
   const notes = useMemo(() => {
+    let filteredNotes: NoteSnapshot[];
+
     if (debouncedSearch.trim()) {
       const searchResults = searchNotesQuery.data ?? [];
-      return viewMode === 'archived'
+      filteredNotes = viewMode === 'archived'
         ? searchResults.filter(n => n.isArchived)
         : searchResults.filter(n => !n.isArchived);
+    } else {
+      filteredNotes = notesQuery.data ?? [];
     }
-    return notesQuery.data ?? [];
-  }, [debouncedSearch, searchNotesQuery.data, notesQuery.data, viewMode]);
+
+    // Filter by selected notebook
+    if (selectedNotebookId) {
+      filteredNotes = filteredNotes.filter(n => n.notebookId === selectedNotebookId);
+    }
+
+    return filteredNotes;
+  }, [debouncedSearch, searchNotesQuery.data, notesQuery.data, viewMode, selectedNotebookId]);
 
   const isLoading =
     notesQuery.isLoading || (debouncedSearch.trim() !== '' && searchNotesQuery.isLoading);
@@ -137,6 +150,14 @@ function NotesApp() {
     [viewMode, duplicateNote]
   );
 
+  // Move note to notebook
+  const handleMoveNote = useCallback(
+    async (noteId: string, notebookId: string) => {
+      await moveNote.mutateAsync({ noteId, notebookId });
+    },
+    [moveNote]
+  );
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -181,14 +202,21 @@ function NotesApp() {
       <div className="app">
         <TrialBanner />
         <div className="app__content">
-          <Sidebar onNewNote={handleNewNote} />
+          <Sidebar
+            onNewNote={handleNewNote}
+            selectedNotebookId={selectedNotebookId}
+            onSelectNotebook={setSelectedNotebookId}
+          />
           <NoteList
             notes={notes}
             selectedId={selectedNote?.id ?? null}
+            selectedNotebookId={selectedNotebookId}
             onSelect={handleSelectNote}
+            onSelectNotebook={setSelectedNotebookId}
             onDelete={handleDeleteNote}
             onArchive={handleArchiveNote}
             onDuplicate={handleDuplicateNote}
+            onMove={handleMoveNote}
             onSearch={handleSearch}
             isLoading={isLoading}
             viewMode={viewMode}
