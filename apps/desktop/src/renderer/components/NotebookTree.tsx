@@ -239,10 +239,18 @@ export function NotebookTree({ selectedNotebookId, onSelectNotebook }: NotebookT
             className="notebook-create-input"
           />
           <div className="notebook-create-actions">
-            <button type="submit" className="notebook-create-btn" disabled={!newNotebookName.trim()}>
+            <button
+              type="submit"
+              className="notebook-create-btn"
+              disabled={!newNotebookName.trim()}
+            >
               Create
             </button>
-            <button type="button" className="notebook-create-btn cancel" onClick={handleCreateCancel}>
+            <button
+              type="button"
+              className="notebook-create-btn cancel"
+              onClick={handleCreateCancel}
+            >
               Cancel
             </button>
           </div>

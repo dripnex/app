@@ -227,10 +227,7 @@ export function buildNotebookTree(notebooks: Notebook[]): NotebookTree {
 }
 
 /** Gets the path from root to a notebook */
-export function getNotebookPath(
-  notebook: Notebook,
-  allNotebooks: Notebook[]
-): Notebook[] {
+export function getNotebookPath(notebook: Notebook, allNotebooks: Notebook[]): Notebook[] {
   const path: Notebook[] = [notebook];
   let current = notebook;
 

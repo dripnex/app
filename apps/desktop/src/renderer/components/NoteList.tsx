@@ -138,10 +138,7 @@ export function NoteList({
       </div>
 
       {/* Breadcrumb navigation */}
-      <Breadcrumb
-        selectedNotebookId={selectedNotebookId}
-        onNavigate={onSelectNotebook}
-      />
+      <Breadcrumb selectedNotebookId={selectedNotebookId} onNavigate={onSelectNotebook} />
 
       {/* View mode tabs */}
       <div className="note-list-tabs" role="tablist" aria-label="Note views">

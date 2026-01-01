@@ -20,7 +20,12 @@ import {
   detectImportType,
   type DataPaths,
 } from '@readied/storage-core';
-import { createDatabase, allMigrations, SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
+import {
+  createDatabase,
+  allMigrations,
+  SQLiteNoteRepository,
+  SQLiteNotebookRepository,
+} from '@readied/storage-sqlite';
 import {
   createNoteOperation,
   updateNoteOperation,
@@ -31,7 +36,14 @@ import {
   duplicateNoteOperation,
   moveNoteToNotebook,
 } from '@readied/core';
-import { createNoteId, createNotebookId, createNotebook, renameNotebook, moveNotebook, INBOX_NOTEBOOK_ID } from '@readied/core';
+import {
+  createNoteId,
+  createNotebookId,
+  createNotebook,
+  renameNotebook,
+  moveNotebook,
+  INBOX_NOTEBOOK_ID,
+} from '@readied/core';
 import {
   parseLicenseFile,
   computeLicenseState,
@@ -361,7 +373,9 @@ function registerNotebookHandlers(): void {
       }
     }
 
-    const nextOrder = await repo.getNextOrder(input.parentId ? createNotebookId(input.parentId) : null);
+    const nextOrder = await repo.getNextOrder(
+      input.parentId ? createNotebookId(input.parentId) : null
+    );
 
     const notebook = createNotebook({
       name: input.name,
@@ -455,13 +469,16 @@ function registerNotebookHandlers(): void {
   });
 
   // Reorder notebooks within a parent
-  ipcMain.handle('notebooks:reorder', async (_event, parentId: string | null, orderedIds: string[]) => {
-    await repo.reorder(
-      parentId ? createNotebookId(parentId) : null,
-      orderedIds.map(id => createNotebookId(id))
-    );
-    return { success: true };
-  });
+  ipcMain.handle(
+    'notebooks:reorder',
+    async (_event, parentId: string | null, orderedIds: string[]) => {
+      await repo.reorder(
+        parentId ? createNotebookId(parentId) : null,
+        orderedIds.map(id => createNotebookId(id))
+      );
+      return { success: true };
+    }
+  );
 }
 
 /** Register IPC handlers for data management (backup, export, import) */
@@ -799,43 +816,46 @@ function initAutoUpdater(): void {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
-  // Initialize data paths first (creates directories)
-  dataPaths = initDataPaths();
+app
+  .whenReady()
+  .then(() => {
+    // Initialize data paths first (creates directories)
+    dataPaths = initDataPaths();
 
-  // Initialize logger (must be after dataPaths)
-  const log = initLogger({
-    logsDir: dataPaths.logs,
-    level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-    isDevelopment: process.env.NODE_ENV === 'development',
+    // Initialize logger (must be after dataPaths)
+    const log = initLogger({
+      logsDir: dataPaths.logs,
+      level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+      isDevelopment: process.env.NODE_ENV === 'development',
+    });
+    log.info({ dataDir: dataPaths.root }, 'Application starting');
+
+    // Initialize database and handlers
+    initDatabase();
+    registerIpcHandlers();
+    registerNotebookHandlers();
+    registerDataHandlers();
+
+    // Initialize license storage and handlers
+    licenseStorage = new FileLicenseStorage(dataPaths.root);
+    registerLicenseHandlers();
+    registerLogHandlers();
+    log.info('All IPC handlers registered');
+
+    // Create window and start auto-updater
+    createWindow();
+    initAutoUpdater();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  })
+  .catch(err => {
+    console.error('Failed to initialize app:', err);
+    app.quit();
   });
-  log.info({ dataDir: dataPaths.root }, 'Application starting');
-
-  // Initialize database and handlers
-  initDatabase();
-  registerIpcHandlers();
-  registerNotebookHandlers();
-  registerDataHandlers();
-
-  // Initialize license storage and handlers
-  licenseStorage = new FileLicenseStorage(dataPaths.root);
-  registerLicenseHandlers();
-  registerLogHandlers();
-  log.info('All IPC handlers registered');
-
-  // Create window and start auto-updater
-  createWindow();
-  initAutoUpdater();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-}).catch((err) => {
-  console.error('Failed to initialize app:', err);
-  app.quit();
-});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

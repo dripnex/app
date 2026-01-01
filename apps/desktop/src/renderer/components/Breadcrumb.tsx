@@ -48,12 +48,14 @@ export function Breadcrumb({ selectedNotebookId, onNavigate }: BreadcrumbProps) 
               onClick={() => onNavigate(notebook.id)}
               aria-current={isLast ? 'location' : undefined}
             >
-              <span className="breadcrumb-icon">
-                {notebook.id === 'inbox' ? '📥' : '📁'}
-              </span>
+              <span className="breadcrumb-icon">{notebook.id === 'inbox' ? '📥' : '📁'}</span>
               <span className="breadcrumb-name">{notebook.name}</span>
             </button>
-            {!isLast && <span className="breadcrumb-separator" aria-hidden="true">/</span>}
+            {!isLast && (
+              <span className="breadcrumb-separator" aria-hidden="true">
+                /
+              </span>
+            )}
           </span>
         );
       })}

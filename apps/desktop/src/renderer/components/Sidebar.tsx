@@ -28,10 +28,7 @@ export function Sidebar({ onNewNote, selectedNotebookId, onSelectNotebook }: Sid
       </nav>
 
       <div className="sidebar-notebooks">
-        <NotebookTree
-          selectedNotebookId={selectedNotebookId}
-          onSelectNotebook={onSelectNotebook}
-        />
+        <NotebookTree selectedNotebookId={selectedNotebookId} onSelectNotebook={onSelectNotebook} />
       </div>
 
       <div className="sidebar-footer">

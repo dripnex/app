@@ -175,7 +175,9 @@ export class SQLiteNotebookRepository implements NotebookRepository {
       WHERE parent_id ${parentId === null ? 'IS NULL' : '= ?'}
     `);
 
-    const row = (parentId === null ? stmt.get() : stmt.get(parentId)) as { max_order: number | null };
+    const row = (parentId === null ? stmt.get() : stmt.get(parentId)) as {
+      max_order: number | null;
+    };
     return (row.max_order ?? -1) + 1;
   }
 

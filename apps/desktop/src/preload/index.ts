@@ -245,7 +245,8 @@ const api: ReadiedAPI = {
     rename: (id, name) => ipcRenderer.invoke('notebooks:rename', id, name),
     move: (id, newParentId) => ipcRenderer.invoke('notebooks:move', id, newParentId),
     delete: id => ipcRenderer.invoke('notebooks:delete', id),
-    reorder: (parentId, orderedIds) => ipcRenderer.invoke('notebooks:reorder', parentId, orderedIds),
+    reorder: (parentId, orderedIds) =>
+      ipcRenderer.invoke('notebooks:reorder', parentId, orderedIds),
   },
   data: {
     backup: () => ipcRenderer.invoke('data:backup'),

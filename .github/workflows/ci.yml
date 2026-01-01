@@ -64,9 +64,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Run ALL tests in CI (fresh Node environment, no electron-rebuild contamination)
+      # Run tests (excludes storage-sqlite which requires native module)
       - name: Run tests
-        run: pnpm test:all
+        run: pnpm test
 
       - name: Build packages
         run: pnpm build

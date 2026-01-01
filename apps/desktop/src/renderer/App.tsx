@@ -48,9 +48,10 @@ function NotesApp() {
 
     if (debouncedSearch.trim()) {
       const searchResults = searchNotesQuery.data ?? [];
-      filteredNotes = viewMode === 'archived'
-        ? searchResults.filter(n => n.isArchived)
-        : searchResults.filter(n => !n.isArchived);
+      filteredNotes =
+        viewMode === 'archived'
+          ? searchResults.filter(n => n.isArchived)
+          : searchResults.filter(n => !n.isArchived);
     } else {
       filteredNotes = notesQuery.data ?? [];
     }

@@ -60,7 +60,7 @@ Pattern for workspace packages with native deps:
     "better-sqlite3": "^11.0.0"
   },
   "devDependencies": {
-    "better-sqlite3": "^11.7.0"  // For local dev/tests only
+    "better-sqlite3": "^11.7.0" // For local dev/tests only
   }
 }
 ```
@@ -69,7 +69,7 @@ Pattern for workspace packages with native deps:
 // apps/desktop/package.json
 {
   "dependencies": {
-    "better-sqlite3": "^11.7.0"  // The actual dependency
+    "better-sqlite3": "^11.7.0" // The actual dependency
   }
 }
 ```
