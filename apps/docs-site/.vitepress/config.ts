@@ -6,7 +6,10 @@ export default defineConfig({
   base: '/readide/',
 
   head: [
-    ['link', { rel: 'icon', href: '/readide/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/x-icon', href: '/readide/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/readide/favicon-32x32.png' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/readide/favicon-16x16.png' }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/readide/apple-touch-icon.png' }],
     ['meta', { name: 'theme-color', content: '#0d9488' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Readied Documentation' }],
