@@ -66,7 +66,4 @@ features:
   <a href="https://github.com/tomymaritano/readide/releases/latest">
     <img src="https://img.shields.io/github/v/release/tomymaritano/readide?label=latest" alt="Latest Release" />
   </a>
-  <a href="https://github.com/tomymaritano/readide/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/tomymaritano/readide" alt="License" />
-  </a>
 </div>
