@@ -5,7 +5,7 @@ import type { AppLicenseState } from './types.js';
  */
 export interface UpdateEligibility {
   readonly eligible: boolean;
-  readonly reason: 'licensed' | 'trial' | 'updates_expired' | 'unlicensed' | 'release_after_expiry';
+  readonly reason: 'subscribed' | 'trial' | 'free' | 'grace_period';
   readonly message?: string;
 }
 
@@ -18,141 +18,142 @@ export interface ReleaseInfo {
 }
 
 /**
- * Checks if user is eligible to install a specific update
- *
- * @param release - The release to check eligibility for
- * @param state - Current license state
- * @returns Update eligibility result
+ * Checks if user is eligible to install updates
+ * In subscription model: active subscribers always get updates
  */
 export function checkUpdateEligibility(
-  release: ReleaseInfo,
+  _release: ReleaseInfo,
   state: AppLicenseState
 ): UpdateEligibility {
-  // Trial users can always update
-  if (state.status === 'trial') {
-    return {
-      eligible: true,
-      reason: 'trial',
-    };
-  }
-
-  // Unlicensed users cannot update
-  if (state.status === 'unlicensed') {
-    return {
-      eligible: false,
-      reason: 'unlicensed',
-      message: 'Purchase a license to receive updates.',
-    };
-  }
-
-  // Licensed users (active or active_expired)
-  if (state.status === 'active' || state.status === 'active_expired') {
-    if (!state.license) {
-      return {
-        eligible: false,
-        reason: 'unlicensed',
-        message: 'License data not found.',
-      };
-    }
-
-    const releaseDate = new Date(release.releaseDate);
-    const updatesUntil = new Date(state.license.updatesUntil);
-
-    // Check if release date is before or on the updatesUntil date
-    if (releaseDate <= updatesUntil) {
+  switch (state.status) {
+    case 'trial':
       return {
         eligible: true,
-        reason: 'licensed',
+        reason: 'trial',
+        message: 'Trial includes all updates',
       };
-    }
 
-    // Release is after license coverage expired
-    return {
-      eligible: false,
-      reason: 'release_after_expiry',
-      message: `This version was released after your update coverage expired. Renew to get updates.`,
-    };
+    case 'pro_active':
+      return {
+        eligible: true,
+        reason: 'subscribed',
+        message: 'Your subscription includes all updates',
+      };
+
+    case 'pro_grace':
+      return {
+        eligible: true,
+        reason: 'grace_period',
+        message: 'Please update your payment method to continue receiving updates',
+      };
+
+    case 'free':
+    case 'pro_expired':
+      return {
+        eligible: false,
+        reason: 'free',
+        message: 'Subscribe to Pro to receive updates',
+      };
+
+    default:
+      return {
+        eligible: false,
+        reason: 'free',
+        message: 'Unknown status',
+      };
   }
-
-  // Fallback
-  return {
-    eligible: false,
-    reason: 'unlicensed',
-    message: 'Unknown license state.',
-  };
 }
 
 /**
- * Checks if updates are expiring soon (within 30 days)
- *
- * @param state - Current license state
- * @param warningDays - Days before expiry to warn (default 30)
- * @param now - Current date (for testing)
- * @returns True if updates are expiring soon
+ * Checks if subscription is ending soon
  */
-export function isUpdatesExpiringSoon(
+export function isSubscriptionEndingSoon(
   state: AppLicenseState,
-  warningDays: number = 30,
+  warningDays: number = 7,
   now: Date = new Date()
 ): boolean {
-  if (state.status !== 'active' || !state.license) {
+  if (state.status !== 'pro_active' || !state.subscription) {
     return false;
   }
 
-  const updatesUntil = new Date(state.license.updatesUntil);
+  // Only warn if subscription is set to cancel at period end
+  if (!state.subscription.cancelAtPeriodEnd) {
+    return false;
+  }
+
+  const periodEnd = new Date(state.subscription.currentPeriodEnd);
   const msPerDay = 24 * 60 * 60 * 1000;
-  const daysRemaining = Math.floor((updatesUntil.getTime() - now.getTime()) / msPerDay);
+  const daysRemaining = Math.floor((periodEnd.getTime() - now.getTime()) / msPerDay);
 
   return daysRemaining > 0 && daysRemaining <= warningDays;
 }
 
 /**
- * Gets number of days until updates expire
- *
- * @param state - Current license state
- * @param now - Current date (for testing)
- * @returns Days until expiry (negative if already expired, null if not licensed)
+ * Gets days until subscription period ends
  */
-export function getDaysUntilUpdatesExpire(
+export function getDaysUntilPeriodEnd(
   state: AppLicenseState,
   now: Date = new Date()
 ): number | null {
-  if ((state.status !== 'active' && state.status !== 'active_expired') || !state.license) {
+  if (!state.subscription) {
     return null;
   }
 
-  const updatesUntil = new Date(state.license.updatesUntil);
+  const periodEnd = new Date(state.subscription.currentPeriodEnd);
   const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.floor((updatesUntil.getTime() - now.getTime()) / msPerDay);
+  return Math.floor((periodEnd.getTime() - now.getTime()) / msPerDay);
 }
 
 /**
- * Formats a user-friendly message about update status
- *
- * @param state - Current license state
- * @param now - Current date (for testing)
- * @returns Human-readable status message
+ * Formats a user-friendly message about subscription status
  */
 export function getUpdateStatusMessage(state: AppLicenseState, now: Date = new Date()): string {
   switch (state.status) {
-    case 'trial':
-      return 'Trial mode - updates included';
-
-    case 'unlicensed':
-      return 'Unlicensed - purchase to receive updates';
-
-    case 'active': {
-      const days = getDaysUntilUpdatesExpire(state, now);
-      if (days !== null && days <= 30) {
-        return `Updates expire in ${days} day${days !== 1 ? 's' : ''}`;
-      }
-      return 'Updates included';
+    case 'trial': {
+      const days = state.trial?.daysRemaining ?? 0;
+      return `Trial - ${days} day${days !== 1 ? 's' : ''} remaining`;
     }
 
-    case 'active_expired':
-      return 'Update coverage expired - renew to get latest versions';
+    case 'pro_active': {
+      if (state.subscription?.cancelAtPeriodEnd) {
+        const days = getDaysUntilPeriodEnd(state, now);
+        return `Pro (canceling) - ${days} day${days !== 1 ? 's' : ''} remaining`;
+      }
+      return 'Pro - Updates included';
+    }
+
+    case 'pro_grace':
+      return 'Pro - Payment required';
+
+    case 'pro_expired':
+      return 'Subscription ended - using Free tier';
+
+    case 'free':
+      return 'Free tier - Subscribe to Pro for updates';
 
     default:
       return 'Unknown status';
   }
+}
+
+// ============================================
+// LEGACY EXPORTS (for backwards compatibility)
+// ============================================
+
+/**
+ * @deprecated No longer relevant in subscription model
+ */
+export function isUpdatesExpiringSoon(
+  _state: AppLicenseState,
+  _warningDays?: number,
+  _now?: Date
+): boolean {
+  return false;
+}
+
+/**
+ * @deprecated No longer relevant in subscription model
+ */
+export function getDaysUntilUpdatesExpire(_state: AppLicenseState, _now?: Date): number | null {
+  return null;
 }

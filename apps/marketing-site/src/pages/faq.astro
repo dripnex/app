@@ -26,10 +26,11 @@ const faqs = [
   {
     category: 'Pricing',
     questions: [
-      { q: 'How much does Readied cost?', a: `${PRICING.license.label} one-time payment. You own the app forever.` },
-      { q: 'Is there a subscription option?', a: 'No. One-time purchases align incentives better. We make money when you buy, not when you stay locked in.' },
-      { q: 'What about updates?', a: `${PRICING.updatesPeriodMonths} months of updates included. After that, ${PRICING.renewal.label} for continued updates. Your app keeps working regardless.` },
+      { q: 'How much does Readied cost?', a: `Free tier is free forever. Pro is ${PRICING.pro.monthly.label} or ${PRICING.pro.annual.label} (${PRICING.pro.annual.savings} off).` },
+      { q: 'Is there a free tier?', a: GUARANTEES.freeTierForever.description },
+      { q: 'Can I try Pro before subscribing?', a: `Yes! ${PRICING.trial.description}. No credit card needed.` },
       { q: 'What about refunds?', a: GUARANTEES.refund.description },
+      { q: 'Can I cancel anytime?', a: GUARANTEES.cancelAnytime.description },
     ]
   },
   {
@@ -37,7 +38,7 @@ const faqs = [
     questions: [
       { q: 'What platforms are supported?', a: 'macOS 11+ (Apple Silicon and Intel) and Windows 10+ (64-bit).' },
       { q: 'Can I export my data?', a: 'Your data is already Markdown files on your disk. Nothing to export. Open them with any editor.' },
-      { q: 'What if Readied stops being developed?', a: GUARANTEES.perpetual.description },
+      { q: 'What if Readied stops being developed?', a: GUARANTEES.freeTierForever.description },
       { q: 'Is the source code available?', a: 'Yes, the source is available on GitHub for transparency. The license is source-available, not open-source.' },
     ]
   }

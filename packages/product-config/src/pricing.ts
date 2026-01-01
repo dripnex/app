@@ -1,24 +1,39 @@
 /**
  * Readied pricing configuration
- * Single source of truth for all pricing displayed in marketing and app
+ * Freemium + Pro Subscription model
  */
 
 export const PRICING = {
-  license: {
-    amount: 79,
+  free: {
+    amount: 0,
     currency: 'USD',
-    label: '$79',
-    type: 'one-time' as const,
-    description: 'One-time payment, own the app forever',
+    label: 'Free',
+    description: 'Local notes, offline forever',
   },
-  renewal: {
-    amount: 39,
-    currency: 'USD',
-    label: '$39/year',
-    type: 'annual' as const,
-    description: 'For continued updates. App keeps working regardless.',
+  pro: {
+    monthly: {
+      amount: 2.99,
+      currency: 'USD',
+      label: '$2.99/mo',
+      interval: 'month' as const,
+      description: 'Billed monthly',
+    },
+    annual: {
+      amount: 29,
+      currency: 'USD',
+      label: '$29/year',
+      interval: 'year' as const,
+      monthlyEquivalent: 2.42,
+      savings: '19%',
+      description: 'Save 19% with annual billing',
+    },
   },
-  updatesPeriodMonths: 12,
+  trial: {
+    days: 14,
+    tier: 'pro' as const,
+    description: '14-day Pro trial, no credit card required',
+  },
 } as const;
 
 export type PricingConfig = typeof PRICING;
+export type BillingInterval = 'month' | 'year';

@@ -45,11 +45,9 @@ import {
   INBOX_NOTEBOOK_ID,
 } from '@readied/core';
 import {
-  parseLicenseFile,
   computeLicenseState,
   startTrial,
-  needsTrialStart,
-  createStoredLicenseData,
+  canStartTrial,
   type LicenseStorage,
   type StoredTrialData,
   type StoredLicenseData,
@@ -634,73 +632,41 @@ function registerLicenseHandlers(): void {
   const storage = licenseStorage;
 
   // Get current license state
+  // In subscription model: trial data is local, subscription data comes from server (not implemented yet)
   ipcMain.handle('license:getState', async (): Promise<AppLicenseState> => {
     let trialData = await storage.readTrialData();
-    const licenseData = await storage.readLicenseData();
 
-    // Auto-start trial if needed
-    if (needsTrialStart(trialData, licenseData)) {
+    // Auto-start trial if user hasn't started one yet
+    // Note: In subscription model, canStartTrial checks if trial hasn't started and no active subscription
+    if (canStartTrial(trialData, null)) {
       trialData = startTrial();
       await storage.writeTrialData(trialData);
       loggers.license().info('Trial started automatically');
     }
 
-    return computeLicenseState(trialData, licenseData);
+    // Compute state from trial data only (subscription verification not implemented yet)
+    // Once subscription system is ready, we'll pass subscription data as second parameter
+    return computeLicenseState(trialData, null);
   });
 
-  // Activate license from content
-  ipcMain.handle(
-    'license:activate',
-    async (_event, content: string): Promise<{ success: boolean; error?: string }> => {
-      const result = await parseLicenseFile(content);
+  // Start trial manually (if not auto-started)
+  ipcMain.handle('license:startTrial', async (): Promise<{ success: boolean; error?: string }> => {
+    const trialData = await storage.readTrialData();
 
-      if (!result.valid || !result.license) {
-        return { success: false, error: result.error ?? 'Invalid license' };
-      }
-
-      const storedData = createStoredLicenseData(result.license);
-      await storage.writeLicenseData(storedData);
-
-      loggers.license().info({ licenseId: result.license.licenseId }, 'License activated');
-      return { success: true };
-    }
-  );
-
-  // Import license file via dialog
-  ipcMain.handle('license:importFile', async (): Promise<{ success: boolean; error?: string }> => {
-    const { filePaths, canceled } = await dialog.showOpenDialog({
-      title: 'Import License',
-      filters: [{ name: 'License Files', extensions: ['json'] }],
-      properties: ['openFile'],
-      buttonLabel: 'Import',
-    });
-
-    if (canceled || !filePaths[0]) {
-      return { success: false, error: 'Cancelled' };
+    if (!canStartTrial(trialData, null)) {
+      return { success: false, error: 'Trial already started or subscription active' };
     }
 
-    try {
-      const content = await readFile(filePaths[0], 'utf-8');
-      const result = await parseLicenseFile(content);
-
-      if (!result.valid || !result.license) {
-        return { success: false, error: result.error ?? 'Invalid license' };
-      }
-
-      const storedData = createStoredLicenseData(result.license);
-      await storage.writeLicenseData(storedData);
-
-      loggers.license().info({ licenseId: result.license.licenseId }, 'License imported');
-      return { success: true };
-    } catch {
-      return { success: false, error: 'Failed to read license file' };
-    }
+    const newTrialData = startTrial();
+    await storage.writeTrialData(newTrialData);
+    loggers.license().info('Trial started manually');
+    return { success: true };
   });
 
-  // Deactivate license (for debug/testing)
-  ipcMain.handle('license:deactivate', async (): Promise<{ success: boolean }> => {
-    await storage.removeLicenseData();
-    loggers.license().info('License deactivated');
+  // Open subscription page (placeholder for future)
+  ipcMain.handle('license:openSubscribe', async (): Promise<{ success: boolean }> => {
+    // TODO: Open browser to subscription page when payment system is ready
+    loggers.license().info('Subscription page requested (not implemented yet)');
     return { success: true };
   });
 }

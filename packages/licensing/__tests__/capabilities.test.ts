@@ -6,10 +6,25 @@ import {
   hasFullAccess,
   shouldShowUpgradeBanner,
   shouldShowRenewalNotice,
+  isTrialEndingSoon,
   ALL_CAPABILITIES,
-  UNLICENSED_CAPABILITIES,
+  FREE_CAPABILITIES,
+  PRO_CAPABILITIES,
 } from '../src/capabilities.js';
-import type { AppLicenseState, Capability } from '../src/types.js';
+import type { AppLicenseState, SubscriptionInfo } from '../src/types.js';
+
+// Helper to create a subscription
+const createSubscription = (overrides: Partial<SubscriptionInfo> = {}): SubscriptionInfo => ({
+  subscriptionId: 'sub_123',
+  customerId: 'cus_123',
+  email: 'test@example.com',
+  plan: 'monthly',
+  status: 'active',
+  currentPeriodStart: '2025-01-01',
+  currentPeriodEnd: '2026-01-01',
+  cancelAtPeriodEnd: false,
+  ...overrides,
+});
 
 describe('capabilities', () => {
   describe('hasCapability', () => {
@@ -21,56 +36,56 @@ describe('capabilities', () => {
       }
     });
 
-    it('unlicensed has only basic capabilities', () => {
-      const state: AppLicenseState = { status: 'unlicensed' };
+    it('free has only basic capabilities', () => {
+      const state: AppLicenseState = { status: 'free' };
 
+      // Free tier capabilities
       expect(hasCapability('notes.basic', state)).toBe(true);
+      expect(hasCapability('notes.unlimited', state)).toBe(true); // Free has unlimited local notes
       expect(hasCapability('search.basic', state)).toBe(true);
       expect(hasCapability('export.markdown', state)).toBe(true);
+      expect(hasCapability('import.folder', state)).toBe(true);
 
-      expect(hasCapability('notes.unlimited', state)).toBe(false);
+      // Pro-only capabilities
+      expect(hasCapability('sync.cloud', state)).toBe(false);
       expect(hasCapability('links.backlinks', state)).toBe(false);
       expect(hasCapability('graph.view', state)).toBe(false);
+      expect(hasCapability('search.advanced', state)).toBe(false);
     });
 
-    it('active license has its capabilities', () => {
+    it('pro_active has all capabilities', () => {
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: ['notes.basic', 'notes.unlimited', 'graph.view'],
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription(),
       };
 
-      expect(hasCapability('notes.basic', state)).toBe(true);
-      expect(hasCapability('notes.unlimited', state)).toBe(true);
-      expect(hasCapability('graph.view', state)).toBe(true);
-      expect(hasCapability('links.backlinks', state)).toBe(false);
-    });
-
-    it('active_expired still has all capabilities', () => {
-      const state: AppLicenseState = {
-        status: 'active_expired',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2025-06-01',
-          plan: 'pro',
-          capabilities: ALL_CAPABILITIES as Capability[],
-          updatesExpired: true,
-        },
-      };
-
-      // Features still work even after updates expire
       for (const cap of ALL_CAPABILITIES) {
         expect(hasCapability(cap, state)).toBe(true);
       }
+    });
+
+    it('pro_grace still has all capabilities', () => {
+      const state: AppLicenseState = {
+        status: 'pro_grace',
+        subscription: createSubscription({ status: 'past_due' }),
+      };
+
+      for (const cap of ALL_CAPABILITIES) {
+        expect(hasCapability(cap, state)).toBe(true);
+      }
+    });
+
+    it('pro_expired falls back to free capabilities', () => {
+      const state: AppLicenseState = { status: 'pro_expired' };
+
+      // Free tier capabilities still work
+      expect(hasCapability('notes.basic', state)).toBe(true);
+      expect(hasCapability('notes.unlimited', state)).toBe(true);
+
+      // Pro capabilities are lost
+      expect(hasCapability('sync.cloud', state)).toBe(false);
+      expect(hasCapability('links.backlinks', state)).toBe(false);
+      expect(hasCapability('graph.view', state)).toBe(false);
     });
   });
 
@@ -80,26 +95,30 @@ describe('capabilities', () => {
       expect(getAvailableCapabilities(state)).toEqual(ALL_CAPABILITIES);
     });
 
-    it('unlicensed returns basic capabilities', () => {
-      const state: AppLicenseState = { status: 'unlicensed' };
-      expect(getAvailableCapabilities(state)).toEqual(UNLICENSED_CAPABILITIES);
+    it('free returns free capabilities', () => {
+      const state: AppLicenseState = { status: 'free' };
+      expect(getAvailableCapabilities(state)).toEqual(FREE_CAPABILITIES);
     });
 
-    it('active returns license capabilities', () => {
-      const caps: readonly Capability[] = ['notes.basic', 'graph.view'];
+    it('pro_active returns all capabilities', () => {
       const state: AppLicenseState = {
-        status: 'active',
-        license: {
-          licenseId: 'lic_123',
-          issuedTo: 'test@example.com',
-          purchaseDate: '2025-01-01',
-          updatesUntil: '2026-01-01',
-          plan: 'pro',
-          capabilities: caps,
-          updatesExpired: false,
-        },
+        status: 'pro_active',
+        subscription: createSubscription(),
       };
-      expect(getAvailableCapabilities(state)).toEqual(caps);
+      expect(getAvailableCapabilities(state)).toEqual(PRO_CAPABILITIES);
+    });
+
+    it('pro_grace returns all capabilities', () => {
+      const state: AppLicenseState = {
+        status: 'pro_grace',
+        subscription: createSubscription({ status: 'past_due' }),
+      };
+      expect(getAvailableCapabilities(state)).toEqual(PRO_CAPABILITIES);
+    });
+
+    it('pro_expired returns free capabilities', () => {
+      const state: AppLicenseState = { status: 'pro_expired' };
+      expect(getAvailableCapabilities(state)).toEqual(FREE_CAPABILITIES);
     });
   });
 
@@ -109,14 +128,32 @@ describe('capabilities', () => {
       expect(getLockedCapabilities(state)).toEqual([]);
     });
 
-    it('unlicensed has many locked capabilities', () => {
-      const state: AppLicenseState = { status: 'unlicensed' };
+    it('pro_active has no locked capabilities', () => {
+      const state: AppLicenseState = {
+        status: 'pro_active',
+        subscription: createSubscription(),
+      };
+      expect(getLockedCapabilities(state)).toEqual([]);
+    });
+
+    it('free has pro-only capabilities locked', () => {
+      const state: AppLicenseState = { status: 'free' };
       const locked = getLockedCapabilities(state);
 
-      expect(locked).toContain('notes.unlimited');
+      expect(locked).toContain('sync.cloud');
       expect(locked).toContain('links.backlinks');
       expect(locked).toContain('graph.view');
+      expect(locked).toContain('search.advanced');
       expect(locked).not.toContain('notes.basic');
+      expect(locked).not.toContain('notes.unlimited');
+    });
+
+    it('pro_expired has pro-only capabilities locked', () => {
+      const state: AppLicenseState = { status: 'pro_expired' };
+      const locked = getLockedCapabilities(state);
+
+      expect(locked).toContain('sync.cloud');
+      expect(locked).toContain('links.backlinks');
     });
   });
 
@@ -125,109 +162,133 @@ describe('capabilities', () => {
       expect(hasFullAccess({ status: 'trial' })).toBe(true);
     });
 
-    it('active has full access', () => {
+    it('pro_active has full access', () => {
       expect(
         hasFullAccess({
-          status: 'active',
-          license: {
-            licenseId: 'lic_123',
-            issuedTo: 'test@example.com',
-            purchaseDate: '2025-01-01',
-            updatesUntil: '2026-01-01',
-            plan: 'pro',
-            capabilities: [],
-            updatesExpired: false,
-          },
+          status: 'pro_active',
+          subscription: createSubscription(),
         })
       ).toBe(true);
     });
 
-    it('active_expired has full access', () => {
+    it('pro_grace has full access', () => {
       expect(
         hasFullAccess({
-          status: 'active_expired',
-          license: {
-            licenseId: 'lic_123',
-            issuedTo: 'test@example.com',
-            purchaseDate: '2025-01-01',
-            updatesUntil: '2025-06-01',
-            plan: 'pro',
-            capabilities: [],
-            updatesExpired: true,
-          },
+          status: 'pro_grace',
+          subscription: createSubscription({ status: 'past_due' }),
         })
       ).toBe(true);
     });
 
-    it('unlicensed does not have full access', () => {
-      expect(hasFullAccess({ status: 'unlicensed' })).toBe(false);
+    it('free does not have full access', () => {
+      expect(hasFullAccess({ status: 'free' })).toBe(false);
+    });
+
+    it('pro_expired does not have full access', () => {
+      expect(hasFullAccess({ status: 'pro_expired' })).toBe(false);
     });
   });
 
   describe('shouldShowUpgradeBanner', () => {
-    it('shows for unlicensed', () => {
-      expect(shouldShowUpgradeBanner({ status: 'unlicensed' })).toBe(true);
+    it('shows for free', () => {
+      expect(shouldShowUpgradeBanner({ status: 'free' })).toBe(true);
+    });
+
+    it('shows for pro_expired', () => {
+      expect(shouldShowUpgradeBanner({ status: 'pro_expired' })).toBe(true);
     });
 
     it('does not show for trial', () => {
       expect(shouldShowUpgradeBanner({ status: 'trial' })).toBe(false);
     });
 
-    it('does not show for active', () => {
+    it('does not show for pro_active', () => {
       expect(
         shouldShowUpgradeBanner({
-          status: 'active',
-          license: {
-            licenseId: 'lic_123',
-            issuedTo: 'test@example.com',
-            purchaseDate: '2025-01-01',
-            updatesUntil: '2026-01-01',
-            plan: 'pro',
-            capabilities: [],
-            updatesExpired: false,
-          },
+          status: 'pro_active',
+          subscription: createSubscription(),
+        })
+      ).toBe(false);
+    });
+
+    it('does not show for pro_grace', () => {
+      expect(
+        shouldShowUpgradeBanner({
+          status: 'pro_grace',
+          subscription: createSubscription({ status: 'past_due' }),
         })
       ).toBe(false);
     });
   });
 
   describe('shouldShowRenewalNotice', () => {
-    it('shows for active_expired', () => {
+    it('shows for pro_grace (past due)', () => {
       expect(
         shouldShowRenewalNotice({
-          status: 'active_expired',
-          license: {
-            licenseId: 'lic_123',
-            issuedTo: 'test@example.com',
-            purchaseDate: '2025-01-01',
-            updatesUntil: '2025-06-01',
-            plan: 'pro',
-            capabilities: [],
-            updatesExpired: true,
-          },
+          status: 'pro_grace',
+          subscription: createSubscription({ status: 'past_due' }),
         })
       ).toBe(true);
     });
 
-    it('does not show for active', () => {
+    it('does not show for pro_active', () => {
       expect(
         shouldShowRenewalNotice({
-          status: 'active',
-          license: {
-            licenseId: 'lic_123',
-            issuedTo: 'test@example.com',
-            purchaseDate: '2025-01-01',
-            updatesUntil: '2026-01-01',
-            plan: 'pro',
-            capabilities: [],
-            updatesExpired: false,
-          },
+          status: 'pro_active',
+          subscription: createSubscription(),
         })
       ).toBe(false);
     });
 
-    it('does not show for unlicensed', () => {
-      expect(shouldShowRenewalNotice({ status: 'unlicensed' })).toBe(false);
+    it('does not show for free', () => {
+      expect(shouldShowRenewalNotice({ status: 'free' })).toBe(false);
+    });
+
+    it('does not show for pro_expired', () => {
+      expect(shouldShowRenewalNotice({ status: 'pro_expired' })).toBe(false);
+    });
+  });
+
+  describe('isTrialEndingSoon', () => {
+    it('returns true when trial has 3 or fewer days left', () => {
+      const state: AppLicenseState = {
+        status: 'trial',
+        trial: {
+          startDate: '2025-01-01',
+          daysRemaining: 2,
+          isExpired: false,
+        },
+      };
+      expect(isTrialEndingSoon(state)).toBe(true);
+    });
+
+    it('returns false when trial has more than 3 days left', () => {
+      const state: AppLicenseState = {
+        status: 'trial',
+        trial: {
+          startDate: '2025-01-01',
+          daysRemaining: 10,
+          isExpired: false,
+        },
+      };
+      expect(isTrialEndingSoon(state)).toBe(false);
+    });
+
+    it('returns false for non-trial states', () => {
+      expect(isTrialEndingSoon({ status: 'free' })).toBe(false);
+      expect(isTrialEndingSoon({ status: 'pro_active' })).toBe(false);
+    });
+
+    it('returns false when trial is expired', () => {
+      const state: AppLicenseState = {
+        status: 'trial',
+        trial: {
+          startDate: '2025-01-01',
+          daysRemaining: 0,
+          isExpired: true,
+        },
+      };
+      expect(isTrialEndingSoon(state)).toBe(false);
     });
   });
 });
