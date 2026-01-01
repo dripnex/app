@@ -1,5 +1,8 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { getProductConfig } from '@readied/product-config';
+
+const config = getProductConfig();
 ---
 
 <section class="cta-section">
@@ -16,19 +19,19 @@ import { Icon } from 'astro-icon/components';
         <div class="cta-actions">
           <a href="/download" class="btn btn-primary btn-lg" data-magnetic="0.2">
             <Icon name="lucide:download" size={20} />
-            Start 14-day trial
+            Start {config.trialDays}-day trial
           </a>
           <a href="/pricing" class="btn btn-ghost btn-lg" data-magnetic="0.2">View pricing</a>
         </div>
 
         <div class="trust-signals" data-stagger="100">
           <div class="signal glass hover-float">
-            <span class="signal-value" data-counter="79" data-counter-prefix="$">$0</span>
-            <span class="signal-label">One-time payment</span>
+            <span class="signal-value">Free</span>
+            <span class="signal-label">forever</span>
           </div>
           <div class="signal glass hover-float">
-            <span class="signal-value" data-counter="14">0</span>
-            <span class="signal-label">days free trial</span>
+            <span class="signal-value" data-counter={config.trialDays}>0</span>
+            <span class="signal-label">days Pro trial</span>
           </div>
           <div class="signal glass hover-float">
             <span class="signal-value" data-counter="100" data-counter-suffix="%">0%</span>
