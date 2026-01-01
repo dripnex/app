@@ -5,16 +5,28 @@ export default defineConfig({
   description: 'Technical documentation for Readied - Markdown-first, offline-forever note app',
   base: '/readide/',
 
-  head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
+  head: [
+    ['link', { rel: 'icon', href: '/readide/logo.svg' }],
+    ['meta', { name: 'theme-color', content: '#0d9488' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'Readied Documentation' }],
+    ['meta', { property: 'og:description', content: 'Markdown-first, offline-forever note app for developers' }],
+    ['meta', { property: 'og:image', content: '/readide/logo.svg' }],
+  ],
 
   themeConfig: {
     logo: '/logo.svg',
+    siteTitle: 'Readied',
 
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Architecture', link: '/architecture/overview' },
       { text: 'Decisions', link: '/decisions/' },
       { text: 'Roadmap', link: '/roadmap/mvp' },
+      {
+        text: 'Releases',
+        link: 'https://github.com/tomymaritano/readide/releases',
+      },
     ],
 
     sidebar: {
@@ -66,12 +78,27 @@ export default defineConfig({
     socialLinks: [{ icon: 'github', link: 'https://github.com/tomymaritano/readide' }],
 
     footer: {
-      message: 'Released under the MIT License.',
+      message: 'Released under the MIT License. <a href="https://github.com/tomymaritano/readide/issues/new" target="_blank">Report an issue</a>',
       copyright: 'Copyright © 2025 Readied',
     },
 
     search: {
       provider: 'local',
     },
+
+    editLink: {
+      pattern: 'https://github.com/tomymaritano/readide/edit/main/apps/docs-site/:path',
+      text: 'Edit this page on GitHub',
+    },
+
+    lastUpdated: {
+      text: 'Updated at',
+      formatOptions: {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      },
+    },
   },
+
+  lastUpdated: true,
 });
