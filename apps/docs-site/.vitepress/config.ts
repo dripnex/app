@@ -90,8 +90,8 @@ export default defineConfig({
 
     footer: {
       message:
-        'Released under the MIT License. <a href="https://github.com/tomymaritano/readide/issues/new" target="_blank">Report an issue</a>',
-      copyright: 'Copyright © 2025 Readied',
+        '<a href="https://github.com/tomymaritano/readide/issues/new" target="_blank">Report an issue</a>',
+      copyright: 'Copyright © 2025 Readied. All Rights Reserved.',
     },
 
     search: {
