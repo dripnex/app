@@ -1,5 +1,8 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { getProductConfig } from '@readied/product-config';
+
+const config = getProductConfig();
 ---
 
 <section class="hero" id="hero-bg">
@@ -52,7 +55,7 @@ import { Icon } from 'astro-icon/components';
           <span class="meta-divider">·</span>
           <span class="meta-item">macOS 12+ & Windows 10+</span>
           <span class="meta-divider">·</span>
-          <span class="meta-item">14-day free trial</span>
+          <span class="meta-item">{config.trialDays}-day free trial</span>
         </div>
       </div>
 

@@ -86,6 +86,32 @@ cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 3. `pnpm typecheck` — Validate TypeScript
 4. `pnpm build && pnpm --filter @readied/desktop dist:mac` — Build for production
 
+## Pricing/Copy Changes
+
+**Source of Truth:** `packages/product-config/src/facade.ts`
+
+All pricing, plans, and guarantees live in ONE place. Marketing pages consume it.
+
+**Golden Rule:** If the business model changes, one PR must touch:
+
+1. `packages/product-config/src/facade.ts` — Update SoT
+2. Marketing pages that consume facade — Auto-updated via import
+3. `terms.astro` + `privacy.astro` — Align vocabulary manually
+
+**Pages consuming facade:**
+
+- `pricing.astro` ✅
+- `faq.astro` ✅
+- `Hero.astro` ✅
+- `Audience.astro` ✅
+
+**Legal pages checklist (before merge):**
+
+- [ ] Model matches facade? (free vs subscription)
+- [ ] "Free tier" and "Pro" used consistently?
+- [ ] Trial days = `config.trialDays`?
+- [ ] Refund days = 14?
+
 ## Documentation
 
 - **Architecture decisions:** `plan.md`
