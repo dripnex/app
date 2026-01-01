@@ -1,18 +1,23 @@
-// Types
+// Types (subscription model)
 export type {
-  LicenseFile,
   Capability,
   LicenseStatus,
+  BillingInterval,
   TrialState,
-  ActiveLicense,
+  SubscriptionInfo,
   AppLicenseState,
-  ValidationResult,
   StoredTrialData,
+  StoredSubscriptionData,
+  VerificationResult,
+  // Legacy types (deprecated)
+  LicenseFile,
+  ActiveLicense,
+  ValidationResult,
   StoredLicenseData,
   PublicKeyConfig,
 } from './types.js';
 
-// Validation
+// Validation (legacy - kept for backwards compatibility)
 export { validateLicense, parseLicenseFile, signLicense, generateKeyPair } from './validator.js';
 
 // Trial
@@ -31,26 +36,32 @@ export {
 export {
   ALL_CAPABILITIES,
   TRIAL_CAPABILITIES,
-  UNLICENSED_CAPABILITIES,
+  FREE_CAPABILITIES,
   PRO_CAPABILITIES,
+  // Legacy alias
+  UNLICENSED_CAPABILITIES,
   hasCapability,
   getAvailableCapabilities,
   getLockedCapabilities,
   hasFullAccess,
   shouldShowUpgradeBanner,
   shouldShowRenewalNotice,
+  isTrialEndingSoon,
 } from './capabilities.js';
 
 // Updates
 export type { UpdateEligibility, ReleaseInfo } from './updates.js';
 export {
   checkUpdateEligibility,
+  isSubscriptionEndingSoon,
+  getDaysUntilPeriodEnd,
+  getUpdateStatusMessage,
+  // Legacy functions (deprecated - always return false/null)
   isUpdatesExpiringSoon,
   getDaysUntilUpdatesExpire,
-  getUpdateStatusMessage,
 } from './updates.js';
 
-// Storage
+// Storage (legacy - kept for backwards compatibility)
 export type { LicenseStorage } from './storage.js';
 export {
   InMemoryLicenseStorage,
@@ -61,7 +72,10 @@ export {
 // State
 export {
   computeLicenseState,
-  createUnlicensedState,
+  createFreeState,
   createTrialState,
+  canStartTrial,
+  // Legacy aliases (deprecated)
+  createUnlicensedState,
   needsTrialStart,
 } from './state.js';
