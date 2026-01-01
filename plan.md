@@ -878,13 +878,13 @@ Non-goals reviewed at major versions:
 
 ### 18.1 Pricing Model
 
-| Decision  | Choice                      | Rationale                                 |
-| --------- | --------------------------- | ----------------------------------------- |
-| Model     | **Freemium + Subscription** | Free tier guarantees app always works     |
-| Free      | $0 forever                  | Core features, unlimited notes, local-only|
-| Pro       | $2.99/mo or $29/year        | Sync, priority support, early access      |
-| Trial     | 14 days, Pro features       | Let users evaluate Pro properly           |
-| Processor | Lemon Squeezy               | Handles VAT, subscriptions                |
+| Decision  | Choice                      | Rationale                                  |
+| --------- | --------------------------- | ------------------------------------------ |
+| Model     | **Freemium + Subscription** | Free tier guarantees app always works      |
+| Free      | $0 forever                  | Core features, unlimited notes, local-only |
+| Pro       | $2.99/mo or $29/year        | Sync, priority support, early access       |
+| Trial     | 14 days, Pro features       | Let users evaluate Pro properly            |
+| Processor | Lemon Squeezy               | Handles VAT, subscriptions                 |
 
 **Why this model:**
 
@@ -923,10 +923,7 @@ Cancel anytime → revert to Free tier
 
 ```typescript
 // In capability check (renderer or main)
-function hasCapability(
-  capability: string,
-  license: LicenseState
-): boolean {
+function hasCapability(capability: string, license: LicenseState): boolean {
   // Free tier capabilities are always available
   const freeCapabilities = [
     'notes.unlimited',
