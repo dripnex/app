@@ -2,7 +2,11 @@
 import Base from '../layouts/Base.astro';
 import Footer from '../components/Footer.astro';
 import { Icon } from 'astro-icon/components';
-import { PRICING, TRIAL, GUARANTEES, URLS } from '@readied/product-config';
+import { getProductConfig, URLS } from '@readied/product-config';
+
+const config = getProductConfig();
+const { plans, guarantees, trialDescription } = config;
+const proPricing = plans.pro.pricing!;
 
 const faqs = [
   {
@@ -26,11 +30,11 @@ const faqs = [
   {
     category: 'Pricing',
     questions: [
-      { q: 'How much does Readied cost?', a: `Free tier is free forever. Pro is ${PRICING.pro.monthly.label} or ${PRICING.pro.annual.label} (${PRICING.pro.annual.savings} off).` },
-      { q: 'Is there a free tier?', a: GUARANTEES.freeTierForever.description },
-      { q: 'Can I try Pro before subscribing?', a: `Yes! ${PRICING.trial.description}. No credit card needed.` },
-      { q: 'What about refunds?', a: GUARANTEES.refund.description },
-      { q: 'Can I cancel anytime?', a: GUARANTEES.cancelAnytime.description },
+      { q: 'How much does Readied cost?', a: `Free tier is free forever. Pro is ${proPricing.intervals.monthly.label} or ${proPricing.intervals.annual.label} (${proPricing.annualSavings} off).` },
+      { q: 'Is there a free tier?', a: guarantees.freeTierForever.description },
+      { q: 'Can I try Pro before subscribing?', a: `Yes! ${trialDescription}. No credit card needed.` },
+      { q: 'What about refunds?', a: guarantees.refund.description },
+      { q: 'Can I cancel anytime?', a: guarantees.cancelAnytime.description },
     ]
   },
   {
@@ -38,7 +42,7 @@ const faqs = [
     questions: [
       { q: 'What platforms are supported?', a: 'macOS 11+ (Apple Silicon and Intel) and Windows 10+ (64-bit).' },
       { q: 'Can I export my data?', a: 'Your data is already Markdown files on your disk. Nothing to export. Open them with any editor.' },
-      { q: 'What if Readied stops being developed?', a: GUARANTEES.freeTierForever.description },
+      { q: 'What if Readied stops being developed?', a: guarantees.freeTierForever.description },
       { q: 'Is the source code available?', a: 'Yes, the source is available on GitHub for transparency. The license is source-available, not open-source.' },
     ]
   }
