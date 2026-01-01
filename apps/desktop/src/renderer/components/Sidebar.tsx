@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { NotebookTree } from './NotebookTree';
 
 interface SidebarProps {
@@ -20,9 +21,7 @@ export function Sidebar({ onNewNote, selectedNotebookId, onSelectNotebook }: Sid
           onClick={onNewNote}
           aria-label="Create new note (⌘N)"
         >
-          <span className="icon" aria-hidden="true">
-            +
-          </span>
+          <Plus size={16} aria-hidden="true" />
           New Note
         </button>
       </nav>
