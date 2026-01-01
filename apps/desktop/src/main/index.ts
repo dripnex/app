@@ -20,7 +20,12 @@ import {
   detectImportType,
   type DataPaths,
 } from '@readied/storage-core';
-import { createDatabase, allMigrations, SQLiteNoteRepository } from '@readied/storage-sqlite';
+import {
+  createDatabase,
+  allMigrations,
+  SQLiteNoteRepository,
+  SQLiteNotebookRepository,
+} from '@readied/storage-sqlite';
 import {
   createNoteOperation,
   updateNoteOperation,
@@ -29,8 +34,16 @@ import {
   archiveNoteOperation,
   restoreNoteOperation,
   duplicateNoteOperation,
+  moveNoteToNotebook,
 } from '@readied/core';
-import { createNoteId } from '@readied/core';
+import {
+  createNoteId,
+  createNotebookId,
+  createNotebook,
+  renameNotebook,
+  moveNotebook,
+  INBOX_NOTEBOOK_ID,
+} from '@readied/core';
 import {
   parseLicenseFile,
   computeLicenseState,
@@ -47,6 +60,7 @@ import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
 let noteRepository: SQLiteNoteRepository | null = null;
+let notebookRepository: SQLiteNotebookRepository | null = null;
 let dataPaths: DataPaths | null = null;
 let licenseStorage: FileLicenseStorage | null = null;
 
@@ -117,6 +131,7 @@ function initDatabase(): void {
   db = createDatabase(dataPaths.database);
   runMigrations(db, allMigrations);
   noteRepository = new SQLiteNoteRepository(db);
+  notebookRepository = new SQLiteNotebookRepository(db);
 
   dbLog.info('Database initialized');
 }
@@ -202,6 +217,33 @@ function registerIpcHandlers(): void {
     return duplicateNoteOperation({ id: noteId }, repo);
   });
 
+  // Move note to notebook
+  ipcMain.handle('notes:move', async (_event, noteId: string, notebookId: string) => {
+    const note = await repo.get(createNoteId(noteId));
+    if (!note) {
+      return { ok: false, error: { type: 'NOT_FOUND', id: noteId } };
+    }
+
+    const movedNote = moveNoteToNotebook(note, createNotebookId(notebookId));
+    await repo.save(movedNote);
+
+    return {
+      ok: true,
+      data: {
+        id: movedNote.id,
+        notebookId: movedNote.notebookId,
+        content: movedNote.content,
+        title: movedNote.metadata.title,
+        createdAt: movedNote.metadata.createdAt,
+        updatedAt: movedNote.metadata.updatedAt,
+        tags: [...movedNote.metadata.tags],
+        wordCount: movedNote.metadata.wordCount,
+        archivedAt: movedNote.metadata.archivedAt,
+        isArchived: movedNote.metadata.archivedAt !== null,
+      },
+    };
+  });
+
   // List notes
   ipcMain.handle(
     'notes:list',
@@ -220,6 +262,7 @@ function registerIpcHandlers(): void {
       // Return as snapshots (serialize for IPC)
       return notes.map(note => ({
         id: note.id,
+        notebookId: note.notebookId,
         content: note.content,
         title: note.metadata.title,
         createdAt: note.metadata.createdAt,
@@ -237,6 +280,7 @@ function registerIpcHandlers(): void {
     const notes = await repo.search(query, limit);
     return notes.map(note => ({
       id: note.id,
+      notebookId: note.notebookId,
       content: note.content,
       title: note.metadata.title,
       createdAt: note.metadata.createdAt,
@@ -258,6 +302,183 @@ function registerIpcHandlers(): void {
     const [active, archived] = await Promise.all([repo.count(false), repo.countArchived()]);
     return { active, archived, total: active + archived };
   });
+}
+
+/** Register IPC handlers for notebooks CRUD */
+function registerNotebookHandlers(): void {
+  if (!notebookRepository) {
+    throw new Error('Notebook repository not initialized');
+  }
+
+  const repo = notebookRepository;
+
+  // List all notebooks
+  ipcMain.handle('notebooks:list', async () => {
+    const notebooks = await repo.getAll();
+    return notebooks.map(nb => ({
+      id: nb.id,
+      name: nb.name,
+      parentId: nb.parentId,
+      depth: nb.depth,
+      order: nb.order,
+      createdAt: nb.createdAt,
+      updatedAt: nb.updatedAt,
+    }));
+  });
+
+  // Get notebook tree
+  ipcMain.handle('notebooks:tree', async () => {
+    return repo.getTree();
+  });
+
+  // Get single notebook
+  ipcMain.handle('notebooks:get', async (_event, id: string) => {
+    const notebook = await repo.get(createNotebookId(id));
+    if (!notebook) return null;
+    return {
+      id: notebook.id,
+      name: notebook.name,
+      parentId: notebook.parentId,
+      depth: notebook.depth,
+      order: notebook.order,
+      createdAt: notebook.createdAt,
+      updatedAt: notebook.updatedAt,
+    };
+  });
+
+  // Get notebook with metadata
+  ipcMain.handle('notebooks:getWithMetadata', async (_event, id: string) => {
+    const notebook = await repo.getWithMetadata(createNotebookId(id));
+    if (!notebook) return null;
+    return {
+      id: notebook.id,
+      name: notebook.name,
+      parentId: notebook.parentId,
+      depth: notebook.depth,
+      order: notebook.order,
+      createdAt: notebook.createdAt,
+      updatedAt: notebook.updatedAt,
+      noteCount: notebook.noteCount,
+      childCount: notebook.childCount,
+    };
+  });
+
+  // Create notebook
+  ipcMain.handle('notebooks:create', async (_event, input: { name: string; parentId?: string }) => {
+    let parentDepth = 0;
+    if (input.parentId) {
+      const parent = await repo.get(createNotebookId(input.parentId));
+      if (parent) {
+        parentDepth = parent.depth;
+      }
+    }
+
+    const nextOrder = await repo.getNextOrder(
+      input.parentId ? createNotebookId(input.parentId) : null
+    );
+
+    const notebook = createNotebook({
+      name: input.name,
+      parentId: input.parentId ? createNotebookId(input.parentId) : null,
+      parentDepth,
+      order: nextOrder,
+    });
+
+    await repo.save(notebook);
+
+    return {
+      id: notebook.id,
+      name: notebook.name,
+      parentId: notebook.parentId,
+      depth: notebook.depth,
+      order: notebook.order,
+      createdAt: notebook.createdAt,
+      updatedAt: notebook.updatedAt,
+    };
+  });
+
+  // Rename notebook
+  ipcMain.handle('notebooks:rename', async (_event, id: string, name: string) => {
+    const notebook = await repo.get(createNotebookId(id));
+    if (!notebook) {
+      throw new Error('Notebook not found');
+    }
+
+    const updated = renameNotebook(notebook, name);
+    await repo.save(updated);
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      parentId: updated.parentId,
+      depth: updated.depth,
+      order: updated.order,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+  });
+
+  // Move notebook
+  ipcMain.handle('notebooks:move', async (_event, id: string, newParentId: string | null) => {
+    const notebook = await repo.get(createNotebookId(id));
+    if (!notebook) {
+      throw new Error('Notebook not found');
+    }
+
+    let newParentDepth = 0;
+    if (newParentId) {
+      const parent = await repo.get(createNotebookId(newParentId));
+      if (parent) {
+        newParentDepth = parent.depth;
+      }
+    }
+
+    const result = moveNotebook(
+      notebook,
+      newParentId ? createNotebookId(newParentId) : null,
+      newParentDepth
+    );
+
+    if (!result.success) {
+      throw new Error(result.reason);
+    }
+
+    await repo.save(result.notebook);
+
+    return {
+      id: result.notebook.id,
+      name: result.notebook.name,
+      parentId: result.notebook.parentId,
+      depth: result.notebook.depth,
+      order: result.notebook.order,
+      createdAt: result.notebook.createdAt,
+      updatedAt: result.notebook.updatedAt,
+    };
+  });
+
+  // Delete notebook
+  ipcMain.handle('notebooks:delete', async (_event, id: string) => {
+    const notebookId = createNotebookId(id);
+
+    if (notebookId === INBOX_NOTEBOOK_ID) {
+      throw new Error('Cannot delete Inbox notebook');
+    }
+
+    await repo.delete(notebookId);
+    return { success: true };
+  });
+
+  // Reorder notebooks within a parent
+  ipcMain.handle(
+    'notebooks:reorder',
+    async (_event, parentId: string | null, orderedIds: string[]) => {
+      await repo.reorder(
+        parentId ? createNotebookId(parentId) : null,
+        orderedIds.map(id => createNotebookId(id))
+      );
+      return { success: true };
+    }
+  );
 }
 
 /** Register IPC handlers for data management (backup, export, import) */
@@ -595,39 +816,46 @@ function initAutoUpdater(): void {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
-  // Initialize data paths first (creates directories)
-  dataPaths = initDataPaths();
+app
+  .whenReady()
+  .then(() => {
+    // Initialize data paths first (creates directories)
+    dataPaths = initDataPaths();
 
-  // Initialize logger (must be after dataPaths)
-  const log = initLogger({
-    logsDir: dataPaths.logs,
-    level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-    isDevelopment: process.env.NODE_ENV === 'development',
+    // Initialize logger (must be after dataPaths)
+    const log = initLogger({
+      logsDir: dataPaths.logs,
+      level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+      isDevelopment: process.env.NODE_ENV === 'development',
+    });
+    log.info({ dataDir: dataPaths.root }, 'Application starting');
+
+    // Initialize database and handlers
+    initDatabase();
+    registerIpcHandlers();
+    registerNotebookHandlers();
+    registerDataHandlers();
+
+    // Initialize license storage and handlers
+    licenseStorage = new FileLicenseStorage(dataPaths.root);
+    registerLicenseHandlers();
+    registerLogHandlers();
+    log.info('All IPC handlers registered');
+
+    // Create window and start auto-updater
+    createWindow();
+    initAutoUpdater();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  })
+  .catch(err => {
+    console.error('Failed to initialize app:', err);
+    app.quit();
   });
-  log.info({ dataDir: dataPaths.root }, 'Application starting');
-
-  // Initialize database and handlers
-  initDatabase();
-  registerIpcHandlers();
-  registerDataHandlers();
-
-  // Initialize license storage and handlers
-  licenseStorage = new FileLicenseStorage(dataPaths.root);
-  registerLicenseHandlers();
-  registerLogHandlers();
-  log.info('All IPC handlers registered');
-
-  // Create window and start auto-updater
-  createWindow();
-  initAutoUpdater();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

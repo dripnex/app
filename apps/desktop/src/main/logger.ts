@@ -1,13 +1,14 @@
 /**
  * Logger Module for Electron Main Process
  *
- * Provides structured logging with pino to file and console.
- * Log rotation is handled by pino-roll.
+ * Provides structured logging with pino.
+ * Uses synchronous logging to avoid worker thread complexity with electron-vite.
  */
 
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { app } from 'electron';
-import pino, { type Logger, type TransportTargetOptions } from 'pino';
+import pino, { type Logger } from 'pino';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -26,31 +27,6 @@ let logger: Logger | null = null;
 export function initLogger(config: LoggerConfig): Logger {
   const { logsDir, level, isDevelopment } = config;
 
-  // File transport configuration using pino-roll
-  const fileTransport: TransportTargetOptions = {
-    target: 'pino-roll',
-    options: {
-      file: join(logsDir, 'readied'),
-      frequency: 'daily',
-      limit: { count: 7 },
-      size: '10m',
-      mkdir: true,
-      extension: '.log',
-    },
-    level,
-  };
-
-  // Console transport for development
-  const consoleTransport: TransportTargetOptions = {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
-    },
-    level,
-  };
-
   const baseConfig = {
     app: 'readied',
     version: app.getVersion(),
@@ -58,28 +34,30 @@ export function initLogger(config: LoggerConfig): Logger {
   };
 
   if (isDevelopment) {
-    // Development: both console (pretty) and file
-    logger = pino(
-      {
-        level,
-        base: baseConfig,
-        timestamp: pino.stdTimeFunctions.isoTime,
-      },
-      pino.transport({
-        targets: [consoleTransport, fileTransport],
-      })
-    );
+    // Development: synchronous JSON output to stdout
+    // Readable and doesn't require worker threads
+    logger = pino({
+      level,
+      base: baseConfig,
+      timestamp: pino.stdTimeFunctions.isoTime,
+    });
   } else {
-    // Production: file only
+    // Production: synchronous file output
+    // Create logs directory if needed
+    if (!existsSync(logsDir)) {
+      mkdirSync(logsDir, { recursive: true });
+    }
+
+    const logFile = join(logsDir, `readied-${new Date().toISOString().split('T')[0]}.log`);
+    const stream = createWriteStream(logFile, { flags: 'a' });
+
     logger = pino(
       {
         level,
         base: baseConfig,
         timestamp: pino.stdTimeFunctions.isoTime,
       },
-      pino.transport({
-        targets: [fileTransport],
-      })
+      stream
     );
   }
 

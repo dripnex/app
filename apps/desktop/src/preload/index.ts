@@ -14,6 +14,7 @@ export type Result<T> =
 /** Note snapshot from the API */
 export interface NoteSnapshot {
   id: string;
+  notebookId: string;
   content: string;
   title: string;
   createdAt: string;
@@ -23,6 +24,32 @@ export interface NoteSnapshot {
   archivedAt: string | null;
   isArchived: boolean;
 }
+
+/** Notebook snapshot from the API */
+export interface NotebookSnapshot {
+  id: string;
+  name: string;
+  parentId: string | null;
+  depth: number;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Notebook with metadata (note/child counts) */
+export interface NotebookWithMetadata extends NotebookSnapshot {
+  noteCount: number;
+  childCount: number;
+}
+
+/** Notebook tree node */
+export interface NotebookTreeNode {
+  notebook: NotebookSnapshot;
+  children: NotebookTreeNode[];
+}
+
+/** Notebook tree (array of root nodes) */
+export type NotebookTree = NotebookTreeNode[];
 
 /** List options */
 export interface ListOptions {
@@ -118,6 +145,8 @@ export interface ReadiedAPI {
     restore: (id: string) => Promise<Result<NoteSnapshot>>;
     /** Duplicate a note */
     duplicate: (id: string) => Promise<Result<NoteSnapshot>>;
+    /** Move note to a different notebook */
+    move: (noteId: string, notebookId: string) => Promise<Result<NoteSnapshot>>;
     /** List notes */
     list: (options?: ListOptions) => Promise<NoteSnapshot[]>;
     /** Search notes */
@@ -126,6 +155,26 @@ export interface ReadiedAPI {
     tags: () => Promise<string[]>;
     /** Get note counts */
     count: () => Promise<NoteCounts>;
+  };
+  notebooks: {
+    /** List all notebooks (flat) */
+    list: () => Promise<NotebookSnapshot[]>;
+    /** Get notebook tree */
+    tree: () => Promise<NotebookTree>;
+    /** Get a notebook by ID */
+    get: (id: string) => Promise<NotebookSnapshot | null>;
+    /** Get a notebook with metadata */
+    getWithMetadata: (id: string) => Promise<NotebookWithMetadata | null>;
+    /** Create a new notebook */
+    create: (input: { name: string; parentId?: string }) => Promise<NotebookSnapshot>;
+    /** Rename a notebook */
+    rename: (id: string, name: string) => Promise<NotebookSnapshot>;
+    /** Move a notebook to a new parent */
+    move: (id: string, newParentId: string | null) => Promise<NotebookSnapshot>;
+    /** Delete a notebook (notes move to Inbox) */
+    delete: (id: string) => Promise<{ success: boolean }>;
+    /** Reorder notebooks within a parent */
+    reorder: (parentId: string | null, orderedIds: string[]) => Promise<{ success: boolean }>;
   };
   data: {
     /** Create a backup of the database */
@@ -181,10 +230,23 @@ const api: ReadiedAPI = {
     archive: id => ipcRenderer.invoke('notes:archive', id),
     restore: id => ipcRenderer.invoke('notes:restore', id),
     duplicate: id => ipcRenderer.invoke('notes:duplicate', id),
+    move: (noteId, notebookId) => ipcRenderer.invoke('notes:move', noteId, notebookId),
     list: options => ipcRenderer.invoke('notes:list', options),
     search: (query, limit) => ipcRenderer.invoke('notes:search', query, limit),
     tags: () => ipcRenderer.invoke('notes:tags'),
     count: () => ipcRenderer.invoke('notes:count'),
+  },
+  notebooks: {
+    list: () => ipcRenderer.invoke('notebooks:list'),
+    tree: () => ipcRenderer.invoke('notebooks:tree'),
+    get: id => ipcRenderer.invoke('notebooks:get', id),
+    getWithMetadata: id => ipcRenderer.invoke('notebooks:getWithMetadata', id),
+    create: input => ipcRenderer.invoke('notebooks:create', input),
+    rename: (id, name) => ipcRenderer.invoke('notebooks:rename', id, name),
+    move: (id, newParentId) => ipcRenderer.invoke('notebooks:move', id, newParentId),
+    delete: id => ipcRenderer.invoke('notebooks:delete', id),
+    reorder: (parentId, orderedIds) =>
+      ipcRenderer.invoke('notebooks:reorder', parentId, orderedIds),
   },
   data: {
     backup: () => ipcRenderer.invoke('data:backup'),

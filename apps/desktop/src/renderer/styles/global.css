@@ -151,6 +151,63 @@ body {
   border-right: 1px solid var(--border);
 }
 
+/* Breadcrumb navigation */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.breadcrumb-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.breadcrumb-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.breadcrumb-item.current {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.breadcrumb-icon {
+  font-size: 11px;
+}
+
+.breadcrumb-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumb-separator {
+  color: var(--text-faint);
+  margin: 0 2px;
+}
+
 /* Search bar */
 .note-list-search {
   padding: 12px;
@@ -425,6 +482,69 @@ input:focus-visible {
   background: var(--danger-muted);
   color: var(--danger);
   border-color: var(--danger);
+}
+
+/* Move dropdown */
+.action-btn-container {
+  position: relative;
+}
+
+.move-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  padding: 4px 0;
+}
+
+.move-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.move-dropdown-item:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.move-dropdown-item.current {
+  color: var(--accent);
+}
+
+.move-dropdown-item .notebook-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.move-dropdown-item .notebook-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.move-dropdown-item .current-mark {
+  font-size: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 /* Note Editor */
@@ -905,4 +1025,253 @@ input:focus-visible {
   background: var(--bg-elevated);
   border-color: var(--border-strong);
   color: var(--text-primary);
+}
+
+/* ============================================
+   Notebook Tree
+   ============================================ */
+
+.sidebar-notebooks {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-app-region: no-drag;
+}
+
+.notebook-tree {
+  padding: 8px 0;
+}
+
+.notebook-tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 4px;
+}
+
+.notebook-tree-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.notebook-tree-add {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.notebook-tree-add:hover {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+
+.notebook-tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notebook-tree-item {
+  list-style: none;
+}
+
+.notebook-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  margin: 0 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.notebook-tree-node:hover {
+  background: var(--bg-elevated);
+}
+
+.notebook-tree-node.selected {
+  background: var(--accent-muted);
+}
+
+.notebook-tree-toggle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 8px;
+}
+
+.notebook-tree-toggle:hover {
+  color: var(--text-primary);
+}
+
+.notebook-tree-toggle .chevron {
+  transition: transform var(--transition-fast);
+}
+
+.notebook-tree-spacer {
+  width: 16px;
+}
+
+.notebook-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.notebook-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notebook-tree-node.selected .notebook-name {
+  color: var(--accent);
+}
+
+.notebook-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.notebook-tree-node:hover .notebook-actions {
+  opacity: 1;
+}
+
+.notebook-action-btn {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+}
+
+.notebook-action-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.notebook-action-delete:hover {
+  color: var(--danger);
+}
+
+.notebook-tree-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notebook-edit-form {
+  flex: 1;
+  display: flex;
+}
+
+.notebook-edit-input {
+  flex: 1;
+  padding: 2px 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+}
+
+.notebook-create-form {
+  padding: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.notebook-create-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.notebook-create-input:focus {
+  border-color: var(--accent);
+}
+
+.notebook-create-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notebook-create-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.notebook-create-btn:not(.cancel) {
+  background: var(--accent);
+  border: none;
+  color: var(--bg-base);
+}
+
+.notebook-create-btn:not(.cancel):hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.notebook-create-btn:not(.cancel):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notebook-create-btn.cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.notebook-create-btn.cancel:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.notebook-tree-loading {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
 }
