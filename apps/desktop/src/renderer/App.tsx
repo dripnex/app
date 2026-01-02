@@ -16,6 +16,7 @@ import {
   useNavigationActions,
   useSortBy,
   useSortOrder,
+  useStatusFilter,
 } from './hooks/useNavigation';
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
@@ -44,6 +45,7 @@ function NotesApp() {
   const selectedTag = useSelectedTag();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
+  const statusFilter = useStatusFilter();
   const { goToAllNotes, goToTag, setSort } = useNavigationActions();
 
   // Editor preferences
@@ -200,9 +202,14 @@ function NotesApp() {
     async (status: NoteStatus) => {
       if (!selectedNote) return;
       const updated = await setNoteStatus.mutateAsync({ id: selectedNote.id, status });
-      setSelectedNote(updated);
+      // If there's a status filter active and the note no longer matches, deselect it
+      if (statusFilter && status !== statusFilter) {
+        setSelectedNote(null);
+      } else {
+        setSelectedNote(updated);
+      }
     },
-    [selectedNote, setNoteStatus]
+    [selectedNote, setNoteStatus, statusFilter]
   );
 
   // Keyboard shortcuts

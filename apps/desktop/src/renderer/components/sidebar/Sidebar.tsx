@@ -6,6 +6,7 @@ import {
   useNavigationActions,
   useGlobalCounts,
   useDisplayedNotesCount,
+  useStatusFilter,
 } from '../../hooks/useNavigation';
 import { SidebarBreadcrumb } from './SidebarBreadcrumb';
 import { SidebarQuickFilters } from './SidebarQuickFilters';
@@ -28,6 +29,7 @@ export function Sidebar() {
   const globalFilter = useGlobalFilter();
   const globalCounts = useGlobalCounts();
   const displayedNotesCount = useDisplayedNotesCount();
+  const statusFilter = useStatusFilter();
 
   // Actions
   const {
@@ -81,7 +83,7 @@ export function Sidebar() {
       <SidebarSection title="Status" collapsible defaultCollapsed>
         <StatusFilters
           counts={globalCounts.byStatus}
-          selectedStatus={null}
+          selectedStatus={statusFilter}
           onSelectStatus={setStatusFilter}
         />
       </SidebarSection>
