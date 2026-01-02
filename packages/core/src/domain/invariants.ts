@@ -17,7 +17,8 @@ export const MIN_CONTENT_LENGTH = 0;
 export type ValidationError =
   | { type: 'CONTENT_TOO_LARGE'; maxSize: number; actualSize: number }
   | { type: 'INVALID_ID'; reason: string }
-  | { type: 'INVALID_CONTENT'; reason: string };
+  | { type: 'INVALID_CONTENT'; reason: string }
+  | { type: 'INVALID_TITLE'; reason: string };
 
 /** Result of validating a note */
 export type ValidationResult = { valid: true } | { valid: false; error: ValidationError };
@@ -76,6 +77,30 @@ export function validateContent(content: string): ValidationResult {
   }
 
   return validateContentSize(content);
+}
+
+/** Maximum title length */
+export const MAX_TITLE_LENGTH = 255;
+
+/** Validates a title */
+export function validateTitle(title: string): ValidationResult {
+  const trimmed = title.trim();
+
+  if (trimmed.length === 0) {
+    return {
+      valid: false,
+      error: { type: 'INVALID_TITLE', reason: 'Title cannot be empty' },
+    };
+  }
+
+  if (trimmed.length > MAX_TITLE_LENGTH) {
+    return {
+      valid: false,
+      error: { type: 'INVALID_TITLE', reason: `Title cannot exceed ${MAX_TITLE_LENGTH} characters` },
+    };
+  }
+
+  return { valid: true };
 }
 
 /** Validates an entire note */
