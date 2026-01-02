@@ -2,7 +2,7 @@
  * CodeMirror 6 Markdown Editor
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { EditorState, type Extension } from '@codemirror/state';
 import {
   EditorView,
@@ -22,6 +22,22 @@ import {
   bracketMatching,
 } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import {
+  toggleBold,
+  toggleItalic,
+  toggleStrikethrough,
+  toggleInlineCode,
+  insertLink,
+  insertHeading,
+  insertUnorderedList,
+  insertOrderedList,
+  insertCheckbox,
+  insertQuote,
+  insertCodeBlock,
+  insertHorizontalRule,
+  undoChange,
+  redoChange,
+} from './editor/toolbar-commands';
 
 /** Dark theme matching Readied's design */
 const darkTheme = EditorView.theme(
@@ -126,111 +142,219 @@ interface MarkdownEditorProps {
   initialContent: string;
   onChange: (content: string) => void;
   placeholder?: string;
+  onReady?: () => void;
 }
 
-export function MarkdownEditor({
-  initialContent,
-  onChange,
-  placeholder = 'Start writing...',
-}: MarkdownEditorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
-  const onChangeRef = useRef(onChange);
+/** Imperative handle exposed via ref */
+export interface MarkdownEditorHandle {
+  focus: () => void;
+  // Formatting commands
+  toggleBold: () => void;
+  toggleItalic: () => void;
+  toggleStrikethrough: () => void;
+  toggleInlineCode: () => void;
+  insertLink: () => void;
+  insertHeading: (level?: 1 | 2 | 3 | 4 | 5 | 6) => void;
+  insertUnorderedList: () => void;
+  insertOrderedList: () => void;
+  insertCheckbox: () => void;
+  insertQuote: () => void;
+  insertCodeBlock: () => void;
+  insertHorizontalRule: () => void;
+  undo: () => void;
+  redo: () => void;
+  // Scroll sync
+  getScrollFraction: () => number;
+  setScrollFraction: (fraction: number) => void;
+  onScroll: (callback: (fraction: number) => void) => () => void;
+  canScroll: () => boolean;
+}
 
-  // Keep onChange ref updated
-  onChangeRef.current = onChange;
+export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
+  function MarkdownEditor({ initialContent, onChange, placeholder = 'Start writing...', onReady }, ref) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const viewRef = useRef<EditorView | null>(null);
+    const onChangeRef = useRef(onChange);
 
-  // Create extensions
-  const createExtensions = useCallback((): Extension[] => {
-    return [
-      // Line numbers
-      lineNumbers(),
+    // Expose methods via ref
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        viewRef.current?.focus();
+      },
+      toggleBold: () => {
+        if (viewRef.current) toggleBold(viewRef.current);
+      },
+      toggleItalic: () => {
+        if (viewRef.current) toggleItalic(viewRef.current);
+      },
+      toggleStrikethrough: () => {
+        if (viewRef.current) toggleStrikethrough(viewRef.current);
+      },
+      toggleInlineCode: () => {
+        if (viewRef.current) toggleInlineCode(viewRef.current);
+      },
+      insertLink: () => {
+        if (viewRef.current) insertLink(viewRef.current);
+      },
+      insertHeading: (level: 1 | 2 | 3 | 4 | 5 | 6 = 2) => {
+        if (viewRef.current) insertHeading(viewRef.current, level);
+      },
+      insertUnorderedList: () => {
+        if (viewRef.current) insertUnorderedList(viewRef.current);
+      },
+      insertOrderedList: () => {
+        if (viewRef.current) insertOrderedList(viewRef.current);
+      },
+      insertCheckbox: () => {
+        if (viewRef.current) insertCheckbox(viewRef.current);
+      },
+      insertQuote: () => {
+        if (viewRef.current) insertQuote(viewRef.current);
+      },
+      insertCodeBlock: () => {
+        if (viewRef.current) insertCodeBlock(viewRef.current);
+      },
+      insertHorizontalRule: () => {
+        if (viewRef.current) insertHorizontalRule(viewRef.current);
+      },
+      undo: () => {
+        if (viewRef.current) undoChange(viewRef.current);
+      },
+      redo: () => {
+        if (viewRef.current) redoChange(viewRef.current);
+      },
+      getScrollFraction: () => {
+        const view = viewRef.current;
+        if (!view) return 0;
+        const scroller = view.scrollDOM;
+        const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+        return maxScroll > 0 ? scroller.scrollTop / maxScroll : 0;
+      },
+      canScroll: () => {
+        const view = viewRef.current;
+        if (!view) return false;
+        const scroller = view.scrollDOM;
+        return scroller.scrollHeight > scroller.clientHeight + 1;
+      },
+      setScrollFraction: (fraction: number) => {
+        const view = viewRef.current;
+        if (!view) return;
+        const scroller = view.scrollDOM;
+        const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+        scroller.scrollTop = fraction * maxScroll;
+      },
+      onScroll: (callback: (fraction: number) => void) => {
+        const view = viewRef.current;
+        if (!view) return () => {};
+        const scroller = view.scrollDOM;
+        const handler = () => {
+          const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+          const fraction = maxScroll > 0 ? scroller.scrollTop / maxScroll : 0;
+          callback(fraction);
+        };
+        scroller.addEventListener('scroll', handler);
+        return () => scroller.removeEventListener('scroll', handler);
+      },
+    }));
 
-      // Active line highlighting
-      highlightActiveLine(),
-      highlightActiveLineGutter(),
+    // Keep onChange ref updated
+    onChangeRef.current = onChange;
 
-      // Selection
-      drawSelection(),
+    // Create extensions
+    const createExtensions = useCallback((): Extension[] => {
+      return [
+        // Line numbers
+        lineNumbers(),
 
-      // History (undo/redo)
-      history(),
+        // Active line highlighting
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
 
-      // Bracket matching
-      bracketMatching(),
+        // Selection
+        drawSelection(),
 
-      // Auto indent
-      indentOnInput(),
+        // History (undo/redo)
+        history(),
 
-      // Keymaps
-      keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        // Bracket matching
+        bracketMatching(),
 
-      // Markdown language with nested code highlighting
-      markdown({
-        base: markdownLanguage,
-        codeLanguages: languages,
-      }),
+        // Auto indent
+        indentOnInput(),
 
-      // Syntax highlighting
-      syntaxHighlighting(markdownHighlighting),
+        // Keymaps
+        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
 
-      // Dark theme
-      darkTheme,
+        // Markdown language with nested code highlighting
+        markdown({
+          base: markdownLanguage,
+          codeLanguages: languages,
+        }),
 
-      // Placeholder
-      EditorView.contentAttributes.of({ 'data-placeholder': placeholder }),
+        // Syntax highlighting
+        syntaxHighlighting(markdownHighlighting),
 
-      // Update listener
-      EditorView.updateListener.of(update => {
-        if (update.docChanged) {
-          const content = update.state.doc.toString();
-          onChangeRef.current(content);
-        }
-      }),
-    ];
-  }, [placeholder]);
+        // Dark theme
+        darkTheme,
 
-  // Initialize editor
-  useEffect(() => {
-    if (!containerRef.current) return;
+        // Placeholder
+        EditorView.contentAttributes.of({ 'data-placeholder': placeholder }),
 
-    const state = EditorState.create({
-      doc: initialContent,
-      extensions: createExtensions(),
-    });
+        // Update listener
+        EditorView.updateListener.of(update => {
+          if (update.docChanged) {
+            const content = update.state.doc.toString();
+            onChangeRef.current(content);
+          }
+        }),
+      ];
+    }, [placeholder]);
 
-    const view = new EditorView({
-      state,
-      parent: containerRef.current,
-    });
+    // Initialize editor
+    useEffect(() => {
+      if (!containerRef.current) return;
 
-    viewRef.current = view;
-
-    // Focus the editor
-    view.focus();
-
-    return () => {
-      view.destroy();
-      viewRef.current = null;
-    };
-  }, []); // Only run once on mount
-
-  // Update content when initialContent changes (new note selected)
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-
-    const currentContent = view.state.doc.toString();
-    if (currentContent !== initialContent) {
-      view.dispatch({
-        changes: {
-          from: 0,
-          to: view.state.doc.length,
-          insert: initialContent,
-        },
+      const state = EditorState.create({
+        doc: initialContent,
+        extensions: createExtensions(),
       });
-    }
-  }, [initialContent]);
 
-  return <div ref={containerRef} className="markdown-editor" />;
-}
+      const view = new EditorView({
+        state,
+        parent: containerRef.current,
+      });
+
+      viewRef.current = view;
+
+      // Focus the editor
+      view.focus();
+
+      // Notify parent that editor is ready
+      onReady?.();
+
+      return () => {
+        view.destroy();
+        viewRef.current = null;
+      };
+    }, []); // Only run once on mount
+
+    // Update content when initialContent changes (new note selected)
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+
+      const currentContent = view.state.doc.toString();
+      if (currentContent !== initialContent) {
+        view.dispatch({
+          changes: {
+            from: 0,
+            to: view.state.doc.length,
+            insert: initialContent,
+          },
+        });
+      }
+    }, [initialContent]);
+
+    return <div ref={containerRef} className="markdown-editor" />;
+  }
+);

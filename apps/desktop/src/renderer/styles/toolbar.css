@@ -1,0 +1,111 @@
+/**
+ * Formatting Toolbar Styles
+ */
+
+.formatting-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Button groups separated by dividers */
+.formatting-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.formatting-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 8px;
+}
+
+/* Individual toolbar button */
+.formatting-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.formatting-toolbar-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.formatting-toolbar-btn:active {
+  background: var(--bg-hover);
+  transform: scale(0.95);
+}
+
+.formatting-toolbar-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Button with text label (for heading dropdown) */
+.formatting-toolbar-btn--with-label {
+  width: auto;
+  padding: 0 10px;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Tooltip container */
+.formatting-toolbar-btn[title] {
+  position: relative;
+}
+
+/* Undo/Redo specific styling */
+.formatting-toolbar-btn--undo,
+.formatting-toolbar-btn--redo {
+  color: var(--text-muted);
+}
+
+.formatting-toolbar-btn--undo:hover,
+.formatting-toolbar-btn--redo:hover {
+  color: var(--text-secondary);
+}
+
+/* Active state for toggle buttons */
+.formatting-toolbar-btn.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+/* Disabled state */
+.formatting-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.formatting-toolbar-btn:disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
+/* Responsive: hide labels on small screens */
+@media (max-width: 800px) {
+  .formatting-toolbar-btn--with-label span {
+    display: none;
+  }
+
+  .formatting-toolbar-btn--with-label {
+    width: 32px;
+    padding: 0;
+  }
+}

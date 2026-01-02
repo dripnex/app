@@ -1,6 +1,12 @@
 import { useRef, useCallback, lazy, Suspense } from 'react';
 import { FileText } from 'lucide-react';
-import type { NoteSnapshot } from '../../preload/index';
+import { TitleInput } from './TitleInput';
+import { EditorHeader, EditorViewToggle, FormattingToolbar, MarkdownPreview } from './editor';
+import type { MarkdownPreviewHandle } from './editor';
+import type { MarkdownEditorHandle } from './MarkdownEditor';
+import type { NoteSnapshot, NoteStatus } from '../../preload/index';
+import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
+import { useScrollSync } from '../hooks/useScrollSync';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
@@ -19,10 +25,36 @@ function EditorLoading() {
 interface NoteEditorProps {
   note: NoteSnapshot | null;
   onUpdate: (content: string) => void;
+  onTitleUpdate?: (title: string) => void;
+  onMoveToNotebook?: (notebookId: string) => void;
+  onStatusChange?: (status: NoteStatus) => void;
 }
 
-export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
+export function NoteEditor({
+  note,
+  onUpdate,
+  onTitleUpdate,
+  onMoveToNotebook,
+  onStatusChange,
+}: NoteEditorProps) {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const editorRef = useRef<MarkdownEditorHandle | null>(null);
+  const previewRef = useRef<MarkdownPreviewHandle | null>(null);
+
+  // View mode from preferences store
+  const viewMode = useEditorPreferencesStore(state => state.viewMode);
+  const setViewMode = useEditorPreferencesStore(state => state.setViewMode);
+
+  const showEditor = viewMode === 'editor' || viewMode === 'split';
+  const showPreview = viewMode === 'preview' || viewMode === 'split';
+  const isSplitMode = viewMode === 'split';
+
+  // Scroll sync for split mode (see useScrollSync for architecture docs)
+  const { masterRef, handleEditorReady, handlePreviewReady } = useScrollSync({
+    isSplitMode,
+    editorRef,
+    previewRef,
+  });
 
   // Handle content change with debounce
   const handleChange = useCallback(
@@ -40,6 +72,19 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
     [onUpdate]
   );
 
+  // Handle title change
+  const handleTitleChange = useCallback(
+    (title: string) => {
+      onTitleUpdate?.(title);
+    },
+    [onTitleUpdate]
+  );
+
+  // Focus editor when Enter is pressed in title
+  const handleTitleEnter = useCallback(() => {
+    editorRef.current?.focus();
+  }, []);
+
   if (!note) {
     return (
       <main className="note-editor" aria-label="Note editor">
@@ -56,16 +101,58 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
 
   return (
     <main className="note-editor" aria-label="Note editor">
+      {onMoveToNotebook && onStatusChange && (
+        <EditorHeader
+          note={note}
+          onMoveToNotebook={onMoveToNotebook}
+          onStatusChange={onStatusChange}
+        />
+      )}
       <header className="note-editor-header">
-        <span className="note-editor-title">{note.title || 'Untitled'}</span>
+        <TitleInput
+          value={note.title}
+          onChange={handleTitleChange}
+          onEnter={handleTitleEnter}
+        />
         <span className="note-editor-meta" aria-label={`${note.wordCount} words`}>
           {note.wordCount} words
         </span>
       </header>
-      <div className="note-editor-body">
-        <Suspense fallback={<EditorLoading />}>
-          <MarkdownEditor key={note.id} initialContent={note.content} onChange={handleChange} />
-        </Suspense>
+      <div className="note-editor-toolbar-row">
+        <FormattingToolbar editorRef={editorRef} />
+        <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
+      </div>
+      <div className={`note-editor-body note-editor-body--${viewMode}`}>
+        {showEditor && (
+          <div
+            className="split-pane split-pane--editor"
+            onMouseEnter={() => { masterRef.current = 'editor'; }}
+          >
+            <Suspense fallback={<EditorLoading />}>
+              <MarkdownEditor
+                ref={editorRef}
+                key={note.id}
+                initialContent={note.content}
+                onChange={handleChange}
+                onReady={handleEditorReady}
+              />
+            </Suspense>
+          </div>
+        )}
+        {showPreview && (
+          <div
+            className="split-pane split-pane--preview"
+            onMouseEnter={() => { masterRef.current = 'preview'; }}
+          >
+            <MarkdownPreview
+              ref={previewRef}
+              content={note.content}
+              createdAt={note.createdAt}
+              updatedAt={note.updatedAt}
+              onReady={handlePreviewReady}
+            />
+          </div>
+        )}
       </div>
     </main>
   );
