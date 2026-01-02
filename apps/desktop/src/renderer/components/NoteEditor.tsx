@@ -139,6 +139,8 @@ export function NoteEditor({
         await window.readied.notes.setManualTags(note.id, updatedTags);
         // Invalidate tags query so sidebar updates
         queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+        // Invalidate notes list so NoteList updates immediately
+        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       } catch (error) {
         console.error('Failed to save manual tags:', error);
         // Revert on error
@@ -160,6 +162,8 @@ export function NoteEditor({
         await window.readied.notes.setManualTags(note.id, updatedTags);
         // Invalidate tags query so sidebar updates
         queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+        // Invalidate notes list so NoteList updates immediately
+        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       } catch (error) {
         console.error('Failed to save manual tags:', error);
         // Revert on error
