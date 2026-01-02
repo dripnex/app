@@ -1,4 +1,5 @@
-import { useRef, useCallback, lazy, Suspense } from 'react';
+import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
 import { TitleInput } from './TitleInput';
 import { EditorHeader, EditorViewToggle, FormattingToolbar, MarkdownPreview } from './editor';
@@ -7,6 +8,7 @@ import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { useScrollSync } from '../hooks/useScrollSync';
+import { noteKeys } from '../hooks/useNotes';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
@@ -37,6 +39,7 @@ export function NoteEditor({
   onMoveToNotebook,
   onStatusChange,
 }: NoteEditorProps) {
+  const queryClient = useQueryClient();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const previewRef = useRef<MarkdownPreviewHandle | null>(null);
@@ -44,6 +47,43 @@ export function NoteEditor({
   // View mode from preferences store
   const viewMode = useEditorPreferencesStore(state => state.viewMode);
   const setViewMode = useEditorPreferencesStore(state => state.setViewMode);
+
+  // Manual tags state (fetched separately, not in NoteSnapshot)
+  const [manualTags, setManualTags] = useState<string[]>([]);
+
+  // Merge note.tags with manualTags for display (deduplicated)
+  const displayTags = note
+    ? [...new Set([...note.tags, ...manualTags])].sort()
+    : [];
+
+  // Fetch manual tags when note changes
+  useEffect(() => {
+    if (!note) {
+      setManualTags([]);
+      return;
+    }
+
+    const noteId = note.id;
+    let cancelled = false;
+    async function loadManualTags() {
+      try {
+        const tags = await window.readied.notes.getManualTags(noteId);
+        if (!cancelled) {
+          setManualTags(tags);
+        }
+      } catch (error) {
+        console.error('Failed to load manual tags:', error);
+        if (!cancelled) {
+          setManualTags([]);
+        }
+      }
+    }
+    loadManualTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [note?.id]);
 
   const showEditor = viewMode === 'editor' || viewMode === 'split';
   const showPreview = viewMode === 'preview' || viewMode === 'split';
@@ -85,6 +125,50 @@ export function NoteEditor({
     editorRef.current?.focus();
   }, []);
 
+  // Handle adding a manual tag
+  const handleAddTag = useCallback(
+    async (tag: string) => {
+      if (!note) return;
+      const normalized = tag.trim().toLowerCase().replace(/^#/, '');
+      if (!normalized || manualTags.includes(normalized)) return;
+
+      const updatedTags = [...manualTags, normalized];
+      setManualTags(updatedTags);
+
+      try {
+        await window.readied.notes.setManualTags(note.id, updatedTags);
+        // Invalidate tags query so sidebar updates
+        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+      } catch (error) {
+        console.error('Failed to save manual tags:', error);
+        // Revert on error
+        setManualTags(manualTags);
+      }
+    },
+    [note, manualTags, queryClient]
+  );
+
+  // Handle removing a manual tag
+  const handleRemoveTag = useCallback(
+    async (tag: string) => {
+      if (!note) return;
+
+      const updatedTags = manualTags.filter(t => t !== tag);
+      setManualTags(updatedTags);
+
+      try {
+        await window.readied.notes.setManualTags(note.id, updatedTags);
+        // Invalidate tags query so sidebar updates
+        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+      } catch (error) {
+        console.error('Failed to save manual tags:', error);
+        // Revert on error
+        setManualTags(manualTags);
+      }
+    },
+    [note, manualTags, queryClient]
+  );
+
   if (!note) {
     return (
       <main className="note-editor" aria-label="Note editor">
@@ -104,8 +188,12 @@ export function NoteEditor({
       {onMoveToNotebook && onStatusChange && (
         <EditorHeader
           note={note}
+          tags={displayTags}
+          manualTags={manualTags}
           onMoveToNotebook={onMoveToNotebook}
           onStatusChange={onStatusChange}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
         />
       )}
       <header className="note-editor-header">

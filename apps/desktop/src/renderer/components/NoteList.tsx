@@ -19,6 +19,7 @@ import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
 import type { QuickFilterType } from './sidebar';
+import { useTagColorsStore } from '../stores/tagColorsStore';
 
 interface NoteListProps {
   notes: NoteWithExcerpt[];
@@ -311,6 +312,7 @@ function NoteListItem({
 }: NoteListItemProps) {
   const [showMoveDropdown, setShowMoveDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const getColor = useTagColorsStore(state => state.getColor);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -352,19 +354,29 @@ function NoteListItem({
         <span className="timestamp">{formatRelativeTime(note.updatedAt)}</span>
         {note.tags.length > 0 && (
           <span className="tags">
-            {note.tags.slice(0, 2).map(tag => (
-              <button
-                key={tag}
-                type="button"
-                className="tag-badge tag-badge-clickable"
-                onClick={e => {
-                  e.stopPropagation();
-                  onTagClick(tag);
-                }}
-              >
-                {tag}
-              </button>
-            ))}
+            {note.tags.slice(0, 2).map(tag => {
+              const color = getColor(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  className="tag-badge tag-badge-clickable"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onTagClick(tag);
+                  }}
+                >
+                  {color && (
+                    <span
+                      className="tag-badge-dot"
+                      style={{ backgroundColor: color }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  {tag}
+                </button>
+              );
+            })}
           </span>
         )}
       </div>

@@ -1,23 +1,102 @@
-import { Hash } from 'lucide-react';
-import { useTags } from '../../hooks/useNotes';
+import { useCallback, useState, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Hash, X, Circle } from 'lucide-react';
+import { useTags, noteKeys } from '../../hooks/useNotes';
 import { useNavigation, useNavigationActions } from '../../hooks/useNavigation';
+import { useTagColorsStore } from '../../stores/tagColorsStore';
+import { TagsContextMenu, TAG_COLORS } from './TagsContextMenu';
+
+/** Context menu state */
+interface ContextMenuState {
+  tag: string;
+  x: number;
+  y: number;
+}
+
+/**
+ * NOTE: Tag Persistence Model
+ *
+ * Tags are persistent entities that exist independently of notes.
+ * Deleting a tag here removes it from the system AND all note associations.
+ *
+ * CAVEAT: If a tag exists in note content (#tag), deleting it here will
+ * remove it from the system, but it will reappear when notes are re-parsed
+ * on the next save. This is expected behavior - content is the source of truth
+ * for content-extracted tags.
+ */
 
 interface TagsListProps {
   readonly onSelectTag: (tag: string) => void;
 }
 
 export function TagsList({ onSelectTag }: TagsListProps) {
+  const queryClient = useQueryClient();
   const { data: tags = [], isLoading } = useTags();
   const navigation = useNavigation();
-  const { goToTag } = useNavigationActions();
+  const { goToTag, goToAllNotes } = useNavigationActions();
+  const getColor = useTagColorsStore(state => state.getColor);
+  const setColor = useTagColorsStore(state => state.setColor);
+
+  // Color picker state
+  const [colorPickerTag, setColorPickerTag] = useState<string | null>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   // Get currently selected tag (if any)
   const selectedTag = navigation.kind === 'tag' ? navigation.name : null;
+
+  // Close color picker on click outside
+  useEffect(() => {
+    if (!colorPickerTag) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setColorPickerTag(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [colorPickerTag]);
 
   const handleTagClick = (tag: string) => {
     goToTag(tag);
     onSelectTag(tag);
   };
+
+  const handleColorDotClick = useCallback((e: React.MouseEvent, tag: string) => {
+    e.stopPropagation();
+    setColorPickerTag(prev => prev === tag ? null : tag);
+  }, []);
+
+  const handleColorSelect = useCallback(async (tag: string, color: string | null) => {
+    await setColor(tag, color);
+    setColorPickerTag(null);
+  }, [setColor]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, tag: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ tag, x: e.clientX, y: e.clientY });
+    setColorPickerTag(null); // Close any open color picker
+  }, []);
+
+  const handleDeleteTag = useCallback(
+    async (tag: string) => {
+      // If deleting the currently selected tag, navigate away
+      if (selectedTag === tag) {
+        goToAllNotes();
+      }
+      await window.readied.notes.deleteTag(tag);
+      // Invalidate tags query for sidebar
+      queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+      // Remove from colors cache (tag no longer exists)
+      useTagColorsStore.getState().removeTag(tag);
+    },
+    [selectedTag, goToAllNotes, queryClient]
+  );
 
   if (isLoading) {
     return (
@@ -37,19 +116,103 @@ export function TagsList({ onSelectTag }: TagsListProps) {
   }
 
   return (
+    <>
     <ul className="tags-list" role="listbox" aria-label="Tags">
-      {tags.map(tag => (
-        <li key={tag} role="option" aria-selected={tag === selectedTag}>
-          <button
-            type="button"
-            className={`tags-list-item ${tag === selectedTag ? 'selected' : ''}`}
-            onClick={() => handleTagClick(tag)}
+      {tags.map(tag => {
+        const color = getColor(tag);
+        const isColorPickerOpen = colorPickerTag === tag;
+
+        return (
+          <li
+            key={tag}
+            role="option"
+            aria-selected={tag === selectedTag}
+            className="tags-list-item-container"
+            onContextMenu={(e) => handleContextMenu(e, tag)}
           >
-            <Hash size={14} className="tags-list-item-icon" aria-hidden="true" />
-            <span className="tags-list-item-name">{tag}</span>
-          </button>
-        </li>
-      ))}
+            {/* Color dot button - always visible, opens color picker */}
+            <button
+              type="button"
+              className="tags-list-item-color-btn"
+              onClick={(e) => handleColorDotClick(e, tag)}
+              aria-label={`Set color for tag ${tag}`}
+            >
+              {color ? (
+                <span
+                  className="tags-list-item-dot"
+                  style={{ backgroundColor: color }}
+                />
+              ) : (
+                <Circle size={10} className="tags-list-item-dot-empty" />
+              )}
+            </button>
+
+            {/* Color picker popover */}
+            {isColorPickerOpen && (
+              <div className="tags-color-picker" ref={colorPickerRef}>
+                <div className="tags-color-picker-grid">
+                  {TAG_COLORS.map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`tags-color-picker-swatch ${color === c ? 'selected' : ''}`}
+                      style={{ backgroundColor: c }}
+                      onClick={() => handleColorSelect(tag, c)}
+                      aria-label={`Set color to ${c}`}
+                    />
+                  ))}
+                </div>
+                {color && (
+                  <button
+                    type="button"
+                    className="tags-color-picker-clear"
+                    onClick={() => handleColorSelect(tag, null)}
+                  >
+                    Remove color
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Main tag button */}
+            <button
+              type="button"
+              className={`tags-list-item ${tag === selectedTag ? 'selected' : ''}`}
+              onClick={() => handleTagClick(tag)}
+            >
+              <Hash size={14} className="tags-list-item-icon" aria-hidden="true" />
+              <span className="tags-list-item-name">{tag}</span>
+            </button>
+
+            {/* Delete button */}
+            <button
+              type="button"
+              className="tags-list-item-delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteTag(tag);
+              }}
+              aria-label={`Delete tag ${tag}`}
+            >
+              <X size={12} />
+            </button>
+          </li>
+        );
+      })}
+
     </ul>
+
+      {/* Context menu component */}
+      {contextMenu && (
+        <TagsContextMenu
+          tag={contextMenu.tag}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          currentColor={getColor(contextMenu.tag)}
+          onClose={() => setContextMenu(null)}
+          onColorSelect={handleColorSelect}
+          onDelete={handleDeleteTag}
+        />
+      )}
+    </>
   );
 }

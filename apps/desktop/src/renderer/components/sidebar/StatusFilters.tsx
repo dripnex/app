@@ -25,6 +25,7 @@ const statusConfig: Record<NoteStatus, { label: string; icon: React.ReactNode }>
 };
 
 const StatusFilterItem = memo(function StatusFilterItem({
+  status,
   label,
   icon,
   count,
@@ -37,6 +38,7 @@ const StatusFilterItem = memo(function StatusFilterItem({
       className={`sidebar-status-filter ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
       aria-pressed={isSelected}
+      data-status={status}
     >
       <span className="sidebar-status-filter-icon" aria-hidden="true">
         {icon}

@@ -19,6 +19,7 @@ import {
 } from './hooks/useNavigation';
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
+import { useTagColorsStore } from './stores/tagColorsStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +48,11 @@ function NotesApp() {
 
   // Editor preferences
   const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
+
+  // Load tag colors on mount (once)
+  useEffect(() => {
+    useTagColorsStore.getState().loadColors();
+  }, []);
 
   // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);

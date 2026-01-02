@@ -6,8 +6,12 @@ import { TagsInput } from './TagsInput';
 
 interface EditorHeaderProps {
   readonly note: NoteSnapshot;
+  readonly tags: readonly string[];
+  readonly manualTags: readonly string[];
   readonly onMoveToNotebook: (notebookId: string) => void;
   readonly onStatusChange: (status: NoteStatus) => void;
+  readonly onAddTag: (tag: string) => void;
+  readonly onRemoveTag: (tag: string) => void;
 }
 
 /**
@@ -18,8 +22,12 @@ interface EditorHeaderProps {
  */
 export const EditorHeader = memo(function EditorHeader({
   note,
+  tags,
+  manualTags,
   onMoveToNotebook,
   onStatusChange,
+  onAddTag,
+  onRemoveTag,
 }: EditorHeaderProps) {
   return (
     <div className="editor-header">
@@ -31,7 +39,12 @@ export const EditorHeader = memo(function EditorHeader({
         status={note.status}
         onStatusChange={onStatusChange}
       />
-      <TagsInput tags={note.tags} />
+      <TagsInput
+        tags={tags}
+        manualTags={manualTags}
+        onAddTag={onAddTag}
+        onRemoveTag={onRemoveTag}
+      />
     </div>
   );
 });
