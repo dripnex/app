@@ -227,12 +227,39 @@ interface NoteRepository {
 
 ## 5. Pending Decisions
 
-| Topic            | Status       | Notes                                        |
-| ---------------- | ------------ | -------------------------------------------- |
-| Plugin system    | Deferred     | Define boundary now, implement later         |
-| Monetization     | Design phase | Need entitlements, gating, license.json      |
-| Sync             | Deferred     | Schema ready (updatedAt, revision, deviceId) |
-| Full-text search | Deferred     | SQLite FTS5 or separate index                |
+| Topic            | Status           | Notes                                            |
+| ---------------- | ---------------- | ------------------------------------------------ |
+| Plugin system    | Deferred         | Define boundary now, implement later             |
+| Monetization     | ✅ Decided       | Freemium + Subscription (see Section 18)         |
+| Auth & Backend   | ✅ Decided       | Inkdrop-style, Stripe, Stage 0/1/2 (see below)   |
+| Sync             | Deferred (St. 2) | Schema ready, implement when demand exists       |
+| Full-text search | Deferred         | SQLite FTS5 or separate index                    |
+
+### 5.1 Auth & Backend Decision (Frozen)
+
+**Model:** Free Offline + Pro with Account (Inkdrop-style)
+
+**Stack (Stage 1):**
+- API: Fastify or Hono
+- Auth: Propio (JWT + Argon2)
+- DB: Postgres (Neon)
+- Payments: Stripe
+- Hosting: Fly.io or Railway
+
+**Stages:**
+| Stage | Trigger | Action |
+|-------|---------|--------|
+| 0 | Now | No backend. Free works 100% offline. |
+| 1 | Pro feature (Sync) | Backend MVP + Stripe integration |
+| 2 | 1000+ Pro users | Sync, teams, dashboard |
+
+**Principles:**
+- Free tier never requires account
+- Pro tier requires account for subscription management
+- No DRM, no hardware fingerprinting
+- Soft device limits (warning at 4, block at 5)
+
+**Full audit:** See GitHub issue #28 and Claude plan file.
 
 ---
 
