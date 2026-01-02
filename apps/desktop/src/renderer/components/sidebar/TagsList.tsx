@@ -4,7 +4,8 @@ import { Hash, X, Circle } from 'lucide-react';
 import { useTags, noteKeys } from '../../hooks/useNotes';
 import { useNavigation, useNavigationActions } from '../../hooks/useNavigation';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
-import { TagsContextMenu, TAG_COLORS } from './TagsContextMenu';
+import { ColorPicker, TAG_COLORS } from '../ColorPicker';
+import { TagsContextMenu } from './TagsContextMenu';
 
 /** Context menu state */
 interface ContextMenuState {
@@ -149,29 +150,12 @@ export function TagsList({ onSelectTag }: TagsListProps) {
 
             {/* Color picker popover */}
             {isColorPickerOpen && (
-              <div className="tags-color-picker" ref={colorPickerRef}>
-                <div className="tags-color-picker-grid">
-                  {TAG_COLORS.map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      className={`tags-color-picker-swatch ${color === c ? 'selected' : ''}`}
-                      style={{ backgroundColor: c }}
-                      onClick={() => handleColorSelect(tag, c)}
-                      aria-label={`Set color to ${c}`}
-                    />
-                  ))}
-                </div>
-                {color && (
-                  <button
-                    type="button"
-                    className="tags-color-picker-clear"
-                    onClick={() => handleColorSelect(tag, null)}
-                  >
-                    Remove color
-                  </button>
-                )}
-              </div>
+              <ColorPicker
+                ref={colorPickerRef}
+                currentColor={color}
+                onSelect={(c) => handleColorSelect(tag, c)}
+                onClear={() => handleColorSelect(tag, null)}
+              />
             )}
 
             {/* Main tag button */}

@@ -1,19 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Palette, Trash2 } from 'lucide-react';
+import { ColorPicker, TAG_COLORS } from '../../ColorPicker';
 import styles from './TagsContextMenu.module.css';
 
-/** Predefined color palette for tags */
-export const TAG_COLORS = [
-  '#ef4444', // Red
-  '#f59e0b', // Amber
-  '#22c55e', // Green
-  '#3b82f6', // Blue
-  '#8b5cf6', // Purple
-  '#ec4899', // Pink
-  '#06b6d4', // Cyan
-  '#84cc16', // Lime
-];
+// Re-export TAG_COLORS for backward compatibility
+export { TAG_COLORS };
 
 export interface TagsContextMenuProps {
   /** Tag name */
@@ -99,29 +91,12 @@ export function TagsContextMenu({
 
       {/* Color submenu */}
       {showColorSubmenu && (
-        <div className={styles.submenu}>
-          <div className="tags-color-picker-grid">
-            {TAG_COLORS.map(c => (
-              <button
-                key={c}
-                type="button"
-                className={`tags-color-picker-swatch ${currentColor === c ? 'selected' : ''}`}
-                style={{ backgroundColor: c }}
-                onClick={() => handleColorSelect(c)}
-                aria-label={`Set color to ${c}`}
-              />
-            ))}
-          </div>
-          {currentColor && (
-            <button
-              type="button"
-              className="tags-color-picker-clear"
-              onClick={() => handleColorSelect(null)}
-            >
-              Remove color
-            </button>
-          )}
-        </div>
+        <ColorPicker
+          currentColor={currentColor}
+          onSelect={(color) => handleColorSelect(color)}
+          onClear={() => handleColorSelect(null)}
+          className={styles.submenu}
+        />
       )}
 
       {/* Divider */}

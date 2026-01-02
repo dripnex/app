@@ -1,0 +1,53 @@
+/**
+ * ColorPicker CSS Module
+ * Shared component for tag color selection
+ */
+
+.container {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  min-width: 120px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.swatch:hover {
+  transform: scale(1.15);
+}
+
+.swatchSelected {
+  composes: swatch;
+  border-color: var(--text-primary);
+}
+
+.clear {
+  width: 100%;
+  padding: 6px 8px;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: var(--bg-surface);
+}

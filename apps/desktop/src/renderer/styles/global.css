@@ -1014,62 +1014,6 @@ input:focus-visible {
   opacity: 1;
 }
 
-/* Color picker popover */
-.tags-color-picker {
-  position: absolute;
-  left: 28px;
-  top: 0;
-  z-index: 100;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: 8px;
-  min-width: 120px;
-}
-
-.tags-color-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-}
-
-.tags-color-picker-swatch {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.tags-color-picker-swatch:hover {
-  transform: scale(1.15);
-}
-
-.tags-color-picker-swatch.selected {
-  border-color: var(--text-primary);
-  box-shadow: 0 0 0 2px var(--bg-elevated);
-}
-
-.tags-color-picker-clear {
-  width: 100%;
-  margin-top: 8px;
-  padding: 4px 8px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.tags-color-picker-clear:hover {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-
 .tags-list-loading {
   padding: 16px;
   text-align: center;
