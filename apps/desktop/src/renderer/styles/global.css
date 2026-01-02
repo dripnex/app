@@ -1244,6 +1244,23 @@ input:focus-visible {
   color: var(--accent);
 }
 
+/* Status icon colors (matching dropdown) */
+.sidebar-status-filter[data-status="active"] .sidebar-status-filter-icon {
+  color: var(--text-secondary);
+}
+
+.sidebar-status-filter[data-status="on_hold"] .sidebar-status-filter-icon {
+  color: #f59e0b; /* Amber */
+}
+
+.sidebar-status-filter[data-status="completed"] .sidebar-status-filter-icon {
+  color: #22c55e; /* Green */
+}
+
+.sidebar-status-filter[data-status="dropped"] .sidebar-status-filter-icon {
+  color: #ef4444; /* Red */
+}
+
 /* Tags List */
 .tags-list {
   list-style: none;
@@ -1296,6 +1313,128 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tags-list-item-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tags-list-item-delete {
+  position: absolute;
+  right: 8px;
+  opacity: 0;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.tags-list-item-container:hover .tags-list-item-delete {
+  opacity: 1;
+}
+
+.tags-list-item-delete:hover {
+  color: var(--danger);
+  background: var(--danger-muted);
+}
+
+/* Color button (dot) */
+.tags-list-item-color-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.tags-list-item-color-btn:hover {
+  background: var(--bg-elevated);
+}
+
+.tags-list-item-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tags-list-item-dot-empty {
+  color: var(--text-faint);
+  opacity: 0.5;
+  transition: opacity var(--transition-fast);
+}
+
+.tags-list-item-color-btn:hover .tags-list-item-dot-empty {
+  opacity: 1;
+}
+
+/* Color picker popover */
+.tags-color-picker {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  min-width: 120px;
+}
+
+.tags-color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.tags-color-picker-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tags-color-picker-swatch:hover {
+  transform: scale(1.15);
+}
+
+.tags-color-picker-swatch.selected {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-elevated);
+}
+
+.tags-color-picker-clear {
+  width: 100%;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tags-color-picker-clear:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .tags-list-loading {

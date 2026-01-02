@@ -257,7 +257,8 @@
 }
 
 .tag-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   background: var(--bg-elevated);
   border-radius: 4px;
   padding: 2px 6px;
@@ -274,6 +275,14 @@
 .tag-badge-clickable:hover {
   background: var(--accent-muted);
   color: var(--accent);
+}
+
+.tag-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+  flex-shrink: 0;
 }
 
 /* Preview (2 lines with line-clamp) */
