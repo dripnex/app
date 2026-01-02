@@ -1,4 +1,13 @@
-import { useLicense } from '../contexts/LicenseContext';
+import { useLicense } from '../../contexts/LicenseContext';
+import styles from './TrialBanner.module.css';
+
+type BannerType = 'trial' | 'expired' | 'updates-expired';
+
+const bannerStyles: Record<BannerType, string> = {
+  'trial': styles.bannerTrial,
+  'expired': styles.bannerExpired,
+  'updates-expired': styles.bannerUpdatesExpired,
+};
 
 export function TrialBanner() {
   const { state, isLoading, openDialog } = useLicense();
@@ -48,9 +57,9 @@ export function TrialBanner() {
   if (!content) return null;
 
   return (
-    <div className={`trial-banner trial-banner--${content.type}`}>
-      <span className="trial-banner__message">{content.message}</span>
-      <button className="trial-banner__action" onClick={openDialog}>
+    <div className={bannerStyles[content.type]}>
+      <span className={styles.message}>{content.message}</span>
+      <button className={styles.action} onClick={openDialog}>
         {content.action}
       </button>
     </div>
