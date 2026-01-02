@@ -29,12 +29,19 @@ import {
 import {
   createNoteOperation,
   updateNoteOperation,
+  updateTitleOperation,
   deleteNoteOperation,
   getNoteOperation,
   archiveNoteOperation,
   restoreNoteOperation,
   duplicateNoteOperation,
   moveNoteToNotebook,
+  pinNote,
+  unpinNote,
+  softDeleteNote,
+  restoreDeletedNote,
+  setNoteStatus,
+  type NoteStatus,
 } from '@readied/core';
 import {
   createNoteId,
@@ -166,6 +173,40 @@ function createWindow(): void {
   }
 }
 
+/** Helper to convert a Note to a snapshot for IPC */
+function noteToSnapshot(note: {
+  id: string;
+  notebookId: string;
+  content: string;
+  title: string;
+  isPinned: boolean;
+  isDeleted: boolean;
+  status: NoteStatus;
+  metadata: {
+    createdAt: string;
+    updatedAt: string;
+    tags: readonly string[];
+    wordCount: number;
+    archivedAt: string | null;
+  };
+}) {
+  return {
+    id: note.id,
+    notebookId: note.notebookId,
+    content: note.content,
+    title: note.title,
+    createdAt: note.metadata.createdAt,
+    updatedAt: note.metadata.updatedAt,
+    tags: [...note.metadata.tags],
+    wordCount: note.metadata.wordCount,
+    archivedAt: note.metadata.archivedAt,
+    isArchived: note.metadata.archivedAt !== null,
+    isPinned: note.isPinned,
+    isDeleted: note.isDeleted,
+    status: note.status,
+  };
+}
+
 /** Register IPC handlers for notes CRUD */
 function registerIpcHandlers(): void {
   if (!noteRepository) {
@@ -185,10 +226,16 @@ function registerIpcHandlers(): void {
     return getNoteOperation({ id: noteId }, repo);
   });
 
-  // Update note
+  // Update note content
   ipcMain.handle('notes:update', async (_event, input: { id: string; content: string }) => {
     const noteId = createNoteId(input.id);
     return updateNoteOperation({ id: noteId, content: input.content }, repo);
+  });
+
+  // Update note title (structural, independent from content)
+  ipcMain.handle('notes:updateTitle', async (_event, input: { id: string; title: string }) => {
+    const noteId = createNoteId(input.id);
+    return updateTitleOperation({ id: noteId, title: input.title }, repo);
   });
 
   // Delete note
@@ -227,19 +274,73 @@ function registerIpcHandlers(): void {
 
     return {
       ok: true,
-      data: {
-        id: movedNote.id,
-        notebookId: movedNote.notebookId,
-        content: movedNote.content,
-        title: movedNote.metadata.title,
-        createdAt: movedNote.metadata.createdAt,
-        updatedAt: movedNote.metadata.updatedAt,
-        tags: [...movedNote.metadata.tags],
-        wordCount: movedNote.metadata.wordCount,
-        archivedAt: movedNote.metadata.archivedAt,
-        isArchived: movedNote.metadata.archivedAt !== null,
-      },
+      data: noteToSnapshot(movedNote),
     };
+  });
+
+  // Pin note
+  ipcMain.handle('notes:pin', async (_event, id: string) => {
+    const note = await repo.get(createNoteId(id));
+    if (!note) {
+      return { ok: false, error: { type: 'NOT_FOUND', id } };
+    }
+
+    const pinnedNote = pinNote(note);
+    await repo.save(pinnedNote);
+
+    return { ok: true, data: noteToSnapshot(pinnedNote) };
+  });
+
+  // Unpin note
+  ipcMain.handle('notes:unpin', async (_event, id: string) => {
+    const note = await repo.get(createNoteId(id));
+    if (!note) {
+      return { ok: false, error: { type: 'NOT_FOUND', id } };
+    }
+
+    const unpinnedNote = unpinNote(note);
+    await repo.save(unpinnedNote);
+
+    return { ok: true, data: noteToSnapshot(unpinnedNote) };
+  });
+
+  // Soft delete (move to trash)
+  ipcMain.handle('notes:softDelete', async (_event, id: string) => {
+    const note = await repo.get(createNoteId(id));
+    if (!note) {
+      return { ok: false, error: { type: 'NOT_FOUND', id } };
+    }
+
+    const deletedNote = softDeleteNote(note);
+    await repo.save(deletedNote);
+
+    return { ok: true, data: noteToSnapshot(deletedNote) };
+  });
+
+  // Restore from trash
+  ipcMain.handle('notes:restoreDeleted', async (_event, id: string) => {
+    const note = await repo.get(createNoteId(id));
+    if (!note) {
+      return { ok: false, error: { type: 'NOT_FOUND', id } };
+    }
+
+    const restoredNote = restoreDeletedNote(note);
+    await repo.save(restoredNote);
+
+    return { ok: true, data: noteToSnapshot(restoredNote) };
+  });
+
+  // Set note status
+  ipcMain.handle('notes:setStatus', async (_event, id: string, status: NoteStatus) => {
+    const note = await repo.get(createNoteId(id));
+    if (!note) {
+      return { ok: false, error: { type: 'NOT_FOUND', id } };
+    }
+
+    const updatedNote = setNoteStatus(note, status);
+    await repo.save(updatedNote);
+
+    return { ok: true, data: noteToSnapshot(updatedNote) };
   });
 
   // List notes
@@ -257,37 +358,14 @@ function registerIpcHandlers(): void {
       }
     ) => {
       const notes = await repo.list(options);
-      // Return as snapshots (serialize for IPC)
-      return notes.map(note => ({
-        id: note.id,
-        notebookId: note.notebookId,
-        content: note.content,
-        title: note.metadata.title,
-        createdAt: note.metadata.createdAt,
-        updatedAt: note.metadata.updatedAt,
-        tags: [...note.metadata.tags],
-        wordCount: note.metadata.wordCount,
-        archivedAt: note.metadata.archivedAt,
-        isArchived: note.metadata.archivedAt !== null,
-      }));
+      return notes.map(note => noteToSnapshot(note));
     }
   );
 
   // Search notes
   ipcMain.handle('notes:search', async (_event, query: string, limit?: number) => {
     const notes = await repo.search(query, limit);
-    return notes.map(note => ({
-      id: note.id,
-      notebookId: note.notebookId,
-      content: note.content,
-      title: note.metadata.title,
-      createdAt: note.metadata.createdAt,
-      updatedAt: note.metadata.updatedAt,
-      tags: [...note.metadata.tags],
-      wordCount: note.metadata.wordCount,
-      archivedAt: note.metadata.archivedAt,
-      isArchived: note.metadata.archivedAt !== null,
-    }));
+    return notes.map(note => noteToSnapshot(note));
   });
 
   // Get all tags
@@ -297,8 +375,48 @@ function registerIpcHandlers(): void {
 
   // Count notes
   ipcMain.handle('notes:count', async () => {
-    const [active, archived] = await Promise.all([repo.count(false), repo.countArchived()]);
-    return { active, archived, total: active + archived };
+    // Get all notes to compute counts
+    const allNotes = await repo.list({ archived: 'all' });
+
+    const counts = {
+      active: 0,
+      archived: 0,
+      total: allNotes.length,
+      pinned: 0,
+      deleted: 0,
+      byStatus: {
+        active: 0,
+        on_hold: 0,
+        completed: 0,
+        dropped: 0,
+      } as Record<NoteStatus, number>,
+    };
+
+    for (const note of allNotes) {
+      // Count archived
+      if (note.metadata.archivedAt !== null) {
+        counts.archived++;
+      } else {
+        counts.active++;
+      }
+
+      // Count pinned
+      if (note.isPinned) {
+        counts.pinned++;
+      }
+
+      // Count deleted (in trash)
+      if (note.isDeleted) {
+        counts.deleted++;
+      }
+
+      // Count by status
+      if (note.status && counts.byStatus[note.status] !== undefined) {
+        counts.byStatus[note.status]++;
+      }
+    }
+
+    return counts;
   });
 }
 
@@ -535,7 +653,7 @@ function registerDataHandlers(): void {
     const snapshots = notes.map(note => ({
       id: note.id,
       content: note.content,
-      title: note.metadata.title,
+      title: note.title, // Use structural title
       createdAt: note.metadata.createdAt,
       updatedAt: note.metadata.updatedAt,
       tags: [...note.metadata.tags],
