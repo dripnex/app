@@ -279,7 +279,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     const linkTagStmt = this.db.prepare(`
       INSERT INTO note_tags (note_id, tag_id, source) VALUES (?, ?, 'content')
-      ON CONFLICT(note_id, tag_id, source) DO NOTHING
+      ON CONFLICT(note_id, tag_id) DO NOTHING
     `);
 
     for (const tag of tags) {
@@ -313,7 +313,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
       const linkTagStmt = this.db.prepare(`
         INSERT INTO note_tags (note_id, tag_id, source) VALUES (?, ?, 'manual')
-        ON CONFLICT(note_id, tag_id, source) DO NOTHING
+        ON CONFLICT(note_id, tag_id) DO NOTHING
       `);
 
       for (const tag of tags) {
