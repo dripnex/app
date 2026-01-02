@@ -42,6 +42,11 @@ interface TagRow {
   name: string;
 }
 
+interface TagWithColorRow {
+  name: string;
+  color: string | null;
+}
+
 /** SQLite implementation of ExtendedNoteRepository */
 export class SQLiteNoteRepository implements ExtendedNoteRepository {
   constructor(private readonly db: DatabaseConnection) {}
@@ -96,8 +101,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         note.status
       );
 
-      // Update tags
-      this.syncNoteTags(note.id, note.metadata.tags);
+      // Update content-extracted tags (preserves manual tags)
+      this.syncExtractedTags(note.id, note.metadata.tags);
     });
   }
 
@@ -207,20 +212,22 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     return row.count;
   }
 
-  /** Get all unique tags (from non-archived notes by default) */
-  async getAllTags(includeArchived: boolean = false): Promise<Tag[]> {
-    const sql = includeArchived
-      ? 'SELECT DISTINCT t.name FROM tags t ORDER BY t.name'
-      : `SELECT DISTINCT t.name
-         FROM tags t
-         JOIN note_tags nt ON t.id = nt.tag_id
-         JOIN notes n ON nt.note_id = n.id
-         WHERE n.archived_at IS NULL
-         ORDER BY t.name`;
-
-    const stmt = this.db.prepare<TagRow>(sql);
+  /** Get all tags (persistent - includes tags not currently in use) */
+  async getAllTags(_includeArchived: boolean = false): Promise<Tag[]> {
+    // Tags are persistent entities - return all from tags table
+    const stmt = this.db.prepare<TagRow>('SELECT name FROM tags ORDER BY name ASC');
     const rows = stmt.all() as TagRow[];
     return rows.map(r => createTag(r.name));
+  }
+
+  /**
+   * Delete a tag from the system.
+   * Also removes all note_tags associations (via CASCADE).
+   */
+  deleteTag(tagName: string): void {
+    const normalized = tagName.trim().toLowerCase();
+    const stmt = this.db.prepare('DELETE FROM tags WHERE name = ?');
+    stmt.run(normalized);
   }
 
   // Private helpers
@@ -239,18 +246,25 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
   private getTagsForNote(noteId: NoteId): Tag[] {
     const stmt = this.db.prepare<TagRow>(`
-      SELECT t.name
+      SELECT DISTINCT t.name
       FROM tags t
       JOIN note_tags nt ON t.id = nt.tag_id
       WHERE nt.note_id = ?
+      ORDER BY t.name ASC
     `);
     const rows = stmt.all(noteId) as TagRow[];
     return rows.map(r => createTag(r.name));
   }
 
-  private syncNoteTags(noteId: NoteId, tags: readonly Tag[]): void {
-    // Remove existing tags for this note
-    const deleteStmt = this.db.prepare('DELETE FROM note_tags WHERE note_id = ?');
+  /**
+   * Sync content-extracted tags (#tag from markdown).
+   * Only affects rows with source='content'.
+   */
+  private syncExtractedTags(noteId: NoteId, tags: readonly Tag[]): void {
+    // Remove existing content-extracted tags for this note
+    const deleteStmt = this.db.prepare(
+      "DELETE FROM note_tags WHERE note_id = ? AND source = 'content'"
+    );
     deleteStmt.run(noteId);
 
     if (tags.length === 0) return;
@@ -264,7 +278,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const getTagIdStmt = this.db.prepare<{ id: number }>('SELECT id FROM tags WHERE name = ?');
 
     const linkTagStmt = this.db.prepare(`
-      INSERT INTO note_tags (note_id, tag_id) VALUES (?, ?)
+      INSERT INTO note_tags (note_id, tag_id, source) VALUES (?, ?, 'content')
+      ON CONFLICT(note_id, tag_id, source) DO NOTHING
     `);
 
     for (const tag of tags) {
@@ -272,6 +287,79 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       const tagRow = getTagIdStmt.get(tag) as { id: number };
       linkTagStmt.run(noteId, tagRow.id);
     }
+  }
+
+  /**
+   * Set manual tags for a note (full replacement).
+   * Must be called within a transaction for crash safety.
+   */
+  setManualTags(noteId: NoteId, tags: readonly Tag[]): void {
+    this.db.transaction(() => {
+      // Remove existing manual tags for this note
+      const deleteStmt = this.db.prepare(
+        "DELETE FROM note_tags WHERE note_id = ? AND source = 'manual'"
+      );
+      deleteStmt.run(noteId);
+
+      if (tags.length === 0) return;
+
+      // Ensure all tags exist and link them
+      const insertTagStmt = this.db.prepare(`
+        INSERT INTO tags (name) VALUES (?)
+        ON CONFLICT(name) DO NOTHING
+      `);
+
+      const getTagIdStmt = this.db.prepare<{ id: number }>('SELECT id FROM tags WHERE name = ?');
+
+      const linkTagStmt = this.db.prepare(`
+        INSERT INTO note_tags (note_id, tag_id, source) VALUES (?, ?, 'manual')
+        ON CONFLICT(note_id, tag_id, source) DO NOTHING
+      `);
+
+      for (const tag of tags) {
+        insertTagStmt.run(tag);
+        const tagRow = getTagIdStmt.get(tag) as { id: number };
+        linkTagStmt.run(noteId, tagRow.id);
+      }
+    });
+  }
+
+  /**
+   * Get manual tags only (for UI to determine removability).
+   */
+  getManualTags(noteId: NoteId): Tag[] {
+    const stmt = this.db.prepare<TagRow>(`
+      SELECT t.name
+      FROM tags t
+      JOIN note_tags nt ON t.id = nt.tag_id
+      WHERE nt.note_id = ? AND nt.source = 'manual'
+      ORDER BY t.name ASC
+    `);
+    const rows = stmt.all(noteId) as TagRow[];
+    return rows.map(r => createTag(r.name));
+  }
+
+  /**
+   * Get all tags with their colors.
+   */
+  getAllTagsWithColors(): Array<{ name: string; color: string | null }> {
+    const stmt = this.db.prepare<TagWithColorRow>(`
+      SELECT name, color FROM tags ORDER BY name ASC
+    `);
+    const rows = stmt.all() as TagWithColorRow[];
+    return rows.map(r => ({ name: r.name, color: r.color }));
+  }
+
+  /**
+   * Set color for a tag.
+   * Normalizes tagName (lowercase, trim) before persisting.
+   */
+  setTagColor(tagName: string, color: string | null): void {
+    const normalized = tagName.trim().toLowerCase();
+    const stmt = this.db.prepare(`
+      UPDATE tags SET color = ? WHERE name = ?
+    `);
+    stmt.run(color, normalized);
   }
 
   private rowToNote(row: NoteRow, tags: Tag[]): Note {

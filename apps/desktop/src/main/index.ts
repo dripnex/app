@@ -49,6 +49,7 @@ import {
   createNotebook,
   renameNotebook,
   moveNotebook,
+  createTag,
   INBOX_NOTEBOOK_ID,
 } from '@readied/core';
 import {
@@ -371,6 +372,42 @@ function registerIpcHandlers(): void {
   // Get all tags
   ipcMain.handle('notes:tags', async () => {
     return repo.getAllTags();
+  });
+
+  // Set manual tags (full replacement)
+  ipcMain.handle('notes:setManualTags', async (_event, noteId: string, tags: string[]) => {
+    const id = createNoteId(noteId);
+    // Normalize tags: trim, lowercase, strip leading '#', remove empties, dedupe
+    const normalizedTags = [...new Set(
+      tags
+        .map(t => t.trim().toLowerCase().replace(/^#/, ''))
+        .filter(t => t.length > 0)
+    )];
+    repo.setManualTags(id, normalizedTags.map(t => createTag(t)));
+    return { ok: true };
+  });
+
+  // Get manual tags only (for editor to know which are removable)
+  ipcMain.handle('notes:getManualTags', async (_event, noteId: string) => {
+    const id = createNoteId(noteId);
+    return repo.getManualTags(id);
+  });
+
+  // Get all tags with colors
+  ipcMain.handle('tags:listWithColors', async () => {
+    return repo.getAllTagsWithColors();
+  });
+
+  // Set tag color
+  ipcMain.handle('tags:setColor', async (_event, tagName: string, color: string | null) => {
+    repo.setTagColor(tagName, color);
+    return { ok: true };
+  });
+
+  // Delete tag from system
+  ipcMain.handle('tags:delete', async (_event, tagName: string) => {
+    repo.deleteTag(tagName);
+    return { ok: true };
   });
 
   // Count notes

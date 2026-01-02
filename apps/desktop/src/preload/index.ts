@@ -134,6 +134,12 @@ export interface LicenseResult {
   error?: string;
 }
 
+/** Tag with color */
+export interface TagWithColor {
+  name: string;
+  color: string | null;
+}
+
 /** Log level types */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -174,6 +180,16 @@ export interface ReadiedAPI {
     search: (query: string, limit?: number) => Promise<NoteSnapshot[]>;
     /** Get all tags */
     tags: () => Promise<string[]>;
+    /** Get all tags with colors */
+    tagsWithColors: () => Promise<TagWithColor[]>;
+    /** Set color for a tag */
+    setTagColor: (tagName: string, color: string | null) => Promise<{ ok: boolean }>;
+    /** Delete a tag from the system */
+    deleteTag: (tagName: string) => Promise<{ ok: boolean }>;
+    /** Set manual tags for a note (full replacement) */
+    setManualTags: (noteId: string, tags: string[]) => Promise<{ ok: boolean }>;
+    /** Get manual tags only (for editor to know which are removable) */
+    getManualTags: (noteId: string) => Promise<string[]>;
     /** Get note counts */
     count: () => Promise<NoteCounts>;
   };
@@ -261,6 +277,11 @@ const api: ReadiedAPI = {
     list: options => ipcRenderer.invoke('notes:list', options),
     search: (query, limit) => ipcRenderer.invoke('notes:search', query, limit),
     tags: () => ipcRenderer.invoke('notes:tags'),
+    tagsWithColors: () => ipcRenderer.invoke('tags:listWithColors'),
+    setTagColor: (tagName, color) => ipcRenderer.invoke('tags:setColor', tagName, color),
+    deleteTag: tagName => ipcRenderer.invoke('tags:delete', tagName),
+    setManualTags: (noteId, tags) => ipcRenderer.invoke('notes:setManualTags', noteId, tags),
+    getManualTags: noteId => ipcRenderer.invoke('notes:getManualTags', noteId),
     count: () => ipcRenderer.invoke('notes:count'),
   },
   notebooks: {
