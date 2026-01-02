@@ -12,12 +12,14 @@ import type {
 import {
   type Note,
   type NoteId,
+  type NoteStatus,
   type Tag,
   type Timestamp,
   createNote,
   createNoteId,
   createNotebookId,
   createTag,
+  DEFAULT_NOTE_STATUS,
 } from '@readied/core';
 import type { DatabaseConnection } from '../database.js';
 
@@ -31,6 +33,9 @@ interface NoteRow {
   updated_at: string;
   word_count: number;
   archived_at: string | null;
+  is_pinned: number; // SQLite stores booleans as 0/1
+  is_deleted: number;
+  status: string;
 }
 
 interface TagRow {
@@ -44,7 +49,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+             is_pinned, is_deleted, status
       FROM notes
       WHERE id = ?
     `);
@@ -61,26 +67,33 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     this.db.transaction(() => {
       // Upsert note
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+                           is_pinned, is_deleted, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           notebook_id = excluded.notebook_id,
           content = excluded.content,
           title = excluded.title,
           updated_at = excluded.updated_at,
           word_count = excluded.word_count,
-          archived_at = excluded.archived_at
+          archived_at = excluded.archived_at,
+          is_pinned = excluded.is_pinned,
+          is_deleted = excluded.is_deleted,
+          status = excluded.status
       `);
 
       stmt.run(
         note.id,
         note.notebookId,
         note.content,
-        note.metadata.title,
+        note.title, // Use structural title
         note.metadata.createdAt,
         note.metadata.updatedAt,
         note.metadata.wordCount,
-        note.metadata.archivedAt
+        note.metadata.archivedAt,
+        note.isPinned ? 1 : 0,
+        note.isDeleted ? 1 : 0,
+        note.status
       );
 
       // Update tags
@@ -118,7 +131,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     if (tag) {
       sql = `
-        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at
+        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at,
+               n.is_pinned, n.is_deleted, n.status
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
@@ -129,7 +143,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       params = [tag.toLowerCase(), limit, offset];
     } else {
       sql = `
-        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
+        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+               is_pinned, is_deleted, status
         FROM notes n
         WHERE 1=1 ${archivedCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
@@ -156,7 +171,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
 
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+             is_pinned, is_deleted, status
       FROM notes
       WHERE (content LIKE ? OR title LIKE ?) ${archivedCondition}
       ORDER BY updated_at DESC
@@ -259,19 +275,26 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   }
 
   private rowToNote(row: NoteRow, tags: Tag[]): Note {
-    // Reconstruct note from stored data
-    // We use createNote to ensure proper structure, but override metadata
+    // Reconstruct note from stored data with structural title
     const note = createNote({
       id: createNoteId(row.id),
       notebookId: createNotebookId(row.notebook_id),
+      title: row.title, // Structural title from DB
       content: row.content,
       createdAt: row.created_at as Timestamp,
+      isPinned: row.is_pinned === 1,
+      isDeleted: row.is_deleted === 1,
+      status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
     });
 
-    // Return note with stored metadata (in case of any differences)
+    // Return note with stored metadata
     return {
       ...note,
       notebookId: createNotebookId(row.notebook_id),
+      title: row.title, // Ensure structural title is set
+      isPinned: row.is_pinned === 1,
+      isDeleted: row.is_deleted === 1,
+      status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
       metadata: {
         ...note.metadata,
         title: row.title,
