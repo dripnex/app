@@ -1,0 +1,152 @@
+/**
+ * NoteListContextMenu CSS Module
+ *
+ * Context menu for note list items (right-click menu).
+ * Inkdrop-style: dark slate glass, clean typography.
+ */
+
+.menu {
+  z-index: 1000;
+  min-width: 240px;
+  background: rgba(40, 45, 55, 0.92);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.08s ease;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item svg {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.itemDanger {
+  composes: item;
+}
+
+.itemDanger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 6px;
+}
+
+/* Item label - flex to push shortcut right */
+.label {
+  flex: 1;
+}
+
+/* Keyboard shortcut hint */
+.shortcut {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Submenu (for Move to Notebook) */
+.submenuContainer {
+  position: relative;
+}
+
+/* Bridge to prevent hover loss when moving to submenu */
+.submenuContainer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 8px;
+  height: 100%;
+}
+
+.arrow {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+.submenu {
+  position: absolute;
+  left: 100%;
+  top: -4px;
+  margin-left: 4px;
+  min-width: 200px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: rgba(40, 45, 55, 0.95);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+}
+
+.submenuItem {
+  composes: item;
+}
+
+.submenuItem.current {
+  color: var(--accent);
+}
+
+.notebookIcon {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.notebookName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.currentMark {
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.8;
+}
