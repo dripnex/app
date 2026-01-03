@@ -31,14 +31,8 @@ export const EditorHeader = memo(function EditorHeader({
 }: EditorHeaderProps) {
   return (
     <div className="editor-header">
-      <NotebookSelector
-        notebookId={note.notebookId}
-        onMove={onMoveToNotebook}
-      />
-      <StatusDropdown
-        status={note.status}
-        onStatusChange={onStatusChange}
-      />
+      <NotebookSelector notebookId={note.notebookId} onMove={onMoveToNotebook} />
+      <StatusDropdown status={note.status} onStatusChange={onStatusChange} />
       <TagsInput
         tags={tags}
         manualTags={manualTags}

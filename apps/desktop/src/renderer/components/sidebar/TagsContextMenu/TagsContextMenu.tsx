@@ -79,11 +79,7 @@ export function TagsContextMenu({
       }}
     >
       {/* Color option with submenu */}
-      <button
-        type="button"
-        className={styles.item}
-        onMouseEnter={() => setShowColorSubmenu(true)}
-      >
+      <button type="button" className={styles.item} onMouseEnter={() => setShowColorSubmenu(true)}>
         <Palette size={14} />
         <span>Set color</span>
         <span className={styles.arrow}>›</span>
@@ -93,7 +89,7 @@ export function TagsContextMenu({
       {showColorSubmenu && (
         <ColorPicker
           currentColor={currentColor}
-          onSelect={(color) => handleColorSelect(color)}
+          onSelect={color => handleColorSelect(color)}
           onClear={() => handleColorSelect(null)}
           className={styles.submenu}
         />
@@ -103,11 +99,7 @@ export function TagsContextMenu({
       <div className={styles.divider} />
 
       {/* Delete option */}
-      <button
-        type="button"
-        className={styles.itemDanger}
-        onClick={handleDelete}
-      >
+      <button type="button" className={styles.itemDanger} onClick={handleDelete}>
         <Trash2 size={14} />
         <span>Delete tag</span>
       </button>

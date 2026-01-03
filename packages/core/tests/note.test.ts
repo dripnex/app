@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createNote, updateNoteContent, updateNoteTitle, hasTag, collectTags } from '../src/domain/note.js';
+import {
+  createNote,
+  updateNoteContent,
+  updateNoteTitle,
+  hasTag,
+  collectTags,
+} from '../src/domain/note.js';
 import { createTag, createNoteId } from '../src/domain/types.js';
 
 describe('Note Entity', () => {

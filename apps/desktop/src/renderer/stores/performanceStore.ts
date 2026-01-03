@@ -34,16 +34,16 @@ interface PerformanceState {
 // Store Implementation
 // ============================================================================
 
-export const usePerformanceStore = create<PerformanceState>()((set) => ({
+export const usePerformanceStore = create<PerformanceState>()(set => ({
   // Initial state (will be set by usePerformanceMode hook on boot)
   mode: 'medium',
   baseMode: 'medium',
   isResizing: false,
 
   // Actions
-  setMode: (mode) => set({ mode }),
-  setBaseMode: (baseMode) => set({ baseMode }),
-  setResizing: (isResizing) => set({ isResizing }),
+  setMode: mode => set({ mode }),
+  setBaseMode: baseMode => set({ baseMode }),
+  setResizing: isResizing => set({ isResizing }),
 }));
 
 // ============================================================================

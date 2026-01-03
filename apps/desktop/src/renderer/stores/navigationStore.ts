@@ -67,7 +67,7 @@ interface NavigationStore {
 
 const DEFAULT_NAVIGATION: NavigationState = { kind: 'global', filter: 'all' };
 
-export const useNavigationStore = create<NavigationStore>((set) => ({
+export const useNavigationStore = create<NavigationStore>(set => ({
   // Initial state
   navigation: DEFAULT_NAVIGATION,
   statusFilter: null,
@@ -82,17 +82,17 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
     set({ navigation: { kind: 'global', filter: 'pinned' }, statusFilter: null, tagFilter: null }),
   goToTrash: () =>
     set({ navigation: { kind: 'global', filter: 'trash' }, statusFilter: null, tagFilter: null }),
-  goToNotebook: (id) =>
+  goToNotebook: id =>
     set({ navigation: { kind: 'notebook', id }, statusFilter: null, tagFilter: null }),
-  goToTag: (name) => set({ navigation: { kind: 'tag', name }, statusFilter: null, tagFilter: null }),
-  goToSearch: (query) =>
+  goToTag: name => set({ navigation: { kind: 'tag', name }, statusFilter: null, tagFilter: null }),
+  goToSearch: query =>
     set({ navigation: { kind: 'search', query }, statusFilter: null, tagFilter: null }),
   clearNavigation: () =>
     set({ navigation: DEFAULT_NAVIGATION, statusFilter: null, tagFilter: null }),
 
   // Filter actions
-  setStatusFilter: (status) => set({ statusFilter: status }),
-  setTagFilter: (tag) => set({ tagFilter: tag }),
+  setStatusFilter: status => set({ statusFilter: status }),
+  setTagFilter: tag => set({ tagFilter: tag }),
   clearStatusFilter: () => set({ statusFilter: null }),
   clearFilters: () => set({ statusFilter: null, tagFilter: null }),
 
@@ -112,8 +112,7 @@ export const selectTagFilter = (state: NavigationStore) => state.tagFilter;
 export const selectIsNotebookContext = (state: NavigationStore) =>
   state.navigation.kind === 'notebook';
 
-export const selectIsGlobalContext = (state: NavigationStore) =>
-  state.navigation.kind === 'global';
+export const selectIsGlobalContext = (state: NavigationStore) => state.navigation.kind === 'global';
 
 export const selectIsTrashView = (state: NavigationStore) =>
   state.navigation.kind === 'global' && state.navigation.filter === 'trash';

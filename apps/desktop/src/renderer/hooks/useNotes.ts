@@ -100,9 +100,7 @@ export function useNotebookNotesCount(notebookId: string | null) {
 
   if (!notebookId || !notes) return 0;
 
-  return notes.filter(
-    n => n.notebookId === notebookId && !n.isDeleted && !n.isArchived
-  ).length;
+  return notes.filter(n => n.notebookId === notebookId && !n.isDeleted && !n.isArchived).length;
 }
 
 /** Hook for note mutations */

@@ -50,7 +50,7 @@ export function Sidebar() {
       <SidebarBreadcrumb
         selectedNotebookId={selectedNotebookId}
         tagFilter={tagFilter}
-        onNavigate={(id) => (id ? goToNotebook(id) : clearNavigation())}
+        onNavigate={id => (id ? goToNotebook(id) : clearNavigation())}
         onClearTagFilter={() => setTagFilter(null)}
       />
 
@@ -59,7 +59,7 @@ export function Sidebar() {
         pinnedCount={globalCounts.pinned}
         trashCount={globalCounts.deleted}
         selectedFilter={globalFilter}
-        onSelectFilter={(filter) => {
+        onSelectFilter={filter => {
           if (filter === 'all') goToAllNotes();
           else if (filter === 'pinned') goToPinned();
           else if (filter === 'trash') goToTrash();

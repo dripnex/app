@@ -171,7 +171,10 @@ export interface MarkdownEditorHandle {
 }
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
-  function MarkdownEditor({ initialContent, onChange, placeholder = 'Start writing...', onReady }, ref) {
+  function MarkdownEditor(
+    { initialContent, onChange, placeholder = 'Start writing...', onReady },
+    ref
+  ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);

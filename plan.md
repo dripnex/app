@@ -227,19 +227,20 @@ interface NoteRepository {
 
 ## 5. Pending Decisions
 
-| Topic            | Status           | Notes                                            |
-| ---------------- | ---------------- | ------------------------------------------------ |
-| Plugin system    | Deferred         | Define boundary now, implement later             |
-| Monetization     | ✅ Decided       | Freemium + Subscription (see Section 18)         |
-| Auth & Backend   | ✅ Decided       | Inkdrop-style, Stripe, Stage 0/1/2 (see below)   |
-| Sync             | Deferred (St. 2) | Schema ready, implement when demand exists       |
-| Full-text search | Deferred         | SQLite FTS5 or separate index                    |
+| Topic            | Status           | Notes                                          |
+| ---------------- | ---------------- | ---------------------------------------------- |
+| Plugin system    | Deferred         | Define boundary now, implement later           |
+| Monetization     | ✅ Decided       | Freemium + Subscription (see Section 18)       |
+| Auth & Backend   | ✅ Decided       | Inkdrop-style, Stripe, Stage 0/1/2 (see below) |
+| Sync             | Deferred (St. 2) | Schema ready, implement when demand exists     |
+| Full-text search | Deferred         | SQLite FTS5 or separate index                  |
 
 ### 5.1 Auth & Backend Decision (Frozen)
 
 **Model:** Free Offline + Pro with Account (Inkdrop-style)
 
 **Stack (Stage 1):**
+
 - API: Fastify or Hono
 - Auth: Propio (JWT + Argon2)
 - DB: Postgres (Neon)
@@ -254,6 +255,7 @@ interface NoteRepository {
 | 2 | 1000+ Pro users | Sync, teams, dashboard |
 
 **Principles:**
+
 - Free tier never requires account
 - Pro tier requires account for subscription management
 - No DRM, no hardware fingerprinting

@@ -120,7 +120,10 @@ export function insertLink(view: EditorView): void {
     const newText = `[${selectedText}](url)`;
     view.dispatch({
       changes: { from, to, insert: newText },
-      selection: EditorSelection.range(from + selectedText.length + 3, from + selectedText.length + 6),
+      selection: EditorSelection.range(
+        from + selectedText.length + 3,
+        from + selectedText.length + 6
+      ),
     });
   } else {
     // Insert empty link template
@@ -204,9 +207,7 @@ export function insertCodeBlock(view: EditorView): void {
   const { from, to } = state.selection.main;
   const selectedText = state.sliceDoc(from, to);
 
-  const codeBlock = selectedText
-    ? `\`\`\`\n${selectedText}\n\`\`\``
-    : '```\n\n```';
+  const codeBlock = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\n\n```';
 
   view.dispatch({
     changes: { from, to, insert: codeBlock },

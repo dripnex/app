@@ -68,10 +68,7 @@ export const TagsInput = memo(function TagsInput({
     setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
-  const isManualTag = useCallback(
-    (tag: string) => manualTags.includes(tag),
-    [manualTags]
-  );
+  const isManualTag = useCallback((tag: string) => manualTags.includes(tag), [manualTags]);
 
   if (tags.length === 0 && !isInputVisible) {
     return (
@@ -100,7 +97,7 @@ export const TagsInput = memo(function TagsInput({
                 <button
                   type="button"
                   className="tag-chip-remove"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onRemoveTag(tag);
                   }}

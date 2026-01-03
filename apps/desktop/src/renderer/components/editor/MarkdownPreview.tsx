@@ -94,14 +94,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
             // Custom checkbox rendering for task lists
             input: ({ type, checked, ...props }) => {
               if (type === 'checkbox') {
-                return (
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled
-                    {...props}
-                  />
-                );
+                return <input type="checkbox" checked={checked} disabled {...props} />;
               }
               return <input type={type} {...props} />;
             },
@@ -112,12 +105,8 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
         {formattedDates && (
           <div className="markdown-preview-meta">
-            {formattedDates.created && (
-              <span>Created: {formattedDates.created}</span>
-            )}
-            {formattedDates.updated && (
-              <span>Updated: {formattedDates.updated}</span>
-            )}
+            {formattedDates.created && <span>Created: {formattedDates.created}</span>}
+            {formattedDates.updated && <span>Updated: {formattedDates.updated}</span>}
           </div>
         )}
       </div>

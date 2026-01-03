@@ -103,11 +103,9 @@ export const ActionsPanel = memo(function ActionsPanel({
   }, [onDelete, onClose]);
 
   // Check if any formatting is hidden
-  const hasHiddenFormatting = hiddenFormatting && (
-    !hiddenFormatting.lists ||
-    !hiddenFormatting.blocks ||
-    !hiddenFormatting.history
-  );
+  const hasHiddenFormatting =
+    hiddenFormatting &&
+    (!hiddenFormatting.lists || !hiddenFormatting.blocks || !hiddenFormatting.history);
 
   // Render via portal to avoid stacking context issues
   return createPortal(
@@ -152,7 +150,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.insertUnorderedList(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.insertUnorderedList();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <List size={16} />
@@ -162,7 +163,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.insertOrderedList(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.insertOrderedList();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <ListOrdered size={16} />
@@ -172,7 +176,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.insertCheckbox(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.insertCheckbox();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <CheckSquare size={16} />
@@ -188,7 +195,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.insertQuote(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.insertQuote();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <Quote size={16} />
@@ -198,7 +208,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.insertCodeBlock(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.insertCodeBlock();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <FileCode size={16} />
@@ -208,7 +221,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.insertHorizontalRule(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.insertHorizontalRule();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <Minus size={16} />
@@ -224,7 +240,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.undo(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.undo();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <Undo2 size={16} />
@@ -234,7 +253,10 @@ export const ActionsPanel = memo(function ActionsPanel({
                   <button
                     type="button"
                     className={styles.item}
-                    onClick={() => { editorRef.current?.redo(); onClose(); }}
+                    onClick={() => {
+                      editorRef.current?.redo();
+                      onClose();
+                    }}
                   >
                     <span className={styles.icon}>
                       <Redo2 size={16} />
@@ -264,23 +286,14 @@ export const ActionsPanel = memo(function ActionsPanel({
               Duplicate
             </button>
 
-            <button
-              type="button"
-              className={styles.item}
-              onClick={handleCopyLink}
-            >
+            <button type="button" className={styles.item} onClick={handleCopyLink}>
               <span className={styles.icon}>
                 <Link2 size={16} />
               </span>
               Copy Note Link
             </button>
 
-            <button
-              type="button"
-              className={styles.item}
-              disabled
-              title="Coming soon"
-            >
+            <button type="button" className={styles.item} disabled title="Coming soon">
               <span className={styles.icon}>
                 <Pin size={16} />
               </span>
@@ -307,12 +320,7 @@ export const ActionsPanel = memo(function ActionsPanel({
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Advanced</div>
 
-            <button
-              type="button"
-              className={styles.item}
-              disabled
-              title="Coming soon"
-            >
+            <button type="button" className={styles.item} disabled title="Coming soon">
               <span className={styles.icon}>
                 <History size={16} />
               </span>
@@ -320,12 +328,7 @@ export const ActionsPanel = memo(function ActionsPanel({
               <span className={styles.badge}>Soon</span>
             </button>
 
-            <button
-              type="button"
-              className={styles.item}
-              disabled
-              title="Coming soon"
-            >
+            <button type="button" className={styles.item} disabled title="Coming soon">
               <span className={styles.icon}>
                 <Share2 size={16} />
               </span>

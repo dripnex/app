@@ -147,7 +147,11 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export interface ReadiedAPI {
   notes: {
     /** Create a new note */
-    create: (input: { content: string; id?: string; title?: string }) => Promise<Result<NoteSnapshot>>;
+    create: (input: {
+      content: string;
+      id?: string;
+      title?: string;
+    }) => Promise<Result<NoteSnapshot>>;
     /** Get a note by ID */
     get: (id: string) => Promise<Result<NoteSnapshot>>;
     /** Update a note's content */

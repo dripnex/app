@@ -66,13 +66,16 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
 
   const handleColorDotClick = useCallback((e: React.MouseEvent, tag: string) => {
     e.stopPropagation();
-    setColorPickerTag(prev => prev === tag ? null : tag);
+    setColorPickerTag(prev => (prev === tag ? null : tag));
   }, []);
 
-  const handleColorSelect = useCallback(async (tag: string, color: string | null) => {
-    await setColor(tag, color);
-    setColorPickerTag(null);
-  }, [setColor]);
+  const handleColorSelect = useCallback(
+    async (tag: string, color: string | null) => {
+      await setColor(tag, color);
+      setColorPickerTag(null);
+    },
+    [setColor]
+  );
 
   const handleContextMenu = useCallback((e: React.MouseEvent, tag: string) => {
     e.preventDefault();
@@ -115,73 +118,69 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
 
   return (
     <>
-    <ul className="tags-list" role="listbox" aria-label="Tags">
-      {tags.map(tag => {
-        const color = getColor(tag);
-        const isColorPickerOpen = colorPickerTag === tag;
+      <ul className="tags-list" role="listbox" aria-label="Tags">
+        {tags.map(tag => {
+          const color = getColor(tag);
+          const isColorPickerOpen = colorPickerTag === tag;
 
-        return (
-          <li
-            key={tag}
-            role="option"
-            aria-selected={tag === selectedTag}
-            className="tags-list-item-container"
-            onContextMenu={(e) => handleContextMenu(e, tag)}
-          >
-            {/* Color dot button - always visible, opens color picker */}
-            <button
-              type="button"
-              className="tags-list-item-color-btn"
-              onClick={(e) => handleColorDotClick(e, tag)}
-              aria-label={`Set color for tag ${tag}`}
+          return (
+            <li
+              key={tag}
+              role="option"
+              aria-selected={tag === selectedTag}
+              className="tags-list-item-container"
+              onContextMenu={e => handleContextMenu(e, tag)}
             >
-              {color ? (
-                <span
-                  className="tags-list-item-dot"
-                  style={{ backgroundColor: color }}
+              {/* Color dot button - always visible, opens color picker */}
+              <button
+                type="button"
+                className="tags-list-item-color-btn"
+                onClick={e => handleColorDotClick(e, tag)}
+                aria-label={`Set color for tag ${tag}`}
+              >
+                {color ? (
+                  <span className="tags-list-item-dot" style={{ backgroundColor: color }} />
+                ) : (
+                  <Circle size={10} className="tags-list-item-dot-empty" />
+                )}
+              </button>
+
+              {/* Color picker popover */}
+              {isColorPickerOpen && (
+                <ColorPicker
+                  ref={colorPickerRef}
+                  currentColor={color}
+                  onSelect={c => handleColorSelect(tag, c)}
+                  onClear={() => handleColorSelect(tag, null)}
                 />
-              ) : (
-                <Circle size={10} className="tags-list-item-dot-empty" />
               )}
-            </button>
 
-            {/* Color picker popover */}
-            {isColorPickerOpen && (
-              <ColorPicker
-                ref={colorPickerRef}
-                currentColor={color}
-                onSelect={(c) => handleColorSelect(tag, c)}
-                onClear={() => handleColorSelect(tag, null)}
-              />
-            )}
+              {/* Main tag button */}
+              <button
+                type="button"
+                className={`tags-list-item ${tag === selectedTag ? 'selected' : ''}`}
+                onClick={() => handleTagClick(tag)}
+              >
+                <Hash size={14} className="tags-list-item-icon" aria-hidden="true" />
+                <span className="tags-list-item-name">{tag}</span>
+              </button>
 
-            {/* Main tag button */}
-            <button
-              type="button"
-              className={`tags-list-item ${tag === selectedTag ? 'selected' : ''}`}
-              onClick={() => handleTagClick(tag)}
-            >
-              <Hash size={14} className="tags-list-item-icon" aria-hidden="true" />
-              <span className="tags-list-item-name">{tag}</span>
-            </button>
-
-            {/* Delete button */}
-            <button
-              type="button"
-              className="tags-list-item-delete"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteTag(tag);
-              }}
-              aria-label={`Delete tag ${tag}`}
-            >
-              <X size={12} />
-            </button>
-          </li>
-        );
-      })}
-
-    </ul>
+              {/* Delete button */}
+              <button
+                type="button"
+                className="tags-list-item-delete"
+                onClick={e => {
+                  e.stopPropagation();
+                  handleDeleteTag(tag);
+                }}
+                aria-label={`Delete tag ${tag}`}
+              >
+                <X size={12} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
 
       {/* Context menu component */}
       {contextMenu && (

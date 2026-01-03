@@ -72,17 +72,17 @@ export const useSortOrder = () => useNavigationStore(selectSortOrder);
 
 /** Get all navigation actions (stable references) */
 export function useNavigationActions() {
-  const goToAllNotes = useNavigationStore((s) => s.goToAllNotes);
-  const goToPinned = useNavigationStore((s) => s.goToPinned);
-  const goToTrash = useNavigationStore((s) => s.goToTrash);
-  const goToNotebook = useNavigationStore((s) => s.goToNotebook);
-  const goToTag = useNavigationStore((s) => s.goToTag);
-  const goToSearch = useNavigationStore((s) => s.goToSearch);
-  const clearNavigation = useNavigationStore((s) => s.clearNavigation);
-  const setStatusFilter = useNavigationStore((s) => s.setStatusFilter);
-  const setTagFilter = useNavigationStore((s) => s.setTagFilter);
-  const clearFilters = useNavigationStore((s) => s.clearFilters);
-  const setSort = useNavigationStore((s) => s.setSort);
+  const goToAllNotes = useNavigationStore(s => s.goToAllNotes);
+  const goToPinned = useNavigationStore(s => s.goToPinned);
+  const goToTrash = useNavigationStore(s => s.goToTrash);
+  const goToNotebook = useNavigationStore(s => s.goToNotebook);
+  const goToTag = useNavigationStore(s => s.goToTag);
+  const goToSearch = useNavigationStore(s => s.goToSearch);
+  const clearNavigation = useNavigationStore(s => s.clearNavigation);
+  const setStatusFilter = useNavigationStore(s => s.setStatusFilter);
+  const setTagFilter = useNavigationStore(s => s.setTagFilter);
+  const clearFilters = useNavigationStore(s => s.clearFilters);
+  const setSort = useNavigationStore(s => s.setSort);
 
   return {
     goToAllNotes,
@@ -131,41 +131,38 @@ export function useFilteredNotes(): NoteWithExcerpt[] {
     switch (navigation.kind) {
       case 'global':
         if (navigation.filter === 'all') {
-          notes = notes.filter((n) => !n.isDeleted && !n.isArchived);
+          notes = notes.filter(n => !n.isDeleted && !n.isArchived);
         } else if (navigation.filter === 'pinned') {
-          notes = notes.filter((n) => n.isPinned && !n.isDeleted);
+          notes = notes.filter(n => n.isPinned && !n.isDeleted);
         } else if (navigation.filter === 'trash') {
-          notes = notes.filter((n) => n.isDeleted);
+          notes = notes.filter(n => n.isDeleted);
         }
         break;
 
       case 'notebook':
-        notes = notes.filter(
-          (n) => n.notebookId === navigation.id && !n.isDeleted && !n.isArchived
-        );
+        notes = notes.filter(n => n.notebookId === navigation.id && !n.isDeleted && !n.isArchived);
         break;
 
       case 'tag':
         notes = notes.filter(
-          (n) =>
-            n.tags.some((t) => t === navigation.name) && !n.isDeleted && !n.isArchived
+          n => n.tags.some(t => t === navigation.name) && !n.isDeleted && !n.isArchived
         );
         break;
 
       case 'search':
         // Search is handled separately via useSearchNotes
-        notes = notes.filter((n) => !n.isDeleted && !n.isArchived);
+        notes = notes.filter(n => !n.isDeleted && !n.isArchived);
         break;
     }
 
     // 2. Filter by status (orthogonal)
     if (statusFilter) {
-      notes = notes.filter((n) => n.status === statusFilter);
+      notes = notes.filter(n => n.status === statusFilter);
     }
 
     // 3. Filter by tag (orthogonal)
     if (tagFilter) {
-      notes = notes.filter((n) => n.tags.some((t) => t === tagFilter));
+      notes = notes.filter(n => n.tags.some(t => t === tagFilter));
     }
 
     // 4. Add excerpt for list display
@@ -196,13 +193,11 @@ export function useNotebookContext() {
     const ancestorIds = getAncestorIds(id, tree ?? []);
 
     // Find children of selected notebook
-    function findChildren(
-      nodes: typeof tree
-    ): string[] {
+    function findChildren(nodes: typeof tree): string[] {
       if (!nodes) return [];
       for (const node of nodes) {
         if (node.notebook.id === id) {
-          return node.children.map((c) => c.notebook.id);
+          return node.children.map(c => c.notebook.id);
         }
         const found = findChildren(node.children);
         if (found.length > 0) return found;

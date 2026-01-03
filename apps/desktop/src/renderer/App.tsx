@@ -89,15 +89,12 @@ function NotesApp() {
 
   // Determine which notes to display
   // Both filteredNotes and searchNotesQuery.data have excerpt
-  const displayedNotes = debouncedSearch.trim()
-    ? (searchNotesQuery.data ?? [])
-    : filteredNotes;
+  const displayedNotes = debouncedSearch.trim() ? (searchNotesQuery.data ?? []) : filteredNotes;
 
   const isLoading = debouncedSearch.trim() !== '' && searchNotesQuery.isLoading;
 
   // Determine selected quick filter for NoteList header
-  const selectedQuickFilter =
-    navigation.kind === 'global' ? navigation.filter : null;
+  const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
 
   // Handle search with debounce
   const handleSearch = useCallback((query: string) => {
@@ -273,24 +270,14 @@ function NotesApp() {
           onLayoutChange={onLayoutChange}
         >
           {/* Sidebar Panel */}
-          <Panel
-            id="sidebar"
-            defaultSize={220}
-            minSize={200}
-            maxSize={360}
-          >
+          <Panel id="sidebar" defaultSize={220} minSize={200} maxSize={360}>
             <Sidebar />
           </Panel>
 
           <Separator className="resize-handle" />
 
           {/* NoteList Panel */}
-          <Panel
-            id="notelist"
-            defaultSize={300}
-            minSize={240}
-            maxSize={450}
-          >
+          <Panel id="notelist" defaultSize={300} minSize={240} maxSize={450}>
             <NoteList
               notes={displayedNotes}
               selectedId={selectedNote?.id ?? null}

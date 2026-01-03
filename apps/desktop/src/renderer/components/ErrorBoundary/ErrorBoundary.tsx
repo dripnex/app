@@ -54,9 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className={styles.message}>
               The application encountered an unexpected error. Your notes are safe.
             </p>
-            {this.state.error && (
-              <pre className={styles.details}>{this.state.error.message}</pre>
-            )}
+            {this.state.error && <pre className={styles.details}>{this.state.error.message}</pre>}
             <div className={styles.actions}>
               <button className={styles.btnPrimary} onClick={this.handleReload}>
                 Reload App

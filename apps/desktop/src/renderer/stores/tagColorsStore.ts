@@ -36,9 +36,7 @@ export const useTagColorsStore = create<TagColorsStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const tags = await window.readied.notes.tagsWithColors();
-      const colorMap = Object.fromEntries(
-        tags.filter(t => t.color).map(t => [t.name, t.color!])
-      );
+      const colorMap = Object.fromEntries(tags.filter(t => t.color).map(t => [t.name, t.color!]));
       set({ colors: colorMap, isLoaded: true });
     } finally {
       set({ isLoading: false });
@@ -61,9 +59,7 @@ export const useTagColorsStore = create<TagColorsStore>((set, get) => ({
 
   removeTag: tagName => {
     set(state => ({
-      colors: Object.fromEntries(
-        Object.entries(state.colors).filter(([k]) => k !== tagName)
-      ),
+      colors: Object.fromEntries(Object.entries(state.colors).filter(([k]) => k !== tagName)),
     }));
   },
 }));

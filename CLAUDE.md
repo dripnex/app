@@ -122,7 +122,7 @@ The app uses a centralized `NavigationState` for all navigation concerns.
 type NavigationState =
   | { kind: 'global'; filter: 'all' | 'pinned' | 'trash' }
   | { kind: 'notebook'; id: string }
-  | { kind: 'tag'; name: string }      // Future
+  | { kind: 'tag'; name: string } // Future
   | { kind: 'search'; query: string }; // Future
 ```
 

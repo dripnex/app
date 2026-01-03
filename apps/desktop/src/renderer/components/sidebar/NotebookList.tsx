@@ -1,9 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import {
-  useNotebookTree,
-  useNotebookMutations,
-  getAncestorIds,
-} from '../../hooks/useNotebooks';
+import { useNotebookTree, useNotebookMutations, getAncestorIds } from '../../hooks/useNotebooks';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { NotebookItem } from './NotebookItem';
 import { NotebookCreateForm } from './NotebookCreateForm';

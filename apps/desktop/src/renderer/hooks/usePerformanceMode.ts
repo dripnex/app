@@ -17,9 +17,9 @@ import { usePerformanceStore, type PerfMode } from '../stores/performanceStore';
  * Call this hook once in App.tsx.
  */
 export function usePerformanceMode(): void {
-  const mode = usePerformanceStore((state) => state.mode);
-  const setMode = usePerformanceStore((state) => state.setMode);
-  const setBaseMode = usePerformanceStore((state) => state.setBaseMode);
+  const mode = usePerformanceStore(state => state.mode);
+  const setMode = usePerformanceStore(state => state.setMode);
+  const setBaseMode = usePerformanceStore(state => state.setBaseMode);
 
   // A) Single source of truth: store.mode → dataset.perf
   useEffect(() => {

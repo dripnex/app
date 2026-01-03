@@ -2,7 +2,13 @@ import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react'
 import { useQueryClient } from '@tanstack/react-query';
 import { FileText, MoreVertical } from 'lucide-react';
 import { TitleInput } from './TitleInput';
-import { ActionsPanel, EditorHeader, EditorViewToggle, FormattingToolbar, MarkdownPreview } from './editor';
+import {
+  ActionsPanel,
+  EditorHeader,
+  EditorViewToggle,
+  FormattingToolbar,
+  MarkdownPreview,
+} from './editor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
@@ -68,9 +74,7 @@ export function NoteEditor({
   });
 
   // Merge note.tags with manualTags for display (deduplicated)
-  const displayTags = note
-    ? [...new Set([...note.tags, ...manualTags])].sort()
-    : [];
+  const displayTags = note ? [...new Set([...note.tags, ...manualTags])].sort() : [];
 
   // Fetch manual tags when note changes
   useEffect(() => {
@@ -207,11 +211,7 @@ export function NoteEditor({
     <main className="note-editor" aria-label="Note editor">
       {/* Title row with actions button */}
       <header className="note-editor-header">
-        <TitleInput
-          value={note.title}
-          onChange={handleTitleChange}
-          onEnter={handleTitleEnter}
-        />
+        <TitleInput value={note.title} onChange={handleTitleChange} onEnter={handleTitleEnter} />
         <button
           type="button"
           className="note-editor-actions-btn"
@@ -235,13 +235,19 @@ export function NoteEditor({
         />
       )}
       <div ref={toolbarRowRef} className="note-editor-toolbar-row">
-        <FormattingToolbar editorRef={editorRef} onVisibilityChange={setToolbarVisibility} containerRef={toolbarRowRef} />
+        <FormattingToolbar
+          editorRef={editorRef}
+          onVisibilityChange={setToolbarVisibility}
+          containerRef={toolbarRowRef}
+        />
       </div>
       <div className={`note-editor-body note-editor-body--${viewMode}`}>
         {showEditor && (
           <div
             className="split-pane split-pane--editor"
-            onMouseEnter={() => { masterRef.current = 'editor'; }}
+            onMouseEnter={() => {
+              masterRef.current = 'editor';
+            }}
           >
             <Suspense fallback={<EditorLoading />}>
               <MarkdownEditor
@@ -257,7 +263,9 @@ export function NoteEditor({
         {showPreview && (
           <div
             className="split-pane split-pane--preview"
-            onMouseEnter={() => { masterRef.current = 'preview'; }}
+            onMouseEnter={() => {
+              masterRef.current = 'preview';
+            }}
           >
             <MarkdownPreview
               ref={previewRef}

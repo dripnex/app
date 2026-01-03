@@ -125,10 +125,7 @@ export const useNotebookList = useNotebooks;
  * Get ancestor IDs for a selected notebook.
  * Used to highlight the path in the sidebar (breadcrumb-style navigation).
  */
-export function getAncestorIds(
-  selectedId: string | null,
-  tree: NotebookTreeNode[]
-): Set<string> {
+export function getAncestorIds(selectedId: string | null, tree: NotebookTreeNode[]): Set<string> {
   const ancestors = new Set<string>();
   if (!selectedId) return ancestors;
 

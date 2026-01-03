@@ -96,7 +96,10 @@ export function validateTitle(title: string): ValidationResult {
   if (trimmed.length > MAX_TITLE_LENGTH) {
     return {
       valid: false,
-      error: { type: 'INVALID_TITLE', reason: `Title cannot exceed ${MAX_TITLE_LENGTH} characters` },
+      error: {
+        type: 'INVALID_TITLE',
+        reason: `Title cannot exceed ${MAX_TITLE_LENGTH} characters`,
+      },
     };
   }
 

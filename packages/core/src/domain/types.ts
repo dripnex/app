@@ -59,7 +59,12 @@ export const MAX_NOTEBOOK_DEPTH = 2;
 export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
 
 /** All valid note statuses */
-export const NOTE_STATUSES: readonly NoteStatus[] = ['active', 'on_hold', 'completed', 'dropped'] as const;
+export const NOTE_STATUSES: readonly NoteStatus[] = [
+  'active',
+  'on_hold',
+  'completed',
+  'dropped',
+] as const;
 
 /** Default status for new notes */
 export const DEFAULT_NOTE_STATUS: NoteStatus = 'active';

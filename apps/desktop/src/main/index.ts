@@ -378,12 +378,13 @@ function registerIpcHandlers(): void {
   ipcMain.handle('notes:setManualTags', async (_event, noteId: string, tags: string[]) => {
     const id = createNoteId(noteId);
     // Normalize tags: trim, lowercase, strip leading '#', remove empties, dedupe
-    const normalizedTags = [...new Set(
-      tags
-        .map(t => t.trim().toLowerCase().replace(/^#/, ''))
-        .filter(t => t.length > 0)
-    )];
-    repo.setManualTags(id, normalizedTags.map(t => createTag(t)));
+    const normalizedTags = [
+      ...new Set(tags.map(t => t.trim().toLowerCase().replace(/^#/, '')).filter(t => t.length > 0)),
+    ];
+    repo.setManualTags(
+      id,
+      normalizedTags.map(t => createTag(t))
+    );
     return { ok: true };
   });
 

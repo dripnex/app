@@ -36,7 +36,7 @@ export const useEditorPreferencesStore = create<EditorPreferencesStore>()(
       viewMode: 'editor',
 
       // Actions
-      setViewMode: (mode) => set({ viewMode: mode }),
+      setViewMode: mode => set({ viewMode: mode }),
 
       cycleViewMode: () => {
         const current = get().viewMode;

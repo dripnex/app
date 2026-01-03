@@ -1,10 +1,4 @@
-import {
-  useRef,
-  useCallback,
-  useEffect,
-  type RefObject,
-  type MutableRefObject,
-} from 'react';
+import { useRef, useCallback, useEffect, type RefObject, type MutableRefObject } from 'react';
 import type { MarkdownEditorHandle } from '../components/MarkdownEditor';
 import type { MarkdownPreviewHandle } from '../components/editor';
 

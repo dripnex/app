@@ -1,13 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  Sparkles,
-  Archive,
-  Search,
-  X,
-  Check,
-  SquarePen,
-  ArrowUpDown,
-} from 'lucide-react';
+import { Sparkles, Archive, Search, X, Check, SquarePen, ArrowUpDown } from 'lucide-react';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
@@ -184,20 +176,17 @@ export function NoteList({
   };
 
   // Context menu handler
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent, note: NoteWithExcerpt) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setContextMenu({
-        noteId: note.id,
-        notebookId: note.notebookId,
-        isArchived: note.isArchived,
-        x: e.clientX,
-        y: e.clientY,
-      });
-    },
-    []
-  );
+  const handleContextMenu = useCallback((e: React.MouseEvent, note: NoteWithExcerpt) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      noteId: note.id,
+      notebookId: note.notebookId,
+      isArchived: note.isArchived,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }, []);
 
   // Get header title based on navigation context
   const getHeaderTitle = () => {
@@ -223,7 +212,7 @@ export function NoteList({
   }, [showSortDropdown]);
 
   // Check if a sort option is active
-  const isSortActive = (option: typeof SORT_OPTIONS[number]) => {
+  const isSortActive = (option: (typeof SORT_OPTIONS)[number]) => {
     return sortBy === option.value && sortOrder === option.order;
   };
 
@@ -424,9 +413,7 @@ function NoteListItem({
           </span>
         )}
       </div>
-      {note.excerpt && (
-        <div className="note-list-item-preview">{note.excerpt}</div>
-      )}
+      {note.excerpt && <div className="note-list-item-preview">{note.excerpt}</div>}
     </li>
   );
 }
