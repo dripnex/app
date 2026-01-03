@@ -151,6 +151,7 @@ export interface ReadiedAPI {
       content: string;
       id?: string;
       title?: string;
+      notebookId?: string;
     }) => Promise<Result<NoteSnapshot>>;
     /** Get a note by ID */
     get: (id: string) => Promise<Result<NoteSnapshot>>;

@@ -139,7 +139,8 @@
     "publish": {
       "provider": "github",
       "owner": "tomymaritano",
-      "repo": "readide"
+      "repo": "readide",
+      "private": true
     }
   }
 }

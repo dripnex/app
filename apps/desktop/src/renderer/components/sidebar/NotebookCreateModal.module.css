@@ -1,0 +1,134 @@
+/**
+ * NotebookCreateModal CSS Module
+ *
+ * Inkdrop-style modal for creating notebooks.
+ */
+
+/* Overlay backdrop */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 120px;
+  background: rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.1s ease-out;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-inset, #1a1d23);
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: slideIn 0.15s ease-out;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.headerIcon {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.headerTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}
+
+/* Input wrapper */
+.inputWrapper {
+  margin-bottom: 20px;
+}
+
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--accent-muted, rgba(107, 159, 255, 0.4));
+  border-radius: 8px;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+  font-size: 14px;
+  font-weight: 400;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: var(--accent, #6b9fff);
+  outline: none;
+  box-shadow: none;
+}
+
+.input::placeholder {
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancelBtn,
+.createBtn {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.cancelBtn {
+  background: var(--bg-surface, #2a2d35);
+  border: none;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}
+
+.cancelBtn:hover {
+  background: var(--bg-hover, #35383f);
+}
+
+.createBtn {
+  background: var(--accent, #6b9fff);
+  border: none;
+  color: #fff;
+}
+
+.createBtn:hover:not(:disabled) {
+  background: var(--accent-hover, #5a8fee);
+}
+
+.createBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

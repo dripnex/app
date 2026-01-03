@@ -1,13 +1,14 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNotebookTree, useNotebookMutations, getAncestorIds } from '../../hooks/useNotebooks';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { NotebookItem } from './NotebookItem';
-import { NotebookCreateForm } from './NotebookCreateForm';
 
 interface NotebookListProps {
   readonly selectedNotebookId: string | null;
   readonly onSelectNotebook: (id: string) => void;
   readonly filterParentId?: string | null;
+  /** Request to create a child notebook */
+  readonly onRequestCreateChild: (parentId: string) => void;
 }
 
 function NotebookListSkeleton() {
@@ -36,15 +37,20 @@ function NotebookListError({ message }: { message: string }) {
   );
 }
 
+/**
+ * NotebookList - Pure list component
+ *
+ * Only renders notebooks and emits events.
+ * Does NOT manage modals or overlays.
+ */
 export function NotebookList({
   selectedNotebookId,
   onSelectNotebook,
   filterParentId,
+  onRequestCreateChild,
 }: NotebookListProps) {
   const { data: tree, isLoading, error } = useNotebookTree();
-  const { createNotebook, renameNotebook, deleteNotebook } = useNotebookMutations();
-  const [isCreating, setIsCreating] = useState(false);
-  const [createParentId, setCreateParentId] = useState<string | null>(null);
+  const { renameNotebook, deleteNotebook } = useNotebookMutations();
 
   // Calculate ancestor IDs for breadcrumb-style highlighting
   const ancestorIds = useMemo(
@@ -56,7 +62,6 @@ export function NotebookList({
   const displayedTree = useMemo(() => {
     if (!filterParentId || !tree) return tree ?? [];
 
-    // Find children of the selected notebook
     function findChildren(nodes: NotebookTreeNode[]): NotebookTreeNode[] {
       for (const node of nodes) {
         if (node.notebook.id === filterParentId) {
@@ -69,28 +74,6 @@ export function NotebookList({
     }
     return findChildren(tree);
   }, [tree, filterParentId]);
-
-  const handleStartCreate = useCallback((parentId?: string) => {
-    setCreateParentId(parentId ?? null);
-    setIsCreating(true);
-  }, []);
-
-  const handleCreate = useCallback(
-    async (name: string, parentId: string | null) => {
-      await createNotebook.mutateAsync({
-        name,
-        parentId: parentId ?? undefined,
-      });
-      setIsCreating(false);
-      setCreateParentId(null);
-    },
-    [createNotebook]
-  );
-
-  const handleCancelCreate = useCallback(() => {
-    setIsCreating(false);
-    setCreateParentId(null);
-  }, []);
 
   const handleRename = useCallback(
     async (id: string, name: string) => {
@@ -126,13 +109,6 @@ export function NotebookList({
 
   return (
     <div className="notebook-list">
-      {isCreating && (
-        <NotebookCreateForm
-          parentId={createParentId}
-          onSubmit={handleCreate}
-          onCancel={handleCancelCreate}
-        />
-      )}
       <ul className="notebook-list-tree" role="tree" aria-label="Notebooks">
         {displayedTree.map(node => (
           <NotebookItem
@@ -146,7 +122,7 @@ export function NotebookList({
             onSelect={onSelectNotebook}
             onRename={handleRename}
             onDelete={handleDelete}
-            onCreateChild={handleStartCreate}
+            onCreateChild={onRequestCreateChild}
           />
         ))}
       </ul>
@@ -154,5 +130,4 @@ export function NotebookList({
   );
 }
 
-// Export for external use to trigger creation
 export type { NotebookListProps };

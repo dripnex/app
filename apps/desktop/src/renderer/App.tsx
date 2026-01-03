@@ -109,14 +109,16 @@ function NotesApp() {
     }, 300);
   }, []);
 
-  // Create new note
+  // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
-    const newNote = await createNote.mutateAsync({ content: '# Untitled\n\n' });
+    const newNote = await createNote.mutateAsync({
+      content: '# Untitled\n\n',
+      notebookId: selectedNotebookId ?? undefined,
+    });
     setSelectedNote(newNote);
-    goToAllNotes();
     setSearchQuery('');
     setDebouncedSearch('');
-  }, [createNote, goToAllNotes]);
+  }, [createNote, selectedNotebookId]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {

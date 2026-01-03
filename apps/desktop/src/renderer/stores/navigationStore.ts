@@ -44,6 +44,7 @@ interface NavigationStore {
 
   // Actions - Navigation
   goToAllNotes: () => void;
+  goToAllInCurrentContext: () => void;
   goToPinned: () => void;
   goToTrash: () => void;
   goToNotebook: (id: string) => void;
@@ -67,7 +68,7 @@ interface NavigationStore {
 
 const DEFAULT_NAVIGATION: NavigationState = { kind: 'global', filter: 'all' };
 
-export const useNavigationStore = create<NavigationStore>(set => ({
+export const useNavigationStore = create<NavigationStore>((set, get) => ({
   // Initial state
   navigation: DEFAULT_NAVIGATION,
   statusFilter: null,
@@ -78,6 +79,16 @@ export const useNavigationStore = create<NavigationStore>(set => ({
   // Navigation actions (clear filters when changing context)
   goToAllNotes: () =>
     set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null }),
+  goToAllInCurrentContext: () => {
+    const { navigation } = get();
+    if (navigation.kind === 'notebook') {
+      // Stay in notebook, just clear filters
+      set({ statusFilter: null, tagFilter: null });
+    } else {
+      // Go to global "all notes"
+      set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null });
+    }
+  },
   goToPinned: () =>
     set({ navigation: { kind: 'global', filter: 'pinned' }, statusFilter: null, tagFilter: null }),
   goToTrash: () =>

@@ -217,7 +217,7 @@ function registerIpcHandlers(): void {
   const repo = noteRepository;
 
   // Create note
-  ipcMain.handle('notes:create', async (_event, input: { content: string; id?: string }) => {
+  ipcMain.handle('notes:create', async (_event, input: { content: string; id?: string; notebookId?: string }) => {
     return createNoteOperation(input, repo);
   });
 
