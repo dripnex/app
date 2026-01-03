@@ -9,6 +9,7 @@
 
 .editor-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
@@ -168,11 +169,11 @@
 
 .tags-display {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  flex: 1;
+  flex-basis: 100%;
   min-width: 0;
-  overflow: hidden;
 }
 
 .tags-display-label {
@@ -183,8 +184,8 @@
 
 .tags-display-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  overflow: hidden;
 }
 
 .tag-chip {
