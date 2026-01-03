@@ -106,11 +106,7 @@ export function Sidebar() {
         isNotebookContext={isNotebookContext}
       />
 
-      <SidebarSection
-        title="Notebooks"
-        collapsible
-        onAdd={openCreateInContext}
-      >
+      <SidebarSection title="Notebooks" collapsible onAdd={openCreateInContext}>
         <NotebookList
           selectedNotebookId={selectedNotebookId}
           onSelectNotebook={goToNotebook}

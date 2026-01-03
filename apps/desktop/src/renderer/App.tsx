@@ -128,6 +128,22 @@ function NotesApp() {
     }
   }, []);
 
+  // Handle wikilink click - best-effort navigation by title
+  const handleWikilinkClick = useCallback(
+    async (title: string) => {
+      const notes = await window.readied.notes.search(title);
+      if (notes.length > 0) {
+        // Find exact match (case-insensitive)
+        const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
+        if (match) {
+          handleSelectNote(match.id);
+        }
+      }
+      // No-op if note doesn't exist (future: could show toast or create note)
+    },
+    [handleSelectNote]
+  );
+
   // Update note content
   const handleUpdateNote = useCallback(
     async (content: string) => {
@@ -313,6 +329,7 @@ function NotesApp() {
               onStatusChange={handleStatusChange}
               onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
               onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+              onWikilinkClick={handleWikilinkClick}
             />
           </Panel>
         </Group>

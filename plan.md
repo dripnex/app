@@ -406,11 +406,13 @@ autoUpdater.checkForUpdatesAndNotify();
 El repo es privado, por lo que los releases requieren autenticación.
 
 **Configuración actual:**
+
 - `publish.private: true` en package.json
 - `GH_TOKEN` secret con PAT de solo lectura
 - electron-updater maneja auth automáticamente
 
 **Riesgos aceptados:**
+
 - Token recuperable del binario (inevitable para repos privados)
 - Si token expira → auto-update roto
 - Dependencia de GitHub infra
@@ -419,16 +421,17 @@ El repo es privado, por lo que los releases requieren autenticación.
 
 Cuando el producto tenga usuarios pagos, churn tracking, y soporte activo, la arquitectura evoluciona a:
 
-| Actual (Pre-revenue) | Futuro (Post-revenue) |
-|----------------------|-----------------------|
-| Repo privado | Releases públicos (o CDN) |
-| Updater con auth | Updater sin auth |
-| N/A | Licencia validada aparte |
-| N/A | Features gated por licencia |
+| Actual (Pre-revenue) | Futuro (Post-revenue)       |
+| -------------------- | --------------------------- |
+| Repo privado         | Releases públicos (o CDN)   |
+| Updater con auth     | Updater sin auth            |
+| N/A                  | Licencia validada aparte    |
+| N/A                  | Features gated por licencia |
 
 **Principio:** Updates accesibles para todos. Monetización via licencia, no via acceso a updates.
 
 **Implementación futura:**
+
 1. Mover releases a GitHub público o CDN propio
 2. Eliminar `private: true` y token
 3. Validar licencia al iniciar app

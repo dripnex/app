@@ -72,6 +72,18 @@
   color: var(--accent);
 }
 
+/* Wikilinks [[note]] */
+.markdown-preview .wikilink {
+  color: var(--accent);
+  border-bottom: 1px solid rgba(94, 234, 212, 0.3);
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.markdown-preview .wikilink:hover {
+  background: rgba(94, 234, 212, 0.1);
+}
+
 /* Strong and emphasis */
 .markdown-preview strong {
   font-weight: 600;

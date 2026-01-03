@@ -75,18 +75,10 @@ export function NotebookCreateModal({ parentId, onSubmit, onCancel }: NotebookCr
           </div>
 
           <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.cancelBtn}
-              onClick={onCancel}
-            >
+            <button type="button" className={styles.cancelBtn} onClick={onCancel}>
               Cancel
             </button>
-            <button
-              type="submit"
-              className={styles.createBtn}
-              disabled={!name.trim()}
-            >
+            <button type="submit" className={styles.createBtn} disabled={!name.trim()}>
               Create
             </button>
           </div>

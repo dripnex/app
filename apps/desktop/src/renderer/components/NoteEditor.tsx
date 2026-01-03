@@ -38,6 +38,7 @@ interface NoteEditorProps {
   onStatusChange?: (status: NoteStatus) => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  onWikilinkClick?: (target: string) => void;
 }
 
 export function NoteEditor({
@@ -48,6 +49,7 @@ export function NoteEditor({
   onStatusChange,
   onDuplicate,
   onDelete,
+  onWikilinkClick,
 }: NoteEditorProps) {
   const queryClient = useQueryClient();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -273,6 +275,7 @@ export function NoteEditor({
               createdAt={note.createdAt}
               updatedAt={note.updatedAt}
               onReady={handlePreviewReady}
+              onWikilinkClick={onWikilinkClick}
             />
           </div>
         )}
