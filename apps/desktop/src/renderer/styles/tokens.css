@@ -73,4 +73,12 @@
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-slow: 300ms ease;
+
+  /* ===== GLASS / BLUR (defaults - overridden by data-perf) ===== */
+  --glass-bg: rgba(20, 22, 26, 0.85);
+  --glass-blur: 28px;
+  --glass-saturate: 180%;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-bg-fallback: rgba(20, 22, 26, 0.95);
 }

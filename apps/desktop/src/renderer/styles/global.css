@@ -29,6 +29,35 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ===== PERFORMANCE MODES (Glass/Blur Tuning) ===== */
+:root[data-perf="high"] {
+  --glass-blur: 32px;
+  --glass-saturate: 200%;
+  --glass-bg: rgba(20, 22, 26, 0.75);
+}
+
+:root[data-perf="medium"] {
+  --glass-blur: 18px;
+  --glass-saturate: 150%;
+  --glass-bg: rgba(20, 22, 26, 0.85);
+}
+
+/* Low perf: no blur, increased opacity for visual consistency */
+:root[data-perf="low"] {
+  --glass-blur: 0px;
+  --glass-saturate: 100%;
+  --glass-bg: var(--glass-bg-fallback);
+  --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Overlay policy: when drawer is open, degrade floating toggle */
+:root[data-overlay-open="true"] .floating-view-toggle {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass-bg-fallback);
+}
+
 /* App layout */
 .app {
   display: flex;
@@ -42,15 +71,42 @@ body {
   min-height: 0;
 }
 
+/* Resize Handles */
+.resize-handle {
+  width: 4px;
+  background: transparent;
+  transition: background var(--transition-fast);
+  cursor: col-resize;
+  position: relative;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border);
+}
+
+.resize-handle:hover,
+.resize-handle[data-resize-handle-active] {
+  background: var(--accent-muted);
+}
+
+.resize-handle:hover::after,
+.resize-handle[data-resize-handle-active]::after {
+  background: var(--accent);
+}
+
 /* Sidebar */
 .sidebar {
-  width: var(--sidebar-width);
-  min-width: var(--sidebar-width);
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--bg-surface);
-  border-right: 1px solid var(--border);
   padding-top: 0;
   -webkit-app-region: drag;
 }
@@ -179,10 +235,10 @@ input:focus-visible {
 
 /* Note Editor */
 .note-editor {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
   background: var(--bg-base);
 }
 
@@ -283,9 +339,99 @@ input:focus-visible {
   flex-shrink: 0;
 }
 
+/* Header right section (words + actions button) */
+.note-editor-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+/* Actions button (vertical dots) */
+.note-editor-actions-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  -webkit-app-region: no-drag;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.note-editor-actions-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.note-editor-actions-btn:active {
+  transform: scale(0.95);
+}
+
 .note-editor-body {
   flex: 1;
   overflow: hidden;
+  position: relative;
+}
+
+/* Floating View Toggle - Inkdrop style (dark, minimal) */
+.floating-view-toggle {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10;
+  background: rgba(15, 16, 18, 0.95);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.floating-view-toggle .editor-view-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Override base styles from preview.css with higher specificity */
+.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn.active,
+.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn.active.filled {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .markdown-editor {
@@ -390,16 +536,53 @@ input:focus-visible {
   font-weight: 500;
 }
 
-/* Sidebar Header */
+.sidebar-breadcrumb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: var(--accent-muted);
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-breadcrumb-tag-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.sidebar-breadcrumb-tag-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 14px;
+  height: 14px;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sidebar-breadcrumb-tag-clear:hover {
+  background: var(--accent);
+  color: white;
+}
+
+/* Sidebar Header - aligned with traffic lights (y: 8) */
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 0 4px;
-  min-height: 0;
+  padding: 4px 8px 0;
+  height: 32px;
+  -webkit-app-region: drag;
 }
 
 .sidebar-settings-btn {
+  -webkit-app-region: no-drag;
   width: 24px;
   height: 24px;
   display: flex;
