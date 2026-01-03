@@ -1,1 +1,0 @@
-export { LicenseDialog } from './LicenseDialog';
