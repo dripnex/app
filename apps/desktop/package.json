@@ -49,10 +49,12 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.2.0",
     "remark-gfm": "^4.0.1",
+    "unist-util-visit": "^5.0.0",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/mdast": "^4.0.4",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
     "@vitejs/plugin-react": "^4.2.1",
@@ -139,7 +141,8 @@
     "publish": {
       "provider": "github",
       "owner": "tomymaritano",
-      "repo": "readide"
+      "repo": "readide",
+      "private": true
     }
   }
 }

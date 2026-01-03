@@ -5,7 +5,7 @@
  */
 
 import { createNote } from '../domain/note.js';
-import { createNoteId } from '../domain/types.js';
+import { createNoteId, createNotebookId } from '../domain/types.js';
 import { validateContent, validateNoteId } from '../domain/invariants.js';
 import { success, validationError, alreadyExists, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
@@ -44,6 +44,7 @@ export async function createNoteOperation(
   const note = createNote({
     id: noteId,
     content: input.content,
+    notebookId: input.notebookId ? createNotebookId(input.notebookId) : undefined,
   });
 
   // Save to repository

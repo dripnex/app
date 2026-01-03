@@ -109,14 +109,16 @@ function NotesApp() {
     }, 300);
   }, []);
 
-  // Create new note
+  // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
-    const newNote = await createNote.mutateAsync({ content: '# Untitled\n\n' });
+    const newNote = await createNote.mutateAsync({
+      content: '# Untitled\n\n',
+      notebookId: selectedNotebookId ?? undefined,
+    });
     setSelectedNote(newNote);
-    goToAllNotes();
     setSearchQuery('');
     setDebouncedSearch('');
-  }, [createNote, goToAllNotes]);
+  }, [createNote, selectedNotebookId]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {
@@ -125,6 +127,22 @@ function NotesApp() {
       setSelectedNote(result.data);
     }
   }, []);
+
+  // Handle wikilink click - best-effort navigation by title
+  const handleWikilinkClick = useCallback(
+    async (title: string) => {
+      const notes = await window.readied.notes.search(title);
+      if (notes.length > 0) {
+        // Find exact match (case-insensitive)
+        const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
+        if (match) {
+          handleSelectNote(match.id);
+        }
+      }
+      // No-op if note doesn't exist (future: could show toast or create note)
+    },
+    [handleSelectNote]
+  );
 
   // Update note content
   const handleUpdateNote = useCallback(
@@ -311,6 +329,7 @@ function NotesApp() {
               onStatusChange={handleStatusChange}
               onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
               onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+              onWikilinkClick={handleWikilinkClick}
             />
           </Panel>
         </Group>

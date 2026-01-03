@@ -73,6 +73,7 @@ export const useSortOrder = () => useNavigationStore(selectSortOrder);
 /** Get all navigation actions (stable references) */
 export function useNavigationActions() {
   const goToAllNotes = useNavigationStore(s => s.goToAllNotes);
+  const goToAllInCurrentContext = useNavigationStore(s => s.goToAllInCurrentContext);
   const goToPinned = useNavigationStore(s => s.goToPinned);
   const goToTrash = useNavigationStore(s => s.goToTrash);
   const goToNotebook = useNavigationStore(s => s.goToNotebook);
@@ -86,6 +87,7 @@ export function useNavigationActions() {
 
   return {
     goToAllNotes,
+    goToAllInCurrentContext,
     goToPinned,
     goToTrash,
     goToNotebook,

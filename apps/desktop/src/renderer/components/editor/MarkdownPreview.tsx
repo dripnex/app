@@ -1,12 +1,14 @@
-import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
+import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useCallback } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { remarkWikilink } from './remark-wikilink';
 
 interface MarkdownPreviewProps {
   readonly content: string;
   readonly createdAt?: string;
   readonly updatedAt?: string;
   readonly onReady?: () => void;
+  readonly onWikilinkClick?: (target: string) => void;
 }
 
 /** Imperative handle for scroll sync */
@@ -24,8 +26,23 @@ export interface MarkdownPreviewHandle {
  * Exposes scroll methods via ref for sync with editor.
  */
 export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
-  function MarkdownPreview({ content, createdAt, updatedAt, onReady }, ref) {
+  function MarkdownPreview({ content, createdAt, updatedAt, onReady, onWikilinkClick }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Delegated click handler for wikilinks
+    const handleClick = useCallback(
+      (e: React.MouseEvent) => {
+        const target = (e.target as HTMLElement).closest('.wikilink');
+        if (target) {
+          const noteTitle = target.getAttribute('data-target');
+          if (noteTitle && onWikilinkClick) {
+            e.preventDefault();
+            onWikilinkClick(noteTitle);
+          }
+        }
+      },
+      [onWikilinkClick]
+    );
 
     // Notify parent when mounted
     useEffect(() => {
@@ -86,9 +103,9 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     }, [createdAt, updatedAt]);
 
     return (
-      <div ref={containerRef} className="markdown-preview">
+      <div ref={containerRef} className="markdown-preview" onClick={handleClick}>
         <Markdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkWikilink]}
           skipHtml={true}
           components={{
             // Custom checkbox rendering for task lists

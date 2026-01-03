@@ -64,7 +64,7 @@ jobs:
         if: matrix.platform == 'mac'
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           # Code signing
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -78,14 +78,14 @@ jobs:
         if: matrix.platform == 'win'
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: pnpm dist:win --publish always
 
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: pnpm dist:linux --publish always
 
       - name: Upload artifacts

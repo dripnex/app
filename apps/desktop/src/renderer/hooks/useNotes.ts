@@ -112,7 +112,7 @@ export function useNoteMutations() {
   };
 
   const createNote = useMutation({
-    mutationFn: async (input: { content: string; id?: string }) => {
+    mutationFn: async (input: { content: string; id?: string; notebookId?: string }) => {
       const result = await window.readied.notes.create(input);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;

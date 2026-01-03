@@ -13,6 +13,9 @@ export interface CreateNoteInput {
 
   /** Optional ID (auto-generated if not provided) */
   id?: string;
+
+  /** Optional notebook ID (defaults to Inbox) */
+  notebookId?: string;
 }
 
 /** Input for updating an existing note's content */

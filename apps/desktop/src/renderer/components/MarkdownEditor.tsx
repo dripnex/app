@@ -38,6 +38,7 @@ import {
   undoChange,
   redoChange,
 } from './editor/toolbar-commands';
+import { wikilinkExtension } from './editor/wikilink-extension';
 
 /** Dark theme matching Readied's design */
 const darkTheme = EditorView.theme(
@@ -299,6 +300,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Syntax highlighting
         syntaxHighlighting(markdownHighlighting),
+
+        // Wikilink [[note]] highlighting
+        wikilinkExtension,
 
         // Dark theme
         darkTheme,
