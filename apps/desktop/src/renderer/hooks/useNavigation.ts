@@ -33,7 +33,7 @@ export interface NoteWithExcerpt extends NoteSnapshot {
 // Re-export types
 // ============================================================================
 
-export type { NavigationState, StatusFilter, TagFilter, SortBy, SortOrder, NoteWithExcerpt };
+export type { NavigationState, StatusFilter, TagFilter, SortBy, SortOrder };
 
 // ============================================================================
 // Granular Selectors (minimize re-renders)
