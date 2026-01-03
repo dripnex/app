@@ -37,7 +37,7 @@ import {
   insertHorizontalRule,
   undoChange,
   redoChange,
-} from './editor/toolbar-commands';
+} from '@readied/commands';
 import {
   wikilinkExtension,
   createWikilinkAutocomplete,

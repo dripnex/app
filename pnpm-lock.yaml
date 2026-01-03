@@ -56,6 +56,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
+      '@readied/commands':
+        specifier: workspace:*
+        version: link:../../packages/commands
       '@readied/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -184,6 +187,24 @@ importers:
       '@iconify-json/simple-icons':
         specifier: ^1.2.64
         version: 1.2.64
+
+  packages/commands:
+    devDependencies:
+      '@codemirror/commands':
+        specifier: ^6.10.1
+        version: 6.10.1
+      '@codemirror/state':
+        specifier: ^6.5.3
+        version: 6.5.3
+      '@codemirror/view':
+        specifier: ^6.39.8
+        version: 6.39.8
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
 
   packages/core:
     dependencies:
