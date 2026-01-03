@@ -71,7 +71,6 @@ function insertLinePrefix(view: EditorView, prefix: string): void {
   const endLine = state.doc.lineAt(to);
 
   const changes: { from: number; to: number; insert: string }[] = [];
-  let offset = 0;
 
   for (let i = startLine.number; i <= endLine.number; i++) {
     const line = state.doc.line(i);
@@ -80,7 +79,6 @@ function insertLinePrefix(view: EditorView, prefix: string): void {
       to: line.from,
       insert: prefix,
     });
-    offset += prefix.length;
   }
 
   view.dispatch({ changes });

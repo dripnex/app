@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Hash, X, Circle } from 'lucide-react';
 import { useTags, noteKeys } from '../../hooks/useNotes';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
-import { ColorPicker, TAG_COLORS } from '../ColorPicker';
+import { ColorPicker } from '../ColorPicker';
 import { TagsContextMenu } from './TagsContextMenu';
 
 /** Context menu state */

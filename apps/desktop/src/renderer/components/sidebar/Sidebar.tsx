@@ -1,5 +1,4 @@
 import {
-  useNavigation,
   useIsNotebookContext,
   useSelectedNotebookId,
   useGlobalFilter,
