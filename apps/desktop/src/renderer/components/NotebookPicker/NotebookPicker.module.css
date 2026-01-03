@@ -1,0 +1,120 @@
+/**
+ * NotebookPicker CSS Module
+ *
+ * Inkdrop-style: centered modal, accent search input, clean list.
+ */
+
+/* Overlay backdrop */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 120px;
+  background: rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.1s ease-out;
+}
+
+.picker {
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg-inset, #1a1d23);
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: slideIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Search input wrapper */
+.searchWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: transparent;
+  border: 1px solid var(--accent-muted, rgba(107, 159, 255, 0.4));
+  border-radius: 6px;
+  margin: 12px;
+}
+
+.searchIcon {
+  color: var(--accent-muted, rgba(107, 159, 255, 0.6));
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+  font-size: 14px;
+  font-weight: 400;
+  outline: none;
+  box-shadow: none;
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+}
+
+/* Notebook list */
+.list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+/* Empty state */
+.empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Notebook item */
+.item {
+  width: 100%;
+  display: block;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.08s ease;
+}
+
+.item:hover {
+  background: var(--bg-surface);
+}
+
+.item.current {
+  color: var(--accent);
+}
