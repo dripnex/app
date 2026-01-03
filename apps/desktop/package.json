@@ -38,6 +38,7 @@
     "@lezer/highlight": "^1.2.3",
     "@readied/commands": "workspace:*",
     "@readied/core": "workspace:*",
+    "@readied/embeds": "workspace:*",
     "@readied/tasks": "workspace:*",
     "@readied/wikilinks": "workspace:*",
     "@readied/licensing": "workspace:*",

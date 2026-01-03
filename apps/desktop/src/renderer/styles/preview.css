@@ -314,6 +314,43 @@
   margin: 1em 0;
 }
 
+/* Embeds (![[file]] syntax) */
+.markdown-preview .embed {
+  display: block;
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.markdown-preview .embed-image {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-preview .embed-video,
+.markdown-preview .embed-audio {
+  width: 100%;
+  max-width: 100%;
+}
+
+.markdown-preview .embed-pdf {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--border-subtle);
+}
+
+.markdown-preview .embed-unresolved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-style: italic;
+  background: var(--bg-elevated);
+  border: 1px dashed var(--border-subtle);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
 /* Footnotes (GFM) */
 .markdown-preview .footnotes {
   margin-top: 2em;

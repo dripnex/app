@@ -3,6 +3,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { remarkWikilink } from '@readied/wikilinks';
+import { remarkEmbed } from '@readied/embeds';
 import { countMarkdownTasks } from '@readied/tasks';
 import { formatDateTime } from '../../utils/date';
 
@@ -135,7 +136,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         </div>
 
         <Markdown
-          remarkPlugins={[remarkGfm, remarkWikilink]}
+          remarkPlugins={[remarkGfm, remarkWikilink, remarkEmbed]}
           skipHtml={true}
           components={{
             // Custom checkbox rendering for task lists
