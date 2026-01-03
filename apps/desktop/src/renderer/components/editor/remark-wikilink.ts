@@ -64,8 +64,9 @@ export function remarkWikilink() {
       }
 
       if (children.length > 0) {
-        // @ts-ignore - unist types don't match hast nodes but this works with rehype
-        parent.children.splice(index, 1, ...children);
+        // Cast needed: we're inserting hast-like nodes into mdast parent
+        // This works because react-markdown handles the hybrid tree
+        (parent.children as unknown[]).splice(index, 1, ...children);
         // IMPORTANTE: retornar nuevo index para no romper traversal
         return index + children.length;
       }
