@@ -3,6 +3,9 @@
  *
  * Transforms [[target]] and [[target|display]] into clickable spans.
  * Navigation is handled by parent component via click delegation.
+ *
+ * Uses mdast text nodes with data.hName/hProperties for proper inline rendering.
+ * This pattern is compatible with remark-rehype and avoids DOM nesting warnings.
  */
 
 import { visit } from 'unist-util-visit';
@@ -11,14 +14,17 @@ import type { Root, Text, Parent } from 'mdast';
 // Pattern: [[target]] or [[target|display]]
 const WIKILINK_PATTERN = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
-interface WikilinkNode {
-  type: 'element';
-  tagName: 'span';
-  properties: {
-    className: string[];
-    'data-target': string;
+/**
+ * Text node with hast data for rendering as span.
+ * This is the standard unified pattern for inline elements.
+ */
+interface TextWithData {
+  type: 'text';
+  value: string;
+  data?: {
+    hName: string;
+    hProperties: Record<string, string>;
   };
-  children: Array<{ type: 'text'; value: string }>;
 }
 
 export function remarkWikilink() {
@@ -29,10 +35,10 @@ export function remarkWikilink() {
       const value = node.value;
       if (!value.includes('[[')) return;
 
-      const children: Array<{ type: string; value?: string } | WikilinkNode> = [];
+      const children: TextWithData[] = [];
       let lastIndex = 0;
 
-      // IMPORTANTE: resetear lastIndex para regex global
+      // Reset lastIndex for global regex
       WIKILINK_PATTERN.lastIndex = 0;
 
       let match;
@@ -42,18 +48,20 @@ export function remarkWikilink() {
           children.push({ type: 'text', value: value.slice(lastIndex, match.index) });
         }
 
-        // Wikilink element
+        // Wikilink as text node with hast data
         const target = match[1]!.trim();
         const display = match[2]?.trim() || target;
         children.push({
-          type: 'element',
-          tagName: 'span',
-          properties: {
-            className: ['wikilink'],
-            'data-target': target,
+          type: 'text',
+          value: display,
+          data: {
+            hName: 'span',
+            hProperties: {
+              className: 'wikilink',
+              'data-target': target,
+            },
           },
-          children: [{ type: 'text', value: display }],
-        } as WikilinkNode);
+        });
 
         lastIndex = match.index + match[0].length;
       }
@@ -64,10 +72,8 @@ export function remarkWikilink() {
       }
 
       if (children.length > 0) {
-        // Cast needed: we're inserting hast-like nodes into mdast parent
-        // This works because react-markdown handles the hybrid tree
-        (parent.children as unknown[]).splice(index, 1, ...children);
-        // IMPORTANTE: retornar nuevo index para no romper traversal
+        (parent.children as TextWithData[]).splice(index, 1, ...children);
+        // Return new index to not break traversal
         return index + children.length;
       }
     });

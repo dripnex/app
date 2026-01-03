@@ -2,7 +2,7 @@ import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useCallbac
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
-import { remarkWikilink } from './remark-wikilink';
+import { remarkWikilink } from '@readied/wikilinks';
 import { countMarkdownTasks } from '../../utils/markdown';
 import { formatDateTime } from '../../utils/date';
 

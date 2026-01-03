@@ -33,6 +33,20 @@ export default defineConfig({
   },
   renderer: {
     plugins: [react()],
+    // Pre-bundle all CodeMirror packages together to avoid multiple instances of @codemirror/state
+    // See: https://codemirror.net/docs/guide/#bundling
+    optimizeDeps: {
+      include: [
+        '@codemirror/state',
+        '@codemirror/view',
+        '@codemirror/autocomplete',
+        '@codemirror/commands',
+        '@codemirror/language',
+        '@codemirror/lang-markdown',
+        '@codemirror/language-data',
+        '@lezer/highlight',
+      ],
+    },
     build: {
       outDir: 'out/renderer',
       rollupOptions: {

@@ -2,4 +2,4 @@
  * Repository exports
  */
 
-export { SQLiteNoteRepository } from './SQLiteNoteRepository.js';
+export { SQLiteNoteRepository, type BacklinkInfo } from './SQLiteNoteRepository.js';

@@ -374,6 +374,37 @@ input:focus-visible {
   transform: scale(0.95);
 }
 
+/* Header actions group (backlinks + more actions) */
+.note-editor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+/* Badge for backlinks count */
+.note-editor-actions-btn .badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-editor-actions-btn.has-badge {
+  position: relative;
+}
+
 .note-editor-body {
   flex: 1;
   overflow: hidden;

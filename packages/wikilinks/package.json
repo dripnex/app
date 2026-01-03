@@ -1,8 +1,8 @@
 {
-  "name": "@readied/core",
+  "name": "@readied/wikilinks",
   "version": "0.1.0",
   "private": true,
-  "description": "Core domain logic for Readied",
+  "description": "Wikilink system for Readied",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -17,11 +17,20 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "@codemirror/autocomplete": "^6.0.0",
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0"
+  },
   "dependencies": {
-    "@readied/wikilinks": "workspace:*",
-    "zod": "^3.24.1"
+    "unified": "^11.0.0",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.0",
+    "@codemirror/state": "^6.5.3",
+    "@codemirror/view": "^6.39.8",
+    "@types/mdast": "^4.0.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

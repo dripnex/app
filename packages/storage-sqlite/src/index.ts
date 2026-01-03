@@ -14,8 +14,17 @@ export {
 } from './database.js';
 
 // Repositories
-export { SQLiteNoteRepository } from './repositories/SQLiteNoteRepository.js';
+export { SQLiteNoteRepository, type BacklinkInfo } from './repositories/SQLiteNoteRepository.js';
 export { SQLiteNotebookRepository } from './repositories/SQLiteNotebookRepository.js';
 
 // Migrations
-export { allMigrations, initialSchema, addArchivedAt, addNotebooks } from './migrations/index.js';
+export {
+  allMigrations,
+  initialSchema,
+  addArchivedAt,
+  addNotebooks,
+  addNoteFields,
+  addManualTags,
+  addTagColors,
+  addLinks,
+} from './migrations/index.js';

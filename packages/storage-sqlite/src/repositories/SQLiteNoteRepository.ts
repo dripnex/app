@@ -20,6 +20,7 @@ import {
   createNotebookId,
   createTag,
   DEFAULT_NOTE_STATUS,
+  extractWikilinks,
 } from '@readied/core';
 import type { DatabaseConnection } from '../database.js';
 
@@ -45,6 +46,13 @@ interface TagRow {
 interface TagWithColorRow {
   name: string;
   color: string | null;
+}
+
+/** Backlink information for UI display */
+export interface BacklinkInfo {
+  noteId: string;
+  noteTitle: string;
+  targetRef: string;
 }
 
 /** SQLite implementation of ExtendedNoteRepository */
@@ -393,5 +401,129 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         archivedAt: row.archived_at as Timestamp | null,
       },
     };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Links (Wikilinks / Backlinks)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Sync links for a note based on its content.
+   * Replaces all existing links from this note with newly extracted ones.
+   *
+   * @param noteId - The source note ID
+   * @param content - The note content to extract wikilinks from
+   */
+  syncLinks(noteId: NoteId, content: string): void {
+    this.db.transaction(() => {
+      // Delete all existing links from this note
+      const deleteStmt = this.db.prepare('DELETE FROM links WHERE source_note_id = ?');
+      deleteStmt.run(noteId);
+
+      // Extract wikilinks from content
+      const wikilinks = extractWikilinks(content);
+      if (wikilinks.length === 0) return;
+
+      // Prepare statements
+      const findNoteByTitle = this.db.prepare<{ id: string; title: string }>(`
+        SELECT id, title FROM notes
+        WHERE title = ? COLLATE NOCASE AND archived_at IS NULL
+        LIMIT 1
+      `);
+
+      const insertLink = this.db.prepare(`
+        INSERT INTO links (source_note_id, target_ref, target_note_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(source_note_id, target_ref) DO UPDATE SET
+          target_note_id = excluded.target_note_id
+      `);
+
+      // Insert each link
+      for (const wikilink of wikilinks) {
+        const targetRef = wikilink.target;
+
+        // Try to resolve target by title (case-insensitive)
+        const targetNote = findNoteByTitle.get(targetRef) as { id: string } | undefined;
+        const targetNoteId = targetNote?.id ?? null;
+
+        insertLink.run(noteId, targetRef, targetNoteId);
+      }
+    });
+  }
+
+  /**
+   * Get all notes that link TO a given note (backlinks).
+   *
+   * @param noteId - The target note ID
+   * @returns Array of backlink info with source note details
+   */
+  getBacklinks(noteId: NoteId): BacklinkInfo[] {
+    const stmt = this.db.prepare<{ source_note_id: string; title: string; target_ref: string }>(`
+      SELECT l.source_note_id, n.title, l.target_ref
+      FROM links l
+      JOIN notes n ON l.source_note_id = n.id
+      WHERE l.target_note_id = ? AND n.archived_at IS NULL
+      ORDER BY n.updated_at DESC
+    `);
+
+    const rows = stmt.all(noteId) as Array<{
+      source_note_id: string;
+      title: string;
+      target_ref: string;
+    }>;
+
+    return rows.map(row => ({
+      noteId: row.source_note_id,
+      noteTitle: row.title,
+      targetRef: row.target_ref,
+    }));
+  }
+
+  /**
+   * Get all notes that a given note links TO (outgoing links).
+   *
+   * @param noteId - The source note ID
+   * @returns Array of outgoing link info
+   */
+  getOutgoingLinks(noteId: NoteId): Array<{ targetRef: string; targetNoteId: string | null; targetTitle: string | null }> {
+    const stmt = this.db.prepare<{
+      target_ref: string;
+      target_note_id: string | null;
+      target_title: string | null;
+    }>(`
+      SELECT l.target_ref, l.target_note_id, n.title as target_title
+      FROM links l
+      LEFT JOIN notes n ON l.target_note_id = n.id
+      WHERE l.source_note_id = ?
+      ORDER BY l.target_ref
+    `);
+
+    const rows = stmt.all(noteId) as Array<{
+      target_ref: string;
+      target_note_id: string | null;
+      target_title: string | null;
+    }>;
+
+    return rows.map(row => ({
+      targetRef: row.target_ref,
+      targetNoteId: row.target_note_id,
+      targetTitle: row.target_title,
+    }));
+  }
+
+  /**
+   * Re-resolve all links that reference a given title.
+   * Call this when a note is renamed to update resolved links.
+   *
+   * @param oldTitle - The old note title
+   * @param newNoteId - The new note ID to resolve to (or null to break links)
+   */
+  reResolveLinks(title: string, noteId: NoteId | null): void {
+    const stmt = this.db.prepare(`
+      UPDATE links
+      SET target_note_id = ?
+      WHERE target_ref = ? COLLATE NOCASE
+    `);
+    stmt.run(noteId, title);
   }
 }

@@ -414,6 +414,26 @@ function registerIpcHandlers(): void {
     return { ok: true };
   });
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Links (Wikilinks / Backlinks)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Sync links for a note (call after saving note)
+  ipcMain.handle('links:sync', async (_event, noteId: string, content: string) => {
+    repo.syncLinks(createNoteId(noteId), content);
+    return { ok: true };
+  });
+
+  // Get backlinks (notes that link TO this note)
+  ipcMain.handle('links:backlinks', async (_event, noteId: string) => {
+    return repo.getBacklinks(createNoteId(noteId));
+  });
+
+  // Get outgoing links (notes this note links TO)
+  ipcMain.handle('links:outgoing', async (_event, noteId: string) => {
+    return repo.getOutgoingLinks(createNoteId(noteId));
+  });
+
   // Count notes
   ipcMain.handle('notes:count', async () => {
     // Get all notes to compute counts

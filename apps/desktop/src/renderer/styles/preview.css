@@ -12,6 +12,8 @@
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.7;
+  container-type: inline-size;
+  container-name: preview;
 }
 
 /* ============================================================================
@@ -21,8 +23,9 @@
 
 .preview-metadata-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 48px;
+  gap: 24px 48px;
   padding: 10px 16px;
   margin-bottom: 16px;
   background: var(--bg-surface);
@@ -30,10 +33,30 @@
   border-radius: 12px;
 }
 
+/* Compact layout for narrow widths (container query) */
+@container preview (max-width: 450px) {
+  .preview-metadata-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .preview-meta-item {
+    gap: 10px;
+  }
+
+  .preview-meta-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 .preview-meta-item {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .preview-meta-icon {
@@ -149,6 +172,7 @@
 
 /* Wikilinks [[note]] */
 .markdown-preview .wikilink {
+  display: inline; /* Force inline in all contexts (blockquotes, etc) */
   color: var(--accent);
   border-bottom: 1px solid rgba(94, 234, 212, 0.3);
   cursor: pointer;
