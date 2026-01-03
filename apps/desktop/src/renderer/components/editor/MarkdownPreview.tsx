@@ -1,7 +1,10 @@
 import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useCallback } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { remarkWikilink } from './remark-wikilink';
+import { countMarkdownTasks } from '../../utils/markdown';
+import { formatDateTime } from '../../utils/date';
 
 interface MarkdownPreviewProps {
   readonly content: string;
@@ -81,29 +84,56 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       },
     }));
 
-    // Format dates for display
-    const formattedDates = useMemo(() => {
-      if (!createdAt && !updatedAt) return null;
-
-      const formatDate = (iso: string) => {
-        const date = new Date(iso);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      };
-
-      return {
-        created: createdAt ? formatDate(createdAt) : null,
-        updated: updatedAt ? formatDate(updatedAt) : null,
-      };
-    }, [createdAt, updatedAt]);
+    // Count tasks for progress display
+    const tasks = useMemo(() => countMarkdownTasks(content), [content]);
+    const hasProgress = tasks.total > 0;
+    const progressPercent = hasProgress ? (tasks.completed / tasks.total) * 100 : 0;
 
     return (
       <div ref={containerRef} className="markdown-preview" onClick={handleClick}>
+        {/* Metadata header - Inkdrop style */}
+        <div className="preview-metadata-header">
+          {hasProgress && (
+            <div className="preview-meta-item">
+              <ListChecks size={20} className="preview-meta-icon" aria-hidden="true" />
+              <div className="preview-meta-content">
+                <span className="preview-meta-label">PROGRESS</span>
+                <div className="preview-meta-progress">
+                  <div className="preview-progress-bar">
+                    <div
+                      className="preview-progress-fill"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <span className="preview-progress-text">
+                    {tasks.completed} of {tasks.total} tasks
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {createdAt && (
+            <div className="preview-meta-item">
+              <Clock size={20} className="preview-meta-icon" aria-hidden="true" />
+              <div className="preview-meta-content">
+                <span className="preview-meta-label">CREATED AT</span>
+                <span className="preview-meta-value">{formatDateTime(createdAt)}</span>
+              </div>
+            </div>
+          )}
+
+          {updatedAt && (
+            <div className="preview-meta-item">
+              <CalendarPlus size={20} className="preview-meta-icon" aria-hidden="true" />
+              <div className="preview-meta-content">
+                <span className="preview-meta-label">UPDATED AT</span>
+                <span className="preview-meta-value">{formatDateTime(updatedAt)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         <Markdown
           remarkPlugins={[remarkGfm, remarkWikilink]}
           skipHtml={true}
@@ -119,13 +149,6 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         >
           {content}
         </Markdown>
-
-        {formattedDates && (
-          <div className="markdown-preview-meta">
-            {formattedDates.created && <span>Created: {formattedDates.created}</span>}
-            {formattedDates.updated && <span>Updated: {formattedDates.updated}</span>}
-          </div>
-        )}
       </div>
     );
   }

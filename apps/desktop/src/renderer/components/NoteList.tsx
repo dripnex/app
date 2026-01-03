@@ -1,5 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Sparkles, Archive, Search, X, Check, SquarePen, ArrowUpDown } from 'lucide-react';
+import {
+  Sparkles,
+  Archive,
+  Search,
+  X,
+  Check,
+  SquarePen,
+  ArrowUpDown,
+  Pin,
+  PinOff,
+} from 'lucide-react';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
@@ -20,6 +30,7 @@ interface NoteListProps {
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onDuplicate: (id: string) => void;
+  onPin: (id: string) => void;
   onMove: (noteId: string, notebookId: string) => void;
   onSearch: (query: string) => void;
   onNewNote: () => void;
@@ -89,6 +100,7 @@ interface ContextMenuState {
   noteId: string;
   notebookId: string | null;
   isArchived: boolean;
+  isPinned: boolean;
   x: number;
   y: number;
 }
@@ -111,6 +123,7 @@ export function NoteList({
   onDelete,
   onArchive,
   onDuplicate,
+  onPin,
   onMove,
   onSearch,
   onNewNote,
@@ -183,6 +196,7 @@ export function NoteList({
       noteId: note.id,
       notebookId: note.notebookId,
       isArchived: note.isArchived,
+      isPinned: note.isPinned,
       x: e.clientX,
       y: e.clientY,
     });
@@ -328,8 +342,10 @@ export function NoteList({
           noteId={contextMenu.noteId}
           currentNotebookId={contextMenu.notebookId}
           isArchived={contextMenu.isArchived}
+          isPinned={contextMenu.isPinned}
           position={{ x: contextMenu.x, y: contextMenu.y }}
           onClose={() => setContextMenu(null)}
+          onPin={onPin}
           onDuplicate={onDuplicate}
           onArchive={onArchive}
           onDelete={onDelete}
@@ -366,6 +382,18 @@ function NoteListItem({
   onContextMenu,
 }: NoteListItemProps) {
   const getColor = useTagColorsStore(state => state.getColor);
+  const [showUnpinEffect, setShowUnpinEffect] = useState(false);
+  const prevPinnedRef = useRef(note.isPinned);
+
+  // Detect unpin transition (pinned → unpinned)
+  useEffect(() => {
+    if (prevPinnedRef.current && !note.isPinned) {
+      setShowUnpinEffect(true);
+      const timer = setTimeout(() => setShowUnpinEffect(false), 600);
+      return () => clearTimeout(timer);
+    }
+    prevPinnedRef.current = note.isPinned;
+  }, [note.isPinned]);
 
   return (
     <li
@@ -382,7 +410,11 @@ function NoteListItem({
       }}
       tabIndex={0}
     >
-      <div className="note-list-item-title">{note.title || 'Untitled'}</div>
+      <div className="note-list-item-title">
+        {note.isPinned && <Pin size={12} className="pin-icon" aria-label="Pinned" />}
+        {showUnpinEffect && <PinOff size={12} className="unpin-icon" aria-hidden="true" />}
+        {note.title || 'Untitled'}
+      </div>
       <div className="note-list-item-meta">
         <span className="timestamp">{formatRelativeTime(note.updatedAt)}</span>
         {note.tags.length > 0 && (

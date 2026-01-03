@@ -25,3 +25,13 @@ export function formatRelativeTime(dateStr: string): string {
     day: 'numeric',
   });
 }
+
+/**
+ * Format ISO date to readable datetime
+ * @example "2026-01-02 00:01:01"
+ */
+export function formatDateTime(isoString: string): string {
+  const date = new Date(isoString);
+  // sv-SE locale gives ISO-like format: "2026-01-02 00:01:01"
+  return date.toLocaleString('sv-SE').replace('T', ' ');
+}
