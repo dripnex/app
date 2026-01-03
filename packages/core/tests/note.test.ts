@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createNote, updateNoteContent, hasTag, collectTags } from '../src/domain/note.js';
+import {
+  createNote,
+  updateNoteContent,
+  updateNoteTitle,
+  hasTag,
+  collectTags,
+} from '../src/domain/note.js';
 import { createTag, createNoteId } from '../src/domain/types.js';
 
 describe('Note Entity', () => {
@@ -62,13 +68,15 @@ describe('Note Entity', () => {
   });
 
   describe('updateNoteContent', () => {
-    it('updates content while preserving ID', () => {
+    it('updates content while preserving ID and structural title', () => {
       const original = createNote({ content: '# Original' });
       const updated = updateNoteContent(original, '# Updated');
 
       expect(updated.id).toBe(original.id);
       expect(updated.content).toBe('# Updated');
-      expect(updated.metadata.title).toBe('Updated');
+      // Title is structural and preserved (not re-extracted from content)
+      expect(updated.title).toBe('Original');
+      expect(updated.metadata.title).toBe('Original');
     });
 
     it('preserves createdAt timestamp', () => {
@@ -97,6 +105,36 @@ describe('Note Entity', () => {
       expect(updated.metadata.tags).not.toContain('old');
       expect(updated.metadata.tags).toContain('new');
       expect(updated.metadata.tags).toContain('fresh');
+    });
+  });
+
+  describe('updateNoteTitle', () => {
+    it('updates title independently from content', () => {
+      const original = createNote({ content: '# Original Content' });
+      const updated = updateNoteTitle(original, 'New Title');
+
+      expect(updated.title).toBe('New Title');
+      expect(updated.metadata.title).toBe('New Title');
+      expect(updated.content).toBe('# Original Content'); // Content unchanged
+    });
+
+    it('preserves other fields when updating title', () => {
+      const original = createNote({ content: '# Test #tag' });
+      const updated = updateNoteTitle(original, 'New Title');
+
+      expect(updated.id).toBe(original.id);
+      expect(updated.notebookId).toBe(original.notebookId);
+      expect(updated.metadata.tags).toContain('tag');
+      expect(updated.metadata.createdAt).toBe(original.metadata.createdAt);
+    });
+
+    it('updates updatedAt timestamp', () => {
+      const original = createNote({ content: '# Test' });
+      const updated = updateNoteTitle(original, 'New Title');
+
+      expect(new Date(updated.metadata.updatedAt).getTime()).toBeGreaterThanOrEqual(
+        new Date(original.metadata.updatedAt).getTime()
+      );
     });
   });
 

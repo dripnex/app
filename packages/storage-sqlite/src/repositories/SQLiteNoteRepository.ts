@@ -12,12 +12,14 @@ import type {
 import {
   type Note,
   type NoteId,
+  type NoteStatus,
   type Tag,
   type Timestamp,
   createNote,
   createNoteId,
   createNotebookId,
   createTag,
+  DEFAULT_NOTE_STATUS,
 } from '@readied/core';
 import type { DatabaseConnection } from '../database.js';
 
@@ -31,10 +33,18 @@ interface NoteRow {
   updated_at: string;
   word_count: number;
   archived_at: string | null;
+  is_pinned: number; // SQLite stores booleans as 0/1
+  is_deleted: number;
+  status: string;
 }
 
 interface TagRow {
   name: string;
+}
+
+interface TagWithColorRow {
+  name: string;
+  color: string | null;
 }
 
 /** SQLite implementation of ExtendedNoteRepository */
@@ -44,7 +54,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+             is_pinned, is_deleted, status
       FROM notes
       WHERE id = ?
     `);
@@ -61,30 +72,37 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     this.db.transaction(() => {
       // Upsert note
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+                           is_pinned, is_deleted, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           notebook_id = excluded.notebook_id,
           content = excluded.content,
           title = excluded.title,
           updated_at = excluded.updated_at,
           word_count = excluded.word_count,
-          archived_at = excluded.archived_at
+          archived_at = excluded.archived_at,
+          is_pinned = excluded.is_pinned,
+          is_deleted = excluded.is_deleted,
+          status = excluded.status
       `);
 
       stmt.run(
         note.id,
         note.notebookId,
         note.content,
-        note.metadata.title,
+        note.title, // Use structural title
         note.metadata.createdAt,
         note.metadata.updatedAt,
         note.metadata.wordCount,
-        note.metadata.archivedAt
+        note.metadata.archivedAt,
+        note.isPinned ? 1 : 0,
+        note.isDeleted ? 1 : 0,
+        note.status
       );
 
-      // Update tags
-      this.syncNoteTags(note.id, note.metadata.tags);
+      // Update content-extracted tags (preserves manual tags)
+      this.syncExtractedTags(note.id, note.metadata.tags);
     });
   }
 
@@ -118,7 +136,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     if (tag) {
       sql = `
-        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at
+        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at,
+               n.is_pinned, n.is_deleted, n.status
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
@@ -129,7 +148,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       params = [tag.toLowerCase(), limit, offset];
     } else {
       sql = `
-        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
+        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+               is_pinned, is_deleted, status
         FROM notes n
         WHERE 1=1 ${archivedCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
@@ -156,7 +176,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
 
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+             is_pinned, is_deleted, status
       FROM notes
       WHERE (content LIKE ? OR title LIKE ?) ${archivedCondition}
       ORDER BY updated_at DESC
@@ -191,20 +212,22 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     return row.count;
   }
 
-  /** Get all unique tags (from non-archived notes by default) */
-  async getAllTags(includeArchived: boolean = false): Promise<Tag[]> {
-    const sql = includeArchived
-      ? 'SELECT DISTINCT t.name FROM tags t ORDER BY t.name'
-      : `SELECT DISTINCT t.name
-         FROM tags t
-         JOIN note_tags nt ON t.id = nt.tag_id
-         JOIN notes n ON nt.note_id = n.id
-         WHERE n.archived_at IS NULL
-         ORDER BY t.name`;
-
-    const stmt = this.db.prepare<TagRow>(sql);
+  /** Get all tags (persistent - includes tags not currently in use) */
+  async getAllTags(_includeArchived: boolean = false): Promise<Tag[]> {
+    // Tags are persistent entities - return all from tags table
+    const stmt = this.db.prepare<TagRow>('SELECT name FROM tags ORDER BY name ASC');
     const rows = stmt.all() as TagRow[];
     return rows.map(r => createTag(r.name));
+  }
+
+  /**
+   * Delete a tag from the system.
+   * Also removes all note_tags associations (via CASCADE).
+   */
+  deleteTag(tagName: string): void {
+    const normalized = tagName.trim().toLowerCase();
+    const stmt = this.db.prepare('DELETE FROM tags WHERE name = ?');
+    stmt.run(normalized);
   }
 
   // Private helpers
@@ -223,18 +246,25 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
   private getTagsForNote(noteId: NoteId): Tag[] {
     const stmt = this.db.prepare<TagRow>(`
-      SELECT t.name
+      SELECT DISTINCT t.name
       FROM tags t
       JOIN note_tags nt ON t.id = nt.tag_id
       WHERE nt.note_id = ?
+      ORDER BY t.name ASC
     `);
     const rows = stmt.all(noteId) as TagRow[];
     return rows.map(r => createTag(r.name));
   }
 
-  private syncNoteTags(noteId: NoteId, tags: readonly Tag[]): void {
-    // Remove existing tags for this note
-    const deleteStmt = this.db.prepare('DELETE FROM note_tags WHERE note_id = ?');
+  /**
+   * Sync content-extracted tags (#tag from markdown).
+   * Only affects rows with source='content'.
+   */
+  private syncExtractedTags(noteId: NoteId, tags: readonly Tag[]): void {
+    // Remove existing content-extracted tags for this note
+    const deleteStmt = this.db.prepare(
+      "DELETE FROM note_tags WHERE note_id = ? AND source = 'content'"
+    );
     deleteStmt.run(noteId);
 
     if (tags.length === 0) return;
@@ -248,7 +278,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const getTagIdStmt = this.db.prepare<{ id: number }>('SELECT id FROM tags WHERE name = ?');
 
     const linkTagStmt = this.db.prepare(`
-      INSERT INTO note_tags (note_id, tag_id) VALUES (?, ?)
+      INSERT INTO note_tags (note_id, tag_id, source) VALUES (?, ?, 'content')
+      ON CONFLICT(note_id, tag_id) DO NOTHING
     `);
 
     for (const tag of tags) {
@@ -258,20 +289,100 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     }
   }
 
+  /**
+   * Set manual tags for a note (full replacement).
+   * Must be called within a transaction for crash safety.
+   */
+  setManualTags(noteId: NoteId, tags: readonly Tag[]): void {
+    this.db.transaction(() => {
+      // Remove existing manual tags for this note
+      const deleteStmt = this.db.prepare(
+        "DELETE FROM note_tags WHERE note_id = ? AND source = 'manual'"
+      );
+      deleteStmt.run(noteId);
+
+      if (tags.length === 0) return;
+
+      // Ensure all tags exist and link them
+      const insertTagStmt = this.db.prepare(`
+        INSERT INTO tags (name) VALUES (?)
+        ON CONFLICT(name) DO NOTHING
+      `);
+
+      const getTagIdStmt = this.db.prepare<{ id: number }>('SELECT id FROM tags WHERE name = ?');
+
+      const linkTagStmt = this.db.prepare(`
+        INSERT INTO note_tags (note_id, tag_id, source) VALUES (?, ?, 'manual')
+        ON CONFLICT(note_id, tag_id) DO NOTHING
+      `);
+
+      for (const tag of tags) {
+        insertTagStmt.run(tag);
+        const tagRow = getTagIdStmt.get(tag) as { id: number };
+        linkTagStmt.run(noteId, tagRow.id);
+      }
+    });
+  }
+
+  /**
+   * Get manual tags only (for UI to determine removability).
+   */
+  getManualTags(noteId: NoteId): Tag[] {
+    const stmt = this.db.prepare<TagRow>(`
+      SELECT t.name
+      FROM tags t
+      JOIN note_tags nt ON t.id = nt.tag_id
+      WHERE nt.note_id = ? AND nt.source = 'manual'
+      ORDER BY t.name ASC
+    `);
+    const rows = stmt.all(noteId) as TagRow[];
+    return rows.map(r => createTag(r.name));
+  }
+
+  /**
+   * Get all tags with their colors.
+   */
+  getAllTagsWithColors(): Array<{ name: string; color: string | null }> {
+    const stmt = this.db.prepare<TagWithColorRow>(`
+      SELECT name, color FROM tags ORDER BY name ASC
+    `);
+    const rows = stmt.all() as TagWithColorRow[];
+    return rows.map(r => ({ name: r.name, color: r.color }));
+  }
+
+  /**
+   * Set color for a tag.
+   * Normalizes tagName (lowercase, trim) before persisting.
+   */
+  setTagColor(tagName: string, color: string | null): void {
+    const normalized = tagName.trim().toLowerCase();
+    const stmt = this.db.prepare(`
+      UPDATE tags SET color = ? WHERE name = ?
+    `);
+    stmt.run(color, normalized);
+  }
+
   private rowToNote(row: NoteRow, tags: Tag[]): Note {
-    // Reconstruct note from stored data
-    // We use createNote to ensure proper structure, but override metadata
+    // Reconstruct note from stored data with structural title
     const note = createNote({
       id: createNoteId(row.id),
       notebookId: createNotebookId(row.notebook_id),
+      title: row.title, // Structural title from DB
       content: row.content,
       createdAt: row.created_at as Timestamp,
+      isPinned: row.is_pinned === 1,
+      isDeleted: row.is_deleted === 1,
+      status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
     });
 
-    // Return note with stored metadata (in case of any differences)
+    // Return note with stored metadata
     return {
       ...note,
       notebookId: createNotebookId(row.notebook_id),
+      title: row.title, // Ensure structural title is set
+      isPinned: row.is_pinned === 1,
+      isDeleted: row.is_deleted === 1,
+      status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
       metadata: {
         ...note.metadata,
         title: row.title,

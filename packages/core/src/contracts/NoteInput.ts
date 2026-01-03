@@ -15,13 +15,22 @@ export interface CreateNoteInput {
   id?: string;
 }
 
-/** Input for updating an existing note */
+/** Input for updating an existing note's content */
 export interface UpdateNoteInput {
   /** ID of the note to update */
   id: NoteId;
 
   /** New markdown content */
   content: string;
+}
+
+/** Input for updating an existing note's title */
+export interface UpdateTitleInput {
+  /** ID of the note to update */
+  id: NoteId;
+
+  /** New title (structural, independent from content) */
+  title: string;
 }
 
 /** Input for deleting a note */

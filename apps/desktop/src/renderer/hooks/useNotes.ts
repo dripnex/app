@@ -1,5 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ListOptions } from '../../preload/index';
+import type { ListOptions, NoteStatus, NoteSnapshot } from '../../preload/index';
+
+// ============================================================================
+// Excerpt Helper (shared between filtered notes and search results)
+// ============================================================================
+
+/** Extract excerpt from note content */
+export function extractExcerpt(content: string, maxLength: number = 100): string {
+  return content
+    .replace(/^#.*$/m, '') // Remove title heading if present
+    .trim()
+    .slice(0, maxLength);
+}
+
+/** Add excerpt to a note snapshot */
+export function withExcerpt<T extends NoteSnapshot>(note: T): T & { excerpt: string } {
+  return {
+    ...note,
+    excerpt: extractExcerpt(note.content),
+  };
+}
 
 /** Query key factory for notes */
 export const noteKeys = {
@@ -21,11 +41,14 @@ export function useNotes(options?: ListOptions) {
   });
 }
 
-/** Hook for searching notes */
+/** Hook for searching notes (returns notes with excerpt) */
 export function useSearchNotes(query: string, limit?: number) {
   return useQuery({
     queryKey: noteKeys.search(query),
-    queryFn: () => window.readied.notes.search(query, limit),
+    queryFn: async () => {
+      const notes = await window.readied.notes.search(query, limit);
+      return notes.map(withExcerpt);
+    },
     enabled: query.trim().length > 0,
   });
 }
@@ -59,6 +82,27 @@ export function useNoteCounts() {
   });
 }
 
+/**
+ * Hook for getting note count for a specific notebook.
+ *
+ * NOTE: This is a temporary solution that filters client-side.
+ * TODO: Add backend support for scoped counts: notes.count({ notebookId })
+ *
+ * @see https://github.com/tomymaritano/readide/issues/XX - Scoped note counts
+ */
+export function useNotebookNotesCount(notebookId: string | null) {
+  // Access cached notes data to avoid extra network request
+  const { data: notes } = useNotes({
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+    archived: 'all',
+  });
+
+  if (!notebookId || !notes) return 0;
+
+  return notes.filter(n => n.notebookId === notebookId && !n.isDeleted && !n.isArchived).length;
+}
+
 /** Hook for note mutations */
 export function useNoteMutations() {
   const queryClient = useQueryClient();
@@ -79,6 +123,18 @@ export function useNoteMutations() {
   const updateNote = useMutation({
     mutationFn: async (input: { id: string; content: string }) => {
       const result = await window.readied.notes.update(input);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: data => {
+      queryClient.setQueryData(noteKeys.detail(data.id), data);
+      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+    },
+  });
+
+  const updateNoteTitle = useMutation({
+    mutationFn: async (input: { id: string; title: string }) => {
+      const result = await window.readied.notes.updateTitle(input);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -132,13 +188,64 @@ export function useNoteMutations() {
     onSuccess: () => invalidateNotes(),
   });
 
+  const pinNote = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await window.readied.notes.pin(id);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
+  const unpinNote = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await window.readied.notes.unpin(id);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
+  const softDeleteNote = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await window.readied.notes.softDelete(id);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
+  const restoreDeletedNote = useMutation({
+    mutationFn: async (id: string) => {
+      const result = await window.readied.notes.restoreDeleted(id);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
+  const setNoteStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: NoteStatus }) => {
+      const result = await window.readied.notes.setStatus(id, status);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
   return {
     createNote,
     updateNote,
+    updateNoteTitle,
     deleteNote,
     archiveNote,
     restoreNote,
     duplicateNote,
     moveNote,
+    pinNote,
+    unpinNote,
+    softDeleteNote,
+    restoreDeletedNote,
+    setNoteStatus,
   };
 }

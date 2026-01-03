@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { NotebookTreeNode } from '../../preload/index';
 
 /** Query key factory for notebooks */
 export const notebookKeys = {
@@ -119,3 +120,63 @@ export function useNotebookMutations() {
 
 /** Alias for useNotebooks - returns flat list of notebooks */
 export const useNotebookList = useNotebooks;
+
+/**
+ * Get ancestor IDs for a selected notebook.
+ * Used to highlight the path in the sidebar (breadcrumb-style navigation).
+ */
+export function getAncestorIds(selectedId: string | null, tree: NotebookTreeNode[]): Set<string> {
+  const ancestors = new Set<string>();
+  if (!selectedId) return ancestors;
+
+  function findPath(nodes: NotebookTreeNode[], path: string[]): boolean {
+    for (const node of nodes) {
+      if (node.notebook.id === selectedId) {
+        // Add all ancestors (excluding the selected node itself)
+        path.forEach(id => ancestors.add(id));
+        return true;
+      }
+      if (findPath(node.children, [...path, node.notebook.id])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  findPath(tree, []);
+  return ancestors;
+}
+
+/** Notebook snapshot type for path results */
+export interface NotebookPathItem {
+  id: string;
+  name: string;
+}
+
+/**
+ * Get the full path to a selected notebook.
+ * Returns an array of notebooks from root to selected (inclusive).
+ */
+export function getNotebookPath(
+  selectedId: string | null,
+  tree: NotebookTreeNode[]
+): NotebookPathItem[] {
+  if (!selectedId) return [];
+
+  function findPath(
+    nodes: NotebookTreeNode[],
+    path: NotebookPathItem[]
+  ): NotebookPathItem[] | null {
+    for (const node of nodes) {
+      const newPath = [...path, { id: node.notebook.id, name: node.notebook.name }];
+      if (node.notebook.id === selectedId) {
+        return newPath;
+      }
+      const result = findPath(node.children, newPath);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  return findPath(tree, []) ?? [];
+}

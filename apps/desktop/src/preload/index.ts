@@ -11,6 +11,9 @@ export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: { type: string; error?: unknown } };
 
+/** Note status for workflow tracking */
+export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
+
 /** Note snapshot from the API */
 export interface NoteSnapshot {
   id: string;
@@ -23,6 +26,9 @@ export interface NoteSnapshot {
   wordCount: number;
   archivedAt: string | null;
   isArchived: boolean;
+  isPinned: boolean;
+  isDeleted: boolean;
+  status: NoteStatus;
 }
 
 /** Notebook snapshot from the API */
@@ -66,6 +72,9 @@ export interface NoteCounts {
   active: number;
   archived: number;
   total: number;
+  pinned: number;
+  deleted: number;
+  byStatus: Record<NoteStatus, number>;
 }
 
 /** Backup info */
@@ -125,6 +134,12 @@ export interface LicenseResult {
   error?: string;
 }
 
+/** Tag with color */
+export interface TagWithColor {
+  name: string;
+  color: string | null;
+}
+
 /** Log level types */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -132,11 +147,17 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export interface ReadiedAPI {
   notes: {
     /** Create a new note */
-    create: (input: { content: string; id?: string }) => Promise<Result<NoteSnapshot>>;
+    create: (input: {
+      content: string;
+      id?: string;
+      title?: string;
+    }) => Promise<Result<NoteSnapshot>>;
     /** Get a note by ID */
     get: (id: string) => Promise<Result<NoteSnapshot>>;
-    /** Update a note */
+    /** Update a note's content */
     update: (input: { id: string; content: string }) => Promise<Result<NoteSnapshot>>;
+    /** Update a note's title (structural, independent from content) */
+    updateTitle: (input: { id: string; title: string }) => Promise<Result<NoteSnapshot>>;
     /** Delete a note (hard delete) */
     delete: (id: string) => Promise<Result<void>>;
     /** Archive a note (soft delete) */
@@ -147,12 +168,32 @@ export interface ReadiedAPI {
     duplicate: (id: string) => Promise<Result<NoteSnapshot>>;
     /** Move note to a different notebook */
     move: (noteId: string, notebookId: string) => Promise<Result<NoteSnapshot>>;
+    /** Pin a note to the top */
+    pin: (id: string) => Promise<Result<NoteSnapshot>>;
+    /** Unpin a note */
+    unpin: (id: string) => Promise<Result<NoteSnapshot>>;
+    /** Move note to trash (soft delete) */
+    softDelete: (id: string) => Promise<Result<NoteSnapshot>>;
+    /** Restore note from trash */
+    restoreDeleted: (id: string) => Promise<Result<NoteSnapshot>>;
+    /** Set note workflow status */
+    setStatus: (id: string, status: NoteStatus) => Promise<Result<NoteSnapshot>>;
     /** List notes */
     list: (options?: ListOptions) => Promise<NoteSnapshot[]>;
     /** Search notes */
     search: (query: string, limit?: number) => Promise<NoteSnapshot[]>;
     /** Get all tags */
     tags: () => Promise<string[]>;
+    /** Get all tags with colors */
+    tagsWithColors: () => Promise<TagWithColor[]>;
+    /** Set color for a tag */
+    setTagColor: (tagName: string, color: string | null) => Promise<{ ok: boolean }>;
+    /** Delete a tag from the system */
+    deleteTag: (tagName: string) => Promise<{ ok: boolean }>;
+    /** Set manual tags for a note (full replacement) */
+    setManualTags: (noteId: string, tags: string[]) => Promise<{ ok: boolean }>;
+    /** Get manual tags only (for editor to know which are removable) */
+    getManualTags: (noteId: string) => Promise<string[]>;
     /** Get note counts */
     count: () => Promise<NoteCounts>;
   };
@@ -226,14 +267,25 @@ const api: ReadiedAPI = {
     create: input => ipcRenderer.invoke('notes:create', input),
     get: id => ipcRenderer.invoke('notes:get', id),
     update: input => ipcRenderer.invoke('notes:update', input),
+    updateTitle: input => ipcRenderer.invoke('notes:updateTitle', input),
     delete: id => ipcRenderer.invoke('notes:delete', id),
     archive: id => ipcRenderer.invoke('notes:archive', id),
     restore: id => ipcRenderer.invoke('notes:restore', id),
     duplicate: id => ipcRenderer.invoke('notes:duplicate', id),
     move: (noteId, notebookId) => ipcRenderer.invoke('notes:move', noteId, notebookId),
+    pin: id => ipcRenderer.invoke('notes:pin', id),
+    unpin: id => ipcRenderer.invoke('notes:unpin', id),
+    softDelete: id => ipcRenderer.invoke('notes:softDelete', id),
+    restoreDeleted: id => ipcRenderer.invoke('notes:restoreDeleted', id),
+    setStatus: (id, status) => ipcRenderer.invoke('notes:setStatus', id, status),
     list: options => ipcRenderer.invoke('notes:list', options),
     search: (query, limit) => ipcRenderer.invoke('notes:search', query, limit),
     tags: () => ipcRenderer.invoke('notes:tags'),
+    tagsWithColors: () => ipcRenderer.invoke('tags:listWithColors'),
+    setTagColor: (tagName, color) => ipcRenderer.invoke('tags:setColor', tagName, color),
+    deleteTag: tagName => ipcRenderer.invoke('tags:delete', tagName),
+    setManualTags: (noteId, tags) => ipcRenderer.invoke('notes:setManualTags', noteId, tags),
+    getManualTags: noteId => ipcRenderer.invoke('notes:getManualTags', noteId),
     count: () => ipcRenderer.invoke('notes:count'),
   },
   notebooks: {

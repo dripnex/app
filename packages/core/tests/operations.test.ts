@@ -88,7 +88,7 @@ describe('Operations', () => {
       );
       expect(createResult.ok).toBe(true);
 
-      // Update it
+      // Update content (title is structural and preserved)
       const noteId = createNoteId('note-1');
       const updateResult = await updateNoteOperation(
         { id: noteId, content: '# Updated Content' },
@@ -97,7 +97,8 @@ describe('Operations', () => {
 
       expect(updateResult.ok).toBe(true);
       if (updateResult.ok) {
-        expect(updateResult.data.title).toBe('Updated Content');
+        // Title is structural and preserved (not re-extracted from content)
+        expect(updateResult.data.title).toBe('Original');
         expect(updateResult.data.content).toBe('# Updated Content');
       }
     });

@@ -112,6 +112,59 @@ All pricing, plans, and guarantees live in ONE place. Marketing pages consume it
 - [ ] Trial days = `config.trialDays`?
 - [ ] Refund days = 14?
 
+## Navigation Architecture
+
+The app uses a centralized `NavigationState` for all navigation concerns.
+
+**Source of Truth:** `hooks/useNavigation.tsx`
+
+```tsx
+type NavigationState =
+  | { kind: 'global'; filter: 'all' | 'pinned' | 'trash' }
+  | { kind: 'notebook'; id: string }
+  | { kind: 'tag'; name: string } // Future
+  | { kind: 'search'; query: string }; // Future
+```
+
+**Key Principles:**
+
+- One state rules all navigation
+- All filtering derived from `NavigationState`
+- Sidebar emits navigation actions, never filters data
+- UI = pure function of state
+
+**How it works:**
+
+1. `NavigationProvider` wraps the app
+2. `useNavigation()` provides state + actions
+3. `filteredNotes` is derived automatically
+4. Sidebar calls `goToNotebook()`, `goToAllNotes()`, etc.
+5. No props drilling for navigation
+
+**Adding new views (Tags, Smart Folders):**
+
+```tsx
+// 1. Add to NavigationState type
+| { kind: 'tag'; name: string }
+
+// 2. Add action to useNavigation
+const goToTag = useCallback((name: string) => {
+  setNavigation({ kind: 'tag', name });
+}, []);
+
+// 3. Add filter case in filteredNotes useMemo
+case 'tag':
+  notes = notes.filter(n => n.tags?.includes(navigation.name));
+  break;
+```
+
+**PR Checklist (navigation changes):**
+
+- [ ] State change via actions only (`goToX()`)
+- [ ] Filtering in `useNavigation.tsx` only
+- [ ] Sidebar uses `useNavigation()` hook
+- [ ] No implicit flags (`!== null`)
+
 ## Documentation
 
 - **Architecture decisions:** `plan.md`

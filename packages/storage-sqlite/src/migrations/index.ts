@@ -6,8 +6,18 @@ import type { Migration } from '@readied/storage-core';
 import { initialSchema } from './001_initial_schema.js';
 import { addArchivedAt } from './002_add_archived_at.js';
 import { addNotebooks } from './003_notebooks.js';
+import { addNoteFields } from './004_note_fields.js';
+import { addManualTags } from './005_manual_tags.js';
+import { addTagColors } from './006_tag_colors.js';
 
 /** All migrations in order */
-export const allMigrations: Migration[] = [initialSchema, addArchivedAt, addNotebooks];
+export const allMigrations: Migration[] = [
+  initialSchema,
+  addArchivedAt,
+  addNotebooks,
+  addNoteFields,
+  addManualTags,
+  addTagColors,
+];
 
-export { initialSchema, addArchivedAt, addNotebooks };
+export { initialSchema, addArchivedAt, addNotebooks, addNoteFields, addManualTags, addTagColors };

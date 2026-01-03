@@ -1,0 +1,85 @@
+import { memo } from 'react';
+import { FileText, Pin, Trash2 } from 'lucide-react';
+
+export type QuickFilterType = 'all' | 'pinned' | 'trash';
+
+interface SidebarQuickFiltersProps {
+  readonly allNotesCount: number;
+  readonly pinnedCount: number;
+  readonly trashCount: number;
+  readonly selectedFilter: QuickFilterType | null;
+  readonly onSelectFilter: (filter: QuickFilterType) => void;
+  readonly isNotebookContext?: boolean;
+}
+
+interface QuickFilterItemProps {
+  readonly icon: React.ReactNode;
+  readonly label: string;
+  readonly count: number;
+  readonly isSelected: boolean;
+  readonly onClick: () => void;
+}
+
+const QuickFilterItem = memo(function QuickFilterItem({
+  icon,
+  label,
+  count,
+  isSelected,
+  onClick,
+}: QuickFilterItemProps) {
+  return (
+    <button
+      type="button"
+      className={`sidebar-quick-filter ${isSelected ? 'selected' : ''}`}
+      onClick={onClick}
+      aria-pressed={isSelected}
+    >
+      <span className="sidebar-quick-filter-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="sidebar-quick-filter-label">{label}</span>
+      <span className="sidebar-quick-filter-count" aria-label={`${count} notes`}>
+        {count}
+      </span>
+    </button>
+  );
+});
+
+export const SidebarQuickFilters = memo(function SidebarQuickFilters({
+  allNotesCount,
+  pinnedCount,
+  trashCount,
+  selectedFilter,
+  onSelectFilter,
+  isNotebookContext = false,
+}: SidebarQuickFiltersProps) {
+  return (
+    <nav className="sidebar-quick-filters" aria-label="Quick filters">
+      <QuickFilterItem
+        icon={<FileText size={16} />}
+        label="All Notes"
+        count={allNotesCount}
+        isSelected={selectedFilter === 'all'}
+        onClick={() => onSelectFilter('all')}
+      />
+      {!isNotebookContext && (
+        <QuickFilterItem
+          icon={<Pin size={16} />}
+          label="Pinned"
+          count={pinnedCount}
+          isSelected={selectedFilter === 'pinned'}
+          onClick={() => onSelectFilter('pinned')}
+        />
+      )}
+      {!isNotebookContext && (
+        <QuickFilterItem
+          icon={<Trash2 size={16} />}
+          label="Trash"
+          count={trashCount}
+          isSelected={selectedFilter === 'trash'}
+          onClick={() => onSelectFilter('trash')}
+        />
+      )}
+    </nav>
+  );
+});

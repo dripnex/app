@@ -54,3 +54,17 @@ export const INBOX_NOTEBOOK_ID = createNotebookId('inbox');
 
 /** Maximum allowed nesting depth for notebooks (0, 1, 2 = 3 levels) */
 export const MAX_NOTEBOOK_DEPTH = 2;
+
+/** Status of a note for workflow tracking */
+export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
+
+/** All valid note statuses */
+export const NOTE_STATUSES: readonly NoteStatus[] = [
+  'active',
+  'on_hold',
+  'completed',
+  'dropped',
+] as const;
+
+/** Default status for new notes */
+export const DEFAULT_NOTE_STATUS: NoteStatus = 'active';
