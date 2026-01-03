@@ -7,7 +7,9 @@ import {
   useGlobalCounts,
   useDisplayedNotesCount,
   useStatusFilter,
+  useTagFilter,
 } from '../../hooks/useNavigation';
+import { SidebarHeader } from './SidebarHeader';
 import { SidebarBreadcrumb } from './SidebarBreadcrumb';
 import { SidebarQuickFilters } from './SidebarQuickFilters';
 import { SidebarSection } from './SidebarSection';
@@ -30,6 +32,7 @@ export function Sidebar() {
   const globalCounts = useGlobalCounts();
   const displayedNotesCount = useDisplayedNotesCount();
   const statusFilter = useStatusFilter();
+  const tagFilter = useTagFilter();
 
   // Actions
   const {
@@ -37,16 +40,19 @@ export function Sidebar() {
     goToPinned,
     goToTrash,
     goToNotebook,
-    goToTag,
     clearNavigation,
     setStatusFilter,
+    setTagFilter,
   } = useNavigationActions();
 
   return (
     <aside className="sidebar" aria-label="Main sidebar">
+      <SidebarHeader />
       <SidebarBreadcrumb
         selectedNotebookId={selectedNotebookId}
+        tagFilter={tagFilter}
         onNavigate={(id) => (id ? goToNotebook(id) : clearNavigation())}
+        onClearTagFilter={() => setTagFilter(null)}
       />
 
       <SidebarQuickFilters
@@ -77,7 +83,7 @@ export function Sidebar() {
       </SidebarSection>
 
       <SidebarSection title="Tags" collapsible defaultCollapsed>
-        <TagsList onSelectTag={goToTag} />
+        <TagsList selectedTag={tagFilter} onSelectTag={setTagFilter} />
       </SidebarSection>
 
       <SidebarSection title="Status" collapsible defaultCollapsed>
