@@ -1,6 +1,6 @@
 {
   "name": "readied",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "private": true,
   "license": "UNLICENSED",
   "description": "Offline-first Markdown editor for developers",
