@@ -2,7 +2,6 @@ import { useCallback, useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Hash, X, Circle } from 'lucide-react';
 import { useTags, noteKeys } from '../../hooks/useNotes';
-import { useNavigation, useNavigationActions } from '../../hooks/useNavigation';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
 import { ColorPicker, TAG_COLORS } from '../ColorPicker';
 import { TagsContextMenu } from './TagsContextMenu';
@@ -27,14 +26,15 @@ interface ContextMenuState {
  */
 
 interface TagsListProps {
-  readonly onSelectTag: (tag: string) => void;
+  /** Currently selected tag filter (null if none) */
+  readonly selectedTag: string | null;
+  /** Called when user clicks a tag - pass null to clear */
+  readonly onSelectTag: (tag: string | null) => void;
 }
 
-export function TagsList({ onSelectTag }: TagsListProps) {
+export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
   const queryClient = useQueryClient();
   const { data: tags = [], isLoading } = useTags();
-  const navigation = useNavigation();
-  const { goToTag, goToAllNotes } = useNavigationActions();
   const getColor = useTagColorsStore(state => state.getColor);
   const setColor = useTagColorsStore(state => state.setColor);
 
@@ -44,9 +44,6 @@ export function TagsList({ onSelectTag }: TagsListProps) {
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-
-  // Get currently selected tag (if any)
-  const selectedTag = navigation.kind === 'tag' ? navigation.name : null;
 
   // Close color picker on click outside
   useEffect(() => {
@@ -63,8 +60,8 @@ export function TagsList({ onSelectTag }: TagsListProps) {
   }, [colorPickerTag]);
 
   const handleTagClick = (tag: string) => {
-    goToTag(tag);
-    onSelectTag(tag);
+    // Toggle: if same tag clicked, clear filter; otherwise set filter
+    onSelectTag(tag === selectedTag ? null : tag);
   };
 
   const handleColorDotClick = useCallback((e: React.MouseEvent, tag: string) => {
@@ -86,9 +83,9 @@ export function TagsList({ onSelectTag }: TagsListProps) {
 
   const handleDeleteTag = useCallback(
     async (tag: string) => {
-      // If deleting the currently selected tag, navigate away
+      // If deleting the currently selected tag filter, clear it
       if (selectedTag === tag) {
-        goToAllNotes();
+        onSelectTag(null);
       }
       await window.readied.notes.deleteTag(tag);
       // Invalidate tags query for sidebar
@@ -96,7 +93,7 @@ export function TagsList({ onSelectTag }: TagsListProps) {
       // Remove from colors cache (tag no longer exists)
       useTagColorsStore.getState().removeTag(tag);
     },
-    [selectedTag, goToAllNotes, queryClient]
+    [selectedTag, onSelectTag, queryClient]
   );
 
   if (isLoading) {

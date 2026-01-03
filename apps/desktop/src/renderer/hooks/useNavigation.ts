@@ -4,6 +4,7 @@ import {
   useNavigationStore,
   selectNavigation,
   selectStatusFilter,
+  selectTagFilter,
   selectIsNotebookContext,
   selectSelectedNotebookId,
   selectGlobalFilter,
@@ -12,6 +13,7 @@ import {
   selectSortOrder,
   type NavigationState,
   type StatusFilter,
+  type TagFilter,
   type SortBy,
   type SortOrder,
 } from '../stores/navigationStore';
@@ -31,7 +33,7 @@ export interface NoteWithExcerpt extends NoteSnapshot {
 // Re-export types
 // ============================================================================
 
-export type { NavigationState, StatusFilter, SortBy, SortOrder, NoteWithExcerpt };
+export type { NavigationState, StatusFilter, TagFilter, SortBy, SortOrder, NoteWithExcerpt };
 
 // ============================================================================
 // Granular Selectors (minimize re-renders)
@@ -42,6 +44,9 @@ export const useNavigation = () => useNavigationStore(selectNavigation);
 
 /** Get current status filter */
 export const useStatusFilter = () => useNavigationStore(selectStatusFilter);
+
+/** Get current tag filter */
+export const useTagFilter = () => useNavigationStore(selectTagFilter);
 
 /** Check if in notebook context */
 export const useIsNotebookContext = () => useNavigationStore(selectIsNotebookContext);
@@ -75,7 +80,8 @@ export function useNavigationActions() {
   const goToSearch = useNavigationStore((s) => s.goToSearch);
   const clearNavigation = useNavigationStore((s) => s.clearNavigation);
   const setStatusFilter = useNavigationStore((s) => s.setStatusFilter);
-  const clearStatusFilter = useNavigationStore((s) => s.clearStatusFilter);
+  const setTagFilter = useNavigationStore((s) => s.setTagFilter);
+  const clearFilters = useNavigationStore((s) => s.clearFilters);
   const setSort = useNavigationStore((s) => s.setSort);
 
   return {
@@ -87,7 +93,8 @@ export function useNavigationActions() {
     goToSearch,
     clearNavigation,
     setStatusFilter,
-    clearStatusFilter,
+    setTagFilter,
+    clearFilters,
     setSort,
   };
 }
@@ -104,6 +111,7 @@ export function useNavigationActions() {
 export function useFilteredNotes(): NoteWithExcerpt[] {
   const navigation = useNavigation();
   const statusFilter = useStatusFilter();
+  const tagFilter = useTagFilter();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
 
@@ -155,9 +163,14 @@ export function useFilteredNotes(): NoteWithExcerpt[] {
       notes = notes.filter((n) => n.status === statusFilter);
     }
 
-    // 3. Add excerpt for list display
+    // 3. Filter by tag (orthogonal)
+    if (tagFilter) {
+      notes = notes.filter((n) => n.tags.some((t) => t === tagFilter));
+    }
+
+    // 4. Add excerpt for list display
     return notes.map(withExcerpt);
-  }, [allNotes, navigation, statusFilter]);
+  }, [allNotes, navigation, statusFilter, tagFilter]);
 }
 
 /**

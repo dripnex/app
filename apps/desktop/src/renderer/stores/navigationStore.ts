@@ -20,6 +20,11 @@ export type NavigationState =
 export type StatusFilter = NoteStatus | null;
 
 /**
+ * Tag filter - orthogonal to navigation, filters within current context
+ */
+export type TagFilter = string | null;
+
+/**
  * Sort options for note list
  */
 export type SortBy = 'title' | 'createdAt' | 'updatedAt';
@@ -33,6 +38,7 @@ interface NavigationStore {
   // State
   navigation: NavigationState;
   statusFilter: StatusFilter;
+  tagFilter: TagFilter;
   sortBy: SortBy;
   sortOrder: SortOrder;
 
@@ -45,9 +51,11 @@ interface NavigationStore {
   goToSearch: (query: string) => void;
   clearNavigation: () => void;
 
-  // Actions - Status Filter
+  // Actions - Filters
   setStatusFilter: (status: StatusFilter) => void;
+  setTagFilter: (tag: TagFilter) => void;
   clearStatusFilter: () => void;
+  clearFilters: () => void;
 
   // Actions - Sort
   setSort: (sortBy: SortBy, sortOrder: SortOrder) => void;
@@ -63,21 +71,30 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
   // Initial state
   navigation: DEFAULT_NAVIGATION,
   statusFilter: null,
+  tagFilter: null,
   sortBy: 'updatedAt',
   sortOrder: 'desc',
 
-  // Navigation actions
-  goToAllNotes: () => set({ navigation: { kind: 'global', filter: 'all' } }),
-  goToPinned: () => set({ navigation: { kind: 'global', filter: 'pinned' } }),
-  goToTrash: () => set({ navigation: { kind: 'global', filter: 'trash' } }),
-  goToNotebook: (id) => set({ navigation: { kind: 'notebook', id } }),
-  goToTag: (name) => set({ navigation: { kind: 'tag', name } }),
-  goToSearch: (query) => set({ navigation: { kind: 'search', query } }),
-  clearNavigation: () => set({ navigation: DEFAULT_NAVIGATION }),
+  // Navigation actions (clear filters when changing context)
+  goToAllNotes: () =>
+    set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null }),
+  goToPinned: () =>
+    set({ navigation: { kind: 'global', filter: 'pinned' }, statusFilter: null, tagFilter: null }),
+  goToTrash: () =>
+    set({ navigation: { kind: 'global', filter: 'trash' }, statusFilter: null, tagFilter: null }),
+  goToNotebook: (id) =>
+    set({ navigation: { kind: 'notebook', id }, statusFilter: null, tagFilter: null }),
+  goToTag: (name) => set({ navigation: { kind: 'tag', name }, statusFilter: null, tagFilter: null }),
+  goToSearch: (query) =>
+    set({ navigation: { kind: 'search', query }, statusFilter: null, tagFilter: null }),
+  clearNavigation: () =>
+    set({ navigation: DEFAULT_NAVIGATION, statusFilter: null, tagFilter: null }),
 
-  // Status filter actions
+  // Filter actions
   setStatusFilter: (status) => set({ statusFilter: status }),
+  setTagFilter: (tag) => set({ tagFilter: tag }),
   clearStatusFilter: () => set({ statusFilter: null }),
+  clearFilters: () => set({ statusFilter: null, tagFilter: null }),
 
   // Sort actions
   setSort: (sortBy, sortOrder) => set({ sortBy, sortOrder }),
@@ -89,6 +106,7 @@ export const useNavigationStore = create<NavigationStore>((set) => ({
 
 export const selectNavigation = (state: NavigationStore) => state.navigation;
 export const selectStatusFilter = (state: NavigationStore) => state.statusFilter;
+export const selectTagFilter = (state: NavigationStore) => state.tagFilter;
 
 // Derived selectors
 export const selectIsNotebookContext = (state: NavigationStore) =>
