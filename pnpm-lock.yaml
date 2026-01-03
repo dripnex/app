@@ -71,6 +71,9 @@ importers:
       '@readied/storage-sqlite':
         specifier: workspace:*
         version: link:../../packages/storage-sqlite
+      '@readied/tasks':
+        specifier: workspace:*
+        version: link:../../packages/tasks
       '@readied/wikilinks':
         specifier: workspace:*
         version: link:../../packages/wikilinks
@@ -251,6 +254,15 @@ importers:
       better-sqlite3:
         specifier: ^11.7.0
         version: 11.10.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
+
+  packages/tasks:
+    devDependencies:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

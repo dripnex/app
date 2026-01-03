@@ -20,7 +20,11 @@ export type { WikilinkRef } from './core/types.js';
 export { extractWikilinks, extractWikilinkTargets } from './core/parsing.js';
 
 // Adapters (for advanced use only)
-export { createWikilinkAutocomplete, setCurrentNoteId } from './adapters/codemirror/autocomplete.js';
+export {
+  createWikilinkAutocomplete,
+  setCurrentNoteId,
+  currentNoteIdField,
+} from './adapters/codemirror/autocomplete.js';
 export { wikilinkExtension } from './adapters/codemirror/highlight.js';
 export { remarkWikilink } from './adapters/remark/remark-wikilink.js';
 

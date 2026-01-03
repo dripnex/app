@@ -42,6 +42,7 @@ import {
   wikilinkExtension,
   createWikilinkAutocomplete,
   setCurrentNoteId,
+  currentNoteIdField,
 } from '@readied/wikilinks';
 
 /** Dark theme matching Readied's design */
@@ -410,12 +411,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       const currentContent = view.state.doc.toString();
       if (currentContent !== initialContent) {
+        const { selection } = view.state;
+
         view.dispatch({
           changes: {
             from: 0,
             to: view.state.doc.length,
             insert: initialContent,
           },
+          selection, // Preserve cursor (CodeMirror clamps if invalid)
         });
       }
     }, [initialContent]);
@@ -425,8 +429,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const view = viewRef.current;
       if (!view) return;
 
+      // Guard: avoid redundant dispatch
+      const current = view.state.field(currentNoteIdField, false);
+      if (current === noteId) return;
+
+      const { selection } = view.state;
+
       view.dispatch({
         effects: setCurrentNoteId.of(noteId ?? null),
+        selection, // Preserve cursor position
       });
     }, [noteId]);
 

@@ -3,7 +3,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { remarkWikilink } from '@readied/wikilinks';
-import { countMarkdownTasks } from '../../utils/markdown';
+import { countMarkdownTasks } from '@readied/tasks';
 import { formatDateTime } from '../../utils/date';
 
 interface MarkdownPreviewProps {

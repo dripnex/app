@@ -26,7 +26,7 @@ interface WikilinkAutocompleteConfig {
 export const setCurrentNoteId = StateEffect.define<string | null>();
 
 /** StateField to store the current note ID (for excluding from suggestions) */
-const currentNoteIdField = StateField.define<string | null>({
+export const currentNoteIdField = StateField.define<string | null>({
   create: () => null,
   update: (value, tr) => {
     for (const effect of tr.effects) {
