@@ -50,7 +50,7 @@ const darkTheme = EditorView.theme(
     },
     '.cm-content': {
       fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
-      padding: '24px',
+      padding: '12px',
       lineHeight: '1.7',
       caretColor: '#5eead4',
     },
@@ -265,6 +265,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       return [
         // Line numbers
         lineNumbers(),
+
+        // Line wrapping (responsive text)
+        EditorView.lineWrapping,
 
         // Active line highlighting
         highlightActiveLine(),
