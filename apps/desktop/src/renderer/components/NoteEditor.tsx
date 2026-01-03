@@ -1,9 +1,9 @@
 import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileText } from 'lucide-react';
+import { FileText, MoreVertical } from 'lucide-react';
 import { TitleInput } from './TitleInput';
-import { EditorHeader, EditorViewToggle, FormattingToolbar, MarkdownPreview } from './editor';
-import type { MarkdownPreviewHandle } from './editor';
+import { ActionsPanel, EditorHeader, EditorViewToggle, FormattingToolbar, MarkdownPreview } from './editor';
+import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
@@ -30,6 +30,8 @@ interface NoteEditorProps {
   onTitleUpdate?: (title: string) => void;
   onMoveToNotebook?: (notebookId: string) => void;
   onStatusChange?: (status: NoteStatus) => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
 }
 
 export function NoteEditor({
@@ -38,11 +40,14 @@ export function NoteEditor({
   onTitleUpdate,
   onMoveToNotebook,
   onStatusChange,
+  onDuplicate,
+  onDelete,
 }: NoteEditorProps) {
   const queryClient = useQueryClient();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const previewRef = useRef<MarkdownPreviewHandle | null>(null);
+  const toolbarRowRef = useRef<HTMLDivElement | null>(null);
 
   // View mode from preferences store
   const viewMode = useEditorPreferencesStore(state => state.viewMode);
@@ -50,6 +55,17 @@ export function NoteEditor({
 
   // Manual tags state (fetched separately, not in NoteSnapshot)
   const [manualTags, setManualTags] = useState<string[]>([]);
+
+  // Actions panel state
+  const [actionsOpen, setActionsOpen] = useState(false);
+
+  // Toolbar visibility state (for passing to ActionsPanel)
+  const [toolbarVisibility, setToolbarVisibility] = useState<ToolbarVisibility>({
+    text: true,
+    lists: true,
+    blocks: true,
+    history: true,
+  });
 
   // Merge note.tags with manualTags for display (deduplicated)
   const displayTags = note
@@ -189,6 +205,24 @@ export function NoteEditor({
 
   return (
     <main className="note-editor" aria-label="Note editor">
+      {/* Title row with actions button */}
+      <header className="note-editor-header">
+        <TitleInput
+          value={note.title}
+          onChange={handleTitleChange}
+          onEnter={handleTitleEnter}
+        />
+        <button
+          type="button"
+          className="note-editor-actions-btn"
+          onClick={() => setActionsOpen(true)}
+          title="More actions"
+          aria-label="Open actions panel"
+        >
+          <MoreVertical size={18} />
+        </button>
+      </header>
+      {/* Metadata row: Notebook, Status, Tags */}
       {onMoveToNotebook && onStatusChange && (
         <EditorHeader
           note={note}
@@ -200,19 +234,8 @@ export function NoteEditor({
           onRemoveTag={handleRemoveTag}
         />
       )}
-      <header className="note-editor-header">
-        <TitleInput
-          value={note.title}
-          onChange={handleTitleChange}
-          onEnter={handleTitleEnter}
-        />
-        <span className="note-editor-meta" aria-label={`${note.wordCount} words`}>
-          {note.wordCount} words
-        </span>
-      </header>
-      <div className="note-editor-toolbar-row">
-        <FormattingToolbar editorRef={editorRef} />
-        <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
+      <div ref={toolbarRowRef} className="note-editor-toolbar-row">
+        <FormattingToolbar editorRef={editorRef} onVisibilityChange={setToolbarVisibility} containerRef={toolbarRowRef} />
       </div>
       <div className={`note-editor-body note-editor-body--${viewMode}`}>
         {showEditor && (
@@ -245,7 +268,23 @@ export function NoteEditor({
             />
           </div>
         )}
+
+        {/* Floating View Toggle */}
+        <div className="floating-view-toggle">
+          <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
+        </div>
       </div>
+
+      {/* Actions Panel */}
+      <ActionsPanel
+        isOpen={actionsOpen}
+        onClose={() => setActionsOpen(false)}
+        noteId={note.id}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+        hiddenFormatting={toolbarVisibility}
+        editorRef={editorRef}
+      />
     </main>
   );
 }

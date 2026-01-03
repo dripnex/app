@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
 import { Sidebar } from './components/sidebar';
-import { TrialBanner } from './components/TrialBanner';
-import { LicenseDialog } from './components/LicenseDialog';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
@@ -21,6 +20,7 @@ import {
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
+import { usePerformanceMode } from './hooks/usePerformanceMode';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +38,15 @@ const queryClient = new QueryClient({
  * All filtering is derived via useFilteredNotes hook.
  */
 function NotesApp() {
+  // Initialize performance mode (glass/blur tuning)
+  usePerformanceMode();
+
+  // Layout persistence
+  const { defaultLayout, onLayoutChange } = useDefaultLayout({
+    id: 'readied-main-layout',
+    storage: localStorage,
+  });
+
   // Navigation state from Zustand
   const navigation = useNavigation();
   const filteredNotes = useFilteredNotes();
@@ -256,37 +265,68 @@ function NotesApp() {
   return (
     <LicenseProvider>
       <div className="app">
-        <TrialBanner />
-        <div className="app__content">
-          <Sidebar />
-          <NoteList
-            notes={displayedNotes}
-            selectedId={selectedNote?.id ?? null}
-            selectedNotebookId={selectedNotebookId}
-            selectedTag={selectedTag}
-            selectedQuickFilter={selectedQuickFilter}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSelect={handleSelectNote}
-            onDelete={handleDeleteNote}
-            onArchive={handleArchiveNote}
-            onDuplicate={handleDuplicateNote}
-            onMove={handleMoveNote}
-            onSearch={handleSearch}
-            onNewNote={handleNewNote}
-            onSortChange={setSort}
-            onTagClick={goToTag}
-            isLoading={isLoading}
-          />
-          <NoteEditor
-            note={selectedNote}
-            onUpdate={handleUpdateNote}
-            onTitleUpdate={handleUpdateTitle}
-            onMoveToNotebook={handleMoveSelectedNote}
-            onStatusChange={handleStatusChange}
-          />
-        </div>
-        <LicenseDialog />
+        <Group
+          id="main-layout"
+          orientation="horizontal"
+          className="app__content"
+          defaultLayout={defaultLayout}
+          onLayoutChange={onLayoutChange}
+        >
+          {/* Sidebar Panel */}
+          <Panel
+            id="sidebar"
+            defaultSize={220}
+            minSize={200}
+            maxSize={360}
+          >
+            <Sidebar />
+          </Panel>
+
+          <Separator className="resize-handle" />
+
+          {/* NoteList Panel */}
+          <Panel
+            id="notelist"
+            defaultSize={300}
+            minSize={240}
+            maxSize={450}
+          >
+            <NoteList
+              notes={displayedNotes}
+              selectedId={selectedNote?.id ?? null}
+              selectedNotebookId={selectedNotebookId}
+              selectedTag={selectedTag}
+              selectedQuickFilter={selectedQuickFilter}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSelect={handleSelectNote}
+              onDelete={handleDeleteNote}
+              onArchive={handleArchiveNote}
+              onDuplicate={handleDuplicateNote}
+              onMove={handleMoveNote}
+              onSearch={handleSearch}
+              onNewNote={handleNewNote}
+              onSortChange={setSort}
+              onTagClick={goToTag}
+              isLoading={isLoading}
+            />
+          </Panel>
+
+          <Separator className="resize-handle" />
+
+          {/* Editor Panel - elastic, takes remaining space */}
+          <Panel id="editor" minSize={400}>
+            <NoteEditor
+              note={selectedNote}
+              onUpdate={handleUpdateNote}
+              onTitleUpdate={handleUpdateTitle}
+              onMoveToNotebook={handleMoveSelectedNote}
+              onStatusChange={handleStatusChange}
+              onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
+              onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+            />
+          </Panel>
+        </Group>
       </div>
     </LicenseProvider>
   );

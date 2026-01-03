@@ -4,22 +4,17 @@ import {
   Archive,
   Search,
   X,
-  FolderOpen,
-  Inbox,
-  Folder,
   Check,
-  Copy,
-  ArchiveRestore,
-  Trash2,
   SquarePen,
   ArrowUpDown,
 } from 'lucide-react';
-import type { NotebookSnapshot } from '../../preload/index';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
 import type { QuickFilterType } from './sidebar';
 import { useTagColorsStore } from '../stores/tagColorsStore';
+import { NoteListContextMenu } from './NoteListContextMenu';
+import { NotebookPicker } from './NotebookPicker';
 
 interface NoteListProps {
   notes: NoteWithExcerpt[];
@@ -97,6 +92,21 @@ function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-res
   );
 }
 
+/** Context menu state */
+interface ContextMenuState {
+  noteId: string;
+  notebookId: string | null;
+  isArchived: boolean;
+  x: number;
+  y: number;
+}
+
+/** Notebook picker state */
+interface NotebookPickerState {
+  noteId: string;
+  currentNotebookId: string | null;
+}
+
 export function NoteList({
   notes,
   selectedId,
@@ -118,9 +128,39 @@ export function NoteList({
 }: NoteListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [notebookPicker, setNotebookPicker] = useState<NotebookPickerState | null>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const { data: notebooks = [] } = useNotebookList();
   const { data: notebook } = useNotebook(selectedNotebookId);
+
+  // Handler to open notebook picker from context menu
+  const handleOpenNotebookPicker = useCallback(
+    (noteId: string, currentNotebookId: string | null) => {
+      setContextMenu(null);
+      setNotebookPicker({ noteId, currentNotebookId });
+    },
+    []
+  );
+
+  // Handler for notebook selection
+  const handleNotebookSelect = useCallback(
+    (notebookId: string) => {
+      if (notebookPicker) {
+        onMove(notebookPicker.noteId, notebookId);
+      }
+      setNotebookPicker(null);
+    },
+    [notebookPicker, onMove]
+  );
+
+  // Blur policy: set data-overlay-open when picker is open
+  useEffect(() => {
+    document.documentElement.dataset.overlayOpen = notebookPicker ? 'true' : 'false';
+    return () => {
+      document.documentElement.dataset.overlayOpen = 'false';
+    };
+  }, [notebookPicker]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,6 +182,22 @@ export function NoteList({
     if (selectedQuickFilter === 'pinned') return 'no-notes';
     return 'no-notes';
   };
+
+  // Context menu handler
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, note: NoteWithExcerpt) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({
+        noteId: note.id,
+        notebookId: note.notebookId,
+        isArchived: note.isArchived,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    },
+    []
+  );
 
   // Get header title based on navigation context
   const getHeaderTitle = () => {
@@ -269,18 +325,38 @@ export function NoteList({
                 note={note}
                 isSelected={note.id === selectedId}
                 onSelect={onSelect}
-                onDelete={onDelete}
-                onArchive={onArchive}
-                onDuplicate={onDuplicate}
-                onMove={onMove}
                 onTagClick={onTagClick}
-                notebooks={notebooks}
-                isArchived={note.isArchived}
+                onContextMenu={handleContextMenu}
               />
             ))}
           </ul>
         )}
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <NoteListContextMenu
+          noteId={contextMenu.noteId}
+          currentNotebookId={contextMenu.notebookId}
+          isArchived={contextMenu.isArchived}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          onClose={() => setContextMenu(null)}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
+          onDelete={onDelete}
+          onOpenPicker={handleOpenNotebookPicker}
+        />
+      )}
+
+      {/* Notebook picker modal */}
+      {notebookPicker && (
+        <NotebookPicker
+          currentNotebookId={notebookPicker.currentNotebookId}
+          notebooks={notebooks}
+          onSelect={handleNotebookSelect}
+          onClose={() => setNotebookPicker(null)}
+        />
+      )}
     </nav>
   );
 }
@@ -289,51 +365,18 @@ interface NoteListItemProps {
   note: NoteWithExcerpt;
   isSelected: boolean;
   onSelect: (id: string) => void;
-  onDelete: (id: string) => void;
-  onArchive: (id: string) => void;
-  onDuplicate: (id: string) => void;
-  onMove: (noteId: string, notebookId: string) => void;
   onTagClick: (tag: string) => void;
-  notebooks: NotebookSnapshot[];
-  isArchived: boolean;
+  onContextMenu: (e: React.MouseEvent, note: NoteWithExcerpt) => void;
 }
 
 function NoteListItem({
   note,
   isSelected,
   onSelect,
-  onDelete,
-  onArchive,
-  onDuplicate,
-  onMove,
   onTagClick,
-  notebooks,
-  isArchived,
+  onContextMenu,
 }: NoteListItemProps) {
-  const [showMoveDropdown, setShowMoveDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const getColor = useTagColorsStore(state => state.getColor);
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowMoveDropdown(false);
-      }
-    };
-
-    if (showMoveDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showMoveDropdown]);
-
-  const handleMove = (notebookId: string) => {
-    if (notebookId !== note.notebookId) {
-      onMove(note.id, notebookId);
-    }
-    setShowMoveDropdown(false);
-  };
 
   return (
     <li
@@ -341,6 +384,7 @@ function NoteListItem({
       aria-selected={isSelected}
       className={`note-list-item ${isSelected ? 'selected' : ''}`}
       onClick={() => onSelect(note.id)}
+      onContextMenu={e => onContextMenu(e, note)}
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -383,87 +427,6 @@ function NoteListItem({
       {note.excerpt && (
         <div className="note-list-item-preview">{note.excerpt}</div>
       )}
-      <div className="note-list-item-actions" role="group" aria-label="Note actions">
-        <div className="action-btn-container" ref={dropdownRef}>
-          <button
-            type="button"
-            className="action-btn"
-            onClick={e => {
-              e.stopPropagation();
-              setShowMoveDropdown(!showMoveDropdown);
-            }}
-            aria-label="Move to notebook"
-            aria-expanded={showMoveDropdown}
-            aria-haspopup="menu"
-            title="Move"
-          >
-            <FolderOpen size={14} />
-          </button>
-          {showMoveDropdown && (
-            <div className="move-dropdown" role="menu">
-              {notebooks.map(nb => (
-                <button
-                  key={nb.id}
-                  type="button"
-                  role="menuitem"
-                  className={`move-dropdown-item ${nb.id === note.notebookId ? 'current' : ''}`}
-                  style={{ paddingLeft: `${nb.depth * 12 + 8}px` }}
-                  onClick={e => {
-                    e.stopPropagation();
-                    handleMove(nb.id);
-                  }}
-                >
-                  <span className="notebook-icon">
-                    {nb.id === 'inbox' ? <Inbox size={12} /> : <Folder size={12} />}
-                  </span>
-                  <span className="notebook-name">{nb.name}</span>
-                  {nb.id === note.notebookId && (
-                    <span className="current-mark">
-                      <Check size={12} />
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <button
-          type="button"
-          className="action-btn"
-          onClick={e => {
-            e.stopPropagation();
-            onDuplicate(note.id);
-          }}
-          aria-label="Duplicate note"
-          title="Duplicate"
-        >
-          <Copy size={14} />
-        </button>
-        <button
-          type="button"
-          className="action-btn"
-          onClick={e => {
-            e.stopPropagation();
-            onArchive(note.id);
-          }}
-          aria-label={isArchived ? 'Restore note' : 'Archive note'}
-          title={isArchived ? 'Restore' : 'Archive'}
-        >
-          {isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
-        </button>
-        <button
-          type="button"
-          className="action-btn danger"
-          onClick={e => {
-            e.stopPropagation();
-            onDelete(note.id);
-          }}
-          aria-label="Delete note permanently"
-          title="Delete"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
     </li>
   );
 }
