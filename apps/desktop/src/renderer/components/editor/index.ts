@@ -1,6 +1,8 @@
+export { ActionsPanel } from './ActionsPanel';
 export { EditorHeader } from './EditorHeader';
 export { EditorViewToggle } from './EditorViewToggle';
 export { FormattingToolbar } from './FormattingToolbar';
+export type { ToolbarVisibility } from './FormattingToolbar';
 export { MarkdownPreview } from './MarkdownPreview';
 export type { MarkdownPreviewHandle } from './MarkdownPreview';
 export { NotebookSelector } from './NotebookSelector';
