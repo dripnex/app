@@ -14,6 +14,81 @@
   line-height: 1.7;
 }
 
+/* ============================================================================
+   Preview Metadata Header (Progress, Timestamps)
+   Inkdrop-style layout
+   ============================================================================ */
+
+.preview-metadata-header {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.preview-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-meta-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.preview-meta-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-meta-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.preview-meta-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Progress bar */
+.preview-meta-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-progress-bar {
+  width: 80px;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.preview-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.preview-progress-text {
+  font-size: 15px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 /* Typography */
 .markdown-preview h1,
 .markdown-preview h2,

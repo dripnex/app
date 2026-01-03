@@ -222,31 +222,19 @@ export function collectTags(notes: readonly Note[]): Tag[] {
   return Array.from(tags);
 }
 
-/** Pins a note to the top */
+/** Pins a note to the top (does not update updatedAt - pin is organizational metadata) */
 export function pinNote(note: Note): Note {
-  const now = createTimestamp();
-
   return {
     ...note,
     isPinned: true,
-    metadata: {
-      ...note.metadata,
-      updatedAt: now,
-    },
   };
 }
 
-/** Unpins a note */
+/** Unpins a note (does not update updatedAt - pin is organizational metadata) */
 export function unpinNote(note: Note): Note {
-  const now = createTimestamp();
-
   return {
     ...note,
     isPinned: false,
-    metadata: {
-      ...note.metadata,
-      updatedAt: now,
-    },
   };
 }
 

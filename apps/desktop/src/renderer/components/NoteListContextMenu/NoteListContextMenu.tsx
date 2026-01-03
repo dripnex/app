@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderOpen, Copy, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { FolderOpen, Copy, Archive, ArchiveRestore, Trash2, Pin, PinOff } from 'lucide-react';
 import styles from './NoteListContextMenu.module.css';
 
 export interface NoteListContextMenuProps {
@@ -10,10 +10,14 @@ export interface NoteListContextMenuProps {
   currentNotebookId: string | null;
   /** Whether the note is archived */
   isArchived: boolean;
+  /** Whether the note is pinned */
+  isPinned: boolean;
   /** Menu position */
   position: { x: number; y: number };
   /** Called when menu should close */
   onClose: () => void;
+  /** Called when pin/unpin is clicked */
+  onPin: (id: string) => void;
   /** Called when duplicate is clicked */
   onDuplicate: (id: string) => void;
   /** Called when archive/restore is clicked */
@@ -28,8 +32,10 @@ export function NoteListContextMenu({
   noteId,
   currentNotebookId,
   isArchived,
+  isPinned,
   position,
   onClose,
+  onPin,
   onDuplicate,
   onArchive,
   onDelete,
@@ -85,6 +91,11 @@ export function NoteListContextMenu({
     };
   }, [onClose]);
 
+  const handlePin = useCallback(() => {
+    onPin(noteId);
+    onClose();
+  }, [noteId, onPin, onClose]);
+
   const handleDuplicate = useCallback(() => {
     onDuplicate(noteId);
     onClose();
@@ -120,6 +131,12 @@ export function NoteListContextMenu({
         <FolderOpen size={14} />
         <span className={styles.label}>Move to Notebook</span>
         <span className={styles.shortcut}>M</span>
+      </button>
+
+      {/* Pin / Unpin */}
+      <button type="button" className={styles.item} onClick={handlePin}>
+        {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+        <span className={styles.label}>{isPinned ? 'Unpin' : 'Pin'}</span>
       </button>
 
       {/* Duplicate */}

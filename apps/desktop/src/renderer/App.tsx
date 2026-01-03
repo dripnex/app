@@ -85,6 +85,8 @@ function NotesApp() {
     duplicateNote,
     moveNote,
     setNoteStatus,
+    pinNote,
+    unpinNote,
   } = useNoteMutations();
 
   // Determine which notes to display
@@ -203,6 +205,20 @@ function NotesApp() {
     [duplicateNote, goToAllNotes]
   );
 
+  // Pin/unpin note (toggle)
+  const handlePinNote = useCallback(
+    async (id: string) => {
+      const note = displayedNotes.find(n => n.id === id);
+      if (!note) return;
+      if (note.isPinned) {
+        await unpinNote.mutateAsync(id);
+      } else {
+        await pinNote.mutateAsync(id);
+      }
+    },
+    [displayedNotes, pinNote, unpinNote]
+  );
+
   // Move note to notebook
   const handleMoveNote = useCallback(
     async (noteId: string, notebookId: string) => {
@@ -308,6 +324,7 @@ function NotesApp() {
               onDelete={handleDeleteNote}
               onArchive={handleArchiveNote}
               onDuplicate={handleDuplicateNote}
+              onPin={handlePinNote}
               onMove={handleMoveNote}
               onSearch={handleSearch}
               onNewNote={handleNewNote}
