@@ -40,7 +40,7 @@ class WikilinkHighlighter {
     const { from, to } = view.viewport;
     const text = view.state.sliceDoc(from, to);
 
-    // IMPORTANTE: resetear lastIndex para regex global
+    // Reset lastIndex for global regex
     WIKILINK_PATTERN.lastIndex = 0;
 
     let match;

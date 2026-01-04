@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileText, MoreVertical } from 'lucide-react';
+import { FileText, MoreVertical, Link2 } from 'lucide-react';
 import { TitleInput } from './TitleInput';
 import {
   ActionsPanel,
@@ -9,12 +9,14 @@ import {
   FormattingToolbar,
   MarkdownPreview,
 } from './editor';
+import { BacklinksPanel } from './editor/BacklinksPanel';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { noteKeys } from '../hooks/useNotes';
+import { useBacklinks } from '../hooks/useLinks';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
@@ -39,6 +41,7 @@ interface NoteEditorProps {
   onDuplicate?: () => void;
   onDelete?: () => void;
   onWikilinkClick?: (target: string) => void;
+  onNavigateToNote?: (noteId: string) => void;
 }
 
 export function NoteEditor({
@@ -50,6 +53,7 @@ export function NoteEditor({
   onDuplicate,
   onDelete,
   onWikilinkClick,
+  onNavigateToNote,
 }: NoteEditorProps) {
   const queryClient = useQueryClient();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -66,6 +70,11 @@ export function NoteEditor({
 
   // Actions panel state
   const [actionsOpen, setActionsOpen] = useState(false);
+
+  // Backlinks panel state
+  const [backlinksOpen, setBacklinksOpen] = useState(false);
+  const { data: backlinks } = useBacklinks(note?.id ?? null);
+  const backlinksCount = backlinks?.length ?? 0;
 
   // Toolbar visibility state (for passing to ActionsPanel)
   const [toolbarVisibility, setToolbarVisibility] = useState<ToolbarVisibility>({
@@ -211,18 +220,30 @@ export function NoteEditor({
 
   return (
     <main className="note-editor" aria-label="Note editor">
-      {/* Title row with actions button */}
+      {/* Title row with actions buttons */}
       <header className="note-editor-header">
         <TitleInput value={note.title} onChange={handleTitleChange} onEnter={handleTitleEnter} />
-        <button
-          type="button"
-          className="note-editor-actions-btn"
-          onClick={() => setActionsOpen(true)}
-          title="More actions"
-          aria-label="Open actions panel"
-        >
-          <MoreVertical size={18} />
-        </button>
+        <div className="note-editor-header-actions">
+          <button
+            type="button"
+            className={`note-editor-actions-btn ${backlinksCount > 0 ? 'has-badge' : ''}`}
+            onClick={() => setBacklinksOpen(true)}
+            title={`Backlinks${backlinksCount > 0 ? ` (${backlinksCount})` : ''}`}
+            aria-label="Open backlinks panel"
+          >
+            <Link2 size={18} />
+            {backlinksCount > 0 && <span className="badge">{backlinksCount}</span>}
+          </button>
+          <button
+            type="button"
+            className="note-editor-actions-btn"
+            onClick={() => setActionsOpen(true)}
+            title="More actions"
+            aria-label="Open actions panel"
+          >
+            <MoreVertical size={18} />
+          </button>
+        </div>
       </header>
       {/* Metadata row: Notebook, Status, Tags */}
       {onMoveToNotebook && onStatusChange && (
@@ -258,6 +279,7 @@ export function NoteEditor({
                 initialContent={note.content}
                 onChange={handleChange}
                 onReady={handleEditorReady}
+                noteId={note.id}
               />
             </Suspense>
           </div>
@@ -295,6 +317,14 @@ export function NoteEditor({
         onDelete={onDelete}
         hiddenFormatting={toolbarVisibility}
         editorRef={editorRef}
+      />
+
+      {/* Backlinks Panel */}
+      <BacklinksPanel
+        isOpen={backlinksOpen}
+        onClose={() => setBacklinksOpen(false)}
+        noteId={note.id}
+        onNavigateToNote={onNavigateToNote ?? (() => {})}
       />
     </main>
   );

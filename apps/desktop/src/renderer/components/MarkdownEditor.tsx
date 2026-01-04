@@ -2,7 +2,7 @@
  * CodeMirror 6 Markdown Editor
  */
 
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { EditorState, type Extension } from '@codemirror/state';
 import {
   EditorView,
@@ -37,8 +37,13 @@ import {
   insertHorizontalRule,
   undoChange,
   redoChange,
-} from './editor/toolbar-commands';
-import { wikilinkExtension } from './editor/wikilink-extension';
+} from '@readied/commands';
+import {
+  wikilinkExtension,
+  createWikilinkAutocomplete,
+  setCurrentNoteId,
+  currentNoteIdField,
+} from '@readied/wikilinks';
 
 /** Dark theme matching Readied's design */
 const darkTheme = EditorView.theme(
@@ -86,6 +91,32 @@ const darkTheme = EditorView.theme(
     '&.cm-focused .cm-matchingBracket': {
       backgroundColor: 'rgba(94, 234, 212, 0.3)',
       outline: 'none',
+    },
+    // Autocomplete tooltip
+    '.cm-tooltip-autocomplete': {
+      backgroundColor: 'rgba(24, 24, 27, 0.98)',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '8px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+      overflow: 'hidden',
+    },
+    '.cm-tooltip-autocomplete > ul': {
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      fontSize: '13px',
+      maxHeight: '300px',
+    },
+    '.cm-tooltip-autocomplete > ul > li': {
+      padding: '8px 12px',
+      color: '#a1a1aa',
+      cursor: 'pointer',
+    },
+    '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+      backgroundColor: 'rgba(94, 234, 212, 0.15)',
+      color: '#5eead4',
+    },
+    '.cm-completionLabel': {
+      fontWeight: '500',
     },
   },
   { dark: true }
@@ -144,6 +175,8 @@ interface MarkdownEditorProps {
   onChange: (content: string) => void;
   placeholder?: string;
   onReady?: () => void;
+  /** Current note ID (for excluding from wikilink autocomplete) */
+  noteId?: string;
 }
 
 /** Imperative handle exposed via ref */
@@ -173,12 +206,32 @@ export interface MarkdownEditorHandle {
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
-    { initialContent, onChange, placeholder = 'Start writing...', onReady },
+    { initialContent, onChange, placeholder = 'Start writing...', onReady, noteId },
     ref
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
+
+    // Create wikilink autocomplete extension with injected dependencies
+    const wikilinkAutocomplete = useMemo(
+      () =>
+        createWikilinkAutocomplete({
+          searchNotes: async query => {
+            const notes = await window.readied.notes.search(query, 20);
+            return notes.map(n => ({ id: n.id, title: n.title }));
+          },
+          listNotes: async () => {
+            const notes = await window.readied.notes.list({
+              sortBy: 'updatedAt',
+              sortOrder: 'desc',
+              archived: 'active',
+            });
+            return notes.map(n => ({ id: n.id, title: n.title }));
+          },
+        }),
+      []
+    );
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
@@ -304,6 +357,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         // Wikilink [[note]] highlighting
         wikilinkExtension,
 
+        // Wikilink autocomplete (triggers on [[)
+        wikilinkAutocomplete,
+
         // Dark theme
         darkTheme,
 
@@ -318,7 +374,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           }
         }),
       ];
-    }, [placeholder]);
+    }, [placeholder, wikilinkAutocomplete]);
 
     // Initialize editor
     useEffect(() => {
@@ -355,15 +411,35 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       const currentContent = view.state.doc.toString();
       if (currentContent !== initialContent) {
+        const { selection } = view.state;
+
         view.dispatch({
           changes: {
             from: 0,
             to: view.state.doc.length,
             insert: initialContent,
           },
+          selection, // Preserve cursor (CodeMirror clamps if invalid)
         });
       }
     }, [initialContent]);
+
+    // Update currentNoteId in editor state (for autocomplete filtering)
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+
+      // Guard: avoid redundant dispatch
+      const current = view.state.field(currentNoteIdField, false);
+      if (current === noteId) return;
+
+      const { selection } = view.state;
+
+      view.dispatch({
+        effects: setCurrentNoteId.of(noteId ?? null),
+        selection, // Preserve cursor position
+      });
+    }, [noteId]);
 
     return <div ref={containerRef} className="markdown-editor" />;
   }

@@ -32,6 +32,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@codemirror/autocomplete':
+        specifier: ^6.20.0
+        version: 6.20.0
       '@codemirror/commands':
         specifier: ^6.10.1
         version: 6.10.1
@@ -53,9 +56,15 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
+      '@readied/commands':
+        specifier: workspace:*
+        version: link:../../packages/commands
       '@readied/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@readied/embeds':
+        specifier: workspace:*
+        version: link:../../packages/embeds
       '@readied/licensing':
         specifier: workspace:*
         version: link:../../packages/licensing
@@ -68,6 +77,12 @@ importers:
       '@readied/storage-sqlite':
         specifier: workspace:*
         version: link:../../packages/storage-sqlite
+      '@readied/tasks':
+        specifier: workspace:*
+        version: link:../../packages/tasks
+      '@readied/wikilinks':
+        specifier: workspace:*
+        version: link:../../packages/wikilinks
       '@tanstack/react-query':
         specifier: ^5.90.16
         version: 5.90.16(react@18.3.1)
@@ -176,12 +191,49 @@ importers:
         specifier: ^1.2.64
         version: 1.2.64
 
+  packages/commands:
+    devDependencies:
+      '@codemirror/commands':
+        specifier: ^6.10.1
+        version: 6.10.1
+      '@codemirror/state':
+        specifier: ^6.5.3
+        version: 6.5.3
+      '@codemirror/view':
+        specifier: ^6.39.8
+        version: 6.39.8
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
+
   packages/core:
     dependencies:
+      '@readied/wikilinks':
+        specifier: workspace:*
+        version: link:../wikilinks
       zod:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
+
+  packages/embeds:
+    dependencies:
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
+    devDependencies:
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -242,6 +294,43 @@ importers:
       better-sqlite3:
         specifier: ^11.7.0
         version: 11.10.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
+
+  packages/tasks:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.3)
+
+  packages/wikilinks:
+    dependencies:
+      unified:
+        specifier: ^11.0.0
+        version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
+    devDependencies:
+      '@codemirror/autocomplete':
+        specifier: ^6.20.0
+        version: 6.20.0
+      '@codemirror/state':
+        specifier: ^6.5.3
+        version: 6.5.3
+      '@codemirror/view':
+        specifier: ^6.39.8
+        version: 6.39.8
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

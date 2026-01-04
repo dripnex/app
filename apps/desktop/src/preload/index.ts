@@ -140,6 +140,20 @@ export interface TagWithColor {
   color: string | null;
 }
 
+/** Backlink information (notes that link TO a note) */
+export interface BacklinkInfo {
+  noteId: string;
+  noteTitle: string;
+  targetRef: string;
+}
+
+/** Outgoing link information (notes that a note links TO) */
+export interface OutgoingLinkInfo {
+  targetRef: string;
+  targetNoteId: string | null;
+  targetTitle: string | null;
+}
+
 /** Log level types */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -260,6 +274,14 @@ export interface ReadiedAPI {
     /** Get log directory path */
     getLogPath: () => Promise<string | null>;
   };
+  links: {
+    /** Sync links for a note (extracts wikilinks and updates link table) */
+    sync: (noteId: string, content: string) => Promise<{ ok: boolean }>;
+    /** Get backlinks (notes that link TO this note) */
+    getBacklinks: (noteId: string) => Promise<BacklinkInfo[]>;
+    /** Get outgoing links (notes this note links TO) */
+    getOutgoing: (noteId: string) => Promise<OutgoingLinkInfo[]>;
+  };
 }
 
 // Expose the API
@@ -333,6 +355,11 @@ const api: ReadiedAPI = {
       ipcRenderer.invoke('log:write', 'error', message, context);
     },
     getLogPath: () => ipcRenderer.invoke('log:getPath'),
+  },
+  links: {
+    sync: (noteId, content) => ipcRenderer.invoke('links:sync', noteId, content),
+    getBacklinks: noteId => ipcRenderer.invoke('links:backlinks', noteId),
+    getOutgoing: noteId => ipcRenderer.invoke('links:outgoing', noteId),
   },
 };
 

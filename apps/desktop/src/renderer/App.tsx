@@ -18,6 +18,7 @@ import {
   useStatusFilter,
 } from './hooks/useNavigation';
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
+import { useSyncLinks } from './hooks/useLinks';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -89,6 +90,9 @@ function NotesApp() {
     unpinNote,
   } = useNoteMutations();
 
+  // Links sync mutation
+  const syncLinks = useSyncLinks();
+
   // Determine which notes to display
   // Both filteredNotes and searchNotesQuery.data have excerpt
   const displayedNotes = debouncedSearch.trim() ? (searchNotesQuery.data ?? []) : filteredNotes;
@@ -152,8 +156,10 @@ function NotesApp() {
       if (!selectedNote) return;
       const updated = await updateNote.mutateAsync({ id: selectedNote.id, content });
       setSelectedNote(updated);
+      // Sync links after save (fire-and-forget, don't block UI)
+      syncLinks.mutate({ noteId: selectedNote.id, content });
     },
-    [selectedNote, updateNote]
+    [selectedNote, updateNote, syncLinks]
   );
 
   // Update note title
@@ -347,6 +353,7 @@ function NotesApp() {
               onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
               onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
               onWikilinkClick={handleWikilinkClick}
+              onNavigateToNote={handleSelectNote}
             />
           </Panel>
         </Group>

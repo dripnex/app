@@ -1,8 +1,8 @@
 {
-  "name": "@readied/core",
+  "name": "@readied/embeds",
   "version": "0.1.0",
   "private": true,
-  "description": "Core domain logic for Readied",
+  "description": "Embed system for Readied (![[filename]] syntax)",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,10 +18,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@readied/wikilinks": "workspace:*",
-    "zod": "^3.24.1"
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
+    "@types/mdast": "^4.0.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

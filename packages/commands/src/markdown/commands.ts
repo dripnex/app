@@ -1,5 +1,5 @@
 /**
- * CodeMirror 6 Toolbar Commands
+ * Markdown Editing Commands
  *
  * Pure functions for markdown formatting operations.
  * All functions take an EditorView and dispatch changes.
