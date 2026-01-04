@@ -1,18 +1,28 @@
-import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useCallback } from 'react';
+import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { remarkWikilink } from '@readied/wikilinks';
-import { remarkEmbed } from '@readied/embeds';
+import { extractEmbedTargets } from '@readied/embeds';
 import { countMarkdownTasks } from '@readied/tasks';
 import { formatDateTime } from '../../utils/date';
 
+/** Escape special regex characters in a string */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 interface MarkdownPreviewProps {
   readonly content: string;
+  readonly noteId: string;
   readonly createdAt?: string;
   readonly updatedAt?: string;
   readonly onReady?: () => void;
   readonly onWikilinkClick?: (target: string) => void;
+  readonly onEmbedClick?: (target: string, url: string) => void;
+  /** Optional pre-resolved embeds from parent (for sharing with editor) */
+  readonly resolvedEmbeds?: Record<string, string | null>;
 }
 
 /** Imperative handle for scroll sync */
@@ -23,37 +33,109 @@ export interface MarkdownPreviewHandle {
   canScroll: () => boolean;
 }
 
-/**
- * MarkdownPreview - Renders markdown content as HTML
- *
- * Uses react-markdown with GFM (GitHub Flavored Markdown) support.
- * Exposes scroll methods via ref for sync with editor.
- */
 export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
-  function MarkdownPreview({ content, createdAt, updatedAt, onReady, onWikilinkClick }, ref) {
+  function MarkdownPreview(
+    {
+      content,
+      noteId,
+      createdAt,
+      updatedAt,
+      onReady,
+      onWikilinkClick,
+      onEmbedClick,
+      resolvedEmbeds: resolvedEmbedsProp,
+    },
+    ref
+  ) {
     const containerRef = useRef<HTMLDivElement>(null);
+    const [internalResolvedEmbeds, setInternalResolvedEmbeds] = useState<
+      Record<string, string | null>
+    >({});
 
-    // Delegated click handler for wikilinks
-    const handleClick = useCallback(
-      (e: React.MouseEvent) => {
-        const target = (e.target as HTMLElement).closest('.wikilink');
-        if (target) {
-          const noteTitle = target.getAttribute('data-target');
-          if (noteTitle && onWikilinkClick) {
-            e.preventDefault();
-            onWikilinkClick(noteTitle);
-          }
+    // Use prop if provided, otherwise internal state
+    const resolvedEmbeds = resolvedEmbedsProp ?? internalResolvedEmbeds;
+
+    // Resolve embeds via IPC (only if not using prop)
+    useEffect(() => {
+      // Skip if parent is managing resolved embeds
+      if (resolvedEmbedsProp !== undefined) return;
+
+      const targets = extractEmbedTargets(content);
+      if (targets.length === 0) {
+        setInternalResolvedEmbeds({});
+        return;
+      }
+      window.readied.embeds.resolveBatch(targets, noteId).then(result => {
+        setInternalResolvedEmbeds(result);
+      });
+    }, [content, noteId, resolvedEmbedsProp]);
+
+    // Invariant:
+    // Never normalize embeds to markdown images until all URLs are resolved.
+    // Violating this produces <img src=""> and broken previews.
+    const resolvedContent = useMemo(() => {
+      const targets = extractEmbedTargets(content);
+      if (targets.length === 0) return content;
+
+      // Check if all LOCAL targets are resolved (external URLs don't need IPC)
+      const localTargets = targets.filter(
+        (t) => !t.startsWith('http://') && !t.startsWith('https://')
+      );
+      const allLocalResolved =
+        localTargets.length === 0 ||
+        localTargets.every((t) => resolvedEmbeds[t] != null);
+
+      if (!allLocalResolved) {
+        return content; // Wait for IPC to resolve local files
+      }
+
+      let result = content;
+      for (const target of targets) {
+        // External URLs use themselves, local files use resolved asset:// URL
+        const isExternal = target.startsWith('http://') || target.startsWith('https://');
+        const url = isExternal ? target : resolvedEmbeds[target];
+
+        if (!url) continue;
+
+        const pattern = new RegExp(
+          `!\\[\\[${escapeRegex(target)}(?:\\|([^\\]]+))?\\]\\]`,
+          'g'
+        );
+        // Use custom HTML element to bypass rehype URL sanitization
+        result = result.replace(
+          pattern,
+          (_, display) => `<embed-image src="${url}" alt="${display || target}"></embed-image>`
+        );
+      }
+      return result;
+    }, [content, resolvedEmbeds]);
+
+    // Click handler for wikilinks and embeds
+    const handleClick = (e: React.MouseEvent) => {
+      const wikilinkEl = (e.target as HTMLElement).closest('.wikilink');
+      if (wikilinkEl) {
+        const noteTitle = wikilinkEl.getAttribute('data-target');
+        if (noteTitle && onWikilinkClick) {
+          e.preventDefault();
+          onWikilinkClick(noteTitle);
         }
-      },
-      [onWikilinkClick]
-    );
+        return;
+      }
 
-    // Notify parent when mounted
+      const imgEl = e.target as HTMLElement;
+      if (imgEl.tagName === 'IMG') {
+        const src = imgEl.getAttribute('src');
+        if (src?.startsWith('asset://') && onEmbedClick) {
+          e.preventDefault();
+          onEmbedClick(src, src);
+        }
+      }
+    };
+
     useEffect(() => {
       onReady?.();
     }, []);
 
-    // Expose scroll methods via ref
     useImperativeHandle(ref, () => ({
       getScrollFraction: () => {
         const el = containerRef.current;
@@ -85,18 +167,16 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       },
     }));
 
-    // Count tasks for progress display
     const tasks = useMemo(() => countMarkdownTasks(content), [content]);
     const hasProgress = tasks.total > 0;
     const progressPercent = hasProgress ? (tasks.completed / tasks.total) * 100 : 0;
 
     return (
       <div ref={containerRef} className="markdown-preview" onClick={handleClick}>
-        {/* Metadata header - Inkdrop style */}
         <div className="preview-metadata-header">
           {hasProgress && (
             <div className="preview-meta-item">
-              <ListChecks size={20} className="preview-meta-icon" aria-hidden="true" />
+              <ListChecks size={12} className="preview-meta-icon" aria-hidden="true" />
               <div className="preview-meta-content">
                 <span className="preview-meta-label">PROGRESS</span>
                 <div className="preview-meta-progress">
@@ -116,7 +196,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
           {createdAt && (
             <div className="preview-meta-item">
-              <Clock size={20} className="preview-meta-icon" aria-hidden="true" />
+              <Clock size={12} className="preview-meta-icon" aria-hidden="true" />
               <div className="preview-meta-content">
                 <span className="preview-meta-label">CREATED AT</span>
                 <span className="preview-meta-value">{formatDateTime(createdAt)}</span>
@@ -126,7 +206,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
           {updatedAt && (
             <div className="preview-meta-item">
-              <CalendarPlus size={20} className="preview-meta-icon" aria-hidden="true" />
+              <CalendarPlus size={12} className="preview-meta-icon" aria-hidden="true" />
               <div className="preview-meta-content">
                 <span className="preview-meta-label">UPDATED AT</span>
                 <span className="preview-meta-value">{formatDateTime(updatedAt)}</span>
@@ -136,19 +216,24 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         </div>
 
         <Markdown
-          remarkPlugins={[remarkGfm, remarkWikilink, remarkEmbed]}
-          skipHtml={true}
-          components={{
-            // Custom checkbox rendering for task lists
-            input: ({ type, checked, ...props }) => {
-              if (type === 'checkbox') {
-                return <input type="checkbox" checked={checked} disabled {...props} />;
-              }
-              return <input type={type} {...props} />;
-            },
-          }}
+          remarkPlugins={[remarkGfm, remarkWikilink]}
+          rehypePlugins={[rehypeRaw]}
+          components={
+            {
+              input: ({ type, checked, ...props }) => {
+                if (type === 'checkbox') {
+                  return <input type="checkbox" checked={checked} disabled {...props} />;
+                }
+                return <input type={type} {...props} />;
+              },
+              // Custom embed-image element bypasses rehype URL sanitization
+              'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
+                <img src={src} alt={alt} className="embed embed-image" loading="lazy" />
+              ),
+            } as Record<string, React.ComponentType<unknown>>
+          }
         >
-          {content}
+          {resolvedContent}
         </Markdown>
       </div>
     );

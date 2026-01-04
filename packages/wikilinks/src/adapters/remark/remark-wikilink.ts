@@ -12,7 +12,8 @@ import { visit } from 'unist-util-visit';
 import type { Root, Text, Parent } from 'mdast';
 
 // Pattern: [[target]] or [[target|display]]
-const WIKILINK_PATTERN = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+// Negative lookbehind (?<!!) excludes embed syntax ![[...]]
+const WIKILINK_PATTERN = /(?<!!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 /**
  * Text node with hast data for rendering as span.

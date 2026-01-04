@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { EditorState, type Extension } from '@codemirror/state';
+import { EditorState, EditorSelection, type Extension } from '@codemirror/state';
 import {
   EditorView,
   keymap,
@@ -44,6 +44,7 @@ import {
   setCurrentNoteId,
   currentNoteIdField,
 } from '@readied/wikilinks';
+import { embedInlinePreview } from '@readied/embeds/codemirror';
 
 /** Dark theme matching Readied's design */
 const darkTheme = EditorView.theme(
@@ -177,6 +178,8 @@ interface MarkdownEditorProps {
   onReady?: () => void;
   /** Current note ID (for excluding from wikilink autocomplete) */
   noteId?: string;
+  /** Callback to get resolved embed URL (for inline image preview) */
+  getEmbedUrl?: (target: string) => string | null;
 }
 
 /** Imperative handle exposed via ref */
@@ -206,12 +209,14 @@ export interface MarkdownEditorHandle {
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
-    { initialContent, onChange, placeholder = 'Start writing...', onReady, noteId },
+    { initialContent, onChange, placeholder = 'Start writing...', onReady, noteId, getEmbedUrl },
     ref
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
+    const noteIdRef = useRef(noteId);
+    const getEmbedUrlRef = useRef(getEmbedUrl);
 
     // Create wikilink autocomplete extension with injected dependencies
     const wikilinkAutocomplete = useMemo(
@@ -314,8 +319,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       },
     }));
 
-    // Keep onChange ref updated
+    // Keep refs updated
     onChangeRef.current = onChange;
+    noteIdRef.current = noteId;
+    getEmbedUrlRef.current = getEmbedUrl;
 
     // Create extensions
     const createExtensions = useCallback((): Extension[] => {
@@ -360,6 +367,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         // Wikilink autocomplete (triggers on [[)
         wikilinkAutocomplete,
 
+        // Embed inline preview (shows images after ![[...]] syntax)
+        embedInlinePreview(target => getEmbedUrlRef.current?.(target) ?? null),
+
         // Dark theme
         darkTheme,
 
@@ -398,7 +408,73 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       // Notify parent that editor is ready
       onReady?.();
 
+      // Handle image drop
+      const handleDrop = async (e: DragEvent) => {
+        const file = e.dataTransfer?.files[0];
+        if (!file?.type.startsWith('image/')) return;
+        const currentNoteId = noteIdRef.current;
+        if (!currentNoteId) return;
+
+        e.preventDefault();
+
+        const bytes = await file.arrayBuffer();
+        const result = await window.readied.embeds.saveAsset(
+          currentNoteId,
+          file.type,
+          bytes,
+          file.name
+        );
+        if (!result.ok) {
+          console.error('Failed to save asset:', result.error);
+          return;
+        }
+
+        const embed = `![[${result.filename}]]`;
+        const pos = view.state.selection.main.head;
+        view.dispatch({
+          changes: { from: pos, insert: embed },
+          selection: EditorSelection.cursor(pos + embed.length),
+          userEvent: 'input.drop',
+        });
+      };
+
+      // Handle image paste (Cmd+V)
+      const handlePaste = async (e: ClipboardEvent) => {
+        const items = Array.from(e.clipboardData?.items || []);
+        const imageItem = items.find(i => i.type.startsWith('image/'));
+
+        if (!imageItem) return; // Let default paste handle text
+        const currentNoteId = noteIdRef.current;
+        if (!currentNoteId) return;
+
+        e.preventDefault();
+        const blob = imageItem.getAsFile();
+        if (!blob) return;
+
+        const bytes = await blob.arrayBuffer();
+        const result = await window.readied.embeds.saveAsset(currentNoteId, blob.type, bytes);
+        if (!result.ok) {
+          console.error('Failed to save asset:', result.error);
+          return;
+        }
+
+        const embed = `![[${result.filename}]]`;
+        const pos = view.state.selection.main.head;
+        view.dispatch({
+          changes: { from: pos, insert: embed },
+          selection: EditorSelection.cursor(pos + embed.length),
+          userEvent: 'input.paste',
+        });
+      };
+
+      // Add event listeners to the editor DOM
+      const dom = view.dom;
+      dom.addEventListener('drop', handleDrop);
+      dom.addEventListener('paste', handlePaste);
+
       return () => {
+        dom.removeEventListener('drop', handleDrop);
+        dom.removeEventListener('paste', handlePaste);
         view.destroy();
         viewRef.current = null;
       };

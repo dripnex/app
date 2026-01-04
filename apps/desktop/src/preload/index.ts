@@ -282,6 +282,19 @@ export interface ReadiedAPI {
     /** Get outgoing links (notes this note links TO) */
     getOutgoing: (noteId: string) => Promise<OutgoingLinkInfo[]>;
   };
+  embeds: {
+    /** Resolve embed target to file:// URL (returns null if not found) */
+    resolve: (target: string, noteId: string) => Promise<string | null>;
+    /** Batch resolve multiple embed targets (more efficient) */
+    resolveBatch: (targets: string[], noteId: string) => Promise<Record<string, string | null>>;
+    /** Save asset (image/file) for a note via drag & drop or paste */
+    saveAsset: (
+      noteId: string,
+      mime: string,
+      bytes: ArrayBuffer,
+      originalName?: string
+    ) => Promise<{ ok: true; filename: string; relPath: string } | { ok: false; error: string }>;
+  };
 }
 
 // Expose the API
@@ -360,6 +373,12 @@ const api: ReadiedAPI = {
     sync: (noteId, content) => ipcRenderer.invoke('links:sync', noteId, content),
     getBacklinks: noteId => ipcRenderer.invoke('links:backlinks', noteId),
     getOutgoing: noteId => ipcRenderer.invoke('links:outgoing', noteId),
+  },
+  embeds: {
+    resolve: (target, noteId) => ipcRenderer.invoke('embeds:resolve', target, noteId),
+    resolveBatch: (targets, noteId) => ipcRenderer.invoke('embeds:resolveBatch', targets, noteId),
+    saveAsset: (noteId, mime, bytes, originalName) =>
+      ipcRenderer.invoke('embeds:saveAsset', noteId, mime, bytes, originalName),
   },
 };
 

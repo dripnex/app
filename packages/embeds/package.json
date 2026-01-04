@@ -10,6 +10,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./codemirror": {
+      "types": "./src/adapters/codemirror/index.ts",
+      "import": "./src/adapters/codemirror/index.ts"
     }
   },
   "scripts": {
@@ -20,7 +24,17 @@
   "dependencies": {
     "unist-util-visit": "^5.0.0"
   },
+  "peerDependencies": {
+    "@codemirror/state": "^6.0.0",
+    "@codemirror/view": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@codemirror/state": { "optional": true },
+    "@codemirror/view": { "optional": true }
+  },
   "devDependencies": {
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/view": "^6.35.0",
     "@types/mdast": "^4.0.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

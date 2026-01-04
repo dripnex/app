@@ -21,6 +21,8 @@ export interface DataPaths {
   config: string;
   /** Export directory (temp) */
   exports: string;
+  /** Assets directory for embedded files */
+  assets: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export function createDataPaths(rootPath: string): DataPaths {
     logs: join(rootPath, 'logs'),
     config: join(rootPath, 'config.json'),
     exports: join(rootPath, 'exports'),
+    assets: join(rootPath, 'assets'),
   };
 
   // Ensure directories exist
@@ -42,6 +45,7 @@ export function createDataPaths(rootPath: string): DataPaths {
   ensureDirectory(paths.backups);
   ensureDirectory(paths.logs);
   ensureDirectory(paths.exports);
+  ensureDirectory(paths.assets);
 
   return paths;
 }

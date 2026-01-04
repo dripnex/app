@@ -7,6 +7,7 @@
 @import './editor-header.css';
 @import './toolbar.css';
 @import './preview.css';
+@import './lightbox.css';
 
 * {
   margin: 0;
@@ -65,38 +66,40 @@ body {
   height: 100%;
 }
 
-.app__content {
+/* 3-column layout: Sidebar | NoteList | Editor */
+.app__layout {
   display: flex;
   flex: 1;
   min-height: 0;
+  height: 100%;
 }
 
-/* Resize Handles */
+.app__sidebar {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.app__notelist {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.app__editor {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Resize handle between panels */
 .resize-handle {
-  width: 4px;
-  background: transparent;
-  transition: background var(--transition-fast);
+  width: 1.5px;
+  flex-shrink: 0;
   cursor: col-resize;
-  position: relative;
-}
-
-.resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
   background: var(--border);
+  transition: background 0.15s ease;
 }
 
-.resize-handle:hover,
-.resize-handle[data-resize-handle-active] {
-  background: var(--accent-muted);
-}
-
-.resize-handle:hover::after,
-.resize-handle[data-resize-handle-active]::after {
+.resize-handle:hover {
   background: var(--accent);
 }
 
@@ -1267,4 +1270,26 @@ input:focus-visible {
 .sidebar-footer-version {
   font-size: var(--text-xs);
   color: var(--text-faint);
+}
+
+/* ===== CODEMIRROR EMBED PREVIEW ===== */
+.cm-embed-wrapper {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.cm-embed-preview {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.95;
+  transition: opacity 0.15s ease;
+}
+
+.cm-embed-preview:hover {
+  opacity: 1;
 }

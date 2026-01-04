@@ -10,6 +10,8 @@ import {
   MarkdownPreview,
 } from './editor';
 import { BacklinksPanel } from './editor/BacklinksPanel';
+import { ImageLightbox } from './ImageLightbox';
+import { extractEmbedTargets } from '@readied/embeds';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
@@ -76,6 +78,12 @@ export function NoteEditor({
   const { data: backlinks } = useBacklinks(note?.id ?? null);
   const backlinksCount = backlinks?.length ?? 0;
 
+  // Lightbox state for embedded images
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+
+  // Resolved embeds state (shared between editor and preview)
+  const [resolvedEmbeds, setResolvedEmbeds] = useState<Record<string, string | null>>({});
+
   // Toolbar visibility state (for passing to ActionsPanel)
   const [toolbarVisibility, setToolbarVisibility] = useState<ToolbarVisibility>({
     text: true,
@@ -115,6 +123,47 @@ export function NoteEditor({
       cancelled = true;
     };
   }, [note?.id]);
+
+  // Resolve embeds for sharing between editor and preview
+  useEffect(() => {
+    if (!note) {
+      setResolvedEmbeds({});
+      return;
+    }
+
+    const targets = extractEmbedTargets(note.content);
+    if (targets.length === 0) {
+      setResolvedEmbeds({});
+      return;
+    }
+
+    // Only resolve local targets (external URLs don't need IPC)
+    const localTargets = targets.filter(
+      t => !t.startsWith('http://') && !t.startsWith('https://')
+    );
+
+    if (localTargets.length === 0) {
+      // All external, no IPC needed
+      setResolvedEmbeds({});
+      return;
+    }
+
+    window.readied.embeds.resolveBatch(localTargets, note.id).then(result => {
+      setResolvedEmbeds(result);
+    });
+  }, [note?.id, note?.content]);
+
+  // Callback for editor to get resolved embed URLs
+  const getEmbedUrl = useCallback(
+    (target: string): string | null => {
+      // External URLs return themselves
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        return target;
+      }
+      return resolvedEmbeds[target] ?? null;
+    },
+    [resolvedEmbeds]
+  );
 
   const showEditor = viewMode === 'editor' || viewMode === 'split';
   const showPreview = viewMode === 'preview' || viewMode === 'split';
@@ -280,6 +329,7 @@ export function NoteEditor({
                 onChange={handleChange}
                 onReady={handleEditorReady}
                 noteId={note.id}
+                getEmbedUrl={getEmbedUrl}
               />
             </Suspense>
           </div>
@@ -294,10 +344,13 @@ export function NoteEditor({
             <MarkdownPreview
               ref={previewRef}
               content={note.content}
+              noteId={note.id}
               createdAt={note.createdAt}
               updatedAt={note.updatedAt}
               onReady={handlePreviewReady}
               onWikilinkClick={onWikilinkClick}
+              onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
+              resolvedEmbeds={resolvedEmbeds}
             />
           </div>
         )}
@@ -326,6 +379,15 @@ export function NoteEditor({
         noteId={note.id}
         onNavigateToNote={onNavigateToNote ?? (() => {})}
       />
+
+      {/* Image Lightbox */}
+      {lightbox && (
+        <ImageLightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </main>
   );
 }

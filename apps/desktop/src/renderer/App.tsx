@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
@@ -22,6 +21,7 @@ import { useSyncLinks } from './hooks/useLinks';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
+import { useResizableLayout } from './hooks/useResizableLayout';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,19 +34,12 @@ const queryClient = new QueryClient({
 
 /**
  * Main Notes Application
- *
- * Uses Zustand for navigation state (no Provider needed).
- * All filtering is derived via useFilteredNotes hook.
  */
 function NotesApp() {
-  // Initialize performance mode (glass/blur tuning)
   usePerformanceMode();
 
-  // Layout persistence
-  const { defaultLayout, onLayoutChange } = useDefaultLayout({
-    id: 'readied-main-layout',
-    storage: localStorage,
-  });
+  // Resizable layout
+  const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } = useResizableLayout();
 
   // Navigation state from Zustand
   const navigation = useNavigation();
@@ -302,22 +295,18 @@ function NotesApp() {
   return (
     <LicenseProvider>
       <div className="app">
-        <Group
-          id="main-layout"
-          orientation="horizontal"
-          className="app__content"
-          defaultLayout={defaultLayout}
-          onLayoutChange={onLayoutChange}
-        >
-          {/* Sidebar Panel */}
-          <Panel id="sidebar" defaultSize={220} minSize={200} maxSize={360}>
+        <div className="app__layout">
+          <aside className="app__sidebar" style={{ width: sidebarWidth }}>
             <Sidebar />
-          </Panel>
+          </aside>
+          <div
+            className="resize-handle"
+            onMouseDown={startResizeSidebar}
+            role="separator"
+            aria-orientation="vertical"
+          />
 
-          <Separator className="resize-handle" />
-
-          {/* NoteList Panel */}
-          <Panel id="notelist" defaultSize={300} minSize={240} maxSize={450}>
+          <section className="app__notelist" style={{ width: notelistWidth }}>
             <NoteList
               notes={displayedNotes}
               selectedId={selectedNote?.id ?? null}
@@ -338,12 +327,15 @@ function NotesApp() {
               onTagClick={goToTag}
               isLoading={isLoading}
             />
-          </Panel>
+          </section>
+          <div
+            className="resize-handle"
+            onMouseDown={startResizeNotelist}
+            role="separator"
+            aria-orientation="vertical"
+          />
 
-          <Separator className="resize-handle" />
-
-          {/* Editor Panel - elastic, takes remaining space */}
-          <Panel id="editor" minSize={400}>
+          <main className="app__editor">
             <NoteEditor
               note={selectedNote}
               onUpdate={handleUpdateNote}
@@ -355,8 +347,8 @@ function NotesApp() {
               onWikilinkClick={handleWikilinkClick}
               onNavigateToNote={handleSelectNote}
             />
-          </Panel>
-        </Group>
+          </main>
+        </div>
       </div>
     </LicenseProvider>
   );

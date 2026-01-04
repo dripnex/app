@@ -23,38 +23,56 @@
 
 .preview-metadata-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 24px 48px;
-  padding: 10px 16px;
-  margin-bottom: 16px;
+  gap: 12px 24px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
   background: var(--bg-surface);
-  border: 1px solid transparent;
+  border: none;
   border-radius: 12px;
 }
 
-/* Compact layout for narrow widths (container query) */
-@container preview (max-width: 450px) {
+/* Column layout only for very narrow widths */
+@container preview (max-width: 380px) {
   .preview-metadata-header {
     flex-direction: column;
+    flex-wrap: wrap;
     align-items: flex-start;
-    gap: 12px;
+    gap: 8px;
+  }
+}
+
+/* Responsive typography for narrow preview */
+@container preview (max-width: 500px) {
+  .markdown-preview {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px;
   }
 
-  .preview-meta-item {
-    gap: 10px;
+  .markdown-preview h1 {
+    font-size: 1.4em;
   }
 
-  .preview-meta-icon {
-    width: 16px;
-    height: 16px;
+  .markdown-preview h2 {
+    font-size: 1.2em;
+  }
+
+  .markdown-preview h3 {
+    font-size: 1.1em;
+  }
+
+  .markdown-preview pre,
+  .markdown-preview code {
+    font-size: 11px;
   }
 }
 
 .preview-meta-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   min-width: 0;
   flex-shrink: 0;
 }
@@ -62,24 +80,26 @@
 .preview-meta-icon {
   color: var(--text-muted);
   flex-shrink: 0;
+  width: 12px;
+  height: 12px;
 }
 
 .preview-meta-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .preview-meta-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
   color: var(--text-muted);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 
 .preview-meta-value {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 400;
 }
@@ -88,14 +108,14 @@
 .preview-meta-progress {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .preview-progress-bar {
-  width: 80px;
-  height: 6px;
+  width: 50px;
+  height: 4px;
   background: var(--bg-elevated);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
@@ -107,7 +127,7 @@
 }
 
 .preview-progress-text {
-  font-size: 15px;
+  font-size: 11px;
   color: var(--text-secondary);
   white-space: nowrap;
 }
@@ -323,8 +343,16 @@
 }
 
 .markdown-preview .embed-image {
+  display: block;
+  width: 100%;
   max-width: 100%;
   height: auto;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.markdown-preview .embed-image:hover {
+  opacity: 0.9;
 }
 
 .markdown-preview .embed-video,
