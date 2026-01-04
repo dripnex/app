@@ -13,7 +13,7 @@ import type { EmbedRef } from './types.js';
  * - Optional |display text
  * - Must end with ]]
  */
-const EMBED_REGEX = /!\[\[([^\[\]|]+)(?:\|([^\]]+))?\]\]/g;
+const EMBED_REGEX = /!\[\[([^[\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 /**
  * Extract all embed references from markdown content.

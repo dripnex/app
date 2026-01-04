@@ -9,7 +9,7 @@ import type { WikilinkRef } from './types.js';
 
 /** Pattern for matching wikilinks: [[target]] or [[target|display]] */
 // Exclude [ ] | from target to avoid matching nested/unclosed brackets
-const WIKILINK_PATTERN = /\[\[([^\[\]|]+)(?:\|([^\]]+))?\]\]/g;
+const WIKILINK_PATTERN = /\[\[([^[\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 /**
  * Extract all wikilinks from markdown content.
