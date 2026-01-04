@@ -48,9 +48,7 @@ export const currentNoteIdField = StateField.define<string | null>({
 export function createWikilinkAutocomplete(config: WikilinkAutocompleteConfig): Extension {
   const { searchNotes, listNotes } = config;
 
-  async function wikilinkCompletions(
-    context: CompletionContext
-  ): Promise<CompletionResult | null> {
+  async function wikilinkCompletions(context: CompletionContext): Promise<CompletionResult | null> {
     // Match [[ followed by any characters except [ and ]
     // TODO: Don't activate inside code blocks or inline code
     const match = context.matchBefore(/\[\[[^\][]*/);

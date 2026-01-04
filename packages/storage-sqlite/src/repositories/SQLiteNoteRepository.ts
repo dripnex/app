@@ -485,7 +485,9 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
    * @param noteId - The source note ID
    * @returns Array of outgoing link info
    */
-  getOutgoingLinks(noteId: NoteId): Array<{ targetRef: string; targetNoteId: string | null; targetTitle: string | null }> {
+  getOutgoingLinks(
+    noteId: NoteId
+  ): Array<{ targetRef: string; targetNoteId: string | null; targetTitle: string | null }> {
     const stmt = this.db.prepare<{
       target_ref: string;
       target_note_id: string | null;

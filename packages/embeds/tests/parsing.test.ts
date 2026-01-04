@@ -31,10 +31,7 @@ describe('extractEmbeds', () => {
 
   it('extracts multiple embeds', () => {
     const result = extractEmbeds('![[image1.png]] and ![[image2.jpg|Photo]]');
-    expect(result).toEqual([
-      { target: 'image1.png' },
-      { target: 'image2.jpg', display: 'Photo' },
-    ]);
+    expect(result).toEqual([{ target: 'image1.png' }, { target: 'image2.jpg', display: 'Photo' }]);
   });
 
   it('handles embeds with paths', () => {
