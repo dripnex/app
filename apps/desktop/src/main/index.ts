@@ -175,6 +175,41 @@ function createWindow(): void {
   }
 }
 
+/** Create a new window for viewing a single note */
+function createNoteWindow(noteId: string, noteTitle: string): void {
+  const noteWindow = new BrowserWindow({
+    width: 800,
+    height: 700,
+    minWidth: 500,
+    minHeight: 400,
+    show: false,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 8, y: 8 },
+    backgroundColor: '#0a0b0d',
+    title: noteTitle || 'Note',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  });
+
+  noteWindow.on('ready-to-show', () => {
+    noteWindow.show();
+  });
+
+  // Load renderer with note ID in query param
+  const query = `?noteWindow=${encodeURIComponent(noteId)}`;
+  if (process.env.NODE_ENV === 'development') {
+    noteWindow.loadURL(`http://localhost:5173${query}`);
+  } else {
+    noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      query: { noteWindow: noteId },
+    });
+  }
+}
+
 /** Helper to convert a Note to a snapshot for IPC */
 function noteToSnapshot(note: {
   id: string;
@@ -433,6 +468,21 @@ function registerIpcHandlers(): void {
   // Get outgoing links (notes this note links TO)
   ipcMain.handle('links:outgoing', async (_event, noteId: string) => {
     return repo.getOutgoingLinks(createNoteId(noteId));
+  });
+
+  // Get graph data (all notes and links for visualization)
+  ipcMain.handle('links:graph', async () => {
+    return repo.getGraphData();
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Window Management
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Open a note in a new window
+  ipcMain.handle('window:openNote', async (_event, noteId: string, noteTitle: string) => {
+    createNoteWindow(noteId, noteTitle);
+    return { ok: true };
   });
 
   // ═══════════════════════════════════════════════════════════════════════════

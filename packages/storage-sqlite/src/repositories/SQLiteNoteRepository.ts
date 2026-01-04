@@ -528,4 +528,46 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     `);
     stmt.run(noteId, title);
   }
+
+  /**
+   * Get all data needed for graph visualization.
+   * Returns nodes (notes) and edges (resolved links).
+   */
+  getGraphData(): {
+    nodes: Array<{ id: string; title: string; notebookId: string }>;
+    edges: Array<{ source: string; target: string }>;
+  } {
+    // Get all non-archived, non-deleted notes
+    const notesStmt = this.db.prepare<{ id: string; title: string; notebook_id: string }>(`
+      SELECT id, title, notebook_id
+      FROM notes
+      WHERE archived_at IS NULL AND deleted_at IS NULL
+    `);
+    const noteRows = notesStmt.all() as Array<{
+      id: string;
+      title: string;
+      notebook_id: string;
+    }>;
+
+    // Get all resolved links (where both source and target exist)
+    const linksStmt = this.db.prepare<{ source: string; target: string }>(`
+      SELECT l.source_note_id as source, l.target_note_id as target
+      FROM links l
+      JOIN notes n1 ON l.source_note_id = n1.id
+      JOIN notes n2 ON l.target_note_id = n2.id
+      WHERE l.target_note_id IS NOT NULL
+        AND n1.archived_at IS NULL AND n1.deleted_at IS NULL
+        AND n2.archived_at IS NULL AND n2.deleted_at IS NULL
+    `);
+    const linkRows = linksStmt.all() as Array<{ source: string; target: string }>;
+
+    return {
+      nodes: noteRows.map(row => ({
+        id: row.id,
+        title: row.title,
+        notebookId: row.notebook_id,
+      })),
+      edges: linkRows,
+    };
+  }
 }

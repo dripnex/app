@@ -154,6 +154,12 @@ export interface OutgoingLinkInfo {
   targetTitle: string | null;
 }
 
+/** Graph data for visualization */
+export interface GraphData {
+  nodes: Array<{ id: string; title: string; notebookId: string }>;
+  edges: Array<{ source: string; target: string }>;
+}
+
 /** Log level types */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -281,6 +287,8 @@ export interface ReadiedAPI {
     getBacklinks: (noteId: string) => Promise<BacklinkInfo[]>;
     /** Get outgoing links (notes this note links TO) */
     getOutgoing: (noteId: string) => Promise<OutgoingLinkInfo[]>;
+    /** Get graph data (all notes and links for visualization) */
+    getGraph: () => Promise<GraphData>;
   };
   embeds: {
     /** Resolve embed target to file:// URL (returns null if not found) */
@@ -294,6 +302,10 @@ export interface ReadiedAPI {
       bytes: ArrayBuffer,
       originalName?: string
     ) => Promise<{ ok: true; filename: string; relPath: string } | { ok: false; error: string }>;
+  };
+  windows: {
+    /** Open a note in a new window */
+    openNote: (noteId: string, noteTitle: string) => Promise<{ ok: boolean }>;
   };
 }
 
@@ -373,12 +385,16 @@ const api: ReadiedAPI = {
     sync: (noteId, content) => ipcRenderer.invoke('links:sync', noteId, content),
     getBacklinks: noteId => ipcRenderer.invoke('links:backlinks', noteId),
     getOutgoing: noteId => ipcRenderer.invoke('links:outgoing', noteId),
+    getGraph: () => ipcRenderer.invoke('links:graph'),
   },
   embeds: {
     resolve: (target, noteId) => ipcRenderer.invoke('embeds:resolve', target, noteId),
     resolveBatch: (targets, noteId) => ipcRenderer.invoke('embeds:resolveBatch', targets, noteId),
     saveAsset: (noteId, mime, bytes, originalName) =>
       ipcRenderer.invoke('embeds:saveAsset', noteId, mime, bytes, originalName),
+  },
+  windows: {
+    openNote: (noteId, noteTitle) => ipcRenderer.invoke('window:openNote', noteId, noteTitle),
   },
 };
 

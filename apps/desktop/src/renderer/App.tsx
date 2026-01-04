@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
+import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
+import { GraphView } from './components/GraphView';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
@@ -64,6 +66,7 @@ function NotesApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
 
   // Search query
   const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
@@ -297,7 +300,7 @@ function NotesApp() {
       <div className="app">
         <div className="app__layout">
           <aside className="app__sidebar" style={{ width: sidebarWidth }}>
-            <Sidebar />
+            <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
           </aside>
           <div
             className="resize-handle"
@@ -349,12 +352,40 @@ function NotesApp() {
             />
           </main>
         </div>
+
+        {/* Graph View Overlay */}
+        {isGraphOpen && (
+          <div className="graph-overlay">
+            <GraphView
+              selectedNoteId={selectedNote?.id}
+              onNodeClick={noteId => {
+                handleSelectNote(noteId);
+                setIsGraphOpen(false);
+              }}
+              onClose={() => setIsGraphOpen(false)}
+            />
+          </div>
+        )}
       </div>
     </LicenseProvider>
   );
 }
 
 export function App() {
+  // Check for note window mode via URL query param
+  const urlParams = new URLSearchParams(window.location.search);
+  const noteWindowId = urlParams.get('noteWindow');
+
+  // If this is a note window, render just the note editor
+  if (noteWindowId) {
+    return (
+      <ErrorBoundary>
+        <NoteWindow noteId={noteWindowId} />
+      </ErrorBoundary>
+    );
+  }
+
+  // Main app
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

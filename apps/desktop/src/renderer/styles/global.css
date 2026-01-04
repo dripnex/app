@@ -103,6 +103,17 @@ body {
   background: var(--accent);
 }
 
+/* Graph View Overlay */
+.graph-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: var(--bg-base);
+}
+
 /* Sidebar */
 .sidebar {
   width: 100%;

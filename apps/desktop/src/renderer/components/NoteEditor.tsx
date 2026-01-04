@@ -366,6 +366,7 @@ export function NoteEditor({
         isOpen={actionsOpen}
         onClose={() => setActionsOpen(false)}
         noteId={note.id}
+        noteTitle={note.title}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
         hiddenFormatting={toolbarVisibility}
