@@ -13,8 +13,8 @@ import {
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
-import type { QuickFilterType } from './sidebar';
 import { useTagColorsStore } from '../stores/tagColorsStore';
+import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
 

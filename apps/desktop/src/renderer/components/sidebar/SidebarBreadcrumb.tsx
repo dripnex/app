@@ -106,7 +106,7 @@ function useSegmentTransition(path: SegmentData[]) {
   const commonPrefixLength = useMemo(() => {
     if (!prevPath || prevPath.length === 0) return 0;
     let i = 0;
-    while (i < path.length && i < prevPath.length && path[i].id === prevPath[i].id) {
+    while (i < path.length && i < prevPath.length && path[i]?.id === prevPath[i]?.id) {
       i++;
     }
     return i;

@@ -7,9 +7,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { NoteEditor } from './NoteEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useSyncLinks } from '../hooks/useLinks';
+import { NoteEditor } from './NoteEditor';
 import './NoteWindow.css';
 
 const queryClient = new QueryClient({
@@ -44,7 +44,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
         } else {
           setError('Note not found');
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load note');
       } finally {
         setLoading(false);

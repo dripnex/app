@@ -7,8 +7,8 @@
 
 import { useCallback, useRef, useMemo } from 'react';
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
-import { useGraphData } from '../hooks/useLinks';
 import { X } from 'lucide-react';
+import { useGraphData } from '../hooks/useLinks';
 import './GraphView.css';
 
 interface GraphViewProps {

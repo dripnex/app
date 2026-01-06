@@ -1,17 +1,5 @@
 import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
 import { FileText, MoreVertical, Link2 } from 'lucide-react';
-import { TitleInput } from './TitleInput';
-import {
-  ActionsPanel,
-  EditorHeader,
-  EditorViewToggle,
-  FormattingToolbar,
-  MarkdownPreview,
-} from './editor';
-import { BacklinksPanel } from './editor/BacklinksPanel';
-import { ImageLightbox } from './ImageLightbox';
-import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
-import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
@@ -19,6 +7,18 @@ import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
+import type { MarkdownEditorHandle } from './MarkdownEditor';
+import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
+import { ImageLightbox } from './ImageLightbox';
+import { BacklinksPanel } from './editor/BacklinksPanel';
+import {
+  ActionsPanel,
+  EditorHeader,
+  EditorViewToggle,
+  FormattingToolbar,
+  MarkdownPreview,
+} from './editor';
+import { TitleInput } from './TitleInput';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
