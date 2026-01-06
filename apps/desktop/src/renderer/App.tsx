@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
+import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
+import { GraphView } from './components/GraphView';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
@@ -19,9 +20,12 @@ import {
 } from './hooks/useNavigation';
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
 import { useSyncLinks } from './hooks/useLinks';
+import { useDebouncedSearch } from './hooks/useDebouncedSearch';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
+import { useResizableLayout } from './hooks/useResizableLayout';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,19 +38,13 @@ const queryClient = new QueryClient({
 
 /**
  * Main Notes Application
- *
- * Uses Zustand for navigation state (no Provider needed).
- * All filtering is derived via useFilteredNotes hook.
  */
 function NotesApp() {
-  // Initialize performance mode (glass/blur tuning)
   usePerformanceMode();
 
-  // Layout persistence
-  const { defaultLayout, onLayoutChange } = useDefaultLayout({
-    id: 'readied-main-layout',
-    storage: localStorage,
-  });
+  // Resizable layout
+  const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
+    useResizableLayout();
 
   // Navigation state from Zustand
   const navigation = useNavigation();
@@ -68,9 +66,8 @@ function NotesApp() {
 
   // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
 
   // Search query
   const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
@@ -102,19 +99,6 @@ function NotesApp() {
   // Determine selected quick filter for NoteList header
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
 
-  // Handle search with debounce
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-
-    searchDebounceRef.current = setTimeout(() => {
-      setDebouncedSearch(query);
-    }, 300);
-  }, []);
-
   // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
     const newNote = await createNote.mutateAsync({
@@ -122,9 +106,8 @@ function NotesApp() {
       notebookId: selectedNotebookId ?? undefined,
     });
     setSelectedNote(newNote);
-    setSearchQuery('');
-    setDebouncedSearch('');
-  }, [createNote, selectedNotebookId]);
+    clearSearch();
+  }, [createNote, selectedNotebookId, clearSearch]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {
@@ -258,66 +241,35 @@ function NotesApp() {
     [selectedNote, setNoteStatus, statusFilter]
   );
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey;
-
-      if (isMod && e.key === 'n') {
-        e.preventDefault();
-        handleNewNote();
-      }
-
-      if (isMod && e.key === 'f') {
-        e.preventDefault();
-        const searchInput = document.querySelector('.search-input') as HTMLInputElement;
-        searchInput?.focus();
-      }
-
-      if (isMod && e.key === 'd' && selectedNote) {
-        e.preventDefault();
-        handleDuplicateNote(selectedNote.id);
-      }
-
-      // Cmd+Shift+P to cycle view mode (Editor → Split → Preview)
-      if (isMod && e.shiftKey && e.key === 'p') {
-        e.preventDefault();
-        cycleViewMode();
-      }
-
-      if (e.key === 'Escape') {
-        if (searchQuery) {
-          setSearchQuery('');
-          setDebouncedSearch('');
-        } else if (selectedNote) {
-          setSelectedNote(null);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNewNote, handleDuplicateNote, selectedNote, searchQuery, cycleViewMode]);
+  // Keyboard shortcuts (extracted to hook)
+  useKeyboardShortcuts({
+    onNewNote: handleNewNote,
+    onDuplicateNote: handleDuplicateNote,
+    onCycleViewMode: cycleViewMode,
+    onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), []),
+    onCloseGraph: useCallback(() => setIsGraphOpen(false), []),
+    onClearSearch: clearSearch,
+    onDeselectNote: useCallback(() => setSelectedNote(null), []),
+    selectedNote,
+    searchQuery,
+    isGraphOpen,
+  });
 
   return (
     <LicenseProvider>
       <div className="app">
-        <Group
-          id="main-layout"
-          orientation="horizontal"
-          className="app__content"
-          defaultLayout={defaultLayout}
-          onLayoutChange={onLayoutChange}
-        >
-          {/* Sidebar Panel */}
-          <Panel id="sidebar" defaultSize={220} minSize={200} maxSize={360}>
-            <Sidebar />
-          </Panel>
+        <div className="app__layout">
+          <aside className="app__sidebar" style={{ width: sidebarWidth }}>
+            <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
+          </aside>
+          <div
+            className="resize-handle"
+            onMouseDown={startResizeSidebar}
+            role="separator"
+            aria-orientation="vertical"
+          />
 
-          <Separator className="resize-handle" />
-
-          {/* NoteList Panel */}
-          <Panel id="notelist" defaultSize={300} minSize={240} maxSize={450}>
+          <section className="app__notelist" style={{ width: notelistWidth }}>
             <NoteList
               notes={displayedNotes}
               selectedId={selectedNote?.id ?? null}
@@ -338,31 +290,60 @@ function NotesApp() {
               onTagClick={goToTag}
               isLoading={isLoading}
             />
-          </Panel>
+          </section>
+          <div
+            className="resize-handle"
+            onMouseDown={startResizeNotelist}
+            role="separator"
+            aria-orientation="vertical"
+          />
 
-          <Separator className="resize-handle" />
-
-          {/* Editor Panel - elastic, takes remaining space */}
-          <Panel id="editor" minSize={400}>
-            <NoteEditor
-              note={selectedNote}
-              onUpdate={handleUpdateNote}
-              onTitleUpdate={handleUpdateTitle}
-              onMoveToNotebook={handleMoveSelectedNote}
-              onStatusChange={handleStatusChange}
-              onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
-              onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
-              onWikilinkClick={handleWikilinkClick}
-              onNavigateToNote={handleSelectNote}
-            />
-          </Panel>
-        </Group>
+          <main className="app__editor">
+            {isGraphOpen ? (
+              <GraphView
+                selectedNoteId={selectedNote?.id}
+                onNodeClick={noteId => {
+                  handleSelectNote(noteId);
+                  setIsGraphOpen(false);
+                }}
+                onClose={() => setIsGraphOpen(false)}
+              />
+            ) : (
+              <NoteEditor
+                note={selectedNote}
+                onUpdate={handleUpdateNote}
+                onTitleUpdate={handleUpdateTitle}
+                onMoveToNotebook={handleMoveSelectedNote}
+                onStatusChange={handleStatusChange}
+                onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
+                onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+                onWikilinkClick={handleWikilinkClick}
+                onNavigateToNote={handleSelectNote}
+                onNoteUpdate={setSelectedNote}
+              />
+            )}
+          </main>
+        </div>
       </div>
     </LicenseProvider>
   );
 }
 
 export function App() {
+  // Check for note window mode via URL query param
+  const urlParams = new URLSearchParams(window.location.search);
+  const noteWindowId = urlParams.get('noteWindow');
+
+  // If this is a note window, render just the note editor
+  if (noteWindowId) {
+    return (
+      <ErrorBoundary>
+        <NoteWindow noteId={noteWindowId} />
+      </ErrorBoundary>
+    );
+  }
+
+  // Main app
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

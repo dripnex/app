@@ -85,9 +85,10 @@ export class SQLiteNotebookRepository implements NotebookRepository {
     }
 
     // Move notes to Inbox before delete (in case SET DEFAULT doesn't work as expected)
+    // Note: We intentionally do NOT update updated_at here - moving notes is metadata-only
     this.db.transaction(() => {
       const moveNotesStmt = this.db.prepare(`
-        UPDATE notes SET notebook_id = 'inbox', updated_at = datetime('now')
+        UPDATE notes SET notebook_id = 'inbox'
         WHERE notebook_id = ?
       `);
       moveNotesStmt.run(id);

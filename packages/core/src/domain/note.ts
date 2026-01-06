@@ -187,17 +187,11 @@ export function duplicateNote(note: Note): Note {
   };
 }
 
-/** Moves a note to a different notebook */
+/** Moves a note to a different notebook (metadata-only, doesn't change updatedAt) */
 export function moveNoteToNotebook(note: Note, notebookId: NotebookId): Note {
-  const now = createTimestamp();
-
   return {
     ...note,
     notebookId,
-    metadata: {
-      ...note.metadata,
-      updatedAt: now,
-    },
   };
 }
 
@@ -267,17 +261,11 @@ export function restoreDeletedNote(note: Note): Note {
   };
 }
 
-/** Updates a note's workflow status */
+/** Updates a note's workflow status (metadata-only, doesn't change updatedAt) */
 export function setNoteStatus(note: Note, status: NoteStatus): Note {
-  const now = createTimestamp();
-
   return {
     ...note,
     status,
-    metadata: {
-      ...note.metadata,
-      updatedAt: now,
-    },
   };
 }
 

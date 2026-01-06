@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { Circle, CircleDot, CheckCircle2, XCircle, ChevronDown, Check } from 'lucide-react';
 import type { NoteStatus } from '../../../preload/index';
+import { useDropdownPosition } from '../../hooks/useDropdownPosition';
 
 interface StatusDropdownProps {
   readonly status: NoteStatus;
@@ -22,8 +23,17 @@ export const StatusDropdown = memo(function StatusDropdown({
 }: StatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const currentConfig = statusConfig[status];
+
+  // Auto-position dropdown to avoid viewport overflow
+  const menuPosition = useDropdownPosition({
+    triggerRef,
+    menuRef,
+    isOpen,
+  });
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -49,6 +59,7 @@ export const StatusDropdown = memo(function StatusDropdown({
   return (
     <div className="editor-header-dropdown" ref={containerRef}>
       <button
+        ref={triggerRef}
         type="button"
         className="editor-header-dropdown-btn status-dropdown-btn"
         data-status={status}
@@ -63,7 +74,17 @@ export const StatusDropdown = memo(function StatusDropdown({
       </button>
 
       {isOpen && (
-        <div className="editor-header-menu" role="menu">
+        <div
+          ref={menuRef}
+          className="editor-header-menu"
+          role="menu"
+          style={{
+            top: menuPosition.top,
+            bottom: menuPosition.bottom,
+            left: menuPosition.left,
+            right: menuPosition.right,
+          }}
+        >
           {statuses.map(s => {
             const config = statusConfig[s];
             return (

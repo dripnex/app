@@ -20,8 +20,8 @@ import {
   createNotebookId,
   createTag,
   DEFAULT_NOTE_STATUS,
-  extractWikilinks,
 } from '@readied/core';
+import { extractWikilinks } from '@readied/wikilinks';
 import type { DatabaseConnection } from '../database.js';
 
 /** Row type from SQLite */
@@ -370,6 +370,71 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     stmt.run(color, normalized);
   }
 
+  /**
+   * Rename a tag across all notes.
+   * Only affects manual tags (content tags are derived from markdown).
+   * Preserves the tag's color.
+   */
+  renameTag(oldName: string, newName: string): { ok: boolean; error?: string } {
+    const normalizedOld = oldName.trim().toLowerCase();
+    const normalizedNew = newName.trim().toLowerCase();
+
+    if (!normalizedNew) {
+      return { ok: false, error: 'New tag name cannot be empty' };
+    }
+
+    if (normalizedOld === normalizedNew) {
+      return { ok: true }; // No change needed
+    }
+
+    try {
+      this.db.transaction(() => {
+        // Check if new tag already exists
+        const existingStmt = this.db.prepare('SELECT id, color FROM tags WHERE name = ?');
+        const existingNew = existingStmt.get(normalizedNew) as
+          | { id: number; color: string | null }
+          | undefined;
+        const existingOld = existingStmt.get(normalizedOld) as
+          | { id: number; color: string | null }
+          | undefined;
+
+        if (!existingOld) {
+          throw new Error('Tag not found');
+        }
+
+        if (existingNew) {
+          // Merge: move all note_tags from old to new, then delete old tag
+          const updateNoteTagsStmt = this.db.prepare(`
+            UPDATE OR IGNORE note_tags SET tag_id = ? WHERE tag_id = ?
+          `);
+          updateNoteTagsStmt.run(existingNew.id, existingOld.id);
+
+          // Delete orphaned note_tags (duplicates that couldn't be updated)
+          const deleteOrphanedStmt = this.db.prepare('DELETE FROM note_tags WHERE tag_id = ?');
+          deleteOrphanedStmt.run(existingOld.id);
+
+          // Delete old tag
+          const deleteOldTagStmt = this.db.prepare('DELETE FROM tags WHERE id = ?');
+          deleteOldTagStmt.run(existingOld.id);
+
+          // Preserve color from old tag if new tag has no color
+          if (!existingNew.color && existingOld.color) {
+            const updateColorStmt = this.db.prepare('UPDATE tags SET color = ? WHERE id = ?');
+            updateColorStmt.run(existingOld.color, existingNew.id);
+          }
+        } else {
+          // Simple rename: just update the tag name
+          const renameStmt = this.db.prepare('UPDATE tags SET name = ? WHERE name = ?');
+          renameStmt.run(normalizedNew, normalizedOld);
+        }
+      });
+
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
   private rowToNote(row: NoteRow, tags: Tag[]): Note {
     // Reconstruct note from stored data with structural title
     const note = createNote({
@@ -527,5 +592,47 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       WHERE target_ref = ? COLLATE NOCASE
     `);
     stmt.run(noteId, title);
+  }
+
+  /**
+   * Get all data needed for graph visualization.
+   * Returns nodes (notes) and edges (resolved links).
+   */
+  getGraphData(): {
+    nodes: Array<{ id: string; title: string; notebookId: string }>;
+    edges: Array<{ source: string; target: string }>;
+  } {
+    // Get all non-archived notes
+    const notesStmt = this.db.prepare<{ id: string; title: string; notebook_id: string }>(`
+      SELECT id, title, notebook_id
+      FROM notes
+      WHERE archived_at IS NULL
+    `);
+    const noteRows = notesStmt.all() as Array<{
+      id: string;
+      title: string;
+      notebook_id: string;
+    }>;
+
+    // Get all resolved links (where both source and target exist)
+    const linksStmt = this.db.prepare<{ source: string; target: string }>(`
+      SELECT l.source_note_id as source, l.target_note_id as target
+      FROM links l
+      JOIN notes n1 ON l.source_note_id = n1.id
+      JOIN notes n2 ON l.target_note_id = n2.id
+      WHERE l.target_note_id IS NOT NULL
+        AND n1.archived_at IS NULL
+        AND n2.archived_at IS NULL
+    `);
+    const linkRows = linksStmt.all() as Array<{ source: string; target: string }>;
+
+    return {
+      nodes: noteRows.map(row => ({
+        id: row.id,
+        title: row.title,
+        notebookId: row.notebook_id,
+      })),
+      edges: linkRows,
+    };
   }
 }

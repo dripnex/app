@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Palette, Trash2 } from 'lucide-react';
+import { Palette, Trash2, Pencil } from 'lucide-react';
 import { ColorPicker, TAG_COLORS } from '../../ColorPicker';
 import styles from './TagsContextMenu.module.css';
 
@@ -20,6 +20,8 @@ export interface TagsContextMenuProps {
   onColorSelect: (tag: string, color: string | null) => void;
   /** Called when delete is clicked */
   onDelete: (tag: string) => void;
+  /** Called when rename is confirmed */
+  onRename?: (oldTag: string, newTag: string) => void;
 }
 
 export function TagsContextMenu({
@@ -29,9 +31,13 @@ export function TagsContextMenu({
   onClose,
   onColorSelect,
   onDelete,
+  onRename,
 }: TagsContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const [showColorSubmenu, setShowColorSubmenu] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(tag);
 
   // Close on click outside or escape
   useEffect(() => {
@@ -43,7 +49,12 @@ export function TagsContextMenu({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (isRenaming) {
+          setIsRenaming(false);
+          setRenameValue(tag);
+        } else {
+          onClose();
+        }
       }
     };
 
@@ -53,7 +64,15 @@ export function TagsContextMenu({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, isRenaming, tag]);
+
+  // Focus input when entering rename mode
+  useEffect(() => {
+    if (isRenaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [isRenaming]);
 
   const handleColorSelect = useCallback(
     (color: string | null) => {
@@ -68,6 +87,24 @@ export function TagsContextMenu({
     onClose();
   }, [tag, onDelete, onClose]);
 
+  const handleRenameSubmit = useCallback(() => {
+    const trimmed = renameValue.trim().toLowerCase().replace(/^#/, '');
+    if (trimmed && trimmed !== tag && onRename) {
+      onRename(tag, trimmed);
+    }
+    onClose();
+  }, [tag, renameValue, onRename, onClose]);
+
+  const handleRenameKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleRenameSubmit();
+      }
+    },
+    [handleRenameSubmit]
+  );
+
   return createPortal(
     <div
       ref={menuRef}
@@ -78,31 +115,61 @@ export function TagsContextMenu({
         top: position.y,
       }}
     >
-      {/* Color option with submenu */}
-      <button type="button" className={styles.item} onMouseEnter={() => setShowColorSubmenu(true)}>
-        <Palette size={14} />
-        <span>Set color</span>
-        <span className={styles.arrow}>›</span>
-      </button>
+      {isRenaming ? (
+        /* Rename input mode */
+        <div className={styles.renameContainer}>
+          <input
+            ref={renameInputRef}
+            type="text"
+            className={styles.renameInput}
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onKeyDown={handleRenameKeyDown}
+            onBlur={handleRenameSubmit}
+            placeholder="New tag name"
+          />
+        </div>
+      ) : (
+        <>
+          {/* Rename option */}
+          {onRename && (
+            <button type="button" className={styles.item} onClick={() => setIsRenaming(true)}>
+              <Pencil size={14} />
+              <span>Rename</span>
+            </button>
+          )}
 
-      {/* Color submenu */}
-      {showColorSubmenu && (
-        <ColorPicker
-          currentColor={currentColor}
-          onSelect={color => handleColorSelect(color)}
-          onClear={() => handleColorSelect(null)}
-          className={styles.submenu}
-        />
+          {/* Color option with submenu */}
+          <button
+            type="button"
+            className={styles.item}
+            onMouseEnter={() => setShowColorSubmenu(true)}
+          >
+            <Palette size={14} />
+            <span>Set color</span>
+            <span className={styles.arrow}>›</span>
+          </button>
+
+          {/* Color submenu */}
+          {showColorSubmenu && (
+            <ColorPicker
+              currentColor={currentColor}
+              onSelect={color => handleColorSelect(color)}
+              onClear={() => handleColorSelect(null)}
+              className={styles.submenu}
+            />
+          )}
+
+          {/* Divider */}
+          <div className={styles.divider} />
+
+          {/* Delete option */}
+          <button type="button" className={styles.itemDanger} onClick={handleDelete}>
+            <Trash2 size={14} />
+            <span>Delete tag</span>
+          </button>
+        </>
       )}
-
-      {/* Divider */}
-      <div className={styles.divider} />
-
-      {/* Delete option */}
-      <button type="button" className={styles.itemDanger} onClick={handleDelete}>
-        <Trash2 size={14} />
-        <span>Delete tag</span>
-      </button>
     </div>,
     document.body
   );

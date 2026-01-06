@@ -1,7 +1,16 @@
 import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { FileText, MoreVertical, Link2 } from 'lucide-react';
-import { TitleInput } from './TitleInput';
+import type { NoteSnapshot, NoteStatus } from '../../preload/index';
+import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
+import { useEditorBufferStore } from '../stores/editorBufferStore';
+import { useScrollSync } from '../hooks/useScrollSync';
+import { useManualTags } from '../hooks/useManualTags';
+import { useEmbedResolver } from '../hooks/useEmbedResolver';
+import { useBacklinks } from '../hooks/useLinks';
+import type { MarkdownEditorHandle } from './MarkdownEditor';
+import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
+import { ImageLightbox } from './ImageLightbox';
+import { BacklinksPanel } from './editor/BacklinksPanel';
 import {
   ActionsPanel,
   EditorHeader,
@@ -9,14 +18,7 @@ import {
   FormattingToolbar,
   MarkdownPreview,
 } from './editor';
-import { BacklinksPanel } from './editor/BacklinksPanel';
-import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
-import type { MarkdownEditorHandle } from './MarkdownEditor';
-import type { NoteSnapshot, NoteStatus } from '../../preload/index';
-import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
-import { useScrollSync } from '../hooks/useScrollSync';
-import { noteKeys } from '../hooks/useNotes';
-import { useBacklinks } from '../hooks/useLinks';
+import { TitleInput } from './TitleInput';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
@@ -42,6 +44,8 @@ interface NoteEditorProps {
   onDelete?: () => void;
   onWikilinkClick?: (target: string) => void;
   onNavigateToNote?: (noteId: string) => void;
+  /** Called when note is updated (e.g., tags changed) */
+  onNoteUpdate?: (note: NoteSnapshot) => void;
 }
 
 export function NoteEditor({
@@ -54,8 +58,8 @@ export function NoteEditor({
   onDelete,
   onWikilinkClick,
   onNavigateToNote,
+  onNoteUpdate,
 }: NoteEditorProps) {
-  const queryClient = useQueryClient();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const previewRef = useRef<MarkdownPreviewHandle | null>(null);
@@ -65,8 +69,27 @@ export function NoteEditor({
   const viewMode = useEditorPreferencesStore(state => state.viewMode);
   const setViewMode = useEditorPreferencesStore(state => state.setViewMode);
 
-  // Manual tags state (fetched separately, not in NoteSnapshot)
-  const [manualTags, setManualTags] = useState<string[]>([]);
+  // Initialize editor buffer when note changes
+  useEffect(() => {
+    // Cancel any pending debounce from previous note to prevent stale mutations
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+
+    if (note) {
+      useEditorBufferStore.getState().setNote(note.id, note.content);
+    } else {
+      useEditorBufferStore.getState().clear();
+    }
+  }, [note?.id, note?.content]);
+
+  // Manual tags (extracted to hook)
+  const { manualTags, displayTags, addTag, removeTag } = useManualTags({
+    noteId: note?.id ?? null,
+    inlineTags: note?.tags ?? [],
+    onNoteUpdate,
+  });
 
   // Actions panel state
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -76,6 +99,15 @@ export function NoteEditor({
   const { data: backlinks } = useBacklinks(note?.id ?? null);
   const backlinksCount = backlinks?.length ?? 0;
 
+  // Lightbox state for embedded images
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+
+  // Embed resolution (extracted to hook)
+  const { resolvedEmbeds, getEmbedUrl } = useEmbedResolver({
+    noteId: note?.id ?? null,
+    content: note?.content ?? null,
+  });
+
   // Toolbar visibility state (for passing to ActionsPanel)
   const [toolbarVisibility, setToolbarVisibility] = useState<ToolbarVisibility>({
     text: true,
@@ -83,38 +115,6 @@ export function NoteEditor({
     blocks: true,
     history: true,
   });
-
-  // Merge note.tags with manualTags for display (deduplicated)
-  const displayTags = note ? [...new Set([...note.tags, ...manualTags])].sort() : [];
-
-  // Fetch manual tags when note changes
-  useEffect(() => {
-    if (!note) {
-      setManualTags([]);
-      return;
-    }
-
-    const noteId = note.id;
-    let cancelled = false;
-    async function loadManualTags() {
-      try {
-        const tags = await window.readied.notes.getManualTags(noteId);
-        if (!cancelled) {
-          setManualTags(tags);
-        }
-      } catch (error) {
-        console.error('Failed to load manual tags:', error);
-        if (!cancelled) {
-          setManualTags([]);
-        }
-      }
-    }
-    loadManualTags();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [note?.id]);
 
   const showEditor = viewMode === 'editor' || viewMode === 'split';
   const showPreview = viewMode === 'preview' || viewMode === 'split';
@@ -143,6 +143,15 @@ export function NoteEditor({
     [onUpdate]
   );
 
+  // Cleanup debounce timer on unmount to prevent stale mutations
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
   // Handle title change
   const handleTitleChange = useCallback(
     (title: string) => {
@@ -155,54 +164,6 @@ export function NoteEditor({
   const handleTitleEnter = useCallback(() => {
     editorRef.current?.focus();
   }, []);
-
-  // Handle adding a manual tag
-  const handleAddTag = useCallback(
-    async (tag: string) => {
-      if (!note) return;
-      const normalized = tag.trim().toLowerCase().replace(/^#/, '');
-      if (!normalized || manualTags.includes(normalized)) return;
-
-      const updatedTags = [...manualTags, normalized];
-      setManualTags(updatedTags);
-
-      try {
-        await window.readied.notes.setManualTags(note.id, updatedTags);
-        // Invalidate tags query so sidebar updates
-        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
-        // Invalidate notes list so NoteList updates immediately
-        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
-      } catch (error) {
-        console.error('Failed to save manual tags:', error);
-        // Revert on error
-        setManualTags(manualTags);
-      }
-    },
-    [note, manualTags, queryClient]
-  );
-
-  // Handle removing a manual tag
-  const handleRemoveTag = useCallback(
-    async (tag: string) => {
-      if (!note) return;
-
-      const updatedTags = manualTags.filter(t => t !== tag);
-      setManualTags(updatedTags);
-
-      try {
-        await window.readied.notes.setManualTags(note.id, updatedTags);
-        // Invalidate tags query so sidebar updates
-        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
-        // Invalidate notes list so NoteList updates immediately
-        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
-      } catch (error) {
-        console.error('Failed to save manual tags:', error);
-        // Revert on error
-        setManualTags(manualTags);
-      }
-    },
-    [note, manualTags, queryClient]
-  );
 
   if (!note) {
     return (
@@ -253,8 +214,8 @@ export function NoteEditor({
           manualTags={manualTags}
           onMoveToNotebook={onMoveToNotebook}
           onStatusChange={onStatusChange}
-          onAddTag={handleAddTag}
-          onRemoveTag={handleRemoveTag}
+          onAddTag={addTag}
+          onRemoveTag={removeTag}
         />
       )}
       <div ref={toolbarRowRef} className="note-editor-toolbar-row">
@@ -280,6 +241,7 @@ export function NoteEditor({
                 onChange={handleChange}
                 onReady={handleEditorReady}
                 noteId={note.id}
+                getEmbedUrl={getEmbedUrl}
               />
             </Suspense>
           </div>
@@ -294,10 +256,13 @@ export function NoteEditor({
             <MarkdownPreview
               ref={previewRef}
               content={note.content}
+              noteId={note.id}
               createdAt={note.createdAt}
               updatedAt={note.updatedAt}
               onReady={handlePreviewReady}
               onWikilinkClick={onWikilinkClick}
+              onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
+              resolvedEmbeds={resolvedEmbeds}
             />
           </div>
         )}
@@ -313,6 +278,7 @@ export function NoteEditor({
         isOpen={actionsOpen}
         onClose={() => setActionsOpen(false)}
         noteId={note.id}
+        noteTitle={note.title}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
         hiddenFormatting={toolbarVisibility}
@@ -326,6 +292,11 @@ export function NoteEditor({
         noteId={note.id}
         onNavigateToNote={onNavigateToNote ?? (() => {})}
       />
+
+      {/* Image Lightbox */}
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
     </main>
   );
 }

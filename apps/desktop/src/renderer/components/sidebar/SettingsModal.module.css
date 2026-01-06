@@ -1,0 +1,245 @@
+/**
+ * SettingsModal CSS Module
+ *
+ * Full-featured settings panel with sections.
+ */
+
+/* Overlay backdrop */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  background: rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 160px);
+  background: var(--bg-inset, #1a1d23);
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: slideIn 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerIcon {
+  color: var(--accent, #6b9fff);
+}
+
+.headerTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.closeBtn:hover {
+  background: var(--bg-surface, #2a2d35);
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}
+
+/* Content area */
+.content {
+  padding: 8px 20px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Section */
+.section {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.sectionHeader svg {
+  color: var(--accent, #6b9fff);
+}
+
+.sectionDesc {
+  font-size: 12px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  margin: 0 0 12px 0;
+}
+
+/* Option group (buttons) */
+.optionGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.optionBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: var(--bg-surface, #2a2d35);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.optionBtn span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}
+
+.optionBtn small {
+  font-size: 10px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+}
+
+.optionBtn svg {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.optionBtn:hover {
+  background: var(--bg-hover, #35383f);
+}
+
+.optionBtn.selected {
+  background: var(--accent-muted, rgba(107, 159, 255, 0.15));
+  border-color: var(--accent, #6b9fff);
+}
+
+.optionBtn.selected svg {
+  color: var(--accent, #6b9fff);
+}
+
+.optionBtn.selected span {
+  color: var(--accent, #6b9fff);
+}
+
+/* License info */
+.licenseInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.licenseRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.licenseLabel {
+  font-size: 13px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.licenseValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}
+
+.statusLicensed {
+  color: #4ade80;
+}
+
+.statusTrial {
+  color: var(--accent, #6b9fff);
+}
+
+.statusExpired {
+  color: #f87171;
+}
+
+/* About info */
+.aboutInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aboutRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.aboutLabel {
+  font-size: 13px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.aboutValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, rgba(255, 255, 255, 0.9));
+}

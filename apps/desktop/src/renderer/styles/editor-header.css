@@ -198,6 +198,17 @@
   font-size: 11px;
   color: var(--text-secondary);
   white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.tag-chip--colored {
+  background: var(--tag-color-bg, var(--bg-elevated));
+  color: var(--tag-color, var(--text-secondary));
+}
+
+.tag-chip--colored .tag-hash {
+  color: var(--tag-color, var(--text-faint));
+  opacity: 0.7;
 }
 
 .tag-chip .tag-hash {
@@ -272,4 +283,69 @@
 
 .tags-input-field::placeholder {
   color: var(--text-faint);
+}
+
+/* Tags autocomplete wrapper */
+.tags-input-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Tags autocomplete suggestions dropdown */
+.tags-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 140px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  animation: tags-suggestions-enter var(--transition-fast) ease-out;
+}
+
+@keyframes tags-suggestions-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tags-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-normal);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.tags-suggestion-item:hover,
+.tags-suggestion-item.selected {
+  background: var(--bg-hover);
+}
+
+.tags-suggestion-item.selected {
+  color: var(--accent);
+}
+
+.tags-suggestion-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
 }

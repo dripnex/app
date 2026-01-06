@@ -5,13 +5,14 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { BacklinkInfo, OutgoingLinkInfo } from '../../preload/index';
+import type { BacklinkInfo, OutgoingLinkInfo, GraphData } from '../../preload/index';
 
 /** Query key factory for links */
 export const linkKeys = {
   all: ['links'] as const,
   backlinks: (noteId: string) => [...linkKeys.all, 'backlinks', noteId] as const,
   outgoing: (noteId: string) => [...linkKeys.all, 'outgoing', noteId] as const,
+  graph: () => [...linkKeys.all, 'graph'] as const,
 };
 
 /**
@@ -63,5 +64,19 @@ export function useSyncLinks() {
       // Invalidate all link queries since links may have changed
       queryClient.invalidateQueries({ queryKey: linkKeys.all });
     },
+  });
+}
+
+/**
+ * Hook for getting graph data (all notes and their links).
+ * Used for the graph visualization view.
+ */
+export function useGraphData() {
+  return useQuery({
+    queryKey: linkKeys.graph(),
+    queryFn: async (): Promise<GraphData> => {
+      return window.readied.links.getGraph();
+    },
+    staleTime: 1000 * 60 * 2, // Cache for 2 minutes
   });
 }

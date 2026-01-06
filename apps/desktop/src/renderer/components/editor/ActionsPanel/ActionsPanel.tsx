@@ -8,6 +8,7 @@ import {
   Trash2,
   History,
   Share2,
+  ExternalLink,
   // Formatting icons for overflow
   List,
   ListOrdered,
@@ -26,6 +27,7 @@ interface ActionsPanelProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
   readonly noteId: string;
+  readonly noteTitle?: string;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
   /** Hidden formatting groups from toolbar overflow */
@@ -51,6 +53,7 @@ export const ActionsPanel = memo(function ActionsPanel({
   isOpen,
   onClose,
   noteId,
+  noteTitle,
   onDuplicate,
   onDelete,
   hiddenFormatting,
@@ -101,6 +104,12 @@ export const ActionsPanel = memo(function ActionsPanel({
     onDelete?.();
     onClose();
   }, [onDelete, onClose]);
+
+  // Open note in new window
+  const handleOpenInNewWindow = useCallback(async () => {
+    await window.readied.windows.openNote(noteId, noteTitle || 'Note');
+    onClose();
+  }, [noteId, noteTitle, onClose]);
 
   // Check if any formatting is hidden
   const hasHiddenFormatting =
@@ -299,6 +308,13 @@ export const ActionsPanel = memo(function ActionsPanel({
               </span>
               Pin to Top
               <span className={styles.badge}>Soon</span>
+            </button>
+
+            <button type="button" className={styles.item} onClick={handleOpenInNewWindow}>
+              <span className={styles.icon}>
+                <ExternalLink size={16} />
+              </span>
+              Open in New Window
             </button>
 
             <div className={styles.divider} />

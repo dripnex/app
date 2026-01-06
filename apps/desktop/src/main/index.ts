@@ -4,11 +4,12 @@
  * Initializes the app, database, and IPC handlers.
  */
 
-import { join } from 'path';
-import { readFile, writeFile, unlink } from 'fs/promises';
+import { join, normalize } from 'path';
+import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
+import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import {
   runMigrations,
   createDataPaths,
@@ -166,11 +167,93 @@ function createWindow(): void {
   });
 
   // Load renderer
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173');
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  }
+}
+
+/** Create a new window for viewing a single note */
+function createNoteWindow(noteId: string, noteTitle: string): void {
+  const noteWindow = new BrowserWindow({
+    width: 800,
+    height: 700,
+    minWidth: 500,
+    minHeight: 400,
+    show: false,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 8, y: 8 },
+    backgroundColor: '#0a0b0d',
+    title: noteTitle || 'Note',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  });
+
+  noteWindow.on('ready-to-show', () => {
+    noteWindow.show();
+  });
+
+  // Load renderer with note ID in query param
+  const query = `?noteWindow=${encodeURIComponent(noteId)}`;
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
+  } else {
+    noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      query: { noteWindow: noteId },
+    });
+  }
+}
+
+/** Settings window singleton */
+let settingsWindow: BrowserWindow | null = null;
+
+/** Create or focus the settings window */
+function createSettingsWindow(): void {
+  // If window exists, focus it
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 700,
+    height: 500,
+    minWidth: 500,
+    minHeight: 400,
+    show: false,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 8, y: 8 },
+    backgroundColor: '#0a0b0d',
+    title: 'Settings',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  });
+
+  settingsWindow.on('ready-to-show', () => {
+    settingsWindow?.show();
+  });
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+
+  // Load settings page
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    // Replace index.html with settings.html in the URL
+    const settingsUrl = process.env.ELECTRON_RENDERER_URL.replace(/\/?$/, '/settings.html');
+    settingsWindow.loadURL(settingsUrl);
+  } else {
+    settingsWindow.loadFile(join(__dirname, '../renderer/settings.html'));
   }
 }
 
@@ -414,6 +497,11 @@ function registerIpcHandlers(): void {
     return { ok: true };
   });
 
+  // Rename tag across all notes
+  ipcMain.handle('tags:rename', async (_event, oldName: string, newName: string) => {
+    return repo.renameTag(oldName, newName);
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Links (Wikilinks / Backlinks)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -433,6 +521,145 @@ function registerIpcHandlers(): void {
   ipcMain.handle('links:outgoing', async (_event, noteId: string) => {
     return repo.getOutgoingLinks(createNoteId(noteId));
   });
+
+  // Get graph data (all notes and links for visualization)
+  ipcMain.handle('links:graph', async () => {
+    try {
+      return repo.getGraphData();
+    } catch (error) {
+      console.error('Failed to get graph data:', error);
+      // Return empty data on error
+      return { nodes: [], edges: [] };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Window Management
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Open a note in a new window
+  ipcMain.handle('window:openNote', async (_event, noteId: string, noteTitle: string) => {
+    createNoteWindow(noteId, noteTitle);
+    return { ok: true };
+  });
+
+  // Open settings window
+  ipcMain.handle('window:openSettings', async () => {
+    createSettingsWindow();
+    return { ok: true };
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Embeds (File Resolution)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Resolve embed target to asset:// URL
+  ipcMain.handle('embeds:resolve', async (_event, target: string, noteId: string) => {
+    if (!dataPaths) return null;
+
+    // Build path to note's assets folder: /assets/{noteId}/{target}
+    const assetPath = join(dataPaths.assets, noteId, target);
+
+    // Check if file exists
+    if (existsSync(assetPath)) {
+      // Return asset:// URL with host (required for browser to recognize protocol)
+      return `asset://local/${noteId}/${target}`;
+    }
+
+    // File not found
+    return null;
+  });
+
+  // Batch resolve multiple embed targets (more efficient)
+  ipcMain.handle(
+    'embeds:resolveBatch',
+    async (_event, targets: string[], noteId: string): Promise<Record<string, string | null>> => {
+      if (!dataPaths) return {};
+
+      const result: Record<string, string | null> = {};
+      for (const target of targets) {
+        const assetPath = join(dataPaths.assets, noteId, target);
+        // Return asset:// URL with host (required for browser to recognize protocol)
+        result[target] = existsSync(assetPath) ? `asset://local/${noteId}/${target}` : null;
+      }
+      return result;
+    }
+  );
+
+  // Save asset (image/file) for a note via drag & drop or paste
+  ipcMain.handle(
+    'embeds:saveAsset',
+    async (
+      _event,
+      noteId: string,
+      mime: string,
+      bytes: ArrayBuffer,
+      originalName?: string
+    ): Promise<{ ok: true; filename: string; relPath: string } | { ok: false; error: string }> => {
+      if (!dataPaths) {
+        return { ok: false, error: 'Data paths not initialized' };
+      }
+
+      // Validate noteId (non-empty, alphanumeric with hyphens/underscores)
+      if (!noteId || !/^[\w-]+$/.test(noteId)) {
+        return { ok: false, error: 'Invalid noteId' };
+      }
+
+      // Validate size (max 20MB)
+      const MAX_SIZE = 20 * 1024 * 1024;
+      if (bytes.byteLength > MAX_SIZE) {
+        return { ok: false, error: 'File too large (max 20MB)' };
+      }
+
+      // Derive extension from mime type
+      const mimeToExt: Record<string, string> = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
+        'image/ico': 'ico',
+        'video/mp4': 'mp4',
+        'video/webm': 'webm',
+        'video/quicktime': 'mov',
+        'audio/mpeg': 'mp3',
+        'audio/wav': 'wav',
+        'audio/ogg': 'ogg',
+        'application/pdf': 'pdf',
+      };
+
+      let ext = mimeToExt[mime];
+      if (!ext && originalName) {
+        // Fallback to originalName extension
+        const match = originalName.match(/\.([a-zA-Z0-9]+)$/);
+        ext = match?.[1]?.toLowerCase() ?? 'bin';
+      }
+      if (!ext) {
+        ext = 'bin';
+      }
+
+      // Generate unique filename: timestamp-random.ext
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8);
+      const filename = `${timestamp}-${random}.${ext}`;
+
+      // Ensure note's assets directory exists
+      const noteAssetsDir = join(dataPaths.assets, noteId);
+      await mkdir(noteAssetsDir, { recursive: true });
+
+      // Write file
+      const assetPath = join(noteAssetsDir, filename);
+      await writeFile(assetPath, Buffer.from(bytes));
+
+      return {
+        ok: true,
+        filename,
+        relPath: `${noteId}/${filename}`,
+      };
+    }
+  );
 
   // Count notes
   ipcMain.handle('notes:count', async () => {
@@ -960,12 +1187,58 @@ function initAutoUpdater(): void {
   }, 3000);
 }
 
+/**
+ * asset:// protocol
+ *
+ * Invariant:
+ * - Renderer NEVER accesses filesystem paths directly
+ * - All local assets are resolved via asset:// URLs
+ *
+ * Rationale:
+ * - Avoids file:// which is blocked in dev (http://localhost)
+ * - Same behavior in dev and production
+ * - Enables secure embeds (images, video, pdf)
+ */
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'asset',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
+  },
+]);
+
 // App lifecycle
 app
   .whenReady()
   .then(() => {
     // Initialize data paths first (creates directories)
     dataPaths = initDataPaths();
+
+    // Register asset:// protocol handler
+    protocol.registerFileProtocol('asset', (request, callback) => {
+      // asset://local/noteId/filename → assets/noteId/filename
+      // Strip protocol and host (local/)
+      let urlPath = decodeURIComponent(request.url.slice('asset://'.length));
+      if (urlPath.startsWith('local/')) {
+        urlPath = urlPath.slice('local/'.length);
+      }
+
+      // Sanitize: prevent path traversal attacks
+      const safePath = normalize(urlPath).replace(/^(\.\.[/\\])+/, '');
+
+      const filePath = join(dataPaths!.assets, safePath);
+
+      if (!existsSync(filePath)) {
+        callback({ error: -6 }); // FILE_NOT_FOUND
+        return;
+      }
+
+      callback({ path: filePath });
+    });
 
     // Initialize logger (must be after dataPaths)
     const log = initLogger({
@@ -986,6 +1259,13 @@ app
     registerLicenseHandlers();
     registerLogHandlers();
     log.info('All IPC handlers registered');
+
+    // Install React DevTools in development
+    if (process.env.NODE_ENV === 'development') {
+      installExtension(REACT_DEVELOPER_TOOLS)
+        .then(name => log.info({ extension: name }, 'DevTools extension installed'))
+        .catch(err => log.warn({ error: err.message }, 'Failed to install DevTools extension'));
+    }
 
     // Create window and start auto-updater
     createWindow();

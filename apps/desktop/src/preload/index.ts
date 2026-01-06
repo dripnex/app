@@ -154,6 +154,12 @@ export interface OutgoingLinkInfo {
   targetTitle: string | null;
 }
 
+/** Graph data for visualization */
+export interface GraphData {
+  nodes: Array<{ id: string; title: string; notebookId: string }>;
+  edges: Array<{ source: string; target: string }>;
+}
+
 /** Log level types */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -205,6 +211,8 @@ export interface ReadiedAPI {
     setTagColor: (tagName: string, color: string | null) => Promise<{ ok: boolean }>;
     /** Delete a tag from the system */
     deleteTag: (tagName: string) => Promise<{ ok: boolean }>;
+    /** Rename a tag across all notes */
+    renameTag: (oldName: string, newName: string) => Promise<{ ok: boolean; error?: string }>;
     /** Set manual tags for a note (full replacement) */
     setManualTags: (noteId: string, tags: string[]) => Promise<{ ok: boolean }>;
     /** Get manual tags only (for editor to know which are removable) */
@@ -281,6 +289,27 @@ export interface ReadiedAPI {
     getBacklinks: (noteId: string) => Promise<BacklinkInfo[]>;
     /** Get outgoing links (notes this note links TO) */
     getOutgoing: (noteId: string) => Promise<OutgoingLinkInfo[]>;
+    /** Get graph data (all notes and links for visualization) */
+    getGraph: () => Promise<GraphData>;
+  };
+  embeds: {
+    /** Resolve embed target to file:// URL (returns null if not found) */
+    resolve: (target: string, noteId: string) => Promise<string | null>;
+    /** Batch resolve multiple embed targets (more efficient) */
+    resolveBatch: (targets: string[], noteId: string) => Promise<Record<string, string | null>>;
+    /** Save asset (image/file) for a note via drag & drop or paste */
+    saveAsset: (
+      noteId: string,
+      mime: string,
+      bytes: ArrayBuffer,
+      originalName?: string
+    ) => Promise<{ ok: true; filename: string; relPath: string } | { ok: false; error: string }>;
+  };
+  windows: {
+    /** Open a note in a new window */
+    openNote: (noteId: string, noteTitle: string) => Promise<{ ok: boolean }>;
+    /** Open the settings window */
+    openSettings: () => Promise<{ ok: boolean }>;
   };
 }
 
@@ -307,6 +336,7 @@ const api: ReadiedAPI = {
     tagsWithColors: () => ipcRenderer.invoke('tags:listWithColors'),
     setTagColor: (tagName, color) => ipcRenderer.invoke('tags:setColor', tagName, color),
     deleteTag: tagName => ipcRenderer.invoke('tags:delete', tagName),
+    renameTag: (oldName, newName) => ipcRenderer.invoke('tags:rename', oldName, newName),
     setManualTags: (noteId, tags) => ipcRenderer.invoke('notes:setManualTags', noteId, tags),
     getManualTags: noteId => ipcRenderer.invoke('notes:getManualTags', noteId),
     count: () => ipcRenderer.invoke('notes:count'),
@@ -333,7 +363,8 @@ const api: ReadiedAPI = {
     openFolder: () => ipcRenderer.invoke('data:openFolder'),
   },
   app: {
-    version: () => '0.1.0',
+    // TODO: Use IPC to get version dynamically from main process
+    version: () => '0.1.5',
   },
   license: {
     getState: () => ipcRenderer.invoke('license:getState'),
@@ -360,6 +391,17 @@ const api: ReadiedAPI = {
     sync: (noteId, content) => ipcRenderer.invoke('links:sync', noteId, content),
     getBacklinks: noteId => ipcRenderer.invoke('links:backlinks', noteId),
     getOutgoing: noteId => ipcRenderer.invoke('links:outgoing', noteId),
+    getGraph: () => ipcRenderer.invoke('links:graph'),
+  },
+  embeds: {
+    resolve: (target, noteId) => ipcRenderer.invoke('embeds:resolve', target, noteId),
+    resolveBatch: (targets, noteId) => ipcRenderer.invoke('embeds:resolveBatch', targets, noteId),
+    saveAsset: (noteId, mime, bytes, originalName) =>
+      ipcRenderer.invoke('embeds:saveAsset', noteId, mime, bytes, originalName),
+  },
+  windows: {
+    openNote: (noteId, noteTitle) => ipcRenderer.invoke('window:openNote', noteId, noteTitle),
+    openSettings: () => ipcRenderer.invoke('window:openSettings'),
   },
 };
 

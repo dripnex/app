@@ -84,3 +84,28 @@
   top: -4px;
   margin-left: 4px;
 }
+
+.renameContainer {
+  padding: 4px;
+}
+
+.renameInput {
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.renameInput:focus {
+  border-color: rgba(100, 150, 255, 0.5);
+}
+
+.renameInput::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}

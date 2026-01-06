@@ -20,13 +20,17 @@ import { StatusFilters } from './StatusFilters';
 import { SidebarFooter } from './SidebarFooter';
 import { NotebookCreateModal } from './NotebookCreateModal';
 
+interface SidebarProps {
+  onOpenGraph?: () => void;
+}
+
 /**
  * Sidebar component - Pure render of NavigationState from Zustand
  *
  * Uses granular selectors to minimize re-renders.
  * Owns modal state for notebook creation.
  */
-export function Sidebar() {
+export function Sidebar({ onOpenGraph }: SidebarProps) {
   // Modal state - lives HERE, not in NotebookList
   const [isCreateNotebookOpen, setIsCreateNotebookOpen] = useState(false);
   const [createParentId, setCreateParentId] = useState<string | null>(null);
@@ -85,7 +89,7 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar" aria-label="Main sidebar">
-      <SidebarHeader />
+      <SidebarHeader onSettingsClick={() => window.readied.windows.openSettings()} />
       <SidebarBreadcrumb
         selectedNotebookId={selectedNotebookId}
         tagFilter={tagFilter}
@@ -104,6 +108,7 @@ export function Sidebar() {
           else if (filter === 'trash') goToTrash();
         }}
         isNotebookContext={isNotebookContext}
+        onOpenGraph={onOpenGraph}
       />
 
       <SidebarSection title="Notebooks" collapsible onAdd={openCreateInContext}>
