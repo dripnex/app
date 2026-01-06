@@ -29,8 +29,12 @@
     "@codemirror/view": "^6.0.0"
   },
   "peerDependenciesMeta": {
-    "@codemirror/state": { "optional": true },
-    "@codemirror/view": { "optional": true }
+    "@codemirror/state": {
+      "optional": true
+    },
+    "@codemirror/view": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@codemirror/state": "^6.5.0",

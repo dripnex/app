@@ -8,44 +8,48 @@
 
 ### 1.1 Clasificación de Mutaciones
 
-| Tipo | Actualiza `updatedAt` | Ejemplos |
-|------|----------------------|----------|
-| **Content** | **SÍ** | Crear, editar contenido, cambiar título |
-| **Metadata** | **NO** | Status, tags, notebook, pin |
-| **Lifecycle** | **SÍ** (debatible) | Archive, trash, restore |
-| **Destroy** | **N/A** | Hard delete (entidad deja de existir) |
-| **Infra** | **NO** | Cascadas, FKs, triggers |
+| Tipo          | Actualiza `updatedAt` | Ejemplos                                |
+| ------------- | --------------------- | --------------------------------------- |
+| **Content**   | **SÍ**                | Crear, editar contenido, cambiar título |
+| **Metadata**  | **NO**                | Status, tags, notebook, pin             |
+| **Lifecycle** | **SÍ** (debatible)    | Archive, trash, restore                 |
+| **Destroy**   | **N/A**               | Hard delete (entidad deja de existir)   |
+| **Infra**     | **NO**                | Cascadas, FKs, triggers                 |
 
 ### 1.2 Reglas por Función
 
 #### Content (actualiza `updatedAt`)
+
 ```typescript
-createNote()      // Nueva nota
-updateNote()      // Cambio de contenido
-updateTitle()     // Cambio de título
-duplicateNote()   // Nueva nota (copia)
+createNote(); // Nueva nota
+updateNote(); // Cambio de contenido
+updateTitle(); // Cambio de título
+duplicateNote(); // Nueva nota (copia)
 ```
 
 #### Metadata (NO actualiza `updatedAt`)
+
 ```typescript
-setNoteStatus()        // Cambio de status (active, on_hold, etc.)
-moveNoteToNotebook()   // Mover a otro notebook
-pinNote()              // Fijar nota
-unpinNote()            // Desfijar nota
-setManualTags()        // Agregar/quitar tags manuales
+setNoteStatus(); // Cambio de status (active, on_hold, etc.)
+moveNoteToNotebook(); // Mover a otro notebook
+pinNote(); // Fijar nota
+unpinNote(); // Desfijar nota
+setManualTags(); // Agregar/quitar tags manuales
 ```
 
 #### Lifecycle (actualiza `updatedAt` - debatible)
+
 ```typescript
-archiveNote()          // Archivar
-restoreNote()          // Restaurar de archivo
-softDeleteNote()       // Mover a papelera
-restoreDeletedNote()   // Restaurar de papelera
+archiveNote(); // Archivar
+restoreNote(); // Restaurar de archivo
+softDeleteNote(); // Mover a papelera
+restoreDeletedNote(); // Restaurar de papelera
 ```
 
 #### Destroy (N/A)
+
 ```typescript
-deleteNote()  // Hard delete - la entidad deja de existir
+deleteNote(); // Hard delete - la entidad deja de existir
 ```
 
 ### 1.3 Rationale
@@ -88,6 +92,7 @@ El AST es **efímero** - se parsea para features, nunca se persiste como autorid
 ## 3. Core es Puro
 
 El paquete `@readied/core` no debe tener dependencias de:
+
 - Electron
 - React
 - Node.js APIs específicas

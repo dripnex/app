@@ -6,12 +6,12 @@
 
 La arquitectura React ha mejorado significativamente con la introducción de `editorBufferStore`:
 
-| Problema Original | Estado | Solución |
-|-------------------|--------|----------|
-| Preview no reactivo al buffer | **RESUELTO** | `selectContentForNote` selector |
-| Múltiples fuentes de verdad | **MITIGADO** | Buffer store es fuente de UI |
-| Efectos no cancelables | **RESUELTO** | Debounce se cancela en cambio de nota |
-| Componentes como servicios | **PARCIAL** | NoteEditor aún orquesta, pero mejor |
+| Problema Original             | Estado       | Solución                              |
+| ----------------------------- | ------------ | ------------------------------------- |
+| Preview no reactivo al buffer | **RESUELTO** | `selectContentForNote` selector       |
+| Múltiples fuentes de verdad   | **MITIGADO** | Buffer store es fuente de UI          |
+| Efectos no cancelables        | **RESUELTO** | Debounce se cancela en cambio de nota |
+| Componentes como servicios    | **PARCIAL**  | NoteEditor aún orquesta, pero mejor   |
 
 ## 2. Arquitectura de Estado
 
@@ -58,27 +58,32 @@ La arquitectura React ha mejorado significativamente con la introducción de `ed
 ## 4. CSS Architecture
 
 ### 4.1 Sistema de Tokens
+
 - `styles/tokens.css`: Variables CSS centralizadas
 - Escala de espaciado, colores, tipografía
 - Temas via atributos en `:root`
 
 ### 4.2 Módulos CSS
+
 - Componentes usan `.module.css`
 - Evita conflictos de nombres
 - Scoped por defecto
 
 ### 4.3 Estilos Globales
+
 - `global.css`: Reset y utilities
 - Markdown preview tiene estilos globales (necesario para react-markdown)
 
 ## 5. Áreas de Mejora Potencial
 
 ### 5.1 NoteEditor como orquestador
+
 - Aún maneja bastante estado (debounce, scroll sync, embeds)
 - Podría beneficiarse de más extracción a hooks
 - **Prioridad:** Baja, funciona correctamente
 
 ### 5.2 Atajos globales
+
 - `useKeyboardShortcuts` usa listeners globales
 - Podrían centralizarse más
 - **Impacto:** Bajo
@@ -86,11 +91,13 @@ La arquitectura React ha mejorado significativamente con la introducción de `ed
 ## 6. Contratos Estables
 
 ### 6.1 Scroll Sync
+
 - `MarkdownPreviewHandle`: getScrollFraction, setScrollFraction, onScroll, canScroll
 - `MarkdownEditorHandle`: mismo contrato
 - Master-slave pattern evita loops
 
 ### 6.2 Editor Buffer
+
 - `EditorBufferStore`: noteId, liveContent, isDirty
 - Selector: `selectContentForNote(noteId)` - null-safe
 

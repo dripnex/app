@@ -391,8 +391,12 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       this.db.transaction(() => {
         // Check if new tag already exists
         const existingStmt = this.db.prepare('SELECT id, color FROM tags WHERE name = ?');
-        const existingNew = existingStmt.get(normalizedNew) as { id: number; color: string | null } | undefined;
-        const existingOld = existingStmt.get(normalizedOld) as { id: number; color: string | null } | undefined;
+        const existingNew = existingStmt.get(normalizedNew) as
+          | { id: number; color: string | null }
+          | undefined;
+        const existingOld = existingStmt.get(normalizedOld) as
+          | { id: number; color: string | null }
+          | undefined;
 
         if (!existingOld) {
           throw new Error('Tag not found');

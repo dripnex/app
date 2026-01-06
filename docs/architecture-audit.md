@@ -6,12 +6,12 @@
 
 La arquitectura ha evolucionado significativamente. Muchos problemas identificados originalmente ya fueron resueltos:
 
-| Problema Original | Estado | Solución |
-|-------------------|--------|----------|
-| Preview muestra datos stale | **RESUELTO** | `editorBufferStore` provee buffer en vivo |
-| Core vs renderer borroso | **NO EXISTE** | Separación correcta en packages |
-| Debounce no cancela al cambiar nota | **RESUELTO** | Fix en NoteEditor.tsx |
-| Pipeline markdown fragmentado | **PARCIAL** | Cada package tiene su parser |
+| Problema Original                   | Estado        | Solución                                  |
+| ----------------------------------- | ------------- | ----------------------------------------- |
+| Preview muestra datos stale         | **RESUELTO**  | `editorBufferStore` provee buffer en vivo |
+| Core vs renderer borroso            | **NO EXISTE** | Separación correcta en packages           |
+| Debounce no cancela al cambiar nota | **RESUELTO**  | Fix en NoteEditor.tsx                     |
+| Pipeline markdown fragmentado       | **PARCIAL**   | Cada package tiene su parser              |
 
 ## 2. Arquitectura Actual
 
@@ -38,21 +38,25 @@ React Query cache invalidation
 ### 2.2 Separación de Capas
 
 **Core (packages/core):**
+
 - Operaciones de dominio puras
 - Sin dependencias Electron/React
 - Tests completos
 
 **Packages satélite:**
+
 - `@readied/wikilinks`: Parseo y plugins
 - `@readied/embeds`: Parseo de `![[file]]`
 - `@readied/tasks`: Conteo de tasks
 - `@readied/commands`: Formateo markdown
 
 **Storage:**
+
 - `storage-core`: Interfaces puras
 - `storage-sqlite`: Implementación con native deps
 
 **Renderer:**
+
 - Hooks son bindings a IPC, no lógica
 - Stores Zustand para estado de UI
 - No hay lógica de negocio
@@ -67,11 +71,13 @@ React Query cache invalidation
 ## 4. Áreas de Mejora Potencial
 
 ### 4.1 Embeds resueltos del contenido guardado (edge case)
+
 - `useEmbedResolver` usa `note?.content` (guardado)
 - Si se agrega un embed nuevo, no se resuelve hasta guardar
 - **Impacto:** Bajo, solo afecta embeds recién agregados
 
 ### 4.2 Centralización de parseo (futuro)
+
 - Cada package parsea independientemente
 - Podría beneficiarse de un pipeline unificado
 - **Prioridad:** Baja, funciona correctamente
