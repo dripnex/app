@@ -50,8 +50,7 @@ export function useDropdownPosition({
       triggerRect.bottom + menuRect.height + viewportPadding > viewportHeight;
 
     // Check if menu would overflow right
-    const wouldOverflowRight =
-      triggerRect.left + menuRect.width + viewportPadding > viewportWidth;
+    const wouldOverflowRight = triggerRect.left + menuRect.width + viewportPadding > viewportWidth;
 
     // Check if there's enough space above
     const hasSpaceAbove = triggerRect.top - menuRect.height - viewportPadding > 0;

@@ -84,11 +84,10 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
       // Check if all LOCAL targets are resolved (external URLs don't need IPC)
       const localTargets = targets.filter(
-        (t) => !t.startsWith('http://') && !t.startsWith('https://')
+        t => !t.startsWith('http://') && !t.startsWith('https://')
       );
       const allLocalResolved =
-        localTargets.length === 0 ||
-        localTargets.every((t) => resolvedEmbeds[t] != null);
+        localTargets.length === 0 || localTargets.every(t => resolvedEmbeds[t] != null);
 
       if (!allLocalResolved) {
         return content; // Wait for IPC to resolve local files
@@ -102,10 +101,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
         if (!url) continue;
 
-        const pattern = new RegExp(
-          `!\\[\\[${escapeRegex(target)}(?:\\|([^\\]]+))?\\]\\]`,
-          'g'
-        );
+        const pattern = new RegExp(`!\\[\\[${escapeRegex(target)}(?:\\|([^\\]]+))?\\]\\]`, 'g');
         // Use custom HTML element to bypass rehype URL sanitization
         result = result.replace(
           pattern,

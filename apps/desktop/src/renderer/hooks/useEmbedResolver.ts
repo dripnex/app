@@ -39,9 +39,7 @@ export function useEmbedResolver({
     }
 
     // Only resolve local targets (external URLs don't need IPC)
-    const localTargets = targets.filter(
-      t => !t.startsWith('http://') && !t.startsWith('https://')
-    );
+    const localTargets = targets.filter(t => !t.startsWith('http://') && !t.startsWith('https://'));
 
     if (localTargets.length === 0) {
       // All external, no IPC needed

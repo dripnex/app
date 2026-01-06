@@ -109,7 +109,11 @@ export const TagsInput = memo(function TagsInput({
           );
           return;
         }
-        if (e.key === 'Tab' && selectedSuggestionIndex >= 0 && filteredSuggestions[selectedSuggestionIndex]) {
+        if (
+          e.key === 'Tab' &&
+          selectedSuggestionIndex >= 0 &&
+          filteredSuggestions[selectedSuggestionIndex]
+        ) {
           e.preventDefault();
           selectSuggestion(filteredSuggestions[selectedSuggestionIndex]);
           return;
@@ -135,7 +139,15 @@ export const TagsInput = memo(function TagsInput({
         setSelectedSuggestionIndex(-1);
       }
     },
-    [inputValue, tags, normalizeTag, onAddTag, filteredSuggestions, selectedSuggestionIndex, selectSuggestion]
+    [
+      inputValue,
+      tags,
+      normalizeTag,
+      onAddTag,
+      filteredSuggestions,
+      selectedSuggestionIndex,
+      selectSuggestion,
+    ]
   );
 
   const handleBlur = useCallback(() => {
@@ -187,10 +199,10 @@ export const TagsInput = memo(function TagsInput({
               className={`tag-chip ${color ? 'tag-chip--colored' : ''}`}
               style={
                 color
-                  ? {
+                  ? ({
                       '--tag-color': color,
                       '--tag-color-bg': `${color}20`,
-                    } as React.CSSProperties
+                    } as React.CSSProperties)
                   : undefined
               }
             >

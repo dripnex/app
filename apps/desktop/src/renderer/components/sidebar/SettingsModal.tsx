@@ -1,17 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Settings,
-  X,
-  Monitor,
-  Zap,
-  Eye,
-  Key,
-  Info,
-  Columns,
-  FileText,
-  Split,
-} from 'lucide-react';
+import { Settings, X, Monitor, Zap, Eye, Key, Info, Columns, FileText, Split } from 'lucide-react';
 import { usePerformanceStore, type PerfMode } from '../../stores/performanceStore';
 import {
   useEditorPreferencesStore,

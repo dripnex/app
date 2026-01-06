@@ -142,7 +142,6 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           onCancel={closeCreate}
         />
       )}
-
     </aside>
   );
 }

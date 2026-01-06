@@ -146,9 +146,7 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
         </div>
         <div className="graph-view__empty">
           <p>No notes to display</p>
-          <p className="graph-view__hint">
-            Create some notes and link them with [[wikilinks]]
-          </p>
+          <p className="graph-view__hint">Create some notes and link them with [[wikilinks]]</p>
         </div>
       </div>
     );

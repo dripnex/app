@@ -43,7 +43,8 @@ function NotesApp() {
   usePerformanceMode();
 
   // Resizable layout
-  const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } = useResizableLayout();
+  const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
+    useResizableLayout();
 
   // Navigation state from Zustand
   const navigation = useNavigation();

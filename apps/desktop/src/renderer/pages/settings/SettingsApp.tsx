@@ -28,13 +28,8 @@ export function SettingsApp() {
 
   return (
     <div className={styles.container}>
-      <SettingsSidebar
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-      />
-      <main className={styles.content}>
-        {renderSection()}
-      </main>
+      <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+      <main className={styles.content}>{renderSection()}</main>
     </div>
   );
 }

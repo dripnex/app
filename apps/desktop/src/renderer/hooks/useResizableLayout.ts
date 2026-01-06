@@ -27,8 +27,16 @@ export function useResizableLayout() {
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
-          sidebarWidth: clamp(parsed.sidebarWidth ?? DEFAULT_LAYOUT.sidebarWidth, MIN_SIDEBAR, MAX_SIDEBAR),
-          notelistWidth: clamp(parsed.notelistWidth ?? DEFAULT_LAYOUT.notelistWidth, MIN_NOTELIST, MAX_NOTELIST),
+          sidebarWidth: clamp(
+            parsed.sidebarWidth ?? DEFAULT_LAYOUT.sidebarWidth,
+            MIN_SIDEBAR,
+            MAX_SIDEBAR
+          ),
+          notelistWidth: clamp(
+            parsed.notelistWidth ?? DEFAULT_LAYOUT.notelistWidth,
+            MIN_NOTELIST,
+            MAX_NOTELIST
+          ),
         };
       }
     } catch {
@@ -82,23 +90,29 @@ export function useResizableLayout() {
     };
   }, [handleMouseMove, handleMouseUp]);
 
-  const startResizeSidebar = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    resizingRef.current = 'sidebar';
-    startXRef.current = e.clientX;
-    startWidthRef.current = layout.sidebarWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [layout.sidebarWidth]);
+  const startResizeSidebar = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      resizingRef.current = 'sidebar';
+      startXRef.current = e.clientX;
+      startWidthRef.current = layout.sidebarWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [layout.sidebarWidth]
+  );
 
-  const startResizeNotelist = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    resizingRef.current = 'notelist';
-    startXRef.current = e.clientX;
-    startWidthRef.current = layout.notelistWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [layout.notelistWidth]);
+  const startResizeNotelist = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      resizingRef.current = 'notelist';
+      startXRef.current = e.clientX;
+      startWidthRef.current = layout.notelistWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [layout.notelistWidth]
+  );
 
   return {
     sidebarWidth: layout.sidebarWidth,

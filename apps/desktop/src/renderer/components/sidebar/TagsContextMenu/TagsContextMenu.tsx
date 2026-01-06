@@ -133,18 +133,18 @@ export function TagsContextMenu({
         <>
           {/* Rename option */}
           {onRename && (
-            <button
-              type="button"
-              className={styles.item}
-              onClick={() => setIsRenaming(true)}
-            >
+            <button type="button" className={styles.item} onClick={() => setIsRenaming(true)}>
               <Pencil size={14} />
               <span>Rename</span>
             </button>
           )}
 
           {/* Color option with submenu */}
-          <button type="button" className={styles.item} onMouseEnter={() => setShowColorSubmenu(true)}>
+          <button
+            type="button"
+            className={styles.item}
+            onMouseEnter={() => setShowColorSubmenu(true)}
+          >
             <Palette size={14} />
             <span>Set color</span>
             <span className={styles.arrow}>›</span>

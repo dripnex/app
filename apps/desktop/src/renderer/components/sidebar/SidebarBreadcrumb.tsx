@@ -24,8 +24,8 @@ function usePrevious<T>(value: T): T | undefined {
  * Check if user prefers reduced motion (accessibility).
  */
 function usePrefersReducedMotion(): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
 
   useEffect(() => {
