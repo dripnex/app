@@ -22,8 +22,7 @@
   max-width: 560px;
   background: var(--bg-inset, #1a1d23);
   border-radius: 8px;
-  border: none;
-  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
   overflow: hidden;
   animation: slideIn 0.15s ease-out;
 }

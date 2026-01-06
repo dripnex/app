@@ -48,7 +48,6 @@ body {
   --glass-blur: 0px;
   --glass-saturate: 100%;
   --glass-bg: var(--glass-bg-fallback);
-  --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   --glass-border: rgba(255, 255, 255, 0.12);
 }
 
@@ -429,7 +428,6 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .floating-view-toggle .editor-view-toggle {
@@ -526,10 +524,10 @@ input:focus-visible {
 
 @keyframes sidebar-subtle-glow {
   0%, 100% {
-    box-shadow: 0 0 0 0 transparent;
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 0 8px -2px var(--accent);
+    opacity: 0.8;
   }
 }
 
