@@ -24,8 +24,10 @@ import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
+import { useSettingsStore, selectGeneral } from './stores/settings';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useResizableLayout } from './hooks/useResizableLayout';
+import { useTheme } from './hooks/useTheme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +43,7 @@ const queryClient = new QueryClient({
  */
 function NotesApp() {
   usePerformanceMode();
+  useTheme();
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
@@ -58,6 +61,9 @@ function NotesApp() {
 
   // Editor preferences
   const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
+
+  // General settings (for default notebook)
+  const generalSettings = useSettingsStore(selectGeneral);
 
   // Load tag colors on mount (once)
   useEffect(() => {
@@ -99,15 +105,16 @@ function NotesApp() {
   // Determine selected quick filter for NoteList header
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
 
-  // Create new note (respects current navigation context)
+  // Create new note (respects current navigation context, falls back to default notebook)
   const handleNewNote = useCallback(async () => {
+    const notebookId = selectedNotebookId ?? generalSettings.defaultNotebookId ?? undefined;
     const newNote = await createNote.mutateAsync({
       content: '# Untitled\n\n',
-      notebookId: selectedNotebookId ?? undefined,
+      notebookId,
     });
     setSelectedNote(newNote);
     clearSearch();
-  }, [createNote, selectedNotebookId, clearSearch]);
+  }, [createNote, selectedNotebookId, generalSettings.defaultNotebookId, clearSearch]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {

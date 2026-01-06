@@ -10,6 +10,8 @@ const sections: { id: SettingsSection; label: string; icon: string }[] = [
   { id: 'general', label: 'General', icon: 'cog' },
   { id: 'editor', label: 'Editor', icon: 'edit' },
   { id: 'appearance', label: 'Appearance', icon: 'palette' },
+  { id: 'backup', label: 'Backup', icon: 'archive' },
+  { id: 'updates', label: 'Updates', icon: 'download' },
   { id: 'about', label: 'About', icon: 'info' },
 ];
 

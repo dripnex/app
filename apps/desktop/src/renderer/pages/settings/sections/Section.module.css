@@ -10,7 +10,7 @@
 }
 
 .placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   font-size: var(--text-sm);
 }
 
@@ -37,13 +37,144 @@
 }
 
 .link {
-  color: var(--accent-primary);
+  color: var(--accent);
   text-decoration: none;
   font-size: var(--text-sm);
   transition: color var(--transition-fast);
 }
 
 .link:hover {
-  color: var(--accent-hover);
+  color: var(--accent-strong);
   text-decoration: underline;
+}
+
+/* Action button (e.g., Open Folder) */
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionButton:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+}
+
+.actionButton:active {
+  background: var(--bg-inset);
+}
+
+/* Theme selector (segmented control) */
+.themeSelector {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-inset);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.themeOption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.themeOption:hover {
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+}
+
+.themeOptionActive {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.themeOptionActive:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* Spinning animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Check result message */
+.checkResult {
+  padding: 8px 12px;
+  margin-top: 8px;
+  background: var(--bg-inset);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Color picker */
+.colorPicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.colorSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.1);
+}
+
+.colorSwatchActive {
+  border-color: var(--text-primary);
+}
+
+.colorInput {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: transparent;
+}
+
+.colorInput::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.colorInput::-webkit-color-swatch {
+  border: 1px dashed var(--border-strong);
+  border-radius: 50%;
 }
