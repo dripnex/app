@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
@@ -20,6 +20,8 @@ import {
 } from './hooks/useNavigation';
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
 import { useSyncLinks } from './hooks/useLinks';
+import { useDebouncedSearch } from './hooks/useDebouncedSearch';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -63,9 +65,7 @@ function NotesApp() {
 
   // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
 
   // Search query
@@ -98,19 +98,6 @@ function NotesApp() {
   // Determine selected quick filter for NoteList header
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
 
-  // Handle search with debounce
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-
-    searchDebounceRef.current = setTimeout(() => {
-      setDebouncedSearch(query);
-    }, 300);
-  }, []);
-
   // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
     const newNote = await createNote.mutateAsync({
@@ -118,9 +105,8 @@ function NotesApp() {
       notebookId: selectedNotebookId ?? undefined,
     });
     setSelectedNote(newNote);
-    setSearchQuery('');
-    setDebouncedSearch('');
-  }, [createNote, selectedNotebookId]);
+    clearSearch();
+  }, [createNote, selectedNotebookId, clearSearch]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {
@@ -254,46 +240,19 @@ function NotesApp() {
     [selectedNote, setNoteStatus, statusFilter]
   );
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey;
-
-      if (isMod && e.key === 'n') {
-        e.preventDefault();
-        handleNewNote();
-      }
-
-      if (isMod && e.key === 'f') {
-        e.preventDefault();
-        const searchInput = document.querySelector('.search-input') as HTMLInputElement;
-        searchInput?.focus();
-      }
-
-      if (isMod && e.key === 'd' && selectedNote) {
-        e.preventDefault();
-        handleDuplicateNote(selectedNote.id);
-      }
-
-      // Cmd+Shift+P to cycle view mode (Editor → Split → Preview)
-      if (isMod && e.shiftKey && e.key === 'p') {
-        e.preventDefault();
-        cycleViewMode();
-      }
-
-      if (e.key === 'Escape') {
-        if (searchQuery) {
-          setSearchQuery('');
-          setDebouncedSearch('');
-        } else if (selectedNote) {
-          setSelectedNote(null);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNewNote, handleDuplicateNote, selectedNote, searchQuery, cycleViewMode]);
+  // Keyboard shortcuts (extracted to hook)
+  useKeyboardShortcuts({
+    onNewNote: handleNewNote,
+    onDuplicateNote: handleDuplicateNote,
+    onCycleViewMode: cycleViewMode,
+    onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), []),
+    onCloseGraph: useCallback(() => setIsGraphOpen(false), []),
+    onClearSearch: clearSearch,
+    onDeselectNote: useCallback(() => setSelectedNote(null), []),
+    selectedNote,
+    searchQuery,
+    isGraphOpen,
+  });
 
   return (
     <LicenseProvider>
@@ -339,33 +298,31 @@ function NotesApp() {
           />
 
           <main className="app__editor">
-            <NoteEditor
-              note={selectedNote}
-              onUpdate={handleUpdateNote}
-              onTitleUpdate={handleUpdateTitle}
-              onMoveToNotebook={handleMoveSelectedNote}
-              onStatusChange={handleStatusChange}
-              onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
-              onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
-              onWikilinkClick={handleWikilinkClick}
-              onNavigateToNote={handleSelectNote}
-            />
+            {isGraphOpen ? (
+              <GraphView
+                selectedNoteId={selectedNote?.id}
+                onNodeClick={noteId => {
+                  handleSelectNote(noteId);
+                  setIsGraphOpen(false);
+                }}
+                onClose={() => setIsGraphOpen(false)}
+              />
+            ) : (
+              <NoteEditor
+                note={selectedNote}
+                onUpdate={handleUpdateNote}
+                onTitleUpdate={handleUpdateTitle}
+                onMoveToNotebook={handleMoveSelectedNote}
+                onStatusChange={handleStatusChange}
+                onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
+                onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+                onWikilinkClick={handleWikilinkClick}
+                onNavigateToNote={handleSelectNote}
+                onNoteUpdate={setSelectedNote}
+              />
+            )}
           </main>
         </div>
-
-        {/* Graph View Overlay */}
-        {isGraphOpen && (
-          <div className="graph-overlay">
-            <GraphView
-              selectedNoteId={selectedNote?.id}
-              onNodeClick={noteId => {
-                handleSelectNote(noteId);
-                setIsGraphOpen(false);
-              }}
-              onClose={() => setIsGraphOpen(false)}
-            />
-          </div>
-        )}
       </div>
     </LicenseProvider>
   );

@@ -7,6 +7,7 @@ import { remarkWikilink } from '@readied/wikilinks';
 import { extractEmbedTargets } from '@readied/embeds';
 import { countMarkdownTasks } from '@readied/tasks';
 import { formatDateTime } from '../../utils/date';
+import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
 
 /** Escape special regex characters in a string */
 function escapeRegex(str: string): string {
@@ -36,7 +37,7 @@ export interface MarkdownPreviewHandle {
 export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
   function MarkdownPreview(
     {
-      content,
+      content: contentProp,
       noteId,
       createdAt,
       updatedAt,
@@ -51,6 +52,10 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     const [internalResolvedEmbeds, setInternalResolvedEmbeds] = useState<
       Record<string, string | null>
     >({});
+
+    // Use live buffer content if available for this note, otherwise fall back to prop
+    const liveContent = useEditorBufferStore(selectContentForNote(noteId));
+    const content = liveContent ?? contentProp;
 
     // Use prop if provided, otherwise internal state
     const resolvedEmbeds = resolvedEmbedsProp ?? internalResolvedEmbeds;

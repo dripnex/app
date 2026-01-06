@@ -89,7 +89,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
   return (
     <aside className="sidebar" aria-label="Main sidebar">
-      <SidebarHeader />
+      <SidebarHeader onSettingsClick={() => window.readied.windows.openSettings()} />
       <SidebarBreadcrumb
         selectedNotebookId={selectedNotebookId}
         tagFilter={tagFilter}
@@ -142,6 +142,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           onCancel={closeCreate}
         />
       )}
+
     </aside>
   );
 }

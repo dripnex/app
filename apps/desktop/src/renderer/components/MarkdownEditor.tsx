@@ -45,6 +45,7 @@ import {
   currentNoteIdField,
 } from '@readied/wikilinks';
 import { embedInlinePreview } from '@readied/embeds/codemirror';
+import { useEditorBufferStore } from '../stores/editorBufferStore';
 
 /** Dark theme matching Readied's design */
 const darkTheme = EditorView.theme(
@@ -380,6 +381,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         EditorView.updateListener.of(update => {
           if (update.docChanged) {
             const content = update.state.doc.toString();
+            // Update live buffer immediately (for preview sync)
+            useEditorBufferStore.getState().updateBuffer(content);
+            // Trigger debounced save via callback
             onChangeRef.current(content);
           }
         }),

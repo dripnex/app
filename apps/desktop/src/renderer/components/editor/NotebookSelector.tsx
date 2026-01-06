@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { Folder, Inbox, ChevronDown, Check } from 'lucide-react';
 import { useNotebookList } from '../../hooks/useNotebooks';
+import { useDropdownPosition } from '../../hooks/useDropdownPosition';
 
 interface NotebookSelectorProps {
   readonly notebookId: string;
@@ -13,7 +14,16 @@ export const NotebookSelector = memo(function NotebookSelector({
 }: NotebookSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { data: notebooks = [] } = useNotebookList();
+
+  // Auto-position dropdown to avoid viewport overflow
+  const menuPosition = useDropdownPosition({
+    triggerRef,
+    menuRef,
+    isOpen,
+  });
 
   // Find current notebook name
   const currentNotebook = notebooks.find(nb => nb.id === notebookId);
@@ -44,6 +54,7 @@ export const NotebookSelector = memo(function NotebookSelector({
   return (
     <div className="editor-header-dropdown" ref={containerRef}>
       <button
+        ref={triggerRef}
         type="button"
         className="editor-header-dropdown-btn"
         onClick={() => setIsOpen(!isOpen)}
@@ -59,7 +70,17 @@ export const NotebookSelector = memo(function NotebookSelector({
       </button>
 
       {isOpen && (
-        <div className="editor-header-menu" role="menu">
+        <div
+          ref={menuRef}
+          className="editor-header-menu"
+          role="menu"
+          style={{
+            top: menuPosition.top,
+            bottom: menuPosition.bottom,
+            left: menuPosition.left,
+            right: menuPosition.right,
+          }}
+        >
           {notebooks.map(notebook => (
             <button
               key={notebook.id}

@@ -220,9 +220,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@readied/wikilinks':
-        specifier: workspace:*
-        version: link:../wikilinks
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -302,6 +299,9 @@ importers:
       '@readied/storage-core':
         specifier: workspace:*
         version: link:../storage-core
+      '@readied/wikilinks':
+        specifier: workspace:*
+        version: link:../wikilinks
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.12

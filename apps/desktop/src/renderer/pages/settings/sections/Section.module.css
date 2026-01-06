@@ -1,0 +1,49 @@
+.section {
+  max-width: 600px;
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin: 0 0 var(--space-4);
+  color: var(--text-primary);
+}
+
+.placeholder {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.infoBlock {
+  margin-bottom: var(--space-6);
+}
+
+.appName {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.version {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  transition: color var(--transition-fast);
+}
+
+.link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}

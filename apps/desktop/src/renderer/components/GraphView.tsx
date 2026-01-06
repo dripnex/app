@@ -57,18 +57,18 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
     };
   }, [data]);
 
-  // Node color based on selection
+  // Node color based on selection (using hex - CSS vars don't work in canvas)
   const getNodeColor = useCallback(
     (node: GraphNode) => {
       if (node.id === selectedNoteId) {
-        return 'var(--accent)';
+        return '#6366f1'; // accent/indigo
       }
-      return 'var(--text-secondary)';
+      return '#a1a1aa'; // zinc-400
     },
     [selectedNoteId]
   );
 
-  // Node size based on connections
+  // Node size based on connections (nodeVal is area, not radius)
   const getNodeSize = useCallback(
     (node: GraphNode) => {
       const linkCount = graphData.links.filter(l => {
@@ -76,7 +76,8 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
         const targetId = typeof l.target === 'string' ? l.target : (l.target as GraphNode).id;
         return sourceId === node.id || targetId === node.id;
       }).length;
-      return Math.max(4, Math.min(12, 4 + linkCount * 1.5));
+      // Small values: 1 = tiny, 3 = medium, 5 = large
+      return Math.max(1, Math.min(4, 1 + linkCount * 0.5));
     },
     [graphData.links]
   );
@@ -89,21 +90,19 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
     [onNodeClick]
   );
 
-  // Draw node label
+  // Draw node label (using hex - CSS vars don't work in canvas)
   const drawNodeLabel = useCallback(
     (node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const label = node.title || 'Untitled';
-      const fontSize = 12 / globalScale;
-      const nodeSize = getNodeSize(node);
+      const fontSize = 11 / globalScale;
 
-      ctx.font = `${fontSize}px var(--font-sans)`;
+      ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillStyle =
-        node.id === selectedNoteId ? 'var(--accent)' : 'var(--text-secondary)';
-      ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + nodeSize + 2);
+      ctx.fillStyle = node.id === selectedNoteId ? '#818cf8' : '#d4d4d8'; // indigo-400 : zinc-300
+      ctx.fillText(label, node.x ?? 0, (node.y ?? 0) + 6);
     },
-    [selectedNoteId, getNodeSize]
+    [selectedNoteId]
   );
 
   if (isLoading) {
@@ -115,9 +114,21 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
   }
 
   if (error) {
+    console.error('Graph data error:', error);
     return (
       <div className="graph-view">
-        <div className="graph-view__error">Failed to load graph data</div>
+        <div className="graph-view__header">
+          <h2>Graph View</h2>
+          {onClose && (
+            <button className="graph-view__close" onClick={onClose} title="Close">
+              <X size={18} />
+            </button>
+          )}
+        </div>
+        <div className="graph-view__error">
+          Failed to load graph data
+          <p className="graph-view__hint">Check console for details</p>
+        </div>
       </div>
     );
   }
@@ -164,14 +175,14 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
           nodeLabel="title"
           nodeColor={getNodeColor}
           nodeVal={getNodeSize}
-          linkColor={() => 'var(--border)'}
-          linkWidth={1}
+          linkColor={() => '#52525b'}
+          linkWidth={1.5}
           linkDirectionalArrowLength={4}
           linkDirectionalArrowRelPos={1}
           onNodeClick={handleNodeClick}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={drawNodeLabel}
-          backgroundColor="var(--bg-base)"
+          backgroundColor="#18181b"
           cooldownTicks={100}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}

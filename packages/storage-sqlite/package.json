@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@readied/core": "workspace:*",
-    "@readied/storage-core": "workspace:*"
+    "@readied/storage-core": "workspace:*",
+    "@readied/wikilinks": "workspace:*"
   },
   "peerDependencies": {
     "better-sqlite3": "^11.0.0"

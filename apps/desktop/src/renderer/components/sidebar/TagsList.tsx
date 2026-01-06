@@ -99,6 +99,28 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
     [selectedTag, onSelectTag, queryClient]
   );
 
+  const handleRenameTag = useCallback(
+    async (oldTag: string, newTag: string) => {
+      const result = await window.readied.notes.renameTag(oldTag, newTag);
+      if (result.ok) {
+        // Update selected tag filter if renaming the active filter
+        if (selectedTag === oldTag) {
+          onSelectTag(newTag);
+        }
+        // Invalidate queries to refresh sidebar and notes
+        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        // Update colors cache (move color from old to new)
+        const oldColor = useTagColorsStore.getState().getColor(oldTag);
+        if (oldColor) {
+          useTagColorsStore.getState().setColor(newTag, oldColor);
+        }
+        useTagColorsStore.getState().removeTag(oldTag);
+      }
+    },
+    [selectedTag, onSelectTag, queryClient]
+  );
+
   if (isLoading) {
     return (
       <div className="tags-list-loading" aria-busy="true">
@@ -191,6 +213,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
           onClose={() => setContextMenu(null)}
           onColorSelect={handleColorSelect}
           onDelete={handleDeleteTag}
+          onRename={handleRenameTag}
         />
       )}
     </>

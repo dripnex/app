@@ -211,6 +211,8 @@ export interface ReadiedAPI {
     setTagColor: (tagName: string, color: string | null) => Promise<{ ok: boolean }>;
     /** Delete a tag from the system */
     deleteTag: (tagName: string) => Promise<{ ok: boolean }>;
+    /** Rename a tag across all notes */
+    renameTag: (oldName: string, newName: string) => Promise<{ ok: boolean; error?: string }>;
     /** Set manual tags for a note (full replacement) */
     setManualTags: (noteId: string, tags: string[]) => Promise<{ ok: boolean }>;
     /** Get manual tags only (for editor to know which are removable) */
@@ -306,6 +308,8 @@ export interface ReadiedAPI {
   windows: {
     /** Open a note in a new window */
     openNote: (noteId: string, noteTitle: string) => Promise<{ ok: boolean }>;
+    /** Open the settings window */
+    openSettings: () => Promise<{ ok: boolean }>;
   };
 }
 
@@ -332,6 +336,7 @@ const api: ReadiedAPI = {
     tagsWithColors: () => ipcRenderer.invoke('tags:listWithColors'),
     setTagColor: (tagName, color) => ipcRenderer.invoke('tags:setColor', tagName, color),
     deleteTag: tagName => ipcRenderer.invoke('tags:delete', tagName),
+    renameTag: (oldName, newName) => ipcRenderer.invoke('tags:rename', oldName, newName),
     setManualTags: (noteId, tags) => ipcRenderer.invoke('notes:setManualTags', noteId, tags),
     getManualTags: noteId => ipcRenderer.invoke('notes:getManualTags', noteId),
     count: () => ipcRenderer.invoke('notes:count'),
@@ -358,7 +363,8 @@ const api: ReadiedAPI = {
     openFolder: () => ipcRenderer.invoke('data:openFolder'),
   },
   app: {
-    version: () => '0.1.0',
+    // TODO: Use IPC to get version dynamically from main process
+    version: () => '0.1.5',
   },
   license: {
     getState: () => ipcRenderer.invoke('license:getState'),
@@ -395,6 +401,7 @@ const api: ReadiedAPI = {
   },
   windows: {
     openNote: (noteId, noteTitle) => ipcRenderer.invoke('window:openNote', noteId, noteTitle),
+    openSettings: () => ipcRenderer.invoke('window:openSettings'),
   },
 };
 

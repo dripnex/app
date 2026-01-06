@@ -167,8 +167,8 @@ function createWindow(): void {
   });
 
   // Load renderer
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173');
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
@@ -201,12 +201,59 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
 
   // Load renderer with note ID in query param
   const query = `?noteWindow=${encodeURIComponent(noteId)}`;
-  if (process.env.NODE_ENV === 'development') {
-    noteWindow.loadURL(`http://localhost:5173${query}`);
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
   } else {
     noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
       query: { noteWindow: noteId },
     });
+  }
+}
+
+/** Settings window singleton */
+let settingsWindow: BrowserWindow | null = null;
+
+/** Create or focus the settings window */
+function createSettingsWindow(): void {
+  // If window exists, focus it
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 700,
+    height: 500,
+    minWidth: 500,
+    minHeight: 400,
+    show: false,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 8, y: 8 },
+    backgroundColor: '#0a0b0d',
+    title: 'Settings',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  });
+
+  settingsWindow.on('ready-to-show', () => {
+    settingsWindow?.show();
+  });
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+
+  // Load settings page
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    // Replace index.html with settings.html in the URL
+    const settingsUrl = process.env.ELECTRON_RENDERER_URL.replace(/\/?$/, '/settings.html');
+    settingsWindow.loadURL(settingsUrl);
+  } else {
+    settingsWindow.loadFile(join(__dirname, '../renderer/settings.html'));
   }
 }
 
@@ -450,6 +497,11 @@ function registerIpcHandlers(): void {
     return { ok: true };
   });
 
+  // Rename tag across all notes
+  ipcMain.handle('tags:rename', async (_event, oldName: string, newName: string) => {
+    return repo.renameTag(oldName, newName);
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Links (Wikilinks / Backlinks)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -472,7 +524,13 @@ function registerIpcHandlers(): void {
 
   // Get graph data (all notes and links for visualization)
   ipcMain.handle('links:graph', async () => {
-    return repo.getGraphData();
+    try {
+      return repo.getGraphData();
+    } catch (error) {
+      console.error('Failed to get graph data:', error);
+      // Return empty data on error
+      return { nodes: [], edges: [] };
+    }
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -482,6 +540,12 @@ function registerIpcHandlers(): void {
   // Open a note in a new window
   ipcMain.handle('window:openNote', async (_event, noteId: string, noteTitle: string) => {
     createNoteWindow(noteId, noteTitle);
+    return { ok: true };
+  });
+
+  // Open settings window
+  ipcMain.handle('window:openSettings', async () => {
+    createSettingsWindow();
     return { ok: true };
   });
 
