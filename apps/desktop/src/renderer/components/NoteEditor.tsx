@@ -42,7 +42,7 @@ interface NoteEditorProps {
   onStatusChange?: (status: NoteStatus) => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
-  onWikilinkClick?: (target: string) => void;
+  onWikilinkClick?: (target: string, anchor?: string) => void;
   onNavigateToNote?: (noteId: string) => void;
   /** Called when note is updated (e.g., tags changed) */
   onNoteUpdate?: (note: NoteSnapshot) => void;

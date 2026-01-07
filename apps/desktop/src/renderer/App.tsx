@@ -126,13 +126,14 @@ function NotesApp() {
 
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
-    async (title: string) => {
+    async (title: string, _anchor?: string) => {
       const notes = await window.readied.notes.search(title);
       if (notes.length > 0) {
         // Find exact match (case-insensitive)
         const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
         if (match) {
           handleSelectNote(match.id);
+          // TODO: scroll to anchor after navigation (requires editor/preview scroll API)
         }
       }
       // No-op if note doesn't exist (future: could show toast or create note)

@@ -522,21 +522,22 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       `);
 
       const insertLink = this.db.prepare(`
-        INSERT INTO links (source_note_id, target_ref, target_note_id)
-        VALUES (?, ?, ?)
-        ON CONFLICT(source_note_id, target_ref) DO UPDATE SET
+        INSERT INTO links (source_note_id, target_ref, target_note_id, target_anchor)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(source_note_id, target_ref, COALESCE(target_anchor, '')) DO UPDATE SET
           target_note_id = excluded.target_note_id
       `);
 
       // Insert each link
       for (const wikilink of wikilinks) {
         const targetRef = wikilink.target;
+        const targetAnchor = wikilink.anchor ?? null;
 
         // Try to resolve target by title (case-insensitive)
         const targetNote = findNoteByTitle.get(targetRef) as { id: string } | undefined;
         const targetNoteId = targetNote?.id ?? null;
 
-        insertLink.run(noteId, targetRef, targetNoteId);
+        insertLink.run(noteId, targetRef, targetNoteId, targetAnchor);
       }
     });
   }
