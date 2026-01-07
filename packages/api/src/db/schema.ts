@@ -1,7 +1,7 @@
 /**
  * Database Schema for Readied API
  *
- * Uses Drizzle ORM with Neon Postgres serverless.
+ * Uses Drizzle ORM with Turso (libSQL/SQLite).
  * Tables:
  * - users: User accounts with magic link auth
  * - devices: Registered sync devices
@@ -9,39 +9,32 @@
  * - subscriptions: Pro tier subscriptions
  */
 
-import {
-  pgTable,
-  text,
-  timestamp,
-  integer,
-  uuid,
-  index,
-} from 'drizzle-orm/pg-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
  * Users table - core user accounts
  */
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').notNull().unique(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 /**
  * Magic links for passwordless auth
  */
-export const magicLinks = pgTable(
+export const magicLinks = sqliteTable(
   'magic_links',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     token: text('token').notNull().unique(),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-    usedAt: timestamp('used_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: text('expires_at').notNull(),
+    usedAt: text('used_at'),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   },
   (table) => [index('idx_magic_links_token').on(table.token)]
 );
@@ -49,31 +42,34 @@ export const magicLinks = pgTable(
 /**
  * Devices - registered sync devices per user
  */
-export const devices = pgTable(
+export const devices = sqliteTable(
   'devices',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     deviceId: text('device_id').notNull(), // Client-generated UUID
     name: text('name'), // e.g., "MacBook Pro", "iPhone 15"
     platform: text('platform'), // "darwin", "win32", "ios", "android"
-    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: text('last_seen_at').notNull().$defaultFn(() => new Date().toISOString()),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   },
-  (table) => [index('idx_devices_user_device').on(table.userId, table.deviceId)]
+  (table) => [
+    index('idx_devices_user_device').on(table.userId, table.deviceId),
+    uniqueIndex('idx_devices_unique').on(table.userId, table.deviceId),
+  ]
 );
 
 /**
  * Sync log - encrypted note changes
  * Stores encrypted data only, server never sees plaintext
  */
-export const syncLog = pgTable(
+export const syncLog = sqliteTable(
   'sync_log',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     noteId: text('note_id').notNull(), // Client's note ID
@@ -81,7 +77,7 @@ export const syncLog = pgTable(
     operation: text('operation').notNull(), // 'create' | 'update' | 'delete'
     encryptedData: text('encrypted_data'), // E2EE note content (null for deletes)
     deviceId: text('device_id').notNull(), // Which device made the change
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   },
   (table) => [
     index('idx_sync_log_user_version').on(table.userId, table.version),
@@ -92,9 +88,9 @@ export const syncLog = pgTable(
 /**
  * Subscriptions - Pro tier tracking
  */
-export const subscriptions = pgTable('subscriptions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
+export const subscriptions = sqliteTable('subscriptions', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: 'cascade' }),
@@ -102,28 +98,31 @@ export const subscriptions = pgTable('subscriptions', {
   stripeSubscriptionId: text('stripe_subscription_id'),
   status: text('status').notNull().default('inactive'), // 'active' | 'trialing' | 'canceled' | 'inactive'
   plan: text('plan').notNull().default('free'), // 'free' | 'pro'
-  trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
-  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
-  canceledAt: timestamp('canceled_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  trialEndsAt: text('trial_ends_at'),
+  currentPeriodEnd: text('current_period_end'),
+  canceledAt: text('canceled_at'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 /**
  * User sync cursor - tracks last synced version per device
  */
-export const syncCursors = pgTable(
+export const syncCursors = sqliteTable(
   'sync_cursors',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     deviceId: text('device_id').notNull(),
     lastSyncedVersion: integer('last_synced_version').notNull().default(0),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
   },
-  (table) => [index('idx_sync_cursors_user_device').on(table.userId, table.deviceId)]
+  (table) => [
+    index('idx_sync_cursors_user_device').on(table.userId, table.deviceId),
+    uniqueIndex('idx_sync_cursors_unique').on(table.userId, table.deviceId),
+  ]
 );
 
 // Type exports for use in routes

@@ -36,7 +36,7 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async (c) => {
 
   // Generate magic link token
   const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
 
   await db.insert(magicLinks).values({
     userId: user.id,
@@ -71,7 +71,7 @@ auth.post('/verify', zValidator('json', verifySchema), async (c) => {
     .where(
       and(
         eq(magicLinks.token, token),
-        gt(magicLinks.expiresAt, new Date()),
+        gt(magicLinks.expiresAt, new Date().toISOString()),
         isNull(magicLinks.usedAt)
       )
     )
@@ -82,7 +82,7 @@ auth.post('/verify', zValidator('json', verifySchema), async (c) => {
   }
 
   // Mark as used
-  await db.update(magicLinks).set({ usedAt: new Date() }).where(eq(magicLinks.id, link.id));
+  await db.update(magicLinks).set({ usedAt: new Date().toISOString() }).where(eq(magicLinks.id, link.id));
 
   // Get user
   const [user] = await db.select().from(users).where(eq(users.id, link.userId)).limit(1);
@@ -106,7 +106,7 @@ auth.post('/verify', zValidator('json', verifySchema), async (c) => {
         set: {
           name: deviceName,
           platform,
-          lastSeenAt: new Date(),
+          lastSeenAt: new Date().toISOString(),
         },
       });
   }
@@ -147,7 +147,7 @@ auth.post('/refresh', zValidator('json', refreshSchema), async (c) => {
   if (deviceId) {
     await db
       .update(devices)
-      .set({ lastSeenAt: new Date() })
+      .set({ lastSeenAt: new Date().toISOString() })
       .where(and(eq(devices.userId, user.id), eq(devices.deviceId, deviceId)));
   }
 

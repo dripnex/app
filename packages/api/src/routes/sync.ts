@@ -73,7 +73,7 @@ sync.get('/', zValidator('query', pullSchema), async (c) => {
         target: [syncCursors.userId, syncCursors.deviceId],
         set: {
           lastSyncedVersion: maxVersion,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         },
       });
   }

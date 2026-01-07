@@ -81,7 +81,7 @@ subscription.post('/webhook', async (c) => {
               stripeSubscriptionId: session.subscription as string,
               status: 'active',
               plan: 'pro',
-              updatedAt: new Date(),
+              updatedAt: new Date().toISOString(),
             },
           });
       }
@@ -94,9 +94,9 @@ subscription.post('/webhook', async (c) => {
         .update(subscriptions)
         .set({
           status: mapStripeStatus(sub.status),
-          currentPeriodEnd: new Date(sub.current_period_end * 1000),
-          canceledAt: sub.canceled_at ? new Date(sub.canceled_at * 1000) : null,
-          updatedAt: new Date(),
+          currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+          canceledAt: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(subscriptions.stripeSubscriptionId, sub.id));
       break;
@@ -109,8 +109,8 @@ subscription.post('/webhook', async (c) => {
         .set({
           status: 'canceled',
           plan: 'free',
-          canceledAt: new Date(),
-          updatedAt: new Date(),
+          canceledAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(subscriptions.stripeSubscriptionId, sub.id));
       break;
@@ -123,7 +123,7 @@ subscription.post('/webhook', async (c) => {
           .update(subscriptions)
           .set({
             status: 'inactive',
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(subscriptions.stripeSubscriptionId, invoice.subscription as string));
       }
@@ -161,9 +161,9 @@ subscription.get('/status', async (c) => {
     plan: sub.plan,
     status: sub.status,
     syncEnabled: sub.status === 'active' || sub.status === 'trialing',
-    currentPeriodEnd: sub.currentPeriodEnd?.toISOString(),
-    trialEndsAt: sub.trialEndsAt?.toISOString(),
-    canceledAt: sub.canceledAt?.toISOString(),
+    currentPeriodEnd: sub.currentPeriodEnd,
+    trialEndsAt: sub.trialEndsAt,
+    canceledAt: sub.canceledAt,
   });
 });
 

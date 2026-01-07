@@ -2,11 +2,12 @@ name = "readied-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
-# Environment variables (set via wrangler secret)
-# DATABASE_URL - Neon Postgres connection string
+[vars]
+ENVIRONMENT = "development"
+
+# Secrets (set via wrangler secret put):
+# TURSO_DATABASE_URL - libsql://your-db.turso.io
+# TURSO_AUTH_TOKEN - Token from turso db tokens create
 # JWT_SECRET - Secret for signing JWTs
 # RESEND_API_KEY - API key for Resend email service
 # STRIPE_WEBHOOK_SECRET - Stripe webhook signing secret
-
-[vars]
-ENVIRONMENT = "development"
