@@ -68,6 +68,7 @@ import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js
 import { ApiClient } from './services/apiClient.js';
 import { EncryptionService } from './services/encryptionService.js';
 import { SyncService } from './services/syncService.js';
+import { GitService } from './services/gitService.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -82,6 +83,9 @@ let deviceInfo: DeviceInfo | null = null;
 let apiClient: ApiClient | null = null;
 let encryptionService: EncryptionService | null = null;
 let syncService: SyncService | null = null;
+
+// Git service (initialized on app ready)
+let gitService: GitService | null = null;
 
 /** File-based license storage implementation */
 class FileLicenseStorage implements LicenseStorage {
@@ -151,6 +155,9 @@ function initDatabase(): void {
   runMigrations(db, allMigrations);
   noteRepository = new SQLiteNoteRepository(db);
   notebookRepository = new SQLiteNotebookRepository(db);
+
+  // Initialize Git service for git-backed notebooks
+  gitService = new GitService(dataPaths.root);
 
   dbLog.info('Database initialized');
 }
@@ -1424,6 +1431,147 @@ function registerAuthSyncHandlers(): void {
   });
 }
 
+/** Register IPC handlers for git operations */
+function registerGitHandlers(): void {
+  if (!gitService) {
+    throw new Error('Git service not initialized');
+  }
+
+  const git = gitService;
+
+  // Initialize git repository for a notebook
+  ipcMain.handle('git:init', async (_event, notebookId: string) => {
+    try {
+      const repoPath = await git.initRepository(notebookId);
+      return {
+        success: true,
+        repoPath,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to initialize git repository',
+      };
+    }
+  });
+
+  // Check if notebook has git repository
+  ipcMain.handle('git:isRepo', async (_event, notebookId: string) => {
+    try {
+      const isRepo = await git.isGitRepository(notebookId);
+      return { success: true, isRepo };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to check git repository',
+      };
+    }
+  });
+
+  // Commit changes
+  ipcMain.handle('git:commit', async (_event, notebookId: string, message: string, files?: string[]) => {
+    try {
+      const sha = await git.commit(notebookId, message, files);
+      return {
+        success: true,
+        sha,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to commit changes',
+      };
+    }
+  });
+
+  // Get commit history
+  ipcMain.handle('git:log', async (_event, notebookId: string, limit?: number) => {
+    try {
+      const commits = await git.log(notebookId, limit);
+      return {
+        success: true,
+        commits,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get commit history',
+      };
+    }
+  });
+
+  // Get repository status
+  ipcMain.handle('git:status', async (_event, notebookId: string) => {
+    try {
+      const status = await git.status(notebookId);
+      return {
+        success: true,
+        status,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get repository status',
+      };
+    }
+  });
+
+  // Checkout (revert to) a specific commit
+  ipcMain.handle('git:checkout', async (_event, notebookId: string, commitSha: string) => {
+    try {
+      await git.checkout(notebookId, commitSha);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to checkout commit',
+      };
+    }
+  });
+
+  // Write note file to git repository
+  ipcMain.handle('git:writeNote', async (_event, notebookId: string, noteId: string, content: string) => {
+    try {
+      await git.writeNoteFile(notebookId, noteId, content);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to write note file',
+      };
+    }
+  });
+
+  // Read note file from git repository
+  ipcMain.handle('git:readNote', async (_event, notebookId: string, noteId: string) => {
+    try {
+      const content = await git.readNoteFile(notebookId, noteId);
+      return {
+        success: true,
+        content,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to read note file',
+      };
+    }
+  });
+
+  // Delete note file from git repository
+  ipcMain.handle('git:deleteNote', async (_event, notebookId: string, noteId: string) => {
+    try {
+      await git.deleteNoteFile(notebookId, noteId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete note file',
+      };
+    }
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   const updateLog = loggers.updater();
@@ -1566,6 +1714,7 @@ app
     initDatabase();
     registerIpcHandlers();
     registerNotebookHandlers();
+    registerGitHandlers(); // Git operations for git-backed notebooks
     registerDataHandlers();
 
     // Initialize license storage and handlers
