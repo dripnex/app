@@ -2,17 +2,56 @@
  * Conflict Resolver Component
  *
  * Shows sync conflicts and allows user to choose which version to keep.
+ * Displays visual diff with highlighted additions/deletions.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AlertTriangle, Check, X } from 'lucide-react';
+import { diffLines, type Change } from 'diff';
 import { useSyncStore, selectConflicts } from '../../stores/syncStore';
 import styles from './ConflictResolver.module.css';
+
+/**
+ * Render a single diff change with appropriate styling
+ */
+function DiffChange({ change }: { change: Change }) {
+  if (change.added) {
+    return <span className={styles.diffAdded}>{change.value}</span>;
+  }
+  if (change.removed) {
+    return <span className={styles.diffRemoved}>{change.value}</span>;
+  }
+  return <span className={styles.diffUnchanged}>{change.value}</span>;
+}
+
+/**
+ * Render unified diff view
+ */
+function UnifiedDiff({ localContent, remoteContent }: { localContent: string; remoteContent: string }) {
+  const diff = useMemo(() => {
+    // Use line diff for better readability
+    return diffLines(localContent, remoteContent);
+  }, [localContent, remoteContent]);
+
+  return (
+    <div className={styles.unifiedDiff}>
+      <div className={styles.diffHeader}>
+        <span className={styles.diffLabel}>Unified Diff (Local → Remote)</span>
+      </div>
+      <pre className={styles.diffContent}>
+        {diff.map((change, idx) => (
+          <DiffChange key={idx} change={change} />
+        ))}
+      </pre>
+    </div>
+  );
+}
 
 export function ConflictResolver() {
   const conflicts = useSyncStore(selectConflicts);
   const resolveConflict = useSyncStore(state => state.resolveConflict);
   const [expandedConflict, setExpandedConflict] = useState<string | null>(null);
+  const [showUnifiedDiff, setShowUnifiedDiff] = useState<Record<string, boolean>>({});
   const [isResolving, setIsResolving] = useState(false);
 
   const handleResolve = useCallback(
@@ -64,43 +103,102 @@ export function ConflictResolver() {
 
             {expandedConflict === conflict.noteId && (
               <div className={styles.conflictDetails}>
-                <div className={styles.version}>
-                  <div className={styles.versionHeader}>
-                    <span className={styles.versionLabel}>Local Version</span>
-                    <span className={styles.versionNumber}>v{conflict.localVersion}</span>
-                  </div>
-                  <pre className={styles.content}>{conflict.localContent}</pre>
+                {/* Toggle between side-by-side and unified diff */}
+                <div className={styles.viewToggle}>
                   <button
                     type="button"
-                    className={styles.keepButton}
-                    onClick={() => handleResolve(conflict.noteId, 'local')}
-                    disabled={isResolving}
+                    className={
+                      !showUnifiedDiff[conflict.noteId] ? styles.toggleActive : styles.toggleButton
+                    }
+                    onClick={() =>
+                      setShowUnifiedDiff(prev => ({ ...prev, [conflict.noteId]: false }))
+                    }
                   >
-                    <Check size={16} />
-                    Keep Local
+                    Side by Side
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      showUnifiedDiff[conflict.noteId] ? styles.toggleActive : styles.toggleButton
+                    }
+                    onClick={() =>
+                      setShowUnifiedDiff(prev => ({ ...prev, [conflict.noteId]: true }))
+                    }
+                  >
+                    Unified Diff
                   </button>
                 </div>
 
-                <div className={styles.divider}>
-                  <X size={16} className={styles.versusIcon} />
-                </div>
+                {showUnifiedDiff[conflict.noteId] ? (
+                  // Unified diff view
+                  <>
+                    <UnifiedDiff
+                      localContent={conflict.localContent}
+                      remoteContent={conflict.remoteContent}
+                    />
+                    <div className={styles.actionsRow}>
+                      <button
+                        type="button"
+                        className={styles.keepButton}
+                        onClick={() => handleResolve(conflict.noteId, 'local')}
+                        disabled={isResolving}
+                      >
+                        <Check size={16} />
+                        Keep Local (v{conflict.localVersion})
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.keepButton}
+                        onClick={() => handleResolve(conflict.noteId, 'remote')}
+                        disabled={isResolving}
+                      >
+                        <Check size={16} />
+                        Keep Remote (v{conflict.remoteVersion})
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  // Side-by-side view
+                  <>
+                    <div className={styles.version}>
+                      <div className={styles.versionHeader}>
+                        <span className={styles.versionLabel}>Local Version</span>
+                        <span className={styles.versionNumber}>v{conflict.localVersion}</span>
+                      </div>
+                      <pre className={styles.content}>{conflict.localContent}</pre>
+                      <button
+                        type="button"
+                        className={styles.keepButton}
+                        onClick={() => handleResolve(conflict.noteId, 'local')}
+                        disabled={isResolving}
+                      >
+                        <Check size={16} />
+                        Keep Local
+                      </button>
+                    </div>
 
-                <div className={styles.version}>
-                  <div className={styles.versionHeader}>
-                    <span className={styles.versionLabel}>Remote Version</span>
-                    <span className={styles.versionNumber}>v{conflict.remoteVersion}</span>
-                  </div>
-                  <pre className={styles.content}>{conflict.remoteContent}</pre>
-                  <button
-                    type="button"
-                    className={styles.keepButton}
-                    onClick={() => handleResolve(conflict.noteId, 'remote')}
-                    disabled={isResolving}
-                  >
-                    <Check size={16} />
-                    Keep Remote
-                  </button>
-                </div>
+                    <div className={styles.divider}>
+                      <X size={16} className={styles.versusIcon} />
+                    </div>
+
+                    <div className={styles.version}>
+                      <div className={styles.versionHeader}>
+                        <span className={styles.versionLabel}>Remote Version</span>
+                        <span className={styles.versionNumber}>v{conflict.remoteVersion}</span>
+                      </div>
+                      <pre className={styles.content}>{conflict.remoteContent}</pre>
+                      <button
+                        type="button"
+                        className={styles.keepButton}
+                        onClick={() => handleResolve(conflict.noteId, 'remote')}
+                        disabled={isResolving}
+                      >
+                        <Check size={16} />
+                        Keep Remote
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
