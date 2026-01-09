@@ -4,9 +4,11 @@ import { SettingsSidebar } from './components/SettingsSidebar';
 import { GeneralSection } from './sections/GeneralSection';
 import { EditorSection } from './sections/EditorSection';
 import { AppearanceSection } from './sections/AppearanceSection';
+import { AccountSection } from './sections/AccountSection';
+import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
 
-export type SettingsSection = 'general' | 'editor' | 'appearance' | 'about';
+export type SettingsSection = 'general' | 'editor' | 'appearance' | 'account' | 'backup' | 'about';
 
 export function SettingsApp() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -19,6 +21,10 @@ export function SettingsApp() {
         return <EditorSection />;
       case 'appearance':
         return <AppearanceSection />;
+      case 'account':
+        return <AccountSection />;
+      case 'backup':
+        return <BackupSection />;
       case 'about':
         return <AboutSection />;
       default:

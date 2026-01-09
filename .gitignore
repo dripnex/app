@@ -7,11 +7,13 @@ out/
 release/
 .astro/
 .turbo/
+.wrangler/
 
 # Environment
 .env
 .env.*
 !.env.example
+.dev.vars.local
 
 # IDE
 .idea/

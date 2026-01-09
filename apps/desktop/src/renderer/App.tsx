@@ -26,6 +26,7 @@ import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useResizableLayout } from './hooks/useResizableLayout';
+import { useAuthStore } from './stores/authStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,32 @@ function NotesApp() {
   // Load tag colors on mount (once)
   useEffect(() => {
     useTagColorsStore.getState().loadColors();
+  }, []);
+
+  // Load auth session on mount (once)
+  useEffect(() => {
+    useAuthStore.getState().loadSession();
+  }, []);
+
+  // Handle deep link auth verification (readied://auth/verify?token=xxx)
+  useEffect(() => {
+    const handleAuthVerification = async (...args: unknown[]) => {
+      const token = args[0] as string;
+      if (!token) return;
+
+      try {
+        await useAuthStore.getState().verifyToken(token);
+      } catch (error) {
+        console.error('Deep link auth verification failed:', error);
+      }
+    };
+
+    // Listen for deep link auth verification events
+    const removeListener = window.readied.ipc.on('auth:verify-token', handleAuthVerification);
+
+    return () => {
+      removeListener();
+    };
   }, []);
 
   // Local UI state

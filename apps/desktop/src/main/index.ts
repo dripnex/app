@@ -63,6 +63,11 @@ import {
   type AppLicenseState,
 } from '@readied/licensing';
 import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from './logger';
+import { TokenStorage } from './services/tokenStorage.js';
+import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js';
+import { ApiClient } from './services/apiClient.js';
+import { EncryptionService } from './services/encryptionService.js';
+import { SyncService } from './services/syncService.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -70,6 +75,13 @@ let noteRepository: SQLiteNoteRepository | null = null;
 let notebookRepository: SQLiteNotebookRepository | null = null;
 let dataPaths: DataPaths | null = null;
 let licenseStorage: FileLicenseStorage | null = null;
+
+// Backend API services (initialized on app ready)
+let tokenStorage: TokenStorage | null = null;
+let deviceInfo: DeviceInfo | null = null;
+let apiClient: ApiClient | null = null;
+let encryptionService: EncryptionService | null = null;
+let syncService: SyncService | null = null;
 
 /** File-based license storage implementation */
 class FileLicenseStorage implements LicenseStorage {
@@ -1117,6 +1129,301 @@ function registerLogHandlers(): void {
   });
 }
 
+/** Register IPC handlers for authentication and sync */
+function registerAuthSyncHandlers(): void {
+  if (!apiClient || !tokenStorage || !syncService) {
+    throw new Error('API client, token storage, or sync service not initialized');
+  }
+
+  const client = apiClient;
+  const storage = tokenStorage;
+  const sync = syncService;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Authentication
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Request magic link email
+  ipcMain.handle('auth:requestMagicLink', async (_event, email: string) => {
+    try {
+      await client.requestMagicLink(email);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to request magic link',
+      };
+    }
+  });
+
+  // Verify magic link token and save tokens
+  ipcMain.handle('auth:verify', async (_event, token: string) => {
+    try {
+      const result = await client.verifyMagicLink(token);
+      await storage.saveTokens(result.accessToken, result.refreshToken);
+      return { success: true, user: result.user };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to verify token',
+      };
+    }
+  });
+
+  // Get current session
+  ipcMain.handle('auth:getSession', async () => {
+    try {
+      const hasTokens = await storage.hasTokens();
+      if (!hasTokens) {
+        return null;
+      }
+
+      const user = await client.getCurrentUser();
+      return { user };
+    } catch (_error) {
+      // If session is invalid, clear tokens
+      await storage.clearTokens();
+      return null;
+    }
+  });
+
+  // Logout and clear tokens
+  ipcMain.handle('auth:logout', async () => {
+    try {
+      await storage.clearTokens();
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to logout',
+      };
+    }
+  });
+
+  // Refresh access token
+  ipcMain.handle('auth:refreshToken', async () => {
+    try {
+      const refreshed = await client.refreshAccessToken();
+      return { success: refreshed };
+    } catch (_error) {
+      return { success: false };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Sync
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Pull changes from server
+  ipcMain.handle('sync:pull', async () => {
+    try {
+      const result = await sync.pull();
+      return {
+        success: result.success,
+        changes: result.changes,
+        cursor: result.cursor,
+        hasMore: result.hasMore,
+        conflicts: result.conflicts,
+        error: result.error,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to pull changes',
+      };
+    }
+  });
+
+  // Push changes to server
+  ipcMain.handle('sync:push', async (_event, changes: Array<{
+    noteId: string;
+    operation: 'create' | 'update' | 'delete';
+    content?: string;
+    localVersion?: number;
+  }>) => {
+    try {
+      const result = await sync.push(changes);
+      return {
+        success: result.success,
+        results: result.results,
+        error: result.error,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to push changes',
+      };
+    }
+  });
+
+  // Perform full sync (pull + push)
+  ipcMain.handle('sync:syncNow', async () => {
+    try {
+      const result = await sync.syncNow();
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        changesApplied: 0,
+        changesPushed: 0,
+        conflicts: [],
+        error: error instanceof Error ? error.message : 'Sync failed',
+      };
+    }
+  });
+
+  // Get sync status
+  ipcMain.handle('sync:status', async () => {
+    try {
+      const state = sync.getState();
+      return {
+        success: true,
+        cursor: state.cursor,
+        lastSyncAt: state.lastSyncAt,
+        isSyncing: state.isSyncing,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get sync status',
+      };
+    }
+  });
+
+  // Resolve conflict
+  ipcMain.handle('sync:resolveConflict', async (_event, noteId: string, resolution: 'local' | 'remote') => {
+    try {
+      await sync.resolveConflict(noteId, resolution);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to resolve conflict',
+      };
+    }
+  });
+
+  // Start auto-sync
+  ipcMain.handle('sync:startAutoSync', async (_event, intervalMs?: number) => {
+    try {
+      sync.startAutoSync(intervalMs);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to start auto-sync',
+      };
+    }
+  });
+
+  // Stop auto-sync
+  ipcMain.handle('sync:stopAutoSync', async () => {
+    try {
+      sync.stopAutoSync();
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to stop auto-sync',
+      };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Subscription
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Get subscription status
+  ipcMain.handle('subscription:getStatus', async () => {
+    try {
+      const status = await client.getSubscriptionStatus();
+      return {
+        success: true,
+        status,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get subscription status',
+      };
+    }
+  });
+
+  // Open Stripe billing portal
+  ipcMain.handle('subscription:openPortal', async (_event, returnUrl: string) => {
+    try {
+      const { url } = await client.createPortalSession(returnUrl);
+      shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to open billing portal',
+      };
+    }
+  });
+
+  // Open checkout (placeholder - opens pricing page)
+  ipcMain.handle('subscription:openCheckout', async () => {
+    try {
+      shell.openExternal('https://readied.app/pricing');
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to open checkout',
+      };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Encryption Key Management
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Export encryption key (for backup)
+  ipcMain.handle('encryption:exportKey', async () => {
+    try {
+      if (!encryptionService) {
+        throw new Error('Encryption service not initialized');
+      }
+      const keyHex = encryptionService.exportKey();
+      return {
+        success: true,
+        key: keyHex,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to export encryption key',
+      };
+    }
+  });
+
+  // Import encryption key (for restore)
+  ipcMain.handle('encryption:importKey', async (_event, keyHex: string) => {
+    try {
+      if (!encryptionService) {
+        throw new Error('Encryption service not initialized');
+      }
+      await encryptionService.importKey(keyHex);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to import encryption key',
+      };
+    }
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   const updateLog = loggers.updater();
@@ -1209,6 +1516,13 @@ protocol.registerSchemesAsPrivileged([
       stream: true,
     },
   },
+  {
+    scheme: 'readied',
+    privileges: {
+      secure: true,
+      standard: true,
+    },
+  },
 ]);
 
 // App lifecycle
@@ -1258,6 +1572,40 @@ app
     licenseStorage = new FileLicenseStorage(dataPaths.root);
     registerLicenseHandlers();
     registerLogHandlers();
+
+    // Initialize auth and sync services
+    const initAuthSync = async () => {
+      if (!dataPaths) {
+        log.error('Cannot initialize auth/sync services: dataPaths not initialized');
+        return;
+      }
+
+      if (!noteRepository) {
+        log.error('Cannot initialize sync service: noteRepository not initialized');
+        return;
+      }
+
+      try {
+        tokenStorage = new TokenStorage(dataPaths.root);
+        deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
+
+        const apiBaseUrl = process.env.READIED_API_URL || 'http://localhost:8787';
+        apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
+
+        encryptionService = new EncryptionService(dataPaths.root);
+        await encryptionService.initialize();
+
+        syncService = new SyncService(apiClient, encryptionService, noteRepository);
+
+        registerAuthSyncHandlers();
+        log.info('Auth and sync services initialized');
+      } catch (error) {
+        log.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to initialize auth/sync services');
+      }
+    };
+
+    initAuthSync();
+
     log.info('All IPC handlers registered');
 
     // Install React DevTools in development
@@ -1294,3 +1642,45 @@ app.on('before-quit', () => {
     getLogger().info('Database closed');
   }
 });
+
+// Deep link handler for readied:// protocol (macOS)
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  const log = getLogger();
+  log.info({ url }, 'Deep link received');
+
+  try {
+    const urlObj = new URL(url);
+
+    // Handle auth verification: readied://auth/verify?token=xxx
+    if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
+      const token = urlObj.searchParams.get('token');
+      if (token) {
+        log.info('Auth verification token received via deep link');
+
+        // Send token to renderer process
+        const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+        if (mainWin) {
+          mainWin.webContents.send('auth:verify-token', token);
+          mainWin.show();
+          mainWin.focus();
+        }
+      } else {
+        log.warn('Deep link missing token parameter');
+      }
+    } else {
+      log.warn({ hostname: urlObj.hostname, pathname: urlObj.pathname }, 'Unknown deep link format');
+    }
+  } catch (error) {
+    log.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to parse deep link URL');
+  }
+});
+
+// Register as default protocol client (Windows/Linux)
+if (process.defaultApp) {
+  if (process.argv.length >= 2 && process.argv[1]) {
+    app.setAsDefaultProtocolClient('readied', process.execPath, [process.argv[1]]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('readied');
+}

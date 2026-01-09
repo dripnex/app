@@ -163,6 +163,62 @@ export interface GraphData {
 /** Log level types */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/** User type for authentication */
+export interface User {
+  id: string;
+  email: string;
+}
+
+/** Sync change */
+export interface SyncChange {
+  id: string;
+  noteId: string;
+  version: number;
+  operation: 'create' | 'update' | 'delete';
+  encryptedData: string | null;
+  deviceId: string;
+  createdAt: string;
+}
+
+/** Pull response */
+export interface PullResponse {
+  changes: SyncChange[];
+  cursor: number;
+  hasMore: boolean;
+}
+
+/** Push result */
+export interface PushResult {
+  noteId: string;
+  version: number;
+  status: 'applied' | 'conflict';
+  serverVersion?: number;
+}
+
+/** Push response */
+export interface PushResponse {
+  results: PushResult[];
+  cursor: number;
+}
+
+/** Sync status */
+export interface SyncStatus {
+  enabled: boolean;
+  plan: string;
+  cursor: number;
+  totalChanges: number;
+}
+
+/** Subscription status */
+export interface SubscriptionStatus {
+  plan: string;
+  status: string;
+  syncEnabled: boolean;
+  currentPeriodEnd?: string;
+  trialEndsAt?: string;
+  canceledAt?: string;
+}
+
 /** The API exposed to the renderer */
 export interface ReadiedAPI {
   notes: {
@@ -311,6 +367,103 @@ export interface ReadiedAPI {
     /** Open the settings window */
     openSettings: () => Promise<{ ok: boolean }>;
   };
+  auth: {
+    /** Request a magic link email */
+    requestMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
+    /** Verify magic link token and authenticate */
+    verifyToken: (token: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+    /** Get current session */
+    getSession: () => Promise<{ user: User } | null>;
+    /** Logout and clear tokens */
+    logout: () => Promise<{ success: boolean; error?: string }>;
+    /** Refresh access token */
+    refreshToken: () => Promise<{ success: boolean }>;
+  };
+  sync: {
+    /** Pull changes from server */
+    pull: () => Promise<{
+      success: boolean;
+      changes?: SyncChange[];
+      cursor?: number;
+      hasMore?: boolean;
+      conflicts?: Array<{
+        noteId: string;
+        localContent: string;
+        remoteContent: string;
+        localVersion: number;
+        remoteVersion: number;
+        timestamp: string;
+      }>;
+      error?: string;
+    }>;
+    /** Push changes to server */
+    push: (
+      changes: Array<{
+        noteId: string;
+        operation: 'create' | 'update' | 'delete';
+        content?: string;
+        localVersion?: number;
+      }>
+    ) => Promise<{
+      success: boolean;
+      results?: PushResult[];
+      error?: string;
+    }>;
+    /** Perform full sync cycle (pull + push) */
+    syncNow: () => Promise<{
+      success: boolean;
+      changesApplied: number;
+      changesPushed: number;
+      conflicts: Array<{
+        noteId: string;
+        localContent: string;
+        remoteContent: string;
+        localVersion: number;
+        remoteVersion: number;
+        timestamp: string;
+      }>;
+      error?: string;
+    }>;
+    /** Get sync status */
+    status: () => Promise<{
+      success: boolean;
+      cursor?: number;
+      lastSyncAt?: number | null;
+      isSyncing?: boolean;
+      error?: string;
+    }>;
+    /** Resolve a sync conflict */
+    resolveConflict: (
+      noteId: string,
+      resolution: 'local' | 'remote'
+    ) => Promise<{ success: boolean; error?: string }>;
+    /** Start auto-sync timer */
+    startAutoSync: (intervalMs?: number) => Promise<{ success: boolean; error?: string }>;
+    /** Stop auto-sync timer */
+    stopAutoSync: () => Promise<{ success: boolean; error?: string }>;
+  };
+  subscription: {
+    /** Get subscription status */
+    getStatus: () => Promise<{
+      success: boolean;
+      status?: SubscriptionStatus;
+      error?: string;
+    }>;
+    /** Open Stripe billing portal */
+    openPortal: (returnUrl: string) => Promise<{ success: boolean; error?: string }>;
+    /** Open checkout page */
+    openCheckout: () => Promise<{ success: boolean; error?: string }>;
+  };
+  ipc: {
+    /** Listen to IPC events from main process */
+    on: (channel: string, listener: (...args: unknown[]) => void) => () => void;
+  };
+  encryption: {
+    /** Export encryption key for backup */
+    exportKey: () => Promise<{ success: boolean; key?: string; error?: string }>;
+    /** Import encryption key from backup */
+    importKey: (keyHex: string) => Promise<{ success: boolean; error?: string }>;
+  };
 }
 
 // Expose the API
@@ -402,6 +555,40 @@ const api: ReadiedAPI = {
   windows: {
     openNote: (noteId, noteTitle) => ipcRenderer.invoke('window:openNote', noteId, noteTitle),
     openSettings: () => ipcRenderer.invoke('window:openSettings'),
+  },
+  auth: {
+    requestMagicLink: email => ipcRenderer.invoke('auth:requestMagicLink', email),
+    verifyToken: token => ipcRenderer.invoke('auth:verify', token),
+    getSession: () => ipcRenderer.invoke('auth:getSession'),
+    logout: () => ipcRenderer.invoke('auth:logout'),
+    refreshToken: () => ipcRenderer.invoke('auth:refreshToken'),
+  },
+  sync: {
+    pull: () => ipcRenderer.invoke('sync:pull'),
+    push: changes => ipcRenderer.invoke('sync:push', changes),
+    syncNow: () => ipcRenderer.invoke('sync:syncNow'),
+    status: () => ipcRenderer.invoke('sync:status'),
+    resolveConflict: (noteId, resolution) =>
+      ipcRenderer.invoke('sync:resolveConflict', noteId, resolution),
+    startAutoSync: intervalMs => ipcRenderer.invoke('sync:startAutoSync', intervalMs),
+    stopAutoSync: () => ipcRenderer.invoke('sync:stopAutoSync'),
+  },
+  subscription: {
+    getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
+    openPortal: returnUrl => ipcRenderer.invoke('subscription:openPortal', returnUrl),
+    openCheckout: () => ipcRenderer.invoke('subscription:openCheckout'),
+  },
+  ipc: {
+    on: (channel: string, listener: (...args: unknown[]) => void) => {
+      ipcRenderer.on(channel, (_event, ...args) => listener(...args));
+      return () => {
+        ipcRenderer.removeAllListeners(channel);
+      };
+    },
+  },
+  encryption: {
+    exportKey: () => ipcRenderer.invoke('encryption:exportKey'),
+    importKey: (keyHex: string) => ipcRenderer.invoke('encryption:importKey', keyHex),
   },
 };
 

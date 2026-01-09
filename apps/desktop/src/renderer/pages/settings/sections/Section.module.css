@@ -47,3 +47,102 @@
   color: var(--accent-hover);
   text-decoration: underline;
 }
+
+/* Buttons */
+.actionButton,
+.primaryButton,
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.primaryButton {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.dangerButton {
+  background: #dc2626;
+  color: white;
+}
+
+.dangerButton:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.actionButton:disabled,
+.primaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: #10b981;
+  color: white;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Messages */
+.checkResult,
+.infoMessage,
+.successMessage {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.checkResult,
+.infoMessage {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.successMessage {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+/* Spinning animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}

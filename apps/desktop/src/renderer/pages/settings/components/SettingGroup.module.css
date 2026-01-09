@@ -1,0 +1,18 @@
+.group {
+  margin-bottom: 2rem;
+}
+
+.groupTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 1rem 0;
+}
+
+.groupContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

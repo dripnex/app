@@ -47,6 +47,7 @@
     "@readied/wikilinks": "workspace:*",
     "@tanstack/react-query": "^5.90.16",
     "better-sqlite3": "^11.7.0",
+    "cross-fetch": "^4.1.0",
     "electron-updater": "^6.6.2",
     "lucide-react": "^0.562.0",
     "pino": "^10.1.0",
