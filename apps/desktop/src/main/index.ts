@@ -902,6 +902,99 @@ function registerNotebookHandlers(): void {
       return { success: true };
     }
   );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Git Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Enable git for a notebook
+  ipcMain.handle('notebooks:enableGit', async (_event, notebookId: string) => {
+    try {
+      repo.enableGit(createNotebookId(notebookId));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to enable git',
+      };
+    }
+  });
+
+  // Disable git for a notebook
+  ipcMain.handle('notebooks:disableGit', async (_event, notebookId: string) => {
+    try {
+      repo.disableGit(createNotebookId(notebookId));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to disable git',
+      };
+    }
+  });
+
+  // Check if git is enabled for a notebook
+  ipcMain.handle('notebooks:isGitEnabled', async (_event, notebookId: string) => {
+    try {
+      const enabled = repo.isGitEnabled(createNotebookId(notebookId));
+      return { success: true, enabled };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to check git status',
+      };
+    }
+  });
+
+  // Get git settings for a notebook
+  ipcMain.handle('notebooks:getGitSettings', async (_event, notebookId: string) => {
+    try {
+      const settings = repo.getGitSettings(createNotebookId(notebookId));
+      return { success: true, settings };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get git settings',
+      };
+    }
+  });
+
+  // Toggle auto-commit for a notebook
+  ipcMain.handle('notebooks:setGitAutoCommit', async (_event, notebookId: string, enabled: boolean) => {
+    try {
+      repo.setGitAutoCommit(createNotebookId(notebookId), enabled);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to set auto-commit',
+      };
+    }
+  });
+
+  // Get all git-enabled notebooks
+  ipcMain.handle('notebooks:getGitEnabled', async () => {
+    try {
+      const notebooks = repo.getGitEnabledNotebooks();
+      return {
+        success: true,
+        notebooks: notebooks.map(nb => ({
+          id: nb.id,
+          name: nb.name,
+          parentId: nb.parentId,
+          depth: nb.depth,
+          order: nb.order,
+          createdAt: nb.createdAt,
+          updatedAt: nb.updatedAt,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get git-enabled notebooks',
+      };
+    }
+  });
 }
 
 /** Register IPC handlers for data management (backup, export, import) */

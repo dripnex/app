@@ -295,6 +295,30 @@ export interface ReadiedAPI {
     delete: (id: string) => Promise<{ success: boolean }>;
     /** Reorder notebooks within a parent */
     reorder: (parentId: string | null, orderedIds: string[]) => Promise<{ success: boolean }>;
+    /** Enable git for a notebook */
+    enableGit: (notebookId: string) => Promise<{ success: boolean; error?: string }>;
+    /** Disable git for a notebook */
+    disableGit: (notebookId: string) => Promise<{ success: boolean; error?: string }>;
+    /** Check if git is enabled for a notebook */
+    isGitEnabled: (notebookId: string) => Promise<{ success: boolean; enabled?: boolean; error?: string }>;
+    /** Get git settings for a notebook */
+    getGitSettings: (notebookId: string) => Promise<{
+      success: boolean;
+      settings?: {
+        enabled: boolean;
+        autoCommit: boolean;
+        initializedAt: string | null;
+      };
+      error?: string;
+    }>;
+    /** Toggle auto-commit for a notebook */
+    setGitAutoCommit: (notebookId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+    /** Get all git-enabled notebooks */
+    getGitEnabled: () => Promise<{
+      success: boolean;
+      notebooks?: NotebookSnapshot[];
+      error?: string;
+    }>;
   };
   data: {
     /** Create a backup of the database */
@@ -565,6 +589,12 @@ const api: ReadiedAPI = {
     delete: id => ipcRenderer.invoke('notebooks:delete', id),
     reorder: (parentId, orderedIds) =>
       ipcRenderer.invoke('notebooks:reorder', parentId, orderedIds),
+    enableGit: (notebookId) => ipcRenderer.invoke('notebooks:enableGit', notebookId),
+    disableGit: (notebookId) => ipcRenderer.invoke('notebooks:disableGit', notebookId),
+    isGitEnabled: (notebookId) => ipcRenderer.invoke('notebooks:isGitEnabled', notebookId),
+    getGitSettings: (notebookId) => ipcRenderer.invoke('notebooks:getGitSettings', notebookId),
+    setGitAutoCommit: (notebookId, enabled) => ipcRenderer.invoke('notebooks:setGitAutoCommit', notebookId, enabled),
+    getGitEnabled: () => ipcRenderer.invoke('notebooks:getGitEnabled'),
   },
   data: {
     backup: () => ipcRenderer.invoke('data:backup'),
