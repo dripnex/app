@@ -10,6 +10,7 @@ import { addNoteFields } from './004_note_fields.js';
 import { addManualTags } from './005_manual_tags.js';
 import { addTagColors } from './006_tag_colors.js';
 import { addLinks } from './007_links.js';
+import { syncTracking } from './008_sync_tracking.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -20,6 +21,7 @@ export const allMigrations: Migration[] = [
   addManualTags,
   addTagColors,
   addLinks,
+  syncTracking,
 ];
 
 export {
@@ -30,4 +32,5 @@ export {
   addManualTags,
   addTagColors,
   addLinks,
+  syncTracking,
 };

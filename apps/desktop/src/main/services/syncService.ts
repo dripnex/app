@@ -203,13 +203,46 @@ export class SyncService {
         };
       }
 
-      // Step 2: TODO - Push local changes (Phase 3 - implement local change tracking)
-      // For now, we only pull changes
+      // Step 2: Push local changes
+      let changesPushed = 0;
+      const pendingChanges = this.noteRepository.getPendingChanges(50);
+
+      if (pendingChanges.length > 0) {
+        // Prepare changes for push
+        const changesToPush = pendingChanges.map(({ note, localVersion }) => ({
+          noteId: note.id,
+          operation: (note.isDeleted ? 'delete' : 'update') as 'create' | 'update' | 'delete',
+          content: !note.isDeleted ? note.content : undefined,
+          localVersion,
+        }));
+
+        // Push to server
+        const pushResult = await this.push(changesToPush);
+
+        if (pushResult.success) {
+          // Mark successfully pushed notes as synced
+          const successfulNoteIds = pushResult.results
+            .filter(r => r.status === 'applied')
+            .map(r => createNoteId(r.noteId));
+
+          this.noteRepository.markMultipleAsSynced(successfulNoteIds);
+          changesPushed = successfulNoteIds.length;
+
+          // Handle conflicts from push
+          const pushConflicts = pushResult.results.filter(r => r.status === 'conflict');
+          if (pushConflicts.length > 0) {
+            console.warn(`Push conflicts detected for ${pushConflicts.length} notes:`, pushConflicts);
+            // Conflicts will need to be resolved by user
+          }
+        } else {
+          console.error('Failed to push changes:', pushResult.error);
+        }
+      }
 
       return {
         success: true,
         changesApplied: pullResult.changes.length,
-        changesPushed: 0,
+        changesPushed,
         conflicts: pullResult.conflicts,
       };
     } catch (error) {
@@ -235,11 +268,13 @@ export class SyncService {
     }
 
     if (resolution === 'local') {
-      // Keep local version, push to server
-      // TODO: Mark note for push in next sync
-      console.log(`Conflict resolved: keeping local version for ${noteId}`);
+      // Keep local version, mark for push to server
+      this.noteRepository.resetSyncTracking(createNoteId(noteId));
+      console.log(`Conflict resolved: keeping local version for ${noteId}, marked for sync`);
     } else {
       // Keep remote version (already applied during pull)
+      // Just mark as synced to clear the conflict state
+      this.noteRepository.markAsSynced(createNoteId(noteId));
       console.log(`Conflict resolved: keeping remote version for ${noteId}`);
     }
   }
@@ -356,6 +391,9 @@ export class SyncService {
               updatedAt: createTimestamp(new Date(change.createdAt)),
             },
           });
+
+          // Mark as synced to avoid re-pushing
+          this.noteRepository.markAsSynced(noteId);
         } else {
           // Create new note
           const newTitle = this.extractTitle(decryptedContent);
@@ -376,6 +414,9 @@ export class SyncService {
               archivedAt: null,
             },
           });
+
+          // Mark as synced to avoid re-pushing
+          this.noteRepository.markAsSynced(noteId);
         }
         break;
       }

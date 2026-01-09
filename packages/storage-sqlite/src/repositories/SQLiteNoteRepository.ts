@@ -635,4 +635,165 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       edges: linkRows,
     };
   }
+
+  // ========================================================================
+  // Sync Tracking Methods
+  // ========================================================================
+
+  /**
+   * Get all notes that need to be synced to the server.
+   * Returns notes where needs_sync=1, ordered by local_version.
+   *
+   * @param limit - Maximum number of notes to return (default: 50)
+   * @returns Array of notes pending sync with their sync metadata
+   */
+  getPendingChanges(limit = 50): Array<{
+    note: Note;
+    localVersion: number;
+    lastSyncedAt: string | null;
+  }> {
+    const stmt = this.db.prepare<{
+      id: string;
+      content: string;
+      title: string;
+      created_at: string;
+      updated_at: string;
+      word_count: number;
+      archived_at: string | null;
+      notebook_id: string;
+      is_pinned: number;
+      is_deleted: number;
+      status: string;
+      local_version: number;
+      last_synced_at: string | null;
+    }>(`
+      SELECT *
+      FROM notes
+      WHERE needs_sync = 1
+      ORDER BY local_version ASC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(limit) as Array<{
+      id: string;
+      content: string;
+      title: string;
+      created_at: string;
+      updated_at: string;
+      word_count: number;
+      archived_at: string | null;
+      notebook_id: string;
+      is_pinned: number;
+      is_deleted: number;
+      status: string;
+      local_version: number;
+      last_synced_at: string | null;
+    }>;
+
+    return rows.map(row => {
+      const tags = this.getTagsForNote(createNoteId(row.id));
+      return {
+        note: this.rowToNote(row, tags),
+        localVersion: row.local_version,
+        lastSyncedAt: row.last_synced_at,
+      };
+    });
+  }
+
+  /**
+   * Mark a note as successfully synced.
+   * Sets needs_sync=0 and updates last_synced_at timestamp.
+   *
+   * @param noteId - The note ID to mark as synced
+   */
+  markAsSynced(noteId: NoteId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notes
+      SET
+        needs_sync = 0,
+        last_synced_at = ?
+      WHERE id = ?
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(now, noteId);
+  }
+
+  /**
+   * Mark multiple notes as synced in a transaction.
+   * More efficient than calling markAsSynced individually.
+   *
+   * @param noteIds - Array of note IDs to mark as synced
+   */
+  markMultipleAsSynced(noteIds: NoteId[]): void {
+    if (noteIds.length === 0) return;
+
+    this.db.transaction(() => {
+      const stmt = this.db.prepare(`
+        UPDATE notes
+        SET
+          needs_sync = 0,
+          last_synced_at = ?
+        WHERE id = ?
+      `);
+
+      const now = new Date().toISOString();
+      for (const id of noteIds) {
+        stmt.run(now, id);
+      }
+    });
+  }
+
+  /**
+   * Get sync statistics for monitoring.
+   * Returns count of notes needing sync and last sync timestamp.
+   */
+  getSyncStats(): {
+    pendingCount: number;
+    lastSyncedAt: string | null;
+  } {
+    // Count pending notes
+    const countStmt = this.db.prepare<{ count: number }>(`
+      SELECT COUNT(*) as count
+      FROM notes
+      WHERE needs_sync = 1
+    `);
+    const countRow = countStmt.get() as { count: number } | undefined;
+
+    // Get most recent sync timestamp
+    const lastSyncStmt = this.db.prepare<{ last_synced_at: string | null }>(`
+      SELECT last_synced_at
+      FROM notes
+      WHERE last_synced_at IS NOT NULL
+      ORDER BY last_synced_at DESC
+      LIMIT 1
+    `);
+    const lastSyncRow = lastSyncStmt.get() as { last_synced_at: string | null } | undefined;
+
+    return {
+      pendingCount: countRow?.count || 0,
+      lastSyncedAt: lastSyncRow?.last_synced_at || null,
+    };
+  }
+
+  /**
+   * Reset sync tracking for a note (force re-sync).
+   * Sets needs_sync=1 and increments local_version.
+   *
+   * Useful for:
+   * - Manual re-sync after conflict resolution
+   * - Recovery from sync errors
+   *
+   * @param noteId - The note ID to reset
+   */
+  resetSyncTracking(noteId: NoteId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notes
+      SET
+        needs_sync = 1,
+        local_version = local_version + 1
+      WHERE id = ?
+    `);
+    stmt.run(noteId);
+  }
 }
