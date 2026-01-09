@@ -1063,6 +1063,25 @@ input:focus-visible {
   color: var(--danger);
 }
 
+.notebook-item-action--git-enabled {
+  color: var(--accent);
+}
+
+.notebook-item-action--git-enabled:hover {
+  color: var(--accent-strong);
+}
+
+.notebook-item-git-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 .notebook-item-children {
   list-style: none;
   margin: 0;
