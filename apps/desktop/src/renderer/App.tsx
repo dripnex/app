@@ -168,6 +168,26 @@ function NotesApp() {
       setSelectedNote(updated);
       // Sync links after save (fire-and-forget, don't block UI)
       syncLinks.mutate({ noteId: selectedNote.id, content });
+
+      // Auto-commit to git if enabled (fire-and-forget, don't block UI)
+      if (updated.notebookId) {
+        try {
+          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
+          if (gitSettings.success && gitSettings.settings?.enabled && gitSettings.settings?.autoCommit) {
+            // Write note file to git repo
+            await window.readied.git.writeNote(updated.notebookId, updated.id, content);
+            // Commit with note title
+            await window.readied.git.commit(
+              updated.notebookId,
+              `Update note: ${updated.title}`,
+              [`${updated.id}.md`]
+            );
+          }
+        } catch (error) {
+          console.error('Auto-commit failed:', error);
+          // Don't throw - this shouldn't block the save flow
+        }
+      }
     },
     [selectedNote, updateNote, syncLinks]
   );
@@ -178,6 +198,30 @@ function NotesApp() {
       if (!selectedNote) return;
       const updated = await updateNoteTitle.mutateAsync({ id: selectedNote.id, title });
       setSelectedNote(updated);
+
+      // Auto-commit to git if enabled (fire-and-forget, don't block UI)
+      if (updated.notebookId) {
+        try {
+          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
+          if (gitSettings.success && gitSettings.settings?.enabled && gitSettings.settings?.autoCommit) {
+            // Write note file to git repo (title change also affects content)
+            await window.readied.git.writeNote(
+              updated.notebookId,
+              updated.id,
+              updated.content
+            );
+            // Commit with note title
+            await window.readied.git.commit(
+              updated.notebookId,
+              `Rename note: ${updated.title}`,
+              [`${updated.id}.md`]
+            );
+          }
+        } catch (error) {
+          console.error('Auto-commit failed:', error);
+          // Don't throw - this shouldn't block the save flow
+        }
+      }
     },
     [selectedNote, updateNoteTitle]
   );
