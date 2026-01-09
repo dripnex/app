@@ -1,6 +1,7 @@
 import { useState, useCallback, memo, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Inbox, Folder, Plus, X, GitBranch } from 'lucide-react';
+import { ChevronDown, ChevronRight, Inbox, Folder, Plus, X, GitBranch, History } from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
+import { CommitHistory } from '../git/CommitHistory';
 
 interface NotebookItemProps {
   readonly node: NotebookTreeNode;
@@ -34,6 +35,7 @@ export const NotebookItem = memo(function NotebookItem({
   const [editName, setEditName] = useState(node.notebook.name);
   const [isGitEnabled, setIsGitEnabled] = useState(false);
   const [isGitLoading, setIsGitLoading] = useState(false);
+  const [showCommitHistory, setShowCommitHistory] = useState(false);
 
   const hasChildren = node.children.length > 0;
   const isInbox = node.notebook.id === 'inbox';
@@ -43,8 +45,10 @@ export const NotebookItem = memo(function NotebookItem({
   useEffect(() => {
     const checkGitStatus = async () => {
       try {
-        const enabled = await window.readied.notebooks.isGitEnabled(node.notebook.id);
-        setIsGitEnabled(enabled);
+        const result = await window.readied.notebooks.isGitEnabled(node.notebook.id);
+        if (result.success && result.enabled !== undefined) {
+          setIsGitEnabled(result.enabled);
+        }
       } catch (error) {
         console.error('Failed to check git status:', error);
       }
@@ -143,6 +147,11 @@ export const NotebookItem = memo(function NotebookItem({
     [node.notebook.id, isGitEnabled]
   );
 
+  const handleShowHistory = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCommitHistory(true);
+  }, []);
+
   return (
     <li className="notebook-item" role="treeitem" aria-expanded={isExpanded}>
       <div
@@ -219,6 +228,17 @@ export const NotebookItem = memo(function NotebookItem({
                 style={{ opacity: isGitLoading ? 0.5 : 1 }}
               />
             </button>
+            {isGitEnabled && (
+              <button
+                type="button"
+                className="notebook-item-action"
+                onClick={handleShowHistory}
+                aria-label="View commit history"
+                title="View commit history"
+              >
+                <History size={12} aria-hidden="true" />
+              </button>
+            )}
             {canHaveChildren && (
               <button
                 type="button"
@@ -259,6 +279,14 @@ export const NotebookItem = memo(function NotebookItem({
             />
           ))}
         </ul>
+      )}
+
+      {showCommitHistory && (
+        <CommitHistory
+          notebookId={node.notebook.id}
+          notebookName={node.notebook.name}
+          onClose={() => setShowCommitHistory(false)}
+        />
       )}
     </li>
   );
