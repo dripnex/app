@@ -11,6 +11,7 @@ import { addManualTags } from './005_manual_tags.js';
 import { addTagColors } from './006_tag_colors.js';
 import { addLinks } from './007_links.js';
 import { syncTracking } from './008_sync_tracking.js';
+import { gitNotebooks } from './009_git_notebooks.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -22,6 +23,7 @@ export const allMigrations: Migration[] = [
   addTagColors,
   addLinks,
   syncTracking,
+  gitNotebooks,
 ];
 
 export {
@@ -33,4 +35,5 @@ export {
   addTagColors,
   addLinks,
   syncTracking,
+  gitNotebooks,
 };

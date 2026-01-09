@@ -50,6 +50,7 @@
     "cross-fetch": "^4.1.0",
     "diff": "^8.0.2",
     "electron-updater": "^6.6.2",
+    "isomorphic-git": "^1.36.1",
     "lucide-react": "^0.562.0",
     "pino": "^10.1.0",
     "pino-roll": "^4.0.0",
