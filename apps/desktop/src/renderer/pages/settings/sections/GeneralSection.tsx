@@ -1,10 +1,86 @@
+/**
+ * General Settings Section
+ *
+ * Default notebook, data folder access.
+ */
+
+import { useCallback } from 'react';
+import { FolderOpen } from 'lucide-react';
+import { useSettingsStore, selectGeneral } from '../../../stores/settings';
+import { useNotebooks } from '../../../hooks/useNotebooks';
+import { SettingGroup } from '../components/SettingGroup';
+import { SettingRow } from '../components/SettingRow';
+import { Select, Toggle } from '../components/controls';
 import styles from './Section.module.css';
 
 export function GeneralSection() {
+  const general = useSettingsStore(selectGeneral);
+  const updateGeneral = useSettingsStore((s) => s.updateGeneral);
+  const { data: notebooks = [] } = useNotebooks();
+
+  // Build notebook options for dropdown
+  const notebookOptions = notebooks.map((nb) => ({
+    value: nb.id,
+    label: nb.name,
+  }));
+
+  // Ensure "Inbox" is always available
+  if (!notebookOptions.find((o) => o.value === 'inbox')) {
+    notebookOptions.unshift({ value: 'inbox', label: 'Inbox' });
+  }
+
+  const handleOpenDataFolder = useCallback(async () => {
+    await window.readied.data.openFolder();
+  }, []);
+
   return (
     <div className={styles.section}>
       <h2 className={styles.title}>General</h2>
-      <p className={styles.placeholder}>General settings coming soon...</p>
+
+      <SettingGroup title="Notes">
+        <SettingRow
+          label="Default Notebook"
+          description="New notes will be created in this notebook"
+          htmlFor="defaultNotebook"
+        >
+          <Select
+            id="defaultNotebook"
+            value={general.defaultNotebookId}
+            onChange={(value) => updateGeneral({ defaultNotebookId: value })}
+            options={notebookOptions}
+          />
+        </SettingRow>
+      </SettingGroup>
+
+      <SettingGroup title="Window">
+        <SettingRow
+          label="Remember Window Position"
+          description="Restore window size and position on startup"
+          htmlFor="rememberWindowPosition"
+        >
+          <Toggle
+            id="rememberWindowPosition"
+            checked={general.rememberWindowPosition}
+            onChange={(checked) => updateGeneral({ rememberWindowPosition: checked })}
+          />
+        </SettingRow>
+      </SettingGroup>
+
+      <SettingGroup title="Data">
+        <SettingRow
+          label="Open Data Folder"
+          description="Open the folder containing your notes database"
+        >
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={handleOpenDataFolder}
+          >
+            <FolderOpen size={14} />
+            <span>Open Folder</span>
+          </button>
+        </SettingRow>
+      </SettingGroup>
     </div>
   );
 }

@@ -6,7 +6,7 @@
 
 import { join, normalize } from 'path';
 import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
@@ -136,6 +136,44 @@ class FileLicenseStorage implements LicenseStorage {
   }
 }
 
+// ============================================================================
+// Window State Persistence
+// ============================================================================
+
+interface WindowState {
+  x?: number;
+  y?: number;
+  width: number;
+  height: number;
+  isMaximized?: boolean;
+}
+
+const DEFAULT_WINDOW_STATE: WindowState = {
+  width: 1200,
+  height: 800,
+};
+
+function getWindowStatePath(): string {
+  return join(app.getPath('userData'), 'window-state.json');
+}
+
+function loadWindowState(): WindowState {
+  try {
+    const data = readFileSync(getWindowStatePath(), 'utf-8');
+    return { ...DEFAULT_WINDOW_STATE, ...JSON.parse(data) };
+  } catch {
+    return DEFAULT_WINDOW_STATE;
+  }
+}
+
+function saveWindowState(state: WindowState): void {
+  try {
+    writeFileSync(getWindowStatePath(), JSON.stringify(state, null, 2));
+  } catch (err) {
+    console.error('Failed to save window state:', err);
+  }
+}
+
 /** Initialize data paths */
 function initDataPaths(): DataPaths {
   const userDataPath = app.getPath('userData');
@@ -164,9 +202,14 @@ function initDatabase(): void {
 
 /** Create the main window */
 function createWindow(): void {
+  // Load saved window state
+  const windowState = loadWindowState();
+
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    x: windowState.x,
+    y: windowState.y,
+    width: windowState.width,
+    height: windowState.height,
     minWidth: 800,
     minHeight: 600,
     show: false,
@@ -179,6 +222,44 @@ function createWindow(): void {
       contextIsolation: true,
       sandbox: false, // Required for better-sqlite3
     },
+  });
+
+  // Restore maximized state after window is created
+  if (windowState.isMaximized) {
+    mainWindow.maximize();
+  }
+
+  // Save window state on resize/move/close (debounced)
+  let saveTimeout: NodeJS.Timeout | null = null;
+  const debouncedSave = () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      if (!mainWindow.isDestroyed() && !mainWindow.isMaximized()) {
+        const bounds = mainWindow.getBounds();
+        saveWindowState({
+          ...bounds,
+          isMaximized: false,
+        });
+      }
+    }, 500);
+  };
+
+  mainWindow.on('resize', debouncedSave);
+  mainWindow.on('move', debouncedSave);
+
+  mainWindow.on('maximize', () => {
+    saveWindowState({
+      ...mainWindow.getBounds(),
+      isMaximized: true,
+    });
+  });
+
+  mainWindow.on('unmaximize', () => {
+    const bounds = mainWindow.getBounds();
+    saveWindowState({
+      ...bounds,
+      isMaximized: false,
+    });
   });
 
   mainWindow.on('ready-to-show', () => {
@@ -1229,6 +1310,53 @@ function registerLogHandlers(): void {
   });
 }
 
+/** Register IPC handlers for manual update checks */
+function registerUpdateHandlers(): void {
+  // Manual check for updates
+  ipcMain.handle(
+    'updates:checkNow',
+    async (): Promise<{ available: boolean; version?: string }> => {
+      // In development or without proper updater config, return mock response
+      if (process.env.NODE_ENV === 'development') {
+        return { available: false };
+      }
+
+      // Event-based pattern: autoUpdater emits events, we wrap in Promise
+      return new Promise(resolve => {
+        const onAvailable = (info: { version: string }) => {
+          cleanup();
+          resolve({ available: true, version: info.version });
+        };
+
+        const onNotAvailable = () => {
+          cleanup();
+          resolve({ available: false });
+        };
+
+        const onError = () => {
+          cleanup();
+          resolve({ available: false });
+        };
+
+        const cleanup = () => {
+          autoUpdater.removeListener('update-available', onAvailable);
+          autoUpdater.removeListener('update-not-available', onNotAvailable);
+          autoUpdater.removeListener('error', onError);
+        };
+
+        autoUpdater.once('update-available', onAvailable);
+        autoUpdater.once('update-not-available', onNotAvailable);
+        autoUpdater.once('error', onError);
+
+        autoUpdater.checkForUpdates().catch(() => {
+          cleanup();
+          resolve({ available: false });
+        });
+      });
+    }
+  );
+}
+
 /** Register IPC handlers for authentication and sync */
 function registerAuthSyncHandlers(): void {
   if (!apiClient || !tokenStorage || !syncService) {
@@ -1814,6 +1942,17 @@ app
     licenseStorage = new FileLicenseStorage(dataPaths.root);
     registerLicenseHandlers();
     registerLogHandlers();
+    registerUpdateHandlers();
+
+    // Settings sync: broadcast to all windows except sender
+    ipcMain.on('settings:changed', (event, settings) => {
+      const senderWebContents = event.sender;
+      BrowserWindow.getAllWindows().forEach(win => {
+        if (win.webContents !== senderWebContents && !win.isDestroyed()) {
+          win.webContents.send('settings:sync', settings);
+        }
+      });
+    });
 
     // Initialize auth and sync services
     const initAuthSync = async () => {
@@ -1831,7 +1970,7 @@ app
         tokenStorage = new TokenStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
-        const apiBaseUrl = process.env.READIED_API_URL || 'http://localhost:8787';
+        const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
         apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
 
         encryptionService = new EncryptionService(dataPaths.root);
