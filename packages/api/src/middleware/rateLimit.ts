@@ -21,15 +21,18 @@ interface RateLimitEntry {
 // For production, upgrade to Cloudflare KV for distributed rate limiting
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 60 seconds
-setInterval(() => {
+/**
+ * Cleanup expired entries from rate limit store
+ * Called inline during rate limit checks to avoid global scope timers
+ */
+function cleanupExpiredEntries() {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore.entries()) {
     if (entry.resetAt < now) {
       rateLimitStore.delete(key);
     }
   }
-}, 60000);
+}
 
 export interface RateLimitOptions {
   /**
@@ -79,6 +82,9 @@ export function rateLimit(options: RateLimitOptions) {
   } = options;
 
   return async (c: Context<{ Bindings: Env }>, next: Next) => {
+    // Cleanup expired entries periodically
+    cleanupExpiredEntries();
+
     const key = keyGenerator(c);
     const now = Date.now();
 

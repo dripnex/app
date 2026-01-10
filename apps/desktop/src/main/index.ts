@@ -1831,7 +1831,7 @@ app
         tokenStorage = new TokenStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
-        const apiBaseUrl = process.env.READIED_API_URL || 'http://localhost:8787';
+        const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
         apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
 
         encryptionService = new EncryptionService(dataPaths.root);
