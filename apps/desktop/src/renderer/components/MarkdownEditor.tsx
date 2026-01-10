@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { EditorState, EditorSelection, type Extension } from '@codemirror/state';
+import { EditorState, EditorSelection, type Extension, Compartment } from '@codemirror/state';
 import {
   EditorView,
   keymap,
@@ -13,6 +13,7 @@ import {
   drawSelection,
 } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { indentUnit } from '@codemirror/language';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import {
@@ -46,39 +47,52 @@ import {
 } from '@readied/wikilinks';
 import { embedInlinePreview } from '@readied/embeds/codemirror';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
+import { useSettingsStore, selectEditor } from '../stores/settings';
 
-/** Dark theme matching Readied's design */
-const darkTheme = EditorView.theme(
-  {
+// Compartments for dynamic settings
+const lineNumbersCompartment = new Compartment();
+const activeLineCompartment = new Compartment();
+const lineWrappingCompartment = new Compartment();
+const themeCompartment = new Compartment();
+const tabSizeCompartment = new Compartment();
+const scrollPastEndCompartment = new Compartment();
+const spellCheckCompartment = new Compartment();
+
+/** Scroll past end padding - allows scrolling content to top of viewport */
+const SCROLL_PAST_END_PADDING = '50vh';
+
+/** Create theme with configurable settings (uses CSS variables for colors) */
+function createEditorTheme(fontSize: number, fontFamily: string, lineHeight: number) {
+  return EditorView.theme({
     '&': {
       backgroundColor: 'transparent',
-      color: '#f4f4f5',
-      fontSize: '14px',
+      color: 'var(--cm-text)',
+      fontSize: `${fontSize}px`,
       height: '100%',
     },
     '.cm-content': {
-      fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
+      fontFamily: fontFamily || "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace",
       padding: '12px',
-      lineHeight: '1.7',
-      caretColor: '#5eead4',
+      lineHeight: String(lineHeight),
+      caretColor: 'var(--cm-cursor)',
     },
     '.cm-cursor': {
-      borderLeftColor: '#5eead4',
+      borderLeftColor: 'var(--cm-cursor)',
       borderLeftWidth: '2px',
     },
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
-      backgroundColor: 'rgba(94, 234, 212, 0.2)',
+      backgroundColor: 'var(--cm-selection)',
     },
     '.cm-activeLine': {
-      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      backgroundColor: 'var(--cm-active-line)',
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      backgroundColor: 'var(--cm-active-line)',
     },
     '.cm-gutters': {
       backgroundColor: 'transparent',
-      borderRight: '1px solid rgba(255, 255, 255, 0.06)',
-      color: 'rgba(255, 255, 255, 0.25)',
+      borderRight: '1px solid var(--cm-gutter-border)',
+      color: 'var(--cm-gutter-text)',
     },
     '.cm-lineNumbers .cm-gutterElement': {
       padding: '0 12px 0 16px',
@@ -91,16 +105,16 @@ const darkTheme = EditorView.theme(
       padding: '0 4px',
     },
     '&.cm-focused .cm-matchingBracket': {
-      backgroundColor: 'rgba(94, 234, 212, 0.3)',
+      backgroundColor: 'var(--cm-bracket-match)',
       outline: 'none',
     },
     // Autocomplete tooltip
     '.cm-tooltip-autocomplete': {
-      backgroundColor: 'rgba(24, 24, 27, 0.98)',
+      backgroundColor: 'var(--cm-tooltip-bg)',
       backdropFilter: 'blur(12px)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      border: '1px solid var(--cm-tooltip-border)',
       borderRadius: '8px',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
       overflow: 'hidden',
     },
     '.cm-tooltip-autocomplete > ul': {
@@ -110,66 +124,65 @@ const darkTheme = EditorView.theme(
     },
     '.cm-tooltip-autocomplete > ul > li': {
       padding: '8px 12px',
-      color: '#a1a1aa',
+      color: 'var(--cm-tooltip-text)',
       cursor: 'pointer',
     },
     '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
-      backgroundColor: 'rgba(94, 234, 212, 0.15)',
-      color: '#5eead4',
+      backgroundColor: 'var(--accent-muted)',
+      color: 'var(--accent)',
     },
     '.cm-completionLabel': {
       fontWeight: '500',
     },
-  },
-  { dark: true }
-);
+  });
+}
 
-/** Syntax highlighting for Markdown */
+/** Syntax highlighting for Markdown (uses CSS variables for theme-aware colors) */
 const markdownHighlighting = HighlightStyle.define([
   // Headings
-  { tag: tags.heading1, color: '#5eead4', fontWeight: '700', fontSize: '1.5em' },
-  { tag: tags.heading2, color: '#5eead4', fontWeight: '600', fontSize: '1.3em' },
-  { tag: tags.heading3, color: '#5eead4', fontWeight: '600', fontSize: '1.15em' },
-  { tag: tags.heading4, color: '#5eead4', fontWeight: '600' },
-  { tag: tags.heading5, color: '#5eead4', fontWeight: '600' },
-  { tag: tags.heading6, color: '#5eead4', fontWeight: '600' },
+  { tag: tags.heading1, color: 'var(--cm-heading)', fontWeight: '700', fontSize: '1.5em' },
+  { tag: tags.heading2, color: 'var(--cm-heading)', fontWeight: '600', fontSize: '1.3em' },
+  { tag: tags.heading3, color: 'var(--cm-heading)', fontWeight: '600', fontSize: '1.15em' },
+  { tag: tags.heading4, color: 'var(--cm-heading)', fontWeight: '600' },
+  { tag: tags.heading5, color: 'var(--cm-heading)', fontWeight: '600' },
+  { tag: tags.heading6, color: 'var(--cm-heading)', fontWeight: '600' },
 
   // Emphasis
-  { tag: tags.emphasis, fontStyle: 'italic', color: '#fbbf24' },
-  { tag: tags.strong, fontWeight: '700', color: '#f4f4f5' },
-  { tag: tags.strikethrough, textDecoration: 'line-through', color: 'rgba(255, 255, 255, 0.5)' },
+  { tag: tags.emphasis, fontStyle: 'italic', color: 'var(--cm-emphasis)' },
+  { tag: tags.strong, fontWeight: '700', color: 'var(--cm-strong)' },
+  { tag: tags.strikethrough, textDecoration: 'line-through', color: 'var(--cm-strikethrough)' },
 
   // Code
   {
     tag: tags.monospace,
     fontFamily: "'JetBrains Mono', monospace",
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'var(--cm-code-bg)',
     padding: '2px 4px',
     borderRadius: '3px',
   },
 
   // Links
-  { tag: tags.link, color: '#60a5fa', textDecoration: 'underline' },
-  { tag: tags.url, color: '#60a5fa' },
+  { tag: tags.link, color: 'var(--cm-link)', textDecoration: 'underline' },
+  { tag: tags.url, color: 'var(--cm-link)' },
 
   // Lists
-  { tag: tags.list, color: '#a78bfa' },
+  { tag: tags.list, color: 'var(--cm-list)' },
 
   // Quotes
   {
     tag: tags.quote,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'var(--cm-quote)',
     fontStyle: 'italic',
-    borderLeft: '3px solid rgba(94, 234, 212, 0.5)',
+    borderLeft: '3px solid var(--cm-quote-border)',
     paddingLeft: '12px',
   },
 
   // Meta (like --- for frontmatter)
-  { tag: tags.meta, color: 'rgba(255, 255, 255, 0.4)' },
-  { tag: tags.comment, color: 'rgba(255, 255, 255, 0.4)' },
+  { tag: tags.meta, color: 'var(--cm-meta)' },
+  { tag: tags.comment, color: 'var(--cm-meta)' },
 
   // Punctuation
-  { tag: tags.processingInstruction, color: 'rgba(255, 255, 255, 0.4)' },
+  { tag: tags.processingInstruction, color: 'var(--cm-meta)' },
 ]);
 
 interface MarkdownEditorProps {
@@ -218,6 +231,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const onChangeRef = useRef(onChange);
     const noteIdRef = useRef(noteId);
     const getEmbedUrlRef = useRef(getEmbedUrl);
+
+    // Get editor settings
+    const editorSettings = useSettingsStore(selectEditor);
 
     // Create wikilink autocomplete extension with injected dependencies
     const wikilinkAutocomplete = useMemo(
@@ -325,18 +341,53 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     noteIdRef.current = noteId;
     getEmbedUrlRef.current = getEmbedUrl;
 
-    // Create extensions
+    // Create extensions with configurable settings via compartments
     const createExtensions = useCallback((): Extension[] => {
+      const {
+        lineNumbers: showLineNumbers,
+        highlightActiveLine: showActiveLine,
+        lineWrapping,
+        fontSize,
+        fontFamily,
+        lineHeight,
+        tabSize,
+        indentWithTabs,
+        scrollPastEnd,
+        spellCheck,
+      } = editorSettings;
+
       return [
-        // Line numbers
-        lineNumbers(),
+        // Configurable: Line numbers
+        lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
 
-        // Line wrapping (responsive text)
-        EditorView.lineWrapping,
+        // Configurable: Line wrapping
+        lineWrappingCompartment.of(lineWrapping ? EditorView.lineWrapping : []),
 
-        // Active line highlighting
-        highlightActiveLine(),
-        highlightActiveLineGutter(),
+        // Configurable: Active line highlighting
+        activeLineCompartment.of(
+          showActiveLine ? [highlightActiveLine(), highlightActiveLineGutter()] : []
+        ),
+
+        // Configurable: Tab size and indent unit
+        tabSizeCompartment.of([
+          EditorState.tabSize.of(tabSize),
+          indentUnit.of(indentWithTabs ? '\t' : ' '.repeat(tabSize)),
+        ]),
+
+        // Configurable: Theme with font settings
+        themeCompartment.of(createEditorTheme(fontSize, fontFamily, lineHeight)),
+
+        // Configurable: Scroll past end (via CSS padding on scroller)
+        scrollPastEndCompartment.of(
+          scrollPastEnd
+            ? EditorView.theme({ '.cm-scroller': { paddingBottom: SCROLL_PAST_END_PADDING } })
+            : []
+        ),
+
+        // Configurable: Spell check
+        spellCheckCompartment.of(
+          EditorView.contentAttributes.of({ spellcheck: spellCheck ? 'true' : 'false' })
+        ),
 
         // Selection
         drawSelection(),
@@ -371,9 +422,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         // Embed inline preview (shows images after ![[...]] syntax)
         embedInlinePreview(target => getEmbedUrlRef.current?.(target) ?? null),
 
-        // Dark theme
-        darkTheme,
-
         // Placeholder
         EditorView.contentAttributes.of({ 'data-placeholder': placeholder }),
 
@@ -388,7 +436,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           }
         }),
       ];
-    }, [placeholder, wikilinkAutocomplete]);
+    }, [placeholder, wikilinkAutocomplete, editorSettings]);
 
     // Initialize editor
     useEffect(() => {
@@ -520,6 +568,48 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         selection, // Preserve cursor position
       });
     }, [noteId]);
+
+    // Reconfigure editor when settings change
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+
+      const {
+        lineNumbers: showLineNumbers,
+        highlightActiveLine: showActiveLine,
+        lineWrapping,
+        fontSize,
+        fontFamily,
+        lineHeight,
+        tabSize,
+        indentWithTabs,
+        scrollPastEnd,
+        spellCheck,
+      } = editorSettings;
+
+      view.dispatch({
+        effects: [
+          lineNumbersCompartment.reconfigure(showLineNumbers ? lineNumbers() : []),
+          lineWrappingCompartment.reconfigure(lineWrapping ? EditorView.lineWrapping : []),
+          activeLineCompartment.reconfigure(
+            showActiveLine ? [highlightActiveLine(), highlightActiveLineGutter()] : []
+          ),
+          tabSizeCompartment.reconfigure([
+            EditorState.tabSize.of(tabSize),
+            indentUnit.of(indentWithTabs ? '\t' : ' '.repeat(tabSize)),
+          ]),
+          themeCompartment.reconfigure(createEditorTheme(fontSize, fontFamily, lineHeight)),
+          scrollPastEndCompartment.reconfigure(
+            scrollPastEnd
+              ? EditorView.theme({ '.cm-scroller': { paddingBottom: SCROLL_PAST_END_PADDING } })
+              : []
+          ),
+          spellCheckCompartment.reconfigure(
+            EditorView.contentAttributes.of({ spellcheck: spellCheck ? 'true' : 'false' })
+          ),
+        ],
+      });
+    }, [editorSettings]);
 
     return <div ref={containerRef} className="markdown-editor" />;
   }
