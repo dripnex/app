@@ -19,14 +19,17 @@ export function GeneralSection() {
   const { data: notebooks = [] } = useNotebooks();
 
   // Build notebook options for dropdown
-  const notebookOptions = notebooks.map((nb) => ({
-    value: nb.id,
-    label: nb.name,
-  }));
+  const notebookOptions = [
+    { value: '', label: 'No default (ask each time)' },
+    ...notebooks.map((nb) => ({
+      value: nb.id,
+      label: nb.name,
+    })),
+  ];
 
   // Ensure "Inbox" is always available
   if (!notebookOptions.find((o) => o.value === 'inbox')) {
-    notebookOptions.unshift({ value: 'inbox', label: 'Inbox' });
+    notebookOptions.splice(1, 0, { value: 'inbox', label: 'Inbox' });
   }
 
   const handleOpenDataFolder = useCallback(async () => {
