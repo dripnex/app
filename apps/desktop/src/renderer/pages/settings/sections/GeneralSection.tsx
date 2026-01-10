@@ -45,8 +45,8 @@ export function GeneralSection() {
         >
           <Select
             id="defaultNotebook"
-            value={general.defaultNotebookId}
-            onChange={(value) => updateGeneral({ defaultNotebookId: value })}
+            value={general.defaultNotebookId || ''}
+            onChange={(value) => updateGeneral({ defaultNotebookId: value || null })}
             options={notebookOptions}
           />
         </SettingRow>

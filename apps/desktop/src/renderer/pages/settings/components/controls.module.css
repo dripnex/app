@@ -1,0 +1,112 @@
+/* Toggle (Checkbox) */
+.toggle {
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+  appearance: none;
+  background: var(--color-bg-secondary);
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.2s;
+  border: 1px solid var(--color-border);
+}
+
+.toggle:checked {
+  background: var(--color-accent);
+}
+
+.toggle::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+}
+
+.toggle:checked::before {
+  transform: translateX(18px);
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Number Input */
+.numberInput {
+  width: 80px;
+  padding: 6px 10px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.numberInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.numberInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Text Input */
+.textInput {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px 12px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.textInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.textInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Select (Dropdown) */
+.select {
+  padding: 6px 28px 6px 10px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

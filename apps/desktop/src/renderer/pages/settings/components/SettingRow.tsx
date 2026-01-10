@@ -11,13 +11,16 @@ export interface SettingRowProps {
   label: string;
   description?: string;
   children: ReactNode;
+  htmlFor?: string;
 }
 
-export function SettingRow({ label, description, children }: SettingRowProps) {
+export function SettingRow({ label, description, children, htmlFor }: SettingRowProps) {
   return (
     <div className={styles.row}>
       <div className={styles.info}>
-        <div className={styles.label}>{label}</div>
+        <label htmlFor={htmlFor} className={styles.label}>
+          {label}
+        </label>
         {description && <div className={styles.description}>{description}</div>}
       </div>
       <div className={styles.control}>{children}</div>
