@@ -45,6 +45,7 @@
     "@readied/storage-sqlite": "workspace:*",
     "@readied/tasks": "workspace:*",
     "@readied/wikilinks": "workspace:*",
+    "@sentry/electron": "^7.6.0",
     "@tanstack/react-query": "^5.90.16",
     "better-sqlite3": "^11.7.0",
     "electron-updater": "^6.6.2",
