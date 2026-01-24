@@ -4,7 +4,7 @@
  * Exposes a typed API to the renderer process via contextBridge.
  */
 
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 
 /** Result type from operations */
 export type Result<T> =
@@ -465,6 +465,8 @@ export interface ReadiedAPI {
     startAutoSync: (intervalMs?: number) => Promise<{ success: boolean; error?: string }>;
     /** Stop auto-sync timer */
     stopAutoSync: () => Promise<{ success: boolean; error?: string }>;
+    /** Trigger manual sync */
+    triggerSync: () => Promise<void>;
   };
   subscription: {
     /** Get subscription status */
@@ -547,6 +549,16 @@ export interface ReadiedAPI {
       notebookId: string,
       noteId: string
     ) => Promise<{ success: boolean; error?: string }>;
+  };
+  settings: {
+    /** Notify other windows of settings change */
+    notifyChange: (settings: unknown) => void;
+    /** Listen for settings sync from other windows */
+    onSync: (callback: (settings: unknown) => void) => () => void;
+  };
+  updates: {
+    /** Check for updates manually */
+    checkNow: () => Promise<{ available: boolean; version?: string }>;
   };
 }
 
@@ -662,6 +674,7 @@ const api: ReadiedAPI = {
       ipcRenderer.invoke('sync:resolveConflict', noteId, resolution),
     startAutoSync: intervalMs => ipcRenderer.invoke('sync:startAutoSync', intervalMs),
     stopAutoSync: () => ipcRenderer.invoke('sync:stopAutoSync'),
+    triggerSync: () => ipcRenderer.invoke('sync:trigger'),
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
@@ -695,6 +708,19 @@ const api: ReadiedAPI = {
       ipcRenderer.invoke('git:readNote', notebookId, noteId),
     deleteNote: (notebookId: string, noteId: string) =>
       ipcRenderer.invoke('git:deleteNote', notebookId, noteId),
+  },
+  settings: {
+    notifyChange: settings => ipcRenderer.send('settings:changed', settings),
+    onSync: callback => {
+      const handler = (_event: IpcRendererEvent, settings: unknown) => callback(settings);
+      ipcRenderer.on('settings:sync', handler);
+      return () => {
+        ipcRenderer.removeListener('settings:sync', handler);
+      };
+    },
+  },
+  updates: {
+    checkNow: () => ipcRenderer.invoke('updates:checkNow'),
   },
 };
 

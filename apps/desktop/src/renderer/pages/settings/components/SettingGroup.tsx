@@ -1,22 +1,24 @@
 /**
  * SettingGroup Component
  *
- * Groups related settings together with an optional title.
+ * Groups related settings with a header.
  */
 
-import type { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import styles from './SettingGroup.module.css';
 
-export interface SettingGroupProps {
-  title?: string;
+interface SettingGroupProps {
+  /** Group title */
+  title: string;
+  /** Setting rows */
   children: ReactNode;
 }
 
 export function SettingGroup({ title, children }: SettingGroupProps) {
   return (
     <div className={styles.group}>
-      {title && <h3 className={styles.groupTitle}>{title}</h3>}
-      <div className={styles.groupContent}>{children}</div>
+      <h3 className={styles.title}>{title}</h3>
+      <div className={styles.content}>{children}</div>
     </div>
   );
 }

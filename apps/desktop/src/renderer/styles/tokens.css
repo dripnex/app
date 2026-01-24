@@ -79,6 +79,91 @@
   --glass-blur: 28px;
   --glass-saturate: 180%;
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --glass-bg-fallback: rgba(20, 22, 26, 0.95);
+
+  /* ===== CODEMIRROR / EDITOR ===== */
+  --cm-text: #f4f4f5;
+  --cm-cursor: #5eead4;
+  --cm-selection: rgba(94, 234, 212, 0.2);
+  --cm-active-line: rgba(255, 255, 255, 0.03);
+  --cm-gutter-border: rgba(255, 255, 255, 0.06);
+  --cm-gutter-text: rgba(255, 255, 255, 0.25);
+  --cm-tooltip-bg: rgba(24, 24, 27, 0.98);
+  --cm-tooltip-border: rgba(255, 255, 255, 0.1);
+  --cm-tooltip-text: #a1a1aa;
+  --cm-bracket-match: rgba(94, 234, 212, 0.3);
+
+  /* Syntax highlighting */
+  --cm-heading: #5eead4;
+  --cm-emphasis: #fbbf24;
+  --cm-strong: #f4f4f5;
+  --cm-strikethrough: rgba(255, 255, 255, 0.5);
+  --cm-code-bg: rgba(255, 255, 255, 0.08);
+  --cm-link: #60a5fa;
+  --cm-list: #a78bfa;
+  --cm-quote: rgba(255, 255, 255, 0.6);
+  --cm-quote-border: rgba(94, 234, 212, 0.5);
+  --cm-meta: rgba(255, 255, 255, 0.4);
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base: #ffffff;
+  --bg-surface: #f8f9fa;
+  --bg-elevated: #f1f3f4;
+  --bg-inset: #e8eaed;
+
+  /* Borders */
+  --border: rgba(0, 0, 0, 0.1);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-strong: rgba(0, 0, 0, 0.15);
+
+  /* Text */
+  --text-primary: #1a1a1a;
+  --text-secondary: rgba(0, 0, 0, 0.7);
+  --text-muted: rgba(0, 0, 0, 0.5);
+  --text-faint: rgba(0, 0, 0, 0.3);
+
+  /* Accent (teal - works in both themes) */
+  --accent: #0d9488;
+  --accent-muted: rgba(13, 148, 136, 0.12);
+  --accent-strong: #0f766e;
+
+  /* Semantic */
+  --danger: #dc2626;
+  --danger-muted: rgba(220, 38, 38, 0.1);
+  --warning: #d97706;
+  --warning-muted: rgba(217, 119, 6, 0.1);
+  --success: #16a34a;
+  --success-muted: rgba(22, 163, 74, 0.1);
+
+  /* Glass / Blur for light mode */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-bg-fallback: rgba(255, 255, 255, 0.95);
+
+  /* CodeMirror / Editor for light mode */
+  --cm-text: #1a1a1a;
+  --cm-cursor: #0d9488;
+  --cm-selection: rgba(13, 148, 136, 0.2);
+  --cm-active-line: rgba(0, 0, 0, 0.03);
+  --cm-gutter-border: rgba(0, 0, 0, 0.06);
+  --cm-gutter-text: rgba(0, 0, 0, 0.35);
+  --cm-tooltip-bg: rgba(255, 255, 255, 0.98);
+  --cm-tooltip-border: rgba(0, 0, 0, 0.1);
+  --cm-tooltip-text: #525252;
+  --cm-bracket-match: rgba(13, 148, 136, 0.3);
+
+  /* Syntax highlighting for light mode */
+  --cm-heading: #0d9488;
+  --cm-emphasis: #b45309;
+  --cm-strong: #1a1a1a;
+  --cm-strikethrough: rgba(0, 0, 0, 0.5);
+  --cm-code-bg: rgba(0, 0, 0, 0.05);
+  --cm-link: #2563eb;
+  --cm-list: #7c3aed;
+  --cm-quote: rgba(0, 0, 0, 0.6);
+  --cm-quote-border: rgba(13, 148, 136, 0.5);
+  --cm-meta: rgba(0, 0, 0, 0.4);
 }

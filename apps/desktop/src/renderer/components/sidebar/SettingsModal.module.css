@@ -24,7 +24,6 @@
   background: var(--bg-inset, #1a1d23);
   border-radius: 12px;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   animation: slideIn 0.2s ease-out;
   display: flex;

@@ -1,38 +1,38 @@
+/**
+ * SettingRow CSS
+ */
+
 .row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 1.125rem 1.25rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.625rem;
-  gap: 1.5rem;
-  transition: all 0.2s ease;
+  gap: 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.row:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: var(--border-hover, rgba(255, 255, 255, 0.1));
+.row:last-child {
+  border-bottom: none;
 }
 
-.info {
+.labelContainer {
   flex: 1;
   min-width: 0;
 }
 
 .label {
-  font-size: 0.9375rem;
-  font-weight: 500;
+  display: block;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  font-size: 13px;
+  font-weight: 500;
   cursor: default;
 }
 
 .description {
-  font-size: 0.8125rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin-top: 0.125rem;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .control {

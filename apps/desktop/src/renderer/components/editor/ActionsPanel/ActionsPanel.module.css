@@ -41,7 +41,6 @@
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-left: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
   transform: translateX(100%);
   transition: transform var(--transition-normal);
   z-index: 50;
@@ -61,7 +60,6 @@
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-left: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
   transform: translateX(0);
   transition: transform var(--transition-normal);
   z-index: 50;

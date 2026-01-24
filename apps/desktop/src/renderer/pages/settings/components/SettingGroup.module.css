@@ -1,18 +1,26 @@
+/**
+ * SettingGroup CSS
+ */
+
 .group {
-  margin-bottom: 2.5rem;
+  margin-bottom: 32px;
 }
 
-.groupTitle {
-  font-size: 0.6875rem;
+.group:last-child {
+  margin-bottom: 0;
+}
+
+.title {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.875rem 0.25rem;
+  letter-spacing: 0.05em;
 }
 
-.groupContent {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.content {
+  /* Container for SettingRow components */
 }
