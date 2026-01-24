@@ -1,5 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+
+// Initialize Sentry before App
+import { initSentry } from './sentry';
+initSentry();
+
 import { App } from './App';
 import './styles/global.css';
 

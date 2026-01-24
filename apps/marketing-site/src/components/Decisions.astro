@@ -3,10 +3,10 @@ import { Icon } from 'astro-icon/components';
 
 const decisions = [
   {
-    title: 'No cloud',
-    description: 'Your notes live on your machine.',
-    tradeoff: 'No sync between devices.',
-    icon: 'lucide:cloud-off'
+    title: 'Local-first',
+    description: 'Your notes live on your machine by default. Pro adds optional cloud sync.',
+    tradeoff: 'Sync requires Pro subscription.',
+    icon: 'lucide:hard-drive'
   },
   {
     title: 'No implicit transforms',
@@ -15,9 +15,9 @@ const decisions = [
     icon: 'lucide:shield'
   },
   {
-    title: 'No subscription',
-    description: 'One payment. You own it.',
-    tradeoff: 'Updates require annual renewal.',
+    title: 'Free forever',
+    description: 'Core features work offline, forever, no account needed.',
+    tradeoff: 'Advanced features require Pro.',
     icon: 'lucide:badge-check'
   }
 ];
@@ -160,15 +160,19 @@ const decisions = [
 
   @media (max-width: 900px) {
     .decisions-grid {
-      grid-template-columns: 1fr;
-      max-width: 480px;
-      margin: 0 auto;
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
   @media (max-width: 640px) {
     .decisions {
       padding: var(--space-16) 0;
+    }
+
+    .decisions-grid {
+      grid-template-columns: 1fr;
+      max-width: 480px;
+      margin: 0 auto;
     }
 
     .section-header h2 {

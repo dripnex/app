@@ -60,6 +60,12 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://readied.
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- Analytics (Plausible - privacy-friendly, no cookies) -->
+  <!-- Get your domain at https://plausible.io or self-host -->
+  {import.meta.env.PROD && (
+    <script defer data-domain="readied.app" src="https://plausible.io/js/script.js"></script>
+  )}
 </head>
 <body>
   <!-- Scroll progress indicator -->

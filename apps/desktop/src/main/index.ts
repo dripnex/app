@@ -4,6 +4,10 @@
  * Initializes the app, database, and IPC handlers.
  */
 
+// Initialize Sentry FIRST (before any other imports that might throw)
+import { initSentry } from './sentry';
+initSentry();
+
 import { join, normalize } from 'path';
 import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
