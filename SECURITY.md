@@ -3,7 +3,7 @@
 ## Supported Versions
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | 0.2.x   | ✅ Yes    |
 | < 0.2   | ❌ No     |
 
@@ -14,6 +14,7 @@
 Please report security issues to: **security@readied.app**
 
 Include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
@@ -28,6 +29,7 @@ Include:
 ## Scope
 
 Security issues in:
+
 - ✅ Desktop application
 - ✅ Open source packages
 - ❌ Marketing website (out of scope)

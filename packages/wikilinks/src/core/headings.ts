@@ -73,17 +73,19 @@ export function extractHeadingTexts(content: string): string[] {
  * headingToSlug("1. Introduction") // "1-introduction"
  */
 export function headingToSlug(heading: string): string {
-  return heading
-    .toLowerCase()
-    .trim()
-    // Remove special characters except alphanumeric, spaces, and hyphens
-    .replace(/[^\w\s-]/g, '')
-    // Replace whitespace with hyphens
-    .replace(/\s+/g, '-')
-    // Remove consecutive hyphens
-    .replace(/-+/g, '-')
-    // Remove leading/trailing hyphens
-    .replace(/^-|-$/g, '');
+  return (
+    heading
+      .toLowerCase()
+      .trim()
+      // Remove special characters except alphanumeric, spaces, and hyphens
+      .replace(/[^\w\s-]/g, '')
+      // Replace whitespace with hyphens
+      .replace(/\s+/g, '-')
+      // Remove consecutive hyphens
+      .replace(/-+/g, '-')
+      // Remove leading/trailing hyphens
+      .replace(/^-|-$/g, '')
+  );
 }
 
 /**
@@ -94,17 +96,12 @@ export function headingToSlug(heading: string): string {
  * @param anchor - Anchor text or slug to find
  * @returns Matching heading or undefined
  */
-export function findHeadingByAnchor(
-  content: string,
-  anchor: string
-): Heading | undefined {
+export function findHeadingByAnchor(content: string, anchor: string): Heading | undefined {
   const headings = extractHeadings(content);
   const normalizedAnchor = anchor.toLowerCase().trim();
 
   // Try exact text match first (case-insensitive)
-  const exactMatch = headings.find(
-    h => h.text.toLowerCase() === normalizedAnchor
-  );
+  const exactMatch = headings.find(h => h.text.toLowerCase() === normalizedAnchor);
   if (exactMatch) return exactMatch;
 
   // Try slug match
@@ -112,8 +109,9 @@ export function findHeadingByAnchor(
   if (slugMatch) return slugMatch;
 
   // Try partial match (anchor is contained in heading)
-  return headings.find(h =>
-    h.text.toLowerCase().includes(normalizedAnchor) ||
-    h.slug.includes(headingToSlug(normalizedAnchor))
+  return headings.find(
+    h =>
+      h.text.toLowerCase().includes(normalizedAnchor) ||
+      h.slug.includes(headingToSlug(normalizedAnchor))
   );
 }

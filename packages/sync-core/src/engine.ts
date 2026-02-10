@@ -5,13 +5,7 @@
  * Handles offline queue, conflict resolution, and sync state.
  */
 
-import type {
-  SyncStatus,
-  SyncConflict,
-  ConflictStrategy,
-  PushResult,
-  DeviceId,
-} from './types.js';
+import type { SyncStatus, SyncConflict, ConflictStrategy, PushResult, DeviceId } from './types.js';
 import type { SyncClient, NotePushPayload } from './client.js';
 import type { SyncQueue } from './queue.js';
 
@@ -36,20 +30,22 @@ export interface SyncStorage {
   getModifiedNotes(): Promise<NotePushPayload[]>;
 
   /** Apply remote note changes to local storage */
-  applyRemoteNotes(notes: Array<{
-    id: string;
-    title: string;
-    content: string;
-    notebookId: string | null;
-    createdAt: string;
-    updatedAt: string;
-    archivedAt: string | null;
-    isPinned: boolean;
-    isDeleted: boolean;
-    status: string;
-    wordCount: number;
-    syncVersion: number;
-  }>): Promise<string[]>;
+  applyRemoteNotes(
+    notes: Array<{
+      id: string;
+      title: string;
+      content: string;
+      notebookId: string | null;
+      createdAt: string;
+      updatedAt: string;
+      archivedAt: string | null;
+      isPinned: boolean;
+      isDeleted: boolean;
+      status: string;
+      wordCount: number;
+      syncVersion: number;
+    }>
+  ): Promise<string[]>;
 
   /** Mark notes as synced (update sync metadata) */
   markNotesSynced(ids: string[], syncVersion: number): Promise<void>;
@@ -171,10 +167,7 @@ export class SyncEngine {
   /**
    * Resolve a conflict manually.
    */
-  async resolveConflict(
-    entityId: string,
-    strategy: 'local' | 'remote'
-  ): Promise<void> {
+  async resolveConflict(entityId: string, strategy: 'local' | 'remote'): Promise<void> {
     await this.config.client.resolveNoteConflict(entityId, {
       entityId,
       strategy: strategy === 'local' ? 'local-wins' : 'remote-wins',
@@ -245,9 +238,7 @@ export class SyncEngine {
     }
   }
 
-  private async handleConflicts(
-    conflicts: SyncConflict[]
-  ): Promise<SyncConflict[]> {
+  private async handleConflicts(conflicts: SyncConflict[]): Promise<SyncConflict[]> {
     const strategy = this.config.defaultConflictStrategy ?? 'latest-wins';
 
     if (strategy === 'manual') {

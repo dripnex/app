@@ -13,9 +13,9 @@ const params = new URLSearchParams(window.location.search);
 const view = params.get('view') || 'main';
 
 // Lazy load components
-const App = lazy(() => import('./App').then((m) => ({ default: m.App })));
+const App = lazy(() => import('./App').then(m => ({ default: m.App })));
 const SettingsApp = lazy(() =>
-  import('./pages/settings/SettingsApp').then((m) => ({ default: m.SettingsApp }))
+  import('./pages/settings/SettingsApp').then(m => ({ default: m.SettingsApp }))
 );
 
 // QueryClient for settings (and potentially other views)

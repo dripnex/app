@@ -7,9 +7,17 @@ import { AppearanceSection } from './sections/AppearanceSection';
 import { AccountSection } from './sections/AccountSection';
 import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
+import { UpdatesSection } from './sections/UpdatesSection';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
 
-export type SettingsSection = 'general' | 'editor' | 'appearance' | 'account' | 'backup' | 'about';
+export type SettingsSection =
+  | 'general'
+  | 'editor'
+  | 'appearance'
+  | 'account'
+  | 'backup'
+  | 'updates'
+  | 'about';
 
 export function SettingsApp() {
   useAppearanceSettings();
@@ -27,6 +35,8 @@ export function SettingsApp() {
         return <AccountSection />;
       case 'backup':
         return <BackupSection />;
+      case 'updates':
+        return <UpdatesSection />;
       case 'about':
         return <AboutSection />;
       default:

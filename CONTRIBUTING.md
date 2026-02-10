@@ -8,16 +8,16 @@ Readied uses an **Open Core** model:
 
 ### Open Source (MIT) - Contributions Welcome!
 
-| Package | Description |
-|---------|-------------|
-| `packages/core` | Markdown parsing, note operations |
-| `packages/storage-core` | Storage interfaces |
-| `packages/storage-sqlite` | SQLite implementation |
-| `packages/wikilinks` | Wikilink parsing |
-| `packages/tasks` | Task/checkbox parsing |
-| `packages/commands` | Command palette |
-| `packages/embeds` | Image/embed handling |
-| `packages/design-system` | Design tokens, components |
+| Package                   | Description                       |
+| ------------------------- | --------------------------------- |
+| `packages/core`           | Markdown parsing, note operations |
+| `packages/storage-core`   | Storage interfaces                |
+| `packages/storage-sqlite` | SQLite implementation             |
+| `packages/wikilinks`      | Wikilink parsing                  |
+| `packages/tasks`          | Task/checkbox parsing             |
+| `packages/commands`       | Command palette                   |
+| `packages/embeds`         | Image/embed handling              |
+| `packages/design-system`  | Design tokens, components         |
 
 ### Proprietary - Not Open for Contributions
 

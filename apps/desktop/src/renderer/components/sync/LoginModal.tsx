@@ -52,9 +52,7 @@ export function LoginModal() {
 
         <div className={styles.content}>
           <h2 className={styles.title}>Sign in to sync</h2>
-          <p className={styles.subtitle}>
-            Sync your notes across devices with Readied Pro.
-          </p>
+          <p className={styles.subtitle}>Sync your notes across devices with Readied Pro.</p>
 
           {step === 'email' && (
             <form onSubmit={handleSubmit} className={styles.form}>
@@ -89,10 +87,7 @@ export function LoginModal() {
           {step === 'sent' && (
             <div className={styles.sent}>
               <svg viewBox="0 0 24 24" className={styles.checkIcon}>
-                <path
-                  fill="currentColor"
-                  d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
-                />
+                <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
               </svg>
               <h3>Check your email</h3>
               <p>

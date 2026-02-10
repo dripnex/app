@@ -105,7 +105,7 @@ async function flush(): Promise<void> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           api_key: POSTHOG_KEY,
-          batch: events.map((e) => ({
+          batch: events.map(e => ({
             event: e.name,
             properties: e.properties,
             timestamp: new Date(e.timestamp).toISOString(),

@@ -52,10 +52,7 @@ interface SettingsStore {
  * Migrate settings from older versions to current version.
  * Add cases here when bumping SETTINGS_VERSION.
  */
-function migrateSettings(
-  persisted: unknown,
-  version: number
-): { settings: SettingsSchema } {
+function migrateSettings(persisted: unknown, version: number): { settings: SettingsSchema } {
   // Type guard for persisted state
   const state = persisted as { settings?: Partial<SettingsSchema> } | undefined;
 
@@ -93,12 +90,12 @@ function migrateSettings(
 
 export const useSettingsStore = create<SettingsStore>()(
   persist(
-    (set) => ({
+    set => ({
       settings: DEFAULT_SETTINGS,
 
       // Update general settings
-      updateGeneral: (updates) =>
-        set((state) => ({
+      updateGeneral: updates =>
+        set(state => ({
           settings: {
             ...state.settings,
             general: { ...state.settings.general, ...updates },
@@ -106,8 +103,8 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
 
       // Update updates settings
-      updateUpdates: (updates) =>
-        set((state) => ({
+      updateUpdates: updates =>
+        set(state => ({
           settings: {
             ...state.settings,
             updates: { ...state.settings.updates, ...updates },
@@ -115,8 +112,8 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
 
       // Update appearance settings
-      updateAppearance: (updates) =>
-        set((state) => ({
+      updateAppearance: updates =>
+        set(state => ({
           settings: {
             ...state.settings,
             appearance: { ...state.settings.appearance, ...updates },
@@ -124,8 +121,8 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
 
       // Update editor settings
-      updateEditor: (updates) =>
-        set((state) => ({
+      updateEditor: updates =>
+        set(state => ({
           settings: {
             ...state.settings,
             editor: { ...state.settings.editor, ...updates },
@@ -133,8 +130,8 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
 
       // Update backup settings
-      updateBackup: (updates) =>
-        set((state) => ({
+      updateBackup: updates =>
+        set(state => ({
           settings: {
             ...state.settings,
             backup: { ...state.settings.backup, ...updates },
@@ -142,8 +139,8 @@ export const useSettingsStore = create<SettingsStore>()(
         })),
 
       // Reset a specific section to defaults
-      resetSection: (section) =>
-        set((state) => {
+      resetSection: section =>
+        set(state => {
           const defaults: Record<SettingsSection, unknown> = {
             general: DEFAULT_GENERAL,
             updates: DEFAULT_UPDATES,
@@ -213,9 +210,9 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
 
   // Emit changes to other windows when settings change locally
   let prevSettings = useSettingsStore.getState().settings;
-  useSettingsStore.subscribe((state) => {
+  useSettingsStore.subscribe(state => {
     if (!isRemoteUpdate && state.settings !== prevSettings) {
-      window.readied.settings.notifyChange(state.settings);
+      window.readied.settings.broadcast(state.settings as unknown as Record<string, unknown>);
     }
     prevSettings = state.settings;
   });

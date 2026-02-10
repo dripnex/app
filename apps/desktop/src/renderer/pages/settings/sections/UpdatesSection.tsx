@@ -14,7 +14,7 @@ import styles from './Section.module.css';
 
 export function UpdatesSection() {
   const updates = useSettingsStore(selectUpdates);
-  const updateUpdates = useSettingsStore((s) => s.updateUpdates);
+  const updateUpdates = useSettingsStore(s => s.updateUpdates);
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<string | null>(null);
 
@@ -62,7 +62,7 @@ export function UpdatesSection() {
           <Toggle
             id="autoCheck"
             checked={updates.autoCheck}
-            onChange={(checked) => updateUpdates({ autoCheck: checked })}
+            onChange={checked => updateUpdates({ autoCheck: checked })}
           />
         </SettingRow>
       </SettingGroup>
@@ -91,9 +91,7 @@ export function UpdatesSection() {
             )}
           </button>
         </SettingRow>
-        {checkResult && (
-          <div className={styles.checkResult}>{checkResult}</div>
-        )}
+        {checkResult && <div className={styles.checkResult}>{checkResult}</div>}
       </SettingGroup>
     </div>
   );

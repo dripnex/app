@@ -77,10 +77,7 @@ export interface SyncClient {
   /**
    * Push local note changes to server.
    */
-  pushNotes(
-    notes: NotePushPayload[],
-    deviceId: DeviceId
-  ): Promise<PushResult>;
+  pushNotes(notes: NotePushPayload[], deviceId: DeviceId): Promise<PushResult>;
 
   /**
    * Pull note changes from server.
@@ -98,10 +95,7 @@ export interface SyncClient {
   /**
    * Resolve a note conflict.
    */
-  resolveNoteConflict(
-    noteId: string,
-    resolution: ConflictResolution
-  ): Promise<SyncableNote>;
+  resolveNoteConflict(noteId: string, resolution: ConflictResolution): Promise<SyncableNote>;
 
   // =========================================================================
   // Sync - Notebooks
@@ -110,10 +104,7 @@ export interface SyncClient {
   /**
    * Push local notebook changes to server.
    */
-  pushNotebooks(
-    notebooks: SyncableNotebook[],
-    deviceId: DeviceId
-  ): Promise<PushResult>;
+  pushNotebooks(notebooks: SyncableNotebook[], deviceId: DeviceId): Promise<PushResult>;
 
   /**
    * Pull notebook changes from server.

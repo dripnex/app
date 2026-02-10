@@ -31,10 +31,10 @@ export function Select<T extends string>({
       id={id}
       className={styles.select}
       value={value}
-      onChange={(e) => onChange(e.target.value as T)}
+      onChange={e => onChange(e.target.value as T)}
       disabled={disabled}
     >
-      {options.map((option) => (
+      {options.map(option => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>

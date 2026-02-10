@@ -40,22 +40,14 @@ export type {
 } from './types.js';
 
 // Zod schemas for validation
-export {
-  SyncChangeSchema,
-  PushResultSchema,
-  PullResultSchema,
-} from './types.js';
+export { SyncChangeSchema, PushResultSchema, PullResultSchema } from './types.js';
 
 // Queue
 export type { SyncQueueStorage } from './queue.js';
 export { SyncQueue, createSyncChangeId } from './queue.js';
 
 // Client interface
-export type {
-  SyncClient,
-  SyncClientConfig,
-  NotePushPayload,
-} from './client.js';
+export type { SyncClient, SyncClientConfig, NotePushPayload } from './client.js';
 
 // Engine
 export type { SyncStorage, SyncEngineConfig } from './engine.js';

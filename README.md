@@ -25,16 +25,16 @@ pnpm dev
 
 ## Open Source Packages
 
-| Package | Description |
-|---------|-------------|
-| `@readied/core` | Domain logic, markdown parsing |
-| `@readied/storage-core` | Storage interfaces |
-| `@readied/storage-sqlite` | SQLite implementation |
-| `@readied/wikilinks` | Wikilink parsing |
-| `@readied/tasks` | Task/checkbox parsing |
-| `@readied/commands` | Command palette |
-| `@readied/embeds` | Image/embed handling |
-| `@readied/design-system` | Design tokens, components |
+| Package                   | Description                    |
+| ------------------------- | ------------------------------ |
+| `@readied/core`           | Domain logic, markdown parsing |
+| `@readied/storage-core`   | Storage interfaces             |
+| `@readied/storage-sqlite` | SQLite implementation          |
+| `@readied/wikilinks`      | Wikilink parsing               |
+| `@readied/tasks`          | Task/checkbox parsing          |
+| `@readied/commands`       | Command palette                |
+| `@readied/embeds`         | Image/embed handling           |
+| `@readied/design-system`  | Design tokens, components      |
 
 ## Contributing
 

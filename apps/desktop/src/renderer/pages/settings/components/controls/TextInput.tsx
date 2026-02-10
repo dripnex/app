@@ -14,20 +14,14 @@ interface TextInputProps {
   id?: string;
 }
 
-export function TextInput({
-  value,
-  onChange,
-  placeholder,
-  disabled = false,
-  id,
-}: TextInputProps) {
+export function TextInput({ value, onChange, placeholder, disabled = false, id }: TextInputProps) {
   return (
     <input
       type="text"
       id={id}
       className={styles.textInput}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
     />
