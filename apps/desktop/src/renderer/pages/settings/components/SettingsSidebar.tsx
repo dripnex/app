@@ -1,3 +1,4 @@
+import { Settings, FileText, Palette, User, Database, Info, Download } from 'lucide-react';
 import type { SettingsSection } from '../SettingsApp';
 import styles from './SettingsSidebar.module.css';
 
@@ -6,13 +7,14 @@ interface SettingsSidebarProps {
   onSectionChange: (section: SettingsSection) => void;
 }
 
-const sections: { id: SettingsSection; label: string; icon: string }[] = [
-  { id: 'general', label: 'General', icon: 'cog' },
-  { id: 'editor', label: 'Editor', icon: 'edit' },
-  { id: 'appearance', label: 'Appearance', icon: 'palette' },
-  { id: 'backup', label: 'Backup', icon: 'archive' },
-  { id: 'updates', label: 'Updates', icon: 'download' },
-  { id: 'about', label: 'About', icon: 'info' },
+const sections: { id: SettingsSection; label: string; Icon: any }[] = [
+  { id: 'general', label: 'General', Icon: Settings },
+  { id: 'editor', label: 'Editor', Icon: FileText },
+  { id: 'appearance', label: 'Appearance', Icon: Palette },
+  { id: 'account', label: 'Account', Icon: User },
+  { id: 'backup', label: 'Backup & Data', Icon: Database },
+  { id: 'updates', label: 'Updates', Icon: Download },
+  { id: 'about', label: 'About', Icon: Info },
 ];
 
 export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
@@ -22,15 +24,19 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
         <h1 className={styles.title}>Settings</h1>
       </div>
       <nav className={styles.nav}>
-        {sections.map(section => (
-          <button
-            key={section.id}
-            className={`${styles.navItem} ${activeSection === section.id ? styles.active : ''}`}
-            onClick={() => onSectionChange(section.id)}
-          >
-            <span className={styles.label}>{section.label}</span>
-          </button>
-        ))}
+        {sections.map(section => {
+          const { Icon } = section;
+          return (
+            <button
+              key={section.id}
+              className={`${styles.navItem} ${activeSection === section.id ? styles.active : ''}`}
+              onClick={() => onSectionChange(section.id)}
+            >
+              <Icon size={16} className={styles.icon} />
+              <span className={styles.label}>{section.label}</span>
+            </button>
+          );
+        })}
       </nav>
     </aside>
   );
