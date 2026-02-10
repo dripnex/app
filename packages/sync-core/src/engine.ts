@@ -11,7 +11,6 @@ import type {
   ConflictStrategy,
   PushResult,
   DeviceId,
-  SyncChange,
 } from './types.js';
 import type { SyncClient, NotePushPayload } from './client.js';
 import type { SyncQueue } from './queue.js';
