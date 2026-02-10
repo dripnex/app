@@ -1,6 +1,18 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings, X, Monitor, Zap, Eye, Key, Info, Columns, FileText, Split } from 'lucide-react';
+import {
+  Settings,
+  X,
+  Monitor,
+  Zap,
+  Eye,
+  Key,
+  Info,
+  Columns,
+  FileText,
+  Split,
+  Sparkles,
+} from 'lucide-react';
 import { usePerformanceStore, type PerfMode } from '../../stores/performanceStore';
 import {
   useEditorPreferencesStore,
@@ -17,7 +29,15 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   // Stores
   const { mode: perfMode, setMode: setPerfMode, setBaseMode } = usePerformanceStore();
   const { viewMode, setViewMode } = useEditorPreferencesStore();
-  const { state: licenseState } = useLicense();
+  const { state: licenseState, openSubscribe } = useLicense();
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
+
+  // Load app version
+  useEffect(() => {
+    const result = window.readied.app.version();
+    Promise.resolve(result).then(setAppVersion);
+  }, []);
 
   // Close on escape
   useEffect(() => {
@@ -56,6 +76,24 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       setViewMode(mode);
     },
     [setViewMode]
+  );
+
+  // Upgrade to Pro handler
+  const handleUpgrade = useCallback(
+    async (plan: 'monthly' | 'annual') => {
+      setIsUpgrading(true);
+      try {
+        const result = await openSubscribe({ plan });
+        if (!result.success) {
+          window.readied.log.error('Failed to open subscription', { error: result.error });
+        }
+      } catch (error) {
+        window.readied.log.error('Failed to upgrade', { error: String(error) });
+      } finally {
+        setIsUpgrading(false);
+      }
+    },
+    [openSubscribe]
   );
 
   // License status helpers
@@ -208,6 +246,37 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 </div>
               )}
             </div>
+
+            {/* Show Upgrade button if user is not Pro */}
+            {licenseState &&
+              (licenseState.status === 'trial' || licenseState.status === 'trial_expired') && (
+                <div className={styles.upgradeSection}>
+                  <p className={styles.upgradeText}>
+                    Upgrade to Pro for cloud sync, advanced search, and more.
+                  </p>
+                  <div className={styles.upgradeButtons}>
+                    <button
+                      type="button"
+                      className={styles.upgradeBtn}
+                      onClick={() => handleUpgrade('monthly')}
+                      disabled={isUpgrading}
+                    >
+                      <Sparkles size={16} />
+                      <span>Monthly - $2.99/mo</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.upgradeBtn} ${styles.upgradeBtnPrimary}`}
+                      onClick={() => handleUpgrade('annual')}
+                      disabled={isUpgrading}
+                    >
+                      <Sparkles size={16} />
+                      <span>Annual - $29.90/yr</span>
+                      <small>Save $6</small>
+                    </button>
+                  </div>
+                </div>
+              )}
           </section>
 
           {/* About Section */}
@@ -219,7 +288,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             <div className={styles.aboutInfo}>
               <div className={styles.aboutRow}>
                 <span className={styles.aboutLabel}>Version</span>
-                <span className={styles.aboutValue}>{window.readied.app.version()}</span>
+                <span className={styles.aboutValue}>{appVersion}</span>
               </div>
               <div className={styles.aboutRow}>
                 <span className={styles.aboutLabel}>App</span>

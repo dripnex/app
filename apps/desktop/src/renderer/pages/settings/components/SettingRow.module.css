@@ -1,0 +1,42 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.125rem 1.25rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.625rem;
+  gap: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.row:hover {
+  background: var(--bg-active);
+  border-color: var(--border-hover);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  cursor: default;
+}
+
+.description {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 0.125rem;
+}
+
+.control {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}

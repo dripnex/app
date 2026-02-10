@@ -1,7 +1,12 @@
 /**
  * Remark plugin for wikilink [[note]] syntax in Markdown preview
  *
- * Transforms [[target]] and [[target|display]] into clickable spans.
+ * Transforms wikilinks into clickable spans:
+ * - [[target]]
+ * - [[target#anchor]]
+ * - [[target|display]]
+ * - [[target#anchor|display]]
+ *
  * Navigation is handled by parent component via click delegation.
  *
  * Uses mdast text nodes with data.hName/hProperties for proper inline rendering.
@@ -11,9 +16,10 @@
 import { visit } from 'unist-util-visit';
 import type { Root, Text, Parent } from 'mdast';
 
-// Pattern: [[target]] or [[target|display]]
+// Pattern: [[target]] or [[target#anchor]] or [[target|display]] or [[target#anchor|display]]
 // Negative lookbehind (?<!!) excludes embed syntax ![[...]]
-const WIKILINK_PATTERN = /(?<!!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+// Groups: [1]=target, [2]=anchor (optional), [3]=display (optional)
+const WIKILINK_PATTERN = /(?<!!)\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
 
 /**
  * Text node with hast data for rendering as span.
@@ -51,16 +57,25 @@ export function remarkWikilink() {
 
         // Wikilink as text node with hast data
         const target = match[1]!.trim();
-        const display = match[2]?.trim() || target;
+        const anchor = match[2]?.trim();
+        const display = match[3]?.trim() || (anchor ? `${target}#${anchor}` : target);
+
+        const hProperties: Record<string, string> = {
+          className: 'wikilink',
+          'data-target': target,
+        };
+
+        // Add anchor if present
+        if (anchor) {
+          hProperties['data-anchor'] = anchor;
+        }
+
         children.push({
           type: 'text',
           value: display,
           data: {
             hName: 'span',
-            hProperties: {
-              className: 'wikilink',
-              'data-target': target,
-            },
+            hProperties,
           },
         });
 

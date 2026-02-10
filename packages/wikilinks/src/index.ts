@@ -19,6 +19,15 @@ export type { WikilinkRef } from './core/types.js';
 // Core - parsing (pure, no deps)
 export { extractWikilinks, extractWikilinkTargets } from './core/parsing.js';
 
+// Core - headings (for [[Note#Heading]] support)
+export type { Heading } from './core/headings.js';
+export {
+  extractHeadings,
+  extractHeadingTexts,
+  headingToSlug,
+  findHeadingByAnchor,
+} from './core/headings.js';
+
 // Adapters (for advanced use only)
 export {
   createWikilinkAutocomplete,

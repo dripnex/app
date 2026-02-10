@@ -86,6 +86,72 @@ cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 3. `pnpm typecheck` — Validate TypeScript
 4. `pnpm build && pnpm --filter @readied/desktop dist:mac` — Build for production
 
+## Git Flow
+
+We use Git Flow for branch management:
+
+```
+main          ← Production releases only
+  └── develop ← Integration branch
+        └── feature/* ← Feature development
+        └── fix/*     ← Bug fixes
+        └── release/* ← Release preparation
+```
+
+### Branches
+
+| Branch      | Purpose                   | Merges to            |
+| ----------- | ------------------------- | -------------------- |
+| `main`      | Production releases       | -                    |
+| `develop`   | Integration, next release | `main` (via release) |
+| `feature/*` | New features              | `develop`            |
+| `fix/*`     | Bug fixes                 | `develop`            |
+| `release/*` | Release prep              | `main` + `develop`   |
+
+### Workflow
+
+**Starting new work:**
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/my-feature
+```
+
+**Creating PR:**
+
+```bash
+git push -u origin feature/my-feature
+gh pr create --base develop --head feature/my-feature
+```
+
+**After PR merged:**
+
+```bash
+git checkout develop
+git pull origin develop
+git branch -d feature/my-feature
+```
+
+### Commit Messages
+
+Use conventional commits:
+
+- `feat:` — New feature
+- `fix:` — Bug fix
+- `refactor:` — Code refactoring
+- `docs:` — Documentation
+- `test:` — Tests
+- `chore:` — Maintenance
+
+### PR Requirements
+
+- [ ] All tests pass (`pnpm test`)
+- [ ] Build succeeds (`pnpm build`)
+- [ ] PR targets `develop` (not `main`)
+- [ ] Descriptive title with conventional commit prefix
+- [ ] Summary of changes in description
+
 ## Pricing/Copy Changes
 
 **Source of Truth:** `packages/product-config/src/facade.ts`

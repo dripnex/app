@@ -1,0 +1,29 @@
+name = "readied-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# Default environment (development/local)
+[vars]
+ENVIRONMENT = "development"
+
+# Staging environment
+[env.staging]
+name = "readied-api-staging"
+vars = { ENVIRONMENT = "staging" }
+
+# Production environment
+[env.production]
+name = "readied-api-production"
+vars = { ENVIRONMENT = "production" }
+
+# Secrets (set via wrangler secret put):
+# - Development: wrangler secret put <KEY>
+# - Staging: wrangler secret put <KEY> --env staging
+# - Production: wrangler secret put <KEY> --env production
+#
+# Required secrets:
+# TURSO_DATABASE_URL - libsql://your-db.turso.io
+# TURSO_AUTH_TOKEN - Token from turso db tokens create
+# JWT_SECRET - Secret for signing JWTs (generate with: openssl rand -base64 32)
+# RESEND_API_KEY - API key for Resend email service
+# STRIPE_WEBHOOK_SECRET - Stripe webhook signing secret

@@ -41,7 +41,6 @@
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-left: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
   transform: translateX(100%);
   transition: transform var(--transition-normal);
   z-index: 50;
@@ -61,7 +60,6 @@
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-left: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
   transform: translateX(0);
   transition: transform var(--transition-normal);
   z-index: 50;
@@ -172,18 +170,6 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-/* Badge for coming soon */
-.badge {
-  margin-left: auto;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
 }
 
 /* Divider */

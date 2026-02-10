@@ -20,6 +20,14 @@ export type {
 // Validation (legacy - kept for backwards compatibility)
 export { validateLicense, parseLicenseFile, signLicense, generateKeyPair } from './validator.js';
 
+// Subscription verification
+export {
+  isSubscriptionActive,
+  isCachedSubscriptionValid,
+  createStoredSubscription,
+  verifySubscription,
+} from './validator.js';
+
 // Trial
 export {
   TRIAL_DURATION_DAYS,

@@ -175,30 +175,55 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     });
   }
 
-  /** Search notes by content (basic LIKE search, excludes archived by default) */
+  /** Search notes using FTS5 full-text search with relevance ranking */
   async search(
     query: string,
     limit: number = 20,
     includeArchived: boolean = false
   ): Promise<Note[]> {
-    const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      return [];
+    }
+
+    const archivedCondition = includeArchived ? '' : 'AND n.archived_at IS NULL';
+
+    // Prepare FTS5 query: escape special chars, add prefix matching
+    const ftsQuery = this.prepareFtsQuery(trimmedQuery);
 
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-             is_pinned, is_deleted, status
-      FROM notes
-      WHERE (content LIKE ? OR title LIKE ?) ${archivedCondition}
-      ORDER BY updated_at DESC
+      SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
+             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status
+      FROM notes_fts fts
+      JOIN notes n ON fts.id = n.id
+      WHERE notes_fts MATCH ? ${archivedCondition}
+      ORDER BY bm25(notes_fts)
       LIMIT ?
     `);
 
-    const pattern = `%${query}%`;
-    const rows = stmt.all(pattern, pattern, limit) as NoteRow[];
+    const rows = stmt.all(ftsQuery, limit) as NoteRow[];
 
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
       return this.rowToNote(row, tags);
     });
+  }
+
+  /** Prepare query string for FTS5 MATCH syntax */
+  private prepareFtsQuery(query: string): string {
+    // Escape FTS5 special characters: " * ^ - OR AND NOT ( )
+    const escaped = query.replace(/["*^()]/g, ' ').trim();
+
+    // Split into terms and add prefix matching for partial word search
+    const terms = escaped.split(/\s+/).filter(t => t.length > 0);
+
+    if (terms.length === 0) {
+      return '""'; // Empty search
+    }
+
+    // Use OR between terms with prefix matching
+    // Each term becomes "term"* for prefix matching
+    return terms.map(t => `"${t}"*`).join(' OR ');
   }
 
   /** Get total count of notes */
@@ -497,21 +522,22 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       `);
 
       const insertLink = this.db.prepare(`
-        INSERT INTO links (source_note_id, target_ref, target_note_id)
-        VALUES (?, ?, ?)
-        ON CONFLICT(source_note_id, target_ref) DO UPDATE SET
+        INSERT INTO links (source_note_id, target_ref, target_note_id, target_anchor)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(source_note_id, target_ref, COALESCE(target_anchor, '')) DO UPDATE SET
           target_note_id = excluded.target_note_id
       `);
 
       // Insert each link
       for (const wikilink of wikilinks) {
         const targetRef = wikilink.target;
+        const targetAnchor = wikilink.anchor ?? null;
 
         // Try to resolve target by title (case-insensitive)
         const targetNote = findNoteByTitle.get(targetRef) as { id: string } | undefined;
         const targetNoteId = targetNote?.id ?? null;
 
-        insertLink.run(noteId, targetRef, targetNoteId);
+        insertLink.run(noteId, targetRef, targetNoteId, targetAnchor);
       }
     });
   }
@@ -634,5 +660,182 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       })),
       edges: linkRows,
     };
+  }
+
+  // ========================================================================
+  // Sync Tracking Methods
+  // ========================================================================
+
+  /**
+   * Get all notes that need to be synced to the server.
+   * Returns notes where needs_sync=1, ordered by local_version.
+   *
+   * @param limit - Maximum number of notes to return (default: 50)
+   * @returns Array of notes pending sync with their sync metadata
+   */
+  getPendingChanges(limit = 50): Array<{
+    note: Note;
+    localVersion: number;
+    lastSyncedAt: string | null;
+  }> {
+    const stmt = this.db.prepare<{
+      id: string;
+      content: string;
+      title: string;
+      created_at: string;
+      updated_at: string;
+      word_count: number;
+      archived_at: string | null;
+      notebook_id: string;
+      is_pinned: number;
+      is_deleted: number;
+      status: string;
+      local_version: number;
+      last_synced_at: string | null;
+    }>(`
+      SELECT *
+      FROM notes
+      WHERE needs_sync = 1
+      ORDER BY local_version ASC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(limit) as Array<{
+      id: string;
+      content: string;
+      title: string;
+      created_at: string;
+      updated_at: string;
+      word_count: number;
+      archived_at: string | null;
+      notebook_id: string;
+      is_pinned: number;
+      is_deleted: number;
+      status: string;
+      local_version: number;
+      last_synced_at: string | null;
+    }>;
+
+    return rows.map(row => {
+      const tags = this.getTagsForNote(createNoteId(row.id));
+      return {
+        note: this.rowToNote(row, tags),
+        localVersion: row.local_version,
+        lastSyncedAt: row.last_synced_at,
+      };
+    });
+  }
+
+  /**
+   * Mark a note as successfully synced.
+   * Sets needs_sync=0 and updates last_synced_at timestamp.
+   *
+   * @param noteId - The note ID to mark as synced
+   */
+  markAsSynced(noteId: NoteId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notes
+      SET
+        needs_sync = 0,
+        last_synced_at = ?
+      WHERE id = ?
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(now, noteId);
+  }
+
+  /**
+   * Mark multiple notes as synced in a transaction.
+   * More efficient than calling markAsSynced individually.
+   *
+   * @param noteIds - Array of note IDs to mark as synced
+   */
+  markMultipleAsSynced(noteIds: NoteId[]): void {
+    if (noteIds.length === 0) return;
+
+    this.db.transaction(() => {
+      const stmt = this.db.prepare(`
+        UPDATE notes
+        SET
+          needs_sync = 0,
+          last_synced_at = ?
+        WHERE id = ?
+      `);
+
+      const now = new Date().toISOString();
+      for (const id of noteIds) {
+        stmt.run(now, id);
+      }
+    });
+  }
+
+  /**
+   * Get sync statistics for monitoring.
+   * Returns count of notes needing sync and last sync timestamp.
+   */
+  getSyncStats(): {
+    pendingCount: number;
+    lastSyncedAt: string | null;
+  } {
+    // Count pending notes
+    const countStmt = this.db.prepare<{ count: number }>(`
+      SELECT COUNT(*) as count
+      FROM notes
+      WHERE needs_sync = 1
+    `);
+    const countRow = countStmt.get() as { count: number } | undefined;
+
+    // Get most recent sync timestamp
+    const lastSyncStmt = this.db.prepare<{ last_synced_at: string | null }>(`
+      SELECT last_synced_at
+      FROM notes
+      WHERE last_synced_at IS NOT NULL
+      ORDER BY last_synced_at DESC
+      LIMIT 1
+    `);
+    const lastSyncRow = lastSyncStmt.get() as { last_synced_at: string | null } | undefined;
+
+    return {
+      pendingCount: countRow?.count || 0,
+      lastSyncedAt: lastSyncRow?.last_synced_at || null,
+    };
+  }
+
+  /**
+   * Check if a note has unsynced local edits.
+   *
+   * @param noteId - The note ID to check
+   * @returns true if the note has pending local changes
+   */
+  hasPendingEdits(noteId: NoteId): boolean {
+    const stmt = this.db.prepare(`
+      SELECT needs_sync
+      FROM notes
+      WHERE id = ?
+    `);
+    const row = stmt.get(noteId) as { needs_sync: number } | undefined;
+    return row?.needs_sync === 1;
+  }
+
+  /**
+   * Reset sync tracking for a note (force re-sync).
+   * Sets needs_sync=1 and increments local_version.
+   *
+   * Useful for:
+   * - Manual re-sync after conflict resolution
+   * - Recovery from sync errors
+   *
+   * @param noteId - The note ID to reset
+   */
+  resetSyncTracking(noteId: NoteId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notes
+      SET
+        needs_sync = 1,
+        local_version = local_version + 1
+      WHERE id = ?
+    `);
+    stmt.run(noteId);
   }
 }

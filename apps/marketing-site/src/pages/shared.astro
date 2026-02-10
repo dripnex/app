@@ -1,0 +1,352 @@
+---
+// Standalone page — no layout, no navbar.
+// Client-side JS reads ?slug= from URL, fetches from API, renders markdown.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Shared Note — Readied</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0b0d;
+        --bg-surface: #111216;
+        --text: #e4e4e7;
+        --text-secondary: #a1a1aa;
+        --text-muted: #71717a;
+        --accent: #818cf8;
+        --border: #27272a;
+        --radius: 12px;
+        --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Helvetica, Arial, sans-serif;
+        --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+      }
+
+      /* States */
+      .state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        gap: 1rem;
+      }
+
+      .state h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .state p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+
+      .spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Note header */
+      .note-title {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.3;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+      }
+
+      .note-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* Prose styling for rendered markdown */
+      .prose h1,
+      .prose h2,
+      .prose h3,
+      .prose h4,
+      .prose h5,
+      .prose h6 {
+        font-weight: 600;
+        line-height: 1.3;
+        margin-top: 2em;
+        margin-bottom: 0.75em;
+        letter-spacing: -0.01em;
+      }
+
+      .prose h1 { font-size: 1.75rem; }
+      .prose h2 { font-size: 1.4rem; }
+      .prose h3 { font-size: 1.15rem; }
+
+      .prose p {
+        margin-bottom: 1.25em;
+      }
+
+      .prose a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .prose a:hover {
+        opacity: 0.85;
+      }
+
+      .prose strong {
+        font-weight: 600;
+      }
+
+      .prose ul,
+      .prose ol {
+        padding-left: 1.5em;
+        margin-bottom: 1.25em;
+      }
+
+      .prose li {
+        margin-bottom: 0.35em;
+      }
+
+      .prose li::marker {
+        color: var(--text-muted);
+      }
+
+      .prose blockquote {
+        border-left: 3px solid var(--accent);
+        padding: 0.5em 1em;
+        margin: 1.25em 0;
+        background: var(--bg-surface);
+        border-radius: 0 var(--radius) var(--radius) 0;
+        color: var(--text-secondary);
+      }
+
+      .prose blockquote p:last-child {
+        margin-bottom: 0;
+      }
+
+      .prose code {
+        font-family: var(--font-mono);
+        font-size: 0.85em;
+        background: var(--bg-surface);
+        padding: 0.15em 0.4em;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+      }
+
+      .prose pre {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1em 1.25em;
+        overflow-x: auto;
+        margin: 1.25em 0;
+        font-size: 0.85em;
+        line-height: 1.6;
+      }
+
+      .prose pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: inherit;
+      }
+
+      .prose hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 2em 0;
+      }
+
+      .prose img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--radius);
+        margin: 1.25em 0;
+      }
+
+      .prose table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.25em 0;
+        font-size: 0.9em;
+      }
+
+      .prose th,
+      .prose td {
+        padding: 0.6em 0.8em;
+        border: 1px solid var(--border);
+        text-align: left;
+      }
+
+      .prose th {
+        background: var(--bg-surface);
+        font-weight: 600;
+      }
+
+      .prose input[type='checkbox'] {
+        margin-right: 0.5em;
+        accent-color: var(--accent);
+      }
+
+      /* Footer branding */
+      .footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .footer a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding: 2rem 1rem;
+        }
+
+        .note-title {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="loading" class="state">
+        <div class="spinner"></div>
+        <p>Loading note…</p>
+      </div>
+
+      <div id="error" class="state" style="display:none"></div>
+
+      <article id="note" style="display:none">
+        <h1 id="note-title" class="note-title"></h1>
+        <div id="note-meta" class="note-meta"></div>
+        <div id="note-content" class="prose"></div>
+        <footer class="footer">
+          Shared with <a href="https://readied.app">Readied</a>
+        </footer>
+      </article>
+    </div>
+
+    <script type="module">
+      import { marked } from 'https://esm.sh/marked@15';
+
+      const API_BASE = 'https://api.readied.app';
+
+      const $loading = document.getElementById('loading');
+      const $error = document.getElementById('error');
+      const $note = document.getElementById('note');
+      const $title = document.getElementById('note-title');
+      const $meta = document.getElementById('note-meta');
+      const $content = document.getElementById('note-content');
+
+      function showError(title, message) {
+        $loading.style.display = 'none';
+        $error.style.display = '';
+        $error.innerHTML = `<h1>${title}</h1><p>${message}</p>`;
+      }
+
+      function formatDate(iso) {
+        return new Date(iso).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      }
+
+      async function main() {
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get('slug');
+
+        if (!slug) {
+          showError('No note specified', 'This link appears to be incomplete.');
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API_BASE}/share/${slug}`);
+
+          if (!res.ok) {
+            if (res.status === 404) {
+              showError('Note not found', 'This shared note may have been removed.');
+            } else {
+              showError('Something went wrong', 'Please try again later.');
+            }
+            return;
+          }
+
+          const data = await res.json();
+
+          // Render
+          if (data.title) {
+            $title.textContent = data.title;
+            document.title = `${data.title} — Readied`;
+          } else {
+            $title.textContent = 'Untitled';
+          }
+
+          $meta.textContent = `Shared on ${formatDate(data.createdAt)}`;
+
+          // marked is safe by default (no script execution)
+          $content.innerHTML = marked.parse(data.content || '');
+
+          $loading.style.display = 'none';
+          $note.style.display = '';
+        } catch {
+          showError('Connection error', 'Could not load the note. Please check your connection.');
+        }
+      }
+
+      main();
+    </script>
+  </body>
+</html>

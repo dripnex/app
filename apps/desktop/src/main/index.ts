@@ -4,9 +4,13 @@
  * Initializes the app, database, and IPC handlers.
  */
 
+// Initialize Sentry FIRST (before any other imports that might throw)
+import { initSentry } from './sentry';
+initSentry();
+
 import { join, normalize } from 'path';
 import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
@@ -54,15 +58,20 @@ import {
   INBOX_NOTEBOOK_ID,
 } from '@readied/core';
 import {
-  computeLicenseState,
-  startTrial,
-  canStartTrial,
   type LicenseStorage,
   type StoredTrialData,
   type StoredLicenseData,
-  type AppLicenseState,
+  type StoredSubscriptionData,
 } from '@readied/licensing';
 import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from './logger';
+import { TokenStorage } from './services/tokenStorage.js';
+import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js';
+import { ApiClient } from './services/apiClient.js';
+import { EncryptionService } from './services/encryptionService.js';
+import { SyncService } from './services/syncService.js';
+import { GitService } from './services/gitService.js';
+import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
+import { registerShareHandlers } from './handlers/shareHandlers.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -71,14 +80,25 @@ let notebookRepository: SQLiteNotebookRepository | null = null;
 let dataPaths: DataPaths | null = null;
 let licenseStorage: FileLicenseStorage | null = null;
 
+// Backend API services (initialized on app ready)
+let tokenStorage: TokenStorage | null = null;
+let deviceInfo: DeviceInfo | null = null;
+let apiClient: ApiClient | null = null;
+let encryptionService: EncryptionService | null = null;
+let syncService: SyncService | null = null;
+// Git service (initialized on app ready)
+let gitService: GitService | null = null;
+
 /** File-based license storage implementation */
 class FileLicenseStorage implements LicenseStorage {
   private licensePath: string;
   private trialPath: string;
+  private subscriptionPath: string;
 
   constructor(dataDir: string) {
     this.licensePath = join(dataDir, 'license.json');
     this.trialPath = join(dataDir, 'trial.json');
+    this.subscriptionPath = join(dataDir, 'subscription.json');
   }
 
   async readLicenseData(): Promise<StoredLicenseData | null> {
@@ -118,6 +138,66 @@ class FileLicenseStorage implements LicenseStorage {
   async writeTrialData(data: StoredTrialData): Promise<void> {
     await writeFile(this.trialPath, JSON.stringify(data, null, 2), 'utf-8');
   }
+
+  async readSubscriptionData(): Promise<StoredSubscriptionData | null> {
+    try {
+      if (!existsSync(this.subscriptionPath)) {
+        return null;
+      }
+      const content = await readFile(this.subscriptionPath, 'utf-8');
+      return JSON.parse(content) as StoredSubscriptionData;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeSubscriptionData(data: StoredSubscriptionData): Promise<void> {
+    await writeFile(this.subscriptionPath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+
+  async removeSubscriptionData(): Promise<void> {
+    if (existsSync(this.subscriptionPath)) {
+      await unlink(this.subscriptionPath);
+    }
+  }
+}
+
+// ============================================================================
+// Window State Persistence
+// ============================================================================
+
+interface WindowState {
+  x?: number;
+  y?: number;
+  width: number;
+  height: number;
+  isMaximized?: boolean;
+}
+
+const DEFAULT_WINDOW_STATE: WindowState = {
+  width: 1200,
+  height: 800,
+};
+
+function getWindowStatePath(): string {
+  return join(app.getPath('userData'), 'window-state.json');
+}
+
+function loadWindowState(): WindowState {
+  try {
+    const data = readFileSync(getWindowStatePath(), 'utf-8');
+    return { ...DEFAULT_WINDOW_STATE, ...JSON.parse(data) };
+  } catch {
+    return DEFAULT_WINDOW_STATE;
+  }
+}
+
+function saveWindowState(state: WindowState): void {
+  try {
+    writeFileSync(getWindowStatePath(), JSON.stringify(state, null, 2));
+  } catch (err) {
+    console.error('Failed to save window state:', err);
+  }
 }
 
 /** Initialize data paths */
@@ -140,14 +220,22 @@ function initDatabase(): void {
   noteRepository = new SQLiteNoteRepository(db);
   notebookRepository = new SQLiteNotebookRepository(db);
 
+  // Initialize Git service for git-backed notebooks
+  gitService = new GitService(dataPaths.root);
+
   dbLog.info('Database initialized');
 }
 
 /** Create the main window */
 function createWindow(): void {
+  // Load saved window state
+  const windowState = loadWindowState();
+
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    x: windowState.x,
+    y: windowState.y,
+    width: windowState.width,
+    height: windowState.height,
     minWidth: 800,
     minHeight: 600,
     show: false,
@@ -160,6 +248,44 @@ function createWindow(): void {
       contextIsolation: true,
       sandbox: false, // Required for better-sqlite3
     },
+  });
+
+  // Restore maximized state after window is created
+  if (windowState.isMaximized) {
+    mainWindow.maximize();
+  }
+
+  // Save window state on resize/move/close (debounced)
+  let saveTimeout: NodeJS.Timeout | null = null;
+  const debouncedSave = () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      if (!mainWindow.isDestroyed() && !mainWindow.isMaximized()) {
+        const bounds = mainWindow.getBounds();
+        saveWindowState({
+          ...bounds,
+          isMaximized: false,
+        });
+      }
+    }, 500);
+  };
+
+  mainWindow.on('resize', debouncedSave);
+  mainWindow.on('move', debouncedSave);
+
+  mainWindow.on('maximize', () => {
+    saveWindowState({
+      ...mainWindow.getBounds(),
+      isMaximized: true,
+    });
+  });
+
+  mainWindow.on('unmaximize', () => {
+    const bounds = mainWindow.getBounds();
+    saveWindowState({
+      ...bounds,
+      isMaximized: false,
+    });
   });
 
   mainWindow.on('ready-to-show', () => {
@@ -241,6 +367,9 @@ function createSettingsWindow(): void {
 
   settingsWindow.on('ready-to-show', () => {
     settingsWindow?.show();
+    if (process.env.NODE_ENV === 'development') {
+      settingsWindow?.webContents.openDevTools();
+    }
   });
 
   settingsWindow.on('closed', () => {
@@ -678,6 +807,7 @@ function registerIpcHandlers(): void {
         completed: 0,
         dropped: 0,
       } as Record<NoteStatus, number>,
+      byNotebook: {} as Record<string, number>,
     };
 
     for (const note of allNotes) {
@@ -701,6 +831,11 @@ function registerIpcHandlers(): void {
       // Count by status
       if (note.status && counts.byStatus[note.status] !== undefined) {
         counts.byStatus[note.status]++;
+      }
+
+      // Count by notebook (active, non-deleted notes only)
+      if (note.notebookId && !note.isDeleted && !note.metadata.archivedAt) {
+        counts.byNotebook[note.notebookId] = (counts.byNotebook[note.notebookId] || 0) + 1;
       }
     }
 
@@ -883,6 +1018,102 @@ function registerNotebookHandlers(): void {
       return { success: true };
     }
   );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Git Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Enable git for a notebook
+  ipcMain.handle('notebooks:enableGit', async (_event, notebookId: string) => {
+    try {
+      repo.enableGit(createNotebookId(notebookId));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to enable git',
+      };
+    }
+  });
+
+  // Disable git for a notebook
+  ipcMain.handle('notebooks:disableGit', async (_event, notebookId: string) => {
+    try {
+      repo.disableGit(createNotebookId(notebookId));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to disable git',
+      };
+    }
+  });
+
+  // Check if git is enabled for a notebook
+  ipcMain.handle('notebooks:isGitEnabled', async (_event, notebookId: string) => {
+    try {
+      const enabled = repo.isGitEnabled(createNotebookId(notebookId));
+      return { success: true, enabled };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to check git status',
+      };
+    }
+  });
+
+  // Get git settings for a notebook
+  ipcMain.handle('notebooks:getGitSettings', async (_event, notebookId: string) => {
+    try {
+      const settings = repo.getGitSettings(createNotebookId(notebookId));
+      return { success: true, settings };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get git settings',
+      };
+    }
+  });
+
+  // Toggle auto-commit for a notebook
+  ipcMain.handle(
+    'notebooks:setGitAutoCommit',
+    async (_event, notebookId: string, enabled: boolean) => {
+      try {
+        repo.setGitAutoCommit(createNotebookId(notebookId), enabled);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to set auto-commit',
+        };
+      }
+    }
+  );
+
+  // Get all git-enabled notebooks
+  ipcMain.handle('notebooks:getGitEnabled', async () => {
+    try {
+      const notebooks = repo.getGitEnabledNotebooks();
+      return {
+        success: true,
+        notebooks: notebooks.map(nb => ({
+          id: nb.id,
+          name: nb.name,
+          parentId: nb.parentId,
+          depth: nb.depth,
+          order: nb.order,
+          createdAt: nb.createdAt,
+          updatedAt: nb.updatedAt,
+        })),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get git-enabled notebooks',
+      };
+    }
+  });
 }
 
 /** Register IPC handlers for data management (backup, export, import) */
@@ -1029,54 +1260,6 @@ function registerDataHandlers(): void {
   });
 }
 
-/** Register IPC handlers for licensing */
-function registerLicenseHandlers(): void {
-  if (!licenseStorage) {
-    throw new Error('License storage not initialized');
-  }
-
-  const storage = licenseStorage;
-
-  // Get current license state
-  // In subscription model: trial data is local, subscription data comes from server (not implemented yet)
-  ipcMain.handle('license:getState', async (): Promise<AppLicenseState> => {
-    let trialData = await storage.readTrialData();
-
-    // Auto-start trial if user hasn't started one yet
-    // Note: In subscription model, canStartTrial checks if trial hasn't started and no active subscription
-    if (canStartTrial(trialData, null)) {
-      trialData = startTrial();
-      await storage.writeTrialData(trialData);
-      loggers.license().info('Trial started automatically');
-    }
-
-    // Compute state from trial data only (subscription verification not implemented yet)
-    // Once subscription system is ready, we'll pass subscription data as second parameter
-    return computeLicenseState(trialData, null);
-  });
-
-  // Start trial manually (if not auto-started)
-  ipcMain.handle('license:startTrial', async (): Promise<{ success: boolean; error?: string }> => {
-    const trialData = await storage.readTrialData();
-
-    if (!canStartTrial(trialData, null)) {
-      return { success: false, error: 'Trial already started or subscription active' };
-    }
-
-    const newTrialData = startTrial();
-    await storage.writeTrialData(newTrialData);
-    loggers.license().info('Trial started manually');
-    return { success: true };
-  });
-
-  // Open subscription page (placeholder for future)
-  ipcMain.handle('license:openSubscribe', async (): Promise<{ success: boolean }> => {
-    // TODO: Open browser to subscription page when payment system is ready
-    loggers.license().info('Subscription page requested (not implemented yet)');
-    return { success: true };
-  });
-}
-
 /** Register IPC handlers for renderer logging */
 function registerLogHandlers(): void {
   const rendererLogger = createChildLogger({ component: 'renderer' });
@@ -1114,6 +1297,504 @@ function registerLogHandlers(): void {
   // Get log file path (for debugging/support)
   ipcMain.handle('log:getPath', async (): Promise<string | null> => {
     return dataPaths?.logs ?? null;
+  });
+}
+
+/** Register IPC handlers for manual update checks */
+function registerUpdateHandlers(): void {
+  // Manual check for updates
+  ipcMain.handle(
+    'updates:checkNow',
+    async (): Promise<{ available: boolean; version?: string }> => {
+      // In development or without proper updater config, return mock response
+      if (process.env.NODE_ENV === 'development') {
+        return { available: false };
+      }
+
+      // Event-based pattern: autoUpdater emits events, we wrap in Promise
+      return new Promise(resolve => {
+        const onAvailable = (info: { version: string }) => {
+          cleanup();
+          resolve({ available: true, version: info.version });
+        };
+
+        const onNotAvailable = () => {
+          cleanup();
+          resolve({ available: false });
+        };
+
+        const onError = () => {
+          cleanup();
+          resolve({ available: false });
+        };
+
+        const cleanup = () => {
+          autoUpdater.removeListener('update-available', onAvailable);
+          autoUpdater.removeListener('update-not-available', onNotAvailable);
+          autoUpdater.removeListener('error', onError);
+        };
+
+        autoUpdater.once('update-available', onAvailable);
+        autoUpdater.once('update-not-available', onNotAvailable);
+        autoUpdater.once('error', onError);
+
+        autoUpdater.checkForUpdates().catch(() => {
+          cleanup();
+          resolve({ available: false });
+        });
+      });
+    }
+  );
+}
+
+/** Register IPC handlers for authentication and sync */
+function registerAuthSyncHandlers(): void {
+  if (!apiClient || !tokenStorage || !syncService) {
+    throw new Error('API client, token storage, or sync service not initialized');
+  }
+
+  const client = apiClient;
+  const storage = tokenStorage;
+  const sync = syncService;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Authentication
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Request magic link email
+  ipcMain.handle('auth:requestMagicLink', async (_event, email: string) => {
+    try {
+      await client.requestMagicLink(email);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to request magic link',
+      };
+    }
+  });
+
+  // Verify magic link token and save tokens
+  ipcMain.handle('auth:verify', async (_event, token: string) => {
+    try {
+      const result = await client.verifyMagicLink(token);
+      await storage.saveTokens(result.accessToken, result.refreshToken);
+      return { success: true, user: result.user };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to verify token',
+      };
+    }
+  });
+
+  // Get current session
+  ipcMain.handle('auth:getSession', async () => {
+    try {
+      const hasTokens = await storage.hasTokens();
+      if (!hasTokens) {
+        return null;
+      }
+
+      const user = await client.getCurrentUser();
+      return { user };
+    } catch (_error) {
+      // If session is invalid, clear tokens
+      await storage.clearTokens();
+      return null;
+    }
+  });
+
+  // Logout and clear tokens
+  ipcMain.handle('auth:logout', async () => {
+    try {
+      await storage.clearTokens();
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to logout',
+      };
+    }
+  });
+
+  // Refresh access token
+  ipcMain.handle('auth:refreshToken', async () => {
+    try {
+      const refreshed = await client.refreshAccessToken();
+      return { success: refreshed };
+    } catch (_error) {
+      return { success: false };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Sync
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Pull changes from server
+  ipcMain.handle('sync:pull', async () => {
+    try {
+      const result = await sync.pull();
+      return {
+        success: result.success,
+        changes: result.changes,
+        cursor: result.cursor,
+        hasMore: result.hasMore,
+        conflicts: result.conflicts,
+        error: result.error,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to pull changes',
+      };
+    }
+  });
+
+  // Push changes to server
+  ipcMain.handle(
+    'sync:push',
+    async (
+      _event,
+      changes: Array<{
+        noteId: string;
+        operation: 'create' | 'update' | 'delete';
+        content?: string;
+        localVersion?: number;
+      }>
+    ) => {
+      try {
+        const result = await sync.push(changes);
+        return {
+          success: result.success,
+          results: result.results,
+          error: result.error,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to push changes',
+        };
+      }
+    }
+  );
+
+  // Perform full sync (pull + push)
+  ipcMain.handle('sync:syncNow', async () => {
+    try {
+      const result = await sync.syncNow();
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        changesApplied: 0,
+        changesPushed: 0,
+        conflicts: [],
+        error: error instanceof Error ? error.message : 'Sync failed',
+      };
+    }
+  });
+
+  // Get sync status
+  ipcMain.handle('sync:status', async () => {
+    try {
+      const state = sync.getState();
+      return {
+        success: true,
+        cursor: state.cursor,
+        lastSyncAt: state.lastSyncAt,
+        isSyncing: state.isSyncing,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get sync status',
+      };
+    }
+  });
+
+  // Resolve conflict
+  ipcMain.handle(
+    'sync:resolveConflict',
+    async (_event, noteId: string, resolution: 'local' | 'remote') => {
+      try {
+        await sync.resolveConflict(noteId, resolution);
+        return {
+          success: true,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to resolve conflict',
+        };
+      }
+    }
+  );
+
+  // Start auto-sync
+  ipcMain.handle('sync:startAutoSync', async (_event, intervalMs?: number) => {
+    try {
+      sync.startAutoSync(intervalMs);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to start auto-sync',
+      };
+    }
+  });
+
+  // Stop auto-sync
+  ipcMain.handle('sync:stopAutoSync', async () => {
+    try {
+      sync.stopAutoSync();
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to stop auto-sync',
+      };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Subscription
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Get subscription status
+  ipcMain.handle('subscription:getStatus', async () => {
+    try {
+      const status = await client.getSubscriptionStatus();
+      return {
+        success: true,
+        status,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get subscription status',
+      };
+    }
+  });
+
+  // Open Stripe billing portal
+  ipcMain.handle('subscription:openPortal', async (_event, returnUrl: string) => {
+    try {
+      const { url } = await client.createPortalSession(returnUrl);
+      shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to open billing portal',
+      };
+    }
+  });
+
+  // Open checkout (placeholder - opens pricing page)
+  ipcMain.handle('subscription:openCheckout', async () => {
+    try {
+      shell.openExternal('https://readied.app/pricing');
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to open checkout',
+      };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Encryption Key Management
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Export encryption key (for backup)
+  ipcMain.handle('encryption:exportKey', async () => {
+    try {
+      if (!encryptionService) {
+        throw new Error('Encryption service not initialized');
+      }
+      const keyHex = encryptionService.exportKey();
+      return {
+        success: true,
+        key: keyHex,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to export encryption key',
+      };
+    }
+  });
+
+  // Import encryption key (for restore)
+  ipcMain.handle('encryption:importKey', async (_event, keyHex: string) => {
+    try {
+      if (!encryptionService) {
+        throw new Error('Encryption service not initialized');
+      }
+      await encryptionService.importKey(keyHex);
+      return {
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to import encryption key',
+      };
+    }
+  });
+}
+
+/** Register IPC handlers for git operations */
+function registerGitHandlers(): void {
+  if (!gitService) {
+    throw new Error('Git service not initialized');
+  }
+
+  const git = gitService;
+
+  // Initialize git repository for a notebook
+  ipcMain.handle('git:init', async (_event, notebookId: string) => {
+    try {
+      const repoPath = await git.initRepository(notebookId);
+      return {
+        success: true,
+        repoPath,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to initialize git repository',
+      };
+    }
+  });
+
+  // Check if notebook has git repository
+  ipcMain.handle('git:isRepo', async (_event, notebookId: string) => {
+    try {
+      const isRepo = await git.isGitRepository(notebookId);
+      return { success: true, isRepo };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to check git repository',
+      };
+    }
+  });
+
+  // Commit changes
+  ipcMain.handle(
+    'git:commit',
+    async (_event, notebookId: string, message: string, files?: string[]) => {
+      try {
+        const sha = await git.commit(notebookId, message, files);
+        return {
+          success: true,
+          sha,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to commit changes',
+        };
+      }
+    }
+  );
+
+  // Get commit history
+  ipcMain.handle('git:log', async (_event, notebookId: string, limit?: number) => {
+    try {
+      const commits = await git.log(notebookId, limit);
+      return {
+        success: true,
+        commits,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get commit history',
+      };
+    }
+  });
+
+  // Get repository status
+  ipcMain.handle('git:status', async (_event, notebookId: string) => {
+    try {
+      const status = await git.status(notebookId);
+      return {
+        success: true,
+        status,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get repository status',
+      };
+    }
+  });
+
+  // Checkout (revert to) a specific commit
+  ipcMain.handle('git:checkout', async (_event, notebookId: string, commitSha: string) => {
+    try {
+      await git.checkout(notebookId, commitSha);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to checkout commit',
+      };
+    }
+  });
+
+  // Write note file to git repository
+  ipcMain.handle(
+    'git:writeNote',
+    async (_event, notebookId: string, noteId: string, content: string) => {
+      try {
+        await git.writeNoteFile(notebookId, noteId, content);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to write note file',
+        };
+      }
+    }
+  );
+
+  // Read note file from git repository
+  ipcMain.handle('git:readNote', async (_event, notebookId: string, noteId: string) => {
+    try {
+      const content = await git.readNoteFile(notebookId, noteId);
+      return {
+        success: true,
+        content,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to read note file',
+      };
+    }
+  });
+
+  // Delete note file from git repository
+  ipcMain.handle('git:deleteNote', async (_event, notebookId: string, noteId: string) => {
+    try {
+      await git.deleteNoteFile(notebookId, noteId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete note file',
+      };
+    }
   });
 }
 
@@ -1209,6 +1890,13 @@ protocol.registerSchemesAsPrivileged([
       stream: true,
     },
   },
+  {
+    scheme: 'readied',
+    privileges: {
+      secure: true,
+      standard: true,
+    },
+  },
 ]);
 
 // App lifecycle
@@ -1252,12 +1940,72 @@ app
     initDatabase();
     registerIpcHandlers();
     registerNotebookHandlers();
+    registerGitHandlers(); // Git operations for git-backed notebooks
     registerDataHandlers();
 
-    // Initialize license storage and handlers
+    // Initialize license storage
     licenseStorage = new FileLicenseStorage(dataPaths.root);
-    registerLicenseHandlers();
     registerLogHandlers();
+    registerUpdateHandlers();
+
+    // App version
+    ipcMain.handle('app:version', () => app.getVersion());
+
+    // Settings sync: broadcast to all windows except sender
+    ipcMain.on('settings:changed', (event, settings) => {
+      const senderWebContents = event.sender;
+      BrowserWindow.getAllWindows().forEach(win => {
+        if (win.webContents !== senderWebContents && !win.isDestroyed()) {
+          win.webContents.send('settings:sync', settings);
+        }
+      });
+    });
+
+    // Initialize auth and sync services
+    const initAuthSync = async () => {
+      if (!dataPaths) {
+        log.error('Cannot initialize auth/sync services: dataPaths not initialized');
+        return;
+      }
+
+      if (!noteRepository) {
+        log.error('Cannot initialize sync service: noteRepository not initialized');
+        return;
+      }
+
+      try {
+        tokenStorage = new TokenStorage(dataPaths.root);
+        deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
+
+        const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
+        apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
+
+        encryptionService = new EncryptionService(dataPaths.root);
+        await encryptionService.initialize();
+
+        syncService = new SyncService(apiClient, encryptionService, noteRepository);
+
+        // Register license handlers with dependencies
+        if (licenseStorage) {
+          registerLicenseHandlers({
+            licenseStorage,
+            apiClient,
+          });
+        }
+
+        registerAuthSyncHandlers();
+        registerShareHandlers({ apiClient });
+        log.info('Auth and sync services initialized');
+      } catch (error) {
+        log.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Failed to initialize auth/sync services'
+        );
+      }
+    };
+
+    initAuthSync();
+
     log.info('All IPC handlers registered');
 
     // Install React DevTools in development
@@ -1294,3 +2042,51 @@ app.on('before-quit', () => {
     getLogger().info('Database closed');
   }
 });
+
+// Deep link handler for readied:// protocol (macOS)
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  const log = getLogger();
+  log.info({ url }, 'Deep link received');
+
+  try {
+    const urlObj = new URL(url);
+
+    // Handle auth verification: readied://auth/verify?token=xxx
+    if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
+      const token = urlObj.searchParams.get('token');
+      if (token) {
+        log.info('Auth verification token received via deep link');
+
+        // Send token to renderer process
+        const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+        if (mainWin) {
+          mainWin.webContents.send('auth:verify-token', token);
+          mainWin.show();
+          mainWin.focus();
+        }
+      } else {
+        log.warn('Deep link missing token parameter');
+      }
+    } else {
+      log.warn(
+        { hostname: urlObj.hostname, pathname: urlObj.pathname },
+        'Unknown deep link format'
+      );
+    }
+  } catch (error) {
+    log.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to parse deep link URL'
+    );
+  }
+});
+
+// Register as default protocol client (Windows/Linux)
+if (process.defaultApp) {
+  if (process.argv.length >= 2 && process.argv[1]) {
+    app.setAsDefaultProtocolClient('readied', process.execPath, [process.argv[1]]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('readied');
+}

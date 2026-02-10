@@ -92,4 +92,5 @@ export const loggers = {
   updater: () => createChildLogger({ component: 'updater' }),
   license: () => createChildLogger({ component: 'license' }),
   renderer: () => createChildLogger({ component: 'renderer' }),
+  stripe: () => createChildLogger({ component: 'stripe' }),
 };

@@ -1,0 +1,18 @@
+# Default owner for everything
+* @tomymaritano
+
+# Core packages (open source) - more permissive
+/packages/core/ @tomymaritano
+/packages/storage-core/ @tomymaritano
+/packages/storage-sqlite/ @tomymaritano
+/packages/wikilinks/ @tomymaritano
+/packages/tasks/ @tomymaritano
+/packages/commands/ @tomymaritano
+/packages/embeds/ @tomymaritano
+/packages/design-system/ @tomymaritano
+
+# Desktop app (proprietary) - stricter review
+/apps/desktop/ @tomymaritano
+
+# Infrastructure
+/.github/ @tomymaritano

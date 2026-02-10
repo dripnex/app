@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useSyncLinks } from '../hooks/useLinks';
+import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
 import { NoteEditor } from './NoteEditor';
 import './NoteWindow.css';
 
@@ -26,6 +27,7 @@ interface NoteWindowContentProps {
 }
 
 function NoteWindowContent({ noteId }: NoteWindowContentProps) {
+  useAppearanceSettings();
   const [note, setNote] = useState<NoteSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

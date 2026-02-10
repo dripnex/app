@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/.astro/**',
       '**/coverage/**',
       '**/.vitepress/cache/**',
+      '**/.wrangler/**',
     ],
   },
 
@@ -60,6 +61,7 @@ export default tseslint.config(
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
 

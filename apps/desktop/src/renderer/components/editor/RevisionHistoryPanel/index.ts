@@ -1,0 +1,1 @@
+export { RevisionHistoryPanel } from './RevisionHistoryPanel';

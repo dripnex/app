@@ -84,23 +84,14 @@ export function useNoteCounts() {
 
 /**
  * Hook for getting note count for a specific notebook.
- *
- * NOTE: This is a temporary solution that filters client-side.
- * TODO: Add backend support for scoped counts: notes.count({ notebookId })
- *
- * @see https://github.com/tomymaritano/readide/issues/XX - Scoped note counts
+ * Uses the byNotebook counts from the cached count query.
  */
 export function useNotebookNotesCount(notebookId: string | null) {
-  // Access cached notes data to avoid extra network request
-  const { data: notes } = useNotes({
-    sortBy: 'updatedAt',
-    sortOrder: 'desc',
-    archived: 'all',
-  });
+  const { data: counts } = useNoteCounts();
 
-  if (!notebookId || !notes) return 0;
+  if (!notebookId || !counts) return 0;
 
-  return notes.filter(n => n.notebookId === notebookId && !n.isDeleted && !n.isArchived).length;
+  return (counts as { byNotebook?: Record<string, number> }).byNotebook?.[notebookId] ?? 0;
 }
 
 /** Hook for note mutations */

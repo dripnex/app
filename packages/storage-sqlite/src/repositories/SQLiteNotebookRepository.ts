@@ -27,6 +27,9 @@ interface NotebookRow {
   order: number;
   created_at: string;
   updated_at: string;
+  git_enabled: number;
+  git_auto_commit: number;
+  git_initialized_at: string | null;
 }
 
 /** Row with metadata counts */
@@ -42,7 +45,8 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   /** Get a notebook by ID */
   async get(id: NotebookId): Promise<Notebook | null> {
     const stmt = this.db.prepare<NotebookRow>(`
-      SELECT id, name, parent_id, depth, "order", created_at, updated_at
+      SELECT id, name, parent_id, depth, "order", created_at, updated_at,
+             git_enabled, git_auto_commit, git_initialized_at
       FROM notebooks
       WHERE id = ?
     `);
@@ -101,7 +105,8 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   /** Get all notebooks (flat list) */
   async getAll(): Promise<Notebook[]> {
     const stmt = this.db.prepare<NotebookRow>(`
-      SELECT id, name, parent_id, depth, "order", created_at, updated_at
+      SELECT id, name, parent_id, depth, "order", created_at, updated_at,
+             git_enabled, git_auto_commit, git_initialized_at
       FROM notebooks
       ORDER BY depth, "order"
     `);
@@ -113,7 +118,8 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   /** Get direct children of a notebook (or root level if null) */
   async getChildren(parentId: NotebookId | null): Promise<Notebook[]> {
     const stmt = this.db.prepare<NotebookRow>(`
-      SELECT id, name, parent_id, depth, "order", created_at, updated_at
+      SELECT id, name, parent_id, depth, "order", created_at, updated_at,
+             git_enabled, git_auto_commit, git_initialized_at
       FROM notebooks
       WHERE parent_id ${parentId === null ? 'IS NULL' : '= ?'}
       ORDER BY "order"
@@ -128,6 +134,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
     const stmt = this.db.prepare<NotebookMetadataRow>(`
       SELECT
         nb.id, nb.name, nb.parent_id, nb.depth, nb."order", nb.created_at, nb.updated_at,
+        nb.git_enabled, nb.git_auto_commit, nb.git_initialized_at,
         (SELECT COUNT(*) FROM notes WHERE notebook_id = nb.id AND archived_at IS NULL) as note_count,
         (SELECT COUNT(*) FROM notebooks WHERE parent_id = nb.id) as child_count
       FROM notebooks nb
@@ -180,6 +187,122 @@ export class SQLiteNotebookRepository implements NotebookRepository {
       max_order: number | null;
     };
     return (row.max_order ?? -1) + 1;
+  }
+
+  // ========================================================================
+  // Git Operations
+  // ========================================================================
+
+  /**
+   * Enable git for a notebook
+   * Sets git_enabled=1 and git_initialized_at to current timestamp
+   */
+  enableGit(notebookId: NotebookId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        git_enabled = 1,
+        git_initialized_at = ?,
+        updated_at = ?
+      WHERE id = ?
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(now, now, notebookId);
+  }
+
+  /**
+   * Disable git for a notebook
+   * Sets git_enabled=0 but keeps git_initialized_at for history
+   */
+  disableGit(notebookId: NotebookId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        git_enabled = 0,
+        updated_at = ?
+      WHERE id = ?
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(now, notebookId);
+  }
+
+  /**
+   * Check if git is enabled for a notebook
+   */
+  isGitEnabled(notebookId: NotebookId): boolean {
+    const stmt = this.db.prepare<{ git_enabled: number }>(`
+      SELECT git_enabled
+      FROM notebooks
+      WHERE id = ?
+    `);
+
+    const row = stmt.get(notebookId) as { git_enabled: number } | undefined;
+    return row ? row.git_enabled === 1 : false;
+  }
+
+  /**
+   * Get git settings for a notebook
+   */
+  getGitSettings(notebookId: NotebookId): {
+    enabled: boolean;
+    autoCommit: boolean;
+    initializedAt: string | null;
+  } | null {
+    const stmt = this.db.prepare<{
+      git_enabled: number;
+      git_auto_commit: number;
+      git_initialized_at: string | null;
+    }>(`
+      SELECT git_enabled, git_auto_commit, git_initialized_at
+      FROM notebooks
+      WHERE id = ?
+    `);
+
+    const row = stmt.get(notebookId) as
+      | { git_enabled: number; git_auto_commit: number; git_initialized_at: string | null }
+      | undefined;
+
+    if (!row) return null;
+
+    return {
+      enabled: row.git_enabled === 1,
+      autoCommit: row.git_auto_commit === 1,
+      initializedAt: row.git_initialized_at,
+    };
+  }
+
+  /**
+   * Toggle auto-commit for a git-enabled notebook
+   */
+  setGitAutoCommit(notebookId: NotebookId, enabled: boolean): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        git_auto_commit = ?,
+        updated_at = ?
+      WHERE id = ?
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(enabled ? 1 : 0, now, notebookId);
+  }
+
+  /**
+   * Get all git-enabled notebooks
+   */
+  getGitEnabledNotebooks(): Notebook[] {
+    const stmt = this.db.prepare<NotebookRow>(`
+      SELECT id, name, parent_id, depth, "order", created_at, updated_at,
+             git_enabled, git_auto_commit, git_initialized_at
+      FROM notebooks
+      WHERE git_enabled = 1
+      ORDER BY name ASC
+    `);
+
+    const rows = stmt.all() as NotebookRow[];
+    return rows.map(row => this.rowToNotebook(row));
   }
 
   // Private helpers

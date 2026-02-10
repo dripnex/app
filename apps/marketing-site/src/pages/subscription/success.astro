@@ -1,0 +1,259 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="Welcome to Readied Pro!" description="Your subscription is active. Download the app to get started.">
+  <div class="success-page">
+    <div class="container">
+      <div class="success-icon">✓</div>
+      <h1>Welcome to Readied Pro!</h1>
+      <p class="subtitle">Your subscription is now active</p>
+
+      <div class="next-steps">
+        <h2>What's next?</h2>
+        <ol>
+          <li>
+            <span class="step-number">1</span>
+            <div>
+              <strong>Download Readied</strong>
+              <p>Get the app for your platform</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <div>
+              <strong>Sign in with your email</strong>
+              <p>Use the same email you just subscribed with</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <div>
+              <strong>Start taking notes</strong>
+              <p>All Pro features are unlocked and ready to use</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div class="cta-buttons">
+        <a href="/download" class="button primary large">
+          Download Readied
+        </a>
+      </div>
+
+      <div class="info-box">
+        <h3>What's included in Pro</h3>
+        <ul>
+          <li>✓ Cloud sync across all your devices</li>
+          <li>✓ Backlinks and graph view</li>
+          <li>✓ Advanced search capabilities</li>
+          <li>✓ Priority support</li>
+          <li>✓ Early access to new features</li>
+        </ul>
+      </div>
+
+      <p class="help">
+        Need help? <a href="mailto:support@readied.app">Contact support</a>
+      </p>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .success-page {
+    min-height: 100vh;
+    padding: 6rem 2rem 4rem;
+    background: linear-gradient(180deg, #0a0b0d 0%, #1a1b1e 100%);
+    text-align: center;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 2rem;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: white;
+    animation: scaleIn 0.5s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 3rem;
+  }
+
+  .next-steps {
+    margin: 3rem 0;
+    text-align: left;
+  }
+
+  .next-steps h2 {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    color: white;
+  }
+
+  .next-steps ol {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .next-steps li {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+  }
+
+  .step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    font-weight: 700;
+    color: white;
+  }
+
+  .next-steps li strong {
+    display: block;
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+    color: white;
+  }
+
+  .next-steps li p {
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+  }
+
+  .cta-buttons {
+    margin: 3rem 0;
+  }
+
+  .button {
+    display: inline-block;
+    padding: 1rem 3rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+
+  .button.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  }
+
+  .button.large {
+    padding: 1.25rem 3.5rem;
+    font-size: 1.25rem;
+  }
+
+  .info-box {
+    margin: 3rem 0;
+    padding: 2rem;
+    background: rgba(102, 126, 234, 0.1);
+    border: 2px solid rgba(102, 126, 234, 0.3);
+    border-radius: 16px;
+    text-align: left;
+  }
+
+  .info-box h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: white;
+  }
+
+  .info-box ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .info-box li {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.5rem 0;
+  }
+
+  .help {
+    margin-top: 3rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .help a {
+    color: #667eea;
+    text-decoration: none;
+  }
+
+  .help a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .next-steps li {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .info-box ul {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

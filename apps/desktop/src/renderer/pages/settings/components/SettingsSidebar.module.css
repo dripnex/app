@@ -1,6 +1,6 @@
 .sidebar {
   width: 200px;
-  background: var(--bg-secondary);
+  background: var(--bg-surface);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
@@ -42,13 +42,13 @@
 }
 
 .navItem:hover {
-  background: var(--bg-hover);
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
 .navItem.active {
-  background: var(--bg-active);
-  color: var(--text-primary);
+  background: var(--accent-muted);
+  color: var(--accent);
 }
 
 .label {

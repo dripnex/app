@@ -1,0 +1,66 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  color: var(--color-text-secondary, #666);
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.container:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
+  color: var(--color-text-primary, #333);
+}
+
+.container:active {
+  transform: scale(0.95);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
+
+.icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.icon.error {
+  color: var(--color-error, #dc2626);
+}
+
+.icon.warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+  color: white;
+  background: var(--color-primary, #3b82f6);
+  border-radius: 7px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
