@@ -9,8 +9,7 @@ import { useSyncStore } from '../../stores/syncStore';
 import styles from './LoginModal.module.css';
 
 export function LoginModal() {
-  const { showLoginModal, closeLoginModal, startLogin, setUser, setAuthToken } =
-    useSyncStore();
+  const { showLoginModal, closeLoginModal } = useSyncStore();
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<'email' | 'checking' | 'sent'>('email');
   const [error, setError] = useState<string | null>(null);

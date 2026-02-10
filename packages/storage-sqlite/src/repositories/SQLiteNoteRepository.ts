@@ -212,7 +212,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Prepare query string for FTS5 MATCH syntax */
   private prepareFtsQuery(query: string): string {
     // Escape FTS5 special characters: " * ^ - OR AND NOT ( )
-    const escaped = query.replace(/["\*\^()]/g, ' ').trim();
+    const escaped = query.replace(/["*^()]/g, ' ').trim();
 
     // Split into terms and add prefix matching for partial word search
     const terms = escaped.split(/\s+/).filter(t => t.length > 0);

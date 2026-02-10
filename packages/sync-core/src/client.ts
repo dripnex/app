@@ -9,7 +9,6 @@ import type {
   SyncableNote,
   SyncableNotebook,
   PushResult,
-  PullResult,
   AuthTokens,
   SyncUser,
   ConflictResolution,
