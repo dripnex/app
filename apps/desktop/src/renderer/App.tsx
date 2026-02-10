@@ -7,6 +7,7 @@ import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { LicenseProvider } from './contexts/LicenseContext';
+import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -24,11 +25,10 @@ import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
-import { useSettingsStore, selectGeneral } from './stores/settings';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
+import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
-import { useTheme } from './hooks/useTheme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +44,7 @@ const queryClient = new QueryClient({
  */
 function NotesApp() {
   usePerformanceMode();
-  useTheme();
+  useAppearanceSettings();
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
@@ -62,9 +62,6 @@ function NotesApp() {
 
   // Editor preferences
   const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
-
-  // General settings (for default notebook)
-  const generalSettings = useSettingsStore(selectGeneral);
 
   // Load tag colors on mount (once)
   useEffect(() => {
@@ -132,16 +129,15 @@ function NotesApp() {
   // Determine selected quick filter for NoteList header
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
 
-  // Create new note (respects current navigation context, falls back to default notebook)
+  // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
-    const notebookId = selectedNotebookId ?? generalSettings.defaultNotebookId ?? undefined;
     const newNote = await createNote.mutateAsync({
       content: '# Untitled\n\n',
-      notebookId,
+      notebookId: selectedNotebookId ?? undefined,
     });
     setSelectedNote(newNote);
     clearSearch();
-  }, [createNote, selectedNotebookId, generalSettings.defaultNotebookId, clearSearch]);
+  }, [createNote, selectedNotebookId, clearSearch]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {
@@ -153,14 +149,13 @@ function NotesApp() {
 
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
-    async (title: string, _anchor?: string) => {
+    async (title: string) => {
       const notes = await window.readied.notes.search(title);
       if (notes.length > 0) {
         // Find exact match (case-insensitive)
         const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
         if (match) {
           handleSelectNote(match.id);
-          // TODO: scroll to anchor after navigation (requires editor/preview scroll API)
         }
       }
       // No-op if note doesn't exist (future: could show toast or create note)
@@ -181,15 +176,17 @@ function NotesApp() {
       if (updated.notebookId) {
         try {
           const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
-          if (gitSettings.success && gitSettings.settings?.enabled && gitSettings.settings?.autoCommit) {
+          if (
+            gitSettings.success &&
+            gitSettings.settings?.enabled &&
+            gitSettings.settings?.autoCommit
+          ) {
             // Write note file to git repo
             await window.readied.git.writeNote(updated.notebookId, updated.id, content);
             // Commit with note title
-            await window.readied.git.commit(
-              updated.notebookId,
-              `Update note: ${updated.title}`,
-              [`${updated.id}.md`]
-            );
+            await window.readied.git.commit(updated.notebookId, `Update note: ${updated.title}`, [
+              `${updated.id}.md`,
+            ]);
           }
         } catch (error) {
           console.error('Auto-commit failed:', error);
@@ -211,19 +208,17 @@ function NotesApp() {
       if (updated.notebookId) {
         try {
           const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
-          if (gitSettings.success && gitSettings.settings?.enabled && gitSettings.settings?.autoCommit) {
+          if (
+            gitSettings.success &&
+            gitSettings.settings?.enabled &&
+            gitSettings.settings?.autoCommit
+          ) {
             // Write note file to git repo (title change also affects content)
-            await window.readied.git.writeNote(
-              updated.notebookId,
-              updated.id,
-              updated.content
-            );
+            await window.readied.git.writeNote(updated.notebookId, updated.id, updated.content);
             // Commit with note title
-            await window.readied.git.commit(
-              updated.notebookId,
-              `Rename note: ${updated.title}`,
-              [`${updated.id}.md`]
-            );
+            await window.readied.git.commit(updated.notebookId, `Rename note: ${updated.title}`, [
+              `${updated.id}.md`,
+            ]);
           }
         } catch (error) {
           console.error('Auto-commit failed:', error);
@@ -335,76 +330,81 @@ function NotesApp() {
   });
 
   return (
-    <LicenseProvider>
-      <div className="app">
-        <div className="app__layout">
-          <aside className="app__sidebar" style={{ width: sidebarWidth }}>
-            <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
-          </aside>
-          <div
-            className="resize-handle"
-            onMouseDown={startResizeSidebar}
-            role="separator"
-            aria-orientation="vertical"
-          />
-
-          <section className="app__notelist" style={{ width: notelistWidth }}>
-            <NoteList
-              notes={displayedNotes}
-              selectedId={selectedNote?.id ?? null}
-              selectedNotebookId={selectedNotebookId}
-              selectedTag={selectedTag}
-              selectedQuickFilter={selectedQuickFilter}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSelect={handleSelectNote}
-              onDelete={handleDeleteNote}
-              onArchive={handleArchiveNote}
-              onDuplicate={handleDuplicateNote}
-              onPin={handlePinNote}
-              onMove={handleMoveNote}
-              onSearch={handleSearch}
-              onNewNote={handleNewNote}
-              onSortChange={setSort}
-              onTagClick={goToTag}
-              isLoading={isLoading}
+    <ToastProvider>
+      <LicenseProvider>
+        <div className="app">
+          <div className="app__layout">
+            <aside className="app__sidebar" style={{ width: sidebarWidth }}>
+              <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
+            </aside>
+            <div
+              className="resize-handle"
+              onMouseDown={startResizeSidebar}
+              role="separator"
+              aria-orientation="vertical"
             />
-          </section>
-          <div
-            className="resize-handle"
-            onMouseDown={startResizeNotelist}
-            role="separator"
-            aria-orientation="vertical"
-          />
 
-          <main className="app__editor">
-            {isGraphOpen ? (
-              <GraphView
-                selectedNoteId={selectedNote?.id}
-                onNodeClick={noteId => {
-                  handleSelectNote(noteId);
-                  setIsGraphOpen(false);
-                }}
-                onClose={() => setIsGraphOpen(false)}
+            <section className="app__notelist" style={{ width: notelistWidth }}>
+              <NoteList
+                notes={displayedNotes}
+                selectedId={selectedNote?.id ?? null}
+                selectedNotebookId={selectedNotebookId}
+                selectedTag={selectedTag}
+                selectedQuickFilter={selectedQuickFilter}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSelect={handleSelectNote}
+                onDelete={handleDeleteNote}
+                onArchive={handleArchiveNote}
+                onDuplicate={handleDuplicateNote}
+                onPin={handlePinNote}
+                onMove={handleMoveNote}
+                onSearch={handleSearch}
+                onNewNote={handleNewNote}
+                onSortChange={setSort}
+                onTagClick={goToTag}
+                isLoading={isLoading}
               />
-            ) : (
-              <NoteEditor
-                note={selectedNote}
-                onUpdate={handleUpdateNote}
-                onTitleUpdate={handleUpdateTitle}
-                onMoveToNotebook={handleMoveSelectedNote}
-                onStatusChange={handleStatusChange}
-                onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
-                onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
-                onWikilinkClick={handleWikilinkClick}
-                onNavigateToNote={handleSelectNote}
-                onNoteUpdate={setSelectedNote}
-              />
-            )}
-          </main>
+            </section>
+            <div
+              className="resize-handle"
+              onMouseDown={startResizeNotelist}
+              role="separator"
+              aria-orientation="vertical"
+            />
+
+            <main className="app__editor">
+              {isGraphOpen ? (
+                <GraphView
+                  selectedNoteId={selectedNote?.id}
+                  onNodeClick={noteId => {
+                    handleSelectNote(noteId);
+                    setIsGraphOpen(false);
+                  }}
+                  onClose={() => setIsGraphOpen(false)}
+                />
+              ) : (
+                <NoteEditor
+                  note={selectedNote}
+                  onUpdate={handleUpdateNote}
+                  onTitleUpdate={handleUpdateTitle}
+                  onMoveToNotebook={handleMoveSelectedNote}
+                  onStatusChange={handleStatusChange}
+                  onDuplicate={
+                    selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined
+                  }
+                  onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+                  onPin={selectedNote ? () => handlePinNote(selectedNote.id) : undefined}
+                  onWikilinkClick={handleWikilinkClick}
+                  onNavigateToNote={handleSelectNote}
+                  onNoteUpdate={setSelectedNote}
+                />
+              )}
+            </main>
+          </div>
         </div>
-      </div>
-    </LicenseProvider>
+      </LicenseProvider>
+    </ToastProvider>
   );
 }
 

@@ -11,6 +11,7 @@ import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import { ImageLightbox } from './ImageLightbox';
 import { BacklinksPanel } from './editor/BacklinksPanel';
+import { RevisionHistoryPanel } from './editor/RevisionHistoryPanel';
 import {
   ActionsPanel,
   EditorHeader,
@@ -19,6 +20,7 @@ import {
   MarkdownPreview,
 } from './editor';
 import { TitleInput } from './TitleInput';
+import { useToast } from './Toast';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
@@ -42,7 +44,8 @@ interface NoteEditorProps {
   onStatusChange?: (status: NoteStatus) => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
-  onWikilinkClick?: (target: string, anchor?: string) => void;
+  onPin?: () => void;
+  onWikilinkClick?: (target: string) => void;
   onNavigateToNote?: (noteId: string) => void;
   /** Called when note is updated (e.g., tags changed) */
   onNoteUpdate?: (note: NoteSnapshot) => void;
@@ -56,10 +59,12 @@ export function NoteEditor({
   onStatusChange,
   onDuplicate,
   onDelete,
+  onPin,
   onWikilinkClick,
   onNavigateToNote,
   onNoteUpdate,
 }: NoteEditorProps) {
+  const { showToast } = useToast();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const previewRef = useRef<MarkdownPreviewHandle | null>(null);
@@ -96,6 +101,9 @@ export function NoteEditor({
 
   // Backlinks panel state
   const [backlinksOpen, setBacklinksOpen] = useState(false);
+
+  // Revision history panel state
+  const [revisionHistoryOpen, setRevisionHistoryOpen] = useState(false);
   const { data: backlinks } = useBacklinks(note?.id ?? null);
   const backlinksCount = backlinks?.length ?? 0;
 
@@ -151,6 +159,21 @@ export function NoteEditor({
       }
     };
   }, []);
+
+  // Handle share on web
+  const handleShareOnWeb = useCallback(async () => {
+    if (!note) return;
+    const result = await window.readied.share.create({
+      noteId: note.id,
+      title: note.title,
+      content: note.content,
+    });
+    if (result.success) {
+      showToast('Link copied to clipboard');
+    } else {
+      showToast(result.error || 'Failed to share note', 'error');
+    }
+  }, [note, showToast]);
 
   // Handle title change
   const handleTitleChange = useCallback(
@@ -279,8 +302,12 @@ export function NoteEditor({
         onClose={() => setActionsOpen(false)}
         noteId={note.id}
         noteTitle={note.title}
+        isPinned={note.isPinned}
+        onPin={onPin}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
+        onRevisionHistory={note.notebookId ? () => setRevisionHistoryOpen(true) : undefined}
+        onShareOnWeb={handleShareOnWeb}
         hiddenFormatting={toolbarVisibility}
         editorRef={editorRef}
       />
@@ -291,6 +318,13 @@ export function NoteEditor({
         onClose={() => setBacklinksOpen(false)}
         noteId={note.id}
         onNavigateToNote={onNavigateToNote ?? (() => {})}
+      />
+
+      {/* Revision History Panel */}
+      <RevisionHistoryPanel
+        isOpen={revisionHistoryOpen}
+        onClose={() => setRevisionHistoryOpen(false)}
+        notebookId={note.notebookId}
       />
 
       {/* Image Lightbox */}

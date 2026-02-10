@@ -112,14 +112,17 @@ pnpm deploy
 ## 6. Troubleshooting
 
 ### "Database not found"
+
 - Verify `TURSO_DATABASE_URL` is correct
 - Run `turso db show readied-tomymaritano` to check
 
 ### "Auth token invalid"
+
 - Token may be expired or revoked
 - Create new token: `turso db tokens create readied-tomymaritano`
 
 ### "Migrations failed"
+
 - Check database is accessible
 - Verify auth token has write permissions
 

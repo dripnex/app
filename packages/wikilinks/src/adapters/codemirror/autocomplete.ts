@@ -48,9 +48,35 @@ export const currentNoteIdField = StateField.define<string | null>({
 export function createWikilinkAutocomplete(config: WikilinkAutocompleteConfig): Extension {
   const { searchNotes, listNotes } = config;
 
+  /**
+   * Check if position is inside a fenced code block or inline code.
+   * Uses plain text scanning to avoid a dependency on @codemirror/language.
+   */
+  function isInsideCode(context: CompletionContext): boolean {
+    const { state, pos } = context;
+    const doc = state.doc;
+    const textBefore = doc.sliceString(0, pos);
+
+    // Check inline code: odd number of unescaped backticks (not triple) on the current line
+    const lineStart = textBefore.lastIndexOf('\n') + 1;
+    const lineText = textBefore.slice(lineStart);
+    // Remove triple backticks (code fences) from inline check
+    const inlineText = lineText.replace(/```/g, '');
+    const backtickCount = (inlineText.match(/(?<!\\)`/g) || []).length;
+    if (backtickCount % 2 === 1) return true;
+
+    // Check fenced code block: count opening/closing ``` fences before cursor
+    const fences = textBefore.match(/^```/gm) || [];
+    if (fences.length % 2 === 1) return true;
+
+    return false;
+  }
+
   async function wikilinkCompletions(context: CompletionContext): Promise<CompletionResult | null> {
+    // Don't activate inside code blocks or inline code
+    if (isInsideCode(context)) return null;
+
     // Match [[ followed by any characters except [ and ]
-    // TODO: Don't activate inside code blocks or inline code
     const match = context.matchBefore(/\[\[[^\][]*/);
     if (!match) return null;
 

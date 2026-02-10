@@ -68,6 +68,9 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string;
   trialEndsAt?: string;
   canceledAt?: string;
+  stripeSubscriptionId?: string;
+  stripeCustomerId?: string;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export class ApiError extends Error {
@@ -105,11 +108,7 @@ export class ApiClient {
   /**
    * Generic HTTP request with auth, retry, and error handling
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-    retries = 3
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}, retries = 3): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
     // Inject access token if available
@@ -310,12 +309,53 @@ export class ApiClient {
   }
 
   /**
+   * Create Stripe checkout session via API
+   */
+  async createCheckoutSession(options: {
+    plan: 'monthly' | 'annual';
+    successUrl?: string;
+    cancelUrl?: string;
+  }): Promise<{ url: string }> {
+    return this.request<{ url: string }>('/subscription/checkout', {
+      method: 'POST',
+      body: JSON.stringify(options),
+    });
+  }
+
+  /**
    * Create Stripe billing portal session
    */
   async createPortalSession(returnUrl: string): Promise<{ url: string }> {
     return this.request<{ url: string }>('/subscription/portal', {
       method: 'POST',
       body: JSON.stringify({ returnUrl }),
+    });
+  }
+
+  // ==========================================================================
+  // Share Endpoints
+  // ==========================================================================
+
+  /**
+   * Share a note on the web (create or update)
+   */
+  async shareNote(input: {
+    noteId: string;
+    title: string;
+    content: string;
+  }): Promise<{ slug: string; url: string }> {
+    return this.request<{ slug: string; url: string }>('/share', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  /**
+   * Remove a shared note
+   */
+  async unshareNote(slug: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/share/${slug}`, {
+      method: 'DELETE',
     });
   }
 
@@ -336,6 +376,6 @@ export class ApiClient {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

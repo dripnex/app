@@ -15,14 +15,11 @@ Located at `src/services/stripe.ts`
 Uses Web Crypto API (`crypto.subtle`) for edge compatibility:
 
 ```typescript
-const isValid = await verifyStripeSignature(
-  requestBody,
-  stripeSignatureHeader,
-  webhookSecret
-);
+const isValid = await verifyStripeSignature(requestBody, stripeSignatureHeader, webhookSecret);
 ```
 
 **Security features:**
+
 - HMAC-SHA256 signature verification
 - Timestamp validation (5-minute tolerance)
 - Constant-time comparison (prevents timing attacks)
@@ -30,12 +27,12 @@ const isValid = await verifyStripeSignature(
 
 ### Supported Events
 
-| Event | Handler | Action |
-|-------|---------|--------|
-| `checkout.session.completed` | Create subscription | User upgraded to Pro |
-| `customer.subscription.updated` | Update status | Status/period updated |
+| Event                           | Handler             | Action                  |
+| ------------------------------- | ------------------- | ----------------------- |
+| `checkout.session.completed`    | Create subscription | User upgraded to Pro    |
+| `customer.subscription.updated` | Update status       | Status/period updated   |
 | `customer.subscription.deleted` | Cancel subscription | User downgraded to Free |
-| `invoice.payment_failed` | Suspend access | Subscription inactive |
+| `invoice.payment_failed`        | Suspend access      | Subscription inactive   |
 
 ## Local Testing
 
@@ -58,6 +55,7 @@ stripe listen --forward-to localhost:8787/subscription/webhook
 ```
 
 **Output:**
+
 ```
 > Ready! Your webhook signing secret is whsec_abc123...
 ```
@@ -132,18 +130,21 @@ wrangler tail
 Stripe uses HMAC-SHA256:
 
 1. Parse `Stripe-Signature` header:
+
    ```
    t=1614024000,v1=abc123,v1=def456
    ```
 
 2. Construct signed payload:
+
    ```
    {timestamp}.{request_body}
    ```
 
 3. Compute HMAC-SHA256:
+
    ```javascript
-   hmac = HMAC_SHA256(signed_payload, webhook_secret)
+   hmac = HMAC_SHA256(signed_payload, webhook_secret);
    ```
 
 4. Compare with provided signatures (constant-time)
@@ -153,12 +154,14 @@ Stripe uses HMAC-SHA256:
 ### Why Signature Verification is Critical
 
 **Without verification:**
+
 - Attacker can forge webhook events
 - Free users can upgrade themselves to Pro
 - Malicious actors can cancel subscriptions
 - Payment fraud possible
 
 **With verification:**
+
 - Only Stripe can send valid webhooks
 - Requests older than 5 minutes rejected
 - Timing attacks prevented
@@ -190,6 +193,7 @@ console.warn('Invalid Stripe webhook signature', {
 ### Stripe Dashboard
 
 View webhook delivery history:
+
 - [Dashboard > Webhooks > View logs](https://dashboard.stripe.com/webhooks)
 - Shows delivery attempts, status codes, response times
 - Can resend failed webhooks
@@ -197,20 +201,24 @@ View webhook delivery history:
 ## Error Handling
 
 ### 400 Bad Request
+
 - Missing `stripe-signature` header
 - Invalid JSON payload
 
 ### 401 Unauthorized
+
 - Invalid signature
 - Timestamp outside tolerance (>5 min)
 
 ### 500 Internal Server Error
+
 - `STRIPE_WEBHOOK_SECRET` not configured
 - Database error during processing
 
 ### Retry Strategy
 
 Stripe automatically retries failed webhooks:
+
 - Immediate retry
 - After 1 hour
 - After 6 hours
@@ -235,6 +243,7 @@ Ensure webhook endpoint returns `200 OK` to stop retries.
 **Cause:** Webhook secret mismatch
 
 **Solution:**
+
 1. Get secret from `stripe listen` output
 2. Or from [Dashboard > Webhooks > Endpoint](https://dashboard.stripe.com/webhooks)
 3. Update `.dev.vars.local` or wrangler secret
@@ -244,6 +253,7 @@ Ensure webhook endpoint returns `200 OK` to stop retries.
 **Cause:** `STRIPE_WEBHOOK_SECRET` env var missing
 
 **Solution:**
+
 ```bash
 # Local
 echo 'STRIPE_WEBHOOK_SECRET="whsec_..."' >> packages/api/.dev.vars.local
@@ -257,6 +267,7 @@ wrangler secret put STRIPE_WEBHOOK_SECRET
 **Cause:** URL not configured in Stripe
 
 **Solution:**
+
 1. Check [Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
 2. Verify endpoint URL is correct
 3. Ensure endpoint is enabled
@@ -266,6 +277,7 @@ wrangler secret put STRIPE_WEBHOOK_SECRET
 **Cause:** Body parsed before verification
 
 **Solution:**
+
 - Always verify signature on **raw request body**
 - Don't parse JSON before verification
 - Use `c.req.text()` not `c.req.json()`

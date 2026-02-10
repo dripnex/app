@@ -34,6 +34,7 @@ This document details the complete integration of the Hono.js backend API with t
 ### What Was Built
 
 **New Services (Main Process):**
+
 - `TokenStorage` - Secure JWT token management using Electron safeStorage
 - `DeviceInfo` - Device identification and metadata
 - `ApiClient` - HTTP client with auto token refresh and retry logic
@@ -41,11 +42,13 @@ This document details the complete integration of the Hono.js backend API with t
 - `SyncService` - Bidirectional sync orchestration with conflict detection
 
 **New Stores (Renderer Process):**
+
 - `authStore` - Authentication state management (Zustand)
 - `syncStore` - Sync state management (Zustand)
 - `settings` - Settings persistence (localStorage)
 
 **New UI Components:**
+
 - `AccountSection` - Account management and sync controls
 - `MagicLinkFlow` - Magic link authentication dialog
 - `SyncStatusIndicator` - Real-time sync status in sidebar
@@ -53,6 +56,7 @@ This document details the complete integration of the Hono.js backend API with t
 - `BackupSection` - Data backup/restore
 
 **New IPC Handlers:**
+
 - `auth:*` - Authentication operations
 - `sync:*` - Sync operations
 - `subscription:*` - Subscription management
@@ -105,6 +109,7 @@ This document details the complete integration of the Hono.js backend API with t
 ### Data Flow
 
 **Authentication Flow:**
+
 ```
 1. User enters email → authStore.requestMagicLink()
 2. Renderer → IPC → Main → ApiClient.requestMagicLink()
@@ -116,6 +121,7 @@ This document details the complete integration of the Hono.js backend API with t
 ```
 
 **Sync Flow:**
+
 ```
 1. Auto-sync timer triggers OR manual sync button
 2. syncStore.syncNow() → IPC → SyncService.syncNow()
@@ -128,6 +134,7 @@ This document details the complete integration of the Hono.js backend API with t
 ```
 
 **Encryption Flow:**
+
 ```
 1. On first launch: Generate random 256-bit key
 2. Encrypt key using Electron safeStorage (OS keychain)
@@ -149,22 +156,25 @@ This document details the complete integration of the Hono.js backend API with t
 #### Main Process Services
 
 **`apps/desktop/src/main/services/tokenStorage.ts` (~100 LOC)**
+
 ```typescript
 export class TokenStorage {
   private readonly tokenPath: string;
 
-  async saveTokens(accessToken: string, refreshToken: string): Promise<void>
-  async getTokens(): Promise<Tokens | null>
-  async clearTokens(): Promise<void>
-  async hasTokens(): Promise<boolean>
+  async saveTokens(accessToken: string, refreshToken: string): Promise<void>;
+  async getTokens(): Promise<Tokens | null>;
+  async clearTokens(): Promise<void>;
+  async hasTokens(): Promise<boolean>;
 }
 ```
+
 - **Purpose**: Secure storage of JWT tokens
 - **Security**: Uses Electron `safeStorage` API (OS keychain/DPAPI/libsecret)
 - **File**: `{userData}/auth.encrypted` (binary encrypted file)
 - **Format**: JSON with `{ accessToken, refreshToken }` encrypted
 
 **`apps/desktop/src/main/services/deviceInfo.ts` (~80 LOC)**
+
 ```typescript
 export interface DeviceInfo {
   deviceId: string;
@@ -172,8 +182,9 @@ export interface DeviceInfo {
   platform: string;
 }
 
-export async function getOrCreateDeviceInfo(dataDir: string): Promise<DeviceInfo>
+export async function getOrCreateDeviceInfo(dataDir: string): Promise<DeviceInfo>;
 ```
+
 - **Purpose**: Generate and persist unique device identifier
 - **File**: `{userData}/device.json`
 - **Device ID**: UUID v4
@@ -181,6 +192,7 @@ export async function getOrCreateDeviceInfo(dataDir: string): Promise<DeviceInfo
 - **Platform**: darwin/win32/linux
 
 **`apps/desktop/src/main/services/apiClient.ts` (~330 LOC)**
+
 ```typescript
 export class ApiClient {
   constructor(
@@ -208,6 +220,7 @@ export class ApiClient {
   async createPortalSession(returnUrl: string): Promise<{ url: string }>
 }
 ```
+
 - **Purpose**: Centralized HTTP client for all backend communication
 - **Features**:
   - Automatic token refresh on 401
@@ -219,6 +232,7 @@ export class ApiClient {
 #### Renderer Process Stores
 
 **`apps/desktop/src/renderer/stores/settings.ts` (~80 LOC)**
+
 ```typescript
 interface SettingsState {
   backup: { lastBackupAt: number | null };
@@ -236,11 +250,13 @@ export const useSettingsStore = create<SettingsState>()(
   persist((set) => ({ ... }), { name: 'readied-settings' })
 )
 ```
+
 - **Purpose**: Persist app settings to localStorage
 - **Storage**: `localStorage['readied-settings']`
 - **Missing**: This file was referenced but didn't exist - created in Phase 1
 
 **`apps/desktop/src/renderer/stores/authStore.ts` (~160 LOC)**
+
 ```typescript
 interface AuthState {
   user: User | null;
@@ -257,11 +273,13 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()((set) => ({ ... }))
 ```
+
 - **Purpose**: Manage authentication state and actions
 - **Actions**: Request magic link, verify token, logout, load session
 - **Auto-sync**: Triggers `startAutoSync()` on successful auth
 
 **`apps/desktop/src/renderer/stores/syncStore.ts` (~150 LOC)**
+
 ```typescript
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline';
 
@@ -289,6 +307,7 @@ interface SyncState {
   updateLastSyncAt: (timestamp: number) => void;
 }
 ```
+
 - **Purpose**: Manage sync state and operations
 - **Conflicts**: Stores conflicts for user resolution
 - **Status**: Tracks sync status (idle/syncing/error/offline)
@@ -296,17 +315,20 @@ interface SyncState {
 ### Files Modified
 
 **`apps/desktop/src/main/index.ts` (+400 LOC)**
+
 - Added `initAuthSync()` function to initialize services
 - Instantiated `TokenStorage`, `DeviceInfo`, `ApiClient`
 - Registered `registerAuthSyncHandlers()` function
 - Added IPC handlers for `auth:*` and `sync:*` operations
 
 **`apps/desktop/src/preload/index.ts` (+150 LOC)**
+
 - Added type definitions for API responses
 - Extended `ReadiedAPI` interface with `auth`, `sync`, `subscription` sections
 - Implemented IPC invocations for all new handlers
 
 **`apps/desktop/package.json`**
+
 - Added dependency: `"cross-fetch": "^4.1.0"`
 
 ### Key Design Decisions
@@ -327,23 +349,29 @@ interface SyncState {
 #### UI Components
 
 **`apps/desktop/src/renderer/pages/settings/components/SettingGroup.tsx` (~40 LOC)**
+
 ```typescript
-export function SettingGroup({ title, children }: SettingGroupProps)
+export function SettingGroup({ title, children }: SettingGroupProps);
 ```
+
 - **Purpose**: Reusable collapsible section for settings
 - **Styling**: `SettingGroup.module.css`
 
 **`apps/desktop/src/renderer/pages/settings/components/SettingRow.tsx` (~50 LOC)**
+
 ```typescript
-export function SettingRow({ label, description, children }: SettingRowProps)
+export function SettingRow({ label, description, children }: SettingRowProps);
 ```
+
 - **Purpose**: Individual setting row with label, description, and action
 - **Styling**: `SettingRow.module.css`
 
 **`apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx` (~175 LOC)**
+
 ```typescript
-export function AccountSection()
+export function AccountSection();
 ```
+
 - **Features**:
   - Sign in button (opens MagicLinkFlow)
   - Shows email when authenticated
@@ -354,11 +382,13 @@ export function AccountSection()
 - **State**: Uses `useAuthStore()` and `useSyncStore()`
 
 **`apps/desktop/src/renderer/components/auth/MagicLinkFlow.tsx` (~165 LOC)**
+
 ```typescript
 type Step = 'email' | 'sent' | 'verifying' | 'success' | 'error';
 
-export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps)
+export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps);
 ```
+
 - **Flow**:
   1. **Email Step**: Input field for email address
   2. **Sent Step**: "Check your email" confirmation
@@ -370,22 +400,26 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps)
 ### Files Modified
 
 **`apps/desktop/src/renderer/pages/settings/SettingsApp.tsx`**
+
 - Added `AccountSection` import and render
 - Updated `SettingsSection` type to include `'account'`
 - Added account section to sidebar navigation
 
 **`apps/desktop/src/renderer/pages/settings/sections/BackupSection.tsx`**
+
 - Fixed imports to use new `SettingGroup` and `SettingRow` components
 - Fixed property names: `result.path` instead of `result.outputPath`
 - Fixed type checks: removed invalid `cancelled` property
 
 **`apps/desktop/src/renderer/pages/settings/sections/Section.module.css`**
+
 - Added button styles: `primaryButton`, `dangerButton`, `secondaryButton`
 - Added status badge styles
 - Added message styles: `successMessage`, `infoMessage`, `errorMessage`
 - Added `spinning` animation for loading states
 
 **`apps/desktop/src/renderer/App.tsx`**
+
 - Added `useAuthStore` import
 - Added `loadSession()` call in `useEffect` on mount
 - Ensures session is restored on app launch
@@ -393,9 +427,10 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps)
 ### Authentication Flow Detail
 
 **1. Request Magic Link:**
+
 ```typescript
 // User enters email in MagicLinkFlow
-await useAuthStore.getState().requestMagicLink('user@example.com')
+await useAuthStore.getState().requestMagicLink('user@example.com');
 // → IPC → ApiClient.requestMagicLink()
 // → POST /auth/magic-link { email, deviceId, deviceName }
 // → Backend generates token, sends email via Resend
@@ -403,6 +438,7 @@ await useAuthStore.getState().requestMagicLink('user@example.com')
 ```
 
 **2. Verify Token (Deep Link):**
+
 ```typescript
 // User clicks link in email
 // OS opens app with readied://auth/verify?token=xxx
@@ -417,9 +453,10 @@ await useAuthStore.getState().requestMagicLink('user@example.com')
 ```
 
 **3. Load Session (App Launch):**
+
 ```typescript
 // On app launch, App.tsx calls:
-useAuthStore.getState().loadSession()
+useAuthStore.getState().loadSession();
 // → IPC → Check TokenStorage.hasTokens()
 // → If tokens exist: ApiClient.getCurrentUser()
 // → GET /auth/me (with JWT in Authorization header)
@@ -428,8 +465,9 @@ useAuthStore.getState().loadSession()
 ```
 
 **4. Logout:**
+
 ```typescript
-useAuthStore.getState().logout()
+useAuthStore.getState().logout();
 // → Stop auto-sync timer
 // → IPC → TokenStorage.clearTokens()
 // → Clear auth state
@@ -444,27 +482,30 @@ useAuthStore.getState().logout()
 ### Files Created
 
 **`apps/desktop/src/main/services/encryptionService.ts` (~200 LOC)**
+
 ```typescript
 export class EncryptionService {
   private key: Buffer | null = null;
   private readonly keyPath: string;
 
-  constructor(dataDir: string)
-  async initialize(): Promise<void>
+  constructor(dataDir: string);
+  async initialize(): Promise<void>;
 
-  async encrypt(plaintext: string): Promise<string>
-  async decrypt(ciphertext: string): Promise<string>
-  isEncrypted(content: string): boolean
+  async encrypt(plaintext: string): Promise<string>;
+  async decrypt(ciphertext: string): Promise<string>;
+  isEncrypted(content: string): boolean;
 
-  exportKey(): string
-  async importKey(keyHex: string): Promise<void>
+  exportKey(): string;
+  async importKey(keyHex: string): Promise<void>;
 }
 ```
+
 - **Algorithm**: AES-256-GCM (implemented in Phase 5)
 - **Key Storage**: `{userData}/encryption.key` (encrypted with safeStorage)
 - **Format**: `{iv}:{ciphertext}:{authTag}` (base64 encoded)
 
 **`apps/desktop/src/main/services/syncService.ts` (~400 LOC)**
+
 ```typescript
 export class SyncService {
   private cursor: number = 0;
@@ -482,6 +523,7 @@ export class SyncService {
   getState(): SyncState
 }
 ```
+
 - **Purpose**: Orchestrates sync operations
 - **Auto-sync**: Timer-based automatic sync (default 5 minutes)
 - **Conflict Detection**: Compares local and remote versions
@@ -490,6 +532,7 @@ export class SyncService {
 **Sync Logic Detail:**
 
 **Pull Changes:**
+
 ```typescript
 async pull(): Promise<PullResult> {
   // 1. Get changes from server
@@ -537,6 +580,7 @@ async pull(): Promise<PullResult> {
 ```
 
 **Push Changes:**
+
 ```typescript
 async push(changes: Array<...>): Promise<PushResult> {
   // 1. Collect local changes (notes modified since last sync)
@@ -572,6 +616,7 @@ async push(changes: Array<...>): Promise<PushResult> {
 ```
 
 **Full Sync Cycle:**
+
 ```typescript
 async syncNow(): Promise<SyncResult> {
   // 1. Pull changes from server
@@ -591,9 +636,11 @@ async syncNow(): Promise<SyncResult> {
 ```
 
 **`apps/desktop/src/renderer/components/sync/ConflictResolver.tsx` (~180 LOC)**
+
 ```typescript
-export function ConflictResolver()
+export function ConflictResolver();
 ```
+
 - **Purpose**: UI for resolving sync conflicts
 - **Features**:
   - Expandable list of conflicts
@@ -606,6 +653,7 @@ export function ConflictResolver()
 ### Files Modified
 
 **`apps/desktop/src/main/index.ts`**
+
 - Initialize `EncryptionService` and `SyncService` in `initAuthSync()`
 - Added IPC handlers:
   - `sync:pull` - Pull changes from server
@@ -617,16 +665,19 @@ export function ConflictResolver()
   - `sync:stopAutoSync` - Stop auto-sync timer
 
 **`apps/desktop/src/preload/index.ts`**
+
 - Added sync methods to API:
   - `pull()`, `push()`, `syncNow()`, `status()`
   - `resolveConflict()`, `startAutoSync()`, `stopAutoSync()`
 
 **`apps/desktop/src/renderer/stores/syncStore.ts`**
+
 - Updated `syncNow()` to call IPC handler
 - Added error handling with user-friendly messages
 - Added `resolveConflict()` implementation
 
 **`apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx`**
+
 - Added sync button with loading state
 - Added last sync timestamp display
 - Integrated `<ConflictResolver />` component
@@ -635,6 +686,7 @@ export function ConflictResolver()
 ### Conflict Resolution Strategy
 
 **Detection:**
+
 - Conflict occurs when:
   1. Note exists locally AND remotely
   2. Both versions modified since last sync
@@ -642,12 +694,14 @@ export function ConflictResolver()
   4. Local version < remote version
 
 **Automatic Handling:**
+
 1. Create copy of local version: `{title} (Conflict {timestamp})`
 2. Apply remote version to original note
 3. Add conflict to `syncStore.conflicts` array
 4. Show conflict resolver UI
 
 **User Resolution:**
+
 1. User reviews both versions in ConflictResolver
 2. User chooses "Keep Local" or "Keep Remote"
 3. Chosen version applied to original note
@@ -665,6 +719,7 @@ export function ConflictResolver()
 #### 1. Auto-sync on Authentication
 
 **`apps/desktop/src/renderer/stores/authStore.ts`**
+
 - `verifyToken()`: Start auto-sync after successful authentication
 - `loadSession()`: Start auto-sync if session exists
 - `logout()`: Stop auto-sync before clearing tokens
@@ -682,9 +737,11 @@ await window.readied.sync.stopAutoSync();
 **Files Created:**
 
 **`apps/desktop/src/renderer/components/sync/SyncStatusIndicator.tsx` (~90 LOC)**
+
 ```typescript
-export function SyncStatusIndicator()
+export function SyncStatusIndicator();
 ```
+
 - **Purpose**: Real-time sync status in sidebar header
 - **States**:
   - **Syncing**: Spinning RefreshCw icon (blue)
@@ -700,6 +757,7 @@ export function SyncStatusIndicator()
 **Files Modified:**
 
 **`apps/desktop/src/renderer/components/sidebar/SidebarHeader.tsx`**
+
 - Added `<SyncStatusIndicator />` component
 - Positioned next to settings button
 
@@ -708,6 +766,7 @@ export function SyncStatusIndicator()
 **`apps/desktop/src/main/index.ts`**
 
 **Protocol Registration:**
+
 ```typescript
 protocol.registerSchemesAsPrivileged([
   // ... existing asset protocol
@@ -722,6 +781,7 @@ protocol.registerSchemesAsPrivileged([
 ```
 
 **Deep Link Handler (macOS):**
+
 ```typescript
 app.on('open-url', (event, url) => {
   event.preventDefault();
@@ -751,6 +811,7 @@ app.on('open-url', (event, url) => {
 ```
 
 **Protocol Client Registration (Windows/Linux):**
+
 ```typescript
 // Register as default protocol client
 if (process.defaultApp) {
@@ -765,6 +826,7 @@ if (process.defaultApp) {
 **IPC Event Listener:**
 
 **`apps/desktop/src/preload/index.ts`**
+
 ```typescript
 ipc: {
   on: (channel: string, listener: (...args: unknown[]) => void) => {
@@ -777,6 +839,7 @@ ipc: {
 ```
 
 **`apps/desktop/src/renderer/App.tsx`**
+
 ```typescript
 // Handle deep link auth verification
 useEffect(() => {
@@ -805,6 +868,7 @@ useEffect(() => {
 **User-Friendly Error Messages:**
 
 **Auth Errors (`authStore.ts`):**
+
 - Network errors → "No internet connection. Check your network and try again."
 - Timeouts → "Connection timeout. Please try again."
 - Rate limits → "Too many requests. Please wait a moment and try again."
@@ -812,6 +876,7 @@ useEffect(() => {
 - Device limits → "Device limit reached. Remove a device to continue."
 
 **Sync Errors (`syncStore.ts`):**
+
 - Network/offline → "No internet connection. Sync will resume when online."
 - 401 errors → "Session expired. Please sign in again."
 - 403 errors → "Sync requires Pro subscription."
@@ -820,6 +885,7 @@ useEffect(() => {
 - Note not found → "Note not found. It may have been deleted." (auto-removes conflict)
 
 **Error Detection Logic:**
+
 ```typescript
 async syncNow() {
   try {
@@ -850,11 +916,13 @@ async syncNow() {
 **Error Display:**
 
 **`apps/desktop/src/renderer/components/auth/MagicLinkFlow.tsx`**
+
 - Error step shows user-friendly message
 - Retry button to start over
 - Automatically uses error from `authStore.error`
 
 **`apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx`**
+
 - Success/error messages displayed below actions
 - Sync error shown in red
 - Offline warning shown when status is 'offline'
@@ -862,10 +930,12 @@ async syncNow() {
 #### 5. Build and Testing
 
 **Fixed Lint Errors:**
+
 - Unused error variables → Prefixed with `_error`
 - Unused imports → Removed
 
 **Build Results:**
+
 - ✅ All packages build successfully
 - ✅ TypeScript compilation passes
 - ✅ Main bundle: 2,283.74 kB
@@ -883,6 +953,7 @@ async syncNow() {
 **`apps/desktop/src/main/services/encryptionService.ts` (Complete Rewrite)**
 
 **Key Features:**
+
 - **Algorithm**: AES-256-GCM (Galois/Counter Mode)
 - **Key Size**: 256 bits (32 bytes)
 - **IV Size**: 96 bits (12 bytes) - recommended for GCM
@@ -890,6 +961,7 @@ async syncNow() {
 - **Format**: `{iv}:{ciphertext}:{authTag}` (base64 encoded)
 
 **Security Properties:**
+
 - ✅ **Confidentiality**: AES-256 encryption
 - ✅ **Integrity**: GCM authentication tag prevents tampering
 - ✅ **Uniqueness**: Random IV for each encryption
@@ -956,20 +1028,15 @@ export class EncryptionService {
     const cipher = createCipheriv(ALGORITHM, this.key, iv);
 
     // Encrypt
-    const encrypted = Buffer.concat([
-      cipher.update(plaintext, 'utf-8'),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
 
     // Get authentication tag
     const authTag = cipher.getAuthTag();
 
     // Format: iv:ciphertext:authTag (all base64)
-    return [
-      iv.toString('base64'),
-      encrypted.toString('base64'),
-      authTag.toString('base64'),
-    ].join(':');
+    return [iv.toString('base64'), encrypted.toString('base64'), authTag.toString('base64')].join(
+      ':'
+    );
   }
 
   async decrypt(ciphertext: string): Promise<string> {
@@ -990,10 +1057,7 @@ export class EncryptionService {
     decipher.setAuthTag(authTag);
 
     // Decrypt
-    const decrypted = Buffer.concat([
-      decipher.update(encrypted),
-      decipher.final(),
-    ]);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
     return decrypted.toString('utf-8');
   }
@@ -1091,6 +1155,7 @@ syncService = new SyncService(apiClient, encryptionService, noteRepository);
 ### Security Considerations
 
 **Key Storage:**
+
 - Encryption key stored in `{userData}/encryption.key`
 - Key encrypted using Electron `safeStorage`:
   - **macOS**: Keychain
@@ -1099,22 +1164,26 @@ syncService = new SyncService(apiClient, encryptionService, noteRepository);
 - Key never exposed in plaintext outside secure storage
 
 **Encryption Strength:**
+
 - AES-256: NIST-approved for top secret data
 - GCM mode: Provides both confidentiality and integrity
 - Random IVs: Prevents pattern analysis
 - Authentication tag: Detects tampering
 
 **Key Rotation:**
+
 - Future feature: `reEncrypt()` method available
 - Can decrypt with old key, re-encrypt with new key
 - Requires full note re-encryption
 
 **Backup/Restore:**
+
 - User can export key as hex string
 - Store securely (password manager, encrypted USB, etc.)
 - Import key on new device to restore access
 
 **Threat Model:**
+
 - ✅ **Server compromise**: Server cannot read note content (E2E)
 - ✅ **Network interception**: Encrypted data in transit (HTTPS + E2E)
 - ✅ **Disk theft**: Key encrypted by OS (safeStorage)
@@ -1129,18 +1198,21 @@ syncService = new SyncService(apiClient, encryptionService, noteRepository);
 ### Local Testing Setup
 
 **1. Start Backend API:**
+
 ```bash
 cd packages/api
 pnpm dev  # → http://localhost:8787
 ```
 
 **2. Verify Backend:**
+
 ```bash
 curl http://localhost:8787/health
 # Expected: { "status": "ok" }
 ```
 
 **3. Start Desktop App:**
+
 ```bash
 pnpm dev
 # App connects to http://localhost:8787 (env var)
@@ -1151,6 +1223,7 @@ pnpm dev
 #### Test 1: Authentication Flow
 
 **Steps:**
+
 1. Launch app
 2. Click Settings → Account → Sign In
 3. Enter email
@@ -1160,6 +1233,7 @@ pnpm dev
 7. Verify: Sync status indicator appears in sidebar
 
 **Expected Logs:**
+
 ```bash
 # Terminal (wrangler dev)
 📧 Magic link email (dev mode):
@@ -1170,6 +1244,7 @@ pnpm dev
 #### Test 2: Manual Sync
 
 **Steps:**
+
 1. Sign in (Test 1)
 2. Create a note
 3. Click "Sync Now" button
@@ -1178,6 +1253,7 @@ pnpm dev
 6. Check backend database (Turso studio) for encrypted note
 
 **Expected:**
+
 - Sync status changes: idle → syncing → idle
 - Last sync timestamp updates
 - Note appears in Turso `sync_changes` table
@@ -1188,6 +1264,7 @@ pnpm dev
 **Requires 2 devices or 2 databases:**
 
 **Setup:**
+
 1. Sign in on Device A
 2. Create note "Test Conflict"
 3. Sync
@@ -1199,6 +1276,7 @@ pnpm dev
 9. Sync on Device A
 
 **Expected:**
+
 - Conflict detected
 - Conflict resolver UI appears
 - "Test Conflict (Conflict {timestamp})" copy created
@@ -1208,6 +1286,7 @@ pnpm dev
 #### Test 4: Offline Mode
 
 **Steps:**
+
 1. Sign in
 2. Disconnect network (turn off WiFi)
 3. Try to sync
@@ -1220,18 +1299,22 @@ pnpm dev
 #### Test 5: Encryption
 
 **Steps:**
+
 1. Sign in
 2. Create note with content "Secret message"
 3. Sync
 4. Check `{userData}/encryption.key` file exists
 5. Query Turso database:
+
 ```sql
 SELECT encrypted_data FROM sync_changes WHERE note_id = 'xxx';
 ```
+
 6. Verify: `encrypted_data` is base64 string, not "Secret message"
 7. Verify: Format matches `{base64}:{base64}:{base64}`
 
 **Export/Import Key:**
+
 ```typescript
 // Export
 const result = await window.readied.encryption.exportKey();
@@ -1244,6 +1327,7 @@ await window.readied.encryption.importKey(result.key);
 #### Test 6: Auto-Sync
 
 **Steps:**
+
 1. Sign in
 2. Wait 5 minutes
 3. Verify: Sync automatically triggers
@@ -1255,16 +1339,19 @@ await window.readied.encryption.importKey(result.key);
 #### Test 7: Deep Link
 
 **macOS:**
+
 ```bash
 open "readied://auth/verify?token=YOUR_TOKEN"
 ```
 
 **Windows (CMD):**
+
 ```cmd
 start readied://auth/verify?token=YOUR_TOKEN
 ```
 
 **Expected:**
+
 - App opens (or focuses if already open)
 - Token automatically verified
 - User signed in
@@ -1273,27 +1360,33 @@ start readied://auth/verify?token=YOUR_TOKEN
 ### Error Testing
 
 **Test Network Errors:**
+
 1. Sign in
 2. Block outgoing connections to localhost:8787 (firewall)
 3. Try to sync
 4. Verify: Error message: "No internet connection. Sync will resume when online."
 
 **Test Token Expiry:**
+
 1. Sign in
 2. Manually delete tokens: Delete `{userData}/auth.encrypted`
 3. Try to sync
 4. Verify: Error message: "Session expired. Please sign in again."
 
 **Test Invalid Token:**
+
 1. Trigger deep link with invalid token:
+
 ```bash
 open "readied://auth/verify?token=invalid"
 ```
+
 2. Verify: Error message: "This link has expired or is invalid. Please request a new one."
 
 ### Performance Testing
 
 **Large Sync:**
+
 1. Create 100+ notes
 2. Sync all
 3. Monitor:
@@ -1303,6 +1396,7 @@ open "readied://auth/verify?token=invalid"
 4. Expected: < 30s for 100 notes
 
 **Encryption Performance:**
+
 ```typescript
 // Test encryption speed
 const start = Date.now();
@@ -1324,6 +1418,7 @@ console.log(`1000 encryptions: ${duration}ms`); // Expected: < 1000ms
 #### 1. Backend API Deployment
 
 **Deploy to Cloudflare Workers:**
+
 ```bash
 cd packages/api
 
@@ -1351,6 +1446,7 @@ pnpm deploy
 ```
 
 **Verify Deployment:**
+
 ```bash
 curl https://api.readied.app/health
 # Expected: { "status": "ok" }
@@ -1368,6 +1464,7 @@ curl https://api.readied.app/health
 5. Update secret: `pnpm wrangler secret put RESEND_API_KEY`
 
 **Test Email:**
+
 ```bash
 curl -X POST https://api.readied.app/auth/magic-link \
   -H "Content-Type: application/json" \
@@ -1379,6 +1476,7 @@ Check inbox for magic link email.
 #### 3. Configure Stripe (Payments)
 
 **Create Products:**
+
 1. Go to Stripe Dashboard → Products
 2. Create "Readied Pro - Monthly"
    - Price: $2.99/month
@@ -1388,6 +1486,7 @@ Check inbox for magic link email.
    - Recurring: Yearly
 
 **Create Webhook:**
+
 1. Go to Developers → Webhooks
 2. Add endpoint: `https://api.readied.app/subscription/webhook`
 3. Select events:
@@ -1399,6 +1498,7 @@ Check inbox for magic link email.
 5. Update secret: `pnpm wrangler secret put STRIPE_WEBHOOK_SECRET`
 
 **Test Webhook:**
+
 - Send test webhook from Stripe dashboard
 - Verify logs in Cloudflare Workers
 
@@ -1407,18 +1507,21 @@ Check inbox for magic link email.
 **Environment Configuration:**
 
 **For Development (keep existing):**
+
 ```bash
 # apps/desktop/.env.development
 READIED_API_URL=http://localhost:8787
 ```
 
 **For Production (built app):**
+
 ```typescript
 // apps/desktop/src/main/index.ts
 const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
 ```
 
 **Build for Production:**
+
 ```bash
 # Build all packages
 pnpm build
@@ -1435,41 +1538,48 @@ pnpm --filter @readied/desktop dist:win
 #### 5. Distribution
 
 **macOS:**
+
 - Sign app with Apple Developer certificate
 - Notarize with Apple
 - Create DMG installer
 - Upload to GitHub Releases
 
 **Windows:**
+
 - Sign app with code signing certificate
 - Create installer (NSIS)
 - Upload to GitHub Releases
 
 **Auto-Update:**
+
 - Already configured with `electron-updater`
 - Update `electron-builder.json5` with publish config:
+
 ```json5
 {
   publish: {
-    provider: "github",
-    owner: "yourusername",
-    repo: "readied"
-  }
+    provider: 'github',
+    owner: 'yourusername',
+    repo: 'readied',
+  },
 }
 ```
 
 #### 6. Monitoring
 
 **Backend:**
+
 - Cloudflare Workers analytics (automatic)
 - Optional: Add Sentry for error tracking
 - Monitor logs in Cloudflare dashboard
 
 **Desktop App:**
+
 - Electron crash reporter (optional)
 - Analytics via backend API (session tracking)
 
 **Metrics to Monitor:**
+
 - Auth success rate (>95% expected)
 - Sync success rate (>90% expected)
 - Error rate by type
@@ -1479,6 +1589,7 @@ pnpm --filter @readied/desktop dist:win
 #### 7. DNS Configuration
 
 **Required DNS Records:**
+
 ```
 api.readied.app  →  CNAME  →  your-worker.workers.dev
 readied.app      →  SPF    →  v=spf1 include:_spf.resend.com ~all
@@ -1499,6 +1610,7 @@ _dmarc           →  TXT    →  v=DMARC1; p=none; rua=mailto:dmarc@readied.app
 **Cause:** EncryptionService not initialized on app start
 
 **Fix:** Check main process logs:
+
 ```typescript
 // apps/desktop/src/main/index.ts
 encryptionService = new EncryptionService(dataPaths.root);
@@ -1512,6 +1624,7 @@ await encryptionService.initialize(); // Must be called!
 **Cause:** Tokens not persisting or failing to decrypt
 
 **Fix:**
+
 1. Check `{userData}/auth.encrypted` exists
 2. Verify `safeStorage.isEncryptionAvailable()` returns `true`
 3. Check logs for decryption errors
@@ -1523,6 +1636,7 @@ await encryptionService.initialize(); // Must be called!
 **Cause:** Conflict detection logic issue
 
 **Debug:**
+
 ```typescript
 // In syncService.ts pull() method
 console.log('Local version:', localNote.version);
@@ -1531,13 +1645,16 @@ console.log('Device IDs:', localNote.deviceId, '!==', change.deviceId);
 ```
 
 **Expected:** Conflict when:
+
 - `localNote.version < change.version`
 - `localNote.deviceId !== change.deviceId`
 
 #### Issue: Deep links not working
 
 **macOS:**
+
 1. Check protocol registered:
+
 ```bash
 defaults read com.readied.app
 # Look for CFBundleURLTypes
@@ -1546,7 +1663,9 @@ defaults read com.readied.app
 2. Re-install app (protocol registration happens on install)
 
 **Windows:**
+
 1. Check registry:
+
 ```cmd
 reg query HKEY_CLASSES_ROOT\readied
 ```
@@ -1558,12 +1677,14 @@ reg query HKEY_CLASSES_ROOT\readied
 **Cause:** Backend API not running
 
 **Fix:**
+
 ```bash
 cd packages/api
 pnpm dev  # Must be running!
 ```
 
 **Verify:**
+
 ```bash
 curl http://localhost:8787/health
 ```
@@ -1575,10 +1696,12 @@ curl http://localhost:8787/health
 **Cause:** Encryption key file deleted or corrupted
 
 **Fix:**
+
 1. If backup exists: Use `encryption:importKey` IPC handler
 2. If no backup: Notes are permanently unrecoverable (E2E security trade-off)
 
 **Prevention:**
+
 - Prompt user to export key after first sync
 - Store key in password manager
 - Regular backups
@@ -1586,6 +1709,7 @@ curl http://localhost:8787/health
 ### Debugging Tools
 
 **Main Process Logs:**
+
 ```typescript
 // apps/desktop/src/main/index.ts
 const log = getLogger();
@@ -1596,6 +1720,7 @@ log.error('Error', { error: error.message });
 **Logs location:** `{userData}/logs/main.log`
 
 **Renderer Process Logs:**
+
 ```typescript
 console.log('Debug info');
 console.error('Error:', error);
@@ -1604,6 +1729,7 @@ console.error('Error:', error);
 **View logs:** DevTools Console (Cmd+Option+I)
 
 **IPC Debugging:**
+
 ```typescript
 // In main process
 ipcMain.handle('test:handler', async (_event, data) => {
@@ -1617,6 +1743,7 @@ console.log('Result:', result);
 ```
 
 **Network Debugging:**
+
 ```typescript
 // In apiClient.ts
 private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -1630,6 +1757,7 @@ private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 ### Database Inspection
 
 **Turso (libSQL):**
+
 ```bash
 # Connect to database
 turso db shell readied
@@ -1648,6 +1776,7 @@ SELECT * FROM subscriptions;
 ```
 
 **Local SQLite:**
+
 ```bash
 # Open database
 sqlite3 ~/Library/Application\ Support/Readied/notes.db
@@ -1669,6 +1798,7 @@ SELECT * FROM metadata;
 ### Files Created (29 files)
 
 **Main Process Services (5 files):**
+
 - `apps/desktop/src/main/services/tokenStorage.ts` (~100 LOC)
 - `apps/desktop/src/main/services/deviceInfo.ts` (~80 LOC)
 - `apps/desktop/src/main/services/apiClient.ts` (~330 LOC)
@@ -1676,11 +1806,13 @@ SELECT * FROM metadata;
 - `apps/desktop/src/main/services/syncService.ts` (~400 LOC)
 
 **Renderer Stores (3 files):**
+
 - `apps/desktop/src/renderer/stores/settings.ts` (~80 LOC)
 - `apps/desktop/src/renderer/stores/authStore.ts` (~160 LOC)
 - `apps/desktop/src/renderer/stores/syncStore.ts` (~150 LOC)
 
 **UI Components (9 files + 9 CSS files):**
+
 - `apps/desktop/src/renderer/pages/settings/components/SettingGroup.tsx` + `.module.css`
 - `apps/desktop/src/renderer/pages/settings/components/SettingRow.tsx` + `.module.css`
 - `apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx`

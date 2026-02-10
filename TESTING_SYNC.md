@@ -45,6 +45,7 @@
 **Expected Result:** ✅ Note syncs correctly, content decrypts properly
 
 **Failure Modes:**
+
 - ❌ Note marked needs_sync=1 but not pushed → Check push logic
 - ❌ Note pushed but not appearing on B → Check pull logic
 - ❌ Content garbled → Check encryption/decryption
@@ -87,11 +88,13 @@
    - OR choose "Keep Remote" → markAsSynced() → accept server version
 
 **Expected Result:**
+
 - ✅ Conflict detected during push
 - ✅ User can resolve via UI
 - ✅ After resolution, note syncs correctly
 
 **Failure Modes:**
+
 - ❌ Conflict not detected → Check version comparison in backend
 - ❌ Resolution doesn't work → Check resolveConflict() implementation
 - ❌ Note stuck in conflict state → Check markAsSynced() logic
@@ -123,6 +126,7 @@
 **Expected Result:** ✅ All edits synced, no data loss
 
 **Failure Modes:**
+
 - ❌ Edits lost → Check trigger doesn't skip updates
 - ❌ Version mismatch → Check local_version increment
 - ❌ Duplicate pushes → Check markAsSynced() called correctly
@@ -154,6 +158,7 @@
 **Expected Result:** ✅ Delete syncs correctly
 
 **Failure Modes:**
+
 - ❌ Note not deleted on B → Check delete operation handling
 - ❌ Note re-appears after sync → Check trigger doesn't mark deleted notes
 
@@ -202,6 +207,7 @@ sqlite3 ~/Library/Application\ Support/Readied/readied.db \
 If auto-sync is too slow (5 min interval), trigger manually:
 
 **Option 1: DevTools Console (Renderer)**
+
 ```javascript
 // Trigger sync
 window.api.sync.syncNow();
@@ -211,6 +217,7 @@ window.api.sync.getStatus();
 ```
 
 **Option 2: Main Process (IPC Handler)**
+
 ```typescript
 // In main/index.ts
 ipcMain.handle('test-sync', async () => {
@@ -224,6 +231,7 @@ window.api.invoke('test-sync');
 ```
 
 **Option 3: Auto-Sync Interval Override**
+
 ```typescript
 // In main/index.ts, after creating syncService:
 syncService.startAutoSync(30 * 1000); // 30 seconds instead of 5 minutes
@@ -234,6 +242,7 @@ syncService.startAutoSync(30 * 1000); // 30 seconds instead of 5 minutes
 ## Debug Queries
 
 **Check pending changes locally:**
+
 ```sql
 SELECT id, title, local_version, needs_sync, last_synced_at
 FROM notes
@@ -242,6 +251,7 @@ ORDER BY local_version ASC;
 ```
 
 **Check sync stats:**
+
 ```sql
 SELECT
   COUNT(CASE WHEN needs_sync = 1 THEN 1 END) as pending_count,
@@ -250,6 +260,7 @@ FROM notes;
 ```
 
 **Check server sync log:**
+
 ```sql
 -- In Turso staging database
 SELECT
@@ -261,6 +272,7 @@ LIMIT 20;
 ```
 
 **Check sync cursors:**
+
 ```sql
 -- In Turso staging database
 SELECT
@@ -276,6 +288,7 @@ WHERE user_id = 'test-user-id';
 ### Triggers
 
 **INSERT:** New note immediately marked needs_sync=1
+
 ```sql
 INSERT INTO notes (...) VALUES (...);
 -- Trigger: notes_insert_sync_tracking fires
@@ -283,6 +296,7 @@ INSERT INTO notes (...) VALUES (...);
 ```
 
 **UPDATE (content/title/metadata):**
+
 ```sql
 UPDATE notes SET content='new content' WHERE id='note-id';
 -- Trigger: notes_update_sync_tracking fires
@@ -290,6 +304,7 @@ UPDATE notes SET content='new content' WHERE id='note-id';
 ```
 
 **UPDATE (sync-only fields):** Should NOT trigger
+
 ```sql
 UPDATE notes SET needs_sync=0, last_synced_at='...' WHERE id='note-id';
 -- Trigger: Does NOT fire (WHEN clause prevents it)

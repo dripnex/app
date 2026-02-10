@@ -1,7 +1,17 @@
+import { useState, useEffect } from 'react';
 import styles from './Section.module.css';
 
 export function AboutSection() {
-  const version = window.readied?.app?.version?.() ?? 'Unknown';
+  const [version, setVersion] = useState('');
+
+  useEffect(() => {
+    const result = window.readied?.app?.version?.();
+    if (result !== undefined) {
+      Promise.resolve(result)
+        .then(setVersion)
+        .catch(() => setVersion('Unknown'));
+    }
+  }, []);
 
   return (
     <div className={styles.section}>

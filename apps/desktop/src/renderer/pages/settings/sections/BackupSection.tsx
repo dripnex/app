@@ -13,7 +13,7 @@ import styles from './Section.module.css';
 
 export function BackupSection() {
   const backup = useSettingsStore(selectBackup);
-  const updateBackup = useSettingsStore((s) => s.updateBackup);
+  const updateBackup = useSettingsStore(s => s.updateBackup);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -92,10 +92,7 @@ export function BackupSection() {
       <h2 className={styles.title}>Backup & Data</h2>
 
       <SettingGroup title="Export">
-        <SettingRow
-          label="Export All Notes"
-          description="Export all your notes as Markdown files"
-        >
+        <SettingRow label="Export All Notes" description="Export all your notes as Markdown files">
           <button
             type="button"
             className={styles.actionButton}
@@ -134,10 +131,7 @@ export function BackupSection() {
       </SettingGroup>
 
       <SettingGroup title="Backup">
-        <SettingRow
-          label="Create Backup"
-          description={`Last backup: ${formatLastBackup()}`}
-        >
+        <SettingRow label="Create Backup" description={`Last backup: ${formatLastBackup()}`}>
           <button
             type="button"
             className={styles.actionButton}
@@ -153,15 +147,8 @@ export function BackupSection() {
           </button>
         </SettingRow>
 
-        <SettingRow
-          label="Open Data Folder"
-          description="View backups and database files"
-        >
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleOpenDataFolder}
-          >
+        <SettingRow label="Open Data Folder" description="View backups and database files">
+          <button type="button" className={styles.actionButton} onClick={handleOpenDataFolder}>
             <FolderOpen size={14} />
             <span>Open Folder</span>
           </button>

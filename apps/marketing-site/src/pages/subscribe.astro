@@ -1,0 +1,523 @@
+---
+import Base from '../layouts/Base.astro';
+import { getConfig } from '@readied/product-config';
+
+const config = getConfig();
+---
+
+<Base title="Get Readied Pro" description="Start your free trial of Readied Pro with cloud sync, backlinks, and advanced features.">
+  <div class="subscribe-page">
+    <div class="container">
+      <!-- Step 1: Email Entry -->
+      <div id="step-email" class="step">
+        <h1>Get Started with Readied</h1>
+        <p class="subtitle">Enter your email to create your account</p>
+
+        <form id="email-form" class="email-form">
+          <input
+            type="email"
+            name="email"
+            placeholder="you@example.com"
+            required
+            autocomplete="email"
+            aria-label="Email address"
+          >
+          <button type="submit" class="button primary">
+            Continue
+          </button>
+        </form>
+
+        <p class="legal">
+          By continuing, you agree to our
+          <a href="/terms">Terms of Service</a> and
+          <a href="/privacy">Privacy Policy</a>
+        </p>
+      </div>
+
+      <!-- Step 2: Check Email -->
+      <div id="step-check-email" class="step" style="display: none;">
+        <div class="icon-check">✓</div>
+        <h1>Check your email</h1>
+        <p class="subtitle">
+          We sent a magic link to <strong id="user-email"></strong>
+        </p>
+        <p>Click the link in your email to verify your address and choose your plan.</p>
+
+        <button id="resend-link" class="button secondary" style="margin-top: 2rem;">
+          Resend Link
+        </button>
+      </div>
+
+      <!-- Step 3: Choose Plan -->
+      <div id="step-plan" class="step" style="display: none;">
+        <h1>Choose your plan</h1>
+        <p class="subtitle">Start with a 14-day free trial, cancel anytime</p>
+
+        <div class="plan-cards">
+          <div class="plan-card">
+            <h3>Free</h3>
+            <p class="price">$0<span>/forever</span></p>
+            <ul class="features">
+              <li>✓ Unlimited local notes</li>
+              <li>✓ Full markdown editor</li>
+              <li>✓ 100% offline</li>
+              <li>✓ Export anytime</li>
+            </ul>
+            <a href="/download" class="button secondary">
+              Download Free
+            </a>
+          </div>
+
+          <div class="plan-card featured">
+            <div class="badge">Most Popular</div>
+            <h3>Pro</h3>
+            <p class="price">$2.99<span>/month</span></p>
+            <ul class="features">
+              <li>✓ Everything in Free</li>
+              <li>✓ Cloud sync across devices</li>
+              <li>✓ Backlinks & graph view</li>
+              <li>✓ Advanced search</li>
+              <li>✓ Priority support</li>
+            </ul>
+            <button class="button primary" data-plan="monthly">
+              Start 14-Day Trial
+            </button>
+          </div>
+
+          <div class="plan-card">
+            <div class="badge save">Save $6</div>
+            <h3>Pro Annual</h3>
+            <p class="price">$29<span>/year</span></p>
+            <p class="savings">$2.42/month</p>
+            <ul class="features">
+              <li>✓ Everything in Pro</li>
+              <li>✓ 2 months free</li>
+              <li>✓ Priority support</li>
+              <li>✓ Early access to features</li>
+            </ul>
+            <button class="button primary" data-plan="annual">
+              Start 14-Day Trial
+            </button>
+          </div>
+        </div>
+
+        <p class="guarantee">
+          14-day money-back guarantee • Cancel anytime • Export your data anytime
+        </p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="step-loading" class="step" style="display: none;">
+        <div class="spinner"></div>
+        <h1>Creating your checkout session...</h1>
+      </div>
+
+      <!-- Error State -->
+      <div id="step-error" class="step" style="display: none;">
+        <div class="icon-error">✕</div>
+        <h1>Something went wrong</h1>
+        <p id="error-message" class="subtitle"></p>
+        <button id="retry-btn" class="button primary" style="margin-top: 2rem;">
+          Try Again
+        </button>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .subscribe-page {
+    min-height: 100vh;
+    padding: 6rem 2rem 4rem;
+    background: linear-gradient(180deg, #0a0b0d 0%, #1a1b1e 100%);
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .step {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 2rem;
+  }
+
+  .email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 400px;
+    margin: 0 auto 2rem;
+  }
+
+  input[type="email"] {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    transition: all 0.3s;
+  }
+
+  input[type="email"]:focus {
+    outline: none;
+    border-color: #667eea;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .button {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .button.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  }
+
+  .button.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .button.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .legal {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .legal a {
+    color: #667eea;
+    text-decoration: none;
+  }
+
+  .legal a:hover {
+    text-decoration: underline;
+  }
+
+  .icon-check {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+  }
+
+  .icon-error {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.5rem;
+    background: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+  }
+
+  .plan-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+    max-width: 1000px;
+  }
+
+  .plan-card {
+    position: relative;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    text-align: left;
+    transition: all 0.3s;
+  }
+
+  .plan-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(102, 126, 234, 0.5);
+  }
+
+  .plan-card.featured {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  }
+
+  .badge {
+    position: absolute;
+    top: -12px;
+    right: 1rem;
+    padding: 0.375rem 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+  }
+
+  .badge.save {
+    background: #22c55e;
+  }
+
+  .plan-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: white;
+  }
+
+  .price {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: white;
+  }
+
+  .price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .savings {
+    font-size: 0.875rem;
+    color: #22c55e;
+    margin-bottom: 1rem;
+  }
+
+  .features {
+    list-style: none;
+    margin: 1.5rem 0;
+    padding: 0;
+  }
+
+  .features li {
+    padding: 0.5rem 0;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .guarantee {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    margin-top: 2rem;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1.5rem;
+    border: 4px solid rgba(102, 126, 234, 0.2);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .plan-cards {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  // Get API URL from environment or use default
+  const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787';
+
+  // Step 1: Send magic link
+  const emailForm = document.getElementById('email-form') as HTMLFormElement;
+  const userEmailEl = document.getElementById('user-email');
+
+  emailForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get('email') as string;
+
+    // Store email for later steps
+    sessionStorage.setItem('checkout-email', email);
+    if (userEmailEl) {
+      userEmailEl.textContent = email;
+    }
+
+    // Disable button
+    const button = emailForm.querySelector('button') as HTMLButtonElement;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Sending...';
+
+    try {
+      const res = await fetch(`${API_URL}/auth/magic-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      if (res.ok) {
+        // Show check email step
+        document.getElementById('step-email')!.style.display = 'none';
+        document.getElementById('step-check-email')!.style.display = 'block';
+      } else {
+        throw new Error('Failed to send magic link');
+      }
+    } catch (error) {
+      showError('Failed to send magic link. Please try again.');
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  });
+
+  // Resend link
+  document.getElementById('resend-link')?.addEventListener('click', async () => {
+    const email = sessionStorage.getItem('checkout-email');
+    if (!email) return;
+
+    const button = document.getElementById('resend-link') as HTMLButtonElement;
+    button.disabled = true;
+    button.textContent = 'Sending...';
+
+    try {
+      await fetch(`${API_URL}/auth/magic-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      button.textContent = 'Link Sent!';
+      setTimeout(() => {
+        button.textContent = 'Resend Link';
+        button.disabled = false;
+      }, 3000);
+    } catch {
+      button.textContent = 'Resend Link';
+      button.disabled = false;
+    }
+  });
+
+  // Step 2: After email verified (check URL param)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('verified') === 'true') {
+    document.getElementById('step-email')!.style.display = 'none';
+    document.getElementById('step-check-email')!.style.display = 'none';
+    document.getElementById('step-plan')!.style.display = 'block';
+
+    // Get token from URL or sessionStorage
+    const token = urlParams.get('token') || sessionStorage.getItem('auth-token');
+    if (token) {
+      sessionStorage.setItem('auth-token', token);
+    }
+  }
+
+  // Step 3: Choose plan and go to Stripe
+  document.querySelectorAll('[data-plan]').forEach(button => {
+    button.addEventListener('click', async (e) => {
+      const plan = (e.target as HTMLElement).dataset.plan;
+      const email = sessionStorage.getItem('checkout-email');
+
+      if (!email) {
+        showError('Email not found. Please start over.');
+        return;
+      }
+
+      // Show loading
+      document.getElementById('step-plan')!.style.display = 'none';
+      document.getElementById('step-loading')!.style.display = 'block';
+
+      try {
+        // Use public checkout endpoint (no auth required)
+        const res = await fetch(`${API_URL}/subscription/checkout/public`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            plan,
+            successUrl: `${window.location.origin}/subscription/success`,
+            cancelUrl: `${window.location.origin}/subscribe`
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to create checkout session');
+        }
+
+        const { url } = await res.json();
+        window.location.href = url;
+      } catch (error) {
+        showError('Failed to start checkout. Please try again.');
+      }
+    });
+  });
+
+  // Retry button
+  document.getElementById('retry-btn')?.addEventListener('click', () => {
+    window.location.reload();
+  });
+
+  function showError(message: string) {
+    const errorMessageEl = document.getElementById('error-message');
+    if (errorMessageEl) {
+      errorMessageEl.textContent = message;
+    }
+
+    // Hide all steps
+    document.querySelectorAll('.step').forEach(el => {
+      (el as HTMLElement).style.display = 'none';
+    });
+
+    // Show error step
+    document.getElementById('step-error')!.style.display = 'block';
+  }
+</script>

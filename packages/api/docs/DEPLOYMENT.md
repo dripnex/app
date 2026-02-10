@@ -11,11 +11,11 @@
 
 We use three environments:
 
-| Environment | Worker Name | URL | Branch |
-|-------------|-------------|-----|--------|
-| **Development** | `readied-api` (local) | `http://localhost:8787` | Any |
-| **Staging** | `readied-api-staging` | `https://readied-api-staging.your-subdomain.workers.dev` | `develop` |
-| **Production** | `readied-api-production` | `https://api.readied.app` | `main` |
+| Environment     | Worker Name              | URL                                                      | Branch    |
+| --------------- | ------------------------ | -------------------------------------------------------- | --------- |
+| **Development** | `readied-api` (local)    | `http://localhost:8787`                                  | Any       |
+| **Staging**     | `readied-api-staging`    | `https://readied-api-staging.your-subdomain.workers.dev` | `develop` |
+| **Production**  | `readied-api-production` | `https://api.readied.app`                                | `main`    |
 
 ## First-Time Setup
 
@@ -82,6 +82,7 @@ wrangler secret put STRIPE_WEBHOOK_SECRET --env staging
 ```
 
 **Verify secrets:**
+
 ```bash
 wrangler secret list --env staging
 ```
@@ -98,11 +99,13 @@ pnpm deploy:staging
 ```
 
 Or directly with wrangler:
+
 ```bash
 wrangler deploy --env staging
 ```
 
 **Output:**
+
 ```
 ✨ Uploaded readied-api-staging
 ✨ Published readied-api-staging (1.23 sec)
@@ -163,6 +166,7 @@ pnpm deploy:production
 ### 4. Configure Custom Domain
 
 In Cloudflare Dashboard:
+
 1. Go to Workers & Pages
 2. Select `readied-api-production`
 3. Settings > Triggers > Custom Domains
@@ -172,6 +176,7 @@ In Cloudflare Dashboard:
 ### 5. Update Stripe Webhook
 
 Update webhook URL in [Stripe Dashboard](https://dashboard.stripe.com/webhooks):
+
 - Old: `https://readied-api-staging...workers.dev/subscription/webhook`
 - New: `https://api.readied.app/subscription/webhook`
 
@@ -199,6 +204,7 @@ jobs:
 ```
 
 **Setup:**
+
 1. Create API token: Dashboard > My Profile > API Tokens
 2. Add to GitHub: Settings > Secrets > `CLOUDFLARE_API_TOKEN`
 
@@ -220,6 +226,7 @@ wrangler tail --env production --format pretty | grep ERROR
 ### Metrics
 
 View in Cloudflare Dashboard:
+
 - Workers & Pages > readied-api-staging > Analytics
 - Requests per minute
 - Error rate
@@ -253,6 +260,7 @@ pnpm deploy:production
 **Cause:** Secret not configured for environment
 
 **Solution:**
+
 ```bash
 wrangler secret put MISSING_SECRET --env staging
 ```
@@ -262,6 +270,7 @@ wrangler secret put MISSING_SECRET --env staging
 **Cause:** Wrong Turso URL or token
 
 **Solution:**
+
 ```bash
 # Verify database
 turso db show readied-staging
@@ -276,6 +285,7 @@ wrangler secret put TURSO_AUTH_TOKEN --env staging
 **Cause:** Too much computation in single request
 
 **Solution:**
+
 - Review slow queries (add indexes)
 - Optimize encryption/crypto operations
 - Consider Durable Objects for heavy compute
@@ -285,6 +295,7 @@ wrangler secret put TURSO_AUTH_TOKEN --env staging
 **Cause:** Browser cache or CDN cache
 
 **Solution:**
+
 ```bash
 # Bust cache
 curl -X PURGE https://api.readied.app/

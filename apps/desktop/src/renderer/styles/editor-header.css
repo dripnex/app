@@ -149,17 +149,17 @@
 
 .status-dropdown-btn[data-status="on_hold"] .status-icon,
 .editor-header-menu-item[data-status="on_hold"] .item-icon {
-  color: #f59e0b; /* Amber */
+  color: var(--status-on-hold);
 }
 
 .status-dropdown-btn[data-status="completed"] .status-icon,
 .editor-header-menu-item[data-status="completed"] .item-icon {
-  color: #22c55e; /* Green */
+  color: var(--status-completed);
 }
 
 .status-dropdown-btn[data-status="dropped"] .status-icon,
 .editor-header-menu-item[data-status="dropped"] .item-icon {
-  color: #ef4444; /* Red */
+  color: var(--status-dropped);
 }
 
 /* ============================================================================

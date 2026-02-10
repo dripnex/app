@@ -52,7 +52,11 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
 
   const handleCheckout = useCallback(
     async (commitSha: string, commitMessage: string) => {
-      if (!confirm(`Revert to commit: "${commitMessage}"?\n\nThis will restore all notes to their state at this commit.`)) {
+      if (
+        !confirm(
+          `Revert to commit: "${commitMessage}"?\n\nThis will restore all notes to their state at this commit.`
+        )
+      ) {
         return;
       }
 
@@ -146,7 +150,10 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
                 return (
                   <div key={commit.oid} className={styles.commitItem}>
                     <div className={styles.commitHeader} onClick={() => toggleCommit(commit.oid)}>
-                      <button className={styles.expandBtn} aria-label={isExpanded ? 'Collapse' : 'Expand'}>
+                      <button
+                        className={styles.expandBtn}
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                      >
                         {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                       </button>
                       <div className={styles.commitMain}>

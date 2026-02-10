@@ -1,4 +1,9 @@
-import type { StoredTrialData, StoredLicenseData, LicenseFile } from './types.js';
+import type {
+  StoredTrialData,
+  StoredLicenseData,
+  StoredSubscriptionData,
+  LicenseFile,
+} from './types.js';
 
 /**
  * Interface for license storage operations
@@ -29,6 +34,21 @@ export interface LicenseStorage {
    * Removes license data from storage
    */
   removeLicenseData(): Promise<void>;
+
+  /**
+   * Reads cached subscription data from storage
+   */
+  readSubscriptionData(): Promise<StoredSubscriptionData | null>;
+
+  /**
+   * Writes subscription data to storage
+   */
+  writeSubscriptionData(data: StoredSubscriptionData): Promise<void>;
+
+  /**
+   * Removes subscription data from storage
+   */
+  removeSubscriptionData(): Promise<void>;
 }
 
 /**
@@ -37,6 +57,7 @@ export interface LicenseStorage {
 export class InMemoryLicenseStorage implements LicenseStorage {
   private trialData: StoredTrialData | null = null;
   private licenseData: StoredLicenseData | null = null;
+  private subscriptionData: StoredSubscriptionData | null = null;
 
   async readTrialData(): Promise<StoredTrialData | null> {
     return this.trialData;
@@ -58,12 +79,25 @@ export class InMemoryLicenseStorage implements LicenseStorage {
     this.licenseData = null;
   }
 
+  async readSubscriptionData(): Promise<StoredSubscriptionData | null> {
+    return this.subscriptionData;
+  }
+
+  async writeSubscriptionData(data: StoredSubscriptionData): Promise<void> {
+    this.subscriptionData = data;
+  }
+
+  async removeSubscriptionData(): Promise<void> {
+    this.subscriptionData = null;
+  }
+
   /**
    * Resets all stored data (for testing)
    */
   reset(): void {
     this.trialData = null;
     this.licenseData = null;
+    this.subscriptionData = null;
   }
 }
 

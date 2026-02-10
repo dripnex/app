@@ -1,0 +1,178 @@
+---
+/**
+ * Newsletter Signup Component
+ *
+ * Collects email addresses for product updates and marketing.
+ * Integrated with /newsletter/subscribe API endpoint.
+ */
+---
+
+<section class="newsletter">
+  <div class="container">
+    <h2>Stay Updated</h2>
+    <p>Get product updates, tips, and news delivered to your inbox.</p>
+
+    <form id="newsletter-form">
+      <input
+        type="email"
+        name="email"
+        placeholder="you@example.com"
+        required
+        aria-label="Email address"
+      >
+      <button type="submit">Subscribe</button>
+    </form>
+
+    <div id="newsletter-message" style="display: none;"></div>
+  </div>
+</section>
+
+<script>
+  const API_URL = import.meta.env.PUBLIC_API_URL || 'https://api.readied.app';
+
+  document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+    const message = document.getElementById('newsletter-message');
+    const button = form.querySelector('button') as HTMLButtonElement;
+
+    if (!message) return;
+
+    // Disable button during submission
+    button.disabled = true;
+    button.textContent = 'Subscribing...';
+
+    try {
+      const res = await fetch(`${API_URL}/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        message.textContent = '✓ Thanks for subscribing! Check your email.';
+        message.style.color = '#22c55e';
+        form.reset();
+      } else {
+        message.textContent = data.error || 'Something went wrong. Please try again.';
+        message.style.color = '#ef4444';
+      }
+
+      message.style.display = 'block';
+    } catch (err) {
+      message.textContent = 'Network error. Please try again.';
+      message.style.color = '#ef4444';
+      message.style.display = 'block';
+    } finally {
+      // Re-enable button
+      button.disabled = false;
+      button.textContent = 'Subscribe';
+    }
+  });
+</script>
+
+<style>
+  .newsletter {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 60px 20px;
+    text-align: center;
+    color: white;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .newsletter h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .newsletter p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+  }
+
+  .newsletter form {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 500px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+
+  .newsletter input {
+    flex: 1;
+    min-width: 250px;
+    padding: 0.875rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    color: #1a1b1e;
+  }
+
+  .newsletter input:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+
+  .newsletter button {
+    padding: 0.875rem 1.5rem;
+    background: white;
+    color: #667eea;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .newsletter button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .newsletter button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  #newsletter-message {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    border-radius: 6px;
+  }
+
+  @media (max-width: 640px) {
+    .newsletter {
+      padding: 40px 20px;
+    }
+
+    .newsletter h2 {
+      font-size: 1.5rem;
+    }
+
+    .newsletter p {
+      font-size: 1rem;
+    }
+
+    .newsletter form {
+      flex-direction: column;
+    }
+
+    .newsletter input,
+    .newsletter button {
+      width: 100%;
+    }
+  }
+</style>

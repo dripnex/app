@@ -3,6 +3,7 @@
 ## Sentry Setup (Pending)
 
 ### Why Sentry?
+
 - Error tracking & stack traces
 - Performance monitoring (APM)
 - Release tracking
@@ -17,12 +18,14 @@
    - Copy DSN: `https://xxxxx@o123.ingest.sentry.io/456789`
 
 2. **Install Toucan (Sentry SDK for Workers)**
+
    ```bash
    cd packages/api
    pnpm add toucan-js
    ```
 
 3. **Add Sentry DSN to Secrets**
+
    ```bash
    # Local
    echo 'SENTRY_DSN="https://xxxxx@sentry.io/..."' >> .dev.vars.local
@@ -32,6 +35,7 @@
    ```
 
 4. **Integrate in index.ts**
+
    ```typescript
    import { Toucan } from 'toucan-js';
 
@@ -53,6 +57,7 @@
    ```
 
 5. **Track Performance**
+
    ```typescript
    const transaction = sentry.startTransaction({
      name: 'POST /sync',
@@ -84,12 +89,14 @@ If Sentry is overkill, implement structured logging:
 ```typescript
 // src/lib/logger.ts
 export function log(level: 'info' | 'warn' | 'error', message: string, meta?: object) {
-  console.log(JSON.stringify({
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    ...meta,
-  }));
+  console.log(
+    JSON.stringify({
+      level,
+      message,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    })
+  );
 }
 
 // Usage
@@ -97,6 +104,7 @@ log('error', 'Auth failed', { userId, reason: 'invalid_token' });
 ```
 
 View logs:
+
 ```bash
 wrangler tail
 ```
@@ -113,6 +121,7 @@ wrangler tail
    - Alert: Email when down
 
 ### Alternatives
+
 - Pingdom
 - StatusCake
 - Better Uptime (paid but nice status page)
@@ -120,6 +129,7 @@ wrangler tail
 ## Status Page (Future)
 
 Create public status page:
+
 - Domain: `status.readied.app`
 - Shows API health, incident history
 - Options:
@@ -142,6 +152,7 @@ Create public status page:
 **Low-Medium** - Not blocking launch, but important for operations.
 
 Complete before first paying customers to ensure you can:
+
 - Debug production issues
 - Track down user-reported bugs
 - Monitor API health proactively

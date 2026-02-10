@@ -24,7 +24,7 @@ export function Toggle({ id, checked, onChange, disabled }: ToggleProps) {
       type="checkbox"
       id={id}
       checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
+      onChange={e => onChange(e.target.checked)}
       disabled={disabled}
       className={styles.toggle}
     />
@@ -86,7 +86,7 @@ export function TextInput({ id, value, onChange, placeholder, disabled }: TextIn
       type="text"
       id={id}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
       className={styles.textInput}
@@ -116,15 +116,51 @@ export function Select({ id, value, onChange, options, disabled }: SelectProps) 
     <select
       id={id}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={e => onChange(e.target.value)}
       disabled={disabled}
       className={styles.select}
     >
-      {options.map((option) => (
+      {options.map(option => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>
       ))}
     </select>
+  );
+}
+
+// ============================================================================
+// ColorPicker
+// ============================================================================
+
+export interface ColorOption {
+  value: string;
+  label: string;
+}
+
+export interface ColorPickerProps {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  colors: ColorOption[];
+  disabled?: boolean;
+}
+
+export function ColorPicker({ id, value, onChange, colors, disabled }: ColorPickerProps) {
+  return (
+    <div className={styles.colorPicker} id={id}>
+      {colors.map(color => (
+        <button
+          key={color.value}
+          type="button"
+          className={`${styles.colorSwatch} ${value === color.value ? styles.colorSwatchActive : ''}`}
+          style={{ backgroundColor: color.value }}
+          onClick={() => !disabled && onChange(color.value)}
+          disabled={disabled}
+          title={color.label}
+          aria-label={color.label}
+        />
+      ))}
+    </div>
   );
 }

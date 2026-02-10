@@ -5,6 +5,7 @@ import {
   Copy,
   Link2,
   Pin,
+  PinOff,
   Trash2,
   History,
   Share2,
@@ -28,8 +29,12 @@ interface ActionsPanelProps {
   readonly onClose: () => void;
   readonly noteId: string;
   readonly noteTitle?: string;
+  readonly isPinned?: boolean;
+  readonly onPin?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
+  readonly onRevisionHistory?: () => void;
+  readonly onShareOnWeb?: () => void;
   /** Hidden formatting groups from toolbar overflow */
   readonly hiddenFormatting?: ToolbarVisibility;
   /** Editor ref for formatting actions */
@@ -42,9 +47,9 @@ interface ActionsPanelProps {
  * Actions:
  * - Duplicate (functional)
  * - Copy Note Link (functional)
- * - Pin to Top (coming soon)
+ * - Pin to Top / Unpin (functional)
  * - Move to Trash (functional)
- * - Revision History (coming soon)
+ * - Revision History (functional)
  * - Share on Web (coming soon)
  *
  * Also shows hidden toolbar formatting options when overflow is detected.
@@ -54,8 +59,12 @@ export const ActionsPanel = memo(function ActionsPanel({
   onClose,
   noteId,
   noteTitle,
+  isPinned,
+  onPin,
   onDuplicate,
   onDelete,
+  onRevisionHistory,
+  onShareOnWeb,
   hiddenFormatting,
   editorRef,
 }: ActionsPanelProps) {
@@ -99,11 +108,29 @@ export const ActionsPanel = memo(function ActionsPanel({
     onClose();
   }, [onDuplicate, onClose]);
 
+  // Handle pin toggle
+  const handlePin = useCallback(() => {
+    onPin?.();
+    onClose();
+  }, [onPin, onClose]);
+
   // Handle delete
   const handleDelete = useCallback(() => {
     onDelete?.();
     onClose();
   }, [onDelete, onClose]);
+
+  // Handle revision history
+  const handleRevisionHistory = useCallback(() => {
+    onRevisionHistory?.();
+    onClose();
+  }, [onRevisionHistory, onClose]);
+
+  // Handle share on web
+  const handleShareOnWeb = useCallback(() => {
+    onShareOnWeb?.();
+    onClose();
+  }, [onShareOnWeb, onClose]);
 
   // Open note in new window
   const handleOpenInNewWindow = useCallback(async () => {
@@ -302,12 +329,11 @@ export const ActionsPanel = memo(function ActionsPanel({
               Copy Note Link
             </button>
 
-            <button type="button" className={styles.item} disabled title="Coming soon">
+            <button type="button" className={styles.item} onClick={handlePin} disabled={!onPin}>
               <span className={styles.icon}>
-                <Pin size={16} />
+                {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
               </span>
-              Pin to Top
-              <span className={styles.badge}>Soon</span>
+              {isPinned ? 'Unpin' : 'Pin to Top'}
             </button>
 
             <button type="button" className={styles.item} onClick={handleOpenInNewWindow}>
@@ -336,20 +362,28 @@ export const ActionsPanel = memo(function ActionsPanel({
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Advanced</div>
 
-            <button type="button" className={styles.item} disabled title="Coming soon">
+            <button
+              type="button"
+              className={styles.item}
+              onClick={handleRevisionHistory}
+              disabled={!onRevisionHistory}
+            >
               <span className={styles.icon}>
                 <History size={16} />
               </span>
               Revision History
-              <span className={styles.badge}>Soon</span>
             </button>
 
-            <button type="button" className={styles.item} disabled title="Coming soon">
+            <button
+              type="button"
+              className={styles.item}
+              onClick={handleShareOnWeb}
+              disabled={!onShareOnWeb}
+            >
               <span className={styles.icon}>
                 <Share2 size={16} />
               </span>
               Share on Web
-              <span className={styles.badge}>Soon</span>
             </button>
           </div>
         </div>

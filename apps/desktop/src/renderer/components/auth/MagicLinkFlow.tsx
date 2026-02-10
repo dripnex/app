@@ -57,7 +57,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
 
   return (
     <div className={styles.overlay} onClick={handleCancel}>
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.dialog} onClick={e => e.stopPropagation()}>
         <button type="button" className={styles.closeButton} onClick={handleCancel}>
           <X size={20} />
         </button>
@@ -78,7 +78,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   className={styles.input}
                   autoFocus

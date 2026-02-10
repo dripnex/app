@@ -20,6 +20,8 @@ import type { Env } from './db/client.js';
 import { auth } from './routes/auth.js';
 import { sync } from './routes/sync.js';
 import { subscription } from './routes/subscription.js';
+import { newsletterRoute } from './routes/newsletter.js';
+import { share } from './routes/share.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -39,7 +41,7 @@ app.use(
 );
 
 // Health check
-app.get('/', (c) => {
+app.get('/', c => {
   return c.json({
     name: 'Readied API',
     version: '0.1.0',
@@ -47,7 +49,7 @@ app.get('/', (c) => {
   });
 });
 
-app.get('/health', (c) => {
+app.get('/health', c => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -55,9 +57,11 @@ app.get('/health', (c) => {
 app.route('/auth', auth);
 app.route('/sync', sync);
 app.route('/subscription', subscription);
+app.route('/newsletter', newsletterRoute);
+app.route('/share', share);
 
 // 404 handler
-app.notFound((c) => {
+app.notFound(c => {
   return c.json({ error: 'Not Found' }, 404);
 });
 

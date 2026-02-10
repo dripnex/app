@@ -64,12 +64,12 @@ export function rateLimit(options: RateLimitOptions) {
   const {
     max,
     windowMs,
-    keyGenerator = (c) => {
+    keyGenerator = c => {
       // Use Cloudflare's CF-Connecting-IP header (real client IP)
       const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
       return ip;
     },
-    handler = (c) => {
+    handler = c => {
       return c.json(
         {
           error: 'Too Many Requests',

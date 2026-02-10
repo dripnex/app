@@ -803,6 +803,22 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   }
 
   /**
+   * Check if a note has unsynced local edits.
+   *
+   * @param noteId - The note ID to check
+   * @returns true if the note has pending local changes
+   */
+  hasPendingEdits(noteId: NoteId): boolean {
+    const stmt = this.db.prepare(`
+      SELECT needs_sync
+      FROM notes
+      WHERE id = ?
+    `);
+    const row = stmt.get(noteId) as { needs_sync: number } | undefined;
+    return row?.needs_sync === 1;
+  }
+
+  /**
    * Reset sync tracking for a note (force re-sync).
    * Sets needs_sync=1 and increments local_version.
    *

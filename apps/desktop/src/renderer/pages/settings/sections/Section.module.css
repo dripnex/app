@@ -1,16 +1,22 @@
 .section {
-  max-width: 600px;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .title {
-  font-size: var(--text-xl);
+  font-size: 1.875rem;
   font-weight: 600;
-  margin: 0 0 var(--space-4);
+  margin: 0 0 0.5rem;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.title + * {
+  margin-top: 2rem;
 }
 
 .placeholder {
-  color: var(--text-muted);
+  color: var(--text-tertiary);
   font-size: var(--text-sm);
 }
 
@@ -37,79 +43,101 @@
 }
 
 .link {
-  color: var(--accent);
+  color: var(--accent-primary);
   text-decoration: none;
   font-size: var(--text-sm);
   transition: color var(--transition-fast);
 }
 
 .link:hover {
-  color: var(--accent-strong);
+  color: var(--accent-hover);
   text-decoration: underline;
 }
 
-/* Action button (e.g., Open Folder) */
-.actionButton {
+/* Buttons */
+.actionButton,
+.primaryButton,
+.dangerButton {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.actionButton:hover {
-  background: var(--bg-surface);
-  border-color: var(--border-strong);
-}
-
-.actionButton:active {
-  background: var(--bg-inset);
-}
-
-/* Theme selector (segmented control) */
-.themeSelector {
-  display: flex;
-  gap: 4px;
-  background: var(--bg-inset);
-  padding: 4px;
-  border-radius: 8px;
-}
-
-.themeOption {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: transparent;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
   border: none;
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 13px;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s;
 }
 
-.themeOption:hover {
+.actionButton {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.primaryButton {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.dangerButton {
+  background: var(--danger);
+  color: var(--bg-base);
+}
+
+.dangerButton:hover:not(:disabled) {
+  background: var(--danger);
+  filter: brightness(0.85);
+}
+
+.actionButton:disabled,
+.primaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--success);
+  color: var(--bg-base);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Messages */
+.checkResult,
+.infoMessage,
+.successMessage {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.checkResult,
+.infoMessage {
+  background: var(--bg-tertiary);
   color: var(--text-secondary);
-  background: var(--bg-elevated);
 }
 
-.themeOptionActive {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-.themeOptionActive:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
+.successMessage {
+  background: var(--success-muted);
+  color: var(--success);
+  border: 1px solid var(--success);
 }
 
 /* Spinning animation */
@@ -126,55 +154,46 @@
   animation: spin 1s linear infinite;
 }
 
-/* Check result message */
-.checkResult {
-  padding: 8px 12px;
-  margin-top: 8px;
-  background: var(--bg-inset);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-/* Color picker */
-.colorPicker {
+/* Button Group */
+.buttonGroup {
   display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Secondary Button */
+.secondaryButton {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-
-.colorSwatch {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid transparent;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s;
 }
 
-.colorSwatch:hover {
-  transform: scale(1.1);
+.secondaryButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
 }
 
-.colorSwatchActive {
-  border-color: var(--text-primary);
+.secondaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.colorInput {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  background: transparent;
-}
-
-.colorInput::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.colorInput::-webkit-color-swatch {
-  border: 1px dashed var(--border-strong);
-  border-radius: 50%;
+/* Badge */
+.badge {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background: var(--accent-muted, rgba(107, 159, 255, 0.15));
+  color: var(--accent-primary);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }

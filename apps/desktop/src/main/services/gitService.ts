@@ -174,11 +174,7 @@ export class GitService {
    * @param files - Files to stage (relative to repo root). If empty, stages all changes.
    * @returns The commit SHA
    */
-  async commit(
-    notebookId: string,
-    message: string,
-    files: string[] = []
-  ): Promise<string> {
+  async commit(notebookId: string, message: string, files: string[] = []): Promise<string> {
     const repoPath = this.getRepoPath(notebookId);
 
     // Stage files
@@ -312,14 +308,121 @@ export class GitService {
    * @param _commitSha1 - First commit SHA (or 'HEAD')
    * @param _commitSha2 - Second commit SHA (optional, defaults to working directory)
    */
-  async diff(
-    _notebookId: string,
-    _commitSha1: string,
-    _commitSha2?: string
-  ): Promise<GitDiff[]> {
-    // TODO: Implement diff functionality
-    // isomorphic-git doesn't have built-in diff, need to implement or use external library
-    throw new Error('Diff not yet implemented');
+  async diff(notebookId: string, commitSha1: string, commitSha2?: string): Promise<GitDiff[]> {
+    const repoPath = this.getRepoPath(notebookId);
+    const diffs: GitDiff[] = [];
+
+    // Resolve 'HEAD' to actual SHA
+    const resolveRef = async (ref: string): Promise<string> => {
+      if (ref === 'HEAD') {
+        return git.resolveRef({ fs, dir: repoPath, ref: 'HEAD' });
+      }
+      return ref;
+    };
+
+    const sha1 = await resolveRef(commitSha1);
+
+    // Read a file from a specific commit tree
+    const readFileAtCommit = async (oid: string, filepath: string): Promise<string | null> => {
+      try {
+        const { blob } = await git.readBlob({
+          fs,
+          dir: repoPath,
+          oid,
+          filepath,
+        });
+        return new TextDecoder().decode(blob);
+      } catch {
+        return null;
+      }
+    };
+
+    // Read a file from the working directory
+    const readWorkdirFile = (filepath: string): string | null => {
+      const fullPath = path.join(repoPath, filepath);
+      if (fs.existsSync(fullPath)) {
+        return fs.readFileSync(fullPath, 'utf-8');
+      }
+      return null;
+    };
+
+    if (commitSha2) {
+      // Diff between two commits
+      const sha2 = await resolveRef(commitSha2);
+      const matrix = await git.statusMatrix({ fs, dir: repoPath, ref: sha1 });
+
+      for (const [filepath] of matrix) {
+        if (filepath.startsWith('.git')) continue;
+        const contentA = await readFileAtCommit(sha1, filepath);
+        const contentB = await readFileAtCommit(sha2, filepath);
+
+        if (contentA !== contentB) {
+          diffs.push({
+            file: filepath,
+            changes: this.createSimpleDiff(contentA, contentB),
+          });
+        }
+      }
+    } else {
+      // Diff between commit and working directory
+      const matrix = await git.statusMatrix({ fs, dir: repoPath, ref: sha1 });
+
+      for (const [filepath, headStatus, workdirStatus] of matrix) {
+        if (filepath.startsWith('.git')) continue;
+
+        // Only include files that differ between ref and workdir
+        if (headStatus !== workdirStatus) {
+          const contentA = headStatus !== 0 ? await readFileAtCommit(sha1, filepath) : null;
+          const contentB = workdirStatus !== 0 ? readWorkdirFile(filepath) : null;
+
+          if (contentA !== contentB) {
+            diffs.push({
+              file: filepath,
+              changes: this.createSimpleDiff(contentA, contentB),
+            });
+          }
+        }
+      }
+    }
+
+    return diffs;
+  }
+
+  /**
+   * Create a simple unified-style diff between two strings
+   */
+  private createSimpleDiff(a: string | null, b: string | null): string {
+    if (a === null && b !== null)
+      return `+++ new file\n${b
+        .split('\n')
+        .map(l => `+ ${l}`)
+        .join('\n')}`;
+    if (a !== null && b === null)
+      return `--- deleted file\n${a
+        .split('\n')
+        .map(l => `- ${l}`)
+        .join('\n')}`;
+    if (a === null && b === null) return '';
+
+    const linesA = a!.split('\n');
+    const linesB = b!.split('\n');
+    const lines: string[] = [];
+
+    const maxLen = Math.max(linesA.length, linesB.length);
+    for (let i = 0; i < maxLen; i++) {
+      const lineA = linesA[i];
+      const lineB = linesB[i];
+      if (lineA === undefined) {
+        lines.push(`+ ${lineB}`);
+      } else if (lineB === undefined) {
+        lines.push(`- ${lineA}`);
+      } else if (lineA !== lineB) {
+        lines.push(`- ${lineA}`);
+        lines.push(`+ ${lineB}`);
+      }
+    }
+
+    return lines.join('\n');
   }
 
   // ==========================================================================

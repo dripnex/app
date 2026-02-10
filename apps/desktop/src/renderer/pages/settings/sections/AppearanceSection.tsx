@@ -1,36 +1,75 @@
 /**
  * Appearance Settings Section
  *
- * Theme selection and accent color.
+ * Theme, zoom level, and visual preferences.
  */
 
-import { Monitor, Moon, Sun } from 'lucide-react';
-import { useSettingsStore, selectAppearance } from '../../../stores/settings';
+import { useSettingsStore, selectGeneral } from '../../../stores/settings';
+import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { Select, ColorPicker, type ColorOption } from '../components/controls';
 import styles from './Section.module.css';
 
-type ThemeOption = 'dark' | 'light' | 'system';
-
-const themeOptions: { value: ThemeOption; label: string; icon: React.ReactNode }[] = [
-  { value: 'light', label: 'Light', icon: <Sun size={16} /> },
-  { value: 'dark', label: 'Dark', icon: <Moon size={16} /> },
-  { value: 'system', label: 'System', icon: <Monitor size={16} /> },
+const themeOptions = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
 ];
 
-/** Preset accent colors */
-const accentPresets = [
-  { value: '#5eead4', label: 'Teal' },
-  { value: '#3b82f6', label: 'Blue' },
-  { value: '#8b5cf6', label: 'Purple' },
-  { value: '#f43f5e', label: 'Rose' },
-  { value: '#f97316', label: 'Orange' },
-  { value: '#22c55e', label: 'Green' },
+const zoomOptions = [
+  { value: '0.8', label: '80%' },
+  { value: '0.9', label: '90%' },
+  { value: '1.0', label: '100% (Default)' },
+  { value: '1.1', label: '110%' },
+  { value: '1.2', label: '120%' },
+  { value: '1.3', label: '130%' },
+];
+
+const performanceModeOptions = [
+  { value: 'high', label: 'High (Full effects)' },
+  { value: 'medium', label: 'Medium (Reduced blur)' },
+  { value: 'low', label: 'Low (No blur)' },
+];
+
+const accentColorOptions: ColorOption[] = [
+  { value: '#5eead4', label: 'Teal (Default)' },
+  { value: '#60a5fa', label: 'Blue' },
+  { value: '#a78bfa', label: 'Purple' },
+  { value: '#f472b6', label: 'Pink' },
+  { value: '#fb7185', label: 'Rose' },
+  { value: '#fb923c', label: 'Orange' },
+  { value: '#4ade80', label: 'Green' },
+  { value: '#fbbf24', label: 'Amber' },
 ];
 
 export function AppearanceSection() {
-  const appearance = useSettingsStore(selectAppearance);
-  const updateAppearance = useSettingsStore((s) => s.updateAppearance);
+  const general = useSettingsStore(selectGeneral);
+  const updateGeneral = useSettingsStore(s => s.updateGeneral);
+  const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
+
+  // For now we'll store theme and zoom in general settings
+  const theme = (general as any).theme || 'dark';
+  const zoomLevel = (general as any).zoomLevel || '1.0';
+  const accentColor = (general as any).accentColor || '#5eead4';
+
+  // Store updates trigger useAppearanceSettings (called in window root) to apply DOM changes + IPC broadcast
+  const handleThemeChange = (value: string) => {
+    updateGeneral({ theme: value } as any);
+  };
+
+  const handleAccentColorChange = (value: string) => {
+    updateGeneral({ accentColor: value } as any);
+  };
+
+  const handleZoomChange = (value: string) => {
+    updateGeneral({ zoomLevel: value } as any);
+  };
+
+  const handlePerfModeChange = (value: string) => {
+    setPerfMode(value as 'high' | 'medium' | 'low');
+    document.documentElement.dataset.perf = value;
+  };
 
   return (
     <div className={styles.section}>
@@ -40,55 +79,46 @@ export function AppearanceSection() {
         <SettingRow
           label="Color Theme"
           description="Choose your preferred color scheme"
+          htmlFor="theme"
         >
-          <div className={styles.themeSelector}>
-            {themeOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`${styles.themeOption} ${
-                  appearance.theme === option.value ? styles.themeOptionActive : ''
-                }`}
-                onClick={() => updateAppearance({ theme: option.value })}
-                aria-pressed={appearance.theme === option.value}
-              >
-                {option.icon}
-                <span>{option.label}</span>
-              </button>
-            ))}
-          </div>
+          <Select id="theme" value={theme} onChange={handleThemeChange} options={themeOptions} />
+        </SettingRow>
+
+        <SettingRow
+          label="Accent Color"
+          description="Choose your preferred accent color"
+          htmlFor="accentColor"
+        >
+          <ColorPicker
+            id="accentColor"
+            value={accentColor}
+            onChange={handleAccentColorChange}
+            colors={accentColorOptions}
+          />
         </SettingRow>
       </SettingGroup>
 
-      <SettingGroup title="Accent Color">
+      <SettingGroup title="Display">
+        <SettingRow label="Zoom Level" description="Adjust the interface size" htmlFor="zoomLevel">
+          <Select
+            id="zoomLevel"
+            value={zoomLevel}
+            onChange={handleZoomChange}
+            options={zoomOptions}
+          />
+        </SettingRow>
+
         <SettingRow
-          label="Accent Color"
-          description="Color for highlights and interactive elements"
-          htmlFor="accentColor"
+          label="Performance Mode"
+          description="Adjust visual effects based on your hardware"
+          htmlFor="performanceMode"
         >
-          <div className={styles.colorPicker}>
-            {accentPresets.map((preset) => (
-              <button
-                key={preset.value}
-                type="button"
-                className={`${styles.colorSwatch} ${
-                  appearance.accentColor === preset.value ? styles.colorSwatchActive : ''
-                }`}
-                style={{ backgroundColor: preset.value }}
-                onClick={() => updateAppearance({ accentColor: preset.value })}
-                title={preset.label}
-                aria-label={preset.label}
-              />
-            ))}
-            <input
-              type="color"
-              id="accentColor"
-              value={appearance.accentColor}
-              onChange={(e) => updateAppearance({ accentColor: e.target.value })}
-              className={styles.colorInput}
-              title="Custom color"
-            />
-          </div>
+          <Select
+            id="performanceMode"
+            value={perfMode}
+            onChange={handlePerfModeChange}
+            options={performanceModeOptions}
+          />
         </SettingRow>
       </SettingGroup>
     </div>

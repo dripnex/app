@@ -116,16 +116,45 @@ export interface DataPaths {
   logs: string;
 }
 
-/** License state (mirrored from @readied/licensing) */
-export type LicenseStatus = 'trial' | 'trial_expired' | 'licensed' | 'updates_expired';
+/** License state (mirrored from @readied/licensing AppLicenseState) */
+export type LicenseStatus =
+  | 'free'
+  | 'trial'
+  | 'pro_active'
+  | 'pro_grace'
+  | 'pro_expired'
+  // Legacy statuses (kept for backwards compat)
+  | 'trial_expired'
+  | 'licensed'
+  | 'updates_expired';
+
+export interface TrialInfo {
+  startDate: string;
+  daysRemaining: number;
+  isExpired: boolean;
+}
+
+export interface SubscriptionInfo {
+  subscriptionId: string;
+  customerId: string;
+  email: string;
+  plan: 'monthly' | 'annual';
+  status: 'active' | 'past_due' | 'canceled' | 'paused';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
 
 export interface LicenseState {
   status: LicenseStatus;
-  trialDaysRemaining: number | null;
-  expiresAt: string | null;
-  updatesUntil: string | null;
-  hasUpdates: boolean;
-  capabilities: string[];
+  trial?: TrialInfo;
+  subscription?: SubscriptionInfo;
+  // Legacy fields (kept for backwards compat in settings UI)
+  trialDaysRemaining?: number | null;
+  expiresAt?: string | null;
+  updatesUntil?: string | null;
+  hasUpdates?: boolean;
+  capabilities?: string[];
 }
 
 /** License activation result */
@@ -217,6 +246,9 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string;
   trialEndsAt?: string;
   canceledAt?: string;
+  stripeSubscriptionId?: string;
+  stripeCustomerId?: string;
+  cancelAtPeriodEnd?: boolean;
 }
 
 /** The API exposed to the renderer */
@@ -300,7 +332,9 @@ export interface ReadiedAPI {
     /** Disable git for a notebook */
     disableGit: (notebookId: string) => Promise<{ success: boolean; error?: string }>;
     /** Check if git is enabled for a notebook */
-    isGitEnabled: (notebookId: string) => Promise<{ success: boolean; enabled?: boolean; error?: string }>;
+    isGitEnabled: (
+      notebookId: string
+    ) => Promise<{ success: boolean; enabled?: boolean; error?: string }>;
     /** Get git settings for a notebook */
     getGitSettings: (notebookId: string) => Promise<{
       success: boolean;
@@ -312,7 +346,10 @@ export interface ReadiedAPI {
       error?: string;
     }>;
     /** Toggle auto-commit for a notebook */
-    setGitAutoCommit: (notebookId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+    setGitAutoCommit: (
+      notebookId: string,
+      enabled: boolean
+    ) => Promise<{ success: boolean; error?: string }>;
     /** Get all git-enabled notebooks */
     getGitEnabled: () => Promise<{
       success: boolean;
@@ -338,11 +375,19 @@ export interface ReadiedAPI {
   };
   app: {
     /** Get app version */
-    version: () => string;
+    version: () => Promise<string>;
   };
   license: {
     /** Get current license state */
     getState: () => Promise<LicenseState>;
+    /** Force-refresh subscription from API (ignores cache) */
+    refreshSubscription: () => Promise<LicenseState>;
+    /** Start trial manually */
+    startTrial: () => Promise<{ success: boolean; error?: string }>;
+    /** Open subscription checkout page */
+    openSubscribe: (options?: {
+      plan?: 'monthly' | 'annual';
+    }) => Promise<{ success: boolean; error?: string }>;
     /** Activate license from JSON content */
     activate: (content: string) => Promise<LicenseResult>;
     /** Import license file via system dialog */
@@ -480,9 +525,25 @@ export interface ReadiedAPI {
     /** Open checkout page */
     openCheckout: () => Promise<{ success: boolean; error?: string }>;
   };
+  settings: {
+    /** Broadcast settings change to all other windows */
+    broadcast: (settings: Record<string, unknown>) => void;
+    /** Listen for settings sync from other windows */
+    onSync: (callback: (settings: Record<string, unknown>) => void) => () => void;
+  };
   ipc: {
     /** Listen to IPC events from main process */
     on: (channel: string, listener: (...args: unknown[]) => void) => () => void;
+  };
+  share: {
+    /** Share a note on the web (creates or updates, auto-copies URL to clipboard) */
+    create: (input: {
+      noteId: string;
+      title: string;
+      content: string;
+    }) => Promise<{ success: boolean; url?: string; slug?: string; error?: string }>;
+    /** Remove a shared note */
+    delete: (slug: string) => Promise<{ success: boolean; error?: string }>;
   };
   encryption: {
     /** Export encryption key for backup */
@@ -516,9 +577,7 @@ export interface ReadiedAPI {
       error?: string;
     }>;
     /** Get repository status */
-    status: (
-      notebookId: string
-    ) => Promise<{
+    status: (notebookId: string) => Promise<{
       success: boolean;
       status?: {
         modified: string[];
@@ -601,11 +660,12 @@ const api: ReadiedAPI = {
     delete: id => ipcRenderer.invoke('notebooks:delete', id),
     reorder: (parentId, orderedIds) =>
       ipcRenderer.invoke('notebooks:reorder', parentId, orderedIds),
-    enableGit: (notebookId) => ipcRenderer.invoke('notebooks:enableGit', notebookId),
-    disableGit: (notebookId) => ipcRenderer.invoke('notebooks:disableGit', notebookId),
-    isGitEnabled: (notebookId) => ipcRenderer.invoke('notebooks:isGitEnabled', notebookId),
-    getGitSettings: (notebookId) => ipcRenderer.invoke('notebooks:getGitSettings', notebookId),
-    setGitAutoCommit: (notebookId, enabled) => ipcRenderer.invoke('notebooks:setGitAutoCommit', notebookId, enabled),
+    enableGit: notebookId => ipcRenderer.invoke('notebooks:enableGit', notebookId),
+    disableGit: notebookId => ipcRenderer.invoke('notebooks:disableGit', notebookId),
+    isGitEnabled: notebookId => ipcRenderer.invoke('notebooks:isGitEnabled', notebookId),
+    getGitSettings: notebookId => ipcRenderer.invoke('notebooks:getGitSettings', notebookId),
+    setGitAutoCommit: (notebookId, enabled) =>
+      ipcRenderer.invoke('notebooks:setGitAutoCommit', notebookId, enabled),
     getGitEnabled: () => ipcRenderer.invoke('notebooks:getGitEnabled'),
   },
   data: {
@@ -618,11 +678,13 @@ const api: ReadiedAPI = {
     openFolder: () => ipcRenderer.invoke('data:openFolder'),
   },
   app: {
-    // TODO: Use IPC to get version dynamically from main process
-    version: () => '0.1.5',
+    version: () => ipcRenderer.invoke('app:version'),
   },
   license: {
     getState: () => ipcRenderer.invoke('license:getState'),
+    refreshSubscription: () => ipcRenderer.invoke('license:refreshSubscription'),
+    startTrial: () => ipcRenderer.invoke('license:startTrial'),
+    openSubscribe: options => ipcRenderer.invoke('license:openSubscribe', options),
     activate: content => ipcRenderer.invoke('license:activate', content),
     importFile: () => ipcRenderer.invoke('license:importFile'),
     deactivate: () => ipcRenderer.invoke('license:deactivate'),
@@ -681,6 +743,20 @@ const api: ReadiedAPI = {
     openPortal: returnUrl => ipcRenderer.invoke('subscription:openPortal', returnUrl),
     openCheckout: () => ipcRenderer.invoke('subscription:openCheckout'),
   },
+  settings: {
+    broadcast: (settings: Record<string, unknown>) => {
+      ipcRenderer.send('settings:changed', settings);
+    },
+    onSync: (callback: (settings: Record<string, unknown>) => void) => {
+      const handler = (_event: unknown, settings: Record<string, unknown>) => {
+        callback(settings);
+      };
+      ipcRenderer.on('settings:sync', handler as any);
+      return () => {
+        ipcRenderer.removeListener('settings:sync', handler as any);
+      };
+    },
+  },
   ipc: {
     on: (channel: string, listener: (...args: unknown[]) => void) => {
       ipcRenderer.on(channel, (_event, ...args) => listener(...args));
@@ -688,6 +764,10 @@ const api: ReadiedAPI = {
         ipcRenderer.removeAllListeners(channel);
       };
     },
+  },
+  share: {
+    create: input => ipcRenderer.invoke('share:create', input),
+    delete: slug => ipcRenderer.invoke('share:delete', slug),
   },
   encryption: {
     exportKey: () => ipcRenderer.invoke('encryption:exportKey'),
