@@ -42,6 +42,8 @@ export interface AppearanceSettings {
   theme: 'dark' | 'light' | 'system';
   /** Accent color for highlights (hex) */
   accentColor: string;
+  /** Zoom level for the interface */
+  zoomLevel: string;
   /** @deprecated No longer used - kept for schema compatibility */
   acrylicBackground: boolean;
 }
@@ -118,6 +120,7 @@ export const DEFAULT_UPDATES: UpdatesSettings = {
 export const DEFAULT_APPEARANCE: AppearanceSettings = {
   theme: 'dark',
   accentColor: '#5eead4',
+  zoomLevel: '1.0',
   acrylicBackground: false,
 };
 
