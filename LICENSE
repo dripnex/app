@@ -1,5 +1,39 @@
-Copyright (c) 2025 Readied
-All Rights Reserved.
+# Readied Licensing
 
-This software is proprietary. Unauthorized copying, modification,
-distribution, or use of this software is strictly prohibited.
+This repository uses a dual-licensing model (Open Core):
+
+## Open Source Packages (MIT License)
+
+The following packages are licensed under the MIT License:
+
+- `packages/core/` - Domain logic and markdown parsing
+- `packages/storage-core/` - Storage interfaces
+- `packages/storage-sqlite/` - SQLite adapter
+- `packages/wikilinks/` - Wikilink parsing
+- `packages/tasks/` - Task parsing
+- `packages/commands/` - Command palette logic
+- `packages/embeds/` - Embed handling
+- `packages/design-system/` - Design tokens and components
+- `packages/product-config/` - Product configuration
+
+See the LICENSE file in each package directory for the full MIT License text.
+
+## Proprietary Components
+
+The following components are proprietary:
+
+- `apps/desktop/` - Readied desktop application
+- `apps/marketing-site/` - Marketing website
+- `packages/licensing/` - License validation
+
+Copyright (c) 2025 Readied. All Rights Reserved.
+
+These components may not be copied, modified, or distributed without
+explicit written permission from Readied.
+
+## Contributing
+
+By contributing to the open source packages, you agree that your
+contributions will be licensed under the MIT License.
+
+See CONTRIBUTING.md for contribution guidelines.

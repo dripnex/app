@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useSettingsStore, selectGeneral } from '../stores/settings';
+import { useSettingsStore, selectAppearance } from '../stores/settings';
 import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
 
 /**
@@ -66,12 +66,12 @@ function applyAppearance(theme: string, accentColor: string, zoomLevel: string):
  * Call this hook once per window root component.
  */
 export function useAppearanceSettings(): void {
-  const general = useSettingsStore(selectGeneral);
-  const updateGeneral = useSettingsStore(s => s.updateGeneral);
+  const appearance = useSettingsStore(selectAppearance);
+  const updateAppearance = useSettingsStore(s => s.updateAppearance);
 
-  const theme = general.theme || 'dark';
-  const accentColor = general.accentColor || '#5eead4';
-  const zoomLevel = general.zoomLevel || '1.0';
+  const theme = appearance.theme || 'dark';
+  const accentColor = appearance.accentColor || '#5eead4';
+  const zoomLevel = appearance.zoomLevel || '1.0';
 
   // Track previous values to detect changes for IPC broadcast
   const prevRef = useRef({ theme, accentColor, zoomLevel });
@@ -129,10 +129,10 @@ export function useAppearanceSettings(): void {
       if (incomingZoom) updates.zoomLevel = incomingZoom;
 
       if (Object.keys(updates).length > 0) {
-        updateGeneral(updates as any);
+        updateAppearance(updates as any);
       }
     });
 
     return cleanup;
-  }, [updateGeneral]);
+  }, [updateAppearance]);
 }

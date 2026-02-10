@@ -20,7 +20,7 @@ interface MarkdownPreviewProps {
   readonly createdAt?: string;
   readonly updatedAt?: string;
   readonly onReady?: () => void;
-  readonly onWikilinkClick?: (target: string) => void;
+  readonly onWikilinkClick?: (target: string, anchor?: string) => void;
   readonly onEmbedClick?: (target: string, url: string) => void;
   /** Optional pre-resolved embeds from parent (for sharing with editor) */
   readonly resolvedEmbeds?: Record<string, string | null>;
@@ -116,9 +116,10 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       const wikilinkEl = (e.target as HTMLElement).closest('.wikilink');
       if (wikilinkEl) {
         const noteTitle = wikilinkEl.getAttribute('data-target');
+        const anchor = wikilinkEl.getAttribute('data-anchor') ?? undefined;
         if (noteTitle && onWikilinkClick) {
           e.preventDefault();
-          onWikilinkClick(noteTitle);
+          onWikilinkClick(noteTitle, anchor);
         }
         return;
       }

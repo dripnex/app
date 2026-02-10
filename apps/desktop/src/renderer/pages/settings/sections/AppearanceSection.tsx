@@ -4,7 +4,7 @@
  * Theme, zoom level, and visual preferences.
  */
 
-import { useSettingsStore, selectGeneral } from '../../../stores/settings';
+import { useSettingsStore, selectAppearance } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
@@ -44,26 +44,24 @@ const accentColorOptions: ColorOption[] = [
 ];
 
 export function AppearanceSection() {
-  const general = useSettingsStore(selectGeneral);
-  const updateGeneral = useSettingsStore(s => s.updateGeneral);
+  const appearance = useSettingsStore(selectAppearance);
+  const updateAppearance = useSettingsStore(s => s.updateAppearance);
   const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
 
-  // For now we'll store theme and zoom in general settings
-  const theme = (general as any).theme || 'dark';
-  const zoomLevel = (general as any).zoomLevel || '1.0';
-  const accentColor = (general as any).accentColor || '#5eead4';
+  const theme = appearance.theme || 'dark';
+  const zoomLevel = appearance.zoomLevel || '1.0';
+  const accentColor = appearance.accentColor || '#5eead4';
 
-  // Store updates trigger useAppearanceSettings (called in window root) to apply DOM changes + IPC broadcast
   const handleThemeChange = (value: string) => {
-    updateGeneral({ theme: value } as any);
+    updateAppearance({ theme: value as 'dark' | 'light' | 'system' });
   };
 
   const handleAccentColorChange = (value: string) => {
-    updateGeneral({ accentColor: value } as any);
+    updateAppearance({ accentColor: value });
   };
 
   const handleZoomChange = (value: string) => {
-    updateGeneral({ zoomLevel: value } as any);
+    updateAppearance({ zoomLevel: value });
   };
 
   const handlePerfModeChange = (value: string) => {

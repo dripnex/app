@@ -45,7 +45,7 @@
 }
 
 .navItem:hover {
-  background: var(--bg-hover);
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 

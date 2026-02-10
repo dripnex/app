@@ -175,30 +175,55 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     });
   }
 
-  /** Search notes by content (basic LIKE search, excludes archived by default) */
+  /** Search notes using FTS5 full-text search with relevance ranking */
   async search(
     query: string,
     limit: number = 20,
     includeArchived: boolean = false
   ): Promise<Note[]> {
-    const archivedCondition = includeArchived ? '' : 'AND archived_at IS NULL';
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      return [];
+    }
+
+    const archivedCondition = includeArchived ? '' : 'AND n.archived_at IS NULL';
+
+    // Prepare FTS5 query: escape special chars, add prefix matching
+    const ftsQuery = this.prepareFtsQuery(trimmedQuery);
 
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-             is_pinned, is_deleted, status
-      FROM notes
-      WHERE (content LIKE ? OR title LIKE ?) ${archivedCondition}
-      ORDER BY updated_at DESC
+      SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
+             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status
+      FROM notes_fts fts
+      JOIN notes n ON fts.id = n.id
+      WHERE notes_fts MATCH ? ${archivedCondition}
+      ORDER BY bm25(notes_fts)
       LIMIT ?
     `);
 
-    const pattern = `%${query}%`;
-    const rows = stmt.all(pattern, pattern, limit) as NoteRow[];
+    const rows = stmt.all(ftsQuery, limit) as NoteRow[];
 
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
       return this.rowToNote(row, tags);
     });
+  }
+
+  /** Prepare query string for FTS5 MATCH syntax */
+  private prepareFtsQuery(query: string): string {
+    // Escape FTS5 special characters: " * ^ - OR AND NOT ( )
+    const escaped = query.replace(/["*^()]/g, ' ').trim();
+
+    // Split into terms and add prefix matching for partial word search
+    const terms = escaped.split(/\s+/).filter(t => t.length > 0);
+
+    if (terms.length === 0) {
+      return '""'; // Empty search
+    }
+
+    // Use OR between terms with prefix matching
+    // Each term becomes "term"* for prefix matching
+    return terms.map(t => `"${t}"*`).join(' OR ');
   }
 
   /** Get total count of notes */
@@ -497,21 +522,22 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       `);
 
       const insertLink = this.db.prepare(`
-        INSERT INTO links (source_note_id, target_ref, target_note_id)
-        VALUES (?, ?, ?)
-        ON CONFLICT(source_note_id, target_ref) DO UPDATE SET
+        INSERT INTO links (source_note_id, target_ref, target_note_id, target_anchor)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(source_note_id, target_ref, COALESCE(target_anchor, '')) DO UPDATE SET
           target_note_id = excluded.target_note_id
       `);
 
       // Insert each link
       for (const wikilink of wikilinks) {
         const targetRef = wikilink.target;
+        const targetAnchor = wikilink.anchor ?? null;
 
         // Try to resolve target by title (case-insensitive)
         const targetNote = findNoteByTitle.get(targetRef) as { id: string } | undefined;
         const targetNoteId = targetNote?.id ?? null;
 
-        insertLink.run(noteId, targetRef, targetNoteId);
+        insertLink.run(noteId, targetRef, targetNoteId, targetAnchor);
       }
     });
   }

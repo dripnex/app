@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm typecheck:*)",
+      "WebFetch(domain:about.signpath.io)",
+      "WebFetch(domain:signpath.io)",
+      "WebSearch",
+      "Bash(pnpm install:*)",
+      "Bash(for pkg in storage-core storage-sqlite wikilinks tasks commands embeds design-system product-config)",
+      "Bash(do cp \"C:/Users/Tomy/Documents/Github/readide/packages/core/LICENSE\" \"C:/Users/Tomy/Documents/Github/readide/packages/$pkg/LICENSE\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh pr create --title \"feat: add Sentry, analytics, design system, and Open Core licensing\" --body \"$\\(cat <<''EOF''\n## Summary\n\n- Add Sentry error tracking for desktop app\n- Add offline-first analytics module\n- Create @readied/design-system package\n- Implement Open Core licensing \\(MIT for packages\\)\n- Fix marketing site issues\n\n## Changes\n\n### Marketing Site\n- Fix broken /blog links → Medium\n- Update Decisions.astro for hybrid model\n- Fix GitHub links consistency\n- Update legal dates to January 2026\n- Add Plausible analytics\n\n### Desktop App\n- Integrate @sentry/electron\n- Create offline-first analytics\n- Update ErrorBoundary with Sentry\n\n### Infrastructure\n- Create @readied/design-system package\n- Add MIT licenses to open source packages\n- Add CONTRIBUTING.md\n- Prepare SignPath config in release.yml\n\n## Test plan\n- [ ] `pnpm build` passes\n- [ ] Marketing site builds without errors\n- [ ] Desktop app starts correctly\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(git fetch:*)",
+      "Bash(curl:*)",
+      "Bash(node -e:*)",
+      "Bash(for branch in develop feature/backend-api feature/roadmap-v0.2 feature/settings-and-editor feat/open-core-and-tooling)",
+      "Bash(do echo \"=== $branch ===\" git log origin/main..origin/$branch --oneline)",
+      "Bash(git pull:*)",
+      "Bash(git reset:*)",
+      "Bash(for branch in develop feature/settings-and-editor feature/backend-api feature/roadmap-v0.2 feat/open-core-and-tooling)",
+      "Bash(do)",
+      "Bash(git merge:*)"
+    ]
+  }
+}

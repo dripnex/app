@@ -510,6 +510,8 @@ export interface ReadiedAPI {
     startAutoSync: (intervalMs?: number) => Promise<{ success: boolean; error?: string }>;
     /** Stop auto-sync timer */
     stopAutoSync: () => Promise<{ success: boolean; error?: string }>;
+    /** Trigger manual sync */
+    triggerSync: () => Promise<void>;
   };
   subscription: {
     /** Get subscription status */
@@ -606,6 +608,10 @@ export interface ReadiedAPI {
       notebookId: string,
       noteId: string
     ) => Promise<{ success: boolean; error?: string }>;
+  };
+  updates: {
+    /** Check for updates manually */
+    checkNow: () => Promise<{ available: boolean; version?: string }>;
   };
 }
 
@@ -724,6 +730,7 @@ const api: ReadiedAPI = {
       ipcRenderer.invoke('sync:resolveConflict', noteId, resolution),
     startAutoSync: intervalMs => ipcRenderer.invoke('sync:startAutoSync', intervalMs),
     stopAutoSync: () => ipcRenderer.invoke('sync:stopAutoSync'),
+    triggerSync: () => ipcRenderer.invoke('sync:trigger'),
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
@@ -775,6 +782,9 @@ const api: ReadiedAPI = {
       ipcRenderer.invoke('git:readNote', notebookId, noteId),
     deleteNote: (notebookId: string, noteId: string) =>
       ipcRenderer.invoke('git:deleteNote', notebookId, noteId),
+  },
+  updates: {
+    checkNow: () => ipcRenderer.invoke('updates:checkNow'),
   },
 };
 

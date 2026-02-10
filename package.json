@@ -1,9 +1,31 @@
 {
   "name": "readied",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "private": true,
-  "license": "UNLICENSED",
-  "description": "Offline-first Markdown editor for developers",
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Markdown-first, offline-forever desktop note app",
+  "author": {
+    "name": "Tomy Maritano",
+    "email": "hello@readied.app",
+    "url": "https://readied.app"
+  },
+  "homepage": "https://readied.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tomymaritano/readide.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tomymaritano/readide/issues"
+  },
+  "keywords": [
+    "markdown",
+    "notes",
+    "editor",
+    "offline",
+    "electron",
+    "pkm",
+    "zettelkasten"
+  ],
   "type": "module",
   "scripts": {
     "dev": "turbo dev",

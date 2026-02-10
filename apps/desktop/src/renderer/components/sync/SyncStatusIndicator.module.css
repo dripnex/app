@@ -1,26 +1,59 @@
 .container {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.375rem;
-  border-radius: 0.375rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md, 6px);
   cursor: pointer;
-  transition: background 0.2s;
+  color: var(--color-text-secondary, #666);
+  transition: all 0.15s ease;
+  position: relative;
 }
 
 .container:hover {
-  background: var(--bg-tertiary);
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
+  color: var(--color-text-primary, #333);
+}
+
+.container:active {
+  transform: scale(0.95);
 }
 
 .icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 18px;
+  height: 18px;
 }
 
-.spinning {
+.icon.spinning {
   animation: spin 1s linear infinite;
+}
+
+.icon.error {
+  color: var(--color-error, #dc2626);
+}
+
+.icon.warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+  color: white;
+  background: var(--color-primary, #3b82f6);
+  border-radius: 7px;
 }
 
 @keyframes spin {
@@ -30,31 +63,4 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-.tooltip {
-  position: absolute;
-  bottom: calc(100% + 0.5rem);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  color: var(--text-primary);
-  white-space: nowrap;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 0.375rem solid transparent;
-  border-top-color: var(--border-primary);
 }

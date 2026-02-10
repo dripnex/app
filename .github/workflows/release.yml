@@ -79,7 +79,24 @@ jobs:
         working-directory: apps/desktop
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          # Windows Code Signing via SignPath (for open source)
+          # Apply at https://signpath.org for free OSS certificate
+          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: pnpm dist:win --publish always
+
+      # Optional: Sign Windows build with SignPath (uncomment after approval)
+      # - name: Sign Windows executable (SignPath)
+      #   if: matrix.platform == 'win'
+      #   uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+      #     project-slug: readied
+      #     signing-policy-slug: release-signing
+      #     artifact-configuration-slug: windows-installer
+      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      #     wait-for-completion: true
 
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
