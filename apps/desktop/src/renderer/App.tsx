@@ -7,6 +7,7 @@ import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { LicenseProvider } from './contexts/LicenseContext';
+import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -25,6 +26,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
+import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
 
@@ -42,6 +44,7 @@ const queryClient = new QueryClient({
  */
 function NotesApp() {
   usePerformanceMode();
+  useAppearanceSettings();
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
@@ -327,9 +330,10 @@ function NotesApp() {
   });
 
   return (
-    <LicenseProvider>
-      <div className="app">
-        <div className="app__layout">
+    <ToastProvider>
+      <LicenseProvider>
+        <div className="app">
+          <div className="app__layout">
           <aside className="app__sidebar" style={{ width: sidebarWidth }}>
             <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
           </aside>
@@ -388,6 +392,7 @@ function NotesApp() {
                 onStatusChange={handleStatusChange}
                 onDuplicate={selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined}
                 onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+                onPin={selectedNote ? () => handlePinNote(selectedNote.id) : undefined}
                 onWikilinkClick={handleWikilinkClick}
                 onNavigateToNote={handleSelectNote}
                 onNoteUpdate={setSelectedNote}
@@ -396,7 +401,8 @@ function NotesApp() {
           </main>
         </div>
       </div>
-    </LicenseProvider>
+      </LicenseProvider>
+    </ToastProvider>
   );
 }
 

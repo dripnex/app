@@ -20,6 +20,8 @@ import type { Env } from './db/client.js';
 import { auth } from './routes/auth.js';
 import { sync } from './routes/sync.js';
 import { subscription } from './routes/subscription.js';
+import { newsletterRoute } from './routes/newsletter.js';
+import { share } from './routes/share.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -55,6 +57,8 @@ app.get('/health', (c) => {
 app.route('/auth', auth);
 app.route('/sync', sync);
 app.route('/subscription', subscription);
+app.route('/newsletter', newsletterRoute);
+app.route('/share', share);
 
 // 404 handler
 app.notFound((c) => {

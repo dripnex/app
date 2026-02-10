@@ -54,13 +54,10 @@ import {
   INBOX_NOTEBOOK_ID,
 } from '@readied/core';
 import {
-  computeLicenseState,
-  startTrial,
-  canStartTrial,
   type LicenseStorage,
   type StoredTrialData,
   type StoredLicenseData,
-  type AppLicenseState,
+  type StoredSubscriptionData,
 } from '@readied/licensing';
 import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
@@ -69,6 +66,8 @@ import { ApiClient } from './services/apiClient.js';
 import { EncryptionService } from './services/encryptionService.js';
 import { SyncService } from './services/syncService.js';
 import { GitService } from './services/gitService.js';
+import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
+import { registerShareHandlers } from './handlers/shareHandlers.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -83,7 +82,6 @@ let deviceInfo: DeviceInfo | null = null;
 let apiClient: ApiClient | null = null;
 let encryptionService: EncryptionService | null = null;
 let syncService: SyncService | null = null;
-
 // Git service (initialized on app ready)
 let gitService: GitService | null = null;
 
@@ -91,10 +89,12 @@ let gitService: GitService | null = null;
 class FileLicenseStorage implements LicenseStorage {
   private licensePath: string;
   private trialPath: string;
+  private subscriptionPath: string;
 
   constructor(dataDir: string) {
     this.licensePath = join(dataDir, 'license.json');
     this.trialPath = join(dataDir, 'trial.json');
+    this.subscriptionPath = join(dataDir, 'subscription.json');
   }
 
   async readLicenseData(): Promise<StoredLicenseData | null> {
@@ -133,6 +133,28 @@ class FileLicenseStorage implements LicenseStorage {
 
   async writeTrialData(data: StoredTrialData): Promise<void> {
     await writeFile(this.trialPath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+
+  async readSubscriptionData(): Promise<StoredSubscriptionData | null> {
+    try {
+      if (!existsSync(this.subscriptionPath)) {
+        return null;
+      }
+      const content = await readFile(this.subscriptionPath, 'utf-8');
+      return JSON.parse(content) as StoredSubscriptionData;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeSubscriptionData(data: StoredSubscriptionData): Promise<void> {
+    await writeFile(this.subscriptionPath, JSON.stringify(data, null, 2), 'utf-8');
+  }
+
+  async removeSubscriptionData(): Promise<void> {
+    if (existsSync(this.subscriptionPath)) {
+      await unlink(this.subscriptionPath);
+    }
   }
 }
 
@@ -341,6 +363,9 @@ function createSettingsWindow(): void {
 
   settingsWindow.on('ready-to-show', () => {
     settingsWindow?.show();
+    if (process.env.NODE_ENV === 'development') {
+      settingsWindow?.webContents.openDevTools();
+    }
   });
 
   settingsWindow.on('closed', () => {
@@ -778,6 +803,7 @@ function registerIpcHandlers(): void {
         completed: 0,
         dropped: 0,
       } as Record<NoteStatus, number>,
+      byNotebook: {} as Record<string, number>,
     };
 
     for (const note of allNotes) {
@@ -801,6 +827,11 @@ function registerIpcHandlers(): void {
       // Count by status
       if (note.status && counts.byStatus[note.status] !== undefined) {
         counts.byStatus[note.status]++;
+      }
+
+      // Count by notebook (active, non-deleted notes only)
+      if (note.notebookId && !note.isDeleted && !note.metadata.archivedAt) {
+        counts.byNotebook[note.notebookId] = (counts.byNotebook[note.notebookId] || 0) + 1;
       }
     }
 
@@ -1222,53 +1253,6 @@ function registerDataHandlers(): void {
   });
 }
 
-/** Register IPC handlers for licensing */
-function registerLicenseHandlers(): void {
-  if (!licenseStorage) {
-    throw new Error('License storage not initialized');
-  }
-
-  const storage = licenseStorage;
-
-  // Get current license state
-  // In subscription model: trial data is local, subscription data comes from server (not implemented yet)
-  ipcMain.handle('license:getState', async (): Promise<AppLicenseState> => {
-    let trialData = await storage.readTrialData();
-
-    // Auto-start trial if user hasn't started one yet
-    // Note: In subscription model, canStartTrial checks if trial hasn't started and no active subscription
-    if (canStartTrial(trialData, null)) {
-      trialData = startTrial();
-      await storage.writeTrialData(trialData);
-      loggers.license().info('Trial started automatically');
-    }
-
-    // Compute state from trial data only (subscription verification not implemented yet)
-    // Once subscription system is ready, we'll pass subscription data as second parameter
-    return computeLicenseState(trialData, null);
-  });
-
-  // Start trial manually (if not auto-started)
-  ipcMain.handle('license:startTrial', async (): Promise<{ success: boolean; error?: string }> => {
-    const trialData = await storage.readTrialData();
-
-    if (!canStartTrial(trialData, null)) {
-      return { success: false, error: 'Trial already started or subscription active' };
-    }
-
-    const newTrialData = startTrial();
-    await storage.writeTrialData(newTrialData);
-    loggers.license().info('Trial started manually');
-    return { success: true };
-  });
-
-  // Open subscription page (placeholder for future)
-  ipcMain.handle('license:openSubscribe', async (): Promise<{ success: boolean }> => {
-    // TODO: Open browser to subscription page when payment system is ready
-    loggers.license().info('Subscription page requested (not implemented yet)');
-    return { success: true };
-  });
-}
 
 /** Register IPC handlers for renderer logging */
 function registerLogHandlers(): void {
@@ -1938,11 +1922,13 @@ app
     registerGitHandlers(); // Git operations for git-backed notebooks
     registerDataHandlers();
 
-    // Initialize license storage and handlers
+    // Initialize license storage
     licenseStorage = new FileLicenseStorage(dataPaths.root);
-    registerLicenseHandlers();
     registerLogHandlers();
     registerUpdateHandlers();
+
+    // App version
+    ipcMain.handle('app:version', () => app.getVersion());
 
     // Settings sync: broadcast to all windows except sender
     ipcMain.on('settings:changed', (event, settings) => {
@@ -1978,7 +1964,16 @@ app
 
         syncService = new SyncService(apiClient, encryptionService, noteRepository);
 
+        // Register license handlers with dependencies
+        if (licenseStorage) {
+          registerLicenseHandlers({
+            licenseStorage,
+            apiClient,
+          });
+        }
+
         registerAuthSyncHandlers();
+        registerShareHandlers({ apiClient });
         log.info('Auth and sync services initialized');
       } catch (error) {
         log.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to initialize auth/sync services');
