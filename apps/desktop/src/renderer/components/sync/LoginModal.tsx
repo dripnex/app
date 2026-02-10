@@ -5,16 +5,19 @@
  */
 
 import { useState } from 'react';
-import { useSyncStore } from '../../stores/syncStore';
 import styles from './LoginModal.module.css';
 
-export function LoginModal() {
-  const { showLoginModal, closeLoginModal } = useSyncStore();
+interface LoginModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<'email' | 'checking' | 'sent'>('email');
   const [error, setError] = useState<string | null>(null);
 
-  if (!showLoginModal) return null;
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +25,7 @@ export function LoginModal() {
     setStep('checking');
 
     try {
-      // Call IPC to request magic link
-      await window.readied.sync?.requestMagicLink(email);
+      await window.readied.auth.requestMagicLink(email);
       setStep('sent');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send magic link');
@@ -35,7 +37,7 @@ export function LoginModal() {
     setStep('email');
     setEmail('');
     setError(null);
-    closeLoginModal();
+    onClose();
   };
 
   return (
