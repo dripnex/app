@@ -126,69 +126,74 @@ sync.post('/', zValidator('json', pushSchema), async c => {
     return c.json({ error: 'Sync requires Pro subscription' }, 403);
   }
 
-  // Get current max version for this user
-  const [maxVersionResult] = await db
-    .select({ maxVersion: sql<number>`COALESCE(MAX(${syncLog.version}), 0)` })
-    .from(syncLog)
-    .where(eq(syncLog.userId, userId));
-
-  let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
-
-  // Process changes in order
-  const results: Array<{
-    noteId: string;
-    version: number;
-    status: 'applied' | 'conflict';
-    serverVersion?: number;
-  }> = [];
-
-  for (const change of changes) {
-    // Check for conflicts (another device updated this note)
-    const [latestEntry] = await db
-      .select()
+  // Process all changes inside a transaction to serialize version assignment
+  // and prevent concurrent requests from generating duplicate versions
+  const { results, finalCursor } = await db.transaction(async tx => {
+    // Get current max version inside the transaction
+    const [maxVersionResult] = await tx
+      .select({ maxVersion: sql<number>`COALESCE(MAX(${syncLog.version}), 0)` })
       .from(syncLog)
-      .where(and(eq(syncLog.userId, userId), eq(syncLog.noteId, change.noteId)))
-      .orderBy(desc(syncLog.version))
-      .limit(1);
+      .where(eq(syncLog.userId, userId));
 
-    // If there's a newer version from a different device, flag as conflict
-    if (
-      latestEntry &&
-      latestEntry.deviceId !== deviceId &&
-      change.localVersion !== undefined &&
-      latestEntry.version > change.localVersion
-    ) {
-      results.push({
+    let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
+
+    const txResults: Array<{
+      noteId: string;
+      version: number;
+      status: 'applied' | 'conflict';
+      serverVersion?: number;
+    }> = [];
+
+    for (const change of changes) {
+      // Check for conflicts (another device updated this note)
+      const [latestEntry] = await tx
+        .select()
+        .from(syncLog)
+        .where(and(eq(syncLog.userId, userId), eq(syncLog.noteId, change.noteId)))
+        .orderBy(desc(syncLog.version))
+        .limit(1);
+
+      // If there's a newer version from a different device, flag as conflict
+      if (
+        latestEntry &&
+        latestEntry.deviceId !== deviceId &&
+        change.localVersion !== undefined &&
+        latestEntry.version > change.localVersion
+      ) {
+        txResults.push({
+          noteId: change.noteId,
+          version: latestEntry.version,
+          status: 'conflict',
+          serverVersion: latestEntry.version,
+        });
+        continue;
+      }
+
+      // Insert change
+      await tx.insert(syncLog).values({
+        userId,
         noteId: change.noteId,
-        version: latestEntry.version,
-        status: 'conflict',
-        serverVersion: latestEntry.version,
+        version: nextVersion,
+        operation: change.operation,
+        encryptedData: change.encryptedData ?? null,
+        deviceId,
       });
-      continue;
+
+      txResults.push({
+        noteId: change.noteId,
+        version: nextVersion,
+        status: 'applied',
+      });
+
+      nextVersion++;
     }
 
-    // Insert change
-    await db.insert(syncLog).values({
-      userId,
-      noteId: change.noteId,
-      version: nextVersion,
-      operation: change.operation,
-      encryptedData: change.encryptedData ?? null,
-      deviceId,
-    });
-
-    results.push({
-      noteId: change.noteId,
-      version: nextVersion,
-      status: 'applied',
-    });
-
-    nextVersion++;
-  }
+    return { results: txResults, finalCursor: nextVersion - 1 };
+  });
 
   return c.json({
     results,
-    cursor: nextVersion - 1,
+    cursor: finalCursor,
   });
 });
 

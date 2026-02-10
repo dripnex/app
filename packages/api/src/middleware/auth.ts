@@ -41,6 +41,11 @@ export const authMiddleware = createMiddleware<{
       throw new HTTPException(401, { message: 'Invalid token payload' });
     }
 
+    // Reject refresh tokens — they must not be used as access tokens
+    if (payload.type === 'refresh') {
+      throw new HTTPException(401, { message: 'Refresh tokens cannot be used for authentication' });
+    }
+
     c.set('user', {
       userId: payload.sub,
       email: payload.email as string,
