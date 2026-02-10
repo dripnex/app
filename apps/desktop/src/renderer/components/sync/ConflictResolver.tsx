@@ -27,7 +27,13 @@ function DiffChange({ change }: { change: Change }) {
 /**
  * Render unified diff view
  */
-function UnifiedDiff({ localContent, remoteContent }: { localContent: string; remoteContent: string }) {
+function UnifiedDiff({
+  localContent,
+  remoteContent,
+}: {
+  localContent: string;
+  remoteContent: string;
+}) {
   const diff = useMemo(() => {
     // Use line diff for better readability
     return diffLines(localContent, remoteContent);
@@ -76,9 +82,7 @@ export function ConflictResolver() {
     <div className={styles.container}>
       <div className={styles.header}>
         <AlertTriangle size={20} className={styles.warningIcon} />
-        <h3 className={styles.title}>
-          Sync Conflicts ({conflicts.length})
-        </h3>
+        <h3 className={styles.title}>Sync Conflicts ({conflicts.length})</h3>
       </div>
 
       <p className={styles.description}>

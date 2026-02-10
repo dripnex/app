@@ -60,18 +60,12 @@
       "indexes": {
         "idx_devices_user_device": {
           "name": "idx_devices_user_device",
-          "columns": [
-            "user_id",
-            "device_id"
-          ],
+          "columns": ["user_id", "device_id"],
           "isUnique": false
         },
         "idx_devices_unique": {
           "name": "idx_devices_unique",
-          "columns": [
-            "user_id",
-            "device_id"
-          ],
+          "columns": ["user_id", "device_id"],
           "isUnique": true
         }
       },
@@ -80,12 +74,8 @@
           "name": "devices_user_id_users_id_fk",
           "tableFrom": "devices",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -143,16 +133,12 @@
       "indexes": {
         "magic_links_token_unique": {
           "name": "magic_links_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "idx_magic_links_token": {
           "name": "idx_magic_links_token",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": false
         }
       },
@@ -161,12 +147,8 @@
           "name": "magic_links_user_id_users_id_fk",
           "tableFrom": "magic_links",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -261,9 +243,7 @@
       "indexes": {
         "subscriptions_user_id_unique": {
           "name": "subscriptions_user_id_unique",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": true
         }
       },
@@ -272,12 +252,8 @@
           "name": "subscriptions_user_id_users_id_fk",
           "tableFrom": "subscriptions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -329,18 +305,12 @@
       "indexes": {
         "idx_sync_cursors_user_device": {
           "name": "idx_sync_cursors_user_device",
-          "columns": [
-            "user_id",
-            "device_id"
-          ],
+          "columns": ["user_id", "device_id"],
           "isUnique": false
         },
         "idx_sync_cursors_unique": {
           "name": "idx_sync_cursors_unique",
-          "columns": [
-            "user_id",
-            "device_id"
-          ],
+          "columns": ["user_id", "device_id"],
           "isUnique": true
         }
       },
@@ -349,12 +319,8 @@
           "name": "sync_cursors_user_id_users_id_fk",
           "tableFrom": "sync_cursors",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -426,18 +392,12 @@
       "indexes": {
         "idx_sync_log_user_version": {
           "name": "idx_sync_log_user_version",
-          "columns": [
-            "user_id",
-            "version"
-          ],
+          "columns": ["user_id", "version"],
           "isUnique": false
         },
         "idx_sync_log_user_note": {
           "name": "idx_sync_log_user_note",
-          "columns": [
-            "user_id",
-            "note_id"
-          ],
+          "columns": ["user_id", "note_id"],
           "isUnique": false
         }
       },
@@ -446,12 +406,8 @@
           "name": "sync_log_user_id_users_id_fk",
           "tableFrom": "sync_log",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -495,9 +451,7 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },

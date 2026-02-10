@@ -1,5 +1,14 @@
 import { useState, useCallback, memo, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Inbox, Folder, Plus, X, GitBranch, History } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Inbox,
+  Folder,
+  Plus,
+  X,
+  GitBranch,
+  History,
+} from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { CommitHistory } from '../git/CommitHistory';
 
@@ -222,11 +231,7 @@ export const NotebookItem = memo(function NotebookItem({
               aria-label={isGitEnabled ? 'Disable git' : 'Enable git'}
               title={isGitEnabled ? 'Disable git version control' : 'Enable git version control'}
             >
-              <GitBranch
-                size={12}
-                aria-hidden="true"
-                style={{ opacity: isGitLoading ? 0.5 : 1 }}
-              />
+              <GitBranch size={12} aria-hidden="true" style={{ opacity: isGitLoading ? 0.5 : 1 }} />
             </button>
             {isGitEnabled && (
               <button

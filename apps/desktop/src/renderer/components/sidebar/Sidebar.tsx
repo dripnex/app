@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   useIsNotebookContext,
   useSelectedNotebookId,
@@ -31,6 +31,14 @@ interface SidebarProps {
  * Owns modal state for notebook creation.
  */
 export function Sidebar({ onOpenGraph }: SidebarProps) {
+  // App version (loaded async from main process)
+  const [appVersion, setAppVersion] = useState('');
+  useEffect(() => {
+    const result = window.readied.app.version();
+    // Handle both sync (old preload) and async (new preload) return
+    Promise.resolve(result).then(setAppVersion);
+  }, []);
+
   // Modal state - lives HERE, not in NotebookList
   const [isCreateNotebookOpen, setIsCreateNotebookOpen] = useState(false);
   const [createParentId, setCreateParentId] = useState<string | null>(null);
@@ -132,7 +140,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
         />
       </SidebarSection>
 
-      <SidebarFooter appVersion={window.readied.app.version()} />
+      <SidebarFooter appVersion={appVersion} />
 
       {/* Modal - rendered at Sidebar level, NOT inside NotebookList */}
       {isCreateNotebookOpen && (

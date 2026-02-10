@@ -27,7 +27,7 @@ const magicLinkSchema = z.object({
   email: z.string().email(),
 });
 
-auth.post('/magic-link', zValidator('json', magicLinkSchema), async (c) => {
+auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
   const { email } = c.req.valid('json');
   const db = createDb(c.env);
 
@@ -51,7 +51,12 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async (c) => {
   // Send email
   const emailService = createEmailService(c.env.RESEND_API_KEY);
   const magicLinkUrl = `https://readied.app/auth/verify?token=${token}`;
-  await emailService.sendMagicLink(email, magicLinkUrl);
+  const emailSent = await emailService.sendMagicLink(email, magicLinkUrl);
+
+  if (!emailSent) {
+    console.error(`Failed to send magic link to ${email}`);
+    return c.json({ success: false, error: 'Failed to send email. Please try again.' }, 500);
+  }
 
   return c.json({ success: true, message: 'Magic link sent' });
 });
@@ -64,7 +69,7 @@ const verifySchema = z.object({
   platform: z.string().optional(),
 });
 
-auth.post('/verify', zValidator('json', verifySchema), async (c) => {
+auth.post('/verify', zValidator('json', verifySchema), async c => {
   const { token, deviceId, deviceName, platform } = c.req.valid('json');
   const db = createDb(c.env);
 
@@ -86,7 +91,10 @@ auth.post('/verify', zValidator('json', verifySchema), async (c) => {
   }
 
   // Mark as used
-  await db.update(magicLinks).set({ usedAt: new Date().toISOString() }).where(eq(magicLinks.id, link.id));
+  await db
+    .update(magicLinks)
+    .set({ usedAt: new Date().toISOString() })
+    .where(eq(magicLinks.id, link.id));
 
   // Get user
   const [user] = await db.select().from(users).where(eq(users.id, link.userId)).limit(1);
@@ -130,7 +138,7 @@ const refreshSchema = z.object({
   deviceId: z.string().uuid().optional(),
 });
 
-auth.post('/refresh', zValidator('json', refreshSchema), async (c) => {
+auth.post('/refresh', zValidator('json', refreshSchema), async c => {
   const { refreshToken, deviceId } = c.req.valid('json');
   const db = createDb(c.env);
 
@@ -165,7 +173,7 @@ auth.post('/refresh', zValidator('json', refreshSchema), async (c) => {
 });
 
 // Get current user (protected)
-auth.get('/me', authMiddleware, async (c) => {
+auth.get('/me', authMiddleware, async c => {
   const { userId } = c.get('user');
   const db = createDb(c.env);
 

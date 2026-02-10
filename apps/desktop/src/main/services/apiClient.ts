@@ -108,11 +108,7 @@ export class ApiClient {
   /**
    * Generic HTTP request with auth, retry, and error handling
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-    retries = 3
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}, retries = 3): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
     // Inject access token if available
@@ -380,6 +376,6 @@ export class ApiClient {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

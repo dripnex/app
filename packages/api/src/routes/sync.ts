@@ -33,7 +33,7 @@ const pullSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
-sync.get('/', zValidator('query', pullSchema), async (c) => {
+sync.get('/', zValidator('query', pullSchema), async c => {
   const { cursor, limit } = c.req.valid('query');
   const { userId, deviceId } = c.get('user');
   const db = createDb(c.env);
@@ -81,7 +81,7 @@ sync.get('/', zValidator('query', pullSchema), async (c) => {
   }
 
   return c.json({
-    changes: changes.map((entry) => ({
+    changes: changes.map(entry => ({
       id: entry.id,
       noteId: entry.noteId,
       version: entry.version,
@@ -108,7 +108,7 @@ const pushSchema = z.object({
   deviceId: z.string().uuid(),
 });
 
-sync.post('/', zValidator('json', pushSchema), async (c) => {
+sync.post('/', zValidator('json', pushSchema), async c => {
   const { changes, deviceId } = c.req.valid('json');
   const { userId } = c.get('user');
   const db = createDb(c.env);
@@ -193,7 +193,7 @@ sync.post('/', zValidator('json', pushSchema), async (c) => {
 });
 
 // Get sync status
-sync.get('/status', async (c) => {
+sync.get('/status', async c => {
   const { userId, deviceId } = c.get('user');
   const db = createDb(c.env);
 

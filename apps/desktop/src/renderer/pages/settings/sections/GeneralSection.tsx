@@ -15,20 +15,20 @@ import styles from './Section.module.css';
 
 export function GeneralSection() {
   const general = useSettingsStore(selectGeneral);
-  const updateGeneral = useSettingsStore((s) => s.updateGeneral);
+  const updateGeneral = useSettingsStore(s => s.updateGeneral);
   const { data: notebooks = [] } = useNotebooks();
 
   // Build notebook options for dropdown
   const notebookOptions = [
     { value: '', label: 'No default (ask each time)' },
-    ...notebooks.map((nb) => ({
+    ...notebooks.map(nb => ({
       value: nb.id,
       label: nb.name,
     })),
   ];
 
   // Ensure "Inbox" is always available
-  if (!notebookOptions.find((o) => o.value === 'inbox')) {
+  if (!notebookOptions.find(o => o.value === 'inbox')) {
     notebookOptions.splice(1, 0, { value: 'inbox', label: 'Inbox' });
   }
 
@@ -49,7 +49,7 @@ export function GeneralSection() {
           <Select
             id="defaultNotebook"
             value={general.defaultNotebookId || ''}
-            onChange={(value) => updateGeneral({ defaultNotebookId: value || null })}
+            onChange={value => updateGeneral({ defaultNotebookId: value || null })}
             options={notebookOptions}
           />
         </SettingRow>
@@ -64,7 +64,7 @@ export function GeneralSection() {
           <Toggle
             id="rememberWindowPosition"
             checked={general.rememberWindowPosition}
-            onChange={(checked) => updateGeneral({ rememberWindowPosition: checked })}
+            onChange={checked => updateGeneral({ rememberWindowPosition: checked })}
           />
         </SettingRow>
       </SettingGroup>
@@ -74,11 +74,7 @@ export function GeneralSection() {
           label="Open Data Folder"
           description="Open the folder containing your notes database"
         >
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleOpenDataFolder}
-          >
+          <button type="button" className={styles.actionButton} onClick={handleOpenDataFolder}>
             <FolderOpen size={14} />
             <span>Open Folder</span>
           </button>

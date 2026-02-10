@@ -38,10 +38,7 @@ export function registerShareHandlers(deps: ShareHandlerDependencies): void {
   // Delete a shared note
   ipcMain.handle(
     'share:delete',
-    async (
-      _event,
-      slug: string
-    ): Promise<{ success: boolean; error?: string }> => {
+    async (_event, slug: string): Promise<{ success: boolean; error?: string }> => {
       try {
         await apiClient.unshareNote(slug);
         return { success: true };

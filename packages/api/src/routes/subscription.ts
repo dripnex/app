@@ -5,7 +5,8 @@
  *
  * Endpoints:
  * - POST /subscription/webhook - Stripe webhook handler
- * - GET /subscription - Get current subscription status
+ * - GET /subscription/status - Get current subscription status
+ * - POST /subscription/checkout - Create Stripe checkout session
  * - POST /subscription/portal - Create Stripe portal session
  */
 
@@ -13,6 +14,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
+import Stripe from 'stripe';
 import { createDb, type Env } from '../db/client.js';
 import { subscriptions, users } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
@@ -27,7 +29,7 @@ const subscription = new Hono<{
  * Stripe webhook handler
  * Verifies webhook signature and processes events
  */
-subscription.post('/webhook', async (c) => {
+subscription.post('/webhook', async c => {
   const signature = c.req.header('stripe-signature');
   const webhookSecret = c.env.STRIPE_WEBHOOK_SECRET;
 
@@ -109,6 +111,7 @@ subscription.post('/webhook', async (c) => {
           status: mapStripeStatus(sub.status),
           currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
           canceledAt: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+          cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(subscriptions.stripeSubscriptionId, sub.id));
@@ -149,10 +152,11 @@ subscription.post('/webhook', async (c) => {
 
 // Protected routes
 subscription.use('/status', authMiddleware);
+subscription.use('/checkout', authMiddleware);
 subscription.use('/portal', authMiddleware);
 
 // Get subscription status
-subscription.get('/status', async (c) => {
+subscription.get('/status', async c => {
   const { userId } = c.get('user');
   const db = createDb(c.env);
 
@@ -177,7 +181,127 @@ subscription.get('/status', async (c) => {
     currentPeriodEnd: sub.currentPeriodEnd,
     trialEndsAt: sub.trialEndsAt,
     canceledAt: sub.canceledAt,
+    stripeSubscriptionId: sub.stripeSubscriptionId,
+    stripeCustomerId: sub.stripeCustomerId,
+    cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
   });
+});
+
+// Create checkout session (authenticated)
+const checkoutSchema = z.object({
+  plan: z.enum(['monthly', 'annual']),
+  successUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
+});
+
+subscription.post('/checkout', zValidator('json', checkoutSchema), async c => {
+  const { plan, successUrl, cancelUrl } = c.req.valid('json');
+  const { userId, email } = c.get('user');
+
+  const stripeSecretKey = c.env.STRIPE_SECRET_KEY;
+  const priceMonthly = c.env.STRIPE_PRICE_MONTHLY;
+  const priceAnnual = c.env.STRIPE_PRICE_ANNUAL;
+
+  if (!stripeSecretKey || !priceMonthly || !priceAnnual) {
+    console.error('Stripe configuration missing');
+    return c.json({ error: 'Payment configuration error' }, 500);
+  }
+
+  try {
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-01-27.acacia' as any,
+    });
+
+    const priceId = plan === 'monthly' ? priceMonthly : priceAnnual;
+
+    const session = await stripe.checkout.sessions.create({
+      customer_email: email,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: successUrl || 'https://readied.app/subscription/success',
+      cancel_url: cancelUrl || 'https://readied.app/subscription/cancel',
+      metadata: {
+        userId,
+        email,
+        plan,
+      },
+    });
+
+    return c.json({ url: session.url });
+  } catch (error) {
+    console.error('Failed to create checkout session:', error);
+    return c.json({ error: 'Failed to create checkout session' }, 500);
+  }
+});
+
+// Create checkout session (public - for marketing site)
+const publicCheckoutSchema = z.object({
+  email: z.string().email(),
+  plan: z.enum(['monthly', 'annual']),
+  successUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
+});
+
+subscription.post('/checkout/public', zValidator('json', publicCheckoutSchema), async c => {
+  const { email, plan, successUrl, cancelUrl } = c.req.valid('json');
+  const db = createDb(c.env);
+
+  // Find or create user
+  let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+  if (!user) {
+    [user] = await db.insert(users).values({ email }).returning();
+  }
+
+  const stripeSecretKey = c.env.STRIPE_SECRET_KEY;
+  const priceMonthly = c.env.STRIPE_PRICE_MONTHLY;
+  const priceAnnual = c.env.STRIPE_PRICE_ANNUAL;
+
+  if (!stripeSecretKey || !priceMonthly || !priceAnnual) {
+    console.error('Stripe configuration missing');
+    return c.json({ error: 'Payment configuration error' }, 500);
+  }
+
+  try {
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-01-27.acacia' as any,
+    });
+
+    const priceId = plan === 'monthly' ? priceMonthly : priceAnnual;
+
+    const session = await stripe.checkout.sessions.create({
+      customer_email: email,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: successUrl || 'https://readied.app/subscription/success',
+      cancel_url: cancelUrl || 'https://readied.app/subscribe',
+      subscription_data: {
+        trial_period_days: 14,
+      },
+      metadata: {
+        userId: user.id.toString(),
+        email,
+        plan,
+      },
+    });
+
+    return c.json({ url: session.url });
+  } catch (error) {
+    console.error('Failed to create public checkout session:', error);
+    return c.json({ error: 'Failed to create checkout session' }, 500);
+  }
 });
 
 // Create portal session for subscription management
@@ -185,7 +309,7 @@ const portalSchema = z.object({
   returnUrl: z.string().url(),
 });
 
-subscription.post('/portal', zValidator('json', portalSchema), async (c) => {
+subscription.post('/portal', zValidator('json', portalSchema), async c => {
   const { returnUrl } = c.req.valid('json');
   const { userId } = c.get('user');
   const db = createDb(c.env);
@@ -200,11 +324,27 @@ subscription.post('/portal', zValidator('json', portalSchema), async (c) => {
     return c.json({ error: 'No subscription found' }, 404);
   }
 
-  // In production, use Stripe SDK to create portal session
-  // For now, return placeholder
-  return c.json({
-    url: `https://billing.stripe.com/p/session/${sub.stripeCustomerId}?return_url=${encodeURIComponent(returnUrl)}`,
-  });
+  const stripeSecretKey = c.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    console.error('Stripe configuration missing');
+    return c.json({ error: 'Payment configuration error' }, 500);
+  }
+
+  try {
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-01-27.acacia' as any,
+    });
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: sub.stripeCustomerId,
+      return_url: returnUrl,
+    });
+
+    return c.json({ url: session.url });
+  } catch (error) {
+    console.error('Failed to create portal session:', error);
+    return c.json({ error: 'Failed to create portal session' }, 500);
+  }
 });
 
 // Helper types for Stripe events
@@ -224,6 +364,7 @@ interface StripeSubscription {
   status: string;
   current_period_end: number;
   canceled_at: number | null;
+  cancel_at_period_end: boolean;
 }
 
 interface StripeInvoice {

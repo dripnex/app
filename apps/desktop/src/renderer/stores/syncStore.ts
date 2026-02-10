@@ -121,8 +121,8 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       await window.readied.sync.resolveConflict(noteId, resolution);
 
       // Remove resolved conflict
-      set((state) => ({
-        conflicts: state.conflicts.filter((c) => c.noteId !== noteId),
+      set(state => ({
+        conflicts: state.conflicts.filter(c => c.noteId !== noteId),
       }));
     } catch (error) {
       let errorMessage = 'Failed to resolve conflict';
@@ -134,8 +134,8 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
         } else if (msg.includes('not found')) {
           errorMessage = 'Note not found. It may have been deleted.';
           // Remove the conflict since the note doesn't exist
-          set((state) => ({
-            conflicts: state.conflicts.filter((c) => c.noteId !== noteId),
+          set(state => ({
+            conflicts: state.conflicts.filter(c => c.noteId !== noteId),
           }));
         } else {
           errorMessage = error.message;

@@ -5,9 +5,19 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { LogIn, LogOut, Mail, User as UserIcon, RefreshCw } from 'lucide-react';
+import {
+  LogIn,
+  LogOut,
+  Mail,
+  User as UserIcon,
+  RefreshCw,
+  Sparkles,
+  CreditCard,
+  ExternalLink,
+} from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useSyncStore } from '../../../stores/syncStore';
+import { useLicense } from '../../../contexts/LicenseContext';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
@@ -17,9 +27,12 @@ import styles from './Section.module.css';
 export function AccountSection() {
   const { user, isAuthenticated, isLoading, logout, loadSession } = useAuthStore();
   const { syncNow, status: syncStatus, lastSyncAt, conflicts } = useSyncStore();
+  const { state: licenseState, openSubscribe } = useLicense();
   const [showMagicLinkFlow, setShowMagicLinkFlow] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isManaging, setIsManaging] = useState(false);
 
   // Load session on mount
   useEffect(() => {
@@ -67,6 +80,85 @@ export function AccountSection() {
     if (!lastSyncAt) return 'Never';
     const date = new Date(lastSyncAt);
     return date.toLocaleString();
+  };
+
+  const handleUpgrade = useCallback(
+    async (plan: 'monthly' | 'annual') => {
+      if (!isAuthenticated) {
+        setMessage('Please sign in first to upgrade');
+        return;
+      }
+
+      setIsUpgrading(true);
+      setMessage(null);
+      try {
+        const result = await openSubscribe({ plan });
+        if (!result.success) {
+          setMessage(`Failed to open checkout: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        setMessage(
+          `Failed to upgrade: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      } finally {
+        setIsUpgrading(false);
+      }
+    },
+    [isAuthenticated, openSubscribe]
+  );
+
+  const handleManageSubscription = useCallback(async () => {
+    setIsManaging(true);
+    setMessage(null);
+    try {
+      const result = await window.readied.subscription.openPortal('https://readied.app');
+      if (!result.success) {
+        setMessage(`Failed to open billing portal: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      setMessage(
+        `Failed to open billing portal: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setIsManaging(false);
+    }
+  }, []);
+
+  const getLicenseStatusText = () => {
+    if (!licenseState) return 'Loading...';
+    switch (licenseState.status) {
+      case 'pro_active':
+        return 'Pro';
+      case 'pro_grace':
+        return 'Pro (Payment Issue)';
+      case 'pro_expired':
+        return 'Pro Expired';
+      case 'trial':
+        return `Trial (${licenseState.trial?.daysRemaining ?? 0} days left)`;
+      case 'free':
+        return 'Free';
+      // Legacy statuses
+      case 'licensed':
+        return 'Pro';
+      case 'trial_expired':
+        return 'Trial Expired';
+      case 'updates_expired':
+        return 'Updates Expired';
+      default:
+        return 'Free';
+    }
+  };
+
+  const isProActive = licenseState?.status === 'pro_active' || licenseState?.status === 'pro_grace';
+
+  const shouldShowUpgrade = () => {
+    if (!licenseState) return false;
+    return (
+      licenseState.status === 'trial' ||
+      licenseState.status === 'free' ||
+      licenseState.status === 'pro_expired' ||
+      licenseState.status === 'trial_expired'
+    );
   };
 
   return (
@@ -125,10 +217,7 @@ export function AccountSection() {
       {isAuthenticated && (
         <>
           <SettingGroup title="Synchronization">
-            <SettingRow
-              label="Sync Now"
-              description={`Last synced: ${formatLastSync()}`}
-            >
+            <SettingRow label="Sync Now" description={`Last synced: ${formatLastSync()}`}>
               <button
                 type="button"
                 className={styles.primaryButton}
@@ -157,6 +246,61 @@ export function AccountSection() {
           </SettingGroup>
 
           {conflicts.length > 0 && <ConflictResolver />}
+
+          <SettingGroup title="Subscription">
+            <SettingRow label="Plan" description={`Current status: ${getLicenseStatusText()}`}>
+              <div className={styles.statusBadge}>
+                <CreditCard size={14} />
+                <span>{getLicenseStatusText()}</span>
+              </div>
+            </SettingRow>
+
+            {isProActive && (
+              <SettingRow
+                label="Manage Subscription"
+                description="Update payment method, change plan, or cancel"
+              >
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={handleManageSubscription}
+                  disabled={isManaging}
+                >
+                  <ExternalLink size={14} />
+                  <span>{isManaging ? 'Opening...' : 'Manage Subscription'}</span>
+                </button>
+              </SettingRow>
+            )}
+
+            {shouldShowUpgrade() && (
+              <SettingRow
+                label="Upgrade to Pro"
+                description="Get cloud sync, advanced search, and all pro features"
+              >
+                <div className={styles.buttonGroup}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => handleUpgrade('monthly')}
+                    disabled={isUpgrading}
+                  >
+                    <Sparkles size={14} />
+                    <span>Monthly - $2.99/mo</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => handleUpgrade('annual')}
+                    disabled={isUpgrading}
+                  >
+                    <Sparkles size={14} />
+                    <span>Annual - $29.90/yr</span>
+                    <small className={styles.badge}>Save $6</small>
+                  </button>
+                </div>
+              </SettingRow>
+            )}
+          </SettingGroup>
         </>
       )}
 

@@ -10,6 +10,7 @@
 ## Context
 
 Readied is entering a crowded market of note-taking apps for developers:
+
 - **Inkdrop:** Solid sync, no git integration, $4.99/mo
 - **Obsidian:** Local-first, no reliable sync, plugins ecosystem
 - **Notion:** Cloud-first, not developer-focused
@@ -20,6 +21,7 @@ Readied is entering a crowded market of note-taking apps for developers:
 Without clear differentiation, we become "yet another Inkdrop clone" but more expensive ($9/mo vs $4.99/mo).
 
 **User Pain Points (from competitive analysis):**
+
 1. **Trust:** Developers don't trust proprietary sync (data loss fear)
 2. **Control:** Want real version history, not just "undo"
 3. **Collaboration:** Want to share notes via GitHub, not proprietary systems
@@ -70,21 +72,25 @@ Without clear differentiation, we become "yet another Inkdrop clone" but more ex
 ### What It Enables
 
 **Trust through transparency:**
+
 - Full commit history visible
 - Can inspect `.git` folder
 - Standard git, not proprietary
 
 **Developer workflow integration:**
+
 - Push notes to personal GitHub
 - Share via git (not proprietary share links)
 - Use git for collaboration
 
 **Free backup:**
+
 - `git push origin main` = free backup
 - No reliance on our servers
 - Can clone from GitHub if we shut down
 
 **Power user features:**
+
 - Branching for different versions of ideas
 - Merge notes from different contexts
 - Cherry-pick commits
@@ -97,6 +103,7 @@ Without clear differentiation, we become "yet another Inkdrop clone" but more ex
 **Proposed** - Awaiting implementation (Phase 1, Sprint 2)
 
 Timeline:
+
 - **Semana 5-7:** Implement git integration
 - **Semana 8-10:** Knowledge graph (differentiator #2)
 - **Semana 11-12:** CLI/API (differentiator #3)
@@ -108,26 +115,31 @@ Timeline:
 ### Positive
 
 **✅ Unique selling proposition**
+
 - No competitor has git-backed notes at this level
 - Justifies higher price ($9 vs $4.99)
 - Appeals to developer's love of git
 
 **✅ Trust & security**
+
 - Users control their data (git repo is theirs)
 - Backup doesn't depend on us staying alive
 - Open format (markdown + .git)
 
 **✅ Collaboration enabled**
+
 - Share notes via GitHub (public or private repos)
 - Collaborate via PRs (review, comments, merge)
 - Team notes in shared org repos
 
 **✅ Marketing angle**
+
 - "Git-backed notes" is catchy
 - Differentiates from "yet another sync"
 - HackerNews appeal
 
 **✅ Network effects**
+
 - Users publish notes to GitHub → free marketing
 - Public knowledge graphs visible
 - Community can fork/contribute
@@ -135,26 +147,31 @@ Timeline:
 ### Negative
 
 **❌ Complexity for non-technical users**
+
 - Git concepts are hard (commit, branch, merge)
 - Can't simplify too much or lose power
 - **Mitigation:** Make it optional, sane defaults
 
 **❌ Performance concerns**
+
 - Git operations can be slow (large repos)
 - Indexing .git folders for search
 - **Mitigation:** Exclude .git from search, lazy load history
 
 **❌ Merge conflicts**
+
 - Git merge conflicts are painful
 - Users might break their notes
 - **Mitigation:** Provide conflict resolution UI, warn users
 
 **❌ Storage overhead**
+
 - Git history can balloon disk usage
 - `.git` folder can be larger than notes
 - **Mitigation:** Add "compact history" command (gc)
 
 **❌ Sync complexity**
+
 - Syncing .git folders is expensive
 - Conflicts between devices' git state
 - **Mitigation:** Git is source of truth, sync is transport layer
@@ -162,20 +179,24 @@ Timeline:
 ### Risks
 
 **🔴 Technical Risk: Git library integration**
+
 - Need to integrate `simple-git` or similar
 - Cross-platform git commands (Windows, macOS, Linux)
 - **Mitigation:** Use `isomorphic-git` (pure JS, no git binary needed)
 
 **🟡 Product Risk: Too niche**
+
 - Only developers care about git
 - Non-devs won't understand value
 - **Mitigation:** This is OK - we're targeting developers specifically
 
 **🟡 UX Risk: Complexity overwhelming**
+
 - Too many git options confuse users
 - **Mitigation:** Progressive disclosure (advanced features hidden)
 
 **🟢 Market Risk: Competitors copy us**
+
 - Inkdrop/Obsidian could add git
 - **Mitigation:** Execution matters more than idea, ship first
 
@@ -186,11 +207,13 @@ Timeline:
 ### Alternative 1: No git, focus on better sync
 
 **Pros:**
+
 - Simpler implementation
 - No complexity
 - Faster to market
 
 **Cons:**
+
 - No differentiation
 - Compete on price with Inkdrop
 - "Yet another sync" is boring
@@ -204,10 +227,12 @@ Timeline:
 Sync via git instead of custom protocol.
 
 **Pros:**
+
 - Simpler than dual (git + custom sync)
 - Users already know git
 
 **Cons:**
+
 - Performance terrible (git is slow for sync)
 - Merge conflicts everywhere
 - No offline support
@@ -222,11 +247,13 @@ Sync via git instead of custom protocol.
 Implement git-like features (commits, history) but custom format.
 
 **Pros:**
+
 - Full control over UX
 - Optimize for note-taking
 - No git complexity
 
 **Cons:**
+
 - **Not standard git** → no ecosystem
 - Users can't use git tools
 - Not as trustworthy ("fake git")
@@ -240,23 +267,27 @@ Implement git-like features (commits, history) but custom format.
 ### Phase 1: MVP (Semana 5-7)
 
 **UI:**
+
 - Toggle: "Enable Git for this notebook"
 - Commit history view (log + diffs)
 - Revert to commit button
 - Auto-commit toggle
 
 **Backend:**
+
 - Use `isomorphic-git` (pure JS, no binary)
 - Initialize repo on enable
 - Commit on save (if auto-commit enabled)
 - Read commit history
 
 **Data model:**
+
 - Notebooks have `git_enabled: boolean`
 - Notebook filesystem location: `~/Readied/Notebooks/<notebook-name>/`
 - Git repo at: `~/Readied/Notebooks/<notebook-name>/.git`
 
 **Sync integration:**
+
 - Git commits are synced as files
 - Cloud sync transports `.git` folder (encrypted)
 - Conflicts: Local git state wins
@@ -274,18 +305,21 @@ Implement git-like features (commits, history) but custom format.
 ## Success Metrics
 
 **Product metrics:**
+
 - % of users who enable git on at least 1 notebook
 - Average commits per git-enabled notebook
 - % of users who push to GitHub/GitLab
 
 **Business metrics:**
+
 - Conversion rate (free → Pro) with git-backed as selling point
 - NPS increase from git-enabled users
 - HackerNews engagement (upvotes, comments)
 
 **Targets (6 months post-launch):**
-- >30% of active users enable git
-- >50% of Pro subscribers cite git as reason
+
+- > 30% of active users enable git
+- > 50% of Pro subscribers cite git as reason
 - Feature mentioned in >10 HN posts
 
 ---

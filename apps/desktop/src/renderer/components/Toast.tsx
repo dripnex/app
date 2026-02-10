@@ -59,13 +59,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 // ─── Toast Item ──────────────────────────────────────────────────────────────
 
-function ToastItem({
-  toast,
-  onDismiss,
-}: {
-  toast: ToastItem;
-  onDismiss: (id: number) => void;
-}) {
+function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number) => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -83,9 +77,7 @@ function ToastItem({
   const Icon = toast.type === 'success' ? CheckCircle2 : AlertCircle;
 
   return (
-    <div
-      className={`toast-item toast-item--${toast.type} ${visible ? 'toast-item--visible' : ''}`}
-    >
+    <div className={`toast-item toast-item--${toast.type} ${visible ? 'toast-item--visible' : ''}`}>
       <Icon size={16} className="toast-icon" />
       <span className="toast-message">{toast.message}</span>
       <button

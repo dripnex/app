@@ -81,7 +81,7 @@
 
 .primaryButton {
   background: var(--accent-primary);
-  color: white;
+  color: var(--bg-base);
 }
 
 .primaryButton:hover:not(:disabled) {
@@ -89,12 +89,13 @@
 }
 
 .dangerButton {
-  background: #dc2626;
-  color: white;
+  background: var(--danger);
+  color: var(--bg-base);
 }
 
 .dangerButton:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--danger);
+  filter: brightness(0.85);
 }
 
 .actionButton:disabled,
@@ -110,8 +111,8 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.75rem;
-  background: #10b981;
-  color: white;
+  background: var(--success);
+  color: var(--bg-base);
   border-radius: 0.375rem;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -134,9 +135,9 @@
 }
 
 .successMessage {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #10b981;
+  background: var(--success-muted);
+  color: var(--success);
+  border: 1px solid var(--success);
 }
 
 /* Spinning animation */
@@ -151,4 +152,48 @@
 
 .spinning {
   animation: spin 1s linear infinite;
+}
+
+/* Button Group */
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Secondary Button */
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.secondaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badge */
+.badge {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background: var(--accent-muted, rgba(107, 159, 255, 0.15));
+  color: var(--accent-primary);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }

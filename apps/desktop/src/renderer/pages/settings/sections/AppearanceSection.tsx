@@ -8,7 +8,7 @@ import { useSettingsStore, selectGeneral } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Select } from '../components/controls';
+import { Select, ColorPicker, type ColorOption } from '../components/controls';
 import styles from './Section.module.css';
 
 const themeOptions = [
@@ -32,25 +32,38 @@ const performanceModeOptions = [
   { value: 'low', label: 'Low (No blur)' },
 ];
 
+const accentColorOptions: ColorOption[] = [
+  { value: '#5eead4', label: 'Teal (Default)' },
+  { value: '#60a5fa', label: 'Blue' },
+  { value: '#a78bfa', label: 'Purple' },
+  { value: '#f472b6', label: 'Pink' },
+  { value: '#fb7185', label: 'Rose' },
+  { value: '#fb923c', label: 'Orange' },
+  { value: '#4ade80', label: 'Green' },
+  { value: '#fbbf24', label: 'Amber' },
+];
+
 export function AppearanceSection() {
   const general = useSettingsStore(selectGeneral);
-  const updateGeneral = useSettingsStore((s) => s.updateGeneral);
+  const updateGeneral = useSettingsStore(s => s.updateGeneral);
   const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
 
   // For now we'll store theme and zoom in general settings
   const theme = (general as any).theme || 'dark';
   const zoomLevel = (general as any).zoomLevel || '1.0';
+  const accentColor = (general as any).accentColor || '#5eead4';
 
+  // Store updates trigger useAppearanceSettings (called in window root) to apply DOM changes + IPC broadcast
   const handleThemeChange = (value: string) => {
-    updateGeneral({ ...general, theme: value } as any);
-    // Apply theme change
-    document.documentElement.setAttribute('data-theme', value);
+    updateGeneral({ theme: value } as any);
+  };
+
+  const handleAccentColorChange = (value: string) => {
+    updateGeneral({ accentColor: value } as any);
   };
 
   const handleZoomChange = (value: string) => {
-    updateGeneral({ ...general, zoomLevel: value } as any);
-    // Apply zoom
-    document.body.style.zoom = value;
+    updateGeneral({ zoomLevel: value } as any);
   };
 
   const handlePerfModeChange = (value: string) => {
@@ -68,21 +81,25 @@ export function AppearanceSection() {
           description="Choose your preferred color scheme"
           htmlFor="theme"
         >
-          <Select
-            id="theme"
-            value={theme}
-            onChange={handleThemeChange}
-            options={themeOptions}
+          <Select id="theme" value={theme} onChange={handleThemeChange} options={themeOptions} />
+        </SettingRow>
+
+        <SettingRow
+          label="Accent Color"
+          description="Choose your preferred accent color"
+          htmlFor="accentColor"
+        >
+          <ColorPicker
+            id="accentColor"
+            value={accentColor}
+            onChange={handleAccentColorChange}
+            colors={accentColorOptions}
           />
         </SettingRow>
       </SettingGroup>
 
       <SettingGroup title="Display">
-        <SettingRow
-          label="Zoom Level"
-          description="Adjust the interface size"
-          htmlFor="zoomLevel"
-        >
+        <SettingRow label="Zoom Level" description="Adjust the interface size" htmlFor="zoomLevel">
           <Select
             id="zoomLevel"
             value={zoomLevel}

@@ -18,10 +18,12 @@ Transform the sync system from **read-only** (pull-only) to **bidirectional** (p
 ### 1. Database Layer - Local Change Tracking
 
 **Migration 008: `sync_tracking`**
+
 - **File:** `packages/storage-sqlite/src/migrations/008_sync_tracking.ts`
 - **Version:** `20260109000008`
 
 **Added Columns:**
+
 ```sql
 ALTER TABLE notes ADD COLUMN local_version INTEGER DEFAULT 1;
 ALTER TABLE notes ADD COLUMN needs_sync INTEGER DEFAULT 0;
@@ -33,6 +35,7 @@ ALTER TABLE notes ADD COLUMN last_synced_at TEXT DEFAULT NULL;
 - `last_synced_at` - ISO 8601 timestamp of last successful sync
 
 **Triggers (Auto-Tracking):**
+
 ```sql
 -- Trigger on UPDATE (content/title/metadata changes)
 CREATE TRIGGER notes_update_sync_tracking
@@ -59,11 +62,13 @@ END;
 ```
 
 **Index for Performance:**
+
 ```sql
 CREATE INDEX idx_notes_needs_sync ON notes(needs_sync) WHERE needs_sync = 1;
 ```
 
 **Why It Matters:**
+
 - Automatic tracking eliminates manual bookkeeping
 - Efficient queries (index on WHERE needs_sync = 1)
 - Version tracking enables conflict detection
@@ -77,6 +82,7 @@ CREATE INDEX idx_notes_needs_sync ON notes(needs_sync) WHERE needs_sync = 1;
 **New Methods:**
 
 #### `getPendingChanges(limit = 50)`
+
 ```typescript
 getPendingChanges(limit = 50): Array<{
   note: Note;
@@ -84,42 +90,51 @@ getPendingChanges(limit = 50): Array<{
   lastSyncedAt: string | null;
 }>
 ```
+
 - Queries notes where `needs_sync = 1`
 - Orders by `local_version` ASC (oldest first)
 - Returns notes with their sync metadata
 - Used by sync service to batch push
 
 #### `markAsSynced(noteId: NoteId)`
+
 ```typescript
 markAsSynced(noteId: NoteId): void
 ```
+
 - Sets `needs_sync = 0`
 - Updates `last_synced_at` to current timestamp
 - Called after successful push to server
 
 #### `markMultipleAsSynced(noteIds: NoteId[])`
+
 ```typescript
 markMultipleAsSynced(noteIds: NoteId[]): void
 ```
+
 - Batch version of `markAsSynced`
 - Wrapped in transaction for atomicity
 - More efficient than individual calls
 
 #### `getSyncStats()`
+
 ```typescript
 getSyncStats(): {
   pendingCount: number;
   lastSyncedAt: string | null;
 }
 ```
+
 - Returns count of notes needing sync
 - Returns most recent sync timestamp
 - Used for monitoring/UI display
 
 #### `resetSyncTracking(noteId: NoteId)`
+
 ```typescript
 resetSyncTracking(noteId: NoteId): void
 ```
+
 - Sets `needs_sync = 1`
 - Increments `local_version`
 - Used for conflict resolution (force re-sync)
@@ -131,6 +146,7 @@ resetSyncTracking(noteId: NoteId): void
 **File:** `apps/desktop/src/main/services/syncService.ts`
 
 #### **Before (Read-Only):**
+
 ```typescript
 async syncNow(): Promise<SyncResult> {
   // Step 1: Pull changes from server
@@ -148,6 +164,7 @@ async syncNow(): Promise<SyncResult> {
 ```
 
 #### **After (Bidirectional):**
+
 ```typescript
 async syncNow(): Promise<SyncResult> {
   // Step 1: Pull changes from server
@@ -187,6 +204,7 @@ async syncNow(): Promise<SyncResult> {
 ```
 
 **What Changed:**
+
 1. Gets pending changes from repository
 2. Encrypts and pushes to server
 3. Marks successfully pushed notes as synced
@@ -198,6 +216,7 @@ async syncNow(): Promise<SyncResult> {
 #### `resolveConflict()` - Real Implementation
 
 **Before (Stub):**
+
 ```typescript
 async resolveConflict(noteId: string, resolution: 'local' | 'remote'): Promise<void> {
   if (resolution === 'local') {
@@ -210,6 +229,7 @@ async resolveConflict(noteId: string, resolution: 'local' | 'remote'): Promise<v
 ```
 
 **After (Functional):**
+
 ```typescript
 async resolveConflict(noteId: string, resolution: 'local' | 'remote'): Promise<void> {
   const note = await this.noteRepository.get(createNoteId(noteId));
@@ -231,6 +251,7 @@ async resolveConflict(noteId: string, resolution: 'local' | 'remote'): Promise<v
 ```
 
 **What It Does:**
+
 - **"local" resolution:** Calls `resetSyncTracking()` to force re-push
 - **"remote" resolution:** Calls `markAsSynced()` to accept server version
 - Removes conflict from UI after resolution
@@ -240,6 +261,7 @@ async resolveConflict(noteId: string, resolution: 'local' | 'remote'): Promise<v
 #### `applyRemoteChange()` - Prevent Ping-Pong
 
 **Enhancement:**
+
 ```typescript
 private async applyRemoteChange(change: SyncChange): Promise<void> {
   // ... existing code to apply change ...
@@ -250,6 +272,7 @@ private async applyRemoteChange(change: SyncChange): Promise<void> {
 ```
 
 **Why:**
+
 - Without this, notes pulled from server would be marked `needs_sync=1` by the UPDATE trigger
 - Would cause infinite sync loop (ping-pong effect)
 - Now explicitly marks pulled notes as synced
@@ -263,6 +286,7 @@ private async applyRemoteChange(change: SyncChange): Promise<void> {
 **Features:**
 
 #### Dual View Modes
+
 1. **Side-by-Side View** (Default)
    - Local version on left
    - Remote version on right
@@ -277,6 +301,7 @@ private async applyRemoteChange(change: SyncChange): Promise<void> {
    - Centered resolution buttons
 
 #### Visual Diff Highlighting
+
 ```typescript
 // Using 'diff' library for line-based diffing
 const diff = diffLines(localContent, remoteContent);
@@ -288,17 +313,20 @@ const diff = diffLines(localContent, remoteContent);
 ```
 
 #### Components
+
 - `DiffChange` - Renders individual diff change with styling
 - `UnifiedDiff` - Line-by-line diff view with header
 - `ConflictResolver` - Main component with view toggle
 
 #### CSS Styling
+
 - `.diffAdded` - `background: rgba(34, 197, 94, 0.2); color: #22c55e;`
 - `.diffRemoved` - `background: rgba(239, 68, 68, 0.2); color: #ef4444; text-decoration: line-through;`
 - `.diffUnchanged` - `color: var(--text-secondary);`
 - Responsive layout (mobile-friendly)
 
 **Integration:**
+
 - Already integrated in `AccountSection.tsx` (line 159)
 - Shows when `conflicts.length > 0`
 - Auto-hidden when no conflicts
@@ -431,6 +459,7 @@ needs_sync=0
 ## 📊 What Works Now
 
 ### ✅ Basic Sync
+
 - [x] Create note on Device A → Marked `needs_sync=1`
 - [x] Auto-sync OR manual sync triggers
 - [x] Note pushed to server (encrypted)
@@ -438,6 +467,7 @@ needs_sync=0
 - [x] No ping-pong effect (pulled notes not re-pushed)
 
 ### ✅ Multi-Device Editing
+
 - [x] Edit same note on Device A → Pushes successfully
 - [x] Edit same note on Device B (offline) → Conflict detected on push
 - [x] Conflict displayed in UI with visual diff
@@ -445,16 +475,19 @@ needs_sync=0
 - [x] Sync continues after resolution
 
 ### ✅ Rapid Edits
+
 - [x] Trigger increments `local_version` on each edit
 - [x] Batch push up to 50 notes per sync
 - [x] All edits eventually synced
 
 ### ✅ Delete Sync
+
 - [x] Soft delete (is_deleted=1) → Marked `needs_sync=1`
 - [x] Pushed as `operation='delete'`
 - [x] Device B receives delete → Marks note as deleted
 
 ### ✅ UI/UX
+
 - [x] Conflict resolver shows in AccountSection
 - [x] Side-by-side and unified diff views
 - [x] Visual diff highlighting (green=added, red=removed)
@@ -466,16 +499,19 @@ needs_sync=0
 ## 📈 Performance Characteristics
 
 ### Query Performance
+
 - **Pending changes query:** O(log n) with index on `needs_sync`
 - **Batch mark as synced:** O(m) where m = batch size (max 50)
 - **Conflict detection:** O(1) per note (version comparison)
 
 ### Sync Throughput
+
 - **Pull:** 50 notes per request (configurable)
 - **Push:** 50 notes per request (configurable)
 - **Auto-sync interval:** 5 minutes (configurable)
 
 ### Storage Overhead
+
 - **3 new columns per note:** ~12 bytes (INTEGER + INTEGER + TEXT)
 - **1 new index:** ~4-8 bytes per row
 - **Negligible impact:** <1% storage increase
@@ -485,6 +521,7 @@ needs_sync=0
 ## 🧪 Testing Status
 
 ### ✅ Code Complete
+
 - [x] Migration 008 created
 - [x] Repository methods implemented
 - [x] Sync service bidirectional
@@ -492,6 +529,7 @@ needs_sync=0
 - [x] UI with visual diff
 
 ### ⏳ Testing Required
+
 - [ ] **Multi-device testing** (see TESTING_SYNC.md)
   - Scenario 1: Basic push/pull
   - Scenario 2: Edit conflict
@@ -539,6 +577,7 @@ needs_sync=0
 > **Impacto:** Feature Pro inútil, pérdida de datos
 >
 > **Código literal del problema:**
+>
 > ```typescript
 > // apps/desktop/src/main/services/syncService.ts:74
 > async syncNow() {
@@ -559,6 +598,7 @@ needs_sync=0
 > ✅ **RESUELTO** - Sync Bidireccional Funcional
 >
 > **Implementado:**
+>
 > - Push de cambios locales al servidor
 > - Tracking automático con triggers
 > - Detección de conflictos
@@ -571,11 +611,13 @@ needs_sync=0
 ## 🎯 Next Steps
 
 ### Immediate (Esta Semana)
+
 1. **Multi-device testing** - User must test with 2 devices/instances
 2. **Bug fixes** - Address issues found in testing
 3. **Deploy to staging** - Test with real server
 
 ### Upcoming (Semanas 5-7 per Plan)
+
 4. **Git-backed notes** - Differentiator #1
 5. **Knowledge graph** - Differentiator #2
 6. **CLI & API** - Differentiator #3
@@ -585,20 +627,24 @@ needs_sync=0
 ## 📚 Files Modified
 
 ### Database
+
 - `packages/storage-sqlite/src/migrations/008_sync_tracking.ts` (NEW)
 - `packages/storage-sqlite/src/migrations/index.ts` (MODIFIED)
 
 ### Repository
+
 - `packages/storage-sqlite/src/repositories/SQLiteNoteRepository.ts` (MODIFIED)
   - +5 methods (getPendingChanges, markAsSynced, markMultipleAsSynced, getSyncStats, resetSyncTracking)
 
 ### Services
+
 - `apps/desktop/src/main/services/syncService.ts` (MODIFIED)
   - syncNow(): push implementation
   - resolveConflict(): functional implementation
   - applyRemoteChange(): mark as synced
 
 ### UI
+
 - `apps/desktop/src/renderer/components/sync/ConflictResolver.tsx` (MODIFIED)
   - Dual view modes
   - Visual diff with highlighting
@@ -608,6 +654,7 @@ needs_sync=0
   - Added `diff` dependency
 
 ### Documentation
+
 - `TESTING_SYNC.md` (NEW)
 - `SEMANA_2_COMPLETE.md` (NEW - this file)
 
@@ -628,17 +675,20 @@ needs_sync=0
 ## 💡 Key Insights
 
 ### What Went Well
+
 1. **Triggers work perfectly** - Auto-tracking eliminates manual bookkeeping
 2. **Batch operations** - markMultipleAsSynced() is efficient
 3. **Conflict detection** - Version comparison is simple and reliable
 4. **UI polish** - Visual diff makes conflicts understandable
 
 ### What Could Be Better
+
 1. **Real-time sync** - 5-min polling is slow (future: WebSockets)
 2. **Large batches** - 50 notes limit requires multiple syncs (acceptable for MVP)
 3. **Merge conflicts** - No automatic merge (user must choose)
 
 ### Lessons Learned
+
 1. **Triggers are powerful** - Automatic tracking is better than manual
 2. **Ping-pong prevention is critical** - Must mark pulled notes as synced
 3. **Visual diff is essential** - Users need to see what changed
@@ -648,6 +698,7 @@ needs_sync=0
 ## 🚀 Deployment Checklist
 
 **Before deploying to staging:**
+
 - [x] Migration 008 created
 - [x] TypeScript compiles with no errors
 - [x] IPC handlers exist (sync:resolveConflict)
@@ -656,6 +707,7 @@ needs_sync=0
 - [ ] No critical bugs
 
 **After deploying to staging:**
+
 - [ ] Verify migration applies on fresh DB
 - [ ] Verify triggers fire correctly
 - [ ] Test push/pull with staging API
@@ -666,12 +718,14 @@ needs_sync=0
 ## 📞 Support Info
 
 **If sync breaks:**
+
 1. Check migration applied: `SELECT * FROM migrations WHERE version=20260109000008;`
 2. Check triggers exist: `SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE '%sync%';`
 3. Check pending notes: `SELECT id, title, needs_sync, local_version FROM notes WHERE needs_sync=1;`
 4. Force re-sync: `UPDATE notes SET needs_sync=1, local_version=local_version+1 WHERE id='note-id';`
 
 **Debug Logs:**
+
 - Main process: `~/.config/Readied/logs/main.log`
 - Renderer process: DevTools Console
 - Sync errors: Check Network tab for failed requests

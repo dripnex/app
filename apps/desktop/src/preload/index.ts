@@ -332,7 +332,9 @@ export interface ReadiedAPI {
     /** Disable git for a notebook */
     disableGit: (notebookId: string) => Promise<{ success: boolean; error?: string }>;
     /** Check if git is enabled for a notebook */
-    isGitEnabled: (notebookId: string) => Promise<{ success: boolean; enabled?: boolean; error?: string }>;
+    isGitEnabled: (
+      notebookId: string
+    ) => Promise<{ success: boolean; enabled?: boolean; error?: string }>;
     /** Get git settings for a notebook */
     getGitSettings: (notebookId: string) => Promise<{
       success: boolean;
@@ -344,7 +346,10 @@ export interface ReadiedAPI {
       error?: string;
     }>;
     /** Toggle auto-commit for a notebook */
-    setGitAutoCommit: (notebookId: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+    setGitAutoCommit: (
+      notebookId: string,
+      enabled: boolean
+    ) => Promise<{ success: boolean; error?: string }>;
     /** Get all git-enabled notebooks */
     getGitEnabled: () => Promise<{
       success: boolean;
@@ -380,7 +385,9 @@ export interface ReadiedAPI {
     /** Start trial manually */
     startTrial: () => Promise<{ success: boolean; error?: string }>;
     /** Open subscription checkout page */
-    openSubscribe: (options?: { plan?: 'monthly' | 'annual' }) => Promise<{ success: boolean; error?: string }>;
+    openSubscribe: (options?: {
+      plan?: 'monthly' | 'annual';
+    }) => Promise<{ success: boolean; error?: string }>;
     /** Activate license from JSON content */
     activate: (content: string) => Promise<LicenseResult>;
     /** Import license file via system dialog */
@@ -568,9 +575,7 @@ export interface ReadiedAPI {
       error?: string;
     }>;
     /** Get repository status */
-    status: (
-      notebookId: string
-    ) => Promise<{
+    status: (notebookId: string) => Promise<{
       success: boolean;
       status?: {
         modified: string[];
@@ -643,11 +648,12 @@ const api: ReadiedAPI = {
     delete: id => ipcRenderer.invoke('notebooks:delete', id),
     reorder: (parentId, orderedIds) =>
       ipcRenderer.invoke('notebooks:reorder', parentId, orderedIds),
-    enableGit: (notebookId) => ipcRenderer.invoke('notebooks:enableGit', notebookId),
-    disableGit: (notebookId) => ipcRenderer.invoke('notebooks:disableGit', notebookId),
-    isGitEnabled: (notebookId) => ipcRenderer.invoke('notebooks:isGitEnabled', notebookId),
-    getGitSettings: (notebookId) => ipcRenderer.invoke('notebooks:getGitSettings', notebookId),
-    setGitAutoCommit: (notebookId, enabled) => ipcRenderer.invoke('notebooks:setGitAutoCommit', notebookId, enabled),
+    enableGit: notebookId => ipcRenderer.invoke('notebooks:enableGit', notebookId),
+    disableGit: notebookId => ipcRenderer.invoke('notebooks:disableGit', notebookId),
+    isGitEnabled: notebookId => ipcRenderer.invoke('notebooks:isGitEnabled', notebookId),
+    getGitSettings: notebookId => ipcRenderer.invoke('notebooks:getGitSettings', notebookId),
+    setGitAutoCommit: (notebookId, enabled) =>
+      ipcRenderer.invoke('notebooks:setGitAutoCommit', notebookId, enabled),
     getGitEnabled: () => ipcRenderer.invoke('notebooks:getGitEnabled'),
   },
   data: {
@@ -747,8 +753,8 @@ const api: ReadiedAPI = {
     },
   },
   share: {
-    create: (input) => ipcRenderer.invoke('share:create', input),
-    delete: (slug) => ipcRenderer.invoke('share:delete', slug),
+    create: input => ipcRenderer.invoke('share:create', input),
+    delete: slug => ipcRenderer.invoke('share:delete', slug),
   },
   encryption: {
     exportKey: () => ipcRenderer.invoke('encryption:exportKey'),

@@ -43,6 +43,12 @@ export interface GeneralSettings {
   showNotifications: boolean;
   /** Remember window position and size */
   rememberWindowPosition: boolean;
+  /** Color theme */
+  theme: 'dark' | 'light' | 'system';
+  /** Accent color */
+  accentColor: string;
+  /** Zoom level */
+  zoomLevel: string;
 }
 
 /**
@@ -109,6 +115,9 @@ const initialGeneral: GeneralSettings = {
   defaultNotebookId: null,
   showNotifications: true,
   rememberWindowPosition: true,
+  theme: 'dark',
+  accentColor: '#5eead4',
+  zoomLevel: '1.0',
 };
 
 const initialBackup: BackupSettings = {
@@ -127,7 +136,7 @@ const initialSync: SyncSettings = {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    set => ({
       // Initial state
       editor: initialEditor,
       general: initialGeneral,
@@ -135,23 +144,23 @@ export const useSettingsStore = create<SettingsState>()(
       sync: initialSync,
 
       // Actions
-      updateEditor: (editor) =>
-        set((state) => ({
+      updateEditor: editor =>
+        set(state => ({
           editor: { ...state.editor, ...editor },
         })),
 
-      updateGeneral: (general) =>
-        set((state) => ({
+      updateGeneral: general =>
+        set(state => ({
           general: { ...state.general, ...general },
         })),
 
-      updateBackup: (backup) =>
-        set((state) => ({
+      updateBackup: backup =>
+        set(state => ({
           backup: { ...state.backup, ...backup },
         })),
 
-      updateSync: (sync) =>
-        set((state) => ({
+      updateSync: sync =>
+        set(state => ({
           sync: { ...state.sync, ...sync },
         })),
 
@@ -165,7 +174,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'readied-settings', // localStorage key
-      version: 2, // Incremented version due to new fields
+      version: 3, // Incremented version for theme/accent/zoom
     }
   )
 );

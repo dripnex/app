@@ -11,15 +11,16 @@ Rate limiting is implemented to prevent abuse and ensure fair usage of the API. 
 Located at `src/middleware/rateLimit.ts`
 
 The middleware tracks requests using:
+
 - **Development:** In-memory Map (per-worker, resets on restart)
 - **Production:** Can be upgraded to Cloudflare KV for distributed rate limiting
 
 ### Rate Limits
 
-| Endpoint | Limit | Window | Key |
-|----------|-------|--------|-----|
-| `/auth/*` | 10 requests | 1 minute | IP address |
-| `/sync/*` | 100 requests | 1 minute | IP address |
+| Endpoint    | Limit        | Window   | Key        |
+| ----------- | ------------ | -------- | ---------- |
+| `/auth/*`   | 10 requests  | 1 minute | IP address |
+| `/sync/*`   | 100 requests | 1 minute | IP address |
 | General API | 300 requests | 1 minute | IP address |
 
 ### Headers
@@ -76,6 +77,7 @@ curl -v http://localhost:8787/health 2>&1 | grep -i "x-ratelimit"
 ### In-Memory Store Limitations
 
 Current implementation uses in-memory Map:
+
 - **Pros:** Simple, no external dependencies, fast
 - **Cons:**
   - Not shared across worker instances
@@ -106,6 +108,7 @@ const entry = stored ? JSON.parse(stored) : null;
 ### Cloudflare Rate Limiting (Alternative)
 
 Cloudflare also offers built-in rate limiting:
+
 - Configure via dashboard
 - More expensive ($$$)
 - No code changes needed
@@ -130,9 +133,7 @@ For local testing, you can temporarily disable:
 We use Cloudflare's `CF-Connecting-IP` header to get the real client IP:
 
 ```typescript
-const ip = c.req.header('CF-Connecting-IP') ||
-           c.req.header('X-Forwarded-For') ||
-           'unknown';
+const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
 ```
 
 **Warning:** `X-Forwarded-For` can be spoofed if not behind Cloudflare. Always prioritize `CF-Connecting-IP` when available.

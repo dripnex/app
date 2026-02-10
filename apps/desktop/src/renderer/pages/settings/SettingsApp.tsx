@@ -7,10 +7,12 @@ import { AppearanceSection } from './sections/AppearanceSection';
 import { AccountSection } from './sections/AccountSection';
 import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
+import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
 
 export type SettingsSection = 'general' | 'editor' | 'appearance' | 'account' | 'backup' | 'about';
 
 export function SettingsApp() {
+  useAppearanceSettings();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   const renderSection = () => {

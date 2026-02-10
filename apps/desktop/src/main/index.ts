@@ -1072,17 +1072,20 @@ function registerNotebookHandlers(): void {
   });
 
   // Toggle auto-commit for a notebook
-  ipcMain.handle('notebooks:setGitAutoCommit', async (_event, notebookId: string, enabled: boolean) => {
-    try {
-      repo.setGitAutoCommit(createNotebookId(notebookId), enabled);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to set auto-commit',
-      };
+  ipcMain.handle(
+    'notebooks:setGitAutoCommit',
+    async (_event, notebookId: string, enabled: boolean) => {
+      try {
+        repo.setGitAutoCommit(createNotebookId(notebookId), enabled);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to set auto-commit',
+        };
+      }
     }
-  });
+  );
 
   // Get all git-enabled notebooks
   ipcMain.handle('notebooks:getGitEnabled', async () => {
@@ -1252,7 +1255,6 @@ function registerDataHandlers(): void {
     return { success: true };
   });
 }
-
 
 /** Register IPC handlers for renderer logging */
 function registerLogHandlers(): void {
@@ -1447,26 +1449,32 @@ function registerAuthSyncHandlers(): void {
   });
 
   // Push changes to server
-  ipcMain.handle('sync:push', async (_event, changes: Array<{
-    noteId: string;
-    operation: 'create' | 'update' | 'delete';
-    content?: string;
-    localVersion?: number;
-  }>) => {
-    try {
-      const result = await sync.push(changes);
-      return {
-        success: result.success,
-        results: result.results,
-        error: result.error,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to push changes',
-      };
+  ipcMain.handle(
+    'sync:push',
+    async (
+      _event,
+      changes: Array<{
+        noteId: string;
+        operation: 'create' | 'update' | 'delete';
+        content?: string;
+        localVersion?: number;
+      }>
+    ) => {
+      try {
+        const result = await sync.push(changes);
+        return {
+          success: result.success,
+          results: result.results,
+          error: result.error,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to push changes',
+        };
+      }
     }
-  });
+  );
 
   // Perform full sync (pull + push)
   ipcMain.handle('sync:syncNow', async () => {
@@ -1503,19 +1511,22 @@ function registerAuthSyncHandlers(): void {
   });
 
   // Resolve conflict
-  ipcMain.handle('sync:resolveConflict', async (_event, noteId: string, resolution: 'local' | 'remote') => {
-    try {
-      await sync.resolveConflict(noteId, resolution);
-      return {
-        success: true,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to resolve conflict',
-      };
+  ipcMain.handle(
+    'sync:resolveConflict',
+    async (_event, noteId: string, resolution: 'local' | 'remote') => {
+      try {
+        await sync.resolveConflict(noteId, resolution);
+        return {
+          success: true,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to resolve conflict',
+        };
+      }
     }
-  });
+  );
 
   // Start auto-sync
   ipcMain.handle('sync:startAutoSync', async (_event, intervalMs?: number) => {
@@ -1674,20 +1685,23 @@ function registerGitHandlers(): void {
   });
 
   // Commit changes
-  ipcMain.handle('git:commit', async (_event, notebookId: string, message: string, files?: string[]) => {
-    try {
-      const sha = await git.commit(notebookId, message, files);
-      return {
-        success: true,
-        sha,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to commit changes',
-      };
+  ipcMain.handle(
+    'git:commit',
+    async (_event, notebookId: string, message: string, files?: string[]) => {
+      try {
+        const sha = await git.commit(notebookId, message, files);
+        return {
+          success: true,
+          sha,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to commit changes',
+        };
+      }
     }
-  });
+  );
 
   // Get commit history
   ipcMain.handle('git:log', async (_event, notebookId: string, limit?: number) => {
@@ -1735,17 +1749,20 @@ function registerGitHandlers(): void {
   });
 
   // Write note file to git repository
-  ipcMain.handle('git:writeNote', async (_event, notebookId: string, noteId: string, content: string) => {
-    try {
-      await git.writeNoteFile(notebookId, noteId, content);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to write note file',
-      };
+  ipcMain.handle(
+    'git:writeNote',
+    async (_event, notebookId: string, noteId: string, content: string) => {
+      try {
+        await git.writeNoteFile(notebookId, noteId, content);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to write note file',
+        };
+      }
     }
-  });
+  );
 
   // Read note file from git repository
   ipcMain.handle('git:readNote', async (_event, notebookId: string, noteId: string) => {
@@ -1976,7 +1993,10 @@ app
         registerShareHandlers({ apiClient });
         log.info('Auth and sync services initialized');
       } catch (error) {
-        log.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to initialize auth/sync services');
+        log.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Failed to initialize auth/sync services'
+        );
       }
     };
 
@@ -2045,10 +2065,16 @@ app.on('open-url', (event, url) => {
         log.warn('Deep link missing token parameter');
       }
     } else {
-      log.warn({ hostname: urlObj.hostname, pathname: urlObj.pathname }, 'Unknown deep link format');
+      log.warn(
+        { hostname: urlObj.hostname, pathname: urlObj.pathname },
+        'Unknown deep link format'
+      );
     }
   } catch (error) {
-    log.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to parse deep link URL');
+    log.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to parse deep link URL'
+    );
   }
 });
 

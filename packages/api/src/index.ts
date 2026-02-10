@@ -41,7 +41,7 @@ app.use(
 );
 
 // Health check
-app.get('/', (c) => {
+app.get('/', c => {
   return c.json({
     name: 'Readied API',
     version: '0.1.0',
@@ -49,7 +49,7 @@ app.get('/', (c) => {
   });
 });
 
-app.get('/health', (c) => {
+app.get('/health', c => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -61,7 +61,7 @@ app.route('/newsletter', newsletterRoute);
 app.route('/share', share);
 
 // 404 handler
-app.notFound((c) => {
+app.notFound(c => {
   return c.json({ error: 'Not Found' }, 404);
 });
 

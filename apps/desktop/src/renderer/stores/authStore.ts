@@ -35,7 +35,7 @@ interface AuthState {
 // Store Implementation
 // ============================================================================
 
-export const useAuthStore = create<AuthState>()((set) => ({
+export const useAuthStore = create<AuthState>()(set => ({
   // Initial state
   user: null,
   isAuthenticated: false,

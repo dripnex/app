@@ -21,7 +21,7 @@ Edit `apps/desktop/package.json`:
 
 ```json
 {
-  "version": "0.1.7"  // Increment version
+  "version": "0.1.7" // Increment version
 }
 ```
 

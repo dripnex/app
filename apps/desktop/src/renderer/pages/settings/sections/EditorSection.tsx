@@ -12,7 +12,7 @@ import styles from './Section.module.css';
 
 export function EditorSection() {
   const editor = useSettingsStore(selectEditor);
-  const updateEditor = useSettingsStore((s) => s.updateEditor);
+  const updateEditor = useSettingsStore(s => s.updateEditor);
 
   return (
     <div className={styles.section}>
@@ -28,7 +28,7 @@ export function EditorSection() {
           <Toggle
             id="lineNumbers"
             checked={editor.lineNumbers}
-            onChange={(checked) => updateEditor({ lineNumbers: checked })}
+            onChange={checked => updateEditor({ lineNumbers: checked })}
           />
         </SettingRow>
 
@@ -40,7 +40,7 @@ export function EditorSection() {
           <Toggle
             id="highlightActiveLine"
             checked={editor.highlightActiveLine}
-            onChange={(checked) => updateEditor({ highlightActiveLine: checked })}
+            onChange={checked => updateEditor({ highlightActiveLine: checked })}
           />
         </SettingRow>
 
@@ -52,7 +52,7 @@ export function EditorSection() {
           <Toggle
             id="lineWrapping"
             checked={editor.lineWrapping}
-            onChange={(checked) => updateEditor({ lineWrapping: checked })}
+            onChange={checked => updateEditor({ lineWrapping: checked })}
           />
         </SettingRow>
 
@@ -64,7 +64,7 @@ export function EditorSection() {
           <Toggle
             id="inlineImages"
             checked={editor.inlineImages}
-            onChange={(checked) => updateEditor({ inlineImages: checked })}
+            onChange={checked => updateEditor({ inlineImages: checked })}
           />
         </SettingRow>
 
@@ -76,7 +76,7 @@ export function EditorSection() {
           <Toggle
             id="scrollPastEnd"
             checked={editor.scrollPastEnd}
-            onChange={(checked) => updateEditor({ scrollPastEnd: checked })}
+            onChange={checked => updateEditor({ scrollPastEnd: checked })}
           />
         </SettingRow>
 
@@ -88,7 +88,7 @@ export function EditorSection() {
           <Toggle
             id="spellCheck"
             checked={editor.spellCheck}
-            onChange={(checked) => updateEditor({ spellCheck: checked })}
+            onChange={checked => updateEditor({ spellCheck: checked })}
           />
         </SettingRow>
       </SettingGroup>
@@ -103,7 +103,7 @@ export function EditorSection() {
           <NumberInput
             id="fontSize"
             value={editor.fontSize}
-            onChange={(value) => updateEditor({ fontSize: value })}
+            onChange={value => updateEditor({ fontSize: value })}
             min={10}
             max={32}
             step={1}
@@ -118,20 +118,16 @@ export function EditorSection() {
           <TextInput
             id="fontFamily"
             value={editor.fontFamily}
-            onChange={(value) => updateEditor({ fontFamily: value })}
+            onChange={value => updateEditor({ fontFamily: value })}
             placeholder="ui-monospace, monospace"
           />
         </SettingRow>
 
-        <SettingRow
-          label="Line Height"
-          description="Line height multiplier"
-          htmlFor="lineHeight"
-        >
+        <SettingRow label="Line Height" description="Line height multiplier" htmlFor="lineHeight">
           <NumberInput
             id="lineHeight"
             value={editor.lineHeight}
-            onChange={(value) => updateEditor({ lineHeight: value })}
+            onChange={value => updateEditor({ lineHeight: value })}
             min={1}
             max={3}
             step={0.1}
@@ -141,15 +137,11 @@ export function EditorSection() {
 
       {/* Markdown Group */}
       <SettingGroup title="Markdown">
-        <SettingRow
-          label="Tab Size"
-          description="Number of spaces per tab"
-          htmlFor="tabSize"
-        >
+        <SettingRow label="Tab Size" description="Number of spaces per tab" htmlFor="tabSize">
           <NumberInput
             id="tabSize"
             value={editor.tabSize}
-            onChange={(value) => updateEditor({ tabSize: value })}
+            onChange={value => updateEditor({ tabSize: value })}
             min={1}
             max={8}
             step={1}
@@ -164,7 +156,7 @@ export function EditorSection() {
           <Toggle
             id="indentWithTabs"
             checked={editor.indentWithTabs}
-            onChange={(checked) => updateEditor({ indentWithTabs: checked })}
+            onChange={checked => updateEditor({ indentWithTabs: checked })}
           />
         </SettingRow>
       </SettingGroup>

@@ -91,10 +91,7 @@ export class EncryptionService {
       const cipher = createCipheriv(ALGORITHM, this.key, iv);
 
       // Encrypt
-      const encrypted = Buffer.concat([
-        cipher.update(plaintext, 'utf-8'),
-        cipher.final(),
-      ]);
+      const encrypted = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()]);
 
       // Get authentication tag
       const authTag = cipher.getAuthTag();
@@ -139,10 +136,7 @@ export class EncryptionService {
       decipher.setAuthTag(authTag);
 
       // Decrypt
-      const decrypted = Buffer.concat([
-        decipher.update(encrypted),
-        decipher.final(),
-      ]);
+      const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
 
       return decrypted.toString('utf-8');
     } catch (error) {

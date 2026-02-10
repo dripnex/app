@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react';
 import type { LicenseState, LicenseResult } from '../../preload/index';
 
 interface LicenseContextValue {
@@ -10,6 +18,9 @@ interface LicenseContextValue {
   activateLicense: (content: string) => Promise<LicenseResult>;
   importLicense: () => Promise<LicenseResult>;
   deactivateLicense: () => Promise<void>;
+  openSubscribe: (options?: {
+    plan?: 'monthly' | 'annual';
+  }) => Promise<{ success: boolean; error?: string }>;
   refresh: () => Promise<void>;
 }
 
@@ -19,6 +30,14 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<LicenseState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -32,7 +51,8 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsLoading(true);
     refresh().finally(() => setIsLoading(false));
-  }, [refresh]);
+    return stopPolling;
+  }, [refresh, stopPolling]);
 
   const openDialog = useCallback(() => setIsDialogOpen(true), []);
   const closeDialog = useCallback(() => setIsDialogOpen(false), []);
@@ -63,6 +83,40 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
+  const openSubscribe = useCallback(
+    async (options?: { plan?: 'monthly' | 'annual' }) => {
+      try {
+        const result = await window.readied.license.openSubscribe(options);
+        if (result.success) {
+          // Poll every 5s for up to 2 minutes waiting for webhook to update the API
+          stopPolling();
+          let attempts = 0;
+          const maxAttempts = 24; // 2 minutes at 5s intervals
+          pollRef.current = setInterval(async () => {
+            attempts++;
+            try {
+              const newState = await window.readied.license.refreshSubscription();
+              if (newState.status === 'pro_active' || attempts >= maxAttempts) {
+                stopPolling();
+                setState(newState);
+              }
+            } catch {
+              // Ignore errors during polling
+              if (attempts >= maxAttempts) {
+                stopPolling();
+              }
+            }
+          }, 5000);
+        }
+        return result;
+      } catch (error) {
+        window.readied.log.error('Failed to open subscription', { error: String(error) });
+        return { success: false, error: 'Failed to open subscription checkout' };
+      }
+    },
+    [stopPolling]
+  );
+
   return (
     <LicenseContext.Provider
       value={{
@@ -74,6 +128,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
         activateLicense,
         importLicense,
         deactivateLicense,
+        openSubscribe,
         refresh,
       }}
     >

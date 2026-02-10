@@ -30,7 +30,7 @@ const createShareSchema = z.object({
 
 // ─── POST / — Create or update shared note (upsert) ─────────────────────────
 
-share.post('/', authMiddleware, zValidator('json', createShareSchema), async (c) => {
+share.post('/', authMiddleware, zValidator('json', createShareSchema), async c => {
   const { userId } = c.get('user');
   const { noteId, title, content } = c.req.valid('json');
   const db = createDb(c.env);
@@ -69,7 +69,7 @@ share.post('/', authMiddleware, zValidator('json', createShareSchema), async (c)
 
 // ─── GET /:slug — Get shared note (public, no auth) ─────────────────────────
 
-share.get('/:slug', async (c) => {
+share.get('/:slug', async c => {
   const slug = c.req.param('slug');
   const db = createDb(c.env);
 
@@ -93,7 +93,7 @@ share.get('/:slug', async (c) => {
 
 // ─── DELETE /:slug — Remove shared note (owner only) ─────────────────────────
 
-share.delete('/:slug', authMiddleware, async (c) => {
+share.delete('/:slug', authMiddleware, async c => {
   const { userId } = c.get('user');
   const slug = c.req.param('slug');
   const db = createDb(c.env);

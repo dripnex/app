@@ -100,17 +100,18 @@ main          ← Production releases only
 
 ### Branches
 
-| Branch | Purpose | Merges to |
-|--------|---------|-----------|
-| `main` | Production releases | - |
-| `develop` | Integration, next release | `main` (via release) |
-| `feature/*` | New features | `develop` |
-| `fix/*` | Bug fixes | `develop` |
-| `release/*` | Release prep | `main` + `develop` |
+| Branch      | Purpose                   | Merges to            |
+| ----------- | ------------------------- | -------------------- |
+| `main`      | Production releases       | -                    |
+| `develop`   | Integration, next release | `main` (via release) |
+| `feature/*` | New features              | `develop`            |
+| `fix/*`     | Bug fixes                 | `develop`            |
+| `release/*` | Release prep              | `main` + `develop`   |
 
 ### Workflow
 
 **Starting new work:**
+
 ```bash
 git checkout develop
 git pull origin develop
@@ -118,12 +119,14 @@ git checkout -b feature/my-feature
 ```
 
 **Creating PR:**
+
 ```bash
 git push -u origin feature/my-feature
 gh pr create --base develop --head feature/my-feature
 ```
 
 **After PR merged:**
+
 ```bash
 git checkout develop
 git pull origin develop
@@ -133,6 +136,7 @@ git branch -d feature/my-feature
 ### Commit Messages
 
 Use conventional commits:
+
 - `feat:` — New feature
 - `fix:` — Bug fix
 - `refactor:` — Code refactoring

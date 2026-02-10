@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.125rem 1.25rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-hover);
   border: 1px solid var(--border-subtle);
   border-radius: 0.625rem;
   gap: 1.5rem;
@@ -11,8 +11,8 @@
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: var(--border-hover, rgba(255, 255, 255, 0.1));
+  background: var(--bg-active);
+  border-color: var(--border-hover);
 }
 
 .info {
@@ -21,7 +21,7 @@
 }
 
 .label {
-  font-size: 0.9375rem;
+  font-size: var(--text-lg);
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
@@ -29,7 +29,7 @@
 }
 
 .description {
-  font-size: 0.8125rem;
+  font-size: var(--text-base);
   color: var(--text-secondary);
   line-height: 1.5;
   margin-top: 0.125rem;

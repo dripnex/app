@@ -32,9 +32,7 @@ export function SyncStatusIndicator() {
       case 'idle':
         return {
           icon: <CheckCircle size={14} />,
-          label: lastSyncAt
-            ? `Synced ${formatRelativeTime(lastSyncAt)}`
-            : 'Ready to sync',
+          label: lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync',
           color: '#10b981',
         };
       case 'error':
@@ -82,11 +80,7 @@ export function SyncStatusIndicator() {
       style={{ color }}
     >
       <div className={styles.icon}>{icon}</div>
-      {showTooltip && (
-        <div className={styles.tooltip}>
-          {label}
-        </div>
-      )}
+      {showTooltip && <div className={styles.tooltip}>{label}</div>}
     </div>
   );
 }

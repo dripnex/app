@@ -329,12 +329,7 @@ export const ActionsPanel = memo(function ActionsPanel({
               Copy Note Link
             </button>
 
-            <button
-              type="button"
-              className={styles.item}
-              onClick={handlePin}
-              disabled={!onPin}
-            >
+            <button type="button" className={styles.item} onClick={handlePin} disabled={!onPin}>
               <span className={styles.icon}>
                 {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
               </span>

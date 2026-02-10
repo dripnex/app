@@ -1,0 +1,229 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="Checkout Canceled" description="Your checkout was canceled. You can still use Readied for free.">
+  <div class="cancel-page">
+    <div class="container">
+      <div class="cancel-icon">↩</div>
+      <h1>Checkout Canceled</h1>
+      <p class="subtitle">No worries! You can still use Readied for free</p>
+
+      <div class="options">
+        <div class="option-card free">
+          <h3>Try Readied Free</h3>
+          <p>Get started with unlimited local notes, full markdown editor, and 100% offline functionality.</p>
+          <a href="/download" class="button primary">
+            Download Free
+          </a>
+        </div>
+
+        <div class="option-card pro">
+          <h3>Changed your mind?</h3>
+          <p>Pro includes cloud sync, backlinks, graph view, and advanced search. Start with a 14-day free trial.</p>
+          <a href="/subscribe" class="button secondary">
+            Try Pro
+          </a>
+        </div>
+      </div>
+
+      <div class="why-pro">
+        <h2>Why upgrade to Pro?</h2>
+        <div class="benefits">
+          <div class="benefit">
+            <div class="icon">☁️</div>
+            <h4>Cloud Sync</h4>
+            <p>Access your notes from any device with automatic sync</p>
+          </div>
+          <div class="benefit">
+            <div class="icon">🔗</div>
+            <h4>Backlinks</h4>
+            <p>See connections between your notes automatically</p>
+          </div>
+          <div class="benefit">
+            <div class="icon">🔍</div>
+            <h4>Advanced Search</h4>
+            <p>Find anything instantly with powerful search</p>
+          </div>
+          <div class="benefit">
+            <div class="icon">📊</div>
+            <h4>Graph View</h4>
+            <p>Visualize relationships in your knowledge base</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="help">
+        Questions? <a href="mailto:support@readied.app">Contact support</a> or check out our <a href="/faq">FAQ</a>
+      </p>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .cancel-page {
+    min-height: 100vh;
+    padding: 6rem 2rem 4rem;
+    background: linear-gradient(180deg, #0a0b0d 0%, #1a1b1e 100%);
+    text-align: center;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .cancel-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: white;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 3rem;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+  }
+
+  .option-card {
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    text-align: left;
+  }
+
+  .option-card.free {
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .option-card.pro {
+    border-color: rgba(102, 126, 234, 0.3);
+  }
+
+  .option-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: white;
+  }
+
+  .option-card p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1.5rem;
+  }
+
+  .button {
+    display: inline-block;
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s;
+  }
+
+  .button.primary {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+  }
+
+  .button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+  }
+
+  .button.secondary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .button.secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  }
+
+  .why-pro {
+    margin: 4rem 0;
+  }
+
+  .why-pro h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+  }
+
+  .benefits {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+  }
+
+  .benefit {
+    text-align: center;
+  }
+
+  .benefit .icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .benefit h4 {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+    color: white;
+  }
+
+  .benefit p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+  }
+
+  .help {
+    margin-top: 4rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .help a {
+    color: #667eea;
+    text-decoration: none;
+  }
+
+  .help a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .options {
+      grid-template-columns: 1fr;
+    }
+
+    .benefits {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
