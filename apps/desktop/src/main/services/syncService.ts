@@ -87,19 +87,27 @@ export class SyncService {
       const result = await this.apiClient.pullChanges(this.state.cursor, 50);
 
       const conflicts: SyncConflict[] = [];
+      let appliedCount = 0;
+      let lastAppliedCursor = this.state.cursor;
 
       // Apply each change to local database
       for (const change of result.changes) {
         try {
           await this.applyRemoteChange(change, conflicts);
+          appliedCount++;
+          // Only advance cursor past successfully applied changes
+          lastAppliedCursor = change.version ?? lastAppliedCursor;
         } catch (error) {
           console.error(`Failed to apply change ${change.id}:`, error);
-          // Continue with other changes
+          // Stop processing — don't skip over failed changes
+          break;
         }
       }
 
-      // Update cursor
-      this.state.cursor = result.cursor;
+      // Only advance cursor to the last successfully applied change
+      // If all succeeded, use server cursor; otherwise use last successful version
+      this.state.cursor =
+        appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
       this.state.lastSyncAt = Date.now();
 
       return {
@@ -231,7 +239,10 @@ export class SyncService {
           // Handle conflicts from push
           const pushConflicts = pushResult.results.filter(r => r.status === 'conflict');
           if (pushConflicts.length > 0) {
-            console.warn(`Push conflicts detected for ${pushConflicts.length} notes:`, pushConflicts);
+            console.warn(
+              `Push conflicts detected for ${pushConflicts.length} notes:`,
+              pushConflicts
+            );
             // Conflicts will need to be resolved by user
           }
         } else {
@@ -325,10 +336,7 @@ export class SyncService {
   /**
    * Apply a remote change to local database
    */
-  private async applyRemoteChange(
-    change: SyncChange,
-    conflicts: SyncConflict[]
-  ): Promise<void> {
+  private async applyRemoteChange(change: SyncChange, conflicts: SyncConflict[]): Promise<void> {
     const noteId = createNoteId(change.noteId);
 
     // Decrypt content if present
@@ -348,12 +356,13 @@ export class SyncService {
 
         if (existingNote) {
           // Conflict detection:
-          // If local note has been modified after remote change AND by different device → CONFLICT
-          // For simplicity, we detect conflict if:
-          // 1. Local note exists
-          // 2. Remote change is from a different device
+          // A conflict only occurs when the local note has unsynced edits (needs_sync=1)
+          // AND the remote change is from a different device.
+          // If the local note is clean (no pending edits), the remote change can be
+          // applied safely without conflict.
+          const hasLocalEdits = this.noteRepository.hasPendingEdits(noteId);
           const isConflict =
-            existingNote && change.deviceId !== this.apiClient['deviceInfo'].deviceId;
+            hasLocalEdits && change.deviceId !== this.apiClient['deviceInfo'].deviceId;
 
           if (isConflict) {
             // Store conflict for user resolution
