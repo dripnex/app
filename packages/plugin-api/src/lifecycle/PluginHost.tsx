@@ -38,13 +38,16 @@ export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, config
     const registry = registryRef.current!;
     let cancelled = false;
 
-    // Load and activate all plugins (async for config hydration)
+    // Load and activate all plugins (async for config hydration).
+    // Re-check cancelled after each await to avoid activating on stale entries
+    // when cleanup runs mid-loop (e.g. plugin reload while config hydration is in-flight).
     const activateAll = async () => {
       for (const manifest of plugins) {
         if (cancelled) return;
         const loaded = registry.load(manifest);
         if (!loaded) continue; // validation failed, skip
         await registry.activate(manifest.id, editorAPI, appAPI, registerCommand, configBridge, getView);
+        if (cancelled) return; // cleanup started during activate — stop
       }
     };
 
