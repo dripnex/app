@@ -34,6 +34,8 @@ interface PluginEntry {
   state: PluginState;
   disposable?: PluginDisposable;
   commandUnregisters: Array<() => void>;
+  /** Event unsubscribers tracked by the auto-cleanup wrapper */
+  eventUnsubscribers: Array<() => void>;
 }
 
 export class PluginRegistry {
@@ -59,6 +61,7 @@ export class PluginRegistry {
       manifest,
       state: 'loaded',
       commandUnregisters: [],
+      eventUnsubscribers: [],
     });
 
     return true;
@@ -149,9 +152,50 @@ export class PluginRegistry {
       clear: () => {},
     };
 
+    // Wrap editor and app APIs with auto-tracking for event subscriptions.
+    // Any on*() listener the plugin registers is tracked; if the plugin forgets
+    // to unsubscribe in dispose(), deactivate() cleans up automatically.
+    const trackedEditor: EditorAPI = {
+      ...editorAPI,
+      onDocChanged(callback) {
+        const unsub = editorAPI.onDocChanged(callback);
+        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onSelectionChanged(callback) {
+        const unsub = editorAPI.onSelectionChanged(callback);
+        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+    };
+
+    const trackedApp: AppAPI = {
+      ...appAPI,
+      onNoteSelected(callback) {
+        const unsub = appAPI.onNoteSelected(callback);
+        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onNoteCreated(callback) {
+        const unsub = appAPI.onNoteCreated(callback);
+        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onNoteDeleted(callback) {
+        const unsub = appAPI.onNoteDeleted(callback);
+        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+    };
+
     const context: PluginContext = {
       layout: createLayoutManager(id),
-      editor: editorAPI,
+      editor: trackedEditor,
       decorations: decoResult?.api ?? noopDecorations,
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
@@ -168,7 +212,7 @@ export class PluginRegistry {
         warn: (msg: string, ...args: unknown[]) => console.warn(`[${id}]`, msg, ...args),
         error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
       },
-      app: appAPI,
+      app: trackedApp,
     };
 
     const disposable = entry.manifest.activate(context);
@@ -200,6 +244,12 @@ export class PluginRegistry {
       unregister();
     }
     entry.commandUnregisters = [];
+
+    // Safety net: unsubscribe any leaked event listeners
+    for (const unsub of entry.eventUnsubscribers) {
+      unsub();
+    }
+    entry.eventUnsubscribers = [];
 
     entry.state = 'deactivated';
     entry.disposable = undefined;

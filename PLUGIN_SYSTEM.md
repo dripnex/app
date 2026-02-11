@@ -266,9 +266,8 @@ Total: 9 layout zones disponibles.
 | Plugin IPC handlers (scan, enable, disable, listState) | `@readied/desktop` main | Done |
 | Preload `plugins` API bridge | `@readied/desktop` preload | Done |
 | `loadPluginFromSource()` (CJS eval via `new Function`) | `@readied/plugin-api` | Done |
-| `useDiscoveredPlugins` hook | `@readied/desktop` renderer | Done |
+| `pluginRuntimeStore` (Zustand vanilla, race-safe) | `@readied/desktop` renderer | Done |
 | Discovered plugins wired into `PluginHost` | `@readied/desktop` renderer | Done |
-| Plugins section in SettingsModal (list + toggle) | `@readied/desktop` renderer | Done |
 | Plugins section in SettingsApp (list + toggle + reload) | `@readied/desktop` renderer | Done |
 | Cross-window plugin reload (`plugins:requestReload` IPC) | `@readied/desktop` main/preload | Done |
 | Plugin config UI from `configSchema` in manifest.json | `@readied/desktop` renderer | Done |
@@ -318,6 +317,40 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 ---
 
+## Phase 4.5: Hardening (DONE)
+
+**Goal:** Prove untested APIs, eliminate leak risks, add test coverage.
+
+### Completado
+
+| Componente | Package | Estado |
+|---|---|---|
+| Active Line Highlight plugin (proves decorations + app events + editor events) | `@readied/desktop` renderer | Done |
+| Event auto-cleanup in `PluginRegistry.deactivate()` | `@readied/plugin-api` | Done |
+| Tracked event wrappers (editor + app APIs) | `@readied/plugin-api` | Done |
+| Test suite: validation (23 tests) | `@readied/plugin-api` | Done |
+| Test suite: registry lifecycle + auto-cleanup (25 tests) | `@readied/plugin-api` | Done |
+| Test suite: loadPluginFromSource (7 tests) | `@readied/plugin-api` | Done |
+| Test suite: createAppAPI (9 tests) | `@readied/plugin-api` | Done |
+| Test suite: createEditorAPI (12 tests) | `@readied/plugin-api` | Done |
+| Test suite: layoutStore (9 tests) | `@readied/plugin-api` | Done |
+| Test suite: editorPluginStore (6 tests) | `@readied/plugin-api` | Done |
+| Dead code cleanup (SettingsModal.tsx + CSS) | `@readied/desktop` renderer | Done |
+
+### Built-in plugins
+
+| Plugin | APIs probadas | Archivo |
+|---|---|---|
+| Word Count | layout, editor (onDocChanged, getWordCount, getCharCount, getLineCount), registerCommand | `plugins/wordCount.tsx` |
+| Typewriter Mode | registerExtensions (CM6), config (persistence), registerCommand | `plugins/typewriterMode.ts` |
+| Active Line Highlight | decorations (addLineHighlight), editor (onSelectionChanged), app (onNoteSelected), config, registerCommand | `plugins/activeLineHighlight.ts` |
+
+### Event auto-cleanup
+
+`PluginRegistry.activate()` now wraps `EditorAPI` and `AppAPI` with tracking proxies. Every `on*()` subscription is recorded. When the plugin calls the returned unsubscribe function, the tracking entry is removed. On `deactivate()`, any remaining (leaked) subscriptions are automatically unsubscribed — safety net for misbehaving plugins.
+
+---
+
 ## Phase 5: Plugin Ecosystem (futuro lejano)
 
 - Plugin registry/marketplace (HTTP API + UI)
@@ -353,3 +386,5 @@ Fase inicial: **trusted plugins only**. No sandbox.
 | Read-only AppAPI | Full CRUD | Principio de minimo privilegio. Escritura solo via EditorAPI |
 | No manifest.json en Phase 1-2 | JSON desde el inicio | Built-in plugins no necesitan JSON. Lo agregamos en Phase 4 |
 | Layout zones on-demand | Pre-crear todas | YAGNI. Solo crear zones cuando un plugin real las necesite |
+| `pluginRuntimeStore` (Zustand vanilla) | React hook with `reloadKey` | Reload es infra de runtime, no UI state. Scan generation counter para race safety |
+| Event auto-cleanup via tracked wrappers | Manual cleanup only | Safety net: plugins that forget to unsubscribe don't leak. Zero overhead when plugins clean up properly |

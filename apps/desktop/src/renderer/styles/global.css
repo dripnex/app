@@ -491,6 +491,11 @@ input:focus-visible {
   outline: none;
 }
 
+/* Active Line Highlight plugin */
+.cm-active-line-plugin {
+  background-color: var(--surface-hover);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

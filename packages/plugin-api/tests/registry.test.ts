@@ -257,6 +257,123 @@ describe('PluginRegistry', () => {
     });
   });
 
+  describe('event auto-cleanup', () => {
+    it('auto-unsubscribes leaked editor event listeners on deactivate', async () => {
+      const editorUnsub = vi.fn();
+      const editorAPI = makeEditorAPI();
+      editorAPI.onSelectionChanged = vi.fn().mockReturnValue(editorUnsub);
+
+      registry.load(makeManifest({
+        activate: (ctx) => {
+          // Subscribe but intentionally DO NOT unsubscribe in dispose
+          ctx.editor.onSelectionChanged(() => {});
+          return { dispose() {} };
+        },
+      }));
+
+      await registry.activate('test-plugin', editorAPI, makeAppAPI());
+      registry.deactivate('test-plugin');
+
+      expect(editorUnsub).toHaveBeenCalledOnce();
+    });
+
+    it('auto-unsubscribes leaked app event listeners on deactivate', async () => {
+      const appUnsub = vi.fn();
+      const appAPI = makeAppAPI();
+      appAPI.onNoteSelected = vi.fn().mockReturnValue(appUnsub);
+
+      registry.load(makeManifest({
+        activate: (ctx) => {
+          ctx.app.onNoteSelected(() => {});
+          return { dispose() {} };
+        },
+      }));
+
+      await registry.activate('test-plugin', makeEditorAPI(), appAPI);
+      registry.deactivate('test-plugin');
+
+      expect(appUnsub).toHaveBeenCalledOnce();
+    });
+
+    it('does not double-unsubscribe if plugin cleaned up properly', async () => {
+      const editorUnsub = vi.fn();
+      const editorAPI = makeEditorAPI();
+      editorAPI.onDocChanged = vi.fn().mockReturnValue(editorUnsub);
+
+      registry.load(makeManifest({
+        activate: (ctx) => {
+          const off = ctx.editor.onDocChanged(() => {});
+          return {
+            dispose() {
+              off(); // Plugin properly cleans up
+            },
+          };
+        },
+      }));
+
+      await registry.activate('test-plugin', editorAPI, makeAppAPI());
+      registry.deactivate('test-plugin');
+
+      // The tracked wrapper calls the real unsub, then removes itself from the list.
+      // deactivate() iterates remaining list — should be empty, so no extra call.
+      expect(editorUnsub).toHaveBeenCalledOnce();
+    });
+
+    it('cleans up multiple listeners across editor and app', async () => {
+      const editorDocUnsub = vi.fn();
+      const editorSelUnsub = vi.fn();
+      const appNoteSelUnsub = vi.fn();
+      const appNoteCreatedUnsub = vi.fn();
+      const appNoteDeletedUnsub = vi.fn();
+
+      const editorAPI = makeEditorAPI();
+      editorAPI.onDocChanged = vi.fn().mockReturnValue(editorDocUnsub);
+      editorAPI.onSelectionChanged = vi.fn().mockReturnValue(editorSelUnsub);
+
+      const appAPI = makeAppAPI();
+      appAPI.onNoteSelected = vi.fn().mockReturnValue(appNoteSelUnsub);
+      appAPI.onNoteCreated = vi.fn().mockReturnValue(appNoteCreatedUnsub);
+      appAPI.onNoteDeleted = vi.fn().mockReturnValue(appNoteDeletedUnsub);
+
+      registry.load(makeManifest({
+        activate: (ctx) => {
+          ctx.editor.onDocChanged(() => {});
+          ctx.editor.onSelectionChanged(() => {});
+          ctx.app.onNoteSelected(() => {});
+          ctx.app.onNoteCreated(() => {});
+          ctx.app.onNoteDeleted(() => {});
+          // No cleanup in dispose — all should be auto-cleaned
+          return { dispose() {} };
+        },
+      }));
+
+      await registry.activate('test-plugin', editorAPI, appAPI);
+      registry.deactivate('test-plugin');
+
+      expect(editorDocUnsub).toHaveBeenCalledOnce();
+      expect(editorSelUnsub).toHaveBeenCalledOnce();
+      expect(appNoteSelUnsub).toHaveBeenCalledOnce();
+      expect(appNoteCreatedUnsub).toHaveBeenCalledOnce();
+      expect(appNoteDeletedUnsub).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('decorations', () => {
+    it('provides decorations API in context', async () => {
+      let hasDecorations = false;
+      registry.load(makeManifest({
+        activate: (ctx) => {
+          hasDecorations = typeof ctx.decorations.addLineHighlight === 'function'
+            && typeof ctx.decorations.addWidget === 'function'
+            && typeof ctx.decorations.clear === 'function';
+        },
+      }));
+
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      expect(hasDecorations).toBe(true);
+    });
+  });
+
   describe('logger', () => {
     it('provides namespaced logger to plugins', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});

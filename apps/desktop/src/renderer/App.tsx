@@ -33,6 +33,7 @@ import type { RegisteredCommand } from '@readied/command-registry';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { wordCountPlugin } from './plugins/wordCount';
 import { typewriterModePlugin } from './plugins/typewriterMode';
+import { activeLineHighlightPlugin } from './plugins/activeLineHighlight';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -406,7 +407,7 @@ function NotesApp() {
     pluginRuntimeStore.getState().init();
   }, []);
 
-  const builtInPlugins = useMemo(() => [wordCountPlugin, typewriterModePlugin], []);
+  const builtInPlugins = useMemo(() => [wordCountPlugin, typewriterModePlugin, activeLineHighlightPlugin], []);
   const allPlugins = useMemo(
     () => [...builtInPlugins, ...discoveredPlugins],
     [builtInPlugins, discoveredPlugins]
