@@ -1,6 +1,6 @@
 {
   "name": "@readied/desktop",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Markdown-first, offline-forever note app for developers",
   "author": {
@@ -36,10 +36,12 @@
     "@codemirror/state": "^6.5.3",
     "@codemirror/view": "^6.39.8",
     "@lezer/highlight": "^1.2.3",
+    "@readied/command-registry": "workspace:*",
     "@readied/commands": "workspace:*",
     "@readied/core": "workspace:*",
     "@readied/embeds": "workspace:*",
     "@readied/licensing": "workspace:*",
+    "@readied/plugin-api": "workspace:*",
     "@readied/product-config": "workspace:*",
     "@readied/storage-core": "workspace:*",
     "@readied/storage-sqlite": "workspace:*",

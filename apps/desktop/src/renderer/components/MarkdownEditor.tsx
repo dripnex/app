@@ -48,6 +48,8 @@ import {
 import { embedInlinePreview } from '@readied/embeds/codemirror';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
+import { setEditorView } from '../hooks/useCommandRegistry';
+import { pluginExtensionCompartment, editorPluginStore } from '@readied/plugin-api';
 
 // Compartments for dynamic settings
 const lineNumbersCompartment = new Compartment();
@@ -425,6 +427,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         // Placeholder
         EditorView.contentAttributes.of({ 'data-placeholder': placeholder }),
 
+        // Plugin extensions compartment (reconfigured dynamically)
+        pluginExtensionCompartment.of([]),
+
         // Update listener
         EditorView.updateListener.of(update => {
           if (update.docChanged) {
@@ -453,6 +458,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       });
 
       viewRef.current = view;
+
+      // Expose to command registry
+      setEditorView(view);
 
       // Focus the editor
       view.focus();
@@ -527,6 +535,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       return () => {
         dom.removeEventListener('drop', handleDrop);
         dom.removeEventListener('paste', handlePaste);
+        setEditorView(null);
         view.destroy();
         viewRef.current = null;
       };
@@ -568,6 +577,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         selection, // Preserve cursor position
       });
     }, [noteId]);
+
+    // Reconfigure plugin extensions when registrations change.
+    // Also apply current snapshot on mount so extensions registered before
+    // the editor exists (e.g. decoration plugins) are active immediately.
+    useEffect(() => {
+      const apply = () => {
+        const view = viewRef.current;
+        if (!view) return;
+        const merged = editorPluginStore.getState().getMergedExtensions();
+        view.dispatch({
+          effects: pluginExtensionCompartment.reconfigure(merged),
+        });
+      };
+
+      // Apply current snapshot
+      apply();
+
+      // Subscribe to future changes
+      const unsubscribe = editorPluginStore.subscribe(apply);
+      return unsubscribe;
+    }, []);
 
     // Reconfigure editor when settings change
     useEffect(() => {

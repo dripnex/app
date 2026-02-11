@@ -72,6 +72,7 @@ import { SyncService } from './services/syncService.js';
 import { GitService } from './services/gitService.js';
 import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
+import { scanPlugins } from './pluginScanner.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -348,10 +349,10 @@ function createSettingsWindow(): void {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 700,
-    height: 500,
-    minWidth: 500,
-    minHeight: 400,
+    width: 720,
+    height: 520,
+    minWidth: 620,
+    minHeight: 460,
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
@@ -376,13 +377,14 @@ function createSettingsWindow(): void {
     settingsWindow = null;
   });
 
-  // Load settings page
+  // Load settings page via query param (same index.html, different view)
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    // Replace index.html with settings.html in the URL
-    const settingsUrl = process.env.ELECTRON_RENDERER_URL.replace(/\/?$/, '/settings.html');
+    const settingsUrl = `${process.env.ELECTRON_RENDERER_URL}?view=settings`;
     settingsWindow.loadURL(settingsUrl);
   } else {
-    settingsWindow.loadFile(join(__dirname, '../renderer/settings.html'));
+    settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      query: { view: 'settings' },
+    });
   }
 }
 
@@ -1798,6 +1800,91 @@ function registerGitHandlers(): void {
   });
 }
 
+/** Register IPC handlers for plugin config persistence */
+function registerPluginConfigHandlers(): void {
+  ipcMain.handle('pluginConfig:get', (_event, pluginId: string, key: string) => {
+    const row = db!
+      .prepare('SELECT value FROM plugin_config WHERE plugin_id = ? AND key = ?')
+      .get(pluginId, key) as { value: string } | undefined;
+    return row ? JSON.parse(row.value) : undefined;
+  });
+
+  ipcMain.handle('pluginConfig:set', (_event, pluginId: string, key: string, value: unknown) => {
+    db!
+      .prepare('INSERT OR REPLACE INTO plugin_config (plugin_id, key, value) VALUES (?, ?, ?)')
+      .run(pluginId, key, JSON.stringify(value));
+  });
+
+  ipcMain.handle('pluginConfig:getAll', (_event, pluginId: string) => {
+    const rows = db!
+      .prepare('SELECT key, value FROM plugin_config WHERE plugin_id = ?')
+      .all(pluginId) as Array<{ key: string; value: string }>;
+    const result: Record<string, unknown> = {};
+    for (const row of rows) {
+      result[row.key] = JSON.parse(row.value);
+    }
+    return result;
+  });
+
+  ipcMain.handle('pluginConfig:clear', (_event, pluginId: string) => {
+    db!.prepare('DELETE FROM plugin_config WHERE plugin_id = ?').run(pluginId);
+  });
+}
+
+/** Register IPC handlers for plugin discovery */
+function registerPluginDiscoveryHandlers(): void {
+  if (!dataPaths || !db) {
+    throw new Error('Data paths or database not initialized');
+  }
+
+  const paths = dataPaths;
+  const database = db;
+
+  // Scan filesystem for plugins
+  ipcMain.handle('plugins:scan', async () => {
+    return scanPlugins(paths.plugins);
+  });
+
+  // Check if a plugin is enabled (default: true if no row exists)
+  ipcMain.handle('plugins:isEnabled', (_event, pluginId: string) => {
+    const row = database
+      .prepare('SELECT enabled FROM plugin_registry WHERE plugin_id = ?')
+      .get(pluginId) as { enabled: number } | undefined;
+    return row ? row.enabled === 1 : true;
+  });
+
+  // Set plugin enabled/disabled state
+  ipcMain.handle('plugins:setEnabled', (_event, pluginId: string, enabled: boolean) => {
+    database
+      .prepare(
+        'INSERT INTO plugin_registry (plugin_id, enabled) VALUES (?, ?) ON CONFLICT(plugin_id) DO UPDATE SET enabled = ?'
+      )
+      .run(pluginId, enabled ? 1 : 0, enabled ? 1 : 0);
+  });
+
+  // List all plugin registry state
+  ipcMain.handle('plugins:listState', () => {
+    const rows = database.prepare('SELECT plugin_id, enabled FROM plugin_registry').all() as Array<{
+      plugin_id: string;
+      enabled: number;
+    }>;
+    return rows.map(row => ({
+      pluginId: row.plugin_id,
+      enabled: row.enabled === 1,
+    }));
+  });
+
+  // Request plugin reload: broadcast to all windows except sender
+  ipcMain.on('plugins:requestReload', event => {
+    const senderWebContents = event.sender;
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (win.webContents !== senderWebContents && !win.isDestroyed()) {
+        win.webContents.send('plugins:reload');
+      }
+    });
+  });
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   const updateLog = loggers.updater();
@@ -1941,6 +2028,8 @@ app
     registerIpcHandlers();
     registerNotebookHandlers();
     registerGitHandlers(); // Git operations for git-backed notebooks
+    registerPluginConfigHandlers();
+    registerPluginDiscoveryHandlers();
     registerDataHandlers();
 
     // Initialize license storage

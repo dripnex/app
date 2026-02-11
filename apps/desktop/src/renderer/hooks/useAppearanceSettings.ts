@@ -1,19 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
 import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
-
-/**
- * Check if the settings IPC bridge is available.
- * It may not be during HMR, in dev tools, or before preload is rebuilt.
- */
-function hasSettingsIPC(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    window.readied &&
-    typeof window.readied.settings === 'object' &&
-    window.readied.settings !== null
-  );
-}
 
 /**
  * Resolve 'system' theme to 'dark' or 'light' based on OS preference.
@@ -27,7 +14,6 @@ function resolveTheme(theme: string): string {
 
 /**
  * Apply appearance settings to the DOM.
- * Extracted so it can be called both from React effects and IPC callbacks.
  */
 function applyAppearance(theme: string, accentColor: string, zoomLevel: string): void {
   // Theme — resolve 'system' to actual value
@@ -56,48 +42,24 @@ function applyAppearance(theme: string, accentColor: string, zoomLevel: string):
 }
 
 /**
- * Hook to initialize, apply, and sync appearance settings across windows.
+ * Hook to apply appearance settings to the DOM.
  *
- * Responsibilities:
- * 1. Apply theme/accent/zoom from Zustand store to DOM
- * 2. Broadcast changes to other windows via IPC (settings:changed)
- * 3. Listen for incoming changes from other windows (settings:sync)
+ * Reads theme/accent/zoom from the Zustand settings store and applies
+ * them to the DOM. Cross-window sync is handled by the settings store
+ * itself (settingsStore.ts broadcasts full settings via IPC).
  *
  * Call this hook once per window root component.
  */
 export function useAppearanceSettings(): void {
   const appearance = useSettingsStore(selectAppearance);
-  const updateAppearance = useSettingsStore(s => s.updateAppearance);
 
-  const theme = appearance.theme || 'dark';
-  const accentColor = appearance.accentColor || '#5eead4';
-  const zoomLevel = appearance.zoomLevel || '1.0';
-
-  // Track previous values to detect changes for IPC broadcast
-  const prevRef = useRef({ theme, accentColor, zoomLevel });
-  const isExternalUpdate = useRef(false);
+  const theme = appearance?.theme || 'dark';
+  const accentColor = appearance?.accentColor || '#5eead4';
+  const zoomLevel = appearance?.zoomLevel || '1.0';
 
   // Apply settings to DOM whenever they change
   useEffect(() => {
     applyAppearance(theme, accentColor, zoomLevel);
-
-    // Broadcast to other windows (only if this is a local change, not from IPC sync)
-    if (!isExternalUpdate.current && hasSettingsIPC()) {
-      const prev = prevRef.current;
-      if (
-        prev.theme !== theme ||
-        prev.accentColor !== accentColor ||
-        prev.zoomLevel !== zoomLevel
-      ) {
-        window.readied.settings.broadcast({
-          theme,
-          accentColor,
-          zoomLevel,
-        });
-      }
-    }
-    isExternalUpdate.current = false;
-    prevRef.current = { theme, accentColor, zoomLevel };
   }, [theme, accentColor, zoomLevel]);
 
   // Listen for OS theme changes when using 'system' theme
@@ -109,30 +71,4 @@ export function useAppearanceSettings(): void {
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
   }, [theme, accentColor, zoomLevel]);
-
-  // Listen for settings sync from other windows
-  useEffect(() => {
-    if (!hasSettingsIPC()) return;
-
-    const cleanup = window.readied.settings.onSync(incoming => {
-      const incomingTheme = (incoming.theme as string) || undefined;
-      const incomingAccent = (incoming.accentColor as string) || undefined;
-      const incomingZoom = (incoming.zoomLevel as string) || undefined;
-
-      // Mark as external so the effect doesn't re-broadcast
-      isExternalUpdate.current = true;
-
-      // Update Zustand store (which triggers the effect above to apply to DOM)
-      const updates: Record<string, string> = {};
-      if (incomingTheme) updates.theme = incomingTheme;
-      if (incomingAccent) updates.accentColor = incomingAccent;
-      if (incomingZoom) updates.zoomLevel = incomingZoom;
-
-      if (Object.keys(updates).length > 0) {
-        updateAppearance(updates as any);
-      }
-    });
-
-    return cleanup;
-  }, [updateAppearance]);
 }
