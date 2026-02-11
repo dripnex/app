@@ -252,11 +252,18 @@ export interface SubscriptionStatus {
 }
 
 /** Scanned plugin from filesystem */
+export interface PluginConfigSchemaField {
+  type: 'string' | 'number' | 'boolean';
+  default: unknown;
+  description?: string;
+}
+
 export interface ScannedPlugin {
   id: string;
   name: string;
   version: string;
   description?: string;
+  configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
   path: string;
 }
@@ -648,6 +655,8 @@ export interface ReadiedAPI {
     setEnabled: (pluginId: string, enabled: boolean) => Promise<void>;
     /** List all plugin registry state */
     listState: () => Promise<PluginRegistryState[]>;
+    /** Request all windows to reload plugins */
+    requestReload: () => void;
   };
 }
 
@@ -833,6 +842,7 @@ const api: ReadiedAPI = {
     isEnabled: (pluginId) => ipcRenderer.invoke('plugins:isEnabled', pluginId),
     setEnabled: (pluginId, enabled) => ipcRenderer.invoke('plugins:setEnabled', pluginId, enabled),
     listState: () => ipcRenderer.invoke('plugins:listState'),
+    requestReload: () => ipcRenderer.send('plugins:requestReload'),
   },
 };
 

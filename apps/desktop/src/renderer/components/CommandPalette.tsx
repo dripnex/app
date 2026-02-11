@@ -31,6 +31,7 @@ import {
   formatKeybinding,
   registry,
 } from '../hooks/useCommandRegistry';
+import { LayoutZone } from '@readied/plugin-api';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -257,6 +258,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             })
           )}
         </div>
+        <LayoutZone name="command-palette-footer" />
       </div>
     </div>,
     document.body

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { EditorView } from '@codemirror/view';
 import type { PluginManifest, EditorAPI, AppAPI } from '../types';
 import { PluginRegistry, type RegisterCommandFn, type ConfigBridge } from './PluginRegistry';
 
@@ -8,6 +9,7 @@ interface PluginHostProps {
   appAPI: AppAPI;
   registerCommand?: RegisterCommandFn;
   configBridge?: ConfigBridge;
+  getView?: () => EditorView | null;
 }
 
 /**
@@ -25,7 +27,7 @@ interface PluginHostProps {
  * />
  * ```
  */
-export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, configBridge }: PluginHostProps) {
+export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, configBridge, getView }: PluginHostProps) {
   const registryRef = useRef<PluginRegistry | null>(null);
 
   if (!registryRef.current) {
@@ -42,7 +44,7 @@ export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, config
         if (cancelled) return;
         const loaded = registry.load(manifest);
         if (!loaded) continue; // validation failed, skip
-        await registry.activate(manifest.id, editorAPI, appAPI, registerCommand, configBridge);
+        await registry.activate(manifest.id, editorAPI, appAPI, registerCommand, configBridge, getView);
       }
     };
 
@@ -55,7 +57,7 @@ export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, config
         registry.unload(manifest.id);
       }
     };
-  }, [plugins, editorAPI, appAPI, registerCommand, configBridge]);
+  }, [plugins, editorAPI, appAPI, registerCommand, configBridge, getView]);
 
   // Headless - renders nothing
   return null;

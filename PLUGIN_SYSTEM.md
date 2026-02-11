@@ -40,7 +40,7 @@ PluginHost (React, headless)
         │       ├── layout: LayoutManager (per-plugin)
         │       ├── editor: EditorAPI (safe view ops)
         │       ├── registerExtensions() → CM6 compartment
-        │       ├── config: PluginConfigAPI (stub)
+        │       ├── config: PluginConfigAPI (SQLite-backed)
         │       ├── log: PluginLogger
         │       └── app: AppAPI (read-only)
         └── deactivate(id) → cleanup layout, extensions, disposable
@@ -62,7 +62,7 @@ PluginHost (React, headless)
 - ~~`PluginConfigAPI.get()` → siempre retorna `undefined`~~ (resuelto Phase 2.2)
 - ~~`PluginConfigAPI.set()` → no-op~~ (resuelto Phase 2.2)
 - ~~No hay validacion de manifest (id unico, version semver, etc.)~~ (resuelto Phase 2.3)
-- Plugins solo se cargan desde codigo (array en `App.tsx`)
+- ~~Plugins solo se cargan desde codigo (array en `App.tsx`)~~ (resuelto Phase 4)
 
 ---
 
@@ -228,28 +228,27 @@ Implementacion: `createAppAPI()` factory en `packages/plugin-api/src/app/createA
 | Bridge wiring in App.tsx | `@readied/desktop` | Done |
 | Editor event bridge (doc/selection changed) | `@readied/desktop` | Done |
 
-### 3.3 Editor Decorations API (deferred)
+### 3.3 Editor Decorations API (DONE)
 
 ```ts
 interface EditorDecorationAPI {
   addLineHighlight(line: number, className: string): () => void;
-  addWidget(pos: number, component: ComponentType): () => void;
+  addWidget(pos: number, dom: HTMLElement): () => void;
+  clear(): void;
 }
 ```
 
-Wrapper sobre CM6 `Decoration` + `WidgetType`. Solo cuando un plugin real lo necesite.
+Wrapper sobre CM6 `Decoration` + `StateField` + `WidgetType`. Disponible en `PluginContext.decorations`. Backed by `StateEffect`s for add/remove/clear, with automatic position remapping on doc changes. Extension auto-registered in `editorPluginStore` on plugin activation.
 
-### 3.4 More Layout Zones (deferred)
+### 3.4 More Layout Zones (DONE)
 
-Nuevas zones segun necesidad:
-
-| Zone | Cuando |
+| Zone | Donde aparece |
 |---|---|
-| `settings-section` | Cuando exista UI de plugin settings |
-| `note-list-footer` | Si un plugin necesita mostrar info debajo de la lista |
-| `command-palette-footer` | Acciones custom en el palette |
+| `settings-section` | SettingsModal, antes de About |
+| `note-list-footer` | NoteList, antes del notebook picker |
+| `command-palette-footer` | CommandPalette, debajo de la lista |
 
-No crear zones anticipadamente. Solo cuando un plugin real las necesite.
+Total: 9 layout zones disponibles.
 
 ---
 
@@ -270,6 +269,9 @@ No crear zones anticipadamente. Solo cuando un plugin real las necesite.
 | `useDiscoveredPlugins` hook | `@readied/desktop` renderer | Done |
 | Discovered plugins wired into `PluginHost` | `@readied/desktop` renderer | Done |
 | Plugins section in SettingsModal (list + toggle) | `@readied/desktop` renderer | Done |
+| Plugins section in SettingsApp (list + toggle + reload) | `@readied/desktop` renderer | Done |
+| Cross-window plugin reload (`plugins:requestReload` IPC) | `@readied/desktop` main/preload | Done |
+| Plugin config UI from `configSchema` in manifest.json | `@readied/desktop` renderer | Done |
 | `CommandRegistry` snapshot caching (fix infinite re-render) | `@readied/command-registry` | Done |
 
 ### Architecture

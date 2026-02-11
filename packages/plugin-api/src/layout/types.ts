@@ -6,7 +6,10 @@ export type LayoutZoneName =
   | 'editor-status-bar'
   | 'editor-header-actions'
   | 'panel'
-  | 'modal';
+  | 'modal'
+  | 'settings-section'
+  | 'note-list-footer'
+  | 'command-palette-footer';
 
 export interface ZoneComponentProps {
   meta?: Record<string, unknown>;

@@ -1,5 +1,6 @@
 import type { Extension } from '@codemirror/state';
 import type { LayoutManager } from './layout/types';
+import type { EditorDecorationAPI } from './editor/decorationAPI';
 
 /** Controlled subset of editor operations for plugins */
 export interface EditorAPI {
@@ -74,6 +75,7 @@ export interface PluginCommandOptions {
 export interface PluginContext {
   layout: LayoutManager;
   editor: EditorAPI;
+  decorations: EditorDecorationAPI;
   registerExtensions(id: string, extensions: Extension[]): () => void;
   registerCommand(
     options: PluginCommandOptions,

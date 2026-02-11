@@ -16,10 +16,21 @@ export interface DiscoveredPluginsResult {
 /**
  * Scans for filesystem plugins on mount, filters by enabled state,
  * evaluates JS source, and returns loaded PluginManifest[] + any errors.
+ * Listens for 'plugins:reload' IPC event to re-scan (e.g. from settings window).
  */
 export function useDiscoveredPlugins(): DiscoveredPluginsResult {
   const [result, setResult] = useState<DiscoveredPluginsResult>({ plugins: [], errors: [] });
+  const [reloadKey, setReloadKey] = useState(0);
 
+  // Listen for cross-window reload requests
+  useEffect(() => {
+    const removeListener = window.readied.ipc.on('plugins:reload', () => {
+      setReloadKey(k => k + 1);
+    });
+    return removeListener;
+  }, []);
+
+  // Scan and load plugins whenever reloadKey changes
   useEffect(() => {
     let cancelled = false;
 
@@ -67,7 +78,7 @@ export function useDiscoveredPlugins(): DiscoveredPluginsResult {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   return result;
 }

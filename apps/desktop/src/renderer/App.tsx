@@ -536,6 +536,7 @@ function NotesApp() {
             appAPI={appAPI}
             registerCommand={registerPluginCommand}
             configBridge={configBridge}
+            getView={getEditorView}
           />
 
           <CommandPalette isOpen={isCommandPaletteOpen} onClose={closeCommandPalette} />

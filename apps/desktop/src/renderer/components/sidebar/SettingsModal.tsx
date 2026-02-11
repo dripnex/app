@@ -14,6 +14,7 @@ import {
   Sparkles,
   Puzzle,
 } from 'lucide-react';
+import { LayoutZone } from '@readied/plugin-api';
 import { usePerformanceStore, type PerfMode } from '../../stores/performanceStore';
 import {
   useEditorPreferencesStore,
@@ -365,6 +366,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
             )}
           </section>
+
+          {/* Plugin Settings Sections */}
+          <LayoutZone name="settings-section" />
 
           {/* About Section */}
           <section className={styles.section}>

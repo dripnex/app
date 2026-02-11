@@ -17,6 +17,7 @@ import { useTagColorsStore } from '../stores/tagColorsStore';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
+import { LayoutZone } from '@readied/plugin-api';
 
 interface NoteListProps {
   notes: NoteWithExcerpt[];
@@ -352,6 +353,9 @@ export function NoteList({
           onOpenPicker={handleOpenNotebookPicker}
         />
       )}
+
+      {/* Plugin Note List Footer */}
+      <LayoutZone name="note-list-footer" />
 
       {/* Notebook picker modal */}
       {notebookPicker && (

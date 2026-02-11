@@ -8,11 +8,18 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
 
+export interface PluginConfigSchemaField {
+  type: 'string' | 'number' | 'boolean';
+  default: unknown;
+  description?: string;
+}
+
 export interface ScannedPlugin {
   id: string;
   name: string;
   version: string;
   description?: string;
+  configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
   path: string;
 }
@@ -23,6 +30,7 @@ interface PluginManifestJson {
   version: string;
   description?: string;
   main: string;
+  configSchema?: Record<string, PluginConfigSchemaField>;
 }
 
 export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> {
@@ -58,6 +66,7 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
         name: manifest.name,
         version: manifest.version,
         description: manifest.description,
+        configSchema: manifest.configSchema,
         code,
         path: pluginDir,
       });

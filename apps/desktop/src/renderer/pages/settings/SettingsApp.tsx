@@ -8,12 +8,14 @@ import { AccountSection } from './sections/AccountSection';
 import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
 import { UpdatesSection } from './sections/UpdatesSection';
+import { PluginsSection } from './sections/PluginsSection';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
 
 export type SettingsSection =
   | 'general'
   | 'editor'
   | 'appearance'
+  | 'plugins'
   | 'account'
   | 'backup'
   | 'updates'
@@ -31,6 +33,8 @@ export function SettingsApp() {
         return <EditorSection />;
       case 'appearance':
         return <AppearanceSection />;
+      case 'plugins':
+        return <PluginsSection />;
       case 'account':
         return <AccountSection />;
       case 'backup':

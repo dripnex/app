@@ -21,6 +21,8 @@ export { LayoutZone } from './layout/LayoutZone';
 export type { EditorAPIWithEvents } from './editor/createEditorAPI';
 export { createEditorAPI } from './editor/createEditorAPI';
 export { editorPluginStore, pluginExtensionCompartment } from './editor/editorPluginStore';
+export type { EditorDecorationAPI } from './editor/decorationAPI';
+export { createDecorationAPI } from './editor/decorationAPI';
 
 // App
 export type { AppAPIWithEvents, AppAPIBridge } from './app/createAppAPI';

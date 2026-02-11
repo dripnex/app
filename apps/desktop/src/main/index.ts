@@ -1872,6 +1872,16 @@ function registerPluginDiscoveryHandlers(): void {
       enabled: row.enabled === 1,
     }));
   });
+
+  // Request plugin reload: broadcast to all windows except sender
+  ipcMain.on('plugins:requestReload', (event) => {
+    const senderWebContents = event.sender;
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (win.webContents !== senderWebContents && !win.isDestroyed()) {
+        win.webContents.send('plugins:reload');
+      }
+    });
+  });
 }
 
 /** Initialize auto-updater */

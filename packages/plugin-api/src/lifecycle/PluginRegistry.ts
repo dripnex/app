@@ -1,7 +1,9 @@
 import type { Extension } from '@codemirror/state';
+import type { EditorView } from '@codemirror/view';
 import type { PluginManifest, PluginContext, PluginConfigAPI, PluginDisposable, EditorAPI, AppAPI, PluginCommandOptions } from '../types';
 import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
+import { createDecorationAPI } from '../editor/decorationAPI';
 import { validateManifest } from '../validation';
 
 type PluginState = 'loaded' | 'active' | 'deactivated';
@@ -69,6 +71,7 @@ export class PluginRegistry {
     appAPI: AppAPI,
     registerCommandFn?: RegisterCommandFn,
     configBridge?: ConfigBridge,
+    getView?: () => EditorView | null,
   ): Promise<void> {
     const entry = this.plugins.get(id);
     if (!entry) {
@@ -126,9 +129,30 @@ export class PluginRegistry {
       },
     };
 
+    // Create decoration API if getView is provided
+    const decoResult = getView
+      ? createDecorationAPI(getView)
+      : null;
+
+    // Auto-register the decoration extension
+    if (decoResult) {
+      editorPluginStore.getState().register({
+        id: `__decorations:${id}`,
+        pluginId: id,
+        extensions: [decoResult.extension],
+      });
+    }
+
+    const noopDecorations = {
+      addLineHighlight: () => () => {},
+      addWidget: () => () => {},
+      clear: () => {},
+    };
+
     const context: PluginContext = {
       layout: createLayoutManager(id),
       editor: editorAPI,
+      decorations: decoResult?.api ?? noopDecorations,
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
           id: extId,
