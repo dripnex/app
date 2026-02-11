@@ -1,18 +1,19 @@
 /**
  * Plugins Settings Section
  *
- * Lists discovered filesystem plugins with enable/disable toggles,
- * a reload button to apply changes without restarting,
- * and auto-generated config forms from configSchema.
+ * Card-based plugin manager showing built-in and community plugins
+ * with enable/disable toggles, badges, and collapsible config forms.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, FolderOpen } from 'lucide-react';
+import { RefreshCw, FolderOpen, ChevronDown } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
-import { SettingGroup } from '../components/SettingGroup';
-import { SettingRow } from '../components/SettingRow';
 import { Toggle, TextInput, NumberInput } from '../components/controls';
 import styles from './Section.module.css';
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface DiscoveredPluginInfo {
   id: string;
@@ -22,6 +23,167 @@ interface DiscoveredPluginInfo {
   enabled: boolean;
   configSchema?: Record<string, PluginConfigSchemaField>;
 }
+
+interface BuiltInPluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const BUILT_IN_PLUGINS: BuiltInPluginInfo[] = [
+  {
+    id: 'readied-word-count',
+    name: 'Word Count',
+    version: '1.0.0',
+    description: 'Shows word, character, and line count in the editor status bar',
+  },
+  {
+    id: 'readied-typewriter-mode',
+    name: 'Typewriter Mode',
+    version: '1.0.0',
+    description: 'Keeps the cursor line centered in the editor for a focused writing experience',
+  },
+  {
+    id: 'readied-active-line-highlight',
+    name: 'Active Line Highlight',
+    version: '1.0.0',
+    description: 'Highlights the line where the cursor is positioned',
+  },
+  {
+    id: 'readied-tables',
+    name: 'Tables',
+    version: '1.0.0',
+    description:
+      'Insert Table wizard, WYSIWYG table rendering, sortable preview columns, and Export to CSV',
+  },
+];
+
+// ============================================================================
+// PluginCard
+// ============================================================================
+
+interface PluginCardProps {
+  name: string;
+  version: string;
+  description?: string;
+  isBuiltIn: boolean;
+  enabled: boolean;
+  onToggle?: (enabled: boolean) => void;
+  configSchema?: Record<string, PluginConfigSchemaField>;
+  configValues?: Record<string, unknown>;
+  onConfigChange?: (key: string, value: unknown) => void;
+}
+
+function PluginCard({
+  name,
+  version,
+  description,
+  isBuiltIn,
+  enabled,
+  onToggle,
+  configSchema,
+  configValues,
+  onConfigChange,
+}: PluginCardProps) {
+  const [configOpen, setConfigOpen] = useState(false);
+  const hasConfig = configSchema && Object.keys(configSchema).length > 0 && enabled;
+
+  const getConfigValue = (key: string, field: PluginConfigSchemaField) => {
+    const stored = configValues?.[key];
+    return stored !== undefined ? stored : field.default;
+  };
+
+  return (
+    <div className={styles.pluginCard}>
+      <div className={styles.pluginCardHeader}>
+        <div className={styles.pluginCardInfo}>
+          <div className={styles.pluginCardMeta}>
+            <span className={`${styles.pluginBadge} ${isBuiltIn ? styles.pluginBadgeBuiltIn : ''}`}>
+              {isBuiltIn ? 'Built-in' : 'Installed'}
+            </span>
+            <span className={styles.pluginName}>{name}</span>
+            <span className={styles.pluginVersion}>v{version}</span>
+          </div>
+          {description && <p className={styles.pluginDescription}>{description}</p>}
+        </div>
+        <div className={styles.pluginCardControl}>
+          <Toggle
+            id={`plugin-${name.toLowerCase().replace(/\s+/g, '-')}`}
+            checked={enabled}
+            onChange={checked => onToggle?.(checked)}
+            disabled={isBuiltIn}
+          />
+        </div>
+      </div>
+
+      {hasConfig && (
+        <>
+          <button
+            type="button"
+            className={`${styles.pluginConfigToggle} ${configOpen ? styles.pluginConfigToggleOpen : ''}`}
+            onClick={() => setConfigOpen(prev => !prev)}
+          >
+            <ChevronDown size={14} />
+            <span>Settings</span>
+          </button>
+
+          {configOpen && (
+            <div className={styles.pluginConfigPanel}>
+              {Object.entries(configSchema).map(([key, field]) => {
+                const value = getConfigValue(key, field);
+                const fieldId = `plugin-config-${name}-${key}`;
+                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+
+                return (
+                  <div key={key} className={styles.pluginConfigRow}>
+                    <div>
+                      <div className={styles.pluginConfigLabel}>{label}</div>
+                      {field.description && (
+                        <div className={styles.pluginConfigDescription}>{field.description}</div>
+                      )}
+                    </div>
+                    <div>
+                      {field.type === 'boolean' && (
+                        <Toggle
+                          id={fieldId}
+                          checked={value as boolean}
+                          onChange={checked => onConfigChange?.(key, checked)}
+                        />
+                      )}
+                      {field.type === 'string' && (
+                        <TextInput
+                          id={fieldId}
+                          value={(value as string) ?? ''}
+                          onChange={v => onConfigChange?.(key, v)}
+                        />
+                      )}
+                      {field.type === 'number' && (
+                        <NumberInput
+                          id={fieldId}
+                          value={(value as number) ?? 0}
+                          onChange={v => onConfigChange?.(key, v)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// PluginsSection
+// ============================================================================
 
 export function PluginsSection() {
   const [plugins, setPlugins] = useState<DiscoveredPluginInfo[]>([]);
@@ -99,125 +261,82 @@ export function PluginsSection() {
     }
   }, [pluginsPath]);
 
-  // Get the effective value for a config field (stored value or schema default)
-  const getConfigValue = (pluginId: string, key: string, field: PluginConfigSchemaField) => {
-    const stored = configValues[pluginId]?.[key];
-    return stored !== undefined ? stored : field.default;
-  };
-
-  // Plugins that have configSchema and are enabled
-  const configurablePlugins = plugins.filter(
-    p => p.enabled && p.configSchema && Object.keys(p.configSchema).length > 0
-  );
-
   return (
     <div className={styles.section}>
       <h2 className={styles.title}>Plugins</h2>
 
-      {plugins.length === 0 ? (
-        <SettingGroup title="Installed Plugins">
-          <p className={styles.placeholder}>
-            No plugins installed.{pluginsPath ? ` Place plugins in ${pluginsPath}` : ''}
-          </p>
+      {/* Built-in plugins */}
+      <div style={{ marginTop: '2rem' }}>
+        <div className={styles.pluginSectionLabel}>Built-in</div>
+        <div className={styles.pluginCardList}>
+          {BUILT_IN_PLUGINS.map(plugin => (
+            <PluginCard
+              key={plugin.id}
+              name={plugin.name}
+              version={plugin.version}
+              description={plugin.description}
+              isBuiltIn={true}
+              enabled={true}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Community / installed plugins */}
+      <div style={{ marginTop: '2rem' }}>
+        <div className={styles.pluginSectionLabel}>Installed</div>
+        {plugins.length === 0 ? (
+          <div className={styles.pluginCard}>
+            <div className={styles.pluginEmptyState}>
+              <p>No community plugins installed yet.</p>
+              {pluginsPath && (
+                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
+                  <FolderOpen size={14} />
+                  <span>Open Plugins Folder</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className={styles.pluginCardList}>
+            {plugins.map(plugin => (
+              <PluginCard
+                key={plugin.id}
+                name={plugin.name}
+                version={plugin.version}
+                description={plugin.description}
+                isBuiltIn={false}
+                enabled={plugin.enabled}
+                onToggle={enabled => handleToggle(plugin.id, enabled)}
+                configSchema={plugin.configSchema}
+                configValues={configValues[plugin.id]}
+                onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Actions bar */}
+      <div style={{ marginTop: '2rem' }}>
+        <div className={styles.pluginActions}>
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={handleReload}
+            disabled={isReloading}
+          >
+            <RefreshCw size={14} className={isReloading ? styles.spinning : ''} />
+            <span>{isReloading ? 'Reloading...' : 'Reload Plugins'}</span>
+          </button>
           {pluginsPath && (
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={handleOpenFolder}
-              style={{ marginTop: '0.75rem' }}
-            >
+            <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
               <FolderOpen size={14} />
               <span>Open Plugins Folder</span>
             </button>
           )}
-        </SettingGroup>
-      ) : (
-        <>
-          <SettingGroup title="Installed Plugins">
-            {plugins.map(plugin => (
-              <SettingRow
-                key={plugin.id}
-                label={`${plugin.name} v${plugin.version}`}
-                description={plugin.description}
-                htmlFor={`plugin-${plugin.id}`}
-              >
-                <Toggle
-                  id={`plugin-${plugin.id}`}
-                  checked={plugin.enabled}
-                  onChange={checked => handleToggle(plugin.id, checked)}
-                />
-              </SettingRow>
-            ))}
-          </SettingGroup>
-
-          {/* Config forms for plugins with configSchema */}
-          {configurablePlugins.map(plugin => (
-            <SettingGroup key={plugin.id} title={`${plugin.name} Settings`}>
-              {Object.entries(plugin.configSchema!).map(([key, field]) => {
-                const value = getConfigValue(plugin.id, key, field);
-                const fieldId = `plugin-config-${plugin.id}-${key}`;
-                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-
-                return (
-                  <SettingRow
-                    key={key}
-                    label={label}
-                    description={field.description}
-                    htmlFor={fieldId}
-                  >
-                    {field.type === 'boolean' && (
-                      <Toggle
-                        id={fieldId}
-                        checked={value as boolean}
-                        onChange={checked => handleConfigChange(plugin.id, key, checked)}
-                      />
-                    )}
-                    {field.type === 'string' && (
-                      <TextInput
-                        id={fieldId}
-                        value={(value as string) ?? ''}
-                        onChange={v => handleConfigChange(plugin.id, key, v)}
-                      />
-                    )}
-                    {field.type === 'number' && (
-                      <NumberInput
-                        id={fieldId}
-                        value={(value as number) ?? 0}
-                        onChange={v => handleConfigChange(plugin.id, key, v)}
-                      />
-                    )}
-                  </SettingRow>
-                );
-              })}
-            </SettingGroup>
-          ))}
-
-          <SettingGroup title="Actions">
-            <SettingRow
-              label="Reload Plugins"
-              description="Apply plugin changes without restarting the app"
-            >
-              <button
-                type="button"
-                className={styles.actionButton}
-                onClick={handleReload}
-                disabled={isReloading}
-              >
-                <RefreshCw size={14} className={isReloading ? styles.spinning : ''} />
-                <span>{isReloading ? 'Reloading...' : 'Reload'}</span>
-              </button>
-            </SettingRow>
-            {pluginsPath && (
-              <SettingRow label="Open Plugins Folder" description={pluginsPath}>
-                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
-                  <FolderOpen size={14} />
-                  <span>Open Folder</span>
-                </button>
-              </SettingRow>
-            )}
-          </SettingGroup>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
