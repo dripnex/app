@@ -21,7 +21,7 @@ import {
   Redo2,
 } from 'lucide-react';
 import type { ToolbarVisibility } from '../FormattingToolbar';
-import type { MarkdownEditorHandle } from '../../MarkdownEditor';
+import { dispatchCommand } from '../../../hooks/useCommandRegistry';
 import styles from './ActionsPanel.module.css';
 
 interface ActionsPanelProps {
@@ -37,8 +37,6 @@ interface ActionsPanelProps {
   readonly onShareOnWeb?: () => void;
   /** Hidden formatting groups from toolbar overflow */
   readonly hiddenFormatting?: ToolbarVisibility;
-  /** Editor ref for formatting actions */
-  readonly editorRef?: React.RefObject<MarkdownEditorHandle | null>;
 }
 
 /**
@@ -66,7 +64,6 @@ export const ActionsPanel = memo(function ActionsPanel({
   onRevisionHistory,
   onShareOnWeb,
   hiddenFormatting,
-  editorRef,
 }: ActionsPanelProps) {
   // Handle ESC key to close
   useEffect(() => {
@@ -138,7 +135,7 @@ export const ActionsPanel = memo(function ActionsPanel({
     onClose();
   }, [noteId, noteTitle, onClose]);
 
-  // Check if any formatting is hidden
+  // Check if any formatting is hidden (no longer requires editorRef)
   const hasHiddenFormatting =
     hiddenFormatting &&
     (!hiddenFormatting.lists || !hiddenFormatting.blocks || !hiddenFormatting.history);
@@ -176,7 +173,7 @@ export const ActionsPanel = memo(function ActionsPanel({
         {/* Content */}
         <div className={styles.content}>
           {/* Hidden Formatting Section - only show when toolbar has overflow */}
-          {hasHiddenFormatting && editorRef && (
+          {hasHiddenFormatting && (
             <div className={styles.section}>
               <div className={styles.sectionTitle}>Formatting</div>
 
@@ -187,7 +184,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.insertUnorderedList();
+                      dispatchCommand('editor:insert-unordered-list');
                       onClose();
                     }}
                   >
@@ -200,7 +197,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.insertOrderedList();
+                      dispatchCommand('editor:insert-ordered-list');
                       onClose();
                     }}
                   >
@@ -213,7 +210,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.insertCheckbox();
+                      dispatchCommand('editor:insert-checkbox');
                       onClose();
                     }}
                   >
@@ -232,7 +229,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.insertQuote();
+                      dispatchCommand('editor:insert-quote');
                       onClose();
                     }}
                   >
@@ -245,7 +242,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.insertCodeBlock();
+                      dispatchCommand('editor:insert-code-block');
                       onClose();
                     }}
                   >
@@ -258,7 +255,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.insertHorizontalRule();
+                      dispatchCommand('editor:insert-horizontal-rule');
                       onClose();
                     }}
                   >
@@ -277,7 +274,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.undo();
+                      dispatchCommand('editor:undo');
                       onClose();
                     }}
                   >
@@ -290,7 +287,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      editorRef.current?.redo();
+                      dispatchCommand('editor:redo');
                       onClose();
                     }}
                   >

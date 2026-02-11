@@ -56,6 +56,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
+      '@readied/command-registry':
+        specifier: workspace:*
+        version: link:../../packages/command-registry
       '@readied/commands':
         specifier: workspace:*
         version: link:../../packages/commands
@@ -68,6 +71,9 @@ importers:
       '@readied/licensing':
         specifier: workspace:*
         version: link:../../packages/licensing
+      '@readied/plugin-api':
+        specifier: workspace:*
+        version: link:../../packages/plugin-api
       '@readied/product-config':
         specifier: workspace:*
         version: link:../../packages/product-config
@@ -249,6 +255,15 @@ importers:
         specifier: ^4.58.0
         version: 4.58.0(@cloudflare/workers-types@4.20260109.0)
 
+  packages/command-registry:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.0.5)
+
   packages/commands:
     devDependencies:
       '@codemirror/commands':
@@ -335,6 +350,30 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.3)
+
+  packages/plugin-api:
+    devDependencies:
+      '@codemirror/state':
+        specifier: ^6.5.3
+        version: 6.5.3
+      '@codemirror/view':
+        specifier: ^6.39.8
+        version: 6.39.8
+      '@types/react':
+        specifier: ^18.2.79
+        version: 18.3.27
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.0.5)
+      zustand:
+        specifier: ^5.0.9
+        version: 5.0.9(@types/react@18.3.27)(react@18.3.1)
 
   packages/product-config:
     devDependencies:

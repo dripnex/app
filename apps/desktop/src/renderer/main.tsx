@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { LicenseProvider } from './contexts/LicenseContext';
 
 // Initialize Sentry before App
 import { initSentry } from './sentry';
@@ -18,7 +19,14 @@ const SettingsApp = lazy(() =>
   import('./pages/settings/SettingsApp').then(m => ({ default: m.SettingsApp }))
 );
 
-// QueryClient for settings (and potentially other views)
+// Settings view needs LicenseProvider (used by AccountSection)
+const SettingsView = () => (
+  <LicenseProvider>
+    <SettingsApp />
+  </LicenseProvider>
+);
+
+// QueryClient shared across views
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -50,7 +58,7 @@ const LoadingFallback = () => (
 );
 
 // Render the appropriate view
-const RootComponent = view === 'settings' ? SettingsApp : App;
+const RootComponent = view === 'settings' ? SettingsView : App;
 
 createRoot(container).render(
   <React.StrictMode>

@@ -12,6 +12,7 @@ import {
   FileText,
   Split,
   Sparkles,
+  Puzzle,
 } from 'lucide-react';
 import { usePerformanceStore, type PerfMode } from '../../stores/performanceStore';
 import {
@@ -25,6 +26,14 @@ interface SettingsModalProps {
   readonly onClose: () => void;
 }
 
+interface DiscoveredPluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  enabled: boolean;
+}
+
 export function SettingsModal({ onClose }: SettingsModalProps) {
   // Stores
   const { mode: perfMode, setMode: setPerfMode, setBaseMode } = usePerformanceStore();
@@ -32,11 +41,40 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const { state: licenseState, openSubscribe } = useLicense();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [appVersion, setAppVersion] = useState('');
+  const [discoveredPlugins, setDiscoveredPlugins] = useState<DiscoveredPluginInfo[]>([]);
+  const [pluginsPath, setPluginsPath] = useState('');
 
   // Load app version
   useEffect(() => {
     const result = window.readied.app.version();
     Promise.resolve(result).then(setAppVersion);
+  }, []);
+
+  // Load discovered plugins
+  useEffect(() => {
+    async function loadPlugins() {
+      try {
+        const [scanned, stateList, paths] = await Promise.all([
+          window.readied.plugins.scan(),
+          window.readied.plugins.listState(),
+          window.readied.data.paths(),
+        ]);
+        setPluginsPath(paths.root + '/plugins');
+        const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+        setDiscoveredPlugins(
+          scanned.map(sp => ({
+            id: sp.id,
+            name: sp.name,
+            version: sp.version,
+            description: sp.description,
+            enabled: stateMap.get(sp.id) ?? true,
+          }))
+        );
+      } catch {
+        // Plugin scanning failed - leave empty
+      }
+    }
+    loadPlugins();
   }, []);
 
   // Close on escape
@@ -94,6 +132,17 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       }
     },
     [openSubscribe]
+  );
+
+  // Plugin toggle handler
+  const handlePluginToggle = useCallback(
+    async (pluginId: string, enabled: boolean) => {
+      await window.readied.plugins.setEnabled(pluginId, enabled);
+      setDiscoveredPlugins(prev =>
+        prev.map(p => (p.id === pluginId ? { ...p, enabled } : p))
+      );
+    },
+    []
   );
 
   // License status helpers
@@ -277,6 +326,44 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   </div>
                 </div>
               )}
+          </section>
+
+          {/* Plugins Section */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <Puzzle size={16} />
+              <span>Plugins</span>
+            </div>
+            {discoveredPlugins.length === 0 ? (
+              <p className={styles.sectionDesc}>
+                No plugins installed.{pluginsPath ? ` Place plugins in ${pluginsPath}` : ''}
+              </p>
+            ) : (
+              <div className={styles.pluginList}>
+                {discoveredPlugins.map(plugin => (
+                  <div key={plugin.id} className={styles.pluginItem}>
+                    <div className={styles.pluginInfo}>
+                      <span className={styles.pluginName}>{plugin.name}</span>
+                      <span className={styles.pluginVersion}>v{plugin.version}</span>
+                      {plugin.description && (
+                        <span className={styles.pluginDesc}>{plugin.description}</span>
+                      )}
+                    </div>
+                    <label className={styles.toggle}>
+                      <input
+                        type="checkbox"
+                        checked={plugin.enabled}
+                        onChange={e => handlePluginToggle(plugin.id, e.target.checked)}
+                      />
+                      <span className={styles.toggleTrack} />
+                    </label>
+                  </div>
+                ))}
+                <p className={styles.pluginNote}>
+                  Changes take effect after restart.
+                </p>
+              </div>
+            )}
           </section>
 
           {/* About Section */}

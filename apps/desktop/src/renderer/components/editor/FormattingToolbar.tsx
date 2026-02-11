@@ -15,11 +15,14 @@ import {
   Undo2,
   Redo2,
 } from 'lucide-react';
-import type { MarkdownEditorHandle } from '../MarkdownEditor';
 import { useToolbarOverflow, type ToolbarVisibility } from '../../hooks/useToolbarOverflow';
+import {
+  dispatchCommand,
+  getCommandKeybinding,
+  formatKeybinding,
+} from '../../hooks/useCommandRegistry';
 
 interface FormattingToolbarProps {
-  readonly editorRef: React.RefObject<MarkdownEditorHandle | null>;
   /** Optional callback when visibility changes (for passing to ActionsPanel) */
   readonly onVisibilityChange?: (visibility: ToolbarVisibility) => void;
   /** Ref to the parent container (for measuring available width) */
@@ -38,12 +41,18 @@ interface FormattingToolbarProps {
  * Uses useToolbarOverflow to adapt to available width.
  */
 export const FormattingToolbar = memo(function FormattingToolbar({
-  editorRef,
   onVisibilityChange,
   containerRef,
 }: FormattingToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const { visibility } = useToolbarOverflow({ toolbarRef, containerRef });
+
+  // Helper: format keybinding for tooltip display
+  const fmtKey = (id: string): string => {
+    const kb = getCommandKeybinding(id);
+    if (!kb) return '';
+    return ` (${formatKeybinding(kb)})`;
+  };
 
   // Notify parent of visibility changes (for ActionsPanel overflow menu)
   useEffect(() => {
@@ -64,8 +73,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertHeading(2)}
-              title="Heading (H2)"
+              onClick={() => dispatchCommand('editor:insert-heading')}
+              title={`Heading (H2)${fmtKey('editor:insert-heading')}`}
               aria-label="Insert heading"
             >
               <Heading2 size={18} />
@@ -73,8 +82,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.toggleBold()}
-              title="Bold (⌘B)"
+              onClick={() => dispatchCommand('editor:toggle-bold')}
+              title={`Bold${fmtKey('editor:toggle-bold')}`}
               aria-label="Toggle bold"
             >
               <Bold size={18} />
@@ -82,8 +91,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.toggleItalic()}
-              title="Italic (⌘I)"
+              onClick={() => dispatchCommand('editor:toggle-italic')}
+              title={`Italic${fmtKey('editor:toggle-italic')}`}
               aria-label="Toggle italic"
             >
               <Italic size={18} />
@@ -91,7 +100,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.toggleStrikethrough()}
+              onClick={() => dispatchCommand('editor:toggle-strikethrough')}
               title="Strikethrough"
               aria-label="Toggle strikethrough"
             >
@@ -100,8 +109,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.toggleInlineCode()}
-              title="Inline Code"
+              onClick={() => dispatchCommand('editor:toggle-inline-code')}
+              title={`Inline Code${fmtKey('editor:toggle-inline-code')}`}
               aria-label="Toggle inline code"
             >
               <Code size={18} />
@@ -109,8 +118,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertLink()}
-              title="Link (⌘K)"
+              onClick={() => dispatchCommand('editor:insert-link')}
+              title={`Link${fmtKey('editor:insert-link')}`}
               aria-label="Insert link"
             >
               <Link size={18} />
@@ -127,7 +136,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertUnorderedList()}
+              onClick={() => dispatchCommand('editor:insert-unordered-list')}
               title="Bullet List"
               aria-label="Insert bullet list"
             >
@@ -136,7 +145,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertOrderedList()}
+              onClick={() => dispatchCommand('editor:insert-ordered-list')}
               title="Numbered List"
               aria-label="Insert numbered list"
             >
@@ -145,7 +154,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertCheckbox()}
+              onClick={() => dispatchCommand('editor:insert-checkbox')}
               title="Checkbox"
               aria-label="Insert checkbox"
             >
@@ -163,7 +172,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertQuote()}
+              onClick={() => dispatchCommand('editor:insert-quote')}
               title="Quote"
               aria-label="Insert quote"
             >
@@ -172,7 +181,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertCodeBlock()}
+              onClick={() => dispatchCommand('editor:insert-code-block')}
               title="Code Block"
               aria-label="Insert code block"
             >
@@ -181,7 +190,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             <button
               type="button"
               className="formatting-toolbar-btn"
-              onClick={() => editorRef.current?.insertHorizontalRule()}
+              onClick={() => dispatchCommand('editor:insert-horizontal-rule')}
               title="Horizontal Rule"
               aria-label="Insert horizontal rule"
             >
@@ -198,8 +207,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
           <button
             type="button"
             className="formatting-toolbar-btn formatting-toolbar-btn--undo"
-            onClick={() => editorRef.current?.undo()}
-            title="Undo (⌘Z)"
+            onClick={() => dispatchCommand('editor:undo')}
+            title={`Undo${fmtKey('editor:undo')}`}
             aria-label="Undo"
           >
             <Undo2 size={18} />
@@ -207,8 +216,8 @@ export const FormattingToolbar = memo(function FormattingToolbar({
           <button
             type="button"
             className="formatting-toolbar-btn formatting-toolbar-btn--redo"
-            onClick={() => editorRef.current?.redo()}
-            title="Redo (⌘⇧Z)"
+            onClick={() => dispatchCommand('editor:redo')}
+            title={`Redo${fmtKey('editor:redo')}`}
             aria-label="Redo"
           >
             <Redo2 size={18} />

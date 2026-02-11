@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
@@ -6,6 +6,7 @@ import { NoteEditor } from './components/NoteEditor';
 import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
+import { CommandPalette } from './components/CommandPalette';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -22,13 +23,21 @@ import {
 import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
 import { useSyncLinks } from './hooks/useLinks';
 import { useDebouncedSearch } from './hooks/useDebouncedSearch';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useCommandKeybindings } from './hooks/useCommandKeybindings';
+import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
+import { EditorView } from '@codemirror/view';
+import { PluginHost, createEditorAPI, createAppAPI, editorPluginStore } from '@readied/plugin-api';
+import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
+import type { RegisteredCommand } from '@readied/command-registry';
+import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
+import { wordCountPlugin } from './plugins/wordCount';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
+import { useDiscoveredPlugins } from './hooks/useDiscoveredPlugins';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,8 +105,47 @@ function NotesApp() {
 
   // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
+  const selectedNoteRef = useRef<NoteSnapshot | null>(null);
+  selectedNoteRef.current = selectedNote;
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
+  const editorAPI = useMemo<EditorAPIWithEvents>(
+    () => createEditorAPI(getEditorView),
+    []
+  );
+
+  const appAPI = useMemo<AppAPIWithEvents>(
+    () => createAppAPI({
+      getCurrentNote() {
+        const note = selectedNoteRef.current;
+        if (!note) return null;
+        return { id: note.id, title: note.title, content: note.content };
+      },
+      async searchNotes(query) {
+        const notes = await window.readied.notes.search(query, 20);
+        return notes.map(n => ({ id: n.id, title: n.title }));
+      },
+      async getNoteById(id) {
+        const result = await window.readied.notes.get(id);
+        if (!result.ok) return null;
+        return { id: result.data.id, title: result.data.title, content: result.data.content };
+      },
+      async getNoteTags(noteId) {
+        return window.readied.notes.getManualTags(noteId);
+      },
+      async getBacklinks(noteId) {
+        const links = await window.readied.links.getBacklinks(noteId);
+        return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
+      },
+    }),
+    []
+  );
+
+  const toggleCommandPalette = useCallback(() => setIsCommandPaletteOpen(prev => !prev), []);
+  const closeCommandPalette = useCallback(() => setIsCommandPaletteOpen(false), []);
 
   // Search query
   const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
@@ -137,15 +185,17 @@ function NotesApp() {
     });
     setSelectedNote(newNote);
     clearSearch();
-  }, [createNote, selectedNotebookId, clearSearch]);
+    appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
+  }, [createNote, selectedNotebookId, clearSearch, appAPI]);
 
   // Select note
   const handleSelectNote = useCallback(async (id: string) => {
     const result = await window.readied.notes.get(id);
     if (result.ok) {
       setSelectedNote(result.data);
+      appAPI._notifyNoteSelected({ id: result.data.id, title: result.data.title, content: result.data.content });
     }
-  }, []);
+  }, [appAPI]);
 
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
@@ -236,8 +286,9 @@ function NotesApp() {
       if (selectedNote?.id === id) {
         setSelectedNote(null);
       }
+      appAPI._notifyNoteDeleted(id);
     },
-    [selectedNote, deleteNote]
+    [selectedNote, deleteNote, appAPI]
   );
 
   // Archive note (toggle based on current state)
@@ -315,18 +366,78 @@ function NotesApp() {
     [selectedNote, setNoteStatus, statusFilter]
   );
 
-  // Keyboard shortcuts (extracted to hook)
-  useKeyboardShortcuts({
+  // Register app commands (new note, duplicate, search, etc.)
+  useRegisterAppCommands({
     onNewNote: handleNewNote,
-    onDuplicateNote: handleDuplicateNote,
+    onDuplicateNote: useCallback(() => {
+      if (selectedNote) handleDuplicateNote(selectedNote.id);
+    }, [selectedNote, handleDuplicateNote]),
+    onFocusSearch: useCallback(() => {
+      const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+      searchInput?.focus();
+    }, []),
     onCycleViewMode: cycleViewMode,
     onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), []),
-    onCloseGraph: useCallback(() => setIsGraphOpen(false), []),
-    onClearSearch: clearSearch,
-    onDeselectNote: useCallback(() => setSelectedNote(null), []),
-    selectedNote,
-    searchQuery,
-    isGraphOpen,
+    onOpenSettings: useCallback(() => window.readied.windows.openSettings(), []),
+    onCommandPalette: toggleCommandPalette,
+  });
+
+  const builtInPlugins = useMemo(() => [wordCountPlugin], []);
+  const discoveredPlugins = useDiscoveredPlugins();
+  const allPlugins = useMemo(
+    () => [...builtInPlugins, ...discoveredPlugins],
+    [builtInPlugins, discoveredPlugins]
+  );
+
+  const configBridge = useMemo(() => ({
+    getAll: (pluginId: string) => window.readied.pluginConfig.getAll(pluginId),
+    set: (pluginId: string, key: string, value: unknown) =>
+      window.readied.pluginConfig.set(pluginId, key, value),
+  }), []);
+
+  // Bridge: plugin commands → global CommandRegistry
+  const registerPluginCommand = useCallback(
+    (cmd: Record<string, unknown>) => commandRegistry.register(cmd as unknown as RegisteredCommand),
+    []
+  );
+
+  // Bridge: CM6 editor updates → plugin EditorAPI events
+  useEffect(() => {
+    const ext = EditorView.updateListener.of(update => {
+      if (update.docChanged) {
+        editorAPI._notifyDocChanged(update.state.doc.toString());
+      }
+      if (update.selectionSet) {
+        const sel = update.state.selection.main;
+        editorAPI._notifySelectionChanged({ from: sel.from, to: sel.to });
+      }
+    });
+
+    editorPluginStore.getState().register({
+      id: '__editor-event-bridge',
+      pluginId: '__system',
+      extensions: [ext],
+    });
+
+    return () => {
+      editorPluginStore.getState().unregister('__editor-event-bridge');
+    };
+  }, [editorAPI]);
+
+  // Global keyboard handler (routes through CommandRegistry)
+  useCommandKeybindings({
+    onEscape: useCallback(() => {
+      // Cascading escape: command palette → graph → search → deselect note
+      if (isCommandPaletteOpen) {
+        setIsCommandPaletteOpen(false);
+      } else if (isGraphOpen) {
+        setIsGraphOpen(false);
+      } else if (searchQuery) {
+        clearSearch();
+      } else if (selectedNote) {
+        setSelectedNote(null);
+      }
+    }, [isCommandPaletteOpen, isGraphOpen, searchQuery, selectedNote, clearSearch]),
   });
 
   return (
@@ -402,6 +513,17 @@ function NotesApp() {
               )}
             </main>
           </div>
+
+          {/* Plugin Host - manages plugin lifecycle */}
+          <PluginHost
+            plugins={allPlugins}
+            editorAPI={editorAPI}
+            appAPI={appAPI}
+            registerCommand={registerPluginCommand}
+            configBridge={configBridge}
+          />
+
+          <CommandPalette isOpen={isCommandPaletteOpen} onClose={closeCommandPalette} />
         </div>
       </LicenseProvider>
     </ToastProvider>

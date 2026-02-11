@@ -15,6 +15,8 @@ import { addLinkAnchors } from './009_link_anchors.js';
 import { addSyncFields } from './010_sync_fields.js';
 import { syncTracking } from './011_sync_tracking.js';
 import { gitNotebooks } from './012_git_notebooks.js';
+import { pluginConfig } from './013_plugin_config.js';
+import { pluginRegistry } from './014_plugin_registry.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -30,6 +32,8 @@ export const allMigrations: Migration[] = [
   addSyncFields,
   syncTracking,
   gitNotebooks,
+  pluginConfig,
+  pluginRegistry,
 ];
 
 export {
@@ -45,4 +49,6 @@ export {
   addSyncFields,
   syncTracking,
   gitNotebooks,
+  pluginConfig,
+  pluginRegistry,
 };

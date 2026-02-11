@@ -19,6 +19,7 @@ import {
   FormattingToolbar,
   MarkdownPreview,
 } from './editor';
+import { LayoutZone } from '@readied/plugin-api';
 import { TitleInput } from './TitleInput';
 import { useToast } from './Toast';
 
@@ -227,6 +228,7 @@ export function NoteEditor({
           >
             <MoreVertical size={18} />
           </button>
+          <LayoutZone name="editor-header-actions" />
         </div>
       </header>
       {/* Metadata row: Notebook, Status, Tags */}
@@ -243,7 +245,6 @@ export function NoteEditor({
       )}
       <div ref={toolbarRowRef} className="note-editor-toolbar-row">
         <FormattingToolbar
-          editorRef={editorRef}
           onVisibilityChange={setToolbarVisibility}
           containerRef={toolbarRowRef}
         />
@@ -296,6 +297,12 @@ export function NoteEditor({
         </div>
       </div>
 
+      {/* Plugin Status Bar */}
+      <LayoutZone name="editor-status-bar" className="note-editor-status-bar" />
+
+      {/* Plugin Panels */}
+      <LayoutZone name="panel" />
+
       {/* Actions Panel */}
       <ActionsPanel
         isOpen={actionsOpen}
@@ -309,7 +316,6 @@ export function NoteEditor({
         onRevisionHistory={note.notebookId ? () => setRevisionHistoryOpen(true) : undefined}
         onShareOnWeb={handleShareOnWeb}
         hiddenFormatting={toolbarVisibility}
-        editorRef={editorRef}
       />
 
       {/* Backlinks Panel */}

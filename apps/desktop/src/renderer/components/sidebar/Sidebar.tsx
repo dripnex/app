@@ -19,6 +19,7 @@ import { TagsList } from './TagsList';
 import { StatusFilters } from './StatusFilters';
 import { SidebarFooter } from './SidebarFooter';
 import { NotebookCreateModal } from './NotebookCreateModal';
+import { LayoutZone } from '@readied/plugin-api';
 
 interface SidebarProps {
   onOpenGraph?: () => void;
@@ -139,6 +140,9 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           onSelectStatus={setStatusFilter}
         />
       </SidebarSection>
+
+      {/* Plugin sidebar sections */}
+      <LayoutZone name="sidebar-section" />
 
       <SidebarFooter appVersion={appVersion} />
 

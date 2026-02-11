@@ -251,6 +251,22 @@ export interface SubscriptionStatus {
   cancelAtPeriodEnd?: boolean;
 }
 
+/** Scanned plugin from filesystem */
+export interface ScannedPlugin {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  code: string;
+  path: string;
+}
+
+/** Plugin registry state row */
+export interface PluginRegistryState {
+  pluginId: string;
+  enabled: boolean;
+}
+
 /** The API exposed to the renderer */
 export interface ReadiedAPI {
   notes: {
@@ -613,6 +629,26 @@ export interface ReadiedAPI {
     /** Check for updates manually */
     checkNow: () => Promise<{ available: boolean; version?: string }>;
   };
+  pluginConfig: {
+    /** Get a single config value for a plugin */
+    get: (pluginId: string, key: string) => Promise<unknown>;
+    /** Set a config value for a plugin */
+    set: (pluginId: string, key: string, value: unknown) => Promise<void>;
+    /** Get all config values for a plugin */
+    getAll: (pluginId: string) => Promise<Record<string, unknown>>;
+    /** Clear all config for a plugin */
+    clear: (pluginId: string) => Promise<void>;
+  };
+  plugins: {
+    /** Scan filesystem for installed plugins */
+    scan: () => Promise<ScannedPlugin[]>;
+    /** Check if a plugin is enabled */
+    isEnabled: (pluginId: string) => Promise<boolean>;
+    /** Enable or disable a plugin */
+    setEnabled: (pluginId: string, enabled: boolean) => Promise<void>;
+    /** List all plugin registry state */
+    listState: () => Promise<PluginRegistryState[]>;
+  };
 }
 
 // Expose the API
@@ -785,6 +821,18 @@ const api: ReadiedAPI = {
   },
   updates: {
     checkNow: () => ipcRenderer.invoke('updates:checkNow'),
+  },
+  pluginConfig: {
+    get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),
+    set: (pluginId, key, value) => ipcRenderer.invoke('pluginConfig:set', pluginId, key, value),
+    getAll: (pluginId) => ipcRenderer.invoke('pluginConfig:getAll', pluginId),
+    clear: (pluginId) => ipcRenderer.invoke('pluginConfig:clear', pluginId),
+  },
+  plugins: {
+    scan: () => ipcRenderer.invoke('plugins:scan'),
+    isEnabled: (pluginId) => ipcRenderer.invoke('plugins:isEnabled', pluginId),
+    setEnabled: (pluginId, enabled) => ipcRenderer.invoke('plugins:setEnabled', pluginId, enabled),
+    listState: () => ipcRenderer.invoke('plugins:listState'),
   },
 };
 

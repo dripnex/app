@@ -20,10 +20,7 @@ export const syncTracking: Migration = {
     -- 0 = note is in sync with server
     ALTER TABLE notes ADD COLUMN needs_sync INTEGER DEFAULT 0;
 
-    -- Add last_synced_at timestamp
-    -- ISO 8601 timestamp of last successful sync to server
-    -- NULL = never synced
-    ALTER TABLE notes ADD COLUMN last_synced_at TEXT DEFAULT NULL;
+    -- last_synced_at already added by migration 010_sync_fields
 
     -- Index for querying pending changes
     CREATE INDEX IF NOT EXISTS idx_notes_needs_sync ON notes(needs_sync) WHERE needs_sync = 1;

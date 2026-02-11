@@ -202,9 +202,27 @@ let isRemoteUpdate = false;
 // Setup sync listeners (only in browser environment with preload API available)
 if (typeof window !== 'undefined' && window.readied?.settings) {
   // Listen for settings sync from other windows
-  window.readied.settings.onSync((settings: unknown) => {
+  window.readied.settings.onSync((incoming: unknown) => {
+    // Only accept full settings objects (must have version + all sections)
+    const data = incoming as Record<string, unknown> | null;
+    if (!data || typeof data !== 'object' || !data.version || !data.editor) return;
+
+    // Cast through unknown to satisfy TS
+    const s = data as unknown as Partial<SettingsSchema>;
+
+    // Merge with defaults to ensure no section is undefined
+    const merged: SettingsSchema = {
+      ...DEFAULT_SETTINGS,
+      ...s,
+      general: { ...DEFAULT_GENERAL, ...s.general },
+      updates: { ...DEFAULT_UPDATES, ...s.updates },
+      appearance: { ...DEFAULT_APPEARANCE, ...s.appearance },
+      editor: { ...DEFAULT_EDITOR, ...s.editor },
+      backup: { ...DEFAULT_BACKUP, ...s.backup },
+    };
+
     isRemoteUpdate = true;
-    useSettingsStore.setState({ settings: settings as SettingsSchema });
+    useSettingsStore.setState({ settings: merged });
     isRemoteUpdate = false;
   });
 

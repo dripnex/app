@@ -23,6 +23,8 @@ export interface DataPaths {
   exports: string;
   /** Assets directory for embedded files */
   assets: string;
+  /** Plugins directory for user-installed plugins */
+  plugins: string;
 }
 
 /**
@@ -38,6 +40,7 @@ export function createDataPaths(rootPath: string): DataPaths {
     config: join(rootPath, 'config.json'),
     exports: join(rootPath, 'exports'),
     assets: join(rootPath, 'assets'),
+    plugins: join(rootPath, 'plugins'),
   };
 
   // Ensure directories exist
@@ -46,6 +49,7 @@ export function createDataPaths(rootPath: string): DataPaths {
   ensureDirectory(paths.logs);
   ensureDirectory(paths.exports);
   ensureDirectory(paths.assets);
+  ensureDirectory(paths.plugins);
 
   return paths;
 }
