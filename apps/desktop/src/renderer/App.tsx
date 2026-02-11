@@ -32,6 +32,7 @@ import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api'
 import type { RegisteredCommand } from '@readied/command-registry';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { wordCountPlugin } from './plugins/wordCount';
+import { typewriterModePlugin } from './plugins/typewriterMode';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -396,7 +397,7 @@ function NotesApp() {
     onCommandPalette: toggleCommandPalette,
   });
 
-  const builtInPlugins = useMemo(() => [wordCountPlugin], []);
+  const builtInPlugins = useMemo(() => [wordCountPlugin, typewriterModePlugin], []);
   const { plugins: discoveredPlugins, errors: pluginErrors } = useDiscoveredPlugins();
   const allPlugins = useMemo(
     () => [...builtInPlugins, ...discoveredPlugins],
