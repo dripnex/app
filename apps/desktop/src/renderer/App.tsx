@@ -9,7 +9,7 @@ import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
-import type { PluginLoadError } from './hooks/useDiscoveredPlugins';
+import type { PluginLoadError } from './stores/pluginRuntimeStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -39,7 +39,8 @@ import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
-import { useDiscoveredPlugins } from './hooks/useDiscoveredPlugins';
+import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
+import { useStore } from 'zustand';
 
 /** Shows toast errors for plugins that failed to load */
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
@@ -397,8 +398,15 @@ function NotesApp() {
     onCommandPalette: toggleCommandPalette,
   });
 
+  // Plugin runtime: init once, React observes
+  const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
+  const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
+
+  useEffect(() => {
+    pluginRuntimeStore.getState().init();
+  }, []);
+
   const builtInPlugins = useMemo(() => [wordCountPlugin, typewriterModePlugin], []);
-  const { plugins: discoveredPlugins, errors: pluginErrors } = useDiscoveredPlugins();
   const allPlugins = useMemo(
     () => [...builtInPlugins, ...discoveredPlugins],
     [builtInPlugins, discoveredPlugins]
