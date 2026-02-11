@@ -79,7 +79,7 @@ export interface PluginContext {
   registerExtensions(id: string, extensions: Extension[]): () => void;
   registerCommand(
     options: PluginCommandOptions,
-    execute: () => boolean | void | Promise<boolean | void>,
+    execute: () => boolean | void | Promise<boolean | void>
   ): () => void;
   config: PluginConfigAPI;
   log: PluginLogger;

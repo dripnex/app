@@ -26,7 +26,7 @@ function typewriterScroll(): Extension {
           view.scrollDOM.scrollBy({ top: offset, behavior: 'smooth' });
         }
       }
-    },
+    }
   );
 }
 
@@ -75,7 +75,7 @@ export const typewriterModePlugin: PluginManifest = {
           disable();
         }
         return true;
-      },
+      }
     );
 
     return {

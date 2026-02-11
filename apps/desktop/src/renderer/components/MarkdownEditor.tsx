@@ -578,16 +578,24 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       });
     }, [noteId]);
 
-    // Reconfigure plugin extensions when registrations change
+    // Reconfigure plugin extensions when registrations change.
+    // Also apply current snapshot on mount so extensions registered before
+    // the editor exists (e.g. decoration plugins) are active immediately.
     useEffect(() => {
-      const unsubscribe = editorPluginStore.subscribe(() => {
+      const apply = () => {
         const view = viewRef.current;
         if (!view) return;
         const merged = editorPluginStore.getState().getMergedExtensions();
         view.dispatch({
           effects: pluginExtensionCompartment.reconfigure(merged),
         });
-      });
+      };
+
+      // Apply current snapshot
+      apply();
+
+      // Subscribe to future changes
+      const unsubscribe = editorPluginStore.subscribe(apply);
       return unsubscribe;
     }, []);
 

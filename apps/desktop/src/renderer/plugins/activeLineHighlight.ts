@@ -49,7 +49,7 @@ export const activeLineHighlightPlugin: PluginManifest = {
     });
 
     // Re-apply when a different note is selected
-    const offNoteSelected = context.app.onNoteSelected((note) => {
+    const offNoteSelected = context.app.onNoteSelected(note => {
       clearHighlight();
       // Slight delay — editor content updates async after note selection
       if (note && enabled) {
@@ -77,9 +77,11 @@ export const activeLineHighlightPlugin: PluginManifest = {
         } else {
           clearHighlight();
         }
-        context.log.info(enabled ? 'Active line highlight enabled' : 'Active line highlight disabled');
+        context.log.info(
+          enabled ? 'Active line highlight enabled' : 'Active line highlight disabled'
+        );
         return true;
-      },
+      }
     );
 
     return {

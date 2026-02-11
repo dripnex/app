@@ -81,7 +81,7 @@ export const wordCountPlugin: PluginManifest = {
           hide();
         }
         return true;
-      },
+      }
     );
 
     return {

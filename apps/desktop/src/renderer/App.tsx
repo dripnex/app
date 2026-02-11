@@ -129,35 +129,33 @@ function NotesApp() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
-  const editorAPI = useMemo<EditorAPIWithEvents>(
-    () => createEditorAPI(getEditorView),
-    []
-  );
+  const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
 
   const appAPI = useMemo<AppAPIWithEvents>(
-    () => createAppAPI({
-      getCurrentNote() {
-        const note = selectedNoteRef.current;
-        if (!note) return null;
-        return { id: note.id, title: note.title, content: note.content };
-      },
-      async searchNotes(query) {
-        const notes = await window.readied.notes.search(query, 20);
-        return notes.map(n => ({ id: n.id, title: n.title }));
-      },
-      async getNoteById(id) {
-        const result = await window.readied.notes.get(id);
-        if (!result.ok) return null;
-        return { id: result.data.id, title: result.data.title, content: result.data.content };
-      },
-      async getNoteTags(noteId) {
-        return window.readied.notes.getManualTags(noteId);
-      },
-      async getBacklinks(noteId) {
-        const links = await window.readied.links.getBacklinks(noteId);
-        return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
-      },
-    }),
+    () =>
+      createAppAPI({
+        getCurrentNote() {
+          const note = selectedNoteRef.current;
+          if (!note) return null;
+          return { id: note.id, title: note.title, content: note.content };
+        },
+        async searchNotes(query) {
+          const notes = await window.readied.notes.search(query, 20);
+          return notes.map(n => ({ id: n.id, title: n.title }));
+        },
+        async getNoteById(id) {
+          const result = await window.readied.notes.get(id);
+          if (!result.ok) return null;
+          return { id: result.data.id, title: result.data.title, content: result.data.content };
+        },
+        async getNoteTags(noteId) {
+          return window.readied.notes.getManualTags(noteId);
+        },
+        async getBacklinks(noteId) {
+          const links = await window.readied.links.getBacklinks(noteId);
+          return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
+        },
+      }),
     []
   );
 
@@ -206,13 +204,20 @@ function NotesApp() {
   }, [createNote, selectedNotebookId, clearSearch, appAPI]);
 
   // Select note
-  const handleSelectNote = useCallback(async (id: string) => {
-    const result = await window.readied.notes.get(id);
-    if (result.ok) {
-      setSelectedNote(result.data);
-      appAPI._notifyNoteSelected({ id: result.data.id, title: result.data.title, content: result.data.content });
-    }
-  }, [appAPI]);
+  const handleSelectNote = useCallback(
+    async (id: string) => {
+      const result = await window.readied.notes.get(id);
+      if (result.ok) {
+        setSelectedNote(result.data);
+        appAPI._notifyNoteSelected({
+          id: result.data.id,
+          title: result.data.title,
+          content: result.data.content,
+        });
+      }
+    },
+    [appAPI]
+  );
 
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
@@ -407,17 +412,23 @@ function NotesApp() {
     pluginRuntimeStore.getState().init();
   }, []);
 
-  const builtInPlugins = useMemo(() => [wordCountPlugin, typewriterModePlugin, activeLineHighlightPlugin], []);
+  const builtInPlugins = useMemo(
+    () => [wordCountPlugin, typewriterModePlugin, activeLineHighlightPlugin],
+    []
+  );
   const allPlugins = useMemo(
     () => [...builtInPlugins, ...discoveredPlugins],
     [builtInPlugins, discoveredPlugins]
   );
 
-  const configBridge = useMemo(() => ({
-    getAll: (pluginId: string) => window.readied.pluginConfig.getAll(pluginId),
-    set: (pluginId: string, key: string, value: unknown) =>
-      window.readied.pluginConfig.set(pluginId, key, value),
-  }), []);
+  const configBridge = useMemo(
+    () => ({
+      getAll: (pluginId: string) => window.readied.pluginConfig.getAll(pluginId),
+      set: (pluginId: string, key: string, value: unknown) =>
+        window.readied.pluginConfig.set(pluginId, key, value),
+    }),
+    []
+  );
 
   // Bridge: plugin commands → global CommandRegistry
   const registerPluginCommand = useCallback(

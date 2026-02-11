@@ -834,12 +834,12 @@ const api: ReadiedAPI = {
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),
     set: (pluginId, key, value) => ipcRenderer.invoke('pluginConfig:set', pluginId, key, value),
-    getAll: (pluginId) => ipcRenderer.invoke('pluginConfig:getAll', pluginId),
-    clear: (pluginId) => ipcRenderer.invoke('pluginConfig:clear', pluginId),
+    getAll: pluginId => ipcRenderer.invoke('pluginConfig:getAll', pluginId),
+    clear: pluginId => ipcRenderer.invoke('pluginConfig:clear', pluginId),
   },
   plugins: {
     scan: () => ipcRenderer.invoke('plugins:scan'),
-    isEnabled: (pluginId) => ipcRenderer.invoke('plugins:isEnabled', pluginId),
+    isEnabled: pluginId => ipcRenderer.invoke('plugins:isEnabled', pluginId),
     setEnabled: (pluginId, enabled) => ipcRenderer.invoke('plugins:setEnabled', pluginId, enabled),
     listState: () => ipcRenderer.invoke('plugins:listState'),
     requestReload: () => ipcRenderer.send('plugins:requestReload'),

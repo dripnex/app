@@ -96,7 +96,7 @@ async function executeScan(generation: number): Promise<{
   }
 }
 
-export const pluginRuntimeStore = createStore<PluginRuntimeStore>((set) => ({
+export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
   plugins: [],
   errors: [],
   status: 'idle',

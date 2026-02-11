@@ -1810,9 +1810,9 @@ function registerPluginConfigHandlers(): void {
   });
 
   ipcMain.handle('pluginConfig:set', (_event, pluginId: string, key: string, value: unknown) => {
-    db!.prepare(
-      'INSERT OR REPLACE INTO plugin_config (plugin_id, key, value) VALUES (?, ?, ?)'
-    ).run(pluginId, key, JSON.stringify(value));
+    db!
+      .prepare('INSERT OR REPLACE INTO plugin_config (plugin_id, key, value) VALUES (?, ?, ?)')
+      .run(pluginId, key, JSON.stringify(value));
   });
 
   ipcMain.handle('pluginConfig:getAll', (_event, pluginId: string) => {
@@ -1864,9 +1864,10 @@ function registerPluginDiscoveryHandlers(): void {
 
   // List all plugin registry state
   ipcMain.handle('plugins:listState', () => {
-    const rows = database
-      .prepare('SELECT plugin_id, enabled FROM plugin_registry')
-      .all() as Array<{ plugin_id: string; enabled: number }>;
+    const rows = database.prepare('SELECT plugin_id, enabled FROM plugin_registry').all() as Array<{
+      plugin_id: string;
+      enabled: number;
+    }>;
     return rows.map(row => ({
       pluginId: row.plugin_id,
       enabled: row.enabled === 1,
@@ -1874,7 +1875,7 @@ function registerPluginDiscoveryHandlers(): void {
   });
 
   // Request plugin reload: broadcast to all windows except sender
-  ipcMain.on('plugins:requestReload', (event) => {
+  ipcMain.on('plugins:requestReload', event => {
     const senderWebContents = event.sender;
     BrowserWindow.getAllWindows().forEach(win => {
       if (win.webContents !== senderWebContents && !win.isDestroyed()) {

@@ -23,10 +23,7 @@ export const editorPluginStore = createStore<EditorPluginState>((set, get) => ({
 
   register(registration) {
     set(state => ({
-      registrations: [
-        ...state.registrations.filter(r => r.id !== registration.id),
-        registration,
-      ],
+      registrations: [...state.registrations.filter(r => r.id !== registration.id), registration],
     }));
   },
 

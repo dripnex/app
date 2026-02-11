@@ -49,7 +49,14 @@ describe('CommandRegistry', () => {
   it('dispatches commands', async () => {
     const reg = new CommandRegistry();
     let called = false;
-    reg.register(makeCommand({ id: 'foo', execute: () => { called = true; } }));
+    reg.register(
+      makeCommand({
+        id: 'foo',
+        execute: () => {
+          called = true;
+        },
+      })
+    );
 
     const result = await reg.dispatch('foo');
     expect(result).toBe(true);
@@ -79,11 +86,13 @@ describe('CommandRegistry', () => {
 
   it('finds command by keybinding', () => {
     const reg = new CommandRegistry();
-    reg.register(makeCommand({
-      id: 'bold',
-      context: 'editor',
-      defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
-    }));
+    reg.register(
+      makeCommand({
+        id: 'bold',
+        context: 'editor',
+        defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
+      })
+    );
 
     const found = reg.findByKeybinding({ key: 'b', modifiers: ['Mod'] }, 'editor');
     expect(found?.id).toBe('bold');
@@ -91,10 +100,12 @@ describe('CommandRegistry', () => {
 
   it('respects keybinding overrides', () => {
     const reg = new CommandRegistry();
-    reg.register(makeCommand({
-      id: 'bold',
-      defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
-    }));
+    reg.register(
+      makeCommand({
+        id: 'bold',
+        defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
+      })
+    );
 
     reg.setKeybindingOverride({
       commandId: 'bold',
@@ -106,16 +117,20 @@ describe('CommandRegistry', () => {
 
   it('detects conflicts', () => {
     const reg = new CommandRegistry();
-    reg.register(makeCommand({
-      id: 'a',
-      context: 'editor',
-      defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
-    }));
-    reg.register(makeCommand({
-      id: 'b',
-      context: 'editor',
-      defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
-    }));
+    reg.register(
+      makeCommand({
+        id: 'a',
+        context: 'editor',
+        defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
+      })
+    );
+    reg.register(
+      makeCommand({
+        id: 'b',
+        context: 'editor',
+        defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
+      })
+    );
 
     const conflicts = reg.getConflicts();
     expect(conflicts).toHaveLength(1);
@@ -125,7 +140,9 @@ describe('CommandRegistry', () => {
   it('notifies subscribers', () => {
     const reg = new CommandRegistry();
     let count = 0;
-    reg.subscribe(() => { count++; });
+    reg.subscribe(() => {
+      count++;
+    });
 
     reg.register(makeCommand({ id: 'a' }));
     expect(count).toBe(1);
@@ -143,20 +160,20 @@ describe('keybinding utilities', () => {
   });
 
   it('matches keybindings', () => {
-    expect(keybindingsMatch(
-      { key: 'b', modifiers: ['Mod'] },
-      { key: 'B', modifiers: ['Mod'] },
-    )).toBe(true);
+    expect(
+      keybindingsMatch({ key: 'b', modifiers: ['Mod'] }, { key: 'B', modifiers: ['Mod'] })
+    ).toBe(true);
 
-    expect(keybindingsMatch(
-      { key: 'b', modifiers: ['Mod', 'Shift'] },
-      { key: 'b', modifiers: ['Shift', 'Mod'] },
-    )).toBe(true);
+    expect(
+      keybindingsMatch(
+        { key: 'b', modifiers: ['Mod', 'Shift'] },
+        { key: 'b', modifiers: ['Shift', 'Mod'] }
+      )
+    ).toBe(true);
 
-    expect(keybindingsMatch(
-      { key: 'b', modifiers: ['Mod'] },
-      { key: 'i', modifiers: ['Mod'] },
-    )).toBe(false);
+    expect(
+      keybindingsMatch({ key: 'b', modifiers: ['Mod'] }, { key: 'i', modifiers: ['Mod'] })
+    ).toBe(false);
   });
 
   it('formats keybindings', () => {

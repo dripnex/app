@@ -63,7 +63,7 @@ export function validateManifest(manifest: unknown): ManifestError[] {
  */
 export function assertValidManifest(
   manifest: unknown,
-  log: (msg: string) => void = console.error,
+  log: (msg: string) => void = console.error
 ): PluginManifest | null {
   const errors = validateManifest(manifest);
   if (errors.length > 0) {
