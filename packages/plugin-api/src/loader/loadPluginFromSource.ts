@@ -21,7 +21,7 @@ export function loadPluginFromSource(code: string, expectedId: string): PluginMa
     const manifest = module.exports;
 
     // Validate the manifest using existing validator
-    const validated = assertValidManifest(manifest, (msg) =>
+    const validated = assertValidManifest(manifest, msg =>
       console.warn(`[plugin-loader:${expectedId}] ${msg}`)
     );
 

@@ -79,9 +79,13 @@ describe('PluginRegistry', () => {
 
     it('passes context with all expected APIs', async () => {
       let receivedContext: unknown = null;
-      registry.load(makeManifest({
-        activate: (ctx) => { receivedContext = ctx; },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            receivedContext = ctx;
+          },
+        })
+      );
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
 
       const ctx = receivedContext as Record<string, unknown>;
@@ -111,18 +115,26 @@ describe('PluginRegistry', () => {
 
     it('hydrates config from bridge', async () => {
       let configValue: unknown;
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          configValue = ctx.config.get('theme');
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            configValue = ctx.config.get('theme');
+          },
+        })
+      );
 
       const configBridge: ConfigBridge = {
         getAll: async () => ({ theme: 'dark' }),
         set: async () => {},
       };
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), undefined, configBridge);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        undefined,
+        configBridge
+      );
       expect(configValue).toBe('dark');
     });
 
@@ -133,13 +145,21 @@ describe('PluginRegistry', () => {
         set: setBridge,
       };
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.config.set('font', 'mono');
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.config.set('font', 'mono');
+          },
+        })
+      );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), undefined, configBridge);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        undefined,
+        configBridge
+      );
       expect(setBridge).toHaveBeenCalledWith('test-plugin', 'font', 'mono');
     });
   });
@@ -148,11 +168,13 @@ describe('PluginRegistry', () => {
     it('prefixes command ids with plugin namespace', async () => {
       const registerCommandFn: RegisterCommandFn = vi.fn().mockReturnValue(() => {});
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.registerCommand({ id: 'toggle', name: 'Toggle' }, () => {});
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerCommand({ id: 'toggle', name: 'Toggle' }, () => {});
+          },
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), registerCommandFn);
 
@@ -164,11 +186,13 @@ describe('PluginRegistry', () => {
     it('sets showInPalette true by default', async () => {
       const registerCommandFn: RegisterCommandFn = vi.fn().mockReturnValue(() => {});
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.registerCommand({ id: 'cmd', name: 'Cmd' }, () => {});
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerCommand({ id: 'cmd', name: 'Cmd' }, () => {});
+          },
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), registerCommandFn);
 
@@ -181,11 +205,13 @@ describe('PluginRegistry', () => {
       const unregister = vi.fn();
       const registerCommandFn: RegisterCommandFn = vi.fn().mockReturnValue(unregister);
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.registerCommand({ id: 'cmd', name: 'Cmd' }, () => {});
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerCommand({ id: 'cmd', name: 'Cmd' }, () => {});
+          },
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), registerCommandFn);
       registry.deactivate('test-plugin');
@@ -197,9 +223,11 @@ describe('PluginRegistry', () => {
   describe('deactivate', () => {
     it('calls dispose on disposable returned by activate', async () => {
       const dispose = vi.fn();
-      registry.load(makeManifest({
-        activate: () => ({ dispose }),
-      }));
+      registry.load(
+        makeManifest({
+          activate: () => ({ dispose }),
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
       registry.deactivate('test-plugin');
@@ -263,13 +291,15 @@ describe('PluginRegistry', () => {
       const editorAPI = makeEditorAPI();
       editorAPI.onSelectionChanged = vi.fn().mockReturnValue(editorUnsub);
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          // Subscribe but intentionally DO NOT unsubscribe in dispose
-          ctx.editor.onSelectionChanged(() => {});
-          return { dispose() {} };
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            // Subscribe but intentionally DO NOT unsubscribe in dispose
+            ctx.editor.onSelectionChanged(() => {});
+            return { dispose() {} };
+          },
+        })
+      );
 
       await registry.activate('test-plugin', editorAPI, makeAppAPI());
       registry.deactivate('test-plugin');
@@ -282,12 +312,14 @@ describe('PluginRegistry', () => {
       const appAPI = makeAppAPI();
       appAPI.onNoteSelected = vi.fn().mockReturnValue(appUnsub);
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.app.onNoteSelected(() => {});
-          return { dispose() {} };
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.app.onNoteSelected(() => {});
+            return { dispose() {} };
+          },
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), appAPI);
       registry.deactivate('test-plugin');
@@ -300,16 +332,18 @@ describe('PluginRegistry', () => {
       const editorAPI = makeEditorAPI();
       editorAPI.onDocChanged = vi.fn().mockReturnValue(editorUnsub);
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          const off = ctx.editor.onDocChanged(() => {});
-          return {
-            dispose() {
-              off(); // Plugin properly cleans up
-            },
-          };
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            const off = ctx.editor.onDocChanged(() => {});
+            return {
+              dispose() {
+                off(); // Plugin properly cleans up
+              },
+            };
+          },
+        })
+      );
 
       await registry.activate('test-plugin', editorAPI, makeAppAPI());
       registry.deactivate('test-plugin');
@@ -335,17 +369,19 @@ describe('PluginRegistry', () => {
       appAPI.onNoteCreated = vi.fn().mockReturnValue(appNoteCreatedUnsub);
       appAPI.onNoteDeleted = vi.fn().mockReturnValue(appNoteDeletedUnsub);
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.editor.onDocChanged(() => {});
-          ctx.editor.onSelectionChanged(() => {});
-          ctx.app.onNoteSelected(() => {});
-          ctx.app.onNoteCreated(() => {});
-          ctx.app.onNoteDeleted(() => {});
-          // No cleanup in dispose — all should be auto-cleaned
-          return { dispose() {} };
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.editor.onDocChanged(() => {});
+            ctx.editor.onSelectionChanged(() => {});
+            ctx.app.onNoteSelected(() => {});
+            ctx.app.onNoteCreated(() => {});
+            ctx.app.onNoteDeleted(() => {});
+            // No cleanup in dispose — all should be auto-cleaned
+            return { dispose() {} };
+          },
+        })
+      );
 
       await registry.activate('test-plugin', editorAPI, appAPI);
       registry.deactivate('test-plugin');
@@ -361,13 +397,16 @@ describe('PluginRegistry', () => {
   describe('decorations', () => {
     it('provides decorations API in context', async () => {
       let hasDecorations = false;
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          hasDecorations = typeof ctx.decorations.addLineHighlight === 'function'
-            && typeof ctx.decorations.addWidget === 'function'
-            && typeof ctx.decorations.clear === 'function';
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            hasDecorations =
+              typeof ctx.decorations.addLineHighlight === 'function' &&
+              typeof ctx.decorations.addWidget === 'function' &&
+              typeof ctx.decorations.clear === 'function';
+          },
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
       expect(hasDecorations).toBe(true);
@@ -378,11 +417,13 @@ describe('PluginRegistry', () => {
     it('provides namespaced logger to plugins', async () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      registry.load(makeManifest({
-        activate: (ctx) => {
-          ctx.log.info('hello');
-        },
-      }));
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.log.info('hello');
+          },
+        })
+      );
 
       await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
 

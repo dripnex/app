@@ -1,6 +1,14 @@
 import type { Extension } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
-import type { PluginManifest, PluginContext, PluginConfigAPI, PluginDisposable, EditorAPI, AppAPI, PluginCommandOptions } from '../types';
+import type {
+  PluginManifest,
+  PluginContext,
+  PluginConfigAPI,
+  PluginDisposable,
+  EditorAPI,
+  AppAPI,
+  PluginCommandOptions,
+} from '../types';
 import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
 import { createDecorationAPI } from '../editor/decorationAPI';
@@ -74,7 +82,7 @@ export class PluginRegistry {
     appAPI: AppAPI,
     registerCommandFn?: RegisterCommandFn,
     configBridge?: ConfigBridge,
-    getView?: () => EditorView | null,
+    getView?: () => EditorView | null
   ): Promise<void> {
     const entry = this.plugins.get(id);
     if (!entry) {
@@ -89,7 +97,7 @@ export class PluginRegistry {
     // Build registerCommand wrapper with auto-prefix + defaults
     const registerCommand = (
       options: PluginCommandOptions,
-      execute: () => boolean | void | Promise<boolean | void>,
+      execute: () => boolean | void | Promise<boolean | void>
     ): (() => void) => {
       if (!registerCommandFn) {
         console.warn(`[${id}] registerCommand not available (no host bridge)`);
@@ -116,9 +124,7 @@ export class PluginRegistry {
     };
 
     // Hydrate config cache from persistence before plugin starts
-    const configCache: Record<string, unknown> = configBridge
-      ? await configBridge.getAll(id)
-      : {};
+    const configCache: Record<string, unknown> = configBridge ? await configBridge.getAll(id) : {};
 
     const config: PluginConfigAPI = {
       get<T>(key: string): T | undefined {
@@ -133,9 +139,7 @@ export class PluginRegistry {
     };
 
     // Create decoration API if getView is provided
-    const decoResult = getView
-      ? createDecorationAPI(getView)
-      : null;
+    const decoResult = getView ? createDecorationAPI(getView) : null;
 
     // Auto-register the decoration extension
     if (decoResult) {
@@ -159,13 +163,19 @@ export class PluginRegistry {
       ...editorAPI,
       onDocChanged(callback) {
         const unsub = editorAPI.onDocChanged(callback);
-        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
         entry.eventUnsubscribers.push(tracked);
         return tracked;
       },
       onSelectionChanged(callback) {
         const unsub = editorAPI.onSelectionChanged(callback);
-        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
         entry.eventUnsubscribers.push(tracked);
         return tracked;
       },
@@ -175,19 +185,28 @@ export class PluginRegistry {
       ...appAPI,
       onNoteSelected(callback) {
         const unsub = appAPI.onNoteSelected(callback);
-        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
         entry.eventUnsubscribers.push(tracked);
         return tracked;
       },
       onNoteCreated(callback) {
         const unsub = appAPI.onNoteCreated(callback);
-        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
         entry.eventUnsubscribers.push(tracked);
         return tracked;
       },
       onNoteDeleted(callback) {
         const unsub = appAPI.onNoteDeleted(callback);
-        const tracked = () => { unsub(); entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked); };
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
         entry.eventUnsubscribers.push(tracked);
         return tracked;
       },

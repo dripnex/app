@@ -11,23 +11,23 @@ Base minima para que un plugin built-in funcione end-to-end.
 
 ### Completado
 
-| Componente | Package | Estado |
-|---|---|---|
-| `CommandRegistry` | `@readied/command-registry` | Done |
-| `CommandDefinition` types | `@readied/command-registry` | Done |
-| Editor commands (14) | `definitions/editor.ts` | Done |
-| App commands (7) | `definitions/app.ts` | Done |
-| `useCommandKeybindings` hook | desktop renderer | Done |
-| `useCommandRegistry` hook | desktop renderer | Done |
-| `PluginManifest` + `PluginContext` types | `@readied/plugin-api` | Done |
-| `PluginRegistry` lifecycle | `@readied/plugin-api` | Done |
-| `PluginHost` React component | `@readied/plugin-api` | Done |
-| `EditorAPI` (safe subset) | `@readied/plugin-api` | Done |
-| `AppAPI` (read-only) | `@readied/plugin-api` | Done |
-| `LayoutManager` + zones (6) | `@readied/plugin-api` | Done |
-| `editorPluginStore` (CM6 extensions) | `@readied/plugin-api` | Done |
-| Word Count plugin (example) | `plugins/wordCount.tsx` | Done |
-| Command Palette (`Cmd+P`) | `CommandPalette.tsx` | Done |
+| Componente                               | Package                     | Estado |
+| ---------------------------------------- | --------------------------- | ------ |
+| `CommandRegistry`                        | `@readied/command-registry` | Done   |
+| `CommandDefinition` types                | `@readied/command-registry` | Done   |
+| Editor commands (14)                     | `definitions/editor.ts`     | Done   |
+| App commands (7)                         | `definitions/app.ts`        | Done   |
+| `useCommandKeybindings` hook             | desktop renderer            | Done   |
+| `useCommandRegistry` hook                | desktop renderer            | Done   |
+| `PluginManifest` + `PluginContext` types | `@readied/plugin-api`       | Done   |
+| `PluginRegistry` lifecycle               | `@readied/plugin-api`       | Done   |
+| `PluginHost` React component             | `@readied/plugin-api`       | Done   |
+| `EditorAPI` (safe subset)                | `@readied/plugin-api`       | Done   |
+| `AppAPI` (read-only)                     | `@readied/plugin-api`       | Done   |
+| `LayoutManager` + zones (6)              | `@readied/plugin-api`       | Done   |
+| `editorPluginStore` (CM6 extensions)     | `@readied/plugin-api`       | Done   |
+| Word Count plugin (example)              | `plugins/wordCount.tsx`     | Done   |
+| Command Palette (`Cmd+P`)                | `CommandPalette.tsx`        | Done   |
 
 ### Architecture snapshot
 
@@ -48,14 +48,14 @@ PluginHost (React, headless)
 
 ### Layout zones disponibles
 
-| Zone | Donde aparece |
-|---|---|
-| `sidebar-section` | Sidebar widgets |
-| `editor-toolbar` | Formatting toolbar additions |
-| `editor-status-bar` | Status bar (word count vive aca) |
-| `editor-header-actions` | Header button area |
-| `panel` | Floating/docked panels |
-| `modal` | Modal dialogs |
+| Zone                    | Donde aparece                    |
+| ----------------------- | -------------------------------- |
+| `sidebar-section`       | Sidebar widgets                  |
+| `editor-toolbar`        | Formatting toolbar additions     |
+| `editor-status-bar`     | Status bar (word count vive aca) |
+| `editor-header-actions` | Header button area               |
+| `panel`                 | Floating/docked panels           |
+| `modal`                 | Modal dialogs                    |
 
 ### Stubs / deuda tecnica de Phase 1
 
@@ -82,13 +82,13 @@ Permitir que plugins registren commands en el `CommandRegistry` global.
 // packages/plugin-api/src/types.ts
 interface PluginCommandAPI {
   register(command: {
-    id: string;           // se prefija automatico: "plugin:{pluginId}:{id}"
+    id: string; // se prefija automatico: "plugin:{pluginId}:{id}"
     name: string;
     category?: CommandCategory;
     keybinding?: KeyBinding;
     icon?: string;
     execute: () => boolean | void;
-  }): () => void;         // retorna unregister
+  }): () => void; // retorna unregister
 }
 ```
 
@@ -101,6 +101,7 @@ interface PluginCommandAPI {
 3. **Command Palette** — ya funciona. Los plugin commands aparecen automaticamente porque filtra `registry.getAll()`.
 
 **Archivos a tocar:**
+
 - `packages/plugin-api/src/types.ts` — agregar `PluginCommandAPI` a `PluginContext`
 - `packages/plugin-api/src/lifecycle/PluginRegistry.ts` — crear command API en activate
 - `packages/command-registry/src/types.ts` — agregar category `'plugin'` (opcional)
@@ -154,6 +155,7 @@ config: {
 4. **Hydration:** Al activar un plugin, pre-cargar su config desde SQLite y meterla en un cache sync.
 
 **Archivos a tocar:**
+
 - `packages/storage-sqlite/src/migrations/` — nueva migration
 - `apps/desktop/src/main/` — IPC handlers
 - `apps/desktop/src/preload/` — expose pluginConfig
@@ -218,15 +220,15 @@ Implementacion: `createAppAPI()` factory en `packages/plugin-api/src/app/createA
 
 ### Completado
 
-| Componente | Package | Estado |
-|---|---|---|
-| `NoteInfo` slim type | `@readied/plugin-api` | Done |
-| `createAppAPI()` factory | `@readied/plugin-api` | Done |
-| `AppAPIWithEvents` + `AppAPIBridge` | `@readied/plugin-api` | Done |
-| Extended `AppAPI` (getNoteById, getNoteTags, getBacklinks) | `@readied/plugin-api` | Done |
-| App events (onNoteSelected, onNoteCreated, onNoteDeleted) | `@readied/plugin-api` | Done |
-| Bridge wiring in App.tsx | `@readied/desktop` | Done |
-| Editor event bridge (doc/selection changed) | `@readied/desktop` | Done |
+| Componente                                                 | Package               | Estado |
+| ---------------------------------------------------------- | --------------------- | ------ |
+| `NoteInfo` slim type                                       | `@readied/plugin-api` | Done   |
+| `createAppAPI()` factory                                   | `@readied/plugin-api` | Done   |
+| `AppAPIWithEvents` + `AppAPIBridge`                        | `@readied/plugin-api` | Done   |
+| Extended `AppAPI` (getNoteById, getNoteTags, getBacklinks) | `@readied/plugin-api` | Done   |
+| App events (onNoteSelected, onNoteCreated, onNoteDeleted)  | `@readied/plugin-api` | Done   |
+| Bridge wiring in App.tsx                                   | `@readied/desktop`    | Done   |
+| Editor event bridge (doc/selection changed)                | `@readied/desktop`    | Done   |
 
 ### 3.3 Editor Decorations API (DONE)
 
@@ -242,11 +244,11 @@ Wrapper sobre CM6 `Decoration` + `StateField` + `WidgetType`. Disponible en `Plu
 
 ### 3.4 More Layout Zones (DONE)
 
-| Zone | Donde aparece |
-|---|---|
-| `settings-section` | SettingsModal, antes de About |
-| `note-list-footer` | NoteList, antes del notebook picker |
-| `command-palette-footer` | CommandPalette, debajo de la lista |
+| Zone                     | Donde aparece                       |
+| ------------------------ | ----------------------------------- |
+| `settings-section`       | SettingsModal, antes de About       |
+| `note-list-footer`       | NoteList, antes del notebook picker |
+| `command-palette-footer` | CommandPalette, debajo de la lista  |
 
 Total: 9 layout zones disponibles.
 
@@ -258,20 +260,20 @@ Total: 9 layout zones disponibles.
 
 ### Completado
 
-| Componente | Package | Estado |
-|---|---|---|
-| `plugins` path en `DataPaths` | `@readied/storage-core` | Done |
-| `plugin_registry` migration | `@readied/storage-sqlite` | Done |
-| `pluginScanner.ts` (filesystem scan) | `@readied/desktop` main | Done |
-| Plugin IPC handlers (scan, enable, disable, listState) | `@readied/desktop` main | Done |
-| Preload `plugins` API bridge | `@readied/desktop` preload | Done |
-| `loadPluginFromSource()` (CJS eval via `new Function`) | `@readied/plugin-api` | Done |
-| `pluginRuntimeStore` (Zustand vanilla, race-safe) | `@readied/desktop` renderer | Done |
-| Discovered plugins wired into `PluginHost` | `@readied/desktop` renderer | Done |
-| Plugins section in SettingsApp (list + toggle + reload) | `@readied/desktop` renderer | Done |
-| Cross-window plugin reload (`plugins:requestReload` IPC) | `@readied/desktop` main/preload | Done |
-| Plugin config UI from `configSchema` in manifest.json | `@readied/desktop` renderer | Done |
-| `CommandRegistry` snapshot caching (fix infinite re-render) | `@readied/command-registry` | Done |
+| Componente                                                  | Package                         | Estado |
+| ----------------------------------------------------------- | ------------------------------- | ------ |
+| `plugins` path en `DataPaths`                               | `@readied/storage-core`         | Done   |
+| `plugin_registry` migration                                 | `@readied/storage-sqlite`       | Done   |
+| `pluginScanner.ts` (filesystem scan)                        | `@readied/desktop` main         | Done   |
+| Plugin IPC handlers (scan, enable, disable, listState)      | `@readied/desktop` main         | Done   |
+| Preload `plugins` API bridge                                | `@readied/desktop` preload      | Done   |
+| `loadPluginFromSource()` (CJS eval via `new Function`)      | `@readied/plugin-api`           | Done   |
+| `pluginRuntimeStore` (Zustand vanilla, race-safe)           | `@readied/desktop` renderer     | Done   |
+| Discovered plugins wired into `PluginHost`                  | `@readied/desktop` renderer     | Done   |
+| Plugins section in SettingsApp (list + toggle + reload)     | `@readied/desktop` renderer     | Done   |
+| Cross-window plugin reload (`plugins:requestReload` IPC)    | `@readied/desktop` main/preload | Done   |
+| Plugin config UI from `configSchema` in manifest.json       | `@readied/desktop` renderer     | Done   |
+| `CommandRegistry` snapshot caching (fix infinite re-render) | `@readied/command-registry`     | Done   |
 
 ### Architecture
 
@@ -308,12 +310,12 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 ### Key decisions
 
-| Decision | Rationale |
-|---|---|
-| Main reads JS, renderer evals via `new Function()` | `contextIsolation: true` blocks `require()`. Renderer needs DOM/CM6. |
-| `plugin_registry` table for enable/disable | Persists across restarts. Separate from `plugin_config`. |
-| No row = enabled by default | User installed it → they want it. Only persist when explicitly disabled. |
-| Cached snapshot in `CommandRegistry` | `useSyncExternalStore` requires referential stability. |
+| Decision                                           | Rationale                                                                |
+| -------------------------------------------------- | ------------------------------------------------------------------------ |
+| Main reads JS, renderer evals via `new Function()` | `contextIsolation: true` blocks `require()`. Renderer needs DOM/CM6.     |
+| `plugin_registry` table for enable/disable         | Persists across restarts. Separate from `plugin_config`.                 |
+| No row = enabled by default                        | User installed it → they want it. Only persist when explicitly disabled. |
+| Cached snapshot in `CommandRegistry`               | `useSyncExternalStore` requires referential stability.                   |
 
 ---
 
@@ -323,26 +325,26 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 ### Completado
 
-| Componente | Package | Estado |
-|---|---|---|
-| Active Line Highlight plugin (proves decorations + app events + editor events) | `@readied/desktop` renderer | Done |
-| Event auto-cleanup in `PluginRegistry.deactivate()` | `@readied/plugin-api` | Done |
-| Tracked event wrappers (editor + app APIs) | `@readied/plugin-api` | Done |
-| Test suite: validation (23 tests) | `@readied/plugin-api` | Done |
-| Test suite: registry lifecycle + auto-cleanup (25 tests) | `@readied/plugin-api` | Done |
-| Test suite: loadPluginFromSource (7 tests) | `@readied/plugin-api` | Done |
-| Test suite: createAppAPI (9 tests) | `@readied/plugin-api` | Done |
-| Test suite: createEditorAPI (12 tests) | `@readied/plugin-api` | Done |
-| Test suite: layoutStore (9 tests) | `@readied/plugin-api` | Done |
-| Test suite: editorPluginStore (6 tests) | `@readied/plugin-api` | Done |
-| Dead code cleanup (SettingsModal.tsx + CSS) | `@readied/desktop` renderer | Done |
+| Componente                                                                     | Package                     | Estado |
+| ------------------------------------------------------------------------------ | --------------------------- | ------ |
+| Active Line Highlight plugin (proves decorations + app events + editor events) | `@readied/desktop` renderer | Done   |
+| Event auto-cleanup in `PluginRegistry.deactivate()`                            | `@readied/plugin-api`       | Done   |
+| Tracked event wrappers (editor + app APIs)                                     | `@readied/plugin-api`       | Done   |
+| Test suite: validation (23 tests)                                              | `@readied/plugin-api`       | Done   |
+| Test suite: registry lifecycle + auto-cleanup (25 tests)                       | `@readied/plugin-api`       | Done   |
+| Test suite: loadPluginFromSource (7 tests)                                     | `@readied/plugin-api`       | Done   |
+| Test suite: createAppAPI (9 tests)                                             | `@readied/plugin-api`       | Done   |
+| Test suite: createEditorAPI (12 tests)                                         | `@readied/plugin-api`       | Done   |
+| Test suite: layoutStore (9 tests)                                              | `@readied/plugin-api`       | Done   |
+| Test suite: editorPluginStore (6 tests)                                        | `@readied/plugin-api`       | Done   |
+| Dead code cleanup (SettingsModal.tsx + CSS)                                    | `@readied/desktop` renderer | Done   |
 
 ### Built-in plugins
 
-| Plugin | APIs probadas | Archivo |
-|---|---|---|
-| Word Count | layout, editor (onDocChanged, getWordCount, getCharCount, getLineCount), registerCommand | `plugins/wordCount.tsx` |
-| Typewriter Mode | registerExtensions (CM6), config (persistence), registerCommand | `plugins/typewriterMode.ts` |
+| Plugin                | APIs probadas                                                                                              | Archivo                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| Word Count            | layout, editor (onDocChanged, getWordCount, getCharCount, getLineCount), registerCommand                   | `plugins/wordCount.tsx`          |
+| Typewriter Mode       | registerExtensions (CM6), config (persistence), registerCommand                                            | `plugins/typewriterMode.ts`      |
 | Active Line Highlight | decorations (addLineHighlight), editor (onSelectionChanged), app (onNoteSelected), config, registerCommand | `plugins/activeLineHighlight.ts` |
 
 ### Event auto-cleanup
@@ -378,13 +380,13 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 ## Decision log
 
-| Decision | Alternativa rechazada | Razon |
-|---|---|---|
-| Plugins en renderer process | Proceso separado | Simplicidad. Re-evaluar en Phase 5 |
-| `PluginConfigAPI` sync get, async set | Full async | Plugins necesitan config sync en render. Cache hydrated en activate |
-| Command IDs prefijados | Namespace libre | Prevenir colisiones. `plugin:{pluginId}:{commandId}` |
-| Read-only AppAPI | Full CRUD | Principio de minimo privilegio. Escritura solo via EditorAPI |
-| No manifest.json en Phase 1-2 | JSON desde el inicio | Built-in plugins no necesitan JSON. Lo agregamos en Phase 4 |
-| Layout zones on-demand | Pre-crear todas | YAGNI. Solo crear zones cuando un plugin real las necesite |
-| `pluginRuntimeStore` (Zustand vanilla) | React hook with `reloadKey` | Reload es infra de runtime, no UI state. Scan generation counter para race safety |
-| Event auto-cleanup via tracked wrappers | Manual cleanup only | Safety net: plugins that forget to unsubscribe don't leak. Zero overhead when plugins clean up properly |
+| Decision                                | Alternativa rechazada       | Razon                                                                                                   |
+| --------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Plugins en renderer process             | Proceso separado            | Simplicidad. Re-evaluar en Phase 5                                                                      |
+| `PluginConfigAPI` sync get, async set   | Full async                  | Plugins necesitan config sync en render. Cache hydrated en activate                                     |
+| Command IDs prefijados                  | Namespace libre             | Prevenir colisiones. `plugin:{pluginId}:{commandId}`                                                    |
+| Read-only AppAPI                        | Full CRUD                   | Principio de minimo privilegio. Escritura solo via EditorAPI                                            |
+| No manifest.json en Phase 1-2           | JSON desde el inicio        | Built-in plugins no necesitan JSON. Lo agregamos en Phase 4                                             |
+| Layout zones on-demand                  | Pre-crear todas             | YAGNI. Solo crear zones cuando un plugin real las necesite                                              |
+| `pluginRuntimeStore` (Zustand vanilla)  | React hook with `reloadKey` | Reload es infra de runtime, no UI state. Scan generation counter para race safety                       |
+| Event auto-cleanup via tracked wrappers | Manual cleanup only         | Safety net: plugins that forget to unsubscribe don't leak. Zero overhead when plugins clean up properly |

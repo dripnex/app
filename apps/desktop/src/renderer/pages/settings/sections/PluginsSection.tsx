@@ -73,9 +73,7 @@ export function PluginsSection() {
   // Toggle plugin enabled/disabled
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
     await window.readied.plugins.setEnabled(pluginId, enabled);
-    setPlugins(prev =>
-      prev.map(p => (p.id === pluginId ? { ...p, enabled } : p))
-    );
+    setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
   }, []);
 
   // Update a plugin config value
@@ -108,7 +106,9 @@ export function PluginsSection() {
   };
 
   // Plugins that have configSchema and are enabled
-  const configurablePlugins = plugins.filter(p => p.enabled && p.configSchema && Object.keys(p.configSchema).length > 0);
+  const configurablePlugins = plugins.filter(
+    p => p.enabled && p.configSchema && Object.keys(p.configSchema).length > 0
+  );
 
   return (
     <div className={styles.section}>
@@ -208,15 +208,8 @@ export function PluginsSection() {
               </button>
             </SettingRow>
             {pluginsPath && (
-              <SettingRow
-                label="Open Plugins Folder"
-                description={pluginsPath}
-              >
-                <button
-                  type="button"
-                  className={styles.actionButton}
-                  onClick={handleOpenFolder}
-                >
+              <SettingRow label="Open Plugins Folder" description={pluginsPath}>
+                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
                   <FolderOpen size={14} />
                   <span>Open Folder</span>
                 </button>

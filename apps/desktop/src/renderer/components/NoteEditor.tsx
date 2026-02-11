@@ -244,10 +244,7 @@ export function NoteEditor({
         />
       )}
       <div ref={toolbarRowRef} className="note-editor-toolbar-row">
-        <FormattingToolbar
-          onVisibilityChange={setToolbarVisibility}
-          containerRef={toolbarRowRef}
-        />
+        <FormattingToolbar onVisibilityChange={setToolbarVisibility} containerRef={toolbarRowRef} />
         <LayoutZone name="editor-toolbar" />
       </div>
       <div className={`note-editor-body note-editor-body--${viewMode}`}>

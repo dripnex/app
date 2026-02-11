@@ -242,9 +242,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                     </span>
                     <span className="command-palette-item-name">{cmd.name}</span>
                     <span className="command-palette-item-category">{group.label}</span>
-                    {kbLabel && (
-                      <kbd className="command-palette-item-kbd">{kbLabel}</kbd>
-                    )}
+                    {kbLabel && <kbd className="command-palette-item-kbd">{kbLabel}</kbd>}
                   </div>
                 );
               });

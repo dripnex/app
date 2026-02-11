@@ -27,7 +27,14 @@ interface PluginHostProps {
  * />
  * ```
  */
-export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, configBridge, getView }: PluginHostProps) {
+export function PluginHost({
+  plugins,
+  editorAPI,
+  appAPI,
+  registerCommand,
+  configBridge,
+  getView,
+}: PluginHostProps) {
   const registryRef = useRef<PluginRegistry | null>(null);
 
   if (!registryRef.current) {
@@ -46,7 +53,14 @@ export function PluginHost({ plugins, editorAPI, appAPI, registerCommand, config
         if (cancelled) return;
         const loaded = registry.load(manifest);
         if (!loaded) continue; // validation failed, skip
-        await registry.activate(manifest.id, editorAPI, appAPI, registerCommand, configBridge, getView);
+        await registry.activate(
+          manifest.id,
+          editorAPI,
+          appAPI,
+          registerCommand,
+          configBridge,
+          getView
+        );
         if (cancelled) return; // cleanup started during activate — stop
       }
     };

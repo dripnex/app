@@ -29,23 +29,29 @@ export function createAppAPI(bridge: AppAPIBridge): AppAPIWithEvents {
   return {
     // Delegate to bridge
     getCurrentNote: () => bridge.getCurrentNote(),
-    searchNotes: (query) => bridge.searchNotes(query),
-    getNoteById: (id) => bridge.getNoteById(id),
-    getNoteTags: (noteId) => bridge.getNoteTags(noteId),
-    getBacklinks: (noteId) => bridge.getBacklinks(noteId),
+    searchNotes: query => bridge.searchNotes(query),
+    getNoteById: id => bridge.getNoteById(id),
+    getNoteTags: noteId => bridge.getNoteTags(noteId),
+    getBacklinks: noteId => bridge.getBacklinks(noteId),
 
     // Event subscriptions (return unsubscribe fn)
     onNoteSelected(cb) {
       noteSelectedListeners.add(cb);
-      return () => { noteSelectedListeners.delete(cb); };
+      return () => {
+        noteSelectedListeners.delete(cb);
+      };
     },
     onNoteCreated(cb) {
       noteCreatedListeners.add(cb);
-      return () => { noteCreatedListeners.delete(cb); };
+      return () => {
+        noteCreatedListeners.delete(cb);
+      };
     },
     onNoteDeleted(cb) {
       noteDeletedListeners.add(cb);
-      return () => { noteDeletedListeners.delete(cb); };
+      return () => {
+        noteDeletedListeners.delete(cb);
+      };
     },
 
     // Internal notify methods (called by host)

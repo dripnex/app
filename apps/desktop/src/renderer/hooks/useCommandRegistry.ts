@@ -75,10 +75,7 @@ for (const def of editorCommands) {
 const emptySnapshot: RegisteredCommand[] = [];
 
 export function useCommandRegistry(): RegisteredCommand[] {
-  const subscribe = useCallback(
-    (listener: () => void) => registry.subscribe(listener),
-    []
-  );
+  const subscribe = useCallback((listener: () => void) => registry.subscribe(listener), []);
   const getSnapshot = useCallback((): RegisteredCommand[] => {
     const all = registry.getAll();
     return all.length > 0 ? all : emptySnapshot;

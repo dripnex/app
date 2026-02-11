@@ -77,9 +77,10 @@ class DomWidgetType extends WidgetType {
  * Create an EditorDecorationAPI bound to a getView accessor.
  * Returns the API + the CM6 extension that must be registered via registerExtensions().
  */
-export function createDecorationAPI(
-  getView: () => EditorView | null,
-): { api: EditorDecorationAPI; extension: Extension } {
+export function createDecorationAPI(getView: () => EditorView | null): {
+  api: EditorDecorationAPI;
+  extension: Extension;
+} {
   const api: EditorDecorationAPI = {
     addLineHighlight(line, className) {
       const view = getView();
