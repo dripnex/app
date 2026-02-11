@@ -253,50 +253,66 @@ No crear zones anticipadamente. Solo cuando un plugin real las necesite.
 
 ---
 
-## Phase 4: Plugin Discovery + Loading
+## Phase 4: Plugin Discovery + Loading (DONE)
 
 **Goal:** Cargar plugins desde el filesystem, no solo desde el bundle.
 
-### 4.1 Plugin Directory
+### Completado
+
+| Componente | Package | Estado |
+|---|---|---|
+| `plugins` path en `DataPaths` | `@readied/storage-core` | Done |
+| `plugin_registry` migration | `@readied/storage-sqlite` | Done |
+| `pluginScanner.ts` (filesystem scan) | `@readied/desktop` main | Done |
+| Plugin IPC handlers (scan, enable, disable, listState) | `@readied/desktop` main | Done |
+| Preload `plugins` API bridge | `@readied/desktop` preload | Done |
+| `loadPluginFromSource()` (CJS eval via `new Function`) | `@readied/plugin-api` | Done |
+| `useDiscoveredPlugins` hook | `@readied/desktop` renderer | Done |
+| Discovered plugins wired into `PluginHost` | `@readied/desktop` renderer | Done |
+| Plugins section in SettingsModal (list + toggle) | `@readied/desktop` renderer | Done |
+| `CommandRegistry` snapshot caching (fix infinite re-render) | `@readied/command-registry` | Done |
+
+### Architecture
 
 ```
-~/.config/Readied/plugins/
+Filesystem                    Main Process              Renderer
+─────────                    ────────────              ────────
+plugins/
+  my-plugin/
+    manifest.json  ──scan──▶ Read manifest.json
+    index.js       ──read──▶ Read JS as string ──IPC──▶ new Function() evaluate
+                                                       → PluginManifest object
+                                                       → PluginRegistry.load()
+                                                       → PluginRegistry.activate()
+```
+
+### Plugin format
+
+```
+~/Library/Application Support/@readied/desktop/plugins/
   my-plugin/
     manifest.json    # { id, name, version, main }
-    index.js         # Bundled plugin code
+    index.js         # Pre-bundled CJS module
 ```
 
-### 4.2 Plugin Loader
-
-```ts
-// packages/plugin-api/src/loader/PluginLoader.ts
-class PluginLoader {
-  async scanPluginDir(): Promise<PluginManifest[]>;
-  async loadPlugin(path: string): Promise<PluginManifest>;
-}
-```
-
-- Lee `manifest.json`
-- Valida con `validateManifest()`
-- `require()` o `import()` el entry point
-- Retorna manifest con `activate` ya resuelto
-
-### 4.3 Security Model
+### Security Model
 
 Fase inicial: **trusted plugins only**. No sandbox.
 
-- Plugins corren en el renderer process con acceso completo al DOM
+- Plugins corren en el renderer process (necesitan DOM/React/CM6)
+- Main process lee JS como string, renderer evalua via `new Function()`
 - Solo se cargan plugins instalados manualmente por el usuario
 - La API surface limita que pueden hacer (no acceso directo a SQLite o fs)
-- Futuro: evaluar `vm2`, Workers, o proceso separado si el modelo de amenaza lo requiere
+- Futuro: evaluar Workers o proceso separado si el modelo de amenaza lo requiere
 
-### 4.4 Plugin Manager UI
+### Key decisions
 
-Settings panel con:
-- Lista de plugins instalados (nombre, version, estado)
-- Toggle enable/disable
-- Boton reload
-- Link a plugin config (si tiene `configSchema`)
+| Decision | Rationale |
+|---|---|
+| Main reads JS, renderer evals via `new Function()` | `contextIsolation: true` blocks `require()`. Renderer needs DOM/CM6. |
+| `plugin_registry` table for enable/disable | Persists across restarts. Separate from `plugin_config`. |
+| No row = enabled by default | User installed it → they want it. Only persist when explicitly disabled. |
+| Cached snapshot in `CommandRegistry` | `useSyncExternalStore` requires referential stability. |
 
 ---
 

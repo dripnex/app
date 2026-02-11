@@ -2,12 +2,23 @@ import { useState, useEffect } from 'react';
 import type { PluginManifest } from '@readied/plugin-api';
 import { loadPluginFromSource } from '@readied/plugin-api';
 
+export interface PluginLoadError {
+  pluginId: string;
+  pluginName: string;
+  reason: string;
+}
+
+export interface DiscoveredPluginsResult {
+  plugins: PluginManifest[];
+  errors: PluginLoadError[];
+}
+
 /**
  * Scans for filesystem plugins on mount, filters by enabled state,
- * evaluates JS source, and returns loaded PluginManifest[].
+ * evaluates JS source, and returns loaded PluginManifest[] + any errors.
  */
-export function useDiscoveredPlugins(): PluginManifest[] {
-  const [plugins, setPlugins] = useState<PluginManifest[]>([]);
+export function useDiscoveredPlugins(): DiscoveredPluginsResult {
+  const [result, setResult] = useState<DiscoveredPluginsResult>({ plugins: [], errors: [] });
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +36,8 @@ export function useDiscoveredPlugins(): PluginManifest[] {
         const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
 
         const loaded: PluginManifest[] = [];
+        const errors: PluginLoadError[] = [];
+
         for (const sp of scanned) {
           const enabled = stateMap.get(sp.id) ?? true;
           if (!enabled) continue;
@@ -32,11 +45,17 @@ export function useDiscoveredPlugins(): PluginManifest[] {
           const manifest = loadPluginFromSource(sp.code, sp.id);
           if (manifest) {
             loaded.push(manifest);
+          } else {
+            errors.push({
+              pluginId: sp.id,
+              pluginName: sp.name,
+              reason: 'Failed to load plugin code',
+            });
           }
         }
 
         if (!cancelled) {
-          setPlugins(loaded);
+          setResult({ plugins: loaded, errors });
         }
       } catch (error) {
         console.error('[useDiscoveredPlugins] Failed to discover plugins:', error);
@@ -50,5 +69,5 @@ export function useDiscoveredPlugins(): PluginManifest[] {
     };
   }, []);
 
-  return plugins;
+  return result;
 }

@@ -248,6 +248,7 @@ export function NoteEditor({
           onVisibilityChange={setToolbarVisibility}
           containerRef={toolbarRowRef}
         />
+        <LayoutZone name="editor-toolbar" />
       </div>
       <div className={`note-editor-body note-editor-body--${viewMode}`}>
         {showEditor && (
@@ -337,6 +338,9 @@ export function NoteEditor({
       {lightbox && (
         <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
       )}
+
+      {/* Plugin Modals */}
+      <LayoutZone name="modal" />
     </main>
   );
 }

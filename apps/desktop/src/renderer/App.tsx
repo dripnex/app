@@ -8,7 +8,8 @@ import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
 import { LicenseProvider } from './contexts/LicenseContext';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
+import type { PluginLoadError } from './hooks/useDiscoveredPlugins';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -38,6 +39,19 @@ import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
 import { useDiscoveredPlugins } from './hooks/useDiscoveredPlugins';
+
+/** Shows toast errors for plugins that failed to load */
+function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    for (const err of errors) {
+      showToast(`Plugin "${err.pluginName}" failed to load`, 'error');
+    }
+  }, [errors, showToast]);
+
+  return null;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -383,7 +397,7 @@ function NotesApp() {
   });
 
   const builtInPlugins = useMemo(() => [wordCountPlugin], []);
-  const discoveredPlugins = useDiscoveredPlugins();
+  const { plugins: discoveredPlugins, errors: pluginErrors } = useDiscoveredPlugins();
   const allPlugins = useMemo(
     () => [...builtInPlugins, ...discoveredPlugins],
     [builtInPlugins, discoveredPlugins]
@@ -524,6 +538,8 @@ function NotesApp() {
           />
 
           <CommandPalette isOpen={isCommandPaletteOpen} onClose={closeCommandPalette} />
+
+          <PluginErrorNotifier errors={pluginErrors} />
         </div>
       </LicenseProvider>
     </ToastProvider>
