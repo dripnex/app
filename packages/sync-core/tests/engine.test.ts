@@ -587,4 +587,456 @@ describe('SyncEngine', () => {
       expect(engine.getStatus().status).toBe('conflict');
     });
   });
+
+  // ==========================================================================
+  // Edge Cases
+  // ==========================================================================
+
+  describe('edge cases', () => {
+    it('handles mixed note and notebook push with partial failures', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      // Notes push succeeds
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Test',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 1,
+        },
+      ]);
+      vi.mocked(client.pushNotes).mockResolvedValue({
+        synced: ['note_1'],
+        conflicts: [],
+        errors: [],
+      });
+
+      // Notebooks push also succeeds
+      vi.mocked(storage.getModifiedNotebooks).mockResolvedValue([
+        {
+          id: 'nb_1',
+          name: 'Work',
+          parentId: null,
+          depth: 0,
+          order: 0,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          localVersion: 1,
+        },
+      ]);
+      vi.mocked(client.pushNotebooks).mockResolvedValue({
+        synced: ['nb_1'],
+        conflicts: [],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      expect(storage.markNotesSynced).toHaveBeenCalledWith(['note_1'], expect.any(Number));
+      expect(storage.markNotebooksSynced).toHaveBeenCalledWith(['nb_1'], expect.any(Number));
+      expect(engine.getStatus().status).toBe('idle');
+    });
+
+    it('error during notebook pull sets error status', async () => {
+      const { engine, client } = createEngine();
+      await engine.enable();
+
+      vi.mocked(client.pullNotebooks).mockRejectedValue(new Error('Notebook pull failed'));
+
+      await engine.sync();
+
+      const status = engine.getStatus();
+      expect(status.status).toBe('error');
+      if (status.status === 'error') {
+        expect(status.message).toBe('Notebook pull failed');
+      }
+    });
+
+    it('error during note push still sets error status', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Test',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 1,
+        },
+      ]);
+      vi.mocked(client.pushNotes).mockRejectedValue(new Error('Push failed'));
+
+      await engine.sync();
+
+      expect(engine.getStatus().status).toBe('error');
+    });
+
+    it('merges conflicts from both note and notebook pushes', async () => {
+      const onConflict = vi.fn();
+      const { engine, client, storage } = createEngine({
+        defaultConflictStrategy: 'manual',
+        onConflict,
+      });
+      await engine.enable();
+
+      // Note conflict
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Test',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 1,
+        },
+      ]);
+      const noteConflict = {
+        entityType: 'note' as const,
+        entityId: 'note_1',
+        conflictType: 'update-update' as const,
+        localVersion: {},
+        remoteVersion: {},
+        localUpdatedAt: '2025-01-01T00:00:00Z',
+        remoteUpdatedAt: '2025-01-01T00:00:00Z',
+      };
+      vi.mocked(client.pushNotes).mockResolvedValue({
+        synced: [],
+        conflicts: [noteConflict],
+        errors: [],
+      });
+
+      // Notebook conflict
+      vi.mocked(storage.getModifiedNotebooks).mockResolvedValue([
+        {
+          id: 'nb_1',
+          name: 'Work',
+          parentId: null,
+          depth: 0,
+          order: 0,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          localVersion: 1,
+        },
+      ]);
+      const nbConflict = {
+        entityType: 'notebook' as const,
+        entityId: 'nb_1',
+        conflictType: 'update-update' as const,
+        localVersion: {},
+        remoteVersion: {},
+        localUpdatedAt: '2025-01-01T00:00:00Z',
+        remoteUpdatedAt: '2025-01-01T00:00:00Z',
+      };
+      vi.mocked(client.pushNotebooks).mockResolvedValue({
+        synced: [],
+        conflicts: [nbConflict],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      // Both conflicts should be reported
+      expect(onConflict).toHaveBeenCalledWith(
+        expect.arrayContaining([noteConflict, nbConflict])
+      );
+      expect(engine.getStatus().status).toBe('conflict');
+    });
+
+    it('empty first sync works correctly', async () => {
+      const { engine, storage, client } = createEngine();
+      await engine.enable();
+
+      // No local changes, no remote changes
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([]);
+      vi.mocked(storage.getModifiedNotebooks).mockResolvedValue([]);
+      vi.mocked(client.pullNotebooks).mockResolvedValue({
+        notebooks: [],
+        cursor: '0',
+        hasMore: false,
+      });
+      vi.mocked(client.pullNotes).mockResolvedValue({
+        notes: [],
+        cursor: '0',
+        hasMore: false,
+      });
+
+      await engine.sync();
+
+      expect(engine.getStatus().status).toBe('idle');
+      expect(storage.setLastSyncedAt).toHaveBeenCalled();
+      // pushNotes and pushNotebooks should NOT be called (empty lists)
+      expect(client.pushNotes).not.toHaveBeenCalled();
+      expect(client.pushNotebooks).not.toHaveBeenCalled();
+    });
+
+    it('auto-resolves with remote-wins strategy', async () => {
+      const { engine, client, storage } = createEngine({
+        defaultConflictStrategy: 'remote-wins',
+      });
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Local',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-02T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 2,
+        },
+      ]);
+
+      vi.mocked(client.pushNotes).mockResolvedValue({
+        synced: [],
+        conflicts: [
+          {
+            entityType: 'note',
+            entityId: 'note_1',
+            conflictType: 'update-update',
+            localVersion: { content: '# Local' },
+            remoteVersion: { content: '# Remote' },
+            localUpdatedAt: '2025-01-02T00:00:00Z',
+            remoteUpdatedAt: '2025-01-01T12:00:00Z',
+          },
+        ],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      expect(client.resolveNoteConflict).toHaveBeenCalledWith('note_1', {
+        entityId: 'note_1',
+        strategy: 'remote-wins',
+      });
+    });
+
+    it('auto-resolves with latest-wins comparing timestamps', async () => {
+      const { engine, client, storage } = createEngine({
+        defaultConflictStrategy: 'latest-wins',
+      });
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Local',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-03T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 3,
+        },
+      ]);
+
+      vi.mocked(client.pushNotes).mockResolvedValue({
+        synced: [],
+        conflicts: [
+          {
+            entityType: 'note',
+            entityId: 'note_1',
+            conflictType: 'update-update',
+            localVersion: {},
+            remoteVersion: {},
+            // Local is newer
+            localUpdatedAt: '2025-01-03T00:00:00Z',
+            remoteUpdatedAt: '2025-01-02T00:00:00Z',
+          },
+        ],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      // Latest-wins: local is newer, so local-wins
+      expect(client.resolveNoteConflict).toHaveBeenCalledWith('note_1', {
+        entityId: 'note_1',
+        strategy: 'local-wins',
+      });
+    });
+
+    it('latest-wins picks remote when remote is newer', async () => {
+      const { engine, client, storage } = createEngine({
+        defaultConflictStrategy: 'latest-wins',
+      });
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Old',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 1,
+        },
+      ]);
+
+      vi.mocked(client.pushNotes).mockResolvedValue({
+        synced: [],
+        conflicts: [
+          {
+            entityType: 'note',
+            entityId: 'note_1',
+            conflictType: 'update-update',
+            localVersion: {},
+            remoteVersion: {},
+            // Remote is newer
+            localUpdatedAt: '2025-01-01T00:00:00Z',
+            remoteUpdatedAt: '2025-01-03T00:00:00Z',
+          },
+        ],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      expect(client.resolveNoteConflict).toHaveBeenCalledWith('note_1', {
+        entityId: 'note_1',
+        strategy: 'remote-wins',
+      });
+    });
+
+    it('uses existing cursors for pull operations', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      // Set existing cursors
+      vi.mocked(storage.getCursor).mockImplementation(async (entityType: string) => {
+        if (entityType === 'note') return '50';
+        if (entityType === 'notebook') return '25';
+        return null;
+      });
+
+      await engine.sync();
+
+      // Should pass existing cursors to pull
+      expect(client.pullNotebooks).toHaveBeenCalledWith('25', DEVICE_ID, 100);
+      expect(client.pullNotes).toHaveBeenCalledWith('50', DEVICE_ID, 100);
+    });
+
+    it('resolveConflict triggers a re-sync', async () => {
+      const { engine, client } = createEngine();
+      await engine.enable();
+
+      await engine.resolveConflict('note_1', 'remote');
+
+      expect(client.resolveNoteConflict).toHaveBeenCalledWith('note_1', {
+        entityId: 'note_1',
+        strategy: 'remote-wins',
+      });
+      // sync() should have been called after resolve
+      expect(client.pullNotebooks).toHaveBeenCalled();
+      expect(client.pullNotes).toHaveBeenCalled();
+    });
+
+    it('handles conflict resolution failure gracefully', async () => {
+      const { engine, client, storage } = createEngine({
+        defaultConflictStrategy: 'local-wins',
+      });
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotes).mockResolvedValue([
+        {
+          id: 'note_1',
+          title: 'Test',
+          content: '# Test',
+          notebookId: null,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-01T00:00:00Z',
+          archivedAt: null,
+          isPinned: false,
+          isDeleted: false,
+          status: 'active',
+          wordCount: 1,
+          localVersion: 1,
+        },
+      ]);
+
+      vi.mocked(client.pushNotes).mockResolvedValue({
+        synced: [],
+        conflicts: [
+          {
+            entityType: 'note',
+            entityId: 'note_1',
+            conflictType: 'update-update',
+            localVersion: {},
+            remoteVersion: {},
+            localUpdatedAt: '2025-01-01T00:00:00Z',
+            remoteUpdatedAt: '2025-01-01T00:00:00Z',
+          },
+        ],
+        errors: [],
+      });
+
+      // Resolution fails
+      vi.mocked(client.resolveNoteConflict).mockRejectedValue(new Error('Server error'));
+
+      await engine.sync();
+
+      // Should fall back to conflict state since resolution failed
+      expect(engine.getStatus().status).toBe('conflict');
+    });
+
+    it('tracks progress through status callbacks', async () => {
+      const onStatusChange = vi.fn();
+      const { engine } = createEngine({ onStatusChange });
+
+      await engine.enable();
+      await engine.sync();
+
+      const progresses = onStatusChange.mock.calls
+        .map(call => call[0])
+        .filter((s: { status: string }) => s.status === 'syncing')
+        .map((s: { progress: number }) => s.progress);
+
+      // Should have increasing progress values
+      for (let i = 1; i < progresses.length; i++) {
+        expect(progresses[i]).toBeGreaterThanOrEqual(progresses[i - 1]);
+      }
+
+      // Should end with idle
+      const lastStatus = onStatusChange.mock.calls.at(-1)?.[0];
+      expect(lastStatus.status).toBe('idle');
+    });
+  });
 });
