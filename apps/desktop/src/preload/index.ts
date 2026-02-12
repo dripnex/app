@@ -641,6 +641,25 @@ export interface ReadiedAPI {
   updates: {
     /** Check for updates manually */
     checkNow: () => Promise<{ available: boolean; version?: string }>;
+    /** Start downloading the available update */
+    startDownload: () => Promise<{ ok: boolean }>;
+    /** Quit and install the downloaded update */
+    installNow: () => Promise<void>;
+    /** Subscribe to update-available events from background check */
+    onAvailable: (cb: (info: { version: string }) => void) => () => void;
+    /** Subscribe to download progress events */
+    onDownloadProgress: (
+      cb: (p: {
+        percent: number;
+        bytesPerSecond: number;
+        transferred: number;
+        total: number;
+      }) => void
+    ) => () => void;
+    /** Subscribe to download complete events */
+    onDownloadComplete: (cb: (info: { version: string }) => void) => () => void;
+    /** Subscribe to update error events */
+    onError: (cb: (err: { message: string }) => void) => () => void;
   };
   pluginConfig: {
     /** Get a single config value for a plugin */
@@ -847,6 +866,54 @@ const api: ReadiedAPI = {
   },
   updates: {
     checkNow: () => ipcRenderer.invoke('updates:checkNow'),
+    startDownload: () => ipcRenderer.invoke('updates:startDownload'),
+    installNow: () => ipcRenderer.invoke('updates:installNow'),
+    onAvailable: (cb: (info: { version: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: { version: string }) => {
+        cb(info);
+      };
+      ipcRenderer.on('updates:available', handler);
+      return () => {
+        ipcRenderer.removeListener('updates:available', handler);
+      };
+    },
+    onDownloadProgress: (
+      cb: (p: {
+        percent: number;
+        bytesPerSecond: number;
+        transferred: number;
+        total: number;
+      }) => void
+    ) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        p: { percent: number; bytesPerSecond: number; transferred: number; total: number }
+      ) => {
+        cb(p);
+      };
+      ipcRenderer.on('updates:download-progress', handler);
+      return () => {
+        ipcRenderer.removeListener('updates:download-progress', handler);
+      };
+    },
+    onDownloadComplete: (cb: (info: { version: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: { version: string }) => {
+        cb(info);
+      };
+      ipcRenderer.on('updates:download-complete', handler);
+      return () => {
+        ipcRenderer.removeListener('updates:download-complete', handler);
+      };
+    },
+    onError: (cb: (err: { message: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, err: { message: string }) => {
+        cb(err);
+      };
+      ipcRenderer.on('updates:error', handler);
+      return () => {
+        ipcRenderer.removeListener('updates:error', handler);
+      };
+    },
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),
