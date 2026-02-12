@@ -1893,9 +1893,7 @@ function registerPluginDiscoveryHandlers(): void {
     const { filePaths, canceled } = await dialog.showOpenDialog({
       title: 'Install Plugin',
       properties: ['openFile'],
-      filters: [
-        { name: 'Plugin Archive', extensions: ['tar.gz', 'tgz', 'zip'] },
-      ],
+      filters: [{ name: 'Plugin Archive', extensions: ['tar.gz', 'tgz', 'zip'] }],
       buttonLabel: 'Install',
     });
 
@@ -1925,7 +1923,7 @@ function registerPluginDiscoveryHandlers(): void {
         } else {
           cmd = `tar -xzf "${archivePath}" -C "${tmpDir}"`;
         }
-        exec(cmd, (error) => {
+        exec(cmd, error => {
           if (error) reject(error);
           else resolve();
         });
@@ -1995,9 +1993,7 @@ function registerPluginDiscoveryHandlers(): void {
     try {
       await rm(pluginDir, { recursive: true, force: true });
       // Clean up registry entry
-      database
-        .prepare('DELETE FROM plugin_registry WHERE plugin_id = ?')
-        .run(pluginId);
+      database.prepare('DELETE FROM plugin_registry WHERE plugin_id = ?').run(pluginId);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -2124,7 +2120,7 @@ app
     dataPaths = initDataPaths();
 
     // Register asset:// protocol handler (modern protocol.handle API)
-    protocol.handle('asset', (request) => {
+    protocol.handle('asset', request => {
       // asset://local/noteId/filename → assets/noteId/filename
       // Strip protocol and host (local/)
       let urlPath = decodeURIComponent(new URL(request.url).pathname);

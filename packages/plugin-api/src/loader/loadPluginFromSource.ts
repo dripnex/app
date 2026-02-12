@@ -14,7 +14,7 @@ import { assertValidManifest } from '../validation';
 export function loadPluginFromSource(code: string, expectedId: string): PluginManifest | null {
   try {
     const module = { exports: {} as Record<string, unknown> };
-     
+
     const fn = new Function('module', 'exports', code);
     fn(module, module.exports);
 

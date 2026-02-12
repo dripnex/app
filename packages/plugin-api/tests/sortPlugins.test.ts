@@ -22,10 +22,7 @@ describe('sortPlugins', () => {
   });
 
   it('sorts dependencies before dependents', () => {
-    const plugins = [
-      makePlugin('consumer', { provider: '>=1.0.0' }),
-      makePlugin('provider'),
-    ];
+    const plugins = [makePlugin('consumer', { provider: '>=1.0.0' }), makePlugin('provider')];
     const { sorted, skipped } = sortPlugins(plugins);
 
     expect(sorted.map(p => p.id)).toEqual(['provider', 'consumer']);
@@ -33,11 +30,7 @@ describe('sortPlugins', () => {
   });
 
   it('handles multi-level dependency chains', () => {
-    const plugins = [
-      makePlugin('c', { b: '*' }),
-      makePlugin('b', { a: '*' }),
-      makePlugin('a'),
-    ];
+    const plugins = [makePlugin('c', { b: '*' }), makePlugin('b', { a: '*' }), makePlugin('a')];
     const { sorted, skipped } = sortPlugins(plugins);
 
     const ids = sorted.map(p => p.id);
@@ -47,10 +40,7 @@ describe('sortPlugins', () => {
   });
 
   it('skips plugins with missing dependencies', () => {
-    const plugins = [
-      makePlugin('orphan', { 'does-not-exist': '*' }),
-      makePlugin('ok'),
-    ];
+    const plugins = [makePlugin('orphan', { 'does-not-exist': '*' }), makePlugin('ok')];
     const { sorted, skipped } = sortPlugins(plugins);
 
     expect(sorted.map(p => p.id)).toEqual(['ok']);
@@ -83,10 +73,7 @@ describe('sortPlugins', () => {
 
   it('handles circular dependencies gracefully', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const plugins = [
-      makePlugin('a', { b: '*' }),
-      makePlugin('b', { a: '*' }),
-    ];
+    const plugins = [makePlugin('a', { b: '*' }), makePlugin('b', { a: '*' })];
     const { sorted, skipped } = sortPlugins(plugins);
 
     // Both should still be included (cycle broken)
@@ -110,9 +97,7 @@ describe('sortPlugins', () => {
   });
 
   it('handles multiple missing dependencies', () => {
-    const plugins = [
-      makePlugin('broken', { dep1: '*', dep2: '*' }),
-    ];
+    const plugins = [makePlugin('broken', { dep1: '*', dep2: '*' })];
     const { sorted, skipped } = sortPlugins(plugins);
 
     expect(sorted).toEqual([]);

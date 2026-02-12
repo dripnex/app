@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EditorView } from '@codemirror/view';
-import { PluginHost, createEditorAPI, createAppAPI, editorPluginStore, useCssVariables } from '@readied/plugin-api';
+import {
+  PluginHost,
+  createEditorAPI,
+  createAppAPI,
+  editorPluginStore,
+  useCssVariables,
+} from '@readied/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
 import { useStore } from 'zustand';

@@ -250,17 +250,21 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         </div>
 
         <Markdown
-          remarkPlugins={[
-            remarkGfm,
-            remarkWikilink,
-            ...pluginRemarkRegs.map(r => r.plugin),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ] as any[]}
-          rehypePlugins={[
-            rehypeRaw,
-            ...pluginRehypeRegs.map(r => r.plugin),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ] as any[]}
+          remarkPlugins={
+            [
+              remarkGfm,
+              remarkWikilink,
+              ...pluginRemarkRegs.map(r => r.plugin),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ] as any[]
+          }
+          rehypePlugins={
+            [
+              rehypeRaw,
+              ...pluginRehypeRegs.map(r => r.plugin),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ] as any[]
+          }
           components={
             {
               input: ({ type, checked, ...props }) => {
@@ -292,9 +296,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
                 );
               },
               // Plugin-registered preview components
-              ...Object.fromEntries(
-                pluginComponentRegs.map(r => [r.tagName, r.component])
-              ),
+              ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
             } as Record<string, React.ComponentType<unknown>>
           }
         >

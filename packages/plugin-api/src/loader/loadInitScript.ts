@@ -22,13 +22,11 @@ import { assertValidManifest } from '../validation';
 export function loadInitScript(code: string): PluginManifest | null {
   try {
     const module = { exports: {} as Record<string, unknown> };
-     
+
     const fn = new Function('module', 'exports', code);
     fn(module, module.exports);
 
-    return assertValidManifest(module.exports, msg =>
-      console.warn(`[init.js] ${msg}`)
-    );
+    return assertValidManifest(module.exports, msg => console.warn(`[init.js] ${msg}`));
   } catch (error) {
     console.error('[init.js] Failed to evaluate user init script:', error);
     return null;

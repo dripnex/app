@@ -59,9 +59,7 @@ describe('initPlugin', () => {
     const dir = testDir('existing');
     await initPlugin({ name: 'Existing', dir });
 
-    await expect(initPlugin({ name: 'Existing', dir })).rejects.toThrow(
-      'Directory already exists'
-    );
+    await expect(initPlugin({ name: 'Existing', dir })).rejects.toThrow('Directory already exists');
   });
 
   it('throws for empty name', async () => {

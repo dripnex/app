@@ -105,9 +105,7 @@ function PluginCard({
       <div className={styles.pluginCardHeader}>
         <div className={styles.pluginCardInfo}>
           <div className={styles.pluginCardMeta}>
-            <span
-              className={`${styles.pluginBadge} ${isBuiltIn ? styles.pluginBadgeBuiltIn : ''}`}
-            >
+            <span className={`${styles.pluginBadge} ${isBuiltIn ? styles.pluginBadgeBuiltIn : ''}`}>
               {isBuiltIn ? 'Built-in' : 'Installed'}
             </span>
             <span className={styles.pluginName}>{name}</span>
@@ -151,9 +149,7 @@ function PluginCard({
               {Object.entries(configSchema).map(([key, field]) => {
                 const value = getConfigValue(key, field);
                 const fieldId = `plugin-config-${name}-${key}`;
-                const label = key
-                  .replace(/([A-Z])/g, ' $1')
-                  .replace(/^./, s => s.toUpperCase());
+                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
 
                 return (
                   <div key={key} className={styles.pluginConfigRow}>
@@ -359,11 +355,7 @@ export function PluginsSection() {
             <div className={styles.pluginEmptyState}>
               <p>No community plugins installed yet.</p>
               {pluginsPath && (
-                <button
-                  type="button"
-                  className={styles.actionButton}
-                  onClick={handleOpenFolder}
-                >
+                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
                   <FolderOpen size={14} />
                   <span>Open Plugins Folder</span>
                 </button>
@@ -394,11 +386,7 @@ export function PluginsSection() {
       {/* Actions bar */}
       <div style={{ marginTop: '2rem' }}>
         <div className={styles.pluginActions}>
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleInstall}
-          >
+          <button type="button" className={styles.actionButton} onClick={handleInstall}>
             <Download size={14} />
             <span>Install from File</span>
           </button>
