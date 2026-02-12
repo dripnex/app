@@ -5,14 +5,15 @@
  */
 
 import { useState } from 'react';
-import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { useSyncStore, selectStatus, selectLastSyncAt } from '../../stores/syncStore';
+import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { useSyncStore, selectStatus, selectLastSyncAt, selectConflicts } from '../../stores/syncStore';
 import { useAuthStore } from '../../stores/authStore';
 import styles from './SyncStatusIndicator.module.css';
 
 export function SyncStatusIndicator() {
   const status = useSyncStore(selectStatus);
   const lastSyncAt = useSyncStore(selectLastSyncAt);
+  const conflicts = useSyncStore(selectConflicts);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -21,7 +22,18 @@ export function SyncStatusIndicator() {
     return null;
   }
 
+  const hasConflicts = conflicts.length > 0;
+
   const getStatusInfo = () => {
+    // Conflicts override normal status display
+    if (hasConflicts) {
+      return {
+        icon: <AlertTriangle size={14} />,
+        label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — resolve in Settings`,
+        color: '#f59e0b',
+      };
+    }
+
     switch (status) {
       case 'syncing':
         return {
@@ -80,6 +92,11 @@ export function SyncStatusIndicator() {
       style={{ color }}
     >
       <div className={styles.icon}>{icon}</div>
+      {hasConflicts && (
+        <span className={styles.badge} style={{ background: '#f59e0b' }}>
+          {conflicts.length}
+        </span>
+      )}
       {showTooltip && <div className={styles.tooltip}>{label}</div>}
     </div>
   );

@@ -14,6 +14,7 @@ import {
   Sparkles,
   CreditCard,
   ExternalLink,
+  Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useSyncStore } from '../../../stores/syncStore';
@@ -34,10 +35,46 @@ export function AccountSection() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
 
+  // Device management
+  const [devicesList, setDevicesList] = useState<
+    Array<{
+      id: string;
+      deviceId: string;
+      name: string | null;
+      platform: string | null;
+      lastSeenAt: string;
+      createdAt: string;
+      isCurrent: boolean;
+    }>
+  >([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [revokingDevice, setRevokingDevice] = useState<string | null>(null);
+
   // Load session on mount
   useEffect(() => {
     loadSession();
   }, [loadSession]);
+
+  // Load devices when authenticated
+  const loadDevices = useCallback(async () => {
+    setDevicesLoading(true);
+    try {
+      const result = await window.readied.devices.list();
+      if (result.success) {
+        setDevicesList(result.devices);
+      }
+    } catch {
+      // Silent fail — devices are non-critical
+    } finally {
+      setDevicesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadDevices();
+    }
+  }, [isAuthenticated, loadDevices]);
 
   const handleSignIn = useCallback(() => {
     setShowMagicLinkFlow(true);
@@ -146,6 +183,43 @@ export function AccountSection() {
         return 'Updates Expired';
       default:
         return 'Free';
+    }
+  };
+
+  const handleRevokeDevice = useCallback(
+    async (deviceId: string) => {
+      setRevokingDevice(deviceId);
+      try {
+        const result = await window.readied.devices.revoke(deviceId);
+        if (result.success) {
+          setDevicesList(prev => prev.filter(d => d.deviceId !== deviceId));
+          setMessage('Device removed');
+        } else {
+          setMessage(result.error || 'Failed to remove device');
+        }
+      } catch (error) {
+        setMessage(`Failed to remove device: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setRevokingDevice(null);
+      }
+    },
+    []
+  );
+
+  const formatPlatform = (platform: string | null) => {
+    switch (platform) {
+      case 'darwin':
+        return 'macOS';
+      case 'win32':
+        return 'Windows';
+      case 'linux':
+        return 'Linux';
+      case 'ios':
+        return 'iOS';
+      case 'android':
+        return 'Android';
+      default:
+        return platform || 'Unknown';
     }
   };
 
@@ -299,6 +373,48 @@ export function AccountSection() {
                   </button>
                 </div>
               </SettingRow>
+            )}
+          </SettingGroup>
+
+          <SettingGroup title="Devices">
+            {devicesLoading ? (
+              <SettingRow label="Loading devices..." description="Fetching registered devices">
+                <RefreshCw size={14} className={styles.spinning} />
+              </SettingRow>
+            ) : devicesList.length === 0 ? (
+              <SettingRow
+                label="No devices"
+                description="Devices will appear here after syncing"
+              >
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={loadDevices}
+                >
+                  <RefreshCw size={14} />
+                  <span>Refresh</span>
+                </button>
+              </SettingRow>
+            ) : (
+              devicesList.map(device => (
+                <SettingRow
+                  key={device.deviceId}
+                  label={`${device.name || 'Unknown Device'}${device.isCurrent ? ' (This device)' : ''}`}
+                  description={`${formatPlatform(device.platform)} · Last seen ${new Date(device.lastSeenAt).toLocaleDateString()}`}
+                >
+                  {!device.isCurrent && (
+                    <button
+                      type="button"
+                      className={styles.dangerButton}
+                      onClick={() => handleRevokeDevice(device.deviceId)}
+                      disabled={revokingDevice === device.deviceId}
+                    >
+                      <Trash2 size={14} />
+                      <span>{revokingDevice === device.deviceId ? 'Removing...' : 'Remove'}</span>
+                    </button>
+                  )}
+                </SettingRow>
+              ))
             )}
           </SettingGroup>
         </>

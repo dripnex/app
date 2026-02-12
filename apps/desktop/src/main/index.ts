@@ -1431,6 +1431,47 @@ function registerAuthSyncHandlers(): void {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // Devices
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  ipcMain.handle('devices:list', async () => {
+    try {
+      const devicesList = await client.getDevices();
+      return { success: true, devices: devicesList };
+    } catch (error) {
+      return {
+        success: false,
+        devices: [],
+        error: error instanceof Error ? error.message : 'Failed to list devices',
+      };
+    }
+  });
+
+  ipcMain.handle('devices:revoke', async (_event, deviceId: string) => {
+    try {
+      await client.revokeDevice(deviceId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to revoke device',
+      };
+    }
+  });
+
+  ipcMain.handle('devices:rename', async (_event, deviceId: string, name: string) => {
+    try {
+      await client.renameDevice(deviceId, name);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to rename device',
+      };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // Sync
   // ═══════════════════════════════════════════════════════════════════════════
 

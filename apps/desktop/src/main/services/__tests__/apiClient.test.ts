@@ -392,4 +392,71 @@ describe('ApiClient', () => {
       expect(result.user.email).toBe('user@example.com');
     });
   });
+
+  describe('device management', () => {
+    it('lists devices', async () => {
+      const { client } = createClient();
+      const mockDevices = [
+        {
+          id: 'dev_1',
+          deviceId: 'device-uuid-1',
+          name: 'MacBook Pro',
+          platform: 'darwin',
+          lastSeenAt: '2025-06-01T00:00:00Z',
+          createdAt: '2025-01-01T00:00:00Z',
+          isCurrent: true,
+        },
+        {
+          id: 'dev_2',
+          deviceId: 'device-uuid-2',
+          name: 'iPhone 15',
+          platform: 'ios',
+          lastSeenAt: '2025-05-30T00:00:00Z',
+          createdAt: '2025-02-01T00:00:00Z',
+          isCurrent: false,
+        },
+      ];
+
+      mockFetch.mockResolvedValue(mockJsonResponse({ devices: mockDevices }));
+
+      const devices = await client.getDevices();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.readied.app/auth/devices',
+        expect.any(Object)
+      );
+      expect(devices).toHaveLength(2);
+      expect(devices[0]!.isCurrent).toBe(true);
+      expect(devices[1]!.name).toBe('iPhone 15');
+    });
+
+    it('revokes a device', async () => {
+      const { client } = createClient();
+      mockFetch.mockResolvedValue(mockJsonResponse({ success: true }));
+
+      const result = await client.revokeDevice('device-uuid-2');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.readied.app/auth/devices/device-uuid-2',
+        expect.objectContaining({ method: 'DELETE' })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it('renames a device', async () => {
+      const { client } = createClient();
+      mockFetch.mockResolvedValue(mockJsonResponse({ success: true }));
+
+      const result = await client.renameDevice('device-uuid-1', 'Work Laptop');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.readied.app/auth/devices/device-uuid-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ name: 'Work Laptop' }),
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+  });
 });

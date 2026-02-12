@@ -40,6 +40,7 @@ import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
+import { ConflictBanner } from './components/sync';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
 import { useStore } from 'zustand';
 
@@ -520,6 +521,7 @@ function NotesApp() {
             />
 
             <main className="app__editor">
+              <ConflictBanner />
               {isGraphOpen ? (
                 <GraphView
                   selectedNoteId={selectedNote?.id}

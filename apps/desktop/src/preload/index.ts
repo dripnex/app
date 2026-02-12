@@ -471,6 +471,26 @@ export interface ReadiedAPI {
     /** Refresh access token */
     refreshToken: () => Promise<{ success: boolean }>;
   };
+  devices: {
+    /** List all registered devices */
+    list: () => Promise<{
+      success: boolean;
+      devices: Array<{
+        id: string;
+        deviceId: string;
+        name: string | null;
+        platform: string | null;
+        lastSeenAt: string;
+        createdAt: string;
+        isCurrent: boolean;
+      }>;
+      error?: string;
+    }>;
+    /** Revoke a device */
+    revoke: (deviceId: string) => Promise<{ success: boolean; error?: string }>;
+    /** Rename a device */
+    rename: (deviceId: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  };
   sync: {
     /** Pull changes from server */
     pull: () => Promise<{
@@ -765,6 +785,11 @@ const api: ReadiedAPI = {
     getSession: () => ipcRenderer.invoke('auth:getSession'),
     logout: () => ipcRenderer.invoke('auth:logout'),
     refreshToken: () => ipcRenderer.invoke('auth:refreshToken'),
+  },
+  devices: {
+    list: () => ipcRenderer.invoke('devices:list'),
+    revoke: deviceId => ipcRenderer.invoke('devices:revoke', deviceId),
+    rename: (deviceId, name) => ipcRenderer.invoke('devices:rename', deviceId, name),
   },
   sync: {
     pull: () => ipcRenderer.invoke('sync:pull'),

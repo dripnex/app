@@ -101,6 +101,16 @@ export interface SubscriptionStatus {
   cancelAtPeriodEnd?: boolean;
 }
 
+export interface DeviceRecord {
+  id: string;
+  deviceId: string;
+  name: string | null;
+  platform: string | null;
+  lastSeenAt: string;
+  createdAt: string;
+  isCurrent: boolean;
+}
+
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
@@ -415,6 +425,37 @@ export class ApiClient {
   async unshareNote(slug: string): Promise<{ success: boolean }> {
     return this.request<{ success: boolean }>(`/share/${slug}`, {
       method: 'DELETE',
+    });
+  }
+
+  // ==========================================================================
+  // Device Endpoints
+  // ==========================================================================
+
+  /**
+   * List all devices for the current user
+   */
+  async getDevices(): Promise<DeviceRecord[]> {
+    const response = await this.request<{ devices: DeviceRecord[] }>('/auth/devices');
+    return response.devices;
+  }
+
+  /**
+   * Revoke a device (remove from account)
+   */
+  async revokeDevice(deviceId: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/auth/devices/${deviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Rename a device
+   */
+  async renameDevice(deviceId: string, name: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/auth/devices/${deviceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
     });
   }
 

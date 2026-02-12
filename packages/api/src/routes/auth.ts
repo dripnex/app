@@ -186,4 +186,76 @@ auth.get('/me', authMiddleware, async c => {
   return c.json({ user: { id: user.id, email: user.email } });
 });
 
+// ==========================================================================
+// Device Management
+// ==========================================================================
+
+// List all devices for the authenticated user
+auth.get('/devices', authMiddleware, async c => {
+  const { userId, deviceId: currentDeviceId } = c.get('user');
+  const db = createDb(c.env);
+
+  const userDevices = await db
+    .select({
+      id: devices.id,
+      deviceId: devices.deviceId,
+      name: devices.name,
+      platform: devices.platform,
+      lastSeenAt: devices.lastSeenAt,
+      createdAt: devices.createdAt,
+    })
+    .from(devices)
+    .where(eq(devices.userId, userId))
+    .orderBy(devices.lastSeenAt);
+
+  return c.json({
+    devices: userDevices.map(d => ({
+      ...d,
+      isCurrent: d.deviceId === currentDeviceId,
+    })),
+  });
+});
+
+// Remove a device (revoke access)
+auth.delete('/devices/:deviceId', authMiddleware, async c => {
+  const { userId, deviceId: currentDeviceId } = c.get('user');
+  const targetDeviceId = c.req.param('deviceId');
+  const db = createDb(c.env);
+
+  // Prevent revoking your own device
+  if (targetDeviceId === currentDeviceId) {
+    return c.json({ error: 'Cannot revoke current device' }, 400);
+  }
+
+  await db
+    .delete(devices)
+    .where(and(eq(devices.userId, userId), eq(devices.deviceId, targetDeviceId)));
+
+  return c.json({ success: true });
+});
+
+// Rename a device
+const renameDeviceSchema = z.object({
+  name: z.string().min(1).max(100),
+});
+
+auth.patch(
+  '/devices/:deviceId',
+  authMiddleware,
+  zValidator('json', renameDeviceSchema),
+  async c => {
+    const { userId } = c.get('user');
+    const targetDeviceId = c.req.param('deviceId');
+    const { name } = c.req.valid('json');
+    const db = createDb(c.env);
+
+    await db
+      .update(devices)
+      .set({ name })
+      .where(and(eq(devices.userId, userId), eq(devices.deviceId, targetDeviceId)));
+
+    return c.json({ success: true });
+  }
+);
+
 export { auth };
