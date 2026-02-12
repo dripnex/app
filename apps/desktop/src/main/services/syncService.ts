@@ -7,10 +7,10 @@
  * @module SyncService
  */
 
-import type { ApiClient, SyncChange } from './apiClient.js';
-import type { EncryptionService } from './encryptionService.js';
 import type { SQLiteNoteRepository } from '@readied/storage-sqlite';
 import { createNoteId, createNotebookId, createTimestamp, type NoteStatus } from '@readied/core';
+import type { ApiClient, SyncChange } from './apiClient.js';
+import type { EncryptionService } from './encryptionService.js';
 
 // ============================================================================
 // Types
@@ -281,12 +281,12 @@ export class SyncService {
     if (resolution === 'local') {
       // Keep local version, mark for push to server
       this.noteRepository.resetSyncTracking(createNoteId(noteId));
-      console.log(`Conflict resolved: keeping local version for ${noteId}, marked for sync`);
+      console.warn(`Conflict resolved: keeping local version for ${noteId}, marked for sync`);
     } else {
       // Keep remote version (already applied during pull)
       // Just mark as synced to clear the conflict state
       this.noteRepository.markAsSynced(createNoteId(noteId));
-      console.log(`Conflict resolved: keeping remote version for ${noteId}`);
+      console.warn(`Conflict resolved: keeping remote version for ${noteId}`);
     }
   }
 
@@ -308,7 +308,7 @@ export class SyncService {
       });
     }, this.autoSyncInterval);
 
-    console.log(`Auto-sync started (interval: ${this.autoSyncInterval}ms)`);
+    console.warn(`Auto-sync started (interval: ${this.autoSyncInterval}ms)`);
   }
 
   /**
@@ -318,7 +318,7 @@ export class SyncService {
     if (this.autoSyncTimer) {
       clearInterval(this.autoSyncTimer);
       this.autoSyncTimer = null;
-      console.log('Auto-sync stopped');
+      console.warn('Auto-sync stopped');
     }
   }
 

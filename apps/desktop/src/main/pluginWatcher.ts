@@ -20,7 +20,7 @@ export function startPluginWatcher(pluginsDir: string): void {
   if (watcher) return; // Already watching
 
   if (!existsSync(pluginsDir)) {
-    console.log('[pluginWatcher] Plugins directory does not exist, skipping watch:', pluginsDir);
+    console.warn('[pluginWatcher] Plugins directory does not exist, skipping watch:', pluginsDir);
     return;
   }
 
@@ -42,13 +42,13 @@ export function startPluginWatcher(pluginsDir: string): void {
       // Debounce: wait 300ms after last change before reloading
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        console.log('[pluginWatcher] Plugin file changed, broadcasting reload');
+        console.warn('[pluginWatcher] Plugin file changed, broadcasting reload');
         broadcastReload();
         debounceTimer = null;
       }, 300);
     });
 
-    console.log('[pluginWatcher] Watching for plugin changes:', pluginsDir);
+    console.warn('[pluginWatcher] Watching for plugin changes:', pluginsDir);
   } catch (error) {
     console.error('[pluginWatcher] Failed to start watcher:', error);
   }
@@ -61,6 +61,6 @@ export function stopPluginWatcher(): void {
   if (watcher) {
     watcher.close();
     watcher = null;
-    console.log('[pluginWatcher] Stopped watching plugins directory');
+    console.warn('[pluginWatcher] Stopped watching plugins directory');
   }
 }

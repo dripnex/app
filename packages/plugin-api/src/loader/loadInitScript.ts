@@ -22,7 +22,7 @@ import { assertValidManifest } from '../validation';
 export function loadInitScript(code: string): PluginManifest | null {
   try {
     const module = { exports: {} as Record<string, unknown> };
-    // eslint-disable-next-line no-new-func
+     
     const fn = new Function('module', 'exports', code);
     fn(module, module.exports);
 

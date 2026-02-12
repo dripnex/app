@@ -14,7 +14,7 @@ const SENTRY_DSN = process.env.SENTRY_DSN || '';
 export function initSentry(): void {
   // Skip if no DSN configured
   if (!SENTRY_DSN) {
-    console.log('[Sentry] No DSN configured, skipping initialization');
+    console.warn('[Sentry] No DSN configured, skipping initialization');
     return;
   }
 
@@ -39,7 +39,7 @@ export function initSentry(): void {
     },
   });
 
-  console.log('[Sentry] Initialized for main process');
+  console.warn('[Sentry] Initialized for main process');
 }
 
 /**

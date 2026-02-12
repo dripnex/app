@@ -31,7 +31,7 @@ export function sortPlugins(plugins: PluginManifest[]): SortResult {
   const inDegree = new Map<string, number>();
   const dependents = new Map<string, string[]>(); // depId → [pluginIds that need it]
 
-  // First pass: check for missing deps and compute in-degree
+  // First pass: check for missing deps
   const valid = new Map<string, PluginManifest>();
 
   for (const plugin of plugins) {
@@ -44,6 +44,26 @@ export function sortPlugins(plugins: PluginManifest[]): SortResult {
     }
 
     valid.set(plugin.id, plugin);
+  }
+
+  // Propagate: skip plugins whose deps were themselves skipped
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, plugin] of valid) {
+      const deps = plugin.dependencies ? Object.keys(plugin.dependencies) : [];
+      const missing = deps.filter(d => !valid.has(d));
+      if (missing.length > 0) {
+        valid.delete(id);
+        skipped.push({ plugin, missingDeps: missing });
+        changed = true;
+      }
+    }
+  }
+
+  // Build adjacency from valid plugins only
+  for (const [, plugin] of valid) {
+    const deps = plugin.dependencies ? Object.keys(plugin.dependencies) : [];
     inDegree.set(plugin.id, deps.length);
 
     for (const dep of deps) {

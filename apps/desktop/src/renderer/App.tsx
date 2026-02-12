@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { EditorView } from '@codemirror/view';
+import { PluginHost, createEditorAPI, createAppAPI, editorPluginStore, useCssVariables } from '@readied/plugin-api';
+import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
+import type { RegisteredCommand } from '@readied/command-registry';
+import { useStore } from 'zustand';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
@@ -26,10 +31,6 @@ import { useSyncLinks } from './hooks/useLinks';
 import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useCommandKeybindings } from './hooks/useCommandKeybindings';
 import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
-import { EditorView } from '@codemirror/view';
-import { PluginHost, createEditorAPI, createAppAPI, editorPluginStore, useCssVariables } from '@readied/plugin-api';
-import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
-import type { RegisteredCommand } from '@readied/command-registry';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { wordCountPlugin } from './plugins/wordCount';
 import { typewriterModePlugin } from './plugins/typewriterMode';
@@ -41,7 +42,6 @@ import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
-import { useStore } from 'zustand';
 
 /** Shows toast errors for plugins that failed to load */
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {

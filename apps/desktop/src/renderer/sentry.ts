@@ -12,7 +12,7 @@ const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || '';
 export function initSentry(): void {
   // Skip if no DSN configured
   if (!SENTRY_DSN) {
-    console.log('[Sentry] No DSN configured, skipping initialization');
+    console.warn('[Sentry] No DSN configured, skipping initialization');
     return;
   }
 
@@ -37,7 +37,7 @@ export function initSentry(): void {
     replaysOnErrorSampleRate: 1.0, // Record all sessions with errors
   });
 
-  console.log('[Sentry] Initialized for renderer process');
+  console.warn('[Sentry] Initialized for renderer process');
 }
 
 /**

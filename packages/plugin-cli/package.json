@@ -5,11 +5,12 @@
   "description": "CLI tool for scaffolding Readied plugins",
   "type": "module",
   "bin": {
-    "readied-plugin": "./src/cli.ts"
+    "readied-plugin": "./dist/cli.js"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },

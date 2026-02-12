@@ -5,6 +5,7 @@
  */
 
 // Initialize Sentry FIRST (before any other imports that might throw)
+// eslint-disable-next-line import-x/order
 import { initSentry } from './sentry';
 initSentry();
 
@@ -1916,7 +1917,11 @@ function registerPluginDiscoveryHandlers(): void {
       await new Promise<void>((resolve, reject) => {
         let cmd: string;
         if (fileName.endsWith('.zip')) {
-          cmd = `unzip -o "${archivePath}" -d "${tmpDir}"`;
+          if (process.platform === 'win32') {
+            cmd = `powershell -command "Expand-Archive -Force '${archivePath}' '${tmpDir}'"`;
+          } else {
+            cmd = `unzip -o "${archivePath}" -d "${tmpDir}"`;
+          }
         } else {
           cmd = `tar -xzf "${archivePath}" -C "${tmpDir}"`;
         }

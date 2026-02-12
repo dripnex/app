@@ -5,6 +5,7 @@ export interface PreviewComponentRegistration {
   id: string;
   pluginId: string;
   tagName: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: ComponentType<any>;
 }
 
@@ -13,6 +14,7 @@ interface PreviewComponentState {
   register(registration: PreviewComponentRegistration): void;
   unregister(id: string): void;
   unregisterAll(pluginId: string): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getComponents(): Record<string, ComponentType<any>>;
 }
 
@@ -38,6 +40,7 @@ export const previewComponentStore = createStore<PreviewComponentState>((set, ge
   },
 
   getComponents() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: Record<string, ComponentType<any>> = {};
     for (const reg of get().registrations) {
       result[reg.tagName] = reg.component;

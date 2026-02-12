@@ -1,9 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { initPlugin } from '../src/commands/init';
 import { existsSync } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { describe, it, expect, afterEach } from 'vitest';
+import { initPlugin } from '../src/commands/init';
 
 const TEST_DIR = join(tmpdir(), `readied-plugin-test-${Date.now()}`);
 

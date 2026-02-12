@@ -97,7 +97,9 @@ async function fetchProjectItems(): Promise<ProjectData> {
     }
 
     const items: ProjectItem[] = project.items.nodes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((node: any) => node.content)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((node: any) => {
         const statusField = node.fieldValueByName;
         const status = statusField?.name || 'Todo';

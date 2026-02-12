@@ -118,4 +118,34 @@ describe('sortPlugins', () => {
     expect(sorted).toEqual([]);
     expect(skipped[0].missingDeps).toEqual(['dep1', 'dep2']);
   });
+
+  it('skips dependents of skipped plugins (cascade)', () => {
+    const plugins = [
+      makePlugin('a', { missing: '1.0.0' }),
+      makePlugin('b', { a: '1.0.0' }),
+      makePlugin('c'), // no deps, should be sorted
+    ];
+    const { sorted, skipped } = sortPlugins(plugins);
+
+    expect(sorted.map(p => p.id)).toEqual(['c']);
+    expect(skipped).toHaveLength(2);
+    expect(skipped.map(s => s.plugin.id)).toContain('a');
+    expect(skipped.map(s => s.plugin.id)).toContain('b');
+  });
+
+  it('cascades skips through multi-level chains', () => {
+    const plugins = [
+      makePlugin('a', { missing: '*' }),
+      makePlugin('b', { a: '*' }),
+      makePlugin('c', { b: '*' }),
+      makePlugin('d'),
+    ];
+    const { sorted, skipped } = sortPlugins(plugins);
+
+    expect(sorted.map(p => p.id)).toEqual(['d']);
+    expect(skipped).toHaveLength(3);
+    expect(skipped.map(s => s.plugin.id)).toContain('a');
+    expect(skipped.map(s => s.plugin.id)).toContain('b');
+    expect(skipped.map(s => s.plugin.id)).toContain('c');
+  });
 });

@@ -21,16 +21,23 @@ export function useCssVariables(): void {
   useEffect(() => {
     const root = document.documentElement;
     const merged = cssVariableStore.getState().getMergedVariables();
+    const previous = new Map<string, string | null>();
 
-    // Apply all merged variables
+    // Snapshot current values, then apply merged variables
     for (const [prop, value] of Object.entries(merged)) {
+      const prev = root.style.getPropertyValue(prop);
+      previous.set(prop, prev || null);
       root.style.setProperty(prop, value);
     }
 
-    // On cleanup, remove the variables we set
+    // On cleanup, restore previous values instead of removing
     return () => {
-      for (const prop of Object.keys(merged)) {
-        root.style.removeProperty(prop);
+      for (const [prop, prev] of previous) {
+        if (prev) {
+          root.style.setProperty(prop, prev);
+        } else {
+          root.style.removeProperty(prop);
+        }
       }
     };
   }, [registrations]);

@@ -25,13 +25,13 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CommandCategory } from '@readied/command-registry';
+import { LayoutZone } from '@readied/plugin-api';
 import {
   useCommandRegistry,
   dispatchCommand,
   formatKeybinding,
   registry,
 } from '../hooks/useCommandRegistry';
-import { LayoutZone } from '@readied/plugin-api';
 
 interface CommandPaletteProps {
   isOpen: boolean;

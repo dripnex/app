@@ -7,9 +7,9 @@
  * @module TokenStorage
  */
 
-import { safeStorage } from 'electron';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { safeStorage } from 'electron';
 
 // ============================================================================
 // Types

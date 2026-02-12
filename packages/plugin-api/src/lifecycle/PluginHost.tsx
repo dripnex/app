@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { EditorView } from '@codemirror/view';
 import type { PluginManifest, EditorAPI, AppAPI } from '../types';
+import { PLUGIN_API_VERSION } from '../apiVersion';
 import { PluginRegistry, type RegisterCommandFn, type ConfigBridge } from './PluginRegistry';
 import { sortPlugins } from './sortPlugins';
-import { PLUGIN_API_VERSION } from '../apiVersion';
 
 interface PluginHostProps {
   plugins: PluginManifest[];

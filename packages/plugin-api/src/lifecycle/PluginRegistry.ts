@@ -1,5 +1,6 @@
 import type { Extension } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
+import type { ComponentType } from 'react';
 import type {
   PluginManifest,
   PluginContext,
@@ -9,7 +10,6 @@ import type {
   AppAPI,
   PluginCommandOptions,
 } from '../types';
-import type { ComponentType } from 'react';
 import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
 import { createDecorationAPI } from '../editor/decorationAPI';
@@ -245,10 +245,10 @@ export class PluginRegistry {
         rehypePluginStore.getState().register({ id: regId, pluginId: id, plugin });
         return () => rehypePluginStore.getState().unregister(regId);
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       registerPreviewComponent: (
         regId: string,
         tagName: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         component: ComponentType<any>
       ): (() => void) => {
         previewComponentStore.getState().register({
@@ -273,7 +273,8 @@ export class PluginRegistry {
       },
       config,
       log: {
-        info: (msg: string, ...args: unknown[]) => console.log(`[${id}]`, msg, ...args),
+        // eslint-disable-next-line no-console
+        info: (msg: string, ...args: unknown[]) => console.info(`[${id}]`, msg, ...args),
         warn: (msg: string, ...args: unknown[]) => console.warn(`[${id}]`, msg, ...args),
         error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
       },

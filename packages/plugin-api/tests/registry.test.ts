@@ -447,7 +447,7 @@ describe('PluginRegistry', () => {
 
   describe('logger', () => {
     it('provides namespaced logger to plugins', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const logSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
       registry.load(
         makeManifest({

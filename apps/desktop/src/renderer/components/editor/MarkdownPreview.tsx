@@ -250,16 +250,16 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         </div>
 
         <Markdown
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           remarkPlugins={[
             remarkGfm,
             remarkWikilink,
             ...pluginRemarkRegs.map(r => r.plugin),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ] as any[]}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           rehypePlugins={[
             rehypeRaw,
             ...pluginRehypeRegs.map(r => r.plugin),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ] as any[]}
           components={
             {
@@ -275,7 +275,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
               ),
               // Code block renderer delegation to plugins
               code: ({ className, children, ...props }) => {
-                const match = /language-(\w+)/.exec(className || '');
+                const match = /language-([\w+#.-]+)/.exec(className || '');
                 const lang = match?.[1];
                 if (lang) {
                   const reg = pluginCodeBlockRegs.find(r => r.language === lang);
