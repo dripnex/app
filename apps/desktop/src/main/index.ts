@@ -1350,6 +1350,20 @@ function registerUpdateHandlers(): void {
       });
     }
   );
+
+  ipcMain.handle('updates:startDownload', async () => {
+    if (process.env.NODE_ENV === 'development') return { ok: false };
+    try {
+      await autoUpdater.downloadUpdate();
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  });
+
+  ipcMain.handle('updates:installNow', () => {
+    autoUpdater.quitAndInstall();
+  });
 }
 
 /** Register IPC handlers for authentication and sync */
@@ -2030,20 +2044,11 @@ function initAutoUpdater(): void {
 
   autoUpdater.on('update-available', info => {
     updateLog.info({ version: info.version }, 'Update available');
-    dialog
-      .showMessageBox({
-        type: 'info',
-        title: 'Update Available',
-        message: `A new version (${info.version}) is available.`,
-        detail: 'Would you like to download it now?',
-        buttons: ['Download', 'Later'],
-        defaultId: 0,
-      })
-      .then(({ response }) => {
-        if (response === 0) {
-          autoUpdater.downloadUpdate();
-        }
-      });
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('updates:available', { version: info.version });
+      }
+    });
   });
 
   autoUpdater.on('update-not-available', () => {
@@ -2052,27 +2057,34 @@ function initAutoUpdater(): void {
 
   autoUpdater.on('download-progress', progress => {
     updateLog.debug({ percent: progress.percent.toFixed(1) }, 'Download progress');
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('updates:download-progress', {
+          percent: progress.percent,
+          bytesPerSecond: progress.bytesPerSecond,
+          transferred: progress.transferred,
+          total: progress.total,
+        });
+      }
+    });
   });
 
   autoUpdater.on('update-downloaded', info => {
     updateLog.info({ version: info.version }, 'Update downloaded');
-    dialog
-      .showMessageBox({
-        type: 'info',
-        title: 'Update Ready',
-        message: 'Update downloaded. Restart to apply?',
-        buttons: ['Restart Now', 'Later'],
-        defaultId: 0,
-      })
-      .then(({ response }) => {
-        if (response === 0) {
-          autoUpdater.quitAndInstall();
-        }
-      });
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('updates:download-complete', { version: info.version });
+      }
+    });
   });
 
   autoUpdater.on('error', err => {
     updateLog.error({ error: err.message }, 'Updater error');
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('updates:error', { message: err.message });
+      }
+    });
   });
 
   // Check for updates after a short delay
