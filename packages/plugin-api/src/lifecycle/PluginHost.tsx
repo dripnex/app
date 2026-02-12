@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import type { EditorView } from '@codemirror/view';
 import type { PluginManifest, EditorAPI, AppAPI } from '../types';
 import { PluginRegistry, type RegisterCommandFn, type ConfigBridge } from './PluginRegistry';
+import { sortPlugins } from './sortPlugins';
+import { PLUGIN_API_VERSION } from '../apiVersion';
 
 interface PluginHostProps {
   plugins: PluginManifest[];
@@ -45,12 +47,29 @@ export function PluginHost({
     const registry = registryRef.current!;
     let cancelled = false;
 
+    // Sort plugins by dependency order and check API version compatibility
+    const { sorted, skipped } = sortPlugins(plugins);
+    for (const { plugin, missingDeps } of skipped) {
+      console.warn(
+        `[PluginHost] Skipping "${plugin.id}": missing dependencies: ${missingDeps.join(', ')}`
+      );
+    }
+
     // Load and activate all plugins (async for config hydration).
     // Re-check cancelled after each await to avoid activating on stale entries
     // when cleanup runs mid-loop (e.g. plugin reload while config hydration is in-flight).
     const activateAll = async () => {
-      for (const manifest of plugins) {
+      for (const manifest of sorted) {
         if (cancelled) return;
+
+        // API version check
+        if (manifest.apiVersion && manifest.apiVersion !== PLUGIN_API_VERSION) {
+          console.warn(
+            `[PluginHost] Plugin "${manifest.id}" targets API v${manifest.apiVersion} but current is v${PLUGIN_API_VERSION}, skipping`
+          );
+          continue;
+        }
+
         const loaded = registry.load(manifest);
         if (!loaded) continue; // validation failed, skip
         try {

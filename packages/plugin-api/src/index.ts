@@ -53,8 +53,14 @@ export type { ManifestError } from './validation';
 
 // Loader
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
+export { loadInitScript } from './loader/loadInitScript';
 
 // Lifecycle
 export { PluginRegistry } from './lifecycle/PluginRegistry';
 export type { RegisterCommandFn, ConfigBridge } from './lifecycle/PluginRegistry';
 export { PluginHost } from './lifecycle/PluginHost';
+export { sortPlugins } from './lifecycle/sortPlugins';
+export type { SortResult } from './lifecycle/sortPlugins';
+
+// API Version
+export { PLUGIN_API_VERSION } from './apiVersion';

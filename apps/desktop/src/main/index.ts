@@ -8,9 +8,10 @@
 import { initSentry } from './sentry';
 initSentry();
 
-import { join, normalize } from 'path';
-import { readFile, writeFile, unlink, mkdir } from 'fs/promises';
+import { join, normalize, basename } from 'path';
+import { readFile, writeFile, unlink, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { exec } from 'child_process';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
@@ -1873,6 +1874,129 @@ function registerPluginDiscoveryHandlers(): void {
       pluginId: row.plugin_id,
       enabled: row.enabled === 1,
     }));
+  });
+
+  // Read init.js user script (returns null if not found)
+  ipcMain.handle('plugins:readInitScript', async () => {
+    const initPath = join(paths.root, 'init.js');
+    try {
+      const code = await readFile(initPath, 'utf-8');
+      return code;
+    } catch {
+      return null;
+    }
+  });
+
+  // Install plugin from archive (.tar.gz or .zip)
+  ipcMain.handle('plugins:install', async () => {
+    const { filePaths, canceled } = await dialog.showOpenDialog({
+      title: 'Install Plugin',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Plugin Archive', extensions: ['tar.gz', 'tgz', 'zip'] },
+      ],
+      buttonLabel: 'Install',
+    });
+
+    if (canceled || !filePaths[0]) {
+      return { success: false, error: 'Cancelled' };
+    }
+
+    const archivePath = filePaths[0];
+    const fileName = basename(archivePath).toLowerCase();
+
+    try {
+      // Ensure plugins dir exists
+      await mkdir(paths.plugins, { recursive: true });
+
+      // Extract to a temp dir first, then move validated plugin folder
+      const tmpDir = join(paths.plugins, `__installing_${Date.now()}`);
+      await mkdir(tmpDir, { recursive: true });
+
+      await new Promise<void>((resolve, reject) => {
+        let cmd: string;
+        if (fileName.endsWith('.zip')) {
+          cmd = `unzip -o "${archivePath}" -d "${tmpDir}"`;
+        } else {
+          cmd = `tar -xzf "${archivePath}" -C "${tmpDir}"`;
+        }
+        exec(cmd, (error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+
+      // Find the manifest.json — could be at root or one level deep
+      const entries = await readdir(tmpDir);
+      let pluginSourceDir = tmpDir;
+
+      // If there's a single subdirectory, use that as the plugin root
+      if (entries.length === 1 && entries[0]) {
+        const candidatePath = join(tmpDir, entries[0]);
+        const candidateStat = await stat(candidatePath);
+        if (candidateStat.isDirectory()) {
+          pluginSourceDir = candidatePath;
+        }
+      }
+
+      // Validate: must have manifest.json
+      const manifestPath = join(pluginSourceDir, 'manifest.json');
+      if (!existsSync(manifestPath)) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'No manifest.json found in archive' };
+      }
+
+      const manifestRaw = await readFile(manifestPath, 'utf-8');
+      const manifest = JSON.parse(manifestRaw);
+      if (!manifest.id || !manifest.name) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'Invalid manifest: missing id or name' };
+      }
+
+      // Move to final destination
+      const destDir = join(paths.plugins, manifest.id);
+      if (existsSync(destDir)) {
+        await rm(destDir, { recursive: true, force: true });
+      }
+
+      await rename(pluginSourceDir, destDir);
+
+      // Clean up temp dir (in case pluginSourceDir was a subdirectory)
+      if (pluginSourceDir !== tmpDir && existsSync(tmpDir)) {
+        await rm(tmpDir, { recursive: true, force: true });
+      }
+
+      return { success: true, pluginId: manifest.id, pluginName: manifest.name };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
+  // Uninstall plugin (remove its directory)
+  ipcMain.handle('plugins:uninstall', async (_event, pluginId: string) => {
+    // Safety: only allow removing from the plugins directory, prevent path traversal
+    const safeName = pluginId.replace(/[^a-z0-9-]/g, '');
+    const pluginDir = join(paths.plugins, safeName);
+    const normalizedDir = normalize(pluginDir);
+
+    if (!normalizedDir.startsWith(normalize(paths.plugins))) {
+      return { success: false, error: 'Invalid plugin ID' };
+    }
+
+    if (!existsSync(pluginDir)) {
+      return { success: false, error: 'Plugin not found' };
+    }
+
+    try {
+      await rm(pluginDir, { recursive: true, force: true });
+      // Clean up registry entry
+      database
+        .prepare('DELETE FROM plugin_registry WHERE plugin_id = ?')
+        .run(pluginId);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
   });
 
   // Request plugin reload: broadcast to all windows except sender

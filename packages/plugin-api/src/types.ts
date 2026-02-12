@@ -143,6 +143,10 @@ export interface PluginManifest {
   name: string;
   version: string;
   description?: string;
+  /** Plugin API version this plugin targets (e.g. "1") */
+  apiVersion?: string;
+  /** Plugin dependencies: map of pluginId → semver range (e.g. { "other-plugin": ">=1.0.0" }) */
+  dependencies?: Record<string, string>;
   configSchema?: PluginConfigSchema | null;
   activate(context: PluginContext): PluginDisposable | void;
   deactivate?(): void;
