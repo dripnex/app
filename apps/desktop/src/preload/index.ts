@@ -804,12 +804,12 @@ const api: ReadiedAPI = {
       ipcRenderer.send('settings:changed', settings);
     },
     onSync: (callback: (settings: Record<string, unknown>) => void) => {
-      const handler = (_event: unknown, settings: Record<string, unknown>) => {
+      const handler = (_event: Electron.IpcRendererEvent, settings: Record<string, unknown>) => {
         callback(settings);
       };
-      ipcRenderer.on('settings:sync', handler as any);
+      ipcRenderer.on('settings:sync', handler);
       return () => {
-        ipcRenderer.removeListener('settings:sync', handler as any);
+        ipcRenderer.removeListener('settings:sync', handler);
       };
     },
   },

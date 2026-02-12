@@ -17,10 +17,8 @@ interface AnalyticsEvent {
 }
 
 // Configuration
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const meta = import.meta as any;
-const POSTHOG_KEY = meta.env?.VITE_POSTHOG_KEY || '';
-const ANALYTICS_ENDPOINT = meta.env?.VITE_ANALYTICS_ENDPOINT || '';
+const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY || '';
+const ANALYTICS_ENDPOINT = import.meta.env.VITE_ANALYTICS_ENDPOINT || '';
 const QUEUE_KEY = 'readied_analytics_queue';
 const MAX_QUEUE_SIZE = 100;
 
@@ -74,7 +72,7 @@ export function track(name: string, properties?: Record<string, unknown>): void 
     name,
     properties: {
       ...properties,
-      app_version: (window.readied as any)?.version || 'unknown',
+      app_version: window.readied?.app ? 'readied' : 'unknown',
     },
     timestamp: Date.now(),
   };

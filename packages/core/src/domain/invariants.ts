@@ -23,9 +23,27 @@ export type ValidationError =
 /** Result of validating a note */
 export type ValidationResult = { valid: true } | { valid: false; error: ValidationError };
 
+/**
+ * Calculate UTF-8 byte length without TextEncoder (keeps core DOM-free).
+ * Handles BMP characters and surrogate pairs (emoji, CJK supplementary).
+ */
+function utf8ByteLength(str: string): number {
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code <= 0x7f) bytes += 1;
+    else if (code <= 0x7ff) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff) {
+      bytes += 4; // surrogate pair → 4 UTF-8 bytes
+      i++; // skip low surrogate
+    } else bytes += 3;
+  }
+  return bytes;
+}
+
 /** Validates that content size is within limits */
 export function validateContentSize(content: string): ValidationResult {
-  const size = new TextEncoder().encode(content).length;
+  const size = utf8ByteLength(content);
 
   if (size > MAX_CONTENT_SIZE) {
     return {

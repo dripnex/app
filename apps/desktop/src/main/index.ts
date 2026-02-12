@@ -12,7 +12,7 @@ import { join, normalize, basename } from 'path';
 import { readFile, writeFile, unlink, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { exec } from 'child_process';
-import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import {
@@ -2118,13 +2118,13 @@ app
     // Initialize data paths first (creates directories)
     dataPaths = initDataPaths();
 
-    // Register asset:// protocol handler
-    protocol.registerFileProtocol('asset', (request, callback) => {
+    // Register asset:// protocol handler (modern protocol.handle API)
+    protocol.handle('asset', (request) => {
       // asset://local/noteId/filename → assets/noteId/filename
       // Strip protocol and host (local/)
-      let urlPath = decodeURIComponent(request.url.slice('asset://'.length));
-      if (urlPath.startsWith('local/')) {
-        urlPath = urlPath.slice('local/'.length);
+      let urlPath = decodeURIComponent(new URL(request.url).pathname);
+      if (urlPath.startsWith('/')) {
+        urlPath = urlPath.slice(1);
       }
 
       // Sanitize: prevent path traversal attacks
@@ -2133,11 +2133,10 @@ app
       const filePath = join(dataPaths!.assets, safePath);
 
       if (!existsSync(filePath)) {
-        callback({ error: -6 }); // FILE_NOT_FOUND
-        return;
+        return new Response('Not Found', { status: 404 });
       }
 
-      callback({ path: filePath });
+      return net.fetch(`file://${filePath}`);
     });
 
     // Initialize logger (must be after dataPaths)

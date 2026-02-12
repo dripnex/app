@@ -7,8 +7,7 @@
 import * as Sentry from '@sentry/electron/renderer';
 
 // Must match the DSN in main process
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SENTRY_DSN = (import.meta as any).env?.VITE_SENTRY_DSN || '';
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || '';
 
 export function initSentry(): void {
   // Skip if no DSN configured

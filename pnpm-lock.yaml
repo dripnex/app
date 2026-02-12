@@ -402,12 +402,15 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.27
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
       vitest:
         specifier: ^2.1.8
-        version: 2.1.9(@types/node@25.0.5)
+        version: 2.1.9(@types/node@20.19.27)
 
   packages/storage-sqlite:
     dependencies:
