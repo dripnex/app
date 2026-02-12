@@ -1356,13 +1356,18 @@ function registerUpdateHandlers(): void {
     try {
       await autoUpdater.downloadUpdate();
       return { ok: true };
-    } catch {
+    } catch (err) {
+      loggers.updater().error({ error: (err as Error).message }, 'Failed to download update');
       return { ok: false };
     }
   });
 
   ipcMain.handle('updates:installNow', () => {
-    autoUpdater.quitAndInstall();
+    // Force-close all windows so macOS doesn't block the quit
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) win.destroy();
+    });
+    autoUpdater.quitAndInstall(false, true);
   });
 }
 
