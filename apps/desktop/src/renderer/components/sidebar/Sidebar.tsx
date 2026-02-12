@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { LayoutZone } from '@readied/plugin-api';
 import {
   useIsNotebookContext,
   useSelectedNotebookId,
@@ -19,7 +20,6 @@ import { TagsList } from './TagsList';
 import { StatusFilters } from './StatusFilters';
 import { SidebarFooter } from './SidebarFooter';
 import { NotebookCreateModal } from './NotebookCreateModal';
-import { LayoutZone } from '@readied/plugin-api';
 
 interface SidebarProps {
   onOpenGraph?: () => void;

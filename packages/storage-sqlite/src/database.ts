@@ -53,6 +53,7 @@ export class DatabaseConnection implements DatabaseAdapter {
     this.path = options.path;
 
     this.db = new Database(options.path, {
+      // eslint-disable-next-line no-console
       verbose: options.verbose ? console.log : undefined,
     });
 

@@ -6,9 +6,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, FolderOpen, ChevronDown } from 'lucide-react';
+import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2 } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
-import { Toggle, TextInput, NumberInput } from '../components/controls';
+import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import styles from './Section.module.css';
 
 // ============================================================================
@@ -74,6 +74,7 @@ interface PluginCardProps {
   isBuiltIn: boolean;
   enabled: boolean;
   onToggle?: (enabled: boolean) => void;
+  onUninstall?: () => void;
   configSchema?: Record<string, PluginConfigSchemaField>;
   configValues?: Record<string, unknown>;
   onConfigChange?: (key: string, value: unknown) => void;
@@ -86,6 +87,7 @@ function PluginCard({
   isBuiltIn,
   enabled,
   onToggle,
+  onUninstall,
   configSchema,
   configValues,
   onConfigChange,
@@ -103,9 +105,7 @@ function PluginCard({
       <div className={styles.pluginCardHeader}>
         <div className={styles.pluginCardInfo}>
           <div className={styles.pluginCardMeta}>
-            <span
-              className={`${styles.pluginBadge} ${isBuiltIn ? styles.pluginBadgeBuiltIn : ''}`}
-            >
+            <span className={`${styles.pluginBadge} ${isBuiltIn ? styles.pluginBadgeBuiltIn : ''}`}>
               {isBuiltIn ? 'Built-in' : 'Installed'}
             </span>
             <span className={styles.pluginName}>{name}</span>
@@ -120,6 +120,16 @@ function PluginCard({
             onChange={checked => onToggle?.(checked)}
             disabled={isBuiltIn}
           />
+          {!isBuiltIn && onUninstall && (
+            <button
+              type="button"
+              className={styles.pluginUninstallButton}
+              onClick={onUninstall}
+              title="Uninstall plugin"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -139,9 +149,7 @@ function PluginCard({
               {Object.entries(configSchema).map(([key, field]) => {
                 const value = getConfigValue(key, field);
                 const fieldId = `plugin-config-${name}-${key}`;
-                const label = key
-                  .replace(/([A-Z])/g, ' $1')
-                  .replace(/^./, s => s.toUpperCase());
+                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
 
                 return (
                   <div key={key} className={styles.pluginConfigRow}>
@@ -171,6 +179,24 @@ function PluginCard({
                           id={fieldId}
                           value={(value as number) ?? 0}
                           onChange={v => onConfigChange?.(key, v)}
+                        />
+                      )}
+                      {field.type === 'enum' && field.options && (
+                        <Select
+                          id={fieldId}
+                          value={(value as string) ?? ''}
+                          onChange={v => onConfigChange?.(key, v)}
+                          options={field.options}
+                        />
+                      )}
+                      {field.type === 'range' && (
+                        <RangeInput
+                          id={fieldId}
+                          value={(value as number) ?? field.min ?? 0}
+                          onChange={v => onConfigChange?.(key, v)}
+                          min={field.min ?? 0}
+                          max={field.max ?? 100}
+                          step={field.step}
                         />
                       )}
                     </div>
@@ -258,6 +284,41 @@ export function PluginsSection() {
     setTimeout(() => setIsReloading(false), 800);
   }, []);
 
+  // Install plugin from archive
+  const handleInstall = useCallback(async () => {
+    const result = await window.readied.plugins.install();
+    if (result.success) {
+      // Re-scan to pick up the new plugin
+      const [scanned, stateList] = await Promise.all([
+        window.readied.plugins.scan(),
+        window.readied.plugins.listState(),
+      ]);
+      const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+      setPlugins(
+        scanned.map(sp => ({
+          id: sp.id,
+          name: sp.name,
+          version: sp.version,
+          description: sp.description,
+          enabled: stateMap.get(sp.id) ?? true,
+          configSchema: sp.configSchema,
+        }))
+      );
+      // Trigger reload in main window
+      window.readied.plugins.requestReload();
+    }
+  }, []);
+
+  // Uninstall a community plugin
+  const handleUninstall = useCallback(async (pluginId: string) => {
+    const result = await window.readied.plugins.uninstall(pluginId);
+    if (result.success) {
+      setPlugins(prev => prev.filter(p => p.id !== pluginId));
+      // Trigger reload in main window
+      window.readied.plugins.requestReload();
+    }
+  }, []);
+
   // Open plugins folder
   const handleOpenFolder = useCallback(async () => {
     if (pluginsPath) {
@@ -294,11 +355,7 @@ export function PluginsSection() {
             <div className={styles.pluginEmptyState}>
               <p>No community plugins installed yet.</p>
               {pluginsPath && (
-                <button
-                  type="button"
-                  className={styles.actionButton}
-                  onClick={handleOpenFolder}
-                >
+                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
                   <FolderOpen size={14} />
                   <span>Open Plugins Folder</span>
                 </button>
@@ -316,6 +373,7 @@ export function PluginsSection() {
                 isBuiltIn={false}
                 enabled={plugin.enabled}
                 onToggle={enabled => handleToggle(plugin.id, enabled)}
+                onUninstall={() => handleUninstall(plugin.id)}
                 configSchema={plugin.configSchema}
                 configValues={configValues[plugin.id]}
                 onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
@@ -328,6 +386,10 @@ export function PluginsSection() {
       {/* Actions bar */}
       <div style={{ marginTop: '2rem' }}>
         <div className={styles.pluginActions}>
+          <button type="button" className={styles.actionButton} onClick={handleInstall}>
+            <Download size={14} />
+            <span>Install from File</span>
+          </button>
           <button
             type="button"
             className={styles.actionButton}

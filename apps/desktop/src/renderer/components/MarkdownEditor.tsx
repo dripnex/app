@@ -46,10 +46,10 @@ import {
   currentNoteIdField,
 } from '@readied/wikilinks';
 import { embedInlinePreview } from '@readied/embeds/codemirror';
+import { pluginExtensionCompartment, editorPluginStore } from '@readied/plugin-api';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
 import { setEditorView } from '../hooks/useCommandRegistry';
-import { pluginExtensionCompartment, editorPluginStore } from '@readied/plugin-api';
 
 // Compartments for dynamic settings
 const lineNumbersCompartment = new Compartment();

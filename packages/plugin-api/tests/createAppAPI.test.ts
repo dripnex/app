@@ -9,6 +9,9 @@ function makeBridge(overrides: Partial<AppAPIBridge> = {}): AppAPIBridge {
     getNoteById: async () => null,
     getNoteTags: async () => [],
     getBacklinks: async () => [],
+    listNotes: async () => [],
+    listNotebooks: async () => [],
+    listTags: async () => [],
     ...overrides,
   };
 }
@@ -31,6 +34,36 @@ describe('createAppAPI', () => {
       const note = { id: '1', title: 'Test', content: 'body' };
       const api = createAppAPI(makeBridge({ getNoteById: async () => note }));
       expect(await api.getNoteById('1')).toBe(note);
+    });
+
+    it('delegates listNotes to bridge', async () => {
+      const notes = [
+        {
+          id: '1',
+          title: 'Note',
+          notebookId: 'nb-1',
+          tags: ['tag1'],
+          wordCount: 42,
+          createdAt: '2025-01-01',
+          updatedAt: '2025-01-02',
+          isPinned: false,
+          status: 'active',
+        },
+      ];
+      const api = createAppAPI(makeBridge({ listNotes: async () => notes }));
+      expect(await api.listNotes()).toBe(notes);
+    });
+
+    it('delegates listNotebooks to bridge', async () => {
+      const notebooks = [{ id: 'nb-1', name: 'Inbox', parentId: null }];
+      const api = createAppAPI(makeBridge({ listNotebooks: async () => notebooks }));
+      expect(await api.listNotebooks()).toBe(notebooks);
+    });
+
+    it('delegates listTags to bridge', async () => {
+      const tags = ['javascript', 'react'];
+      const api = createAppAPI(makeBridge({ listTags: async () => tags }));
+      expect(await api.listTags()).toBe(tags);
     });
   });
 

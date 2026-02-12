@@ -7,6 +7,7 @@ interface SettingsSidebarProps {
   onSectionChange: (section: SettingsSection) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sections: { id: SettingsSection; label: string; Icon: any }[] = [
   { id: 'general', label: 'General', Icon: Settings },
   { id: 'editor', label: 'Editor', Icon: FileText },

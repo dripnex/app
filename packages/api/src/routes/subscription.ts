@@ -209,6 +209,7 @@ subscription.post('/checkout', zValidator('json', checkoutSchema), async c => {
 
   try {
     const stripe = new Stripe(stripeSecretKey, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       apiVersion: '2025-01-27.acacia' as any,
     });
 
@@ -270,6 +271,7 @@ subscription.post('/checkout/public', zValidator('json', publicCheckoutSchema), 
 
   try {
     const stripe = new Stripe(stripeSecretKey, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       apiVersion: '2025-01-27.acacia' as any,
     });
 
@@ -332,6 +334,7 @@ subscription.post('/portal', zValidator('json', portalSchema), async c => {
 
   try {
     const stripe = new Stripe(stripeSecretKey, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       apiVersion: '2025-01-27.acacia' as any,
     });
 
