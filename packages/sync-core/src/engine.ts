@@ -6,7 +6,7 @@
  */
 
 import type { SyncStatus, SyncConflict, ConflictStrategy, PushResult, DeviceId } from './types.js';
-import type { SyncClient, NotePushPayload } from './client.js';
+import type { SyncClient, NotePushPayload, NotebookPushPayload } from './client.js';
 import type { SyncQueue } from './queue.js';
 
 /**
@@ -49,6 +49,26 @@ export interface SyncStorage {
 
   /** Mark notes as synced (update sync metadata) */
   markNotesSynced(ids: string[], syncVersion: number): Promise<void>;
+
+  /** Get notebooks that have local changes since last sync */
+  getModifiedNotebooks(): Promise<NotebookPushPayload[]>;
+
+  /** Apply remote notebook changes to local storage */
+  applyRemoteNotebooks(
+    notebooks: Array<{
+      id: string;
+      name: string;
+      parentId: string | null;
+      depth: number;
+      order: number;
+      createdAt: string;
+      updatedAt: string;
+      syncVersion: number;
+    }>
+  ): Promise<string[]>;
+
+  /** Mark notebooks as synced */
+  markNotebooksSynced(ids: string[], syncVersion: number): Promise<void>;
 
   /** Get last sync timestamp */
   getLastSyncedAt(): Promise<string | null>;
@@ -123,11 +143,20 @@ export class SyncEngine {
 
       // Phase 1: Push local changes (40% of progress)
       this.updateStatus({ status: 'syncing', progress: 10 });
-      const pushResult = await this.pushChanges(deviceId);
 
-      if (pushResult.conflicts.length > 0) {
-        // Handle conflicts based on strategy
-        const unresolved = await this.handleConflicts(pushResult.conflicts);
+      // Push notes
+      const notePushResult = await this.pushNoteChanges(deviceId);
+      // Push notebooks
+      const notebookPushResult = await this.pushNotebookChanges(deviceId);
+
+      // Merge conflicts from both
+      const allConflicts = [
+        ...notePushResult.conflicts,
+        ...notebookPushResult.conflicts,
+      ];
+
+      if (allConflicts.length > 0) {
+        const unresolved = await this.handleConflicts(allConflicts);
         if (unresolved.length > 0) {
           this.updateStatus({ status: 'conflict', conflicts: unresolved });
           this.isSyncing = false;
@@ -138,7 +167,9 @@ export class SyncEngine {
       this.updateStatus({ status: 'syncing', progress: 40 });
 
       // Phase 2: Pull remote changes (60% of progress)
-      await this.pullChanges(deviceId);
+      // Pull notebooks first (referential integrity: notes reference notebooks)
+      await this.pullNotebookChanges(deviceId);
+      await this.pullNoteChanges(deviceId);
 
       // Done
       const now = new Date().toISOString();
@@ -199,7 +230,7 @@ export class SyncEngine {
     return deviceId;
   }
 
-  private async pushChanges(deviceId: DeviceId): Promise<PushResult> {
+  private async pushNoteChanges(deviceId: DeviceId): Promise<PushResult> {
     const modifiedNotes = await this.config.storage.getModifiedNotes();
     if (modifiedNotes.length === 0) {
       return { synced: [], conflicts: [], errors: [] };
@@ -207,7 +238,6 @@ export class SyncEngine {
 
     const result = await this.config.client.pushNotes(modifiedNotes, deviceId);
 
-    // Mark synced notes
     if (result.synced.length > 0) {
       await this.config.storage.markNotesSynced(result.synced, Date.now());
     }
@@ -215,10 +245,25 @@ export class SyncEngine {
     return result;
   }
 
-  private async pullChanges(deviceId: DeviceId): Promise<void> {
+  private async pushNotebookChanges(deviceId: DeviceId): Promise<PushResult> {
+    const modifiedNotebooks = await this.config.storage.getModifiedNotebooks();
+    if (modifiedNotebooks.length === 0) {
+      return { synced: [], conflicts: [], errors: [] };
+    }
+
+    const result = await this.config.client.pushNotebooks(modifiedNotebooks, deviceId);
+
+    if (result.synced.length > 0) {
+      await this.config.storage.markNotebooksSynced(result.synced, Date.now());
+    }
+
+    return result;
+  }
+
+  private async pullNoteChanges(deviceId: DeviceId): Promise<void> {
     let cursor = await this.config.storage.getCursor('note');
     let hasMore = true;
-    let progress = 40;
+    let progress = 60;
 
     while (hasMore) {
       const result = await this.config.client.pullNotes(cursor, deviceId, 100);
@@ -230,11 +275,30 @@ export class SyncEngine {
       cursor = result.cursor;
       hasMore = result.hasMore;
 
-      // Update progress
       progress = Math.min(progress + 10, 90);
       this.updateStatus({ status: 'syncing', progress });
 
       await this.config.storage.setCursor('note', cursor);
+    }
+  }
+
+  private async pullNotebookChanges(deviceId: DeviceId): Promise<void> {
+    let cursor = await this.config.storage.getCursor('notebook');
+    let hasMore = true;
+
+    while (hasMore) {
+      const result = await this.config.client.pullNotebooks(cursor, deviceId, 100);
+
+      if (result.notebooks.length > 0) {
+        await this.config.storage.applyRemoteNotebooks(result.notebooks);
+      }
+
+      cursor = result.cursor;
+      hasMore = result.hasMore;
+
+      this.updateStatus({ status: 'syncing', progress: 50 });
+
+      await this.config.storage.setCursor('notebook', cursor);
     }
   }
 

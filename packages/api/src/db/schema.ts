@@ -106,6 +106,34 @@ export const syncLog = sqliteTable(
 );
 
 /**
+ * Notebook sync log - encrypted notebook changes
+ * Mirrors sync_log structure for notebook entity type
+ */
+export const notebookSyncLog = sqliteTable(
+  'notebook_sync_log',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    notebookId: text('notebook_id').notNull(),
+    version: integer('version').notNull(),
+    operation: text('operation').notNull(), // 'create' | 'update' | 'delete'
+    encryptedData: text('encrypted_data'), // E2EE notebook data (null for deletes)
+    deviceId: text('device_id').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  table => [
+    index('idx_notebook_sync_log_user_version').on(table.userId, table.version),
+    index('idx_notebook_sync_log_user_notebook').on(table.userId, table.notebookId),
+  ]
+);
+
+/**
  * Subscriptions - Pro tier tracking
  */
 export const subscriptions = sqliteTable('subscriptions', {
@@ -206,6 +234,7 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Device = typeof devices.$inferSelect;
 export type SyncLogEntry = typeof syncLog.$inferSelect;
+export type NotebookSyncLogEntry = typeof notebookSyncLog.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Newsletter = typeof newsletter.$inferSelect;
 export type SharedNote = typeof sharedNotes.$inferSelect;

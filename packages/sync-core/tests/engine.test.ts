@@ -6,9 +6,9 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { SyncEngine, type SyncStorage, type SyncEngineConfig } from '../src/engine';
-import type { SyncClient, NotePushPayload } from '../src/client';
+import type { SyncClient, NotePushPayload, NotebookPushPayload } from '../src/client';
 import { SyncQueue, type SyncQueueStorage } from '../src/queue';
-import type { DeviceId, SyncableNote, PushResult } from '../src/types';
+import type { DeviceId, SyncableNote, SyncableNotebook, PushResult } from '../src/types';
 
 // ============================================================================
 // Mock Factories
@@ -36,6 +36,9 @@ function createMockStorage(): SyncStorage {
     getModifiedNotes: vi.fn(async () => state.modifiedNotes),
     applyRemoteNotes: vi.fn(async (notes: unknown[]) => notes.map(() => 'applied')),
     markNotesSynced: vi.fn(async () => {}),
+    getModifiedNotebooks: vi.fn(async () => []),
+    applyRemoteNotebooks: vi.fn(async (notebooks: unknown[]) => notebooks.map(() => 'applied')),
+    markNotebooksSynced: vi.fn(async () => {}),
     getLastSyncedAt: vi.fn(async () => state.lastSyncedAt),
     setLastSyncedAt: vi.fn(async (ts: string) => {
       state.lastSyncedAt = ts;
@@ -433,6 +436,155 @@ describe('SyncEngine', () => {
 
       expect(client.registerDevice).toHaveBeenCalled();
       expect(storage.setDeviceId).toHaveBeenCalledWith('new_device');
+    });
+  });
+
+  describe('notebook sync', () => {
+    it('pushes modified notebooks', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      const mockNotebook: NotebookPushPayload = {
+        id: 'nb_1',
+        name: 'Work',
+        parentId: null,
+        depth: 0,
+        order: 0,
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z',
+        localVersion: 1,
+      };
+
+      vi.mocked(storage.getModifiedNotebooks).mockResolvedValue([mockNotebook]);
+      vi.mocked(client.pushNotebooks).mockResolvedValue({
+        synced: ['nb_1'],
+        conflicts: [],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      expect(client.pushNotebooks).toHaveBeenCalledWith([mockNotebook], DEVICE_ID);
+      expect(storage.markNotebooksSynced).toHaveBeenCalledWith(['nb_1'], expect.any(Number));
+    });
+
+    it('skips push when no modified notebooks', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotebooks).mockResolvedValue([]);
+
+      await engine.sync();
+
+      expect(client.pushNotebooks).not.toHaveBeenCalled();
+    });
+
+    it('pulls remote notebooks', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      const remoteNotebook: SyncableNotebook = {
+        id: 'nb_2',
+        name: 'Personal',
+        parentId: null,
+        depth: 0,
+        order: 1,
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-02T00:00:00Z',
+        deviceId: 'other_device' as DeviceId,
+        syncVersion: 5,
+        lastSyncedAt: '2025-01-02T00:00:00Z',
+      };
+
+      vi.mocked(client.pullNotebooks).mockResolvedValue({
+        notebooks: [remoteNotebook],
+        cursor: '5',
+        hasMore: false,
+      });
+
+      await engine.sync();
+
+      expect(client.pullNotebooks).toHaveBeenCalled();
+      expect(storage.applyRemoteNotebooks).toHaveBeenCalledWith([remoteNotebook]);
+      expect(storage.setCursor).toHaveBeenCalledWith('notebook', '5');
+    });
+
+    it('pulls notebooks before notes', async () => {
+      const { engine, client } = createEngine();
+      await engine.enable();
+
+      const callOrder: string[] = [];
+
+      vi.mocked(client.pullNotebooks).mockImplementation(async () => {
+        callOrder.push('pullNotebooks');
+        return { notebooks: [], cursor: '0', hasMore: false };
+      });
+
+      vi.mocked(client.pullNotes).mockImplementation(async () => {
+        callOrder.push('pullNotes');
+        return { notes: [], cursor: '0', hasMore: false };
+      });
+
+      await engine.sync();
+
+      expect(callOrder).toEqual(['pullNotebooks', 'pullNotes']);
+    });
+
+    it('handles paginated notebook pull', async () => {
+      const { engine, client, storage } = createEngine();
+      await engine.enable();
+
+      vi.mocked(client.pullNotebooks)
+        .mockResolvedValueOnce({ notebooks: [], cursor: '10', hasMore: true })
+        .mockResolvedValueOnce({ notebooks: [], cursor: '20', hasMore: false });
+
+      await engine.sync();
+
+      expect(client.pullNotebooks).toHaveBeenCalledTimes(2);
+      expect(storage.setCursor).toHaveBeenCalledWith('notebook', '20');
+    });
+
+    it('handles notebook push conflicts', async () => {
+      const onConflict = vi.fn();
+      const { engine, client, storage } = createEngine({
+        defaultConflictStrategy: 'manual',
+        onConflict,
+      });
+      await engine.enable();
+
+      vi.mocked(storage.getModifiedNotebooks).mockResolvedValue([
+        {
+          id: 'nb_1',
+          name: 'Work',
+          parentId: null,
+          depth: 0,
+          order: 0,
+          createdAt: '2025-01-01T00:00:00Z',
+          updatedAt: '2025-01-02T00:00:00Z',
+          localVersion: 2,
+        },
+      ]);
+
+      const conflict = {
+        entityType: 'notebook' as const,
+        entityId: 'nb_1',
+        conflictType: 'update-update' as const,
+        localVersion: { name: 'Work' },
+        remoteVersion: { name: 'Work Projects' },
+        localUpdatedAt: '2025-01-02T00:00:00Z',
+        remoteUpdatedAt: '2025-01-01T12:00:00Z',
+      };
+
+      vi.mocked(client.pushNotebooks).mockResolvedValue({
+        synced: [],
+        conflicts: [conflict],
+        errors: [],
+      });
+
+      await engine.sync();
+
+      expect(onConflict).toHaveBeenCalledWith(expect.arrayContaining([conflict]));
+      expect(engine.getStatus().status).toBe('conflict');
     });
   });
 });

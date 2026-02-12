@@ -305,6 +305,134 @@ export class SQLiteNotebookRepository implements NotebookRepository {
     return rows.map(row => this.rowToNotebook(row));
   }
 
+  // ========================================================================
+  // Sync Tracking Methods
+  // ========================================================================
+
+  /**
+   * Get all notebooks that need to be synced to the server.
+   * Returns notebooks where needs_sync=1, ordered by local_version.
+   */
+  getPendingChanges(limit = 50): Array<{
+    notebook: Notebook;
+    localVersion: number;
+    lastSyncedAt: string | null;
+  }> {
+    const stmt = this.db.prepare<
+      NotebookRow & { local_version: number; last_synced_at: string | null; needs_sync: number }
+    >(`
+      SELECT *
+      FROM notebooks
+      WHERE needs_sync = 1
+      ORDER BY local_version ASC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(limit) as Array<
+      NotebookRow & { local_version: number; last_synced_at: string | null }
+    >;
+
+    return rows.map(row => ({
+      notebook: this.rowToNotebook(row),
+      localVersion: row.local_version,
+      lastSyncedAt: row.last_synced_at,
+    }));
+  }
+
+  /**
+   * Mark a notebook as successfully synced.
+   */
+  markAsSynced(notebookId: NotebookId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        needs_sync = 0,
+        last_synced_at = ?
+      WHERE id = ?
+    `);
+
+    const now = new Date().toISOString();
+    stmt.run(now, notebookId);
+  }
+
+  /**
+   * Mark multiple notebooks as synced in a transaction.
+   */
+  markMultipleAsSynced(notebookIds: NotebookId[]): void {
+    if (notebookIds.length === 0) return;
+
+    this.db.transaction(() => {
+      const stmt = this.db.prepare(`
+        UPDATE notebooks
+        SET
+          needs_sync = 0,
+          last_synced_at = ?
+        WHERE id = ?
+      `);
+
+      const now = new Date().toISOString();
+      for (const id of notebookIds) {
+        stmt.run(now, id);
+      }
+    });
+  }
+
+  /**
+   * Get sync statistics for notebooks.
+   */
+  getSyncStats(): {
+    pendingCount: number;
+    lastSyncedAt: string | null;
+  } {
+    const countStmt = this.db.prepare<{ count: number }>(`
+      SELECT COUNT(*) as count
+      FROM notebooks
+      WHERE needs_sync = 1
+    `);
+    const countRow = countStmt.get() as { count: number } | undefined;
+
+    const lastSyncStmt = this.db.prepare<{ last_synced_at: string | null }>(`
+      SELECT last_synced_at
+      FROM notebooks
+      WHERE last_synced_at IS NOT NULL
+      ORDER BY last_synced_at DESC
+      LIMIT 1
+    `);
+    const lastSyncRow = lastSyncStmt.get() as { last_synced_at: string | null } | undefined;
+
+    return {
+      pendingCount: countRow?.count || 0,
+      lastSyncedAt: lastSyncRow?.last_synced_at || null,
+    };
+  }
+
+  /**
+   * Check if a notebook has unsynced local edits.
+   */
+  hasPendingEdits(notebookId: NotebookId): boolean {
+    const stmt = this.db.prepare(`
+      SELECT needs_sync
+      FROM notebooks
+      WHERE id = ?
+    `);
+    const row = stmt.get(notebookId) as { needs_sync: number } | undefined;
+    return row?.needs_sync === 1;
+  }
+
+  /**
+   * Reset sync tracking for a notebook (force re-sync).
+   */
+  resetSyncTracking(notebookId: NotebookId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        needs_sync = 1,
+        local_version = local_version + 1
+      WHERE id = ?
+    `);
+    stmt.run(notebookId);
+  }
+
   // Private helpers
 
   private rowToNotebook(row: NotebookRow): Notebook {

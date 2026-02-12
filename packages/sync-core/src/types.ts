@@ -69,6 +69,7 @@ export interface SyncableNotebook extends SyncableFields {
   name: string;
   parentId: string | null;
   depth: number;
+  order: number;
   createdAt: string;
   updatedAt: string;
 }

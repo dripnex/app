@@ -15,6 +15,9 @@ import type {
   DeviceId,
 } from './types.js';
 
+// Re-export for consumers
+export type { SyncableNotebook };
+
 /**
  * Payload for pushing notes to server.
  */
@@ -30,6 +33,20 @@ export interface NotePushPayload {
   isDeleted: boolean;
   status: string;
   wordCount: number;
+  localVersion: number;
+}
+
+/**
+ * Payload for pushing notebooks to server.
+ */
+export interface NotebookPushPayload {
+  id: string;
+  name: string;
+  parentId: string | null;
+  depth: number;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
   localVersion: number;
 }
 
@@ -104,7 +121,7 @@ export interface SyncClient {
   /**
    * Push local notebook changes to server.
    */
-  pushNotebooks(notebooks: SyncableNotebook[], deviceId: DeviceId): Promise<PushResult>;
+  pushNotebooks(notebooks: NotebookPushPayload[], deviceId: DeviceId): Promise<PushResult>;
 
   /**
    * Pull notebook changes from server.

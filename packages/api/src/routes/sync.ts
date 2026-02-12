@@ -14,7 +14,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
-import { syncLog, syncCursors, subscriptions } from '../db/schema.js';
+import { syncLog, syncCursors, subscriptions, notebookSyncLog } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
 import { syncRateLimit } from '../middleware/rateLimit.js';
 
@@ -196,6 +196,185 @@ sync.post('/', zValidator('json', pushSchema), async c => {
     cursor: finalCursor,
   });
 });
+
+// =========================================================================
+// Notebook Sync
+// =========================================================================
+
+// Pull notebook changes since cursor
+const notebookPullSchema = z.object({
+  cursor: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+sync.get('/notebooks', zValidator('query', notebookPullSchema), async c => {
+  const { cursor, limit } = c.req.valid('query');
+  const { userId, deviceId } = c.get('user');
+  const db = createDb(c.env);
+
+  // Check subscription status
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .limit(1);
+
+  const isPro = sub?.status === 'active' || sub?.status === 'trialing';
+
+  if (!isPro) {
+    return c.json({ error: 'Sync requires Pro subscription' }, 403);
+  }
+
+  // Get notebook changes since cursor
+  const changes = await db
+    .select()
+    .from(notebookSyncLog)
+    .where(and(eq(notebookSyncLog.userId, userId), gt(notebookSyncLog.version, cursor)))
+    .orderBy(notebookSyncLog.version)
+    .limit(limit);
+
+  const maxVersion = changes.length > 0 ? changes[changes.length - 1].version : cursor;
+
+  // Update cursor for this device (shared cursor table with entity prefix)
+  if (deviceId) {
+    await db
+      .insert(syncCursors)
+      .values({
+        userId,
+        deviceId: `notebook:${deviceId}`,
+        lastSyncedVersion: maxVersion,
+      })
+      .onConflictDoUpdate({
+        target: [syncCursors.userId, syncCursors.deviceId],
+        set: {
+          lastSyncedVersion: maxVersion,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+  }
+
+  return c.json({
+    changes: changes.map(entry => ({
+      id: entry.id,
+      notebookId: entry.notebookId,
+      version: entry.version,
+      operation: entry.operation,
+      encryptedData: entry.encryptedData,
+      deviceId: entry.deviceId,
+      createdAt: entry.createdAt,
+    })),
+    cursor: maxVersion,
+    hasMore: changes.length === limit,
+  });
+});
+
+// Push notebook changes
+const notebookChangeSchema = z.object({
+  notebookId: z.string(),
+  operation: z.enum(['create', 'update', 'delete']),
+  encryptedData: z.string().nullable().optional(),
+  localVersion: z.number().int().optional(),
+});
+
+const notebookPushSchema = z.object({
+  changes: z.array(notebookChangeSchema).min(1).max(100),
+  deviceId: z.string().uuid(),
+});
+
+sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
+  const { changes, deviceId } = c.req.valid('json');
+  const { userId } = c.get('user');
+  const db = createDb(c.env);
+
+  // Check subscription status
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .limit(1);
+
+  const isPro = sub?.status === 'active' || sub?.status === 'trialing';
+
+  if (!isPro) {
+    return c.json({ error: 'Sync requires Pro subscription' }, 403);
+  }
+
+  const { results, finalCursor } = await db.transaction(async tx => {
+    // Get current max version for notebooks
+    const [maxVersionResult] = await tx
+      .select({ maxVersion: sql<number>`COALESCE(MAX(${notebookSyncLog.version}), 0)` })
+      .from(notebookSyncLog)
+      .where(eq(notebookSyncLog.userId, userId));
+
+    let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
+
+    const txResults: Array<{
+      notebookId: string;
+      version: number;
+      status: 'applied' | 'conflict';
+      serverVersion?: number;
+    }> = [];
+
+    for (const change of changes) {
+      // Check for conflicts
+      const [latestEntry] = await tx
+        .select()
+        .from(notebookSyncLog)
+        .where(
+          and(
+            eq(notebookSyncLog.userId, userId),
+            eq(notebookSyncLog.notebookId, change.notebookId)
+          )
+        )
+        .orderBy(desc(notebookSyncLog.version))
+        .limit(1);
+
+      if (
+        latestEntry &&
+        latestEntry.deviceId !== deviceId &&
+        change.localVersion !== undefined &&
+        latestEntry.version > change.localVersion
+      ) {
+        txResults.push({
+          notebookId: change.notebookId,
+          version: latestEntry.version,
+          status: 'conflict',
+          serverVersion: latestEntry.version,
+        });
+        continue;
+      }
+
+      // Insert change
+      await tx.insert(notebookSyncLog).values({
+        userId,
+        notebookId: change.notebookId,
+        version: nextVersion,
+        operation: change.operation,
+        encryptedData: change.encryptedData ?? null,
+        deviceId,
+      });
+
+      txResults.push({
+        notebookId: change.notebookId,
+        version: nextVersion,
+        status: 'applied',
+      });
+
+      nextVersion++;
+    }
+
+    return { results: txResults, finalCursor: nextVersion - 1 };
+  });
+
+  return c.json({
+    results,
+    cursor: finalCursor,
+  });
+});
+
+// =========================================================================
+// Status
+// =========================================================================
 
 // Get sync status
 sync.get('/status', async c => {

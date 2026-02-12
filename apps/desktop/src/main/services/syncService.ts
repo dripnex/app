@@ -7,9 +7,9 @@
  * @module SyncService
  */
 
-import type { ApiClient, SyncChange } from './apiClient.js';
+import type { ApiClient, SyncChange, NotebookSyncChange } from './apiClient.js';
 import type { EncryptionService } from './encryptionService.js';
-import type { SQLiteNoteRepository } from '@readied/storage-sqlite';
+import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
 import { createNoteId, createNotebookId, createTimestamp, type NoteStatus } from '@readied/core';
 
 // ============================================================================
@@ -35,6 +35,7 @@ export interface SyncResult {
 
 interface SyncState {
   cursor: number;
+  notebookCursor: number;
   lastSyncAt: number | null;
   isSyncing: boolean;
 }
@@ -47,6 +48,7 @@ export class SyncService {
   private apiClient: ApiClient;
   private encryptionService: EncryptionService;
   private noteRepository: SQLiteNoteRepository;
+  private notebookRepository: SQLiteNotebookRepository | null;
   private state: SyncState;
   private autoSyncTimer: NodeJS.Timeout | null = null;
   private autoSyncInterval: number = 5 * 60 * 1000; // 5 minutes
@@ -55,13 +57,16 @@ export class SyncService {
     apiClient: ApiClient,
     encryptionService: EncryptionService,
     noteRepository: SQLiteNoteRepository,
+    notebookRepository?: SQLiteNotebookRepository,
     initialCursor = 0
   ) {
     this.apiClient = apiClient;
     this.encryptionService = encryptionService;
     this.noteRepository = noteRepository;
+    this.notebookRepository = notebookRepository ?? null;
     this.state = {
       cursor: initialCursor,
+      notebookCursor: 0,
       lastSyncAt: null,
       isSyncing: false,
     };
@@ -211,12 +216,16 @@ export class SyncService {
         };
       }
 
-      // Step 2: Push local changes
+      // Step 2: Pull notebook changes (before notes for referential integrity)
+      if (this.notebookRepository) {
+        await this.pullNotebooks();
+      }
+
+      // Step 3: Push local note changes
       let changesPushed = 0;
       const pendingChanges = this.noteRepository.getPendingChanges(50);
 
       if (pendingChanges.length > 0) {
-        // Prepare changes for push
         const changesToPush = pendingChanges.map(({ note, localVersion }) => ({
           noteId: note.id,
           operation: (note.isDeleted ? 'delete' : 'update') as 'create' | 'update' | 'delete',
@@ -224,11 +233,9 @@ export class SyncService {
           localVersion,
         }));
 
-        // Push to server
         const pushResult = await this.push(changesToPush);
 
         if (pushResult.success) {
-          // Mark successfully pushed notes as synced
           const successfulNoteIds = pushResult.results
             .filter(r => r.status === 'applied')
             .map(r => createNoteId(r.noteId));
@@ -236,18 +243,21 @@ export class SyncService {
           this.noteRepository.markMultipleAsSynced(successfulNoteIds);
           changesPushed = successfulNoteIds.length;
 
-          // Handle conflicts from push
           const pushConflicts = pushResult.results.filter(r => r.status === 'conflict');
           if (pushConflicts.length > 0) {
             console.warn(
               `Push conflicts detected for ${pushConflicts.length} notes:`,
               pushConflicts
             );
-            // Conflicts will need to be resolved by user
           }
         } else {
           console.error('Failed to push changes:', pushResult.error);
         }
+      }
+
+      // Step 4: Push local notebook changes
+      if (this.notebookRepository) {
+        await this.pushNotebooks();
       }
 
       return {
@@ -332,6 +342,123 @@ export class SyncService {
   // ==========================================================================
   // Private Methods
   // ==========================================================================
+
+  /**
+   * Pull notebook changes from server and apply locally
+   */
+  private async pullNotebooks(): Promise<void> {
+    if (!this.notebookRepository) return;
+
+    try {
+      const result = await this.apiClient.pullNotebookChanges(this.state.notebookCursor, 50);
+
+      for (const change of result.changes) {
+        await this.applyRemoteNotebookChange(change);
+      }
+
+      this.state.notebookCursor = result.cursor;
+    } catch (error) {
+      console.error('Failed to pull notebook changes:', error);
+    }
+  }
+
+  /**
+   * Push local notebook changes to server
+   */
+  private async pushNotebooks(): Promise<void> {
+    if (!this.notebookRepository) return;
+
+    const pendingNotebooks = this.notebookRepository.getPendingChanges(50);
+    if (pendingNotebooks.length === 0) return;
+
+    try {
+      const encryptedChanges = await Promise.all(
+        pendingNotebooks.map(async ({ notebook, localVersion }) => {
+          const data = JSON.stringify({
+            name: notebook.name,
+            parentId: notebook.parentId,
+            depth: notebook.depth,
+            order: notebook.order,
+          });
+          return {
+            notebookId: notebook.id,
+            operation: 'update' as const,
+            encryptedData: await this.encryptionService.encrypt(data),
+            localVersion,
+          };
+        })
+      );
+
+      const result = await this.apiClient.pushNotebookChanges(encryptedChanges);
+
+      const successfulIds = result.results
+        .filter(r => r.status === 'applied')
+        .map(r => createNotebookId(r.notebookId));
+
+      if (successfulIds.length > 0) {
+        this.notebookRepository.markMultipleAsSynced(successfulIds);
+      }
+    } catch (error) {
+      console.error('Failed to push notebook changes:', error);
+    }
+  }
+
+  /**
+   * Apply a remote notebook change to local database
+   */
+  private async applyRemoteNotebookChange(change: NotebookSyncChange): Promise<void> {
+    if (!this.notebookRepository) return;
+
+    const notebookId = createNotebookId(change.notebookId);
+
+    if (change.operation === 'delete') {
+      const existing = await this.notebookRepository.get(notebookId);
+      if (existing) {
+        await this.notebookRepository.delete(notebookId);
+      }
+      return;
+    }
+
+    // Decrypt notebook data
+    if (!change.encryptedData) return;
+
+    const decrypted = await this.encryptionService.decrypt(change.encryptedData);
+    const data = JSON.parse(decrypted) as {
+      name: string;
+      parentId: string | null;
+      depth: number;
+      order: number;
+    };
+
+    const existing = await this.notebookRepository.get(notebookId);
+
+    if (existing) {
+      // Update existing notebook
+      await this.notebookRepository.save({
+        ...existing,
+        name: data.name,
+        parentId: data.parentId ? createNotebookId(data.parentId) : null,
+        depth: data.depth,
+        order: data.order,
+        updatedAt: createTimestamp(new Date(change.createdAt)),
+      });
+    } else {
+      // Create new notebook
+      const { createNotebook } = await import('@readied/core');
+      await this.notebookRepository.save(
+        createNotebook({
+          id: notebookId,
+          name: data.name,
+          parentId: data.parentId ? createNotebookId(data.parentId) : null,
+          parentDepth: data.depth > 0 ? data.depth - 1 : undefined,
+          order: data.order,
+        })
+      );
+    }
+
+    // Mark as synced to avoid re-pushing
+    this.notebookRepository.markAsSynced(notebookId);
+  }
 
   /**
    * Apply a remote change to local database
