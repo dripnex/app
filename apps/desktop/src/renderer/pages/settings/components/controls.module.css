@@ -117,6 +117,60 @@
   cursor: not-allowed;
 }
 
+/* Range Input (Slider) */
+.rangeInput {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 160px;
+}
+
+.rangeSlider {
+  flex: 1;
+  height: 6px;
+  cursor: pointer;
+  appearance: none;
+  background: var(--bg-hover);
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+  transition: all 0.2s ease;
+}
+
+.rangeSlider:hover {
+  background: var(--bg-active);
+  border-color: var(--border-hover);
+}
+
+.rangeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+}
+
+.rangeSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.rangeSlider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rangeValue {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  min-width: 2.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Select (Dropdown) */
 .select {
   min-width: 160px;

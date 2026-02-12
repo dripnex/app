@@ -95,6 +95,39 @@ export function TextInput({ id, value, onChange, placeholder, disabled }: TextIn
 }
 
 // ============================================================================
+// RangeInput (Slider)
+// ============================================================================
+
+export interface RangeInputProps {
+  id?: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  disabled?: boolean;
+}
+
+export function RangeInput({ id, value, onChange, min, max, step = 1, disabled }: RangeInputProps) {
+  return (
+    <div className={styles.rangeInput}>
+      <input
+        type="range"
+        id={id}
+        value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+        className={styles.rangeSlider}
+      />
+      <span className={styles.rangeValue}>{value}</span>
+    </div>
+  );
+}
+
+// ============================================================================
 // Select (Dropdown)
 // ============================================================================
 

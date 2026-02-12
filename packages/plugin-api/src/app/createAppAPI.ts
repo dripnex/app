@@ -1,4 +1,4 @@
-import type { AppAPI, NoteInfo } from '../types';
+import type { AppAPI, NoteInfo, NoteSummaryInfo, NotebookInfo } from '../types';
 
 /** Extended AppAPI with internal notify methods (called by host, not plugins) */
 export interface AppAPIWithEvents extends AppAPI {
@@ -14,6 +14,9 @@ export interface AppAPIBridge {
   getNoteById(id: string): Promise<NoteInfo | null>;
   getNoteTags(noteId: string): Promise<string[]>;
   getBacklinks(noteId: string): Promise<Array<{ noteId: string; noteTitle: string }>>;
+  listNotes(): Promise<NoteSummaryInfo[]>;
+  listNotebooks(): Promise<NotebookInfo[]>;
+  listTags(): Promise<string[]>;
 }
 
 /**
@@ -33,6 +36,9 @@ export function createAppAPI(bridge: AppAPIBridge): AppAPIWithEvents {
     getNoteById: id => bridge.getNoteById(id),
     getNoteTags: noteId => bridge.getNoteTags(noteId),
     getBacklinks: noteId => bridge.getBacklinks(noteId),
+    listNotes: () => bridge.listNotes(),
+    listNotebooks: () => bridge.listNotebooks(),
+    listTags: () => bridge.listTags(),
 
     // Event subscriptions (return unsubscribe fn)
     onNoteSelected(cb) {

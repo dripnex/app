@@ -253,9 +253,15 @@ export interface SubscriptionStatus {
 
 /** Scanned plugin from filesystem */
 export interface PluginConfigSchemaField {
-  type: 'string' | 'number' | 'boolean';
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'range';
   default: unknown;
   description?: string;
+  /** For 'enum' type: available options */
+  options?: Array<{ value: string; label: string }>;
+  /** For 'range' type */
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export interface ScannedPlugin {

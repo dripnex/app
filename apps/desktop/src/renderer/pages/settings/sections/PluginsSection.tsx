@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, FolderOpen, ChevronDown } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
-import { Toggle, TextInput, NumberInput } from '../components/controls';
+import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import styles from './Section.module.css';
 
 // ============================================================================
@@ -171,6 +171,24 @@ function PluginCard({
                           id={fieldId}
                           value={(value as number) ?? 0}
                           onChange={v => onConfigChange?.(key, v)}
+                        />
+                      )}
+                      {field.type === 'enum' && field.options && (
+                        <Select
+                          id={fieldId}
+                          value={(value as string) ?? ''}
+                          onChange={v => onConfigChange?.(key, v)}
+                          options={field.options}
+                        />
+                      )}
+                      {field.type === 'range' && (
+                        <RangeInput
+                          id={fieldId}
+                          value={(value as number) ?? field.min ?? 0}
+                          onChange={v => onConfigChange?.(key, v)}
+                          min={field.min ?? 0}
+                          max={field.max ?? 100}
+                          step={field.step}
                         />
                       )}
                     </div>

@@ -53,14 +53,19 @@ export function PluginHost({
         if (cancelled) return;
         const loaded = registry.load(manifest);
         if (!loaded) continue; // validation failed, skip
-        await registry.activate(
-          manifest.id,
-          editorAPI,
-          appAPI,
-          registerCommand,
-          configBridge,
-          getView
-        );
+        try {
+          await registry.activate(
+            manifest.id,
+            editorAPI,
+            appAPI,
+            registerCommand,
+            configBridge,
+            getView
+          );
+        } catch (error) {
+          // Individual plugin failure should not prevent other plugins from loading
+          console.error(`[PluginHost] Failed to activate ${manifest.id}:`, error);
+        }
         if (cancelled) return; // cleanup started during activate — stop
       }
     };

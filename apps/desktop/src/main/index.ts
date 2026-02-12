@@ -73,6 +73,7 @@ import { GitService } from './services/gitService.js';
 import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
 import { scanPlugins } from './pluginScanner.js';
+import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -2030,6 +2031,12 @@ app
     registerGitHandlers(); // Git operations for git-backed notebooks
     registerPluginConfigHandlers();
     registerPluginDiscoveryHandlers();
+
+    // Start plugin hot-reload watcher in dev mode
+    if (process.env.NODE_ENV === 'development' && dataPaths) {
+      startPluginWatcher(dataPaths.plugins);
+    }
+
     registerDataHandlers();
 
     // Initialize license storage
@@ -2126,6 +2133,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  stopPluginWatcher();
   if (db) {
     db.close();
     getLogger().info('Database closed');
