@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
 import styles from './SettingsApp.module.css';
 import { SettingsSidebar } from './components/SettingsSidebar';
 import { GeneralSection } from './sections/GeneralSection';
@@ -9,7 +10,6 @@ import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
 import { UpdatesSection } from './sections/UpdatesSection';
 import { PluginsSection } from './sections/PluginsSection';
-import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
 
 export type SettingsSection =
   | 'general'

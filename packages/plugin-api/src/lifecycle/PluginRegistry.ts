@@ -1,5 +1,6 @@
 import type { Extension } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
+import type { ComponentType } from 'react';
 import type {
   PluginManifest,
   PluginContext,
@@ -13,8 +14,14 @@ import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
 import { createDecorationAPI } from '../editor/decorationAPI';
 import { validateManifest } from '../validation';
+import { remarkPluginStore } from '../preview/remarkPluginStore';
+import { rehypePluginStore } from '../preview/rehypePluginStore';
+import { previewComponentStore } from '../preview/previewComponentStore';
+import { codeBlockStore } from '../preview/codeBlockStore';
+import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
+import { cssVariableStore } from '../theme/cssVariableStore';
 
-type PluginState = 'loaded' | 'active' | 'deactivated';
+type PluginState = 'loaded' | 'active' | 'deactivated' | 'error';
 
 /** Shape expected by the host's command registry */
 export interface RegisterCommandFn {
@@ -44,6 +51,10 @@ interface PluginEntry {
   commandUnregisters: Array<() => void>;
   /** Event unsubscribers tracked by the auto-cleanup wrapper */
   eventUnsubscribers: Array<() => void>;
+  /** Number of times activate() has thrown */
+  errorCount: number;
+  /** Last error message if state is 'error' */
+  lastError?: string;
 }
 
 export class PluginRegistry {
@@ -70,6 +81,7 @@ export class PluginRegistry {
       state: 'loaded',
       commandUnregisters: [],
       eventUnsubscribers: [],
+      errorCount: 0,
     });
 
     return true;
@@ -225,19 +237,75 @@ export class PluginRegistry {
         return () => editorPluginStore.getState().unregister(extId);
       },
       registerCommand,
+      registerRemarkPlugin: (regId: string, plugin: unknown): (() => void) => {
+        remarkPluginStore.getState().register({ id: regId, pluginId: id, plugin });
+        return () => remarkPluginStore.getState().unregister(regId);
+      },
+      registerRehypePlugin: (regId: string, plugin: unknown): (() => void) => {
+        rehypePluginStore.getState().register({ id: regId, pluginId: id, plugin });
+        return () => rehypePluginStore.getState().unregister(regId);
+      },
+      registerPreviewComponent: (
+        regId: string,
+        tagName: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        component: ComponentType<any>
+      ): (() => void) => {
+        previewComponentStore.getState().register({
+          id: regId,
+          pluginId: id,
+          tagName,
+          component,
+        });
+        return () => previewComponentStore.getState().unregister(regId);
+      },
+      registerCodeBlockRenderer: (
+        regId: string,
+        language: string,
+        component: ComponentType<CodeBlockRendererProps>
+      ): (() => void) => {
+        codeBlockStore.getState().register({ id: regId, pluginId: id, language, component });
+        return () => codeBlockStore.getState().unregister(regId);
+      },
+      registerCssVariables: (regId: string, variables: Record<string, string>): (() => void) => {
+        cssVariableStore.getState().register({ id: regId, pluginId: id, variables });
+        return () => cssVariableStore.getState().unregister(regId);
+      },
       config,
       log: {
-        info: (msg: string, ...args: unknown[]) => console.log(`[${id}]`, msg, ...args),
+        // eslint-disable-next-line no-console
+        info: (msg: string, ...args: unknown[]) => console.info(`[${id}]`, msg, ...args),
         warn: (msg: string, ...args: unknown[]) => console.warn(`[${id}]`, msg, ...args),
         error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
       },
       app: trackedApp,
     };
 
-    const disposable = entry.manifest.activate(context);
+    try {
+      const disposable = entry.manifest.activate(context);
+      entry.state = 'active';
+      entry.disposable = disposable ?? undefined;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[plugin:${id}] activate() threw:`, error);
+      entry.errorCount++;
+      entry.lastError = message;
+      entry.state = 'error';
 
-    entry.state = 'active';
-    entry.disposable = disposable ?? undefined;
+      // Cleanup any partial registrations the plugin may have made before crashing
+      editorPluginStore.getState().unregisterAll(id);
+      remarkPluginStore.getState().unregisterAll(id);
+      rehypePluginStore.getState().unregisterAll(id);
+      previewComponentStore.getState().unregisterAll(id);
+      codeBlockStore.getState().unregisterAll(id);
+      cssVariableStore.getState().unregisterAll(id);
+      const layoutManager = createLayoutManager(id);
+      layoutManager.removeAllForPlugin(id);
+      for (const unregister of entry.commandUnregisters) {
+        unregister();
+      }
+      entry.commandUnregisters = [];
+    }
   }
 
   /** Deactivate an active plugin */
@@ -245,11 +313,19 @@ export class PluginRegistry {
     const entry = this.plugins.get(id);
     if (!entry || entry.state !== 'active') return;
 
-    // Call disposable
-    entry.disposable?.dispose();
+    // Call disposable (guarded)
+    try {
+      entry.disposable?.dispose();
+    } catch (error) {
+      console.error(`[plugin:${id}] dispose() threw:`, error);
+    }
 
-    // Call deactivate lifecycle
-    entry.manifest.deactivate?.();
+    // Call deactivate lifecycle (guarded)
+    try {
+      entry.manifest.deactivate?.();
+    } catch (error) {
+      console.error(`[plugin:${id}] deactivate() threw:`, error);
+    }
 
     // Cleanup layout entries
     const layoutManager = createLayoutManager(id);
@@ -257,6 +333,15 @@ export class PluginRegistry {
 
     // Cleanup editor extensions
     editorPluginStore.getState().unregisterAll(id);
+
+    // Cleanup preview stores
+    remarkPluginStore.getState().unregisterAll(id);
+    rehypePluginStore.getState().unregisterAll(id);
+    previewComponentStore.getState().unregisterAll(id);
+    codeBlockStore.getState().unregisterAll(id);
+
+    // Cleanup theme stores
+    cssVariableStore.getState().unregisterAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {
@@ -288,5 +373,17 @@ export class PluginRegistry {
   /** Get all loaded plugin ids */
   getLoadedIds(): string[] {
     return Array.from(this.plugins.keys());
+  }
+
+  /** Check if a plugin is in error state */
+  hasError(id: string): boolean {
+    return this.plugins.get(id)?.state === 'error';
+  }
+
+  /** Get error info for a plugin */
+  getError(id: string): { message: string; count: number } | null {
+    const entry = this.plugins.get(id);
+    if (!entry || entry.state !== 'error') return null;
+    return { message: entry.lastError ?? 'Unknown error', count: entry.errorCount };
   }
 }

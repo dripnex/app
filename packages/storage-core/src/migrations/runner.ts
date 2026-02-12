@@ -50,6 +50,7 @@ export function runMigrations(db: DatabaseAdapter, migrations: Migration[]): voi
         continue; // Already applied
       }
 
+      // eslint-disable-next-line no-console
       console.log(`Running migration ${migration.version}: ${migration.name}`);
 
       // Execute migration SQL

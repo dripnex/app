@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
 import { FileText, MoreVertical, Link2 } from 'lucide-react';
+import { LayoutZone } from '@readied/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
@@ -19,7 +20,6 @@ import {
   FormattingToolbar,
   MarkdownPreview,
 } from './editor';
-import { LayoutZone } from '@readied/plugin-api';
 import { TitleInput } from './TitleInput';
 import { useToast } from './Toast';
 

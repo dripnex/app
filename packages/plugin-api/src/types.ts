@@ -1,6 +1,8 @@
 import type { Extension } from '@codemirror/state';
+import type { ComponentType } from 'react';
 import type { LayoutManager } from './layout/types';
 import type { EditorDecorationAPI } from './editor/decorationAPI';
+import type { CodeBlockRendererProps } from './preview/codeBlockStore';
 
 /** Controlled subset of editor operations for plugins */
 export interface EditorAPI {
@@ -23,6 +25,26 @@ export interface NoteInfo {
   content: string;
 }
 
+/** Note summary for listing (no full content) */
+export interface NoteSummaryInfo {
+  id: string;
+  title: string;
+  notebookId: string;
+  tags: string[];
+  wordCount: number;
+  createdAt: string;
+  updatedAt: string;
+  isPinned: boolean;
+  status: string;
+}
+
+/** Notebook info exposed to plugins (read-only) */
+export interface NotebookInfo {
+  id: string;
+  name: string;
+  parentId: string | null;
+}
+
 /** Read-only app operations for plugins */
 export interface AppAPI {
   // Core (Phase 1)
@@ -34,18 +56,33 @@ export interface AppAPI {
   getNoteTags(noteId: string): Promise<string[]>;
   getBacklinks(noteId: string): Promise<Array<{ noteId: string; noteTitle: string }>>;
 
+  // Data listing (Phase 2 — read-only)
+  listNotes(): Promise<NoteSummaryInfo[]>;
+  listNotebooks(): Promise<NotebookInfo[]>;
+  listTags(): Promise<string[]>;
+
   // Events (Phase 3.2)
   onNoteSelected(callback: (note: NoteInfo | null) => void): () => void;
   onNoteCreated(callback: (note: NoteInfo) => void): () => void;
   onNoteDeleted(callback: (noteId: string) => void): () => void;
 }
 
+export interface PluginConfigSchemaField {
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'range';
+  default: unknown;
+  description?: string;
+  /** For 'enum' type: available options */
+  options?: Array<{ value: string; label: string }>;
+  /** For 'range' type: minimum value */
+  min?: number;
+  /** For 'range' type: maximum value */
+  max?: number;
+  /** For 'range' type: step increment */
+  step?: number;
+}
+
 export interface PluginConfigSchema {
-  [key: string]: {
-    type: 'string' | 'number' | 'boolean';
-    default: unknown;
-    description?: string;
-  };
+  [key: string]: PluginConfigSchemaField;
 }
 
 export interface PluginConfigAPI {
@@ -81,6 +118,21 @@ export interface PluginContext {
     options: PluginCommandOptions,
     execute: () => boolean | void | Promise<boolean | void>
   ): () => void;
+  /** Register a remark (mdast) plugin for the markdown preview pipeline */
+  registerRemarkPlugin(id: string, plugin: unknown): () => void;
+  /** Register a rehype (hast) plugin for the markdown preview pipeline */
+  registerRehypePlugin(id: string, plugin: unknown): () => void;
+  /** Register a custom React component to replace an HTML element in the preview */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  registerPreviewComponent(id: string, tagName: string, component: ComponentType<any>): () => void;
+  /** Register a custom renderer for fenced code blocks of a specific language */
+  registerCodeBlockRenderer(
+    id: string,
+    language: string,
+    component: ComponentType<CodeBlockRendererProps>
+  ): () => void;
+  /** Register CSS custom properties (theme overrides or custom variables) */
+  registerCssVariables(id: string, variables: Record<string, string>): () => void;
   config: PluginConfigAPI;
   log: PluginLogger;
   app: AppAPI;
@@ -91,6 +143,10 @@ export interface PluginManifest {
   name: string;
   version: string;
   description?: string;
+  /** Plugin API version this plugin targets (e.g. "1") */
+  apiVersion?: string;
+  /** Plugin dependencies: map of pluginId → semver range (e.g. { "other-plugin": ">=1.0.0" }) */
+  dependencies?: Record<string, string>;
   configSchema?: PluginConfigSchema | null;
   activate(context: PluginContext): PluginDisposable | void;
   deactivate?(): void;

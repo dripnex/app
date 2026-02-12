@@ -1,6 +1,6 @@
-import { defineConfig } from 'drizzle-kit';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { defineConfig } from 'drizzle-kit';
 
 // Load environment variables from .dev.vars.local (priority) or .dev.vars (fallback)
 const devVarsPath = existsSync(join(process.cwd(), '.dev.vars.local'))

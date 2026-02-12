@@ -11,7 +11,7 @@
 
 import { createStore } from 'zustand/vanilla';
 import type { PluginManifest } from '@readied/plugin-api';
-import { loadPluginFromSource } from '@readied/plugin-api';
+import { loadPluginFromSource, loadInitScript } from '@readied/plugin-api';
 
 export interface PluginLoadError {
   pluginId: string;
@@ -58,9 +58,10 @@ async function executeScan(generation: number): Promise<{
   errors: PluginLoadError[];
 } | null> {
   try {
-    const [scanned, stateList] = await Promise.all([
+    const [scanned, stateList, initCode] = await Promise.all([
       window.readied.plugins.scan(),
       window.readied.plugins.listState(),
+      window.readied.plugins.readInitScript(),
     ]);
 
     // Race check: another scan started while this one was in-flight
@@ -82,6 +83,23 @@ async function executeScan(generation: number): Promise<{
           pluginId: sp.id,
           pluginName: sp.name,
           reason: 'Failed to load plugin code',
+        });
+      }
+    }
+
+    // Load init.js user script (if present)
+    if (initCode) {
+      const initManifest = loadInitScript(initCode);
+      if (initManifest) {
+        const enabled = stateMap.get(initManifest.id) ?? true;
+        if (enabled) {
+          plugins.push(initManifest);
+        }
+      } else {
+        errors.push({
+          pluginId: 'user-init',
+          pluginName: 'init.js',
+          reason: 'Failed to load init.js — check console for details',
         });
       }
     }

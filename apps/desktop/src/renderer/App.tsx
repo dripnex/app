@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { EditorView } from '@codemirror/view';
+import {
+  PluginHost,
+  createEditorAPI,
+  createAppAPI,
+  editorPluginStore,
+  useCssVariables,
+} from '@readied/plugin-api';
+import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
+import type { RegisteredCommand } from '@readied/command-registry';
+import { useStore } from 'zustand';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
@@ -26,10 +37,6 @@ import { useSyncLinks } from './hooks/useLinks';
 import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useCommandKeybindings } from './hooks/useCommandKeybindings';
 import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
-import { EditorView } from '@codemirror/view';
-import { PluginHost, createEditorAPI, createAppAPI, editorPluginStore } from '@readied/plugin-api';
-import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
-import type { RegisteredCommand } from '@readied/command-registry';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { wordCountPlugin } from './plugins/wordCount';
 import { typewriterModePlugin } from './plugins/typewriterMode';
@@ -41,7 +48,6 @@ import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
-import { useStore } from 'zustand';
 
 /** Shows toast errors for plugins that failed to load */
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
@@ -71,6 +77,7 @@ const queryClient = new QueryClient({
 function NotesApp() {
   usePerformanceMode();
   useAppearanceSettings();
+  useCssVariables();
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
@@ -154,6 +161,31 @@ function NotesApp() {
         async getBacklinks(noteId) {
           const links = await window.readied.links.getBacklinks(noteId);
           return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
+        },
+        async listNotes() {
+          const notes = await window.readied.notes.list();
+          return notes.map(n => ({
+            id: n.id,
+            title: n.title,
+            notebookId: n.notebookId,
+            tags: [...n.tags],
+            wordCount: n.wordCount,
+            createdAt: n.createdAt,
+            updatedAt: n.updatedAt,
+            isPinned: n.isPinned,
+            status: n.status,
+          }));
+        },
+        async listNotebooks() {
+          const notebooks = await window.readied.notebooks.list();
+          return notebooks.map(nb => ({
+            id: nb.id,
+            name: nb.name,
+            parentId: nb.parentId,
+          }));
+        },
+        async listTags() {
+          return window.readied.notes.tags();
         },
       }),
     []

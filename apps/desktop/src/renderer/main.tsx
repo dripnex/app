@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LicenseProvider } from './contexts/LicenseContext';
-
 // Initialize Sentry before App
 import { initSentry } from './sentry';
 initSentry();

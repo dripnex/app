@@ -73,6 +73,10 @@ export interface SyncEngineConfig {
   onStatusChange?: (status: SyncStatus) => void;
   /** Callback for conflicts that need manual resolution */
   onConflict?: (conflicts: SyncConflict[]) => void;
+  /** Platform identifier (injected by host, avoids Node.js process global) */
+  platform?: string;
+  /** App version string */
+  appVersion?: string;
 }
 
 /**
@@ -191,8 +195,8 @@ export class SyncEngine {
     if (!deviceId) {
       deviceId = await this.config.client.registerDevice({
         name: 'Readied Desktop',
-        platform: process.platform ?? 'unknown',
-        version: '0.1.0', // TODO: get from package
+        platform: this.config.platform ?? 'unknown',
+        version: this.config.appVersion ?? '0.1.0',
       });
       await this.config.storage.setDeviceId(deviceId);
     }

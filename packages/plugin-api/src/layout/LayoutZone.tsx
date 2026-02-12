@@ -1,6 +1,7 @@
 import { useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { layoutStore } from './layoutStore';
 import type { LayoutZoneName, ZoneEntry } from './types';
+import { PluginErrorBoundary } from './PluginErrorBoundary';
 
 interface LayoutZoneProps {
   name: LayoutZoneName;
@@ -52,8 +53,12 @@ export function LayoutZone({ name, className, wrapper: Wrapper }: LayoutZoneProp
   return (
     <div className={className} data-layout-zone={name}>
       {entries.map(entry => {
-        const { component: Component, meta, id } = entry;
-        const rendered = <Component key={id} meta={meta} />;
+        const { component: Component, meta, id, pluginId } = entry;
+        const rendered = (
+          <PluginErrorBoundary key={id} pluginId={pluginId}>
+            <Component meta={meta} />
+          </PluginErrorBoundary>
+        );
 
         if (Wrapper) {
           return (

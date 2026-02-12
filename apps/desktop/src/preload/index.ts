@@ -253,9 +253,15 @@ export interface SubscriptionStatus {
 
 /** Scanned plugin from filesystem */
 export interface PluginConfigSchemaField {
-  type: 'string' | 'number' | 'boolean';
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'range';
   default: unknown;
   description?: string;
+  /** For 'enum' type: available options */
+  options?: Array<{ value: string; label: string }>;
+  /** For 'range' type */
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export interface ScannedPlugin {
@@ -657,6 +663,17 @@ export interface ReadiedAPI {
     listState: () => Promise<PluginRegistryState[]>;
     /** Request all windows to reload plugins */
     requestReload: () => void;
+    /** Read user init.js script (returns null if not found) */
+    readInitScript: () => Promise<string | null>;
+    /** Install plugin from a local archive (opens file dialog) */
+    install: () => Promise<{
+      success: boolean;
+      pluginId?: string;
+      pluginName?: string;
+      error?: string;
+    }>;
+    /** Uninstall a community plugin by ID */
+    uninstall: (pluginId: string) => Promise<{ success: boolean; error?: string }>;
   };
 }
 
@@ -787,12 +804,12 @@ const api: ReadiedAPI = {
       ipcRenderer.send('settings:changed', settings);
     },
     onSync: (callback: (settings: Record<string, unknown>) => void) => {
-      const handler = (_event: unknown, settings: Record<string, unknown>) => {
+      const handler = (_event: Electron.IpcRendererEvent, settings: Record<string, unknown>) => {
         callback(settings);
       };
-      ipcRenderer.on('settings:sync', handler as any);
+      ipcRenderer.on('settings:sync', handler);
       return () => {
-        ipcRenderer.removeListener('settings:sync', handler as any);
+        ipcRenderer.removeListener('settings:sync', handler);
       };
     },
   },
@@ -843,6 +860,9 @@ const api: ReadiedAPI = {
     setEnabled: (pluginId, enabled) => ipcRenderer.invoke('plugins:setEnabled', pluginId, enabled),
     listState: () => ipcRenderer.invoke('plugins:listState'),
     requestReload: () => ipcRenderer.send('plugins:requestReload'),
+    readInitScript: () => ipcRenderer.invoke('plugins:readInitScript'),
+    install: () => ipcRenderer.invoke('plugins:install'),
+    uninstall: (pluginId: string) => ipcRenderer.invoke('plugins:uninstall', pluginId),
   },
 };
 

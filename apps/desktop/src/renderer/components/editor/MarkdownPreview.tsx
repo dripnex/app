@@ -1,4 +1,12 @@
-import { useMemo, useRef, useImperativeHandle, forwardRef, useEffect, useState } from 'react';
+import {
+  useMemo,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -6,6 +14,12 @@ import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { remarkWikilink } from '@readied/wikilinks';
 import { extractEmbedTargets } from '@readied/embeds';
 import { countMarkdownTasks } from '@readied/tasks';
+import {
+  remarkPluginStore,
+  rehypePluginStore,
+  previewComponentStore,
+  codeBlockStore,
+} from '@readied/plugin-api';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
 
@@ -52,6 +66,24 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     const [internalResolvedEmbeds, setInternalResolvedEmbeds] = useState<
       Record<string, string | null>
     >({});
+
+    // Subscribe to plugin preview stores
+    const pluginRemarkRegs = useSyncExternalStore(
+      remarkPluginStore.subscribe,
+      () => remarkPluginStore.getState().registrations
+    );
+    const pluginRehypeRegs = useSyncExternalStore(
+      rehypePluginStore.subscribe,
+      () => rehypePluginStore.getState().registrations
+    );
+    const pluginComponentRegs = useSyncExternalStore(
+      previewComponentStore.subscribe,
+      () => previewComponentStore.getState().registrations
+    );
+    const pluginCodeBlockRegs = useSyncExternalStore(
+      codeBlockStore.subscribe,
+      () => codeBlockStore.getState().registrations
+    );
 
     // Use live buffer content if available for this note, otherwise fall back to prop
     const liveContent = useEditorBufferStore(selectContentForNote(noteId));
@@ -218,8 +250,21 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         </div>
 
         <Markdown
-          remarkPlugins={[remarkGfm, remarkWikilink]}
-          rehypePlugins={[rehypeRaw]}
+          remarkPlugins={
+            [
+              remarkGfm,
+              remarkWikilink,
+              ...pluginRemarkRegs.map(r => r.plugin),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ] as any[]
+          }
+          rehypePlugins={
+            [
+              rehypeRaw,
+              ...pluginRehypeRegs.map(r => r.plugin),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ] as any[]
+          }
           components={
             {
               input: ({ type, checked, ...props }) => {
@@ -232,6 +277,26 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
               'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
                 <img src={src} alt={alt} className="embed embed-image" loading="lazy" />
               ),
+              // Code block renderer delegation to plugins
+              code: ({ className, children, ...props }) => {
+                const match = /language-([\w+#.-]+)/.exec(className || '');
+                const lang = match?.[1];
+                if (lang) {
+                  const reg = pluginCodeBlockRegs.find(r => r.language === lang);
+                  if (reg) {
+                    const CodeRenderer = reg.component;
+                    const code = String(children).replace(/\n$/, '');
+                    return <CodeRenderer code={code} language={lang} />;
+                  }
+                }
+                return (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+              // Plugin-registered preview components
+              ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
             } as Record<string, React.ComponentType<unknown>>
           }
         >

@@ -10,6 +10,7 @@ import {
   Pin,
   PinOff,
 } from 'lucide-react';
+import { LayoutZone } from '@readied/plugin-api';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
@@ -17,7 +18,6 @@ import { useTagColorsStore } from '../stores/tagColorsStore';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
-import { LayoutZone } from '@readied/plugin-api';
 
 interface NoteListProps {
   notes: NoteWithExcerpt[];
