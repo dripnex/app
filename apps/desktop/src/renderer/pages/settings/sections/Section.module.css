@@ -391,3 +391,45 @@
   letter-spacing: 0.08em;
   margin: 0 0 0.625rem 0.25rem;
 }
+
+/* ============================================================================
+   Update Progress
+   ============================================================================ */
+
+.progressContainer {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+}
+
+.progressBar {
+  height: 6px;
+  background: var(--bg-inset);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+  transition: width 300ms ease;
+}
+
+.progressInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.errorMessage {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: var(--danger-muted, rgba(239, 68, 68, 0.1));
+  color: var(--danger, #ef4444);
+}

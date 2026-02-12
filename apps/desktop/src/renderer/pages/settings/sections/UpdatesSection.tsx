@@ -1,42 +1,111 @@
 /**
  * Updates Settings Section
  *
- * Auto-update preferences and manual check.
+ * Auto-update preferences and manual check with download progress.
  */
 
-import { useState, useCallback } from 'react';
-import { RefreshCw, Download } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { RefreshCw, Download, RotateCcw } from 'lucide-react';
 import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Toggle } from '../components/controls';
 import styles from './Section.module.css';
 
+type UpdateState =
+  | { status: 'idle' }
+  | { status: 'checking' }
+  | { status: 'available'; version: string }
+  | {
+      status: 'downloading';
+      version: string;
+      percent: number;
+      bytesPerSecond: number;
+      transferred: number;
+      total: number;
+    }
+  | { status: 'ready'; version: string }
+  | { status: 'installing' }
+  | { status: 'up-to-date' }
+  | { status: 'error'; message: string };
+
+function formatSpeed(bytesPerSecond: number): string {
+  if (bytesPerSecond >= 1_048_576) {
+    return `${(bytesPerSecond / 1_048_576).toFixed(1)} MB/s`;
+  }
+  return `${Math.round(bytesPerSecond / 1024)} KB/s`;
+}
+
 export function UpdatesSection() {
   const updates = useSettingsStore(selectUpdates);
   const updateUpdates = useSettingsStore(s => s.updateUpdates);
-  const [isChecking, setIsChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState<string | null>(null);
+  const [state, setState] = useState<UpdateState>({ status: 'idle' });
+
+  // Subscribe to main-process update events
+  useEffect(() => {
+    const unsubs = [
+      window.readied.updates.onAvailable(info => {
+        setState({ status: 'available', version: info.version });
+      }),
+      window.readied.updates.onDownloadProgress(p => {
+        setState(prev => ({
+          status: 'downloading',
+          version: prev.status === 'downloading' || prev.status === 'available' ? prev.version : '',
+          percent: p.percent,
+          bytesPerSecond: p.bytesPerSecond,
+          transferred: p.transferred,
+          total: p.total,
+        }));
+      }),
+      window.readied.updates.onDownloadComplete(info => {
+        setState({ status: 'ready', version: info.version });
+      }),
+      window.readied.updates.onError(err => {
+        setState({ status: 'error', message: err.message });
+      }),
+    ];
+    return () => unsubs.forEach(fn => fn());
+  }, []);
 
   const handleCheckForUpdates = useCallback(async () => {
-    setIsChecking(true);
-    setCheckResult(null);
-
+    setState({ status: 'checking' });
     try {
       const result = await window.readied.updates.checkNow();
       if (result.available) {
-        setCheckResult(`Update available: v${result.version}`);
+        setState({ status: 'available', version: result.version ?? '' });
       } else {
-        setCheckResult('You are on the latest version');
+        setState({ status: 'up-to-date' });
       }
-      // Update last checked timestamp
       updateUpdates({ lastCheckedAt: Date.now() });
     } catch {
-      setCheckResult('Failed to check for updates');
-    } finally {
-      setIsChecking(false);
+      setState({ status: 'error', message: 'Failed to check for updates' });
     }
   }, [updateUpdates]);
+
+  const handleStartDownload = useCallback(async () => {
+    const version = state.status === 'available' ? state.version : '';
+    setState({
+      status: 'downloading',
+      version,
+      percent: 0,
+      bytesPerSecond: 0,
+      transferred: 0,
+      total: 0,
+    });
+    const result = await window.readied.updates.startDownload();
+    if (!result.ok) {
+      setState({ status: 'error', message: 'Failed to start download' });
+    }
+  }, [state]);
+
+  const handleInstall = useCallback(() => {
+    setState({ status: 'installing' });
+    window.readied.updates.installNow();
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    setState({ status: 'idle' });
+  }, []);
 
   const formatLastChecked = (timestamp: number | null) => {
     if (!timestamp) return 'Never';
@@ -47,6 +116,95 @@ export function UpdatesSection() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const renderButton = () => {
+    switch (state.status) {
+      case 'idle':
+      case 'up-to-date':
+        return (
+          <button type="button" className={styles.actionButton} onClick={handleCheckForUpdates}>
+            <Download size={14} />
+            <span>Check Now</span>
+          </button>
+        );
+      case 'checking':
+        return (
+          <button type="button" className={styles.actionButton} disabled>
+            <RefreshCw size={14} className={styles.spinning} />
+            <span>Checking...</span>
+          </button>
+        );
+      case 'available':
+        return (
+          <button type="button" className={styles.primaryButton} onClick={handleStartDownload}>
+            <Download size={14} />
+            <span>Download v{state.version}</span>
+          </button>
+        );
+      case 'downloading':
+        return (
+          <button type="button" className={styles.actionButton} disabled>
+            <RefreshCw size={14} className={styles.spinning} />
+            <span>Downloading...</span>
+          </button>
+        );
+      case 'ready':
+        return (
+          <button type="button" className={styles.primaryButton} onClick={handleInstall}>
+            <RotateCcw size={14} />
+            <span>Restart to Update</span>
+          </button>
+        );
+      case 'installing':
+        return (
+          <button type="button" className={styles.actionButton} disabled>
+            <RefreshCw size={14} className={styles.spinning} />
+            <span>Restarting...</span>
+          </button>
+        );
+      case 'error':
+        return (
+          <button type="button" className={styles.actionButton} onClick={handleRetry}>
+            <RotateCcw size={14} />
+            <span>Try Again</span>
+          </button>
+        );
+    }
+  };
+
+  const renderInfo = () => {
+    switch (state.status) {
+      case 'up-to-date':
+        return <div className={styles.checkResult}>You are on the latest version</div>;
+      case 'available':
+        return <div className={styles.checkResult}>Version {state.version} is available</div>;
+      case 'downloading':
+        return (
+          <div className={styles.progressContainer}>
+            <div className={styles.progressBar}>
+              <div
+                className={styles.progressFill}
+                style={{ width: `${Math.min(state.percent, 100)}%` }}
+              />
+            </div>
+            <div className={styles.progressInfo}>
+              <span>{Math.round(state.percent)}%</span>
+              <span>{formatSpeed(state.bytesPerSecond)}</span>
+            </div>
+          </div>
+        );
+      case 'ready':
+        return (
+          <div className={styles.successMessage}>
+            v{state.version} downloaded. Restart to apply.
+          </div>
+        );
+      case 'error':
+        return <div className={styles.errorMessage}>{state.message}</div>;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -72,26 +230,9 @@ export function UpdatesSection() {
           label="Check for Updates"
           description={`Last checked: ${formatLastChecked(updates.lastCheckedAt)}`}
         >
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleCheckForUpdates}
-            disabled={isChecking}
-          >
-            {isChecking ? (
-              <>
-                <RefreshCw size={14} className={styles.spinning} />
-                <span>Checking...</span>
-              </>
-            ) : (
-              <>
-                <Download size={14} />
-                <span>Check Now</span>
-              </>
-            )}
-          </button>
+          {renderButton()}
         </SettingRow>
-        {checkResult && <div className={styles.checkResult}>{checkResult}</div>}
+        {renderInfo()}
       </SettingGroup>
     </div>
   );
