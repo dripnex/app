@@ -654,7 +654,7 @@ export interface ReadiedAPI {
         bytesPerSecond: number;
         transferred: number;
         total: number;
-      }) => void,
+      }) => void
     ) => () => void;
     /** Subscribe to download complete events */
     onDownloadComplete: (cb: (info: { version: string }) => void) => () => void;
@@ -883,11 +883,11 @@ const api: ReadiedAPI = {
         bytesPerSecond: number;
         transferred: number;
         total: number;
-      }) => void,
+      }) => void
     ) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        p: { percent: number; bytesPerSecond: number; transferred: number; total: number },
+        p: { percent: number; bytesPerSecond: number; transferred: number; total: number }
       ) => {
         cb(p);
       };
