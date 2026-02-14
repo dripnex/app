@@ -9,14 +9,14 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.82",
+    "@iconify-json/lucide": "^1.2.90",
     "@readied/product-config": "workspace:*",
-    "astro": "^5.0.0",
+    "astro": "^5.17.2",
     "astro-icon": "^1.1.5",
     "three": "^0.182.0",
     "vanta": "^0.5.24"
   },
   "devDependencies": {
-    "@iconify-json/simple-icons": "^1.2.64"
+    "@iconify-json/simple-icons": "^1.2.70"
   }
 }

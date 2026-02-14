@@ -39,13 +39,13 @@
     "clean": "turbo clean && rm -rf node_modules .eslintcache"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "eslint": "^9.39.2",
     "eslint-plugin-import-x": "^4.16.1",
     "prettier": "^3.7.4",
-    "turbo": "^2.3.3",
+    "turbo": "^2.8.8",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.51.0"
+    "typescript-eslint": "^8.55.0"
   },
   "packageManager": "pnpm@9.15.1",
   "engines": {
