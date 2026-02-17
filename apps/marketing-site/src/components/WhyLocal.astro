@@ -1,22 +1,24 @@
 ---
 import { Icon } from 'astro-icon/components';
 
-const comparisons = [
+const steps = [
   {
-    cloud: "Files stored on someone else's server",
-    local: 'Files on your disk, in folders you control'
+    number: '01',
+    icon: 'lucide:folder-open',
+    title: 'Open a folder',
+    description: 'Point Readied at any folder on your computer. Your existing Markdown files appear instantly — no import, no conversion, no setup.'
   },
   {
-    cloud: 'Requires internet to access your notes',
-    local: 'Works offline, always'
+    number: '02',
+    icon: 'lucide:square-pen',
+    title: 'Start writing',
+    description: 'A focused editor with syntax highlighting, live preview, and keyboard shortcuts. Write in standard Markdown — the format that works everywhere.'
   },
   {
-    cloud: 'Proprietary format, export "when available"',
-    local: 'Standard Markdown, open with any editor'
-  },
-  {
-    cloud: 'Company pivots, your data migrates',
-    local: 'Your files stay exactly where they are'
+    number: '03',
+    icon: 'lucide:hard-drive',
+    title: 'Your files stay yours',
+    description: 'Every note is a .md file on your disk. Open them in VS Code, sync them with Git, back them up however you want. No lock-in, ever.'
   }
 ];
 ---
@@ -25,105 +27,78 @@ const comparisons = [
   <div class="mx-auto max-w-4xl">
     <!-- Section header -->
     <header class="mx-auto mb-16 max-w-[640px] text-center">
-      <span class="mb-4 inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent">Why local-first</span>
+      <span class="mb-4 inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent">How it works</span>
       <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight lg:text-4xl">
-        Your notes shouldn't<br />
-        <span class="text-accent">depend on us</span>
+        Three steps.<br />
+        <span class="text-accent">Zero friction.</span>
       </h2>
       <p class="text-lg leading-relaxed text-[#a1a1aa]">
-        Cloud apps come and go. Business models change. Servers shut down.
-        But a folder of Markdown files? That works forever.
+        No account. No onboarding. No cloud. Just open a folder and write.
       </p>
     </header>
 
-    <div class="grid items-start gap-6 lg:grid-cols-[1fr_1.4fr]">
-      <!-- Risks card -->
-      <div class="rounded-xl bg-surface p-6">
-        <!-- Warning header -->
-        <div class="mb-5 flex items-center gap-3">
-          <Icon name="lucide:alert-triangle" class="h-5 w-5 shrink-0 text-red-400" />
-          <span class="text-sm leading-snug text-[#a1a1aa]">With cloud apps, you're always one email away from:</span>
-        </div>
-
-        <!-- Risk items grid -->
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div class="flex items-center gap-3 rounded-lg border border-red-400/[0.12] bg-red-400/[0.06] px-4 py-3">
-            <Icon name="lucide:server" class="h-[18px] w-[18px] shrink-0 text-red-400" />
-            <span class="text-sm font-medium text-[#a1a1aa]">Server shutdown</span>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-red-400/[0.12] bg-red-400/[0.06] px-4 py-3">
-            <Icon name="lucide:dollar-sign" class="h-[18px] w-[18px] shrink-0 text-red-400" />
-            <span class="text-sm font-medium text-[#a1a1aa]">Price increase</span>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-red-400/[0.12] bg-red-400/[0.06] px-4 py-3">
-            <Icon name="lucide:lock" class="h-[18px] w-[18px] shrink-0 text-red-400" />
-            <span class="text-sm font-medium text-[#a1a1aa]">Feature lock-in</span>
-          </div>
-          <div class="flex items-center gap-3 rounded-lg border border-red-400/[0.12] bg-red-400/[0.06] px-4 py-3">
-            <Icon name="lucide:file-text" class="h-[18px] w-[18px] shrink-0 text-red-400" />
-            <span class="text-sm font-medium text-[#a1a1aa]">Policy change</span>
-          </div>
-        </div>
-
-        <!-- Divider -->
-        <div class="flex items-center justify-center py-5">
-          <span class="rounded-full border border-accent/15 bg-accent/10 px-5 py-2 font-mono text-xs font-bold uppercase tracking-widest text-accent">With Readied</span>
-        </div>
-
-        <!-- Solution card -->
-        <div class="flex items-center gap-4 rounded-xl border border-accent/15 bg-accent/10 p-4">
-          <div class="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-accent text-white">
-            <Icon name="lucide:folder" class="h-[22px] w-[22px]" />
-          </div>
-          <div class="flex flex-1 flex-col gap-0.5">
-            <strong class="text-base text-accent">Your local folder</strong>
-            <span class="text-sm text-[#71717a]">Always accessible. Always yours.</span>
-          </div>
-          <div class="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-accent text-white">
-            <Icon name="lucide:check" class="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Comparison side -->
-      <div class="flex flex-col gap-4">
-        <!-- Comparison table -->
-        <div class="overflow-hidden rounded-xl bg-surface">
-          <!-- Table header -->
-          <div class="grid grid-cols-2 border-b border-white/[0.06] bg-inset">
-            <div class="flex items-center gap-2 px-5 py-4 font-mono text-xs font-bold uppercase tracking-widest text-[#71717a]">
-              <Icon name="lucide:cloud" class="h-4 w-4 shrink-0" />
-              <span>Cloud apps</span>
-            </div>
-            <div class="flex items-center gap-2 border-l border-white/[0.06] bg-accent/[0.06] px-5 py-4 font-mono text-xs font-bold uppercase tracking-widest text-accent">
-              <Icon name="lucide:folder" class="h-4 w-4 shrink-0" />
-              <span>Readied</span>
+    <!-- Steps -->
+    <div class="grid gap-6 md:grid-cols-3">
+      {steps.map((step) => (
+        <article class="rounded-xl bg-surface p-6 md:p-8 flex flex-col">
+          <!-- Step number + icon -->
+          <div class="flex items-center gap-4 mb-5">
+            <span class="font-mono text-2xl font-bold text-accent/30">{step.number}</span>
+            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-accent/10 text-accent">
+              <Icon name={step.icon} class="h-5 w-5" />
             </div>
           </div>
 
-          <!-- Table rows -->
-          <ul class="list-none">
-            {comparisons.map((row, i) => (
-              <li class={`grid grid-cols-2 ${i < comparisons.length - 1 ? 'border-b border-white/[0.06]' : ''}`}>
-                <div class="flex items-start gap-3 px-5 py-4 text-sm leading-snug text-[#71717a]">
-                  <Icon name="lucide:x-circle" class="mt-0.5 h-[18px] w-[18px] shrink-0 text-red-400/60" />
-                  <span>{row.cloud}</span>
-                </div>
-                <div class="flex items-start gap-3 border-l border-white/[0.06] bg-accent/[0.04] px-5 py-4 text-sm leading-snug text-[#f4f4f5]">
-                  <Icon name="lucide:check-circle" class="mt-0.5 h-[18px] w-[18px] shrink-0 text-accent" />
-                  <span>{row.local}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <h3 class="text-lg font-semibold text-[#f4f4f5] mb-3">{step.title}</h3>
+          <p class="text-sm leading-relaxed text-[#a1a1aa] flex-1">{step.description}</p>
+        </article>
+      ))}
+    </div>
+
+    <!-- Visual: file format proof -->
+    <div class="mt-10 rounded-xl bg-surface overflow-hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2">
+        <!-- Left: what you write -->
+        <div class="p-6 md:p-8 border-b md:border-b-0 md:border-r border-white/[0.06]">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="font-mono text-xs font-semibold uppercase tracking-wider text-accent">What you write</span>
+          </div>
+          <div class="font-mono text-xs sm:text-sm leading-relaxed text-[#a1a1aa] space-y-1 bg-inset rounded-lg p-4 border border-white/[0.06]">
+            <div><span class="text-accent font-bold"># </span><span class="text-[#f4f4f5] font-bold">Meeting Notes</span></div>
+            <div class="h-1"></div>
+            <div><span class="text-accent/50">- </span>Decided on local-first architecture</div>
+            <div><span class="text-accent/50">- </span>Launch timeline: Q2 2026</div>
+            <div><span class="text-accent/50">- </span>Next step: prototype by Friday</div>
+          </div>
         </div>
 
-        <!-- Info note -->
-        <div class="flex items-start gap-3 rounded-xl border border-accent/10 bg-accent/[0.04] px-5 py-4">
-          <Icon name="lucide:info" class="mt-0.5 h-[18px] w-[18px] shrink-0 text-accent" />
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">
-            Even if Readied disappears tomorrow, your notes remain. They're just files on your computer.
-          </p>
+        <!-- Right: what's on disk -->
+        <div class="p-6 md:p-8">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="font-mono text-xs font-semibold uppercase tracking-wider text-accent">What's on your disk</span>
+          </div>
+          <div class="font-mono text-xs sm:text-sm text-[#a1a1aa] space-y-0.5 bg-inset rounded-lg p-4 border border-white/[0.06]">
+            <div class="flex items-center gap-2">
+              <Icon name="lucide:folder-open" class="h-3.5 w-3.5 text-accent" />
+              <span class="text-[#f4f4f5]">~/notes/</span>
+            </div>
+            <div class="flex items-center gap-2 pl-5">
+              <Icon name="lucide:file-text" class="h-3.5 w-3.5 text-[#71717a]" />
+              <span>meeting-notes.md</span>
+              <span class="text-[10px] text-[#71717a] ml-auto">1.2 KB</span>
+            </div>
+            <div class="flex items-center gap-2 pl-5">
+              <Icon name="lucide:file-text" class="h-3.5 w-3.5 text-[#71717a]" />
+              <span>project-plan.md</span>
+              <span class="text-[10px] text-[#71717a] ml-auto">3.4 KB</span>
+            </div>
+            <div class="flex items-center gap-2 pl-5">
+              <Icon name="lucide:file-text" class="h-3.5 w-3.5 text-[#71717a]" />
+              <span>ideas.md</span>
+              <span class="text-[10px] text-[#71717a] ml-auto">0.8 KB</span>
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-[#71717a] italic">Plain .md files. Open with any editor.</p>
         </div>
       </div>
     </div>
