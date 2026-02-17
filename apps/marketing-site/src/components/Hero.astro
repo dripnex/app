@@ -5,492 +5,67 @@ import { getProductConfig } from '@readied/product-config';
 const config = getProductConfig();
 ---
 
-<section class="hero" id="hero-bg">
-  <!-- Ambient glow orbs -->
-  <div class="hero-ambient">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-
-  <!-- Overlay to dim Vanta effect -->
-  <div class="hero-overlay"></div>
-
-  <div class="container">
-    <div class="hero-grid">
-      <!-- Left content -->
-      <div class="hero-content">
-        <div class="hero-badge glass-accent">
-          <span class="pulse"></span>
-          Now in development
-        </div>
-
-        <h1 class="hero-title">
-          Your notes.<br/>
-          <span class="text-gradient">Your disk.</span><br/>
-          Your rules.
-        </h1>
-
-        <p class="hero-lead">
-          A Markdown editor that works offline, stores files locally,
-          and never locks you into a platform. Own your data forever.
-        </p>
-
-        <div class="hero-actions">
-          <a href="/download" class="btn btn-primary btn-lg hero-cta" data-magnetic="0.2">
-            <Icon name="lucide:download" size={20} />
-            Download for Mac
-          </a>
-          <a href="/philosophy" class="btn btn-ghost btn-lg" data-magnetic="0.2">
-            Learn more
-            <Icon name="lucide:arrow-right" size={16} />
-          </a>
-        </div>
-
-        <div class="hero-meta">
-          <span class="meta-item">
-            <Icon name="lucide:shield" size={14} />
-            Offline-first
-          </span>
-          <span class="meta-divider">·</span>
-          <span class="meta-item">macOS 12+ & Windows 10+</span>
-          <span class="meta-divider">·</span>
-          <span class="meta-item">{config.trialDays}-day free trial</span>
-        </div>
+<section class="relative pt-32 sm:pt-40 pb-20 lg:pb-24">
+  <div class="relative z-[2] mx-auto w-full max-w-4xl px-6 lg:px-8">
+    <!-- Content -->
+    <div class="text-center">
+      <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs font-medium text-[#a1a1aa] opacity-0 animate-fade-in-up">
+        <span class="font-mono text-accent">v0.6</span>
+        Now in development
       </div>
 
-      <!-- Right: Glass card with preview -->
-      <div class="hero-preview">
-        <div class="preview-card glass">
-          <div class="preview-header">
-            <div class="window-dots">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <span class="preview-title">readme.md</span>
-          </div>
-          <div class="preview-content">
-            <div class="preview-placeholder">
-              <div class="play-button">
-                <Icon name="lucide:play" size={24} />
-              </div>
-              <span class="placeholder-label">Watch demo</span>
-            </div>
-          </div>
-        </div>
+      <h1 class="mb-6 text-[clamp(2.5rem,5vw,4rem)] font-bold leading-[1.1] tracking-tight opacity-0 animate-fade-in-up [animation-delay:100ms]">
+        Your notes.<br />
+        <span class="text-accent">Your disk.</span><br />
+        Your rules.
+      </h1>
 
-        <!-- Floating feature cards -->
-        <div class="floating-card card-1 glass" data-parallax="0.15">
-          <Icon name="lucide:file-text" size={20} class="icon-accent" />
-          <span>Local files</span>
-        </div>
+      <p class="mx-auto mb-8 max-w-[520px] text-lg leading-relaxed text-[#a1a1aa] opacity-0 animate-fade-in-up [animation-delay:200ms]">
+        A beautiful Markdown editor that works offline, stores files on your
+        computer, and never locks you in. Your data stays yours, forever.
+      </p>
 
-        <div class="floating-card card-2 glass" data-parallax="-0.1">
-          <Icon name="lucide:search" size={20} class="icon-accent" />
-          <span>Full-text search</span>
+      <div class="mb-8 flex flex-col items-center gap-4 opacity-0 animate-fade-in-up [animation-delay:300ms] sm:flex-row sm:justify-center">
+        <a
+          href="/download"
+          class="group inline-flex w-full items-center justify-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto"
+        >
+          <Icon name="lucide:download" class="h-5 w-5" />
+          Download for Mac
+        </a>
+        <a
+          href="/philosophy"
+          class="group inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white sm:w-auto"
+        >
+          Learn more
+          <Icon name="lucide:arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </a>
+      </div>
+
+      <div class="flex flex-col items-center gap-2 text-sm text-[#71717a] opacity-0 animate-fade-in-up [animation-delay:400ms] sm:flex-row sm:gap-3 sm:justify-center">
+        <span class="inline-flex items-center gap-2">
+          <Icon name="lucide:shield" class="h-3.5 w-3.5" />
+          Offline-first
+        </span>
+        <span class="hidden text-white/20 sm:inline">&middot;</span>
+        <span>macOS 12+ &amp; Windows 10+</span>
+        <span class="hidden text-white/20 sm:inline">&middot;</span>
+        <span>{config.trialDays}-day free trial</span>
+      </div>
+    </div>
+
+    <!-- Demo placeholder -->
+    <div class="mt-16 opacity-0 animate-fade-in-up [animation-delay:500ms]">
+      <div class="relative overflow-hidden rounded-xl border border-white/[0.06] bg-surface">
+        <div class="flex items-center justify-center min-h-[400px] sm:min-h-[480px]">
+          <div class="text-center px-6">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+              <Icon name="lucide:play" size={32} />
+            </div>
+            <p class="font-mono text-sm text-[#71717a]">// demo coming soon</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
-
-<style>
-  .hero {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    padding: calc(var(--nav-height) + var(--space-16)) 0 var(--space-20);
-    overflow: hidden;
-  }
-
-  /* Ambient background orbs */
-  .hero-ambient {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: 0.4;
-    animation: float 20s ease-in-out infinite;
-  }
-
-  .orb-1 {
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-    top: -20%;
-    right: -10%;
-    animation-delay: 0s;
-  }
-
-  .orb-2 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(94, 234, 212, 0.2) 0%, transparent 70%);
-    bottom: 10%;
-    left: -5%;
-    animation-delay: -7s;
-  }
-
-  .orb-3 {
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(126, 243, 224, 0.15) 0%, transparent 70%);
-    top: 40%;
-    left: 30%;
-    animation-delay: -14s;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -30px) scale(1.05); }
-    66% { transform: translate(-20px, 20px) scale(0.95); }
-  }
-
-  /* Overlay to improve readability */
-  .hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(10, 11, 13, 0.6) 0%,
-      rgba(10, 11, 13, 0.4) 50%,
-      rgba(10, 11, 13, 0.7) 100%
-    );
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .hero > .container {
-    position: relative;
-    z-index: 2;
-  }
-
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-16);
-    align-items: center;
-  }
-
-  /* Hero content */
-  .hero-content {
-    position: relative;
-    z-index: 2;
-  }
-
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    color: var(--accent);
-    margin-bottom: var(--space-6);
-    animation: fadeInUp var(--duration-slow) var(--ease-out) forwards;
-    opacity: 0;
-  }
-
-  .pulse {
-    width: 8px;
-    height: 8px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  .hero-title {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.03em;
-    margin-bottom: var(--space-6);
-  }
-
-  .hero-lead {
-    font-size: var(--text-lg);
-    color: var(--text-secondary);
-    max-width: 480px;
-    margin-bottom: var(--space-8);
-    animation: fadeInUp var(--duration-slow) var(--ease-out) forwards;
-    animation-delay: 200ms;
-    opacity: 0;
-  }
-
-  .hero-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-8);
-    animation: fadeInUp var(--duration-slow) var(--ease-out) forwards;
-    animation-delay: 300ms;
-    opacity: 0;
-  }
-
-  .hero-actions .btn {
-    gap: var(--space-3);
-  }
-
-  /* Pulsing glow on main CTA */
-  .hero-cta {
-    animation:
-      fadeInUp var(--duration-slow) var(--ease-out) forwards,
-      ctaGlow 3s ease-in-out 1s infinite;
-    opacity: 0;
-  }
-
-  @keyframes ctaGlow {
-    0%, 100% {
-      box-shadow: var(--glow-accent), var(--shadow-sm);
-    }
-    50% {
-      box-shadow: 0 0 30px rgba(94, 234, 212, 0.4), 0 0 60px rgba(94, 234, 212, 0.2), var(--shadow-lg);
-    }
-  }
-
-  .hero-meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    animation: fadeInUp var(--duration-slow) var(--ease-out) forwards;
-    animation-delay: 400ms;
-    opacity: 0;
-  }
-
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .meta-divider {
-    color: var(--text-faint);
-  }
-
-  /* Preview card */
-  .hero-preview {
-    position: relative;
-    z-index: 1;
-    animation: fadeInUp var(--duration-slow) var(--ease-out) forwards;
-    animation-delay: 500ms;
-    opacity: 0;
-  }
-
-  .preview-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--radius-xl);
-  }
-
-  .preview-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
-    border-bottom: 1px solid var(--glass-border);
-    background: var(--glass-bg-dark);
-  }
-
-  .window-dots {
-    display: flex;
-    gap: 6px;
-  }
-
-  .window-dots span {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--text-faint);
-  }
-
-  .window-dots span:first-child { background: #ff5f57; }
-  .window-dots span:nth-child(2) { background: #ffbd2e; }
-  .window-dots span:last-child { background: #28c840; }
-
-  .preview-title {
-    font-size: var(--text-sm);
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-  }
-
-  .preview-content {
-    aspect-ratio: 16 / 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(
-      180deg,
-      var(--glass-bg-dark) 0%,
-      var(--bg-inset) 100%
-    );
-  }
-
-  .preview-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-4);
-  }
-
-  .play-button {
-    width: 72px;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--glass-bg);
-    backdrop-filter: var(--blur-sm);
-    -webkit-backdrop-filter: var(--blur-sm);
-    border: 1px solid var(--glass-border-strong);
-    border-radius: 50%;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all var(--duration-normal) var(--ease-out);
-  }
-
-  .play-button:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg-base);
-    transform: scale(1.05);
-    box-shadow: var(--glow-accent-strong);
-  }
-
-  .placeholder-label {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-  }
-
-  /* Floating cards */
-  .floating-card {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-primary);
-    border-radius: var(--radius-md);
-    animation: float-card 6s ease-in-out infinite;
-  }
-
-  .card-1 {
-    top: 15%;
-    right: -10%;
-    animation-delay: 0s;
-  }
-
-  .card-2 {
-    bottom: 20%;
-    left: -5%;
-    animation-delay: -3s;
-  }
-
-  @keyframes float-card {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  /* Responsive */
-  @media (max-width: 1024px) {
-    .hero-grid {
-      grid-template-columns: 1fr;
-      gap: var(--space-12);
-    }
-
-    .hero-content {
-      text-align: center;
-    }
-
-    .hero-lead {
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .hero-actions {
-      justify-content: center;
-    }
-
-    .hero-meta {
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .hero-preview {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .floating-card {
-      display: none;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .hero {
-      padding: calc(var(--nav-height) + var(--space-10)) 0 var(--space-12);
-    }
-
-    .hero-title {
-      font-size: 2rem;
-    }
-
-    .hero-actions {
-      flex-direction: column;
-      width: 100%;
-    }
-
-    .hero-actions .btn {
-      width: 100%;
-    }
-
-    .hero-meta {
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-
-    .meta-divider {
-      display: none;
-    }
-  }
-</style>
-
-<script>
-  import * as THREE from 'three';
-
-  async function initVanta() {
-    // @ts-ignore - Vanta doesn't have types
-    const VANTA = await import('vanta/dist/vanta.halo.min.js');
-
-    // @ts-ignore
-    (VANTA.default as any)({
-      el: '#hero-bg',
-      THREE,
-      mouseControls: true,
-      touchControls: true,
-      gyroControls: false,
-      minHeight: 200,
-      minWidth: 200,
-      backgroundColor: 0x0a0b0d,
-      baseColor: 0x5eead4,
-      amplitudeFactor: 1.2,
-      size: 1.8,
-      speed: 0.6,
-    });
-  }
-
-  if (typeof window !== 'undefined') {
-    initVanta();
-  }
-</script>

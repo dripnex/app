@@ -1,0 +1,24 @@
+[
+  {
+    "id": "readied-ai-assistant",
+    "name": "AI Assistant",
+    "description": "AI assistant with RAG over your notes, powered by Claude",
+    "author": "Readied",
+    "version": "0.1.0",
+    "category": "productivity",
+    "icon": "sparkles",
+    "builtin": true,
+    "tags": ["ai", "rag", "claude"]
+  },
+  {
+    "id": "readied-word-count",
+    "name": "Word Count",
+    "description": "Shows word and character count in the status bar",
+    "author": "Readied",
+    "version": "0.1.0",
+    "category": "editor",
+    "icon": "hash",
+    "builtin": true,
+    "tags": ["statistics", "writing"]
+  }
+]

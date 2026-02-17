@@ -17,371 +17,180 @@ const faqs = [
 ---
 
 <Base title="Pricing — Readied" description="Free forever. Pro when you need it.">
-  <main class="pricing-page">
-    <div class="container">
-      <header class="page-header">
-        <span class="label">Pricing</span>
-        <h1>Free forever.<br/><span class="text-gradient">Pro when you need it.</span></h1>
-        <p class="page-intro">Start with the free tier. Upgrade to Pro for sync and advanced features.</p>
+  <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
+    <div class="relative z-10 max-w-4xl mx-auto">
+      <!-- Page header -->
+      <header class="text-center mb-12">
+        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">Pricing</span>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
+          Free forever.<br />
+          <span class="text-accent">Pro when you need it.</span>
+        </h1>
+        <p class="text-lg text-[#a1a1aa] max-w-[540px] mx-auto">
+          Start with the free tier -- it does a lot. Upgrade to Pro when you want
+          sync, graph view, and all the extras.
+        </p>
       </header>
 
-      <div class="pricing-layout">
+      <!-- App preview strip -->
+      <div class="mb-12 rounded-xl border border-white/[0.06] bg-surface overflow-hidden">
+        <div class="flex items-center gap-4 border-b border-white/[0.06] bg-inset px-4 py-2.5">
+          <div class="flex gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-[#ff5f57]"></span>
+            <span class="h-2 w-2 rounded-full bg-[#ffbd2e]"></span>
+            <span class="h-2 w-2 rounded-full bg-[#28c840]"></span>
+          </div>
+          <span class="font-mono text-[10px] text-[#71717a]">Readied</span>
+        </div>
+        <div class="grid grid-cols-[120px_1fr] sm:grid-cols-[160px_1fr] min-h-[160px] sm:min-h-[200px]">
+          <div class="border-r border-white/[0.06] bg-inset p-3 text-[9px] sm:text-[10px] space-y-0.5">
+            <div class="flex items-center gap-1 rounded px-1 py-0.5 text-[#a1a1aa]">
+              <Icon name="lucide:folder" class="h-2.5 w-2.5 text-accent/60" />
+              <span class="truncate">notes</span>
+            </div>
+            <div class="flex items-center gap-1 rounded bg-accent/10 px-1 py-0.5 text-accent pl-3">
+              <Icon name="lucide:file-text" class="h-2.5 w-2.5" />
+              <span class="truncate">readme.md</span>
+            </div>
+            <div class="flex items-center gap-1 rounded px-1 py-0.5 text-[#71717a] pl-3">
+              <Icon name="lucide:file-text" class="h-2.5 w-2.5" />
+              <span class="truncate">ideas.md</span>
+            </div>
+            <div class="flex items-center gap-1 rounded px-1 py-0.5 text-[#a1a1aa]">
+              <Icon name="lucide:folder" class="h-2.5 w-2.5 text-accent/60" />
+              <span class="truncate">projects</span>
+            </div>
+          </div>
+          <div class="p-3 sm:p-4 font-mono text-[9px] sm:text-[11px] leading-relaxed text-[#a1a1aa] overflow-hidden">
+            <div><span class="font-bold text-accent"># </span><span class="font-bold text-[#f4f4f5]">Project Notes</span></div>
+            <div class="h-0.5"></div>
+            <div>Welcome to the project. This document tracks</div>
+            <div>our key decisions and architecture choices.</div>
+            <div class="h-0.5"></div>
+            <div><span class="font-semibold text-accent/80">## </span><span class="font-semibold text-[#e4e4e7]">Key Decisions</span></div>
+            <div><span class="text-accent/50">- </span>Use local-first architecture</div>
+            <div><span class="text-accent/50">- </span>Standard Markdown format only</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-10">
         <!-- Free Tier -->
-        <div class="pricing-card glass">
-          <div class="card-header">
-            <div class="plan-name">{plans.free.name}</div>
-            <div class="price">
-              <span class="amount">Free</span>
-              <span class="period">forever</span>
+        <div class="rounded-xl bg-surface p-6 sm:p-8">
+          <div class="pb-6 border-b border-white/[0.06] mb-4">
+            <div class="w-11 h-11 flex items-center justify-center rounded-lg bg-accent/10 text-accent mb-4">
+              <Icon name="lucide:heart" size={22} />
+            </div>
+            <div class="text-lg font-semibold text-[#f4f4f5] mb-2">{plans.free.name}</div>
+            <div class="flex items-baseline gap-2">
+              <span class="font-mono text-3xl sm:text-4xl font-bold text-[#f4f4f5]">Free</span>
+              <span class="text-base text-[#71717a]">forever</span>
             </div>
           </div>
 
-          <p class="plan-description">{plans.free.description}</p>
+          <p class="text-sm text-[#a1a1aa] mb-6">{plans.free.description}</p>
 
-          <ul class="features">
+          <ul class="list-none mb-6 space-y-0">
             {plans.free.features.map((f) => (
-              <li>
-                <Icon name="lucide:check" size={16} class="icon-check" />
-                {f}
+              <li class="flex items-center gap-3 py-2 text-sm text-[#a1a1aa]">
+                <span class="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-white/[0.05] text-[#71717a]">
+                  <Icon name="lucide:check" size={14} />
+                </span>
+                <span>{f}</span>
               </li>
             ))}
           </ul>
 
-          <a href="/download" class="btn btn-ghost btn-lg" data-magnetic="0.2">
+          <a href="/download" class="flex items-center justify-center gap-3 w-full px-6 py-3 rounded-lg border border-white/[0.08] text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white">
             <Icon name="lucide:download" size={20} />
             Download Free
           </a>
         </div>
 
         <!-- Pro Tier -->
-        <div class="pricing-card pricing-card-pro glass">
-          <div class="card-header">
-            <div class="plan-name">{plans.pro.name}</div>
-            <div class="price-options">
-              <div class="price">
-                <span class="amount">{proPricing.intervals.monthly.label}</span>
+        <div class="relative rounded-xl border border-accent/30 bg-surface p-6 sm:p-8 overflow-hidden">
+          <span class="absolute top-5 right-5 font-mono text-xs font-bold uppercase tracking-wider text-white bg-accent px-3 py-1 rounded-full">Most popular</span>
+
+          <div class="pb-6 border-b border-white/[0.06] mb-4">
+            <div class="w-11 h-11 flex items-center justify-center rounded-lg bg-accent/10 text-accent mb-4">
+              <Icon name="lucide:zap" size={22} />
+            </div>
+            <div class="text-lg font-semibold text-[#f4f4f5] mb-2">{plans.pro.name}</div>
+            <div class="flex items-baseline gap-3 flex-wrap">
+              <div class="flex items-baseline gap-2">
+                <span class="font-mono text-3xl sm:text-4xl font-bold text-accent">{proPricing.intervals.monthly.label}</span>
               </div>
-              <span class="price-or">or</span>
-              <div class="price">
-                <span class="amount">{proPricing.intervals.annual.label}</span>
-                <span class="savings">Save {proPricing.annualSavings}</span>
+              <span class="text-sm text-[#71717a]">or</span>
+              <div class="flex items-baseline gap-2">
+                <span class="font-mono text-3xl sm:text-4xl font-bold text-accent">{proPricing.intervals.annual.label}</span>
+                <span class="font-mono text-xs font-semibold text-accent bg-accent/10 px-3 py-1 rounded-full">Save {proPricing.annualSavings}</span>
               </div>
             </div>
           </div>
 
-          <p class="plan-description">{plans.pro.description}</p>
+          <p class="text-sm text-[#a1a1aa] mb-6">{plans.pro.description}</p>
 
-          <ul class="features">
+          <ul class="list-none mb-6 space-y-0">
             {plans.pro.features.map((f) => (
-              <li>
-                <Icon name="lucide:check" size={16} class="icon-accent" />
-                {f}
+              <li class="flex items-center gap-3 py-2 text-sm text-[#a1a1aa]">
+                <span class="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-accent/10 text-accent">
+                  <Icon name="lucide:check" size={14} />
+                </span>
+                <span>{f}</span>
               </li>
             ))}
           </ul>
 
-          <div class="trial-info glass">
-            <Icon name="lucide:sparkles" size={16} class="icon-accent" />
+          <div class="flex items-center gap-3 px-4 py-3 mb-6 rounded-lg bg-accent/[0.06] border border-accent/10 text-sm text-[#a1a1aa]">
+            <Icon name="lucide:sparkles" size={16} class="text-accent" />
             <span>{trialDescription}</span>
           </div>
 
-          <a href="/download" class="btn btn-primary btn-lg" data-magnetic="0.2">
+          <a href="/download" class="flex items-center justify-center gap-3 w-full px-6 py-3 rounded-lg bg-accent text-white font-medium text-sm transition-colors hover:bg-accent-hover">
             <Icon name="lucide:zap" size={20} />
             Start {trialDays}-day free trial
           </a>
-
-          <div class="card-glow"></div>
         </div>
       </div>
 
-      <section class="faq">
-        <h2>Questions</h2>
-        <div class="faq-list">
+      <!-- Trust signals -->
+      <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 mb-20 py-6">
+        <div class="flex items-center gap-2 text-sm text-[#71717a]">
+          <Icon name="lucide:shield-check" size={18} class="text-accent" />
+          <span>No credit card required</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-[#71717a]">
+          <Icon name="lucide:lock" size={18} class="text-accent" />
+          <span>Your data stays local</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-[#71717a]">
+          <Icon name="lucide:refresh-cw" size={18} class="text-accent" />
+          <span>Cancel anytime</span>
+        </div>
+      </div>
+
+      <!-- FAQ section -->
+      <section class="max-w-[640px] mx-auto">
+        <h2 class="text-xl font-bold text-white text-center mb-6">Questions? We've got answers.</h2>
+        <div class="flex flex-col gap-3 mb-6">
           {faqs.map(faq => (
-            <details class="faq-item glass">
-              <summary class="faq-question">
-                <span>{faq.q}</span>
-                <Icon name="lucide:chevron-down" size={20} class="chevron" />
+            <details class="rounded-xl bg-surface overflow-hidden group">
+              <summary class="flex items-center justify-between gap-4 px-5 py-4 text-sm font-medium text-[#f4f4f5] cursor-pointer list-none [&::-webkit-details-marker]:hidden transition-colors hover:text-accent">
+                <span class="flex-1">{faq.q}</span>
+                <Icon name="lucide:chevron-down" size={20} class="shrink-0 text-[#71717a] transition-transform duration-200 group-open:rotate-180 group-open:text-accent" />
               </summary>
-              <p class="faq-answer">{faq.a}</p>
+              <p class="px-5 py-4 text-sm text-[#a1a1aa] leading-relaxed border-t border-white/[0.06] m-0">{faq.a}</p>
             </details>
           ))}
         </div>
-        <a href="/faq" class="faq-more-link">
+        <a href="/faq" class="group flex justify-center items-center gap-2 text-sm font-medium text-accent transition-colors hover:text-accent-hover">
           View all FAQs
-          <Icon name="lucide:arrow-right" size={14} />
+          <Icon name="lucide:arrow-right" size={14} class="transition-transform group-hover:translate-x-0.5" />
         </a>
       </section>
     </div>
-  </main>
+  </section>
 
   <Footer />
 </Base>
-
-<style>
-  .pricing-page {
-    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
-  }
-
-  .container {
-    max-width: var(--container-max);
-    margin: 0 auto;
-  }
-
-  .page-header {
-    text-align: center;
-    margin-bottom: var(--space-12);
-  }
-
-  .page-header .label {
-    display: block;
-    margin-bottom: var(--space-4);
-  }
-
-  .page-header h1 {
-    font-size: var(--text-3xl);
-    line-height: 1.15;
-    margin-bottom: var(--space-4);
-  }
-
-  .page-intro {
-    font-size: var(--text-lg);
-    color: var(--text-secondary);
-  }
-
-  .pricing-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-8);
-    align-items: start;
-    margin-bottom: var(--space-16);
-  }
-
-  .pricing-card {
-    position: relative;
-    padding: var(--space-8);
-    overflow: hidden;
-  }
-
-  .pricing-card-pro {
-    border-color: var(--accent);
-  }
-
-  .card-header {
-    padding-bottom: var(--space-6);
-    border-bottom: 1px solid var(--glass-border);
-    margin-bottom: var(--space-4);
-  }
-
-  .plan-name {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: var(--space-2);
-  }
-
-  .price {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-  }
-
-  .price-options {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-  }
-
-  .price-or {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-  }
-
-  .amount {
-    font-size: var(--text-3xl);
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .pricing-card-pro .amount {
-    color: var(--accent);
-  }
-
-  .period {
-    font-size: var(--text-base);
-    color: var(--text-muted);
-  }
-
-  .savings {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--accent);
-    background: var(--accent-glow);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-full);
-  }
-
-  .plan-description {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-6);
-  }
-
-  .features {
-    list-style: none;
-    margin-bottom: var(--space-6);
-  }
-
-  .features li {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-2) 0;
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  .icon-check {
-    color: var(--text-muted);
-  }
-
-  .trial-info {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    margin-bottom: var(--space-6);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  .pricing-card .btn {
-    width: 100%;
-    justify-content: center;
-    gap: var(--space-3);
-  }
-
-  .card-glow {
-    position: absolute;
-    bottom: -100px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-    opacity: 0.4;
-    pointer-events: none;
-  }
-
-  .faq {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .faq h2 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-6);
-    text-align: center;
-  }
-
-  .faq-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    margin-bottom: var(--space-6);
-  }
-
-  .faq-item {
-    overflow: hidden;
-  }
-
-  .faq-question {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-primary);
-    cursor: pointer;
-    list-style: none;
-  }
-
-  .faq-question::-webkit-details-marker {
-    display: none;
-  }
-
-  .faq-question span {
-    flex: 1;
-  }
-
-  .chevron {
-    flex-shrink: 0;
-    color: var(--text-muted);
-    transition: transform var(--duration-fast) var(--ease-out);
-  }
-
-  .faq-item[open] .chevron {
-    transform: rotate(180deg);
-  }
-
-  .faq-item[open] .faq-question {
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .faq-answer {
-    padding: var(--space-4) var(--space-5);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    line-height: 1.7;
-    background: var(--glass-bg-dark);
-    margin: 0;
-  }
-
-  .faq-more-link {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--accent);
-    transition: gap var(--duration-fast) var(--ease-out);
-  }
-
-  .faq-more-link:hover {
-    gap: var(--space-3);
-  }
-
-  @media (max-width: 768px) {
-    .pricing-layout {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .pricing-page {
-      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
-    }
-
-    .page-header h1 {
-      font-size: var(--text-2xl);
-    }
-
-    .pricing-card {
-      padding: var(--space-6);
-    }
-
-    .price-options {
-      flex-direction: column;
-      gap: var(--space-1);
-    }
-
-    .price-or {
-      display: none;
-    }
-  }
-</style>
