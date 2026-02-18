@@ -6,21 +6,15 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="mt-auto bg-base border-t border-white/[0.06]">
-  <div class="mx-auto flex w-full max-w-4xl flex-col gap-12 px-6 pb-8 pt-14 lg:px-8">
-    <!-- Top row: brand + newsletter -->
-    <div class="flex flex-col items-start justify-between gap-8 sm:flex-row sm:items-center">
-      <div class="flex flex-col gap-3">
-        <a href="/" class="inline-block transition-opacity hover:opacity-75">
-          <img src="/logowhite.svg" alt="Readied" class="h-[22px] w-auto" />
-        </a>
-        <p class="max-w-[260px] text-sm leading-relaxed text-[#71717a]">
-          Your thoughts, your device, your rules.
-        </p>
-      </div>
-
-      <div class="w-full max-w-xs shrink-0">
-        <NewsletterForm client:idle compact />
-      </div>
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 pb-8 pt-14 lg:px-8">
+    <!-- Top row: brand -->
+    <div class="flex flex-col gap-3">
+      <a href="/" class="inline-block transition-opacity hover:opacity-75">
+        <span class="font-mono text-xl font-bold text-zinc-50 tracking-tight">readied<span class="text-accent">.</span></span>
+      </a>
+      <p class="max-w-[260px] text-sm leading-relaxed text-[#71717a]">
+        The note app that stays out of your way.
+      </p>
     </div>
 
     <!-- Navigation columns -->
@@ -28,25 +22,25 @@ const year = new Date().getFullYear();
       <!-- Product -->
       <div class="flex flex-col gap-2.5">
         <span class="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">Product</span>
-        <a href="/download" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Download</a>
+        <a href="/#features" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Features</a>
         <a href="/pricing" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Pricing</a>
-        <a href="/plugins" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Plugins</a>
-        <a href="/changelog" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Changelog</a>
+        <a href="/download" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Download</a>
       </div>
 
       <!-- Resources -->
       <div class="flex flex-col gap-2.5">
         <span class="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">Resources</span>
-        <a href="/faq" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">FAQ</a>
-        <a href="https://medium.com/@tomymaritano" target="_blank" rel="noopener" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Blog</a>
+        <a href="https://tomymaritano.github.io/readide/" target="_blank" rel="noopener" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Docs</a>
+        <a href="/changelog" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Changelog</a>
         <a href="/philosophy" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Philosophy</a>
+        <a href="/faq" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">FAQ</a>
       </div>
 
       <!-- Legal -->
       <div class="flex flex-col gap-2.5">
         <span class="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">Legal</span>
-        <a href="/privacy" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Privacy</a>
         <a href="/terms" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Terms</a>
+        <a href="/privacy" class="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent">Privacy</a>
       </div>
 
       <!-- Connect -->
@@ -58,15 +52,19 @@ const year = new Date().getFullYear();
         </a>
         <a href="https://x.com/tomymaritano" target="_blank" rel="noopener" aria-label="X (Twitter)" class="inline-flex w-fit items-center gap-2 text-sm text-[#a1a1aa] transition-colors hover:text-accent">
           <Icon name="simple-icons:x" class="h-[18px] w-[18px] shrink-0" />
-          <span>X / Twitter</span>
+          <span>Twitter</span>
         </a>
       </div>
     </nav>
   </div>
 
   <!-- Bottom bar -->
-  <div class="mx-auto flex w-full max-w-4xl flex-col items-center justify-between gap-2 border-t border-white/[0.06] px-6 py-5 sm:flex-row lg:px-8">
-    <span class="text-xs text-[#71717a]">&copy; {year} Readied. All rights reserved.</span>
-    <span class="font-mono text-xs text-[#71717a]/60">// built with care</span>
+  <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 border-t border-white/[0.06] px-6 py-5 sm:flex-row lg:px-8">
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-[#71717a]">&copy; {year} Readied. Built with &hearts; for developers.</span>
+    </div>
+    <div class="w-full max-w-xs shrink-0">
+      <NewsletterForm client:idle compact />
+    </div>
   </div>
 </footer>
