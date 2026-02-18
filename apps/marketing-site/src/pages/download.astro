@@ -36,16 +36,22 @@ function primaryLabel(asset: PlatformAsset): string {
 
 <Base title="Download — Readied" description={`Download Readied for macOS, Windows, or Linux. Try free for ${config.trialDays} days.`}>
   <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
-    <div class="relative max-w-4xl mx-auto z-10">
+    <div class="relative max-w-5xl mx-auto z-10">
       <header class="text-center mb-16">
-        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">Download</span>
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-3">
+        <span class="section-label">Download</span>
+        <h1 class="section-heading sm:text-4xl lg:text-5xl mb-3">
           Get <span class="text-accent">Readied</span>
         </h1>
         {isReleased ? (
           <>
             <p class="text-lg text-[#a1a1aa] mb-5">Try free for {config.trialDays} days. No account required.</p>
-            <span class="inline-flex items-center px-5 py-2 font-mono text-sm font-semibold rounded-full bg-accent/10 border border-accent/20 text-accent">v{version}</span>
+            <div class="flex items-center justify-center gap-3 flex-wrap">
+              <span class="inline-flex items-center px-5 py-2 font-mono text-sm font-semibold rounded-full bg-accent/10 border border-accent/20 text-accent">v{version}</span>
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+                <Icon name="lucide:check" size={12} />
+                Free forever
+              </span>
+            </div>
           </>
         ) : (
           <>
@@ -57,67 +63,6 @@ function primaryLabel(asset: PlatformAsset): string {
           </>
         )}
       </header>
-
-      <!-- App preview -->
-      <div class="mb-12 rounded-xl border border-white/[0.06] bg-surface overflow-hidden">
-        <!-- Window chrome -->
-        <div class="flex items-center gap-4 border-b border-white/[0.06] bg-inset px-4 py-3">
-          <div class="flex gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
-          </div>
-          <span class="font-mono text-xs text-[#71717a]">Readied</span>
-        </div>
-        <!-- App content mockup -->
-        <div class="grid grid-cols-[140px_1fr] sm:grid-cols-[180px_1fr] min-h-[240px] sm:min-h-[280px]">
-          <!-- Sidebar -->
-          <div class="border-r border-white/[0.06] bg-inset p-3 sm:p-4">
-            <div class="space-y-0.5 text-[10px] sm:text-[11px]">
-              <div class="flex items-center gap-1.5 rounded px-1.5 py-1 text-[#a1a1aa]">
-                <Icon name="lucide:folder" class="h-3 w-3 shrink-0 text-accent/60" />
-                <span class="truncate">notes</span>
-              </div>
-              <div class="flex items-center gap-1.5 rounded bg-accent/10 px-1.5 py-1 text-accent pl-4">
-                <Icon name="lucide:file-text" class="h-3 w-3 shrink-0" />
-                <span class="truncate">welcome.md</span>
-              </div>
-              <div class="flex items-center gap-1.5 rounded px-1.5 py-1 text-[#71717a] pl-4">
-                <Icon name="lucide:file-text" class="h-3 w-3 shrink-0" />
-                <span class="truncate">getting-started.md</span>
-              </div>
-              <div class="flex items-center gap-1.5 rounded px-1.5 py-1 text-[#71717a] pl-4">
-                <Icon name="lucide:file-text" class="h-3 w-3 shrink-0" />
-                <span class="truncate">shortcuts.md</span>
-              </div>
-              <div class="flex items-center gap-1.5 rounded px-1.5 py-1 text-[#a1a1aa]">
-                <Icon name="lucide:folder" class="h-3 w-3 shrink-0 text-accent/60" />
-                <span class="truncate">projects</span>
-              </div>
-            </div>
-          </div>
-          <!-- Editor area -->
-          <div class="p-4 sm:p-6 font-mono text-[10px] sm:text-xs leading-relaxed overflow-hidden">
-            <div class="space-y-1 text-[#a1a1aa]">
-              <div><span class="font-bold text-accent"># </span><span class="font-bold text-[#f4f4f5]">Welcome to Readied</span></div>
-              <div class="h-1"></div>
-              <div>Your notes live right on your disk.</div>
-              <div>No cloud. No sync. No lock-in.</div>
-              <div class="h-1"></div>
-              <div><span class="font-semibold text-accent/80">## </span><span class="font-semibold text-[#e4e4e7]">Getting Started</span></div>
-              <div class="h-1"></div>
-              <div><span class="text-accent/50">1. </span>Open a folder of Markdown files</div>
-              <div><span class="text-accent/50">2. </span>Start writing</div>
-              <div><span class="text-accent/50">3. </span>That's it. Seriously.</div>
-            </div>
-          </div>
-        </div>
-        <!-- Status bar -->
-        <div class="flex items-center justify-between border-t border-white/[0.06] bg-inset px-4 py-1.5 text-[9px] sm:text-[10px] text-[#71717a]">
-          <span>Markdown</span>
-          <span>Ready</span>
-        </div>
-      </div>
 
       <div class={`grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 ${!isReleased ? 'opacity-50 pointer-events-none' : ''}`}>
         <!-- macOS -->
@@ -149,6 +94,12 @@ function primaryLabel(asset: PlatformAsset): string {
                 <span class="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium border border-white/[0.08] text-[#71717a] cursor-not-allowed">Intel</span>
               </>
             )}
+          </div>
+          <div class="rounded-lg bg-inset border border-white/[0.06] p-4 font-mono text-xs text-[#a1a1aa] overflow-x-auto">
+            <p class="text-[#71717a] mb-2"># Install from DMG</p>
+            <p>hdiutil attach Readied-*.dmg</p>
+            <p>cp -R /Volumes/Readied/Readied.app /Applications/</p>
+            <p>hdiutil detach /Volumes/Readied</p>
           </div>
         </article>
 
@@ -182,6 +133,10 @@ function primaryLabel(asset: PlatformAsset): string {
               </>
             )}
           </div>
+          <div class="rounded-lg bg-inset border border-white/[0.06] p-4 font-mono text-xs text-[#a1a1aa] overflow-x-auto">
+            <p class="text-[#71717a] mb-2"># Run the installer</p>
+            <p>Readied-Setup-*.exe /S</p>
+          </div>
         </article>
 
         <!-- Linux -->
@@ -214,11 +169,15 @@ function primaryLabel(asset: PlatformAsset): string {
               </>
             )}
           </div>
+          <div class="rounded-lg bg-inset border border-white/[0.06] p-4 font-mono text-xs text-[#a1a1aa] overflow-x-auto">
+            <p class="text-[#71717a] mb-2"># Make executable and run</p>
+            <p>chmod +x Readied.AppImage && ./Readied.AppImage</p>
+          </div>
         </article>
       </div>
 
       <!-- System Requirements -->
-      <section class="rounded-xl bg-surface p-6 sm:p-8 mb-10">
+      <section class="glass-card p-6 sm:p-8 mb-10">
         <h3 class="text-lg font-semibold text-[#f4f4f5] mb-6 flex items-center gap-3">
           <Icon name="lucide:cpu" size={20} class="text-accent" />
           System requirements

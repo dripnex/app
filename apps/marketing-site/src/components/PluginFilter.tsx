@@ -80,63 +80,105 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
         role="tabpanel"
         aria-label={`Plugins in ${activeCategory} category`}
       >
-        {filteredPlugins.map((plugin) => (
-          <div
-            key={plugin.id}
-            className="rounded-xl bg-surface p-5 transition-colors hover:bg-elevated"
-          >
-            {/* Header: icon + name + version */}
-            <div className="mb-3 flex items-start gap-3">
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-inset text-xl"
-                aria-hidden="true"
-              >
-                {plugin.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="truncate text-sm font-semibold text-[#f4f4f5]">
-                    {plugin.name}
-                  </h3>
-                  {plugin.builtin && (
-                    <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-                      Built-in
-                    </span>
-                  )}
+        {filteredPlugins.map((plugin) => {
+          const installCmd = plugin.builtin
+            ? `readied plugin enable ${plugin.id}`
+            : `readied plugin install ${plugin.id}`;
+
+          return (
+            <div
+              key={plugin.id}
+              className="glass-card overflow-hidden p-5 transition-colors hover:border-zinc-700"
+            >
+              {/* Header: icon + name + version */}
+              <div className="mb-3 flex items-start gap-3">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-inset text-xl"
+                  aria-hidden="true"
+                >
+                  {plugin.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate text-sm font-semibold text-[#f4f4f5]">
+                      {plugin.name}
+                    </h3>
+                    {plugin.builtin && (
+                      <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                        Built-in
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-[#71717a]">
+                    by {plugin.author} &middot; <span className="font-mono">v{plugin.version}</span>
+                  </p>
                 </div>
-                <p className="mt-0.5 truncate text-xs text-[#71717a]">
-                  by {plugin.author} &middot; <span className="font-mono">v{plugin.version}</span>
-                </p>
               </div>
-            </div>
 
-            {/* Description */}
-            <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-[#a1a1aa]">
-              {plugin.description}
-            </p>
+              {/* Description */}
+              <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-[#a1a1aa]">
+                {plugin.description}
+              </p>
 
-            {/* Tags */}
-            {plugin.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {plugin.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-md bg-inset px-2 py-0.5 text-[11px] text-[#71717a]"
+              {/* Install command */}
+              <div className="mb-3 group relative">
+                <pre className="rounded-lg bg-zinc-950 border border-white/[0.06] px-3 py-2 text-xs font-mono text-[#a1a1aa] overflow-x-auto">
+                  <code>{installCmd}</code>
+                </pre>
+                <button
+                  type="button"
+                  className="absolute top-1.5 right-1.5 rounded-md bg-white/5 p-1 text-[#71717a] opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  aria-label={`Copy install command for ${plugin.name}`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(installCmd);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    {tag}
-                  </span>
-                ))}
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Tags */}
+              {plugin.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {plugin.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-md bg-inset px-2 py-0.5 text-[11px] text-[#71717a]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Empty state */}
       {filteredPlugins.length === 0 && (
-        <div className="py-16 text-center">
+        <div className="glass-card p-12 text-center">
+          <div className="mb-3 text-4xl" aria-hidden="true">
+            🔍
+          </div>
+          <p className="text-sm font-medium text-[#f4f4f5] mb-1">
+            No plugins found
+          </p>
           <p className="text-sm text-[#71717a]">
-            No plugins found in this category.
+            No plugins match the <span className="font-medium text-accent">{activeCategory}</span> category. Try selecting a different filter above.
           </p>
         </div>
       )}

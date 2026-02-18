@@ -98,11 +98,11 @@ const sections = [
 
 <Base title="Privacy Policy — Readied" description="How Readied protects your privacy. Your notes stay on your device.">
   <section class="pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
-    <div class="max-w-4xl mx-auto">
-      <header class="mb-8">
-        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">Legal</span>
-        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-[#f4f4f5] mb-3">Privacy Policy</h1>
-        <p class="text-sm text-[#71717a]">Last updated: {lastUpdated}</p>
+    <div class="max-w-5xl mx-auto">
+      <header class="mb-10">
+        <span class="section-label">Legal</span>
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-zinc-50 mb-3">Privacy Policy</h1>
+        <p class="text-sm text-zinc-500">Last updated: {lastUpdated}</p>
       </header>
 
       <!-- TL;DR -->
@@ -112,41 +112,41 @@ const sections = [
         </div>
         <div class="flex-1">
           <span class="block font-mono text-xs font-semibold uppercase tracking-[0.1em] text-accent mb-1">TL;DR</span>
-          <p class="text-base text-[#a1a1aa] leading-relaxed m-0">Your notes never leave your device. We only collect payment info through Stripe to deliver your license.</p>
+          <p class="text-base text-zinc-400 leading-7 m-0">Your notes never leave your device. We only collect payment info through Stripe to deliver your license.</p>
         </div>
       </div>
 
-      <article class="flex flex-col gap-4">
+      <article class="flex flex-col gap-5">
         {sections.map((section, i) => (
-          <section class="rounded-xl bg-surface p-5 sm:p-6">
+          <section class="rounded-xl bg-surface p-6 sm:p-8">
             <header class="flex items-baseline gap-3 mb-4">
               <span class="text-sm font-semibold text-accent font-mono">{String(i + 1).padStart(2, '0')}</span>
-              <h2 class="text-lg font-bold text-[#f4f4f5]">{section.title}</h2>
+              <h2 class="text-lg sm:text-xl font-bold text-zinc-50">{section.title}</h2>
             </header>
             <div>
               {section.content.map(p => (
-                <p class="text-sm text-[#a1a1aa] leading-relaxed mb-2 last:mb-0">{p}</p>
+                <p class="text-base text-zinc-400 leading-7 mb-3 last:mb-0">{p}</p>
               ))}
               {section.list && (
                 <ul class="list-none my-4 p-4 bg-inset border border-white/[0.06] rounded-lg">
                   {section.list.map(item => (
-                    <li class="flex items-start gap-3 py-2 text-sm text-[#a1a1aa] leading-normal">
-                      <Icon name="lucide:check" size={14} class="text-accent shrink-0 mt-0.5" />
+                    <li class="flex items-start gap-3 py-2.5 text-base text-zinc-400 leading-7">
+                      <Icon name="lucide:check" size={16} class="text-accent shrink-0 mt-1" />
                       {item}
                     </li>
                   ))}
                 </ul>
               )}
               {section.footer && (
-                <p class="mt-4 pt-4 border-t border-white/[0.06] italic text-sm text-[#71717a]">{section.footer}</p>
+                <p class="mt-4 pt-4 border-t border-white/[0.06] italic text-base text-zinc-500 leading-7">{section.footer}</p>
               )}
             </div>
           </section>
         ))}
       </article>
 
-      <footer class="mt-10">
-        <a href="/" class="inline-flex items-center gap-2 text-sm text-[#71717a] transition-colors hover:text-accent">
+      <footer class="mt-12">
+        <a href="/" class="inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-accent">
           <Icon name="lucide:arrow-left" size={16} />
           Back to home
         </a>

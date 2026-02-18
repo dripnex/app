@@ -52,28 +52,18 @@ const faqs = [
 
 <Base title="FAQ — Readied" description="Frequently asked questions about Readied.">
   <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
-    <div class="relative max-w-4xl mx-auto z-10">
+    <div class="relative max-w-5xl mx-auto z-10">
       <header class="text-center mb-16">
-        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">FAQ</span>
+        <span class="section-label">FAQ</span>
         <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
           Frequently asked <span class="text-accent">questions</span>
         </h1>
         <p class="text-lg text-[#a1a1aa]">Everything you need to know about Readied.</p>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 mb-16">
-        {faqs.map((section) => (
-          <section class="flex flex-col gap-4">
-            <h2 class="text-lg font-bold text-accent flex items-center gap-3 mb-2">
-              <span class="w-2 h-2 rounded-full bg-accent shrink-0"></span>
-              {section.category}
-            </h2>
-            <FaqAccordion client:idle items={section.questions} />
-          </section>
-        ))}
-      </div>
+      <FaqAccordion client:idle categories={faqs} />
 
-      <div class="text-center rounded-xl bg-surface p-8 sm:p-12">
+      <div class="text-center rounded-xl bg-surface p-8 sm:p-12 mt-16">
         <div class="w-14 h-14 flex items-center justify-center mx-auto mb-5 bg-accent/10 rounded-lg text-accent">
           <Icon name="lucide:message-circle" size={28} />
         </div>

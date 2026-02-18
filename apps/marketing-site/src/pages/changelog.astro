@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Footer from '../components/Footer.astro';
+import NewsletterForm from '../components/NewsletterForm.tsx';
 import { Icon } from 'astro-icon/components';
 import { fetchAllReleases } from '../lib/github';
 import type { ChangelogRelease } from '../lib/github';
@@ -30,10 +31,10 @@ function typeLabel(type: string): string {
 
 <Base title="Changelog — Readied" description="Release notes and version history for Readied.">
   <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-5xl mx-auto">
       <header class="text-center mb-16">
-        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">Changelog</span>
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
+        <span class="section-label">Changelog</span>
+        <h1 class="section-heading sm:text-4xl lg:text-5xl">
           Release <span class="text-accent">history</span>
         </h1>
         <p class="text-lg text-[#a1a1aa] max-w-[480px] mx-auto">Every improvement, fix, and new feature — pulled directly from our releases.</p>
@@ -47,14 +48,23 @@ function typeLabel(type: string): string {
         </div>
       )}
 
+      <!-- Subscribe CTA -->
+      <div class="mb-12 glass-card p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-semibold text-zinc-50">Stay in the loop</h3>
+          <p class="text-sm text-[#a1a1aa]">Get notified when we ship new features.</p>
+        </div>
+        <NewsletterForm client:idle compact />
+      </div>
+
       <!-- Timeline -->
       <div class="relative">
         <!-- Timeline line (hidden on mobile) -->
         <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-white/[0.06] rounded-full hidden md:block" aria-hidden="true"></div>
 
-        <div class="flex flex-col gap-6 md:pl-12">
+        <div class="flex flex-col gap-8 md:pl-12">
           {releases.map((release, ri) => (
-            <article class="relative rounded-xl bg-surface overflow-hidden">
+            <article class="relative glass-card overflow-hidden">
               <!-- Timeline dot (hidden on mobile) -->
               <div class="absolute -left-12 top-6 w-4 h-4 hidden md:flex items-center justify-center" aria-hidden="true">
                 <span class={`block rounded-full border-2 border-base ${ri === 0 ? 'w-3 h-3 bg-accent' : 'w-2.5 h-2.5 bg-white/20'}`}></span>

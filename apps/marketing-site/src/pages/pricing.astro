@@ -18,11 +18,11 @@ const faqs = [
 
 <Base title="Pricing — Readied" description="Free forever. Pro when you need it.">
   <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
-    <div class="relative z-10 max-w-4xl mx-auto">
+    <div class="relative z-10 max-w-5xl mx-auto">
       <!-- Page header -->
-      <header class="text-center mb-12">
-        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">Pricing</span>
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
+      <header class="text-center mb-16">
+        <span class="section-label">Pricing</span>
+        <h1 class="section-heading text-4xl lg:text-5xl">
           Free forever.<br />
           <span class="text-accent">Pro when you need it.</span>
         </h1>
@@ -32,52 +32,10 @@ const faqs = [
         </p>
       </header>
 
-      <!-- App preview strip -->
-      <div class="mb-12 rounded-xl border border-white/[0.06] bg-surface overflow-hidden">
-        <div class="flex items-center gap-4 border-b border-white/[0.06] bg-inset px-4 py-2.5">
-          <div class="flex gap-1.5">
-            <span class="h-2 w-2 rounded-full bg-[#ff5f57]"></span>
-            <span class="h-2 w-2 rounded-full bg-[#ffbd2e]"></span>
-            <span class="h-2 w-2 rounded-full bg-[#28c840]"></span>
-          </div>
-          <span class="font-mono text-[10px] text-[#71717a]">Readied</span>
-        </div>
-        <div class="grid grid-cols-[120px_1fr] sm:grid-cols-[160px_1fr] min-h-[160px] sm:min-h-[200px]">
-          <div class="border-r border-white/[0.06] bg-inset p-3 text-[9px] sm:text-[10px] space-y-0.5">
-            <div class="flex items-center gap-1 rounded px-1 py-0.5 text-[#a1a1aa]">
-              <Icon name="lucide:folder" class="h-2.5 w-2.5 text-accent/60" />
-              <span class="truncate">notes</span>
-            </div>
-            <div class="flex items-center gap-1 rounded bg-accent/10 px-1 py-0.5 text-accent pl-3">
-              <Icon name="lucide:file-text" class="h-2.5 w-2.5" />
-              <span class="truncate">readme.md</span>
-            </div>
-            <div class="flex items-center gap-1 rounded px-1 py-0.5 text-[#71717a] pl-3">
-              <Icon name="lucide:file-text" class="h-2.5 w-2.5" />
-              <span class="truncate">ideas.md</span>
-            </div>
-            <div class="flex items-center gap-1 rounded px-1 py-0.5 text-[#a1a1aa]">
-              <Icon name="lucide:folder" class="h-2.5 w-2.5 text-accent/60" />
-              <span class="truncate">projects</span>
-            </div>
-          </div>
-          <div class="p-3 sm:p-4 font-mono text-[9px] sm:text-[11px] leading-relaxed text-[#a1a1aa] overflow-hidden">
-            <div><span class="font-bold text-accent"># </span><span class="font-bold text-[#f4f4f5]">Project Notes</span></div>
-            <div class="h-0.5"></div>
-            <div>Welcome to the project. This document tracks</div>
-            <div>our key decisions and architecture choices.</div>
-            <div class="h-0.5"></div>
-            <div><span class="font-semibold text-accent/80">## </span><span class="font-semibold text-[#e4e4e7]">Key Decisions</span></div>
-            <div><span class="text-accent/50">- </span>Use local-first architecture</div>
-            <div><span class="text-accent/50">- </span>Standard Markdown format only</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Pricing cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-10">
         <!-- Free Tier -->
-        <div class="rounded-xl bg-surface p-6 sm:p-8">
+        <div class="glass-card p-6 sm:p-8">
           <div class="pb-6 border-b border-white/[0.06] mb-4">
             <div class="w-11 h-11 flex items-center justify-center rounded-lg bg-accent/10 text-accent mb-4">
               <Icon name="lucide:heart" size={22} />
@@ -109,7 +67,7 @@ const faqs = [
         </div>
 
         <!-- Pro Tier -->
-        <div class="relative rounded-xl border border-accent/30 bg-surface p-6 sm:p-8 overflow-hidden">
+        <div class="relative glass-card-glow p-6 sm:p-8 overflow-hidden">
           <span class="absolute top-5 right-5 font-mono text-xs font-bold uppercase tracking-wider text-white bg-accent px-3 py-1 rounded-full">Most popular</span>
 
           <div class="pb-6 border-b border-white/[0.06] mb-4">
@@ -172,10 +130,13 @@ const faqs = [
 
       <!-- FAQ section -->
       <section class="max-w-[640px] mx-auto">
-        <h2 class="text-xl font-bold text-white text-center mb-6">Questions? We've got answers.</h2>
+        <div class="text-center mb-8">
+          <span class="section-label">FAQ</span>
+          <h2 class="section-heading">Questions? We've got answers.</h2>
+        </div>
         <div class="flex flex-col gap-3 mb-6">
           {faqs.map(faq => (
-            <details class="rounded-xl bg-surface overflow-hidden group">
+            <details class="glass-card overflow-hidden group">
               <summary class="flex items-center justify-between gap-4 px-5 py-4 text-sm font-medium text-[#f4f4f5] cursor-pointer list-none [&::-webkit-details-marker]:hidden transition-colors hover:text-accent">
                 <span class="flex-1">{faq.q}</span>
                 <Icon name="lucide:chevron-down" size={20} class="shrink-0 text-[#71717a] transition-transform duration-200 group-open:rotate-180 group-open:text-accent" />

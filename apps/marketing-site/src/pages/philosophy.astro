@@ -60,12 +60,12 @@ const sections = [
 
 <Base title="Philosophy — Readied" description="Why Readied refuses to become a platform.">
   <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
-    <div class="relative max-w-4xl mx-auto z-10">
+    <div class="relative max-w-5xl mx-auto z-10">
       <header class="text-center mb-16 md:mb-20">
-        <span class="inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent mb-4">Our Philosophy</span>
+        <span class="section-label">Our Philosophy</span>
         <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-6">
           Why Readied refuses to<br />
-          <span class="text-accent">become a platform</span>
+          <span class="gradient-text">become a platform</span>
         </h1>
         <p class="text-lg text-[#a1a1aa] max-w-[50ch] mx-auto leading-relaxed">
           A manifesto for software that respects your files, your time, and your trust.
@@ -74,13 +74,13 @@ const sections = [
 
       <article class="flex flex-col gap-6 md:gap-8">
         {sections.map((section, i) => (
-          <section class="rounded-xl bg-surface p-6 sm:p-8 md:p-10">
+          <section class={`rounded-xl bg-surface p-6 sm:p-8 md:p-10 opacity-0 animate-fade-in-up [animation-delay:${i * 100}ms]`}>
             <header class="flex items-baseline gap-4 mb-6 flex-col sm:flex-row sm:gap-4">
               <span class="text-lg font-extrabold text-accent font-mono leading-none shrink-0">{String(i + 1).padStart(2, '0')}</span>
               <h2 class="text-xl sm:text-2xl font-bold text-[#f4f4f5] tracking-tight">{section.title}</h2>
             </header>
             <div>
-              <p class="text-lg sm:text-xl font-semibold text-[#f4f4f5] leading-snug mb-5 pl-5 border-l-[3px] border-accent">{section.highlight}</p>
+              <p class="text-xl sm:text-2xl font-semibold gradient-text leading-snug mb-5">{section.highlight}</p>
               {section.content.map(p => (
                 <p class="text-base text-[#a1a1aa] leading-relaxed mb-3 last:mb-0">{p}</p>
               ))}
@@ -98,15 +98,27 @@ const sections = [
                 <p class="mt-6 pt-6 border-t border-white/[0.06] italic text-sm text-[#71717a]">{section.footer}</p>
               )}
             </div>
+            {i === 2 && (
+              <div class="mt-6 rounded-xl bg-[#0f0f10] border border-white/[0.06] p-6 font-mono text-sm leading-relaxed">
+                <div class="text-[#71717a] mb-2">// What happens when you delete Readied:</div>
+                <div class="text-[#a1a1aa]">~/notes/</div>
+                <div class="text-[#a1a1aa] pl-4">project.md     <span class="text-emerald-400">&larr; still here</span></div>
+                <div class="text-[#a1a1aa] pl-4">ideas.md       <span class="text-emerald-400">&larr; still here</span></div>
+                <div class="text-[#a1a1aa] pl-4">journal/       <span class="text-emerald-400">&larr; still here</span></div>
+                <div class="text-[#71717a] mt-2">// Your files never depended on us.</div>
+              </div>
+            )}
           </section>
         ))}
       </article>
 
       <footer class="mt-16 text-center">
-        <a href="/" class="group inline-flex items-center gap-2 text-sm font-medium text-[#71717a] px-5 py-3 rounded-lg border border-white/[0.08] transition-colors hover:text-accent hover:bg-white/5">
-          <Icon name="lucide:arrow-left" size={16} class="transition-transform group-hover:-translate-x-0.5" />
-          Back to home
-        </a>
+        <h3 class="text-2xl font-bold text-zinc-50 mb-3">Ready to try software that respects your files?</h3>
+        <p class="text-base text-[#a1a1aa] mb-8 max-w-[44ch] mx-auto">Download for free. No account needed.</p>
+        <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <a href="/download" class="inline-flex items-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white hover:bg-accent-hover">Download Free</a>
+          <a href="/" class="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] hover:bg-white/5 hover:text-white">Back to home</a>
+        </div>
       </footer>
     </div>
   </section>
