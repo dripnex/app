@@ -30,7 +30,7 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="relative z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-surface text-[#a1a1aa] transition-colors hover:bg-elevated hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="relative z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/5 text-[#a1a1aa] transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label="Open navigation menu"
       >
         <svg
@@ -52,7 +52,7 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
       {/* Full-screen mobile nav dialog */}
       <Transition show={isOpen} as={Fragment}>
         <Dialog onClose={close} className="relative z-50">
-          {/* Backdrop overlay */}
+          {/* Backdrop overlay with glassmorphism */}
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -62,7 +62,7 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black/70" aria-hidden="true" />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" />
           </Transition.Child>
 
           {/* Slide-down panel */}
@@ -75,16 +75,16 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
             leaveFrom="translate-y-0 opacity-100"
             leaveTo="-translate-y-full opacity-0"
           >
-            <Dialog.Panel className="fixed inset-x-0 top-0 max-h-screen overflow-y-auto bg-base shadow-2xl">
+            <Dialog.Panel className="fixed inset-x-0 top-0 max-h-screen overflow-y-auto bg-zinc-950/95 backdrop-blur-xl border-b border-white/[0.06] shadow-2xl">
               {/* Header with close button */}
               <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
-                <Dialog.Title className="text-lg font-semibold text-white">
-                  Menu
+                <Dialog.Title className="font-mono text-lg font-bold text-zinc-50 tracking-tight">
+                  readied<span className="text-accent">.</span>
                 </Dialog.Title>
                 <button
                   type="button"
                   onClick={close}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-[#a1a1aa] transition-colors hover:bg-surface hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   aria-label="Close navigation menu"
                 >
                   <svg
@@ -104,19 +104,24 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
                 </button>
               </div>
 
-              {/* Primary links */}
+              {/* CTA buttons */}
               <nav className="px-6 py-4" aria-label="Mobile navigation">
-                <ul className="space-y-1">
-                  {links.map((link) => (
+                <ul className="space-y-2">
+                  {links.map((link, index) => (
                     <li key={link.href}>
                       <a
                         href={link.href}
                         onClick={close}
                         target={link.external ? '_blank' : undefined}
                         rel={link.external ? 'noopener noreferrer' : undefined}
-                        className="flex items-center gap-2 rounded-lg px-4 py-3 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-surface hover:text-white"
+                        className={
+                          index === 0
+                            ? 'flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-4 py-3 text-base font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white'
+                            : 'flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-base font-medium text-white transition-colors hover:bg-accent-hover'
+                        }
                       >
                         {link.label}
+                        {index === 1 && <span aria-hidden="true">&rarr;</span>}
                         {link.external && (
                           <svg
                             className="h-4 w-4 text-[#71717a]"
@@ -155,7 +160,7 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
                               onClick={close}
                               target={link.external ? '_blank' : undefined}
                               rel={link.external ? 'noopener noreferrer' : undefined}
-                              className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm text-[#71717a] transition-colors hover:bg-surface hover:text-[#a1a1aa]"
+                              className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white"
                             >
                               {link.label}
                               {link.external && (

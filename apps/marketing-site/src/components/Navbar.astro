@@ -3,20 +3,20 @@ import MobileNav from './MobileNav.tsx';
 import NavDropdown from './NavDropdown.tsx';
 ---
 
-<header class="fixed top-0 inset-x-0 z-50 h-14 bg-base border-b border-white/[0.06]">
-  <div class="mx-auto flex h-full max-w-4xl items-center justify-between gap-8 px-6 lg:px-8">
-    <!-- Logo -->
-    <a href="/" class="flex items-center transition-opacity hover:opacity-80">
-      <img src="/logowhite.svg" alt="Readied" class="h-[22px] w-auto" />
+<header class="fixed top-0 inset-x-0 z-50 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-white/[0.06]">
+  <div class="mx-auto flex h-full max-w-5xl items-center justify-between gap-8 px-6 lg:px-8">
+    <!-- Text logo -->
+    <a href="/" class="flex items-center">
+      <span class="font-mono text-lg font-bold text-zinc-50 tracking-tight">readied<span class="text-accent">.</span></span>
     </a>
 
     <!-- Desktop nav links -->
     <nav class="hidden items-center gap-1 md:flex" aria-label="Main navigation">
       <a
-        href="/philosophy"
+        href="/#features"
         class="relative rounded-lg px-3 py-2 text-sm font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-[#f4f4f5]"
       >
-        Philosophy
+        Features
       </a>
       <a
         href="/pricing"
@@ -24,36 +24,38 @@ import NavDropdown from './NavDropdown.tsx';
       >
         Pricing
       </a>
-      <a
-        href="/plugins"
-        class="relative rounded-lg px-3 py-2 text-sm font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-[#f4f4f5]"
-      >
-        Plugins
-      </a>
 
       <NavDropdown
         client:load
-        label="More"
+        label="Docs"
         items={[
-          { label: "What's New", href: '/changelog', icon: '\u{1F4CB}' },
-          { label: 'FAQ', href: '/faq', icon: '\u{2753}' },
-          { label: 'Blog', href: 'https://medium.com/@tomymaritano', icon: '\u{270F}\u{FE0F}', external: true },
-          { label: 'GitHub', href: 'https://github.com/tomymaritano/readide', icon: '\u{1F4BB}', external: true },
-          { label: 'X (Twitter)', href: 'https://x.com/tomymaritano', icon: '\u{1D54F}', external: true },
+          { label: 'Philosophy', href: '/philosophy' },
+          { label: 'FAQ', href: '/faq' },
+          { label: 'Plugins', href: '/plugins' },
         ]}
       />
+
+      <a
+        href="/changelog"
+        class="relative rounded-lg px-3 py-2 text-sm font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-[#f4f4f5]"
+      >
+        Changelog
+      </a>
     </nav>
 
-    <!-- Desktop CTA -->
-    <div class="hidden items-center gap-4 md:flex">
+    <!-- Desktop dual CTAs -->
+    <div class="hidden items-center gap-3 md:flex">
       <a
         href="/download"
-        class="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+        class="rounded-lg border border-white/[0.08] px-4 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
       >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-        </svg>
         Download
+      </a>
+      <a
+        href="/pricing"
+        class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+      >
+        Try Pro Free &rarr;
       </a>
     </div>
 
@@ -63,14 +65,14 @@ import NavDropdown from './NavDropdown.tsx';
         client:load
         links={[
           { label: 'Download', href: '/download' },
-          { label: 'Pricing', href: '/pricing' },
-          { label: 'Plugins', href: '/plugins' },
+          { label: 'Try Pro Free', href: '/pricing' },
         ]}
         sections={[
           {
             title: 'Product',
             links: [
-              { label: "What's New", href: '/changelog' },
+              { label: 'Pricing', href: '/pricing' },
+              { label: 'Changelog', href: '/changelog' },
             ],
           },
           {
@@ -78,6 +80,7 @@ import NavDropdown from './NavDropdown.tsx';
             links: [
               { label: 'Philosophy', href: '/philosophy' },
               { label: 'FAQ', href: '/faq' },
+              { label: 'Plugins', href: '/plugins' },
               { label: 'Blog', href: 'https://medium.com/@tomymaritano', external: true },
             ],
           },

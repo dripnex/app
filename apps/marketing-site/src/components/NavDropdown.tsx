@@ -21,7 +21,7 @@ export default function NavDropdown({ label, items }: NavDropdownProps) {
           <Popover.Button
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               open
-                ? 'bg-surface text-white'
+                ? 'bg-white/5 text-white'
                 : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'
             }`}
           >
@@ -52,7 +52,7 @@ export default function NavDropdown({ label, items }: NavDropdownProps) {
             leaveTo="opacity-0 translate-y-1"
           >
             <Popover.Panel className="absolute left-1/2 z-50 mt-3 w-56 -translate-x-1/2 transform">
-              <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-elevated shadow-xl shadow-black/40">
+              <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
                 <div className="py-1">
                   {items.map((item) => (
                     <a
@@ -60,10 +60,10 @@ export default function NavDropdown({ label, items }: NavDropdownProps) {
                       href={item.href}
                       target={item.external ? '_blank' : undefined}
                       rel={item.external ? 'noopener noreferrer' : undefined}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#a1a1aa] transition-colors hover:bg-accent/10 hover:text-white"
                     >
                       {item.icon && (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface text-base" aria-hidden="true">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-base" aria-hidden="true">
                           {item.icon}
                         </span>
                       )}
