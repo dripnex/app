@@ -3,67 +3,54 @@ import { Icon } from 'astro-icon/components';
 import { getProductConfig } from '@readied/product-config';
 
 const config = getProductConfig();
-
-const useCases = [
-  {
-    icon: 'lucide:code',
-    title: 'Developers',
-    description: 'READMEs, ADRs, standups, project docs — all in Markdown, right next to your code.'
-  },
-  {
-    icon: 'lucide:pen-line',
-    title: 'Writers',
-    description: 'Distraction-free writing with live preview. Export to PDF or HTML when you\'re ready to publish.'
-  },
-  {
-    icon: 'lucide:graduation-cap',
-    title: 'Students & researchers',
-    description: 'Organize lecture notes, research, and papers in folders that make sense to you.'
-  },
-  {
-    icon: 'lucide:briefcase',
-    title: 'Teams',
-    description: 'Shared folders via Git, Dropbox, or any sync tool. No vendor account required.'
-  }
-];
 ---
 
 <section class="py-24 px-6">
-  <div class="mx-auto max-w-4xl">
-    <!-- Section header -->
-    <header class="mx-auto mb-16 max-w-[640px] text-center">
-      <span class="mb-4 inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent">Who it's for</span>
-      <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight lg:text-4xl">
-        Built for people who<br />
-        <span class="text-accent">think in plain text</span>
-      </h2>
-      <p class="text-lg leading-relaxed text-[#a1a1aa]">
-        Whether you write code, prose, or lecture notes — if you prefer Markdown, Readied is for you.
-      </p>
-    </header>
+  <div class="mx-auto max-w-5xl">
+    <!-- CTA -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-zinc-50 mb-4">Ready to own your notes?</h2>
+      <p class="text-lg text-[#a1a1aa] mb-8 max-w-[48ch] mx-auto">Download for free. No account. No credit card. Just open a folder and start writing.</p>
 
-    <!-- Use cases grid -->
-    <div class="grid gap-4 sm:grid-cols-2 mb-12">
-      {useCases.map((useCase) => (
-        <article class="flex items-start gap-4 rounded-xl bg-surface p-5 sm:p-6">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
-            <Icon name={useCase.icon} class="h-5 w-5" />
-          </div>
-          <div>
-            <h3 class="text-base font-semibold text-[#f4f4f5] mb-1">{useCase.title}</h3>
-            <p class="text-sm leading-relaxed text-[#a1a1aa]">{useCase.description}</p>
-          </div>
-        </article>
-      ))}
+      <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center mb-8">
+        <a
+          href="/download"
+          class="group inline-flex w-full items-center justify-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto"
+        >
+          <Icon name="lucide:download" class="h-5 w-5" />
+          Download Free
+        </a>
+        <a
+          href="/pricing"
+          class="inline-flex w-full items-center justify-center rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white sm:w-auto"
+        >
+          View pricing
+        </a>
+      </div>
+
+      <!-- Trust signals -->
+      <div class="flex flex-wrap justify-center gap-3">
+        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
+          <Icon name="lucide:heart" class="h-3.5 w-3.5 text-accent" />
+          <span>Free forever</span>
+        </div>
+        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
+          <Icon name="lucide:zap" class="h-3.5 w-3.5 text-accent" />
+          <span>{config.trialDays}-day Pro trial</span>
+        </div>
+        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
+          <Icon name="lucide:wifi-off" class="h-3.5 w-3.5 text-accent" />
+          <span>100% offline</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Indie developer card with photo -->
+    <!-- Indie developer card -->
     <div class="rounded-xl bg-surface p-6 md:p-8">
       <div class="flex flex-col md:flex-row items-start gap-6 md:gap-8">
         <!-- Photo -->
         <div class="shrink-0">
           <div class="w-24 h-24 md:w-28 md:h-28 rounded-xl bg-inset border border-white/[0.06] overflow-hidden flex items-center justify-center">
-            <!-- TODO: Replace with actual photo -->
             <img
               src="https://avatars.githubusercontent.com/u/7626025?v=4"
               alt="Tomy Maritano"
@@ -87,46 +74,6 @@ const useCases = [
             Read the philosophy
             <Icon name="lucide:arrow-right" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Final CTA -->
-    <div class="mt-16 text-center">
-      <h3 class="text-2xl font-bold text-[#f4f4f5] mb-3">Ready to try it?</h3>
-      <p class="text-base text-[#a1a1aa] mb-8 max-w-[44ch] mx-auto">
-        Download for free. No account. No credit card. Just open a folder and start writing.
-      </p>
-
-      <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center mb-8">
-        <a
-          href="/download"
-          class="inline-flex w-full items-center justify-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto"
-        >
-          <Icon name="lucide:download" class="h-5 w-5" />
-          Download free
-        </a>
-        <a
-          href="/pricing"
-          class="inline-flex w-full items-center justify-center rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white sm:w-auto"
-        >
-          View pricing
-        </a>
-      </div>
-
-      <!-- Trust signals -->
-      <div class="flex flex-wrap justify-center gap-3">
-        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
-          <Icon name="lucide:heart" class="h-3.5 w-3.5 text-accent" />
-          <span>Free forever</span>
-        </div>
-        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
-          <Icon name="lucide:zap" class="h-3.5 w-3.5 text-accent" />
-          <span>{config.trialDays}-day Pro trial</span>
-        </div>
-        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
-          <Icon name="lucide:wifi-off" class="h-3.5 w-3.5 text-accent" />
-          <span>100% offline</span>
         </div>
       </div>
     </div>

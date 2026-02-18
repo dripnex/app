@@ -1,59 +1,20 @@
 ---
 import { Icon } from 'astro-icon/components';
-
-const steps = [
-  {
-    number: '01',
-    icon: 'lucide:folder-open',
-    title: 'Open a folder',
-    description: 'Point Readied at any folder on your computer. Your existing Markdown files appear instantly — no import, no conversion, no setup.'
-  },
-  {
-    number: '02',
-    icon: 'lucide:square-pen',
-    title: 'Start writing',
-    description: 'A focused editor with syntax highlighting, live preview, and keyboard shortcuts. Write in standard Markdown — the format that works everywhere.'
-  },
-  {
-    number: '03',
-    icon: 'lucide:hard-drive',
-    title: 'Your files stay yours',
-    description: 'Every note is a .md file on your disk. Open them in VS Code, sync them with Git, back them up however you want. No lock-in, ever.'
-  }
-];
+import ComparisonTable from './ComparisonTable.tsx';
 ---
 
 <section class="py-24 px-6">
-  <div class="mx-auto max-w-4xl">
-    <!-- Section header -->
-    <header class="mx-auto mb-16 max-w-[640px] text-center">
-      <span class="mb-4 inline-block font-mono text-xs font-semibold uppercase tracking-widest text-accent">How it works</span>
-      <h2 class="mb-5 text-3xl font-bold leading-tight tracking-tight lg:text-4xl">
-        Three steps.<br />
-        <span class="text-accent">Zero friction.</span>
+  <div class="mx-auto max-w-5xl">
+    <header class="mx-auto mb-12 max-w-[640px] text-center">
+      <span class="section-label">Why local-first?</span>
+      <h2 class="section-heading">
+        Most note apps treat your data like<br />
+        <span class="gradient-text">their business asset.</span>
       </h2>
-      <p class="text-lg leading-relaxed text-[#a1a1aa]">
-        No account. No onboarding. No cloud. Just open a folder and write.
-      </p>
+      <p class="text-lg leading-relaxed text-[#a1a1aa]">We don't. Your files stay on your disk, in standard Markdown, forever.</p>
     </header>
 
-    <!-- Steps -->
-    <div class="grid gap-6 md:grid-cols-3">
-      {steps.map((step) => (
-        <article class="rounded-xl bg-surface p-6 md:p-8 flex flex-col">
-          <!-- Step number + icon -->
-          <div class="flex items-center gap-4 mb-5">
-            <span class="font-mono text-2xl font-bold text-accent/30">{step.number}</span>
-            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-accent/10 text-accent">
-              <Icon name={step.icon} class="h-5 w-5" />
-            </div>
-          </div>
-
-          <h3 class="text-lg font-semibold text-[#f4f4f5] mb-3">{step.title}</h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa] flex-1">{step.description}</p>
-        </article>
-      ))}
-    </div>
+    <ComparisonTable client:idle />
 
     <!-- Visual: file format proof -->
     <div class="mt-10 rounded-xl bg-surface overflow-hidden">

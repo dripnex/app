@@ -1,47 +1,45 @@
 ---
 import { Icon } from 'astro-icon/components';
 import { getProductConfig } from '@readied/product-config';
+import TypewriterDemo from './TypewriterDemo.tsx';
 
 const config = getProductConfig();
 ---
 
 <section class="relative pt-32 sm:pt-40 pb-20 lg:pb-24">
-  <div class="relative z-[2] mx-auto w-full max-w-4xl px-6 lg:px-8">
-    <!-- Content -->
+  <div class="relative z-[2] mx-auto w-full max-w-5xl px-6 lg:px-8">
     <div class="text-center">
+      <!-- Version badge -->
       <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs font-medium text-[#a1a1aa] opacity-0 animate-fade-in-up">
         <span class="font-mono text-accent">v0.6</span>
         Now in development
       </div>
 
-      <h1 class="mb-6 text-[clamp(2.5rem,5vw,4rem)] font-bold leading-[1.1] tracking-tight opacity-0 animate-fade-in-up [animation-delay:100ms]">
-        Your notes.<br />
-        <span class="text-accent">Your disk.</span><br />
-        Your rules.
+      <!-- Headline -->
+      <h1 class="mb-6 text-[clamp(2.5rem,5vw,4rem)] font-extrabold leading-[1.08] tracking-tight opacity-0 animate-fade-in-up [animation-delay:100ms]">
+        Your Markdown.<br />
+        <span class="gradient-text">Your Machine.</span><br />
+        Your Rules.
       </h1>
 
-      <p class="mx-auto mb-8 max-w-[520px] text-lg leading-relaxed text-[#a1a1aa] opacity-0 animate-fade-in-up [animation-delay:200ms]">
-        A beautiful Markdown editor that works offline, stores files on your
-        computer, and never locks you in. Your data stays yours, forever.
+      <!-- Subtext -->
+      <p class="mx-auto mb-8 max-w-[540px] text-lg leading-relaxed text-[#a1a1aa] opacity-0 animate-fade-in-up [animation-delay:200ms]">
+        The note app that respects your files, your privacy, and your workflow. No cloud. No lock-in. Just Markdown.
       </p>
 
+      <!-- Dual CTAs -->
       <div class="mb-8 flex flex-col items-center gap-4 opacity-0 animate-fade-in-up [animation-delay:300ms] sm:flex-row sm:justify-center">
-        <a
-          href="/download"
-          class="group inline-flex w-full items-center justify-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto"
-        >
+        <a href="/download" class="group inline-flex w-full items-center justify-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto">
           <Icon name="lucide:download" class="h-5 w-5" />
-          Download free
+          Download Free
         </a>
-        <a
-          href="/philosophy"
-          class="group inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white sm:w-auto"
-        >
-          Learn more
+        <a href="/pricing" class="group inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white sm:w-auto">
+          Start Pro Trial
           <Icon name="lucide:arrow-right" class="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </a>
       </div>
 
+      <!-- Trust badges -->
       <div class="flex flex-col items-center gap-2 text-sm text-[#71717a] opacity-0 animate-fade-in-up [animation-delay:400ms] sm:flex-row sm:gap-3 sm:justify-center">
         <span class="inline-flex items-center gap-2">
           <Icon name="lucide:shield" class="h-3.5 w-3.5" />
@@ -54,18 +52,9 @@ const config = getProductConfig();
       </div>
     </div>
 
-    <!-- Demo placeholder -->
+    <!-- Typewriter Demo -->
     <div class="mt-16 opacity-0 animate-fade-in-up [animation-delay:500ms]">
-      <div class="relative overflow-hidden rounded-xl border border-white/[0.06] bg-surface">
-        <div class="flex items-center justify-center min-h-[400px] sm:min-h-[480px]">
-          <div class="text-center px-6">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
-              <Icon name="lucide:play" size={32} />
-            </div>
-            <p class="font-mono text-sm text-[#71717a]">// demo coming soon</p>
-          </div>
-        </div>
-      </div>
+      <TypewriterDemo client:load />
     </div>
   </div>
 </section>
