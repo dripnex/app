@@ -1,0 +1,27 @@
+---
+import { Icon } from 'astro-icon/components';
+---
+
+<div class="flex flex-wrap items-center justify-center gap-3 py-8">
+  <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a]">
+    <Icon name="lucide:wifi-off" class="h-3.5 w-3.5 text-accent" />
+    <span>Works 100% offline</span>
+  </div>
+  <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a]">
+    <Icon name="lucide:file-text" class="h-3.5 w-3.5 text-accent" />
+    <span>Standard Markdown</span>
+  </div>
+  <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a]">
+    <Icon name="lucide:monitor" class="h-3.5 w-3.5 text-accent" />
+    <span>macOS, Windows & Linux</span>
+  </div>
+  <a
+    href="https://github.com/tomymaritano/readide"
+    target="_blank"
+    rel="noopener"
+    class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a] transition-colors hover:text-accent hover:border-accent/20"
+  >
+    <Icon name="lucide:star" class="h-3.5 w-3.5 text-accent" />
+    <span>Star on GitHub</span>
+  </a>
+</div>
