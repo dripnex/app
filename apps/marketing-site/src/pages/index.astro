@@ -4,7 +4,6 @@ import Hero from '../components/Hero.astro';
 import SocialProof from '../components/SocialProof.astro';
 import Features from '../components/Features.astro';
 import WhyLocal from '../components/WhyLocal.astro';
-import WorkflowTabs from '../components/WorkflowTabs.tsx';
 import Audience from '../components/Audience.astro';
 import Footer from '../components/Footer.astro';
 ---
@@ -14,16 +13,6 @@ import Footer from '../components/Footer.astro';
   <SocialProof />
   <Features />
   <WhyLocal />
-  <section class="py-24 px-6" id="workflow">
-    <div class="mx-auto max-w-5xl">
-      <header class="mx-auto mb-12 max-w-[640px] text-center">
-        <span class="section-label">Workflow</span>
-        <h2 class="section-heading">Built for how developers think</h2>
-        <p class="text-lg leading-relaxed text-[#a1a1aa]">Write, organize, and find your notes — all from one place.</p>
-      </header>
-      <WorkflowTabs client:idle />
-    </div>
-  </section>
   <Audience />
   <Footer />
 </Base>

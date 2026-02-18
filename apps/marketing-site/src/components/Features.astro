@@ -8,181 +8,72 @@ import { Icon } from 'astro-icon/components';
     <header class="mb-16 text-center">
       <span class="section-label">Features</span>
       <h2 class="section-heading">
-        Everything you need.<br />
-        <span class="gradient-text">Nothing you don't.</span>
+        Tools that get out of your way.
       </h2>
       <p class="mx-auto max-w-[48ch] text-lg leading-relaxed text-[#a1a1aa]">
         A focused set of tools for people who think in plain text.
       </p>
     </header>
 
-    <!-- 6-card grid (3x2) -->
-    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <!-- Row 1: Text left, image right -->
+    <div class="grid md:grid-cols-2 gap-8 items-center mb-16">
+      <div>
+        <h3 class="text-2xl font-bold text-zinc-50 mb-3">Write in Markdown. See it rendered.</h3>
+        <p class="text-base leading-relaxed text-[#a1a1aa] mb-4">Split-pane editor with syntax highlighting, live preview, and keyboard shortcuts. No WYSIWYG weirdness—just you and your text.</p>
+        <p class="text-sm text-[#71717a]">CodeMirror 6 under the hood. Fast enough for 10,000-line files.</p>
+      </div>
+      <img src="/media/demo-writing.svg" alt="Writing markdown with live preview" class="rounded-xl border border-white/[0.06]" width="800" height="500" loading="lazy" />
+    </div>
 
-      <!-- 1. Local Files -->
-      <article class="glass-card overflow-hidden">
-        <div class="border-b border-white/[0.06] p-4 min-h-[140px]">
-          <div class="font-mono text-[10px] sm:text-[11px] space-y-0.5">
-            <div class="flex items-center gap-1.5 text-[#f4f4f5]">
-              <Icon name="lucide:folder-open" class="h-3 w-3 text-accent" />
-              <span>my-notes/</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-[#a1a1aa] pl-4">
-              <Icon name="lucide:folder" class="h-3 w-3 text-accent/60" />
-              <span>daily/</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-[#71717a] pl-8">
-              <Icon name="lucide:file-text" class="h-3 w-3" />
-              <span>2025-01-15.md</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-[#71717a] pl-8">
-              <Icon name="lucide:file-text" class="h-3 w-3" />
-              <span>2025-01-16.md</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-[#a1a1aa] pl-4">
-              <Icon name="lucide:folder" class="h-3 w-3 text-accent/60" />
-              <span>projects/</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-[#71717a] pl-8">
-              <Icon name="lucide:file-text" class="h-3 w-3" />
-              <span>roadmap.md</span>
-            </div>
-            <div class="flex items-center gap-1.5 text-[#a1a1aa] pl-4">
-              <Icon name="lucide:file-text" class="h-3 w-3" />
-              <span>README.md</span>
-            </div>
-          </div>
-          <div class="mt-3 flex items-center gap-1 rounded-lg bg-inset px-3 py-1.5 font-mono text-[9px] text-[#71717a]">
-            <Icon name="lucide:hard-drive" class="h-2.5 w-2.5 shrink-0" />
-            <span>~/Documents/my-notes/</span>
-          </div>
+    <!-- Row 2: Image left, text right (reversed) -->
+    <div class="grid md:grid-cols-2 gap-8 items-center mb-16">
+      <img src="/media/feature-organize.svg" alt="Organizing notes in notebooks" class="rounded-xl border border-white/[0.06]" width="640" height="480" loading="lazy" />
+      <div>
+        <h3 class="text-2xl font-bold text-zinc-50 mb-3">Organize your way.</h3>
+        <p class="text-base leading-relaxed text-[#a1a1aa] mb-4">Notebooks, folders, pinned notes—structure your thoughts however makes sense to you. It's your file system, not ours.</p>
+        <p class="text-sm text-[#71717a]">Real .md files on your disk. Open them in VS Code, sync with git, back up however you want.</p>
+      </div>
+    </div>
+
+    <!-- Row 3: Text left, image right -->
+    <div class="grid md:grid-cols-2 gap-8 items-center mb-16">
+      <div>
+        <h3 class="text-2xl font-bold text-zinc-50 mb-3">Find anything, instantly.</h3>
+        <p class="text-base leading-relaxed text-[#a1a1aa] mb-4">Full-text search across all your notes. Backlinks computed on the fly from your files—no hidden database required.</p>
+        <p class="text-sm text-[#71717a]">Cmd+P quick-open. Search as you type. Jump between notes in milliseconds.</p>
+      </div>
+      <img src="/media/feature-search.svg" alt="Searching across notes with highlighted results" class="rounded-xl border border-white/[0.06]" width="640" height="480" loading="lazy" />
+    </div>
+
+    <!-- Row 4: Small feature cards (3 columns) -->
+    <div class="grid gap-6 md:grid-cols-3">
+
+      <!-- Offline First -->
+      <article class="glass-card p-6">
+        <div class="mb-4">
+          <Icon name="lucide:wifi-off" class="h-8 w-8 text-accent" />
         </div>
-        <div class="p-5">
-          <h3 class="mb-2 text-base font-semibold text-zinc-50">Local Files</h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">Real files and folders on your disk. No database, no hidden formats — just plain .md files.</p>
-        </div>
+        <h3 class="mb-2 text-base font-semibold text-zinc-50">Works on a plane.</h3>
+        <p class="text-sm leading-relaxed text-[#a1a1aa]">No WiFi? No problem. Readied works entirely offline. Always.</p>
       </article>
 
-      <!-- 2. Offline First -->
-      <article class="glass-card overflow-hidden">
-        <div class="border-b border-white/[0.06] p-4 min-h-[140px] flex flex-col items-center justify-center">
-          <div class="relative mb-3">
-            <Icon name="lucide:wifi-off" class="h-10 w-10 text-accent" />
-          </div>
-          <p class="font-mono text-sm font-semibold text-[#f4f4f5] mb-1">No internet? No problem.</p>
-          <p class="font-mono text-[10px] text-[#71717a]">Everything runs on your machine.</p>
-          <div class="mt-3 flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-medium text-emerald-400">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            All systems operational
-          </div>
+      <!-- Fast & Light -->
+      <article class="glass-card p-6">
+        <div class="mb-4">
+          <Icon name="lucide:zap" class="h-8 w-8 text-accent" />
         </div>
-        <div class="p-5">
-          <h3 class="mb-2 text-base font-semibold text-zinc-50">Offline First</h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">No server, no sync, no internet required. Your notes work everywhere, always.</p>
-        </div>
+        <h3 class="mb-2 text-base font-semibold text-zinc-50">Opens in under 2 seconds.</h3>
+        <p class="text-sm leading-relaxed text-[#a1a1aa]">No Electron bloat. No loading spinners. Just instant access to your notes.</p>
       </article>
 
-      <!-- 3. Fast & Light -->
-      <article class="glass-card overflow-hidden">
-        <div class="border-b border-white/[0.06] p-4 min-h-[140px] flex flex-col items-center justify-center">
-          <div class="flex items-end gap-3 mb-3">
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-8 h-16 rounded bg-zinc-700/50 flex items-end">
-                <div class="w-full h-[85%] rounded bg-zinc-600/50"></div>
-              </div>
-              <span class="text-[9px] text-[#71717a]">Others</span>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-8 h-16 rounded bg-accent/10 flex items-end">
-                <div class="w-full h-[25%] rounded bg-accent"></div>
-              </div>
-              <span class="text-[9px] text-accent font-medium">Readied</span>
-            </div>
-          </div>
-          <p class="font-mono text-xs text-[#a1a1aa]">&lt; 2s launch time</p>
+      <!-- AI Assist (Pro) -->
+      <article class="glass-card p-6">
+        <div class="mb-4 flex items-center gap-2">
+          <Icon name="lucide:sparkles" class="h-8 w-8 text-accent" />
+          <span class="rounded bg-accent/20 px-2 py-0.5 text-[10px] font-semibold text-accent uppercase tracking-wider">Pro</span>
         </div>
-        <div class="p-5">
-          <h3 class="mb-2 text-base font-semibold text-zinc-50">Fast & Light</h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">Instant startup, minimal memory footprint. No bloat, no Electron lag.</p>
-        </div>
-      </article>
-
-      <!-- 4. Backlinks -->
-      <article class="glass-card overflow-hidden">
-        <div class="border-b border-white/[0.06] p-4 min-h-[140px]">
-          <div class="space-y-2 font-mono text-[10px] sm:text-[11px]">
-            <div class="rounded-lg bg-inset px-3 py-2 border-l-2 border-accent">
-              <div class="text-[#a1a1aa]">See also: <span class="text-accent">[[project-plan]]</span></div>
-            </div>
-            <div class="rounded-lg bg-inset px-3 py-2">
-              <div class="text-[#a1a1aa]">Related to <span class="text-accent">[[meeting-notes]]</span></div>
-            </div>
-            <div class="rounded-lg bg-inset px-3 py-2">
-              <div class="text-[#a1a1aa]">Ref: <span class="text-accent">[[architecture]]</span></div>
-            </div>
-          </div>
-          <div class="mt-3 flex items-center gap-1.5 text-[9px] text-accent">
-            <Icon name="lucide:link" class="h-2.5 w-2.5" />
-            <span class="font-mono">3 backlinks found</span>
-          </div>
-        </div>
-        <div class="p-5">
-          <h3 class="mb-2 text-base font-semibold text-zinc-50">Backlinks</h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">Connect your notes with [[wiki-links]]. Discover relationships between ideas instantly.</p>
-        </div>
-      </article>
-
-      <!-- 5. CodeMirror Editor -->
-      <article class="glass-card overflow-hidden">
-        <div class="border-b border-white/[0.06] p-4 min-h-[140px]">
-          <div class="font-mono text-[10px] sm:text-[11px] leading-relaxed space-y-0.5 rounded-lg bg-inset p-3 border border-white/[0.06]">
-            <div><span class="text-accent font-bold"># </span><span class="text-[#f4f4f5] font-bold">API Design</span></div>
-            <div class="h-0.5"></div>
-            <div><span class="text-purple-400">```typescript</span></div>
-            <div><span class="text-blue-400">interface</span> <span class="text-emerald-400">Note</span> &#123;</div>
-            <div class="pl-3"><span class="text-[#a1a1aa]">title</span>: <span class="text-amber-400">string</span>;</div>
-            <div class="pl-3"><span class="text-[#a1a1aa]">body</span>: <span class="text-amber-400">string</span>;</div>
-            <div>&#125;</div>
-            <div><span class="text-purple-400">```</span></div>
-          </div>
-        </div>
-        <div class="p-5">
-          <h3 class="mb-2 text-base font-semibold text-zinc-50">CodeMirror Editor</h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">Syntax highlighting, bracket matching, and keyboard shortcuts. A real editor, not a textarea.</p>
-        </div>
-      </article>
-
-      <!-- 6. AI Assist (Pro) -->
-      <article class="glass-card overflow-hidden">
-        <div class="border-b border-white/[0.06] p-4 min-h-[140px]">
-          <div class="rounded-lg bg-inset p-3 border border-white/[0.06] space-y-2">
-            <div class="flex items-center gap-2 text-[10px] text-[#71717a]">
-              <Icon name="lucide:sparkles" class="h-3 w-3 text-accent" />
-              <span class="font-mono">AI suggestion</span>
-              <span class="ml-auto rounded bg-accent/20 px-1.5 py-0.5 text-[9px] font-semibold text-accent uppercase tracking-wider">Pro</span>
-            </div>
-            <div class="font-mono text-[10px] sm:text-[11px] text-[#a1a1aa] leading-relaxed">
-              <p class="mb-1">Based on your notes, here's a summary:</p>
-              <div class="rounded bg-accent/[0.06] border border-accent/20 px-2 py-1.5 text-accent/80 italic">
-                "The team decided on a local-first architecture with Q2 launch..."
-              </div>
-            </div>
-          </div>
-          <div class="mt-2 flex items-center gap-2">
-            <span class="inline-flex items-center gap-1 rounded bg-white/[0.05] px-2 py-1 text-[9px] text-[#71717a] font-mono">
-              <Icon name="lucide:check" class="h-2.5 w-2.5 text-emerald-400" />
-              Accept
-            </span>
-            <span class="inline-flex items-center gap-1 rounded bg-white/[0.05] px-2 py-1 text-[9px] text-[#71717a] font-mono">
-              <Icon name="lucide:x" class="h-2.5 w-2.5" />
-              Dismiss
-            </span>
-          </div>
-        </div>
-        <div class="p-5">
-          <h3 class="mb-2 text-base font-semibold text-zinc-50">AI Assist <span class="text-[10px] font-semibold text-accent uppercase tracking-wider ml-1">Pro</span></h3>
-          <p class="text-sm leading-relaxed text-[#a1a1aa]">Summarize, expand, and refine your writing with AI — all processed locally when possible.</p>
-        </div>
+        <h3 class="mb-2 text-base font-semibold text-zinc-50">AI that stays local.</h3>
+        <p class="text-sm leading-relaxed text-[#a1a1aa]">Get writing suggestions without sending your notes to the cloud.</p>
       </article>
 
     </div>
