@@ -5,10 +5,11 @@
  * with enable/disable toggles, badges, and collapsible config forms.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Puzzle } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
+import { builtInPlugins } from '../../../plugins';
 import styles from './Section.module.css';
 
 // ============================================================================
@@ -32,36 +33,23 @@ interface BuiltInPluginInfo {
 }
 
 // ============================================================================
-// Constants
+// Constants — derived from runtime plugin manifests
 // ============================================================================
 
-const BUILT_IN_PLUGINS: BuiltInPluginInfo[] = [
-  {
-    id: 'readied-word-count',
-    name: 'Word Count',
-    version: '1.0.0',
-    description: 'Shows word, character, and line count in the editor status bar',
-  },
-  {
-    id: 'readied-typewriter-mode',
-    name: 'Typewriter Mode',
-    version: '1.0.0',
-    description: 'Keeps the cursor line centered in the editor for a focused writing experience',
-  },
-  {
-    id: 'readied-active-line-highlight',
-    name: 'Active Line Highlight',
-    version: '1.0.0',
-    description: 'Highlights the line where the cursor is positioned',
-  },
-  {
-    id: 'readied-tables',
-    name: 'Tables',
-    version: '1.0.0',
-    description:
-      'Insert Table wizard, WYSIWYG table rendering, sortable preview columns, and Export to CSV',
-  },
-];
+const BUILT_IN_PLUGIN_INFOS: BuiltInPluginInfo[] = builtInPlugins.map(p => ({
+  id: p.id,
+  name: p.name,
+  version: p.version,
+  description: p.description ?? '',
+}));
+
+/** Config schemas for built-in plugins that have them */
+const BUILT_IN_CONFIG_SCHEMAS: Record<string, Record<string, PluginConfigSchemaField> | undefined> =
+  Object.fromEntries(
+    builtInPlugins
+      .filter(p => p.configSchema)
+      .map(p => [p.id, p.configSchema as Record<string, PluginConfigSchemaField>])
+  );
 
 // ============================================================================
 // PluginCard
@@ -216,6 +204,8 @@ function PluginCard({
 // ============================================================================
 
 export function PluginsSection() {
+  const [activeTab, setActiveTab] = useState<'installed' | 'browse'>('installed');
+  const [search, setSearch] = useState('');
   const [plugins, setPlugins] = useState<DiscoveredPluginInfo[]>([]);
   const [pluginsPath, setPluginsPath] = useState('');
   const [isReloading, setIsReloading] = useState(false);
@@ -242,8 +232,22 @@ export function PluginsSection() {
         }));
         setPlugins(pluginList);
 
-        // Load config values for plugins with schemas
+        // Load config values for all plugins with schemas (built-in + community)
         const configs: Record<string, Record<string, unknown>> = {};
+
+        // Built-in plugins with config schemas
+        for (const bp of builtInPlugins) {
+          if (bp.configSchema) {
+            try {
+              const allConfig = await window.readied.pluginConfig.getAll(bp.id);
+              configs[bp.id] = allConfig;
+            } catch {
+              configs[bp.id] = {};
+            }
+          }
+        }
+
+        // Community plugins with config schemas
         for (const plugin of pluginList) {
           if (plugin.configSchema && plugin.enabled) {
             try {
@@ -326,34 +330,152 @@ export function PluginsSection() {
     }
   }, [pluginsPath]);
 
+  // Filter plugins by search query
+  const lowerSearch = search.toLowerCase();
+  const filteredBuiltIn = useMemo(
+    () =>
+      lowerSearch
+        ? BUILT_IN_PLUGIN_INFOS.filter(
+            p =>
+              p.name.toLowerCase().includes(lowerSearch) ||
+              p.description.toLowerCase().includes(lowerSearch)
+          )
+        : BUILT_IN_PLUGIN_INFOS,
+    [lowerSearch]
+  );
+  const filteredCommunity = useMemo(
+    () =>
+      lowerSearch
+        ? plugins.filter(
+            p =>
+              p.name.toLowerCase().includes(lowerSearch) ||
+              (p.description ?? '').toLowerCase().includes(lowerSearch)
+          )
+        : plugins,
+    [lowerSearch, plugins]
+  );
+
   return (
     <div className={styles.section}>
       <h2 className={styles.title}>Plugins</h2>
 
-      {/* Built-in plugins */}
-      <div style={{ marginTop: '2rem' }}>
-        <div className={styles.pluginSectionLabel}>Built-in</div>
-        <div className={styles.pluginCardList}>
-          {BUILT_IN_PLUGINS.map(plugin => (
-            <PluginCard
-              key={plugin.id}
-              name={plugin.name}
-              version={plugin.version}
-              description={plugin.description}
-              isBuiltIn={true}
-              enabled={true}
-            />
-          ))}
-        </div>
+      {/* Tab bar */}
+      <div className={styles.pluginTabs}>
+        <button
+          type="button"
+          className={`${styles.pluginTab} ${activeTab === 'installed' ? styles.pluginTabActive : ''}`}
+          onClick={() => setActiveTab('installed')}
+        >
+          Installed
+        </button>
+        <button
+          type="button"
+          className={`${styles.pluginTab} ${activeTab === 'browse' ? styles.pluginTabActive : ''}`}
+          onClick={() => setActiveTab('browse')}
+        >
+          Browse
+        </button>
       </div>
 
-      {/* Community / installed plugins */}
-      <div style={{ marginTop: '2rem' }}>
-        <div className={styles.pluginSectionLabel}>Installed</div>
-        {plugins.length === 0 ? (
-          <div className={styles.pluginCard}>
-            <div className={styles.pluginEmptyState}>
-              <p>No community plugins installed yet.</p>
+      {activeTab === 'installed' && (
+        <>
+          {/* Search */}
+          <div className={styles.pluginSearchWrapper}>
+            <Search size={14} className={styles.pluginSearchIcon} />
+            <input
+              type="text"
+              className={styles.pluginSearchInput}
+              placeholder="Search plugins..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Built-in plugins */}
+          <div style={{ marginTop: '1rem' }}>
+            <div className={styles.pluginSectionLabel}>Built-in</div>
+            <div className={styles.pluginCardList}>
+              {filteredBuiltIn.map(plugin => (
+                <PluginCard
+                  key={plugin.id}
+                  name={plugin.name}
+                  version={plugin.version}
+                  description={plugin.description}
+                  isBuiltIn={true}
+                  enabled={true}
+                  configSchema={BUILT_IN_CONFIG_SCHEMAS[plugin.id]}
+                  configValues={configValues[plugin.id]}
+                  onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
+                />
+              ))}
+              {filteredBuiltIn.length === 0 && search && (
+                <div className={styles.pluginEmptyState}>
+                  <p>No built-in plugins match &ldquo;{search}&rdquo;</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Community / installed plugins */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <div className={styles.pluginSectionLabel}>Community</div>
+            {filteredCommunity.length === 0 && !search ? (
+              <div className={styles.pluginCard}>
+                <div className={styles.pluginEmptyState}>
+                  <p>No community plugins installed yet.</p>
+                  {pluginsPath && (
+                    <button
+                      type="button"
+                      className={styles.actionButton}
+                      onClick={handleOpenFolder}
+                    >
+                      <FolderOpen size={14} />
+                      <span>Open Plugins Folder</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : filteredCommunity.length === 0 && search ? (
+              <div className={styles.pluginEmptyState}>
+                <p>No community plugins match &ldquo;{search}&rdquo;</p>
+              </div>
+            ) : (
+              <div className={styles.pluginCardList}>
+                {filteredCommunity.map(plugin => (
+                  <PluginCard
+                    key={plugin.id}
+                    name={plugin.name}
+                    version={plugin.version}
+                    description={plugin.description}
+                    isBuiltIn={false}
+                    enabled={plugin.enabled}
+                    onToggle={enabled => handleToggle(plugin.id, enabled)}
+                    onUninstall={() => handleUninstall(plugin.id)}
+                    configSchema={plugin.configSchema}
+                    configValues={configValues[plugin.id]}
+                    onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions bar */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <div className={styles.pluginActions}>
+              <button type="button" className={styles.actionButton} onClick={handleInstall}>
+                <Download size={14} />
+                <span>Install from File</span>
+              </button>
+              <button
+                type="button"
+                className={styles.actionButton}
+                onClick={handleReload}
+                disabled={isReloading}
+              >
+                <RefreshCw size={14} className={isReloading ? styles.spinning : ''} />
+                <span>{isReloading ? 'Reloading...' : 'Reload Plugins'}</span>
+              </button>
               {pluginsPath && (
                 <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
                   <FolderOpen size={14} />
@@ -362,51 +484,16 @@ export function PluginsSection() {
               )}
             </div>
           </div>
-        ) : (
-          <div className={styles.pluginCardList}>
-            {plugins.map(plugin => (
-              <PluginCard
-                key={plugin.id}
-                name={plugin.name}
-                version={plugin.version}
-                description={plugin.description}
-                isBuiltIn={false}
-                enabled={plugin.enabled}
-                onToggle={enabled => handleToggle(plugin.id, enabled)}
-                onUninstall={() => handleUninstall(plugin.id)}
-                configSchema={plugin.configSchema}
-                configValues={configValues[plugin.id]}
-                onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
-      {/* Actions bar */}
-      <div style={{ marginTop: '2rem' }}>
-        <div className={styles.pluginActions}>
-          <button type="button" className={styles.actionButton} onClick={handleInstall}>
-            <Download size={14} />
-            <span>Install from File</span>
-          </button>
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleReload}
-            disabled={isReloading}
-          >
-            <RefreshCw size={14} className={isReloading ? styles.spinning : ''} />
-            <span>{isReloading ? 'Reloading...' : 'Reload Plugins'}</span>
-          </button>
-          {pluginsPath && (
-            <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
-              <FolderOpen size={14} />
-              <span>Open Plugins Folder</span>
-            </button>
-          )}
+      {activeTab === 'browse' && (
+        <div className={styles.pluginBrowsePlaceholder}>
+          <Puzzle size={48} />
+          <h3>Plugin Marketplace</h3>
+          <p>Browse and install community plugins. Coming soon.</p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

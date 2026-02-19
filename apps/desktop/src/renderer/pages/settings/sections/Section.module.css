@@ -392,6 +392,104 @@
   margin: 0 0 0.625rem 0.25rem;
 }
 
+/* Plugin Tabs */
+.pluginTabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-elevated, var(--bg-tertiary));
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.pluginTab {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted, var(--text-tertiary));
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pluginTab:hover {
+  color: var(--text-secondary);
+}
+
+.pluginTabActive {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Plugin Search */
+.pluginSearchWrapper {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.pluginSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.pluginSearchInput {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  background: var(--bg-hover, var(--bg-tertiary));
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 150ms ease;
+  box-sizing: border-box;
+}
+
+.pluginSearchInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.pluginSearchInput:focus {
+  border-color: var(--accent-primary);
+}
+
+/* Browse Placeholder */
+.pluginBrowsePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.pluginBrowsePlaceholder svg {
+  margin-bottom: 1rem;
+  opacity: 0.4;
+}
+
+.pluginBrowsePlaceholder h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.pluginBrowsePlaceholder p {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
 /* ============================================================================
    Update Progress
    ============================================================================ */
