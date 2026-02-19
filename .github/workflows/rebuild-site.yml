@@ -1,0 +1,27 @@
+name: Rebuild Marketing Site
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: pnpm install
+
+      - run: pnpm --filter @readied/marketing-site build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

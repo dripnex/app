@@ -661,6 +661,16 @@ export interface ReadiedAPI {
     /** Subscribe to update error events */
     onError: (cb: (err: { message: string }) => void) => () => void;
   };
+  ai: {
+    /** Send a query to Claude API (proxied through main process to avoid CORS) */
+    query: (options: {
+      apiKey: string;
+      model: string;
+      system: string;
+      messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+      maxTokens?: number;
+    }) => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
+  };
   pluginConfig: {
     /** Get a single config value for a plugin */
     get: (pluginId: string, key: string) => Promise<unknown>;
@@ -914,6 +924,9 @@ const api: ReadiedAPI = {
         ipcRenderer.removeListener('updates:error', handler);
       };
     },
+  },
+  ai: {
+    query: options => ipcRenderer.invoke('ai:query', options),
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),

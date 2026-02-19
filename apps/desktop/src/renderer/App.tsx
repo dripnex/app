@@ -41,6 +41,7 @@ import { getEditorView, registry as commandRegistry } from './hooks/useCommandRe
 import { wordCountPlugin } from './plugins/wordCount';
 import { typewriterModePlugin } from './plugins/typewriterMode';
 import { activeLineHighlightPlugin } from './plugins/activeLineHighlight';
+import { aiAssistantPlugin } from './plugins/aiAssistant';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -445,7 +446,7 @@ function NotesApp() {
   }, []);
 
   const builtInPlugins = useMemo(
-    () => [wordCountPlugin, typewriterModePlugin, activeLineHighlightPlugin],
+    () => [wordCountPlugin, typewriterModePlugin, activeLineHighlightPlugin, aiAssistantPlugin],
     []
   );
   const allPlugins = useMemo(
