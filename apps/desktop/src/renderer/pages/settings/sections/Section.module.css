@@ -490,6 +490,142 @@
   margin: 0;
 }
 
+/* Marketplace Category Pills */
+.pluginCategoryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pluginCategoryPill {
+  padding: 5px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pluginCategoryPill:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-hover);
+}
+
+.pluginCategoryPillActive {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+  border-color: var(--accent-primary);
+}
+
+/* Marketplace Grid */
+.pluginMarketplaceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.pluginMarketplaceCard {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  transition: border-color 150ms ease;
+}
+
+.pluginMarketplaceCard:hover {
+  border-color: var(--border-hover);
+}
+
+.pluginMarketplaceCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pluginMarketplaceIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-base);
+  font-size: 14px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.pluginMarketplaceCardInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pluginMarketplaceMeta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pluginMarketplaceCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.pluginMarketplaceTags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pluginMarketplaceTag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-base);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.pluginMarketplaceIncluded {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--success, #22c55e);
+  flex-shrink: 0;
+}
+
+.pluginMarketplaceInstallBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-primary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.pluginMarketplaceInstallBtn:hover {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+}
+
 /* ============================================================================
    Update Progress
    ============================================================================ */

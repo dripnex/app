@@ -6,7 +6,15 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Puzzle } from 'lucide-react';
+import {
+  RefreshCw,
+  FolderOpen,
+  ChevronDown,
+  Download,
+  Trash2,
+  Search,
+  Check,
+} from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';
@@ -50,6 +58,217 @@ const BUILT_IN_CONFIG_SCHEMAS: Record<string, Record<string, PluginConfigSchemaF
       .filter(p => p.configSchema)
       .map(p => [p.id, p.configSchema as Record<string, PluginConfigSchemaField>])
   );
+
+// ============================================================================
+// Marketplace Data (static catalog — fetches from API in future)
+// ============================================================================
+
+interface MarketplacePlugin {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  version: string;
+  category: string;
+  icon: string;
+  builtin: boolean;
+  tags: string[];
+}
+
+const MARKETPLACE_PLUGINS: MarketplacePlugin[] = [
+  {
+    id: 'readied-ai-assistant',
+    name: 'AI Assistant',
+    description: 'AI assistant with RAG over your notes, powered by Claude',
+    author: 'Readied',
+    version: '0.1.0',
+    category: 'productivity',
+    icon: 'sparkles',
+    builtin: true,
+    tags: ['ai', 'rag', 'claude'],
+  },
+  {
+    id: 'readied-word-count',
+    name: 'Word Count',
+    description: 'Shows word, character, and line count in the editor status bar',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'editor',
+    icon: 'hash',
+    builtin: true,
+    tags: ['statistics', 'writing'],
+  },
+  {
+    id: 'readied-typewriter-mode',
+    name: 'Typewriter Mode',
+    description: 'Keeps the cursor line centered in the editor for a focused writing experience',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'editor',
+    icon: 'align-center',
+    builtin: true,
+    tags: ['writing', 'focus'],
+  },
+  {
+    id: 'readied-active-line-highlight',
+    name: 'Active Line Highlight',
+    description: 'Highlights the line where the cursor is positioned',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'editor',
+    icon: 'highlighter',
+    builtin: true,
+    tags: ['editor', 'highlight'],
+  },
+  {
+    id: 'readied-tables',
+    name: 'Tables',
+    description: 'Insert markdown tables with a command. Renders via GFM in preview.',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'editor',
+    icon: 'table',
+    builtin: true,
+    tags: ['tables', 'markdown'],
+  },
+  {
+    id: 'readied-focus-mode',
+    name: 'Focus Mode',
+    description: 'Dims all content except the current paragraph for focused writing',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'productivity',
+    icon: 'eye',
+    builtin: true,
+    tags: ['focus', 'writing', 'zen'],
+  },
+  {
+    id: 'readied-reading-time',
+    name: 'Reading Time',
+    description: 'Shows estimated reading time based on word count (~200 WPM)',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'productivity',
+    icon: 'clock',
+    builtin: true,
+    tags: ['reading', 'statistics'],
+  },
+  {
+    id: 'readied-export-markdown',
+    name: 'Export Markdown',
+    description: 'Copy notes as raw Markdown or rendered HTML to clipboard',
+    author: 'Readied',
+    version: '1.0.0',
+    category: 'export',
+    icon: 'copy',
+    builtin: true,
+    tags: ['export', 'markdown', 'html'],
+  },
+];
+
+const MARKETPLACE_CATEGORIES = ['All', ...new Set(MARKETPLACE_PLUGINS.map(p => p.category))];
+
+// ============================================================================
+// BrowseTab
+// ============================================================================
+
+function BrowseTab() {
+  const [browseSearch, setBrowseSearch] = useState('');
+  const [browseCategory, setBrowseCategory] = useState('All');
+
+  const filteredMarketplace = useMemo(() => {
+    let result = MARKETPLACE_PLUGINS;
+    if (browseCategory !== 'All') {
+      result = result.filter(p => p.category === browseCategory);
+    }
+    if (browseSearch.trim()) {
+      const q = browseSearch.toLowerCase();
+      result = result.filter(
+        p =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.tags.some(t => t.includes(q))
+      );
+    }
+    return result;
+  }, [browseSearch, browseCategory]);
+
+  return (
+    <>
+      {/* Search */}
+      <div className={styles.pluginSearchWrapper}>
+        <Search size={14} className={styles.pluginSearchIcon} />
+        <input
+          type="text"
+          className={styles.pluginSearchInput}
+          placeholder="Search marketplace..."
+          value={browseSearch}
+          onChange={e => setBrowseSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Category pills */}
+      <div className={styles.pluginCategoryPills}>
+        {MARKETPLACE_CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            type="button"
+            className={`${styles.pluginCategoryPill} ${browseCategory === cat ? styles.pluginCategoryPillActive : ''}`}
+            onClick={() => setBrowseCategory(cat)}
+          >
+            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Plugin grid */}
+      {filteredMarketplace.length > 0 ? (
+        <div className={styles.pluginMarketplaceGrid}>
+          {filteredMarketplace.map(plugin => (
+            <div key={plugin.id} className={styles.pluginMarketplaceCard}>
+              <div className={styles.pluginMarketplaceCardHeader}>
+                <span className={styles.pluginMarketplaceIcon}>{plugin.icon}</span>
+                <div className={styles.pluginMarketplaceCardInfo}>
+                  <span className={styles.pluginName}>{plugin.name}</span>
+                  <span className={styles.pluginMarketplaceMeta}>
+                    {plugin.author} &middot; v{plugin.version}
+                  </span>
+                </div>
+              </div>
+              <p className={styles.pluginDescription}>{plugin.description}</p>
+              <div className={styles.pluginMarketplaceCardFooter}>
+                <div className={styles.pluginMarketplaceTags}>
+                  {plugin.tags.slice(0, 3).map(tag => (
+                    <span key={tag} className={styles.pluginMarketplaceTag}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                {plugin.builtin ? (
+                  <span className={styles.pluginMarketplaceIncluded}>
+                    <Check size={12} />
+                    Included
+                  </span>
+                ) : (
+                  <button type="button" className={styles.pluginMarketplaceInstallBtn}>
+                    <Download size={12} />
+                    Install
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={styles.pluginBrowsePlaceholder}>
+          <Search size={32} />
+          <h3>No plugins found</h3>
+          <p>Try a different search term or category.</p>
+        </div>
+      )}
+    </>
+  );
+}
 
 // ============================================================================
 // PluginCard
@@ -487,13 +706,7 @@ export function PluginsSection() {
         </>
       )}
 
-      {activeTab === 'browse' && (
-        <div className={styles.pluginBrowsePlaceholder}>
-          <Puzzle size={48} />
-          <h3>Plugin Marketplace</h3>
-          <p>Browse and install community plugins. Coming soon.</p>
-        </div>
-      )}
+      {activeTab === 'browse' && <BrowseTab />}
     </div>
   );
 }
