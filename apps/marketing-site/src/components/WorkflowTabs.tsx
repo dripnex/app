@@ -199,12 +199,8 @@ function SearchTab() {
               d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
             />
           </svg>
-          <span className="font-mono text-xs text-[#f4f4f5]">
-            architecture decisions
-          </span>
-          <span className="ml-auto text-[9px] text-[#71717a] font-mono">
-            3 results
-          </span>
+          <span className="font-mono text-xs text-[#f4f4f5]">architecture decisions</span>
+          <span className="ml-auto text-[9px] text-[#71717a] font-mono">3 results</span>
         </div>
       </div>
 
@@ -218,9 +214,7 @@ function SearchTab() {
             }`}
           >
             <div
-              className={`font-semibold mb-0.5 ${
-                r.primary ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'
-              }`}
+              className={`font-semibold mb-0.5 ${r.primary ? 'text-[#f4f4f5]' : 'text-[#a1a1aa]'}`}
             >
               {r.file}
             </div>
@@ -228,9 +222,7 @@ function SearchTab() {
               {r.snippet.split(r.highlight).map((part, j, arr) => (
                 <span key={j}>
                   {part}
-                  {j < arr.length - 1 && (
-                    <span className="text-accent">{r.highlight}</span>
-                  )}
+                  {j < arr.length - 1 && <span className="text-accent">{r.highlight}</span>}
                 </span>
               ))}
             </div>
@@ -255,9 +247,7 @@ export default function WorkflowTabs() {
             key={tab}
             onClick={() => setActive(i)}
             className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-              active === i
-                ? 'text-accent'
-                : 'text-[#71717a] hover:text-[#a1a1aa]'
+              active === i ? 'text-accent' : 'text-[#71717a] hover:text-[#a1a1aa]'
             }`}
           >
             {tab}

@@ -6,13 +6,13 @@
 
 ## Brief
 
-| Dimension | Decision |
-|-----------|----------|
-| Audience | Developers & engineers |
-| Tone | Playful technical — smart, fun, interactive demos |
-| Primary CTA | Dual funnel: Download Free + Start Pro Trial |
-| Scope | Complete redesign of all existing pages |
-| Reference | Raycast — clean, premium, great typography, subtle animations |
+| Dimension       | Decision                                                                   |
+| --------------- | -------------------------------------------------------------------------- |
+| Audience        | Developers & engineers                                                     |
+| Tone            | Playful technical — smart, fun, interactive demos                          |
+| Primary CTA     | Dual funnel: Download Free + Start Pro Trial                               |
+| Scope           | Complete redesign of all existing pages                                    |
+| Reference       | Raycast — clean, premium, great typography, subtle animations              |
 | Problems solved | Low conversions, unclear messaging, dated design, wrong audience targeting |
 
 ## Design System

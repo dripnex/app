@@ -44,16 +44,11 @@ export function buildRagPrompt(input: RagInput): RagOutput {
     : relevantNotes;
 
   if (contextNotes.length > 0) {
-    system += buildContextPrompt(
-      contextNotes.map(n => ({ title: n.title, content: n.content }))
-    );
+    system += buildContextPrompt(contextNotes.map(n => ({ title: n.title, content: n.content })));
   }
 
   // Build messages: history + current query
-  const messages: ClaudeMessage[] = [
-    ...history,
-    { role: 'user', content: query },
-  ];
+  const messages: ClaudeMessage[] = [...history, { role: 'user', content: query }];
 
   return { system, messages };
 }

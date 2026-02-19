@@ -21,14 +21,14 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
 
   // Derive unique categories from plugin data
   const categories = useMemo(() => {
-    const cats = new Set(plugins.map((p) => p.category));
+    const cats = new Set(plugins.map(p => p.category));
     return ['All', ...Array.from(cats).sort()];
   }, [plugins]);
 
   // Filter plugins by active category
   const filteredPlugins = useMemo(() => {
     if (activeCategory === 'All') return plugins;
-    return plugins.filter((p) => p.category === activeCategory);
+    return plugins.filter(p => p.category === activeCategory);
   }, [plugins, activeCategory]);
 
   return (
@@ -39,12 +39,12 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
         role="tablist"
         aria-label="Filter plugins by category"
       >
-        {categories.map((category) => {
+        {categories.map(category => {
           const isActive = activeCategory === category;
           const count =
             category === 'All'
               ? plugins.length
-              : plugins.filter((p) => p.category === category).length;
+              : plugins.filter(p => p.category === category).length;
 
           return (
             <button
@@ -62,9 +62,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
               {category}
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-white/5 text-[#71717a]'
+                  isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-[#71717a]'
                 }`}
               >
                 {count}
@@ -80,7 +78,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
         role="tabpanel"
         aria-label={`Plugins in ${activeCategory} category`}
       >
-        {filteredPlugins.map((plugin) => {
+        {filteredPlugins.map(plugin => {
           const installCmd = plugin.builtin
             ? `readied plugin enable ${plugin.id}`
             : `readied plugin install ${plugin.id}`;
@@ -100,9 +98,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-semibold text-[#f4f4f5]">
-                      {plugin.name}
-                    </h3>
+                    <h3 className="truncate text-sm font-semibold text-[#f4f4f5]">{plugin.name}</h3>
                     {plugin.builtin && (
                       <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
                         Built-in
@@ -153,7 +149,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
               {/* Tags */}
               {plugin.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {plugin.tags.map((tag) => (
+                  {plugin.tags.map(tag => (
                     <span
                       key={tag}
                       className="rounded-md bg-inset px-2 py-0.5 text-[11px] text-[#71717a]"
@@ -174,11 +170,10 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
           <div className="mb-3 text-4xl" aria-hidden="true">
             🔍
           </div>
-          <p className="text-sm font-medium text-[#f4f4f5] mb-1">
-            No plugins found
-          </p>
+          <p className="text-sm font-medium text-[#f4f4f5] mb-1">No plugins found</p>
           <p className="text-sm text-[#71717a]">
-            No plugins match the <span className="font-medium text-accent">{activeCategory}</span> category. Try selecting a different filter above.
+            No plugins match the <span className="font-medium text-accent">{activeCategory}</span>{' '}
+            category. Try selecting a different filter above.
           </p>
         </div>
       )}

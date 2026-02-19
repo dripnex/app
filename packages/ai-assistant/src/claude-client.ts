@@ -31,11 +31,14 @@ export type ClaudeResult = ClaudeResponse | ClaudeError;
 const API_URL = 'https://api.anthropic.com/v1/messages';
 
 /** Minimal fetch signature for portability (no DOM lib dependency) */
-type FetchFn = (url: string, init: {
-  method: string;
-  headers: Record<string, string>;
-  body: string;
-}) => Promise<{ ok: boolean; status: number; text(): Promise<string>; json(): Promise<unknown> }>;
+type FetchFn = (
+  url: string,
+  init: {
+    method: string;
+    headers: Record<string, string>;
+    body: string;
+  }
+) => Promise<{ ok: boolean; status: number; text(): Promise<string>; json(): Promise<unknown> }>;
 
 export async function queryClaudeAPI(
   options: ClaudeRequestOptions,

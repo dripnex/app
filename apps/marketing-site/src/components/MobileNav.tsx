@@ -95,11 +95,7 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
                     stroke="currentColor"
                     aria-hidden="true"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -147,13 +143,13 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
               {/* Sections */}
               {sections.length > 0 && (
                 <div className="border-t border-white/[0.06] px-6 py-4">
-                  {sections.map((section) => (
+                  {sections.map(section => (
                     <div key={section.title} className="mb-6 last:mb-0">
                       <h3 className="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-[#71717a]">
                         {section.title}
                       </h3>
                       <ul className="space-y-1">
-                        {section.links.map((link) => (
+                        {section.links.map(link => (
                           <li key={link.href}>
                             <a
                               href={link.href}
@@ -198,7 +194,9 @@ export default function MobileNav({ links, sections }: MobileNavProps) {
                   >
                     Privacy Policy
                   </a>
-                  <span className="text-white/20" aria-hidden="true">&middot;</span>
+                  <span className="text-white/20" aria-hidden="true">
+                    &middot;
+                  </span>
                   <a
                     href="/terms"
                     onClick={close}

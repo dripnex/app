@@ -15,9 +15,10 @@ export interface ReleaseInfo {
 
 function detectPlatform(name: string): PlatformAsset['platform'] | null {
   const lower = name.toLowerCase();
-  if (lower.endsWith('.dmg') || lower.endsWith('.zip') && lower.includes('mac')) return 'mac';
+  if (lower.endsWith('.dmg') || (lower.endsWith('.zip') && lower.includes('mac'))) return 'mac';
   if (lower.endsWith('.exe') || lower.endsWith('.msi')) return 'win';
-  if (lower.endsWith('.appimage') || lower.endsWith('.deb') || lower.endsWith('.rpm')) return 'linux';
+  if (lower.endsWith('.appimage') || lower.endsWith('.deb') || lower.endsWith('.rpm'))
+    return 'linux';
   return null;
 }
 
@@ -44,10 +45,9 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(
-      'https://api.github.com/repos/tomymaritano/readide/releases',
-      { headers }
-    );
+    const res = await fetch('https://api.github.com/repos/tomymaritano/readide/releases', {
+      headers,
+    });
 
     if (!res.ok) return null;
 
@@ -152,24 +152,32 @@ export async function fetchAllReleases(): Promise<ChangelogRelease[]> {
 
     return releases
       .filter((r: { draft: boolean }) => !r.draft)
-      .map((r: { tag_name: string; published_at: string; body: string; html_url: string; prerelease: boolean }) => {
-        const version = r.tag_name.replace(/^v/, '');
-        const date = new Date(r.published_at).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const body = r.body || '';
-        const changes = parseReleaseBody(body);
+      .map(
+        (r: {
+          tag_name: string;
+          published_at: string;
+          body: string;
+          html_url: string;
+          prerelease: boolean;
+        }) => {
+          const version = r.tag_name.replace(/^v/, '');
+          const date = new Date(r.published_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const body = r.body || '';
+          const changes = parseReleaseBody(body);
 
-        return {
-          version,
-          date,
-          body,
-          changes,
-          url: r.html_url,
-        };
-      });
+          return {
+            version,
+            date,
+            body,
+            changes,
+            url: r.html_url,
+          };
+        }
+      );
   } catch {
     return [];
   }

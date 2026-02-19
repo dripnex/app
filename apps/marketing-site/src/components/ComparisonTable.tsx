@@ -10,15 +10,10 @@ export default function ComparisonTable() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Left: Cloud note apps */}
       <div className="rounded-xl bg-surface border border-zinc-800 p-6">
-        <h3 className="text-lg font-semibold text-[#a1a1aa] mb-5">
-          Cloud note apps
-        </h3>
+        <h3 className="text-lg font-semibold text-[#a1a1aa] mb-5">Cloud note apps</h3>
         <ul className="space-y-3">
-          {rows.map((r) => (
-            <li
-              key={r.bad}
-              className="flex items-center gap-3 text-sm text-[#71717a]"
-            >
+          {rows.map(r => (
+            <li key={r.bad} className="flex items-center gap-3 text-sm text-[#71717a]">
               <span className="text-red-400 shrink-0">&#10005;</span>
               {r.bad}
             </li>
@@ -33,11 +28,8 @@ export default function ComparisonTable() {
       >
         <h3 className="text-lg font-semibold text-zinc-50 mb-5">Readied</h3>
         <ul className="space-y-3">
-          {rows.map((r) => (
-            <li
-              key={r.good}
-              className="flex items-center gap-3 text-sm text-[#a1a1aa]"
-            >
+          {rows.map(r => (
+            <li key={r.good} className="flex items-center gap-3 text-sm text-[#a1a1aa]">
               <span className="text-emerald-400 shrink-0">&#10003;</span>
               {r.good}
             </li>

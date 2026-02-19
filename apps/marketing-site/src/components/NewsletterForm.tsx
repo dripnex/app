@@ -83,7 +83,7 @@ export default function NewsletterForm({ compact = false }: NewsletterFormProps)
             id="newsletter-email-compact"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
             disabled={status === 'loading'}
@@ -149,7 +149,7 @@ export default function NewsletterForm({ compact = false }: NewsletterFormProps)
               id="newsletter-email-full"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
               disabled={status === 'loading'}

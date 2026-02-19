@@ -10,10 +10,7 @@ export function AiMessage({ role, content }: AiMessageProps) {
 
   const formattedContent = useMemo(() => {
     // Simple markdown rendering: bold, italic, code blocks, inline code
-    let html = content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    let html = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     // Code blocks
     html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
@@ -38,10 +35,7 @@ export function AiMessage({ role, content }: AiMessageProps) {
   return (
     <div className={`ai-message ai-message--${role}`}>
       <div className="ai-message-label">{isUser ? 'You' : 'AI'}</div>
-      <div
-        className="ai-message-content"
-        dangerouslySetInnerHTML={{ __html: formattedContent }}
-      />
+      <div className="ai-message-content" dangerouslySetInnerHTML={{ __html: formattedContent }} />
     </div>
   );
 }

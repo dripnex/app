@@ -170,10 +170,7 @@ export default function TypewriterDemo() {
     const totalChars = MARKDOWN.length;
 
     if (charIndex <= totalChars) {
-      const timer = setTimeout(
-        () => setCharIndex((prev) => prev + 1),
-        TYPING_SPEED
-      );
+      const timer = setTimeout(() => setCharIndex(prev => prev + 1), TYPING_SPEED);
       return () => clearTimeout(timer);
     }
 
@@ -196,9 +193,7 @@ export default function TypewriterDemo() {
           <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
           <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
         </div>
-        <span className="font-mono text-xs text-[#71717a]">
-          notes.md — Readied
-        </span>
+        <span className="font-mono text-xs text-[#71717a]">notes.md — Readied</span>
       </div>
 
       {/* Editor split */}
@@ -209,9 +204,7 @@ export default function TypewriterDemo() {
             <span className="text-[9px] font-semibold text-accent uppercase tracking-wider">
               Edit
             </span>
-            <span className="text-[9px] text-[#71717a] uppercase tracking-wider">
-              Preview
-            </span>
+            <span className="text-[9px] text-[#71717a] uppercase tracking-wider">Preview</span>
           </div>
           <div className="space-y-0.5">
             {visibleLines.map((line, i) => (

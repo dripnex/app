@@ -15,6 +15,7 @@
 ## Task 1: Update Design System (Tailwind + Global CSS)
 
 **Files:**
+
 - Modify: `apps/marketing-site/tailwind.config.mjs`
 - Modify: `apps/marketing-site/src/styles/global.css`
 
@@ -137,12 +138,14 @@ git commit -m "feat(marketing-site): update design system — new color palette,
 ## Task 2: Redesign Base Layout + Navbar
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/layouts/Base.astro`
 - Modify: `apps/marketing-site/src/components/Navbar.astro`
 - Modify: `apps/marketing-site/src/components/MobileNav.tsx`
 - Modify: `apps/marketing-site/src/components/NavDropdown.tsx`
 
 **Context:**
+
 - Current Navbar is `fixed top-0` with `bg-base border-b`
 - New: glassmorphism (`bg-zinc-950/80 backdrop-blur-xl`), dual CTAs
 - Nav links change: Features, Pricing, Docs dropdown (Philosophy, FAQ, Plugins), Changelog
@@ -157,6 +160,7 @@ Update `<meta name="theme-color">` to `#09090b`. Keep everything else the same.
 **Step 2: Redesign Navbar.astro**
 
 Key changes:
+
 - Header class: `glass` utility (backdrop-blur, semi-transparent)
 - Replace logo SVG with text logo: `<span class="font-mono text-lg font-bold text-zinc-50">readied<span class="text-accent">.</span></span>`
 - Nav links: Features (anchor to #features on homepage), Pricing, Docs dropdown, Changelog
@@ -187,9 +191,11 @@ git commit -m "feat(marketing-site): redesign navbar — glassmorphism, dual CTA
 ## Task 3: Redesign Footer
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/components/Footer.astro`
 
 **Context:**
+
 - Current: logo + newsletter top row, 4-column nav, bottom bar
 - New: larger brand section with tagline, 4-column links (Product, Resources, Legal, Connect), newsletter, "Built with love for developers"
 - Max width stays max-w-4xl
@@ -197,6 +203,7 @@ git commit -m "feat(marketing-site): redesign navbar — glassmorphism, dual CTA
 **Step 1: Redesign Footer.astro**
 
 Key changes:
+
 - Replace logo img with text logo: `readied.` in monospace
 - Update tagline: "The note app that stays out of your way."
 - Add "Features" link to Product column
@@ -215,6 +222,7 @@ git commit -m "feat(marketing-site): redesign footer — text logo, updated layo
 ## Task 4: Create New Interactive Components
 
 **Files:**
+
 - Create: `apps/marketing-site/src/components/TypewriterDemo.tsx`
 - Create: `apps/marketing-site/src/components/WorkflowTabs.tsx`
 - Create: `apps/marketing-site/src/components/ComparisonTable.tsx`
@@ -225,6 +233,7 @@ git commit -m "feat(marketing-site): redesign footer — text logo, updated layo
 React component that shows a split-screen: left side types markdown text character by character, right side renders the result in real-time. Uses `useState` + `useEffect` with `setInterval`.
 
 Markdown content to type:
+
 ```
 # Project Notes
 
@@ -246,6 +255,7 @@ Right pane: rendered HTML preview updating as text appears
 
 React component with 3 tabs: Write | Organize | Search
 Each tab shows a different editor mockup:
+
 - Write: markdown editor with preview (similar to current Features mockup)
 - Organize: file tree with notebooks/folders
 - Search: search results with highlighted matches
@@ -256,6 +266,7 @@ Uses Headless UI Tab component for accessibility.
 
 Static comparison: "Cloud note apps" vs "Readied"
 4 rows with animated checkmarks/crosses:
+
 - Server dependency → Works offline
 - Vendor lock-in → Standard .md files
 - Monthly subscription → Free forever
@@ -264,6 +275,7 @@ Static comparison: "Cloud note apps" vs "Readied"
 **Step 4: Create SocialProof.astro**
 
 Server-rendered bar with:
+
 - GitHub stars count (fetched at build time from existing `lib/github.ts`)
 - "Works 100% offline" badge
 - "Standard Markdown" badge
@@ -281,6 +293,7 @@ git commit -m "feat(marketing-site): add interactive components — typewriter d
 ## Task 5: Redesign Homepage (Hero + All Sections)
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/index.astro`
 - Modify: `apps/marketing-site/src/components/Hero.astro`
 - Modify: `apps/marketing-site/src/components/Features.astro`
@@ -290,6 +303,7 @@ git commit -m "feat(marketing-site): add interactive components — typewriter d
 **Context from design doc:**
 
 Homepage sections in order:
+
 1. Hero — badge, headline "Your Markdown. Your Machine. Your Rules.", dual CTAs, TypewriterDemo
 2. SocialProof bar
 3. Features grid — 6 cards with code snippets
@@ -301,6 +315,7 @@ Homepage sections in order:
 **Step 1: Update index.astro**
 
 New section order:
+
 ```astro
 <Hero />
 <SocialProof />
@@ -332,12 +347,14 @@ Note: Keep Audience.astro for the indie developer card, integrate it into the fi
 **Step 4: Redesign WhyLocal.astro → now uses ComparisonTable**
 
 Replace the 3-step "how it works" with the ComparisonTable component. Keep the section header but update copy:
+
 - Header: "Why local-first?"
 - Subtext: "Most note apps treat your data like their business asset. We don't."
 
 **Step 5: Redesign Audience.astro → Final CTA section**
 
 Replace use-case cards with a clean CTA section:
+
 - "Ready to own your notes?"
 - Brief description
 - Dual CTAs
@@ -356,15 +373,18 @@ git commit -m "feat(marketing-site): redesign homepage — hero with typewriter 
 ## Task 6: Redesign Pricing Page
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/pricing.astro`
 
 **Context:**
+
 - Current: app preview mockup + two pricing cards + FAQ
 - New: remove app preview, glassmorphism cards, Pro card with glow border, toggleable feature checklist, trust signals, FAQ accordion
 
 **Step 1: Redesign pricing.astro**
 
 Key changes:
+
 - Remove the app preview mockup at top (it's now in the homepage hero)
 - Free card: `glass-card` class, check icons for features
 - Pro card: `glass-card-glow` class (glowing accent border), "Most popular" badge
@@ -385,15 +405,18 @@ git commit -m "feat(marketing-site): redesign pricing page — glassmorphism car
 ## Task 7: Redesign Download Page
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/download.astro`
 
 **Context:**
+
 - Current: header + app preview + 3 platform cards + system requirements + verification
 - New: auto-detect OS, highlight correct platform, collapsible other platforms, installation code blocks, remove large app preview (already in homepage)
 
 **Step 1: Redesign download.astro**
 
 Key changes:
+
 - Detect user OS via `navigator.userAgent` (client-side, progressively enhanced)
 - Primary: large download button for detected OS
 - Secondary: collapsible section "Other platforms" with the remaining OS options
@@ -418,15 +441,18 @@ git commit -m "feat(marketing-site): redesign download page — OS auto-detect, 
 ## Task 8: Redesign Changelog Page
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/changelog.astro`
 
 **Context:**
+
 - Current: timeline with color-coded change types
 - New: add category filters, visual diff indicators, subscribe CTA
 
 **Step 1: Redesign changelog.astro**
 
 Key changes:
+
 - Add filter buttons at top: All | Features | Fixes | Breaking (client-side filtering)
 - Keep timeline visualization but enhance:
   - Larger version badges
@@ -448,15 +474,18 @@ git commit -m "feat(marketing-site): redesign changelog — category filters, su
 ## Task 9: Redesign Philosophy Page
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/philosophy.astro`
 
 **Context:**
+
 - Current: numbered sections as cards
 - New: narrative scroll with full-viewport sections, large typography, code examples
 
 **Step 1: Redesign philosophy.astro**
 
 Key changes:
+
 - Each section takes more vertical space (not cards, but full sections with large text)
 - Large pull quotes with gradient-text for highlights
 - Code examples showing what Readied does vs doesn't do:
@@ -483,16 +512,19 @@ git commit -m "feat(marketing-site): redesign philosophy — narrative scroll, c
 ## Task 10: Redesign FAQ Page
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/faq.astro`
 - Modify: `apps/marketing-site/src/components/FaqAccordion.tsx`
 
 **Context:**
+
 - Current: 2-column grid with category sections + FaqAccordion component
 - New: searchable, tabbed categories, single-column for readability
 
 **Step 1: Redesign faq.astro**
 
 Key changes:
+
 - Category tabs at top (General, Features, Pricing, Technical) — clickable, highlight active
 - Single-column accordion below (filtered by selected category)
 - Search input at top with instant filtering
@@ -514,16 +546,19 @@ git commit -m "feat(marketing-site): redesign FAQ — searchable, tabbed categor
 ## Task 11: Redesign Plugins Page
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/plugins.astro`
 - Modify: `apps/marketing-site/src/components/PluginFilter.tsx`
 
 **Context:**
+
 - Current: header + PluginFilter component
 - New: featured plugins section, card grid with better styling, install command per plugin
 
 **Step 1: Redesign plugins.astro + PluginFilter.tsx**
 
 Key changes:
+
 - "Featured" plugins row at top (2-3 highlighted plugins with larger cards)
 - Search/filter bar with category buttons
 - Plugin cards: glass-card style, icon, name, description, install command (copyable code block)
@@ -541,16 +576,19 @@ git commit -m "feat(marketing-site): redesign plugins page — featured section,
 ## Task 12: Redesign Terms & Privacy Pages
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/pages/terms.astro`
 - Modify: `apps/marketing-site/src/pages/privacy.astro`
 
 **Context:**
+
 - Current: standard text pages
 - New: same design system, wider content area, table of contents sidebar
 
 **Step 1: Update terms.astro and privacy.astro**
 
 Key changes:
+
 - Wider max-width (max-w-5xl instead of max-w-4xl)
 - Grid layout: sticky TOC sidebar (left, 200px) + content (right)
 - TOC auto-generated from h2 headings
@@ -569,6 +607,7 @@ git commit -m "feat(marketing-site): redesign terms & privacy — TOC sidebar, w
 ## Task 13: Final Verification & Polish
 
 **Files:**
+
 - All modified files
 
 **Step 1: Full build test**
@@ -580,6 +619,7 @@ Expected: Clean build, no errors
 
 Run: `cd apps/marketing-site && pnpm preview`
 Check every page manually:
+
 - [ ] Homepage: hero, social proof, features, comparison, workflow tabs, CTA, footer
 - [ ] Pricing: cards, trust signals, FAQ
 - [ ] Download: OS detection, platform cards

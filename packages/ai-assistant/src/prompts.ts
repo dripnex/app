@@ -15,9 +15,7 @@ Guidelines:
 export function buildContextPrompt(notes: Array<{ title: string; content: string }>): string {
   if (notes.length === 0) return '';
 
-  const sections = notes.map(
-    (n, i) => `--- Note ${i + 1}: "${n.title}" ---\n${n.content}`
-  );
+  const sections = notes.map((n, i) => `--- Note ${i + 1}: "${n.title}" ---\n${n.content}`);
 
   return `\nHere are relevant notes from the user's knowledge base:\n\n${sections.join('\n\n')}`;
 }

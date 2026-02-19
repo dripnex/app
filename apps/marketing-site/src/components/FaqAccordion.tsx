@@ -34,9 +34,7 @@ function AccordionList({ items }: { items: FaqItem[] }) {
           {({ open }) => (
             <div
               className={`overflow-hidden rounded-xl transition-colors ${
-                open
-                  ? 'bg-surface'
-                  : 'bg-surface/50 hover:bg-surface'
+                open ? 'bg-surface' : 'bg-surface/50 hover:bg-surface'
               }`}
             >
               <Disclosure.Button className="flex w-full items-center justify-between px-6 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
@@ -75,9 +73,7 @@ function AccordionList({ items }: { items: FaqItem[] }) {
               >
                 <Disclosure.Panel className="overflow-hidden">
                   <div className="border-t border-white/[0.06] bg-inset px-6 py-4">
-                    <p className="text-sm leading-relaxed text-[#a1a1aa]">
-                      {item.answer}
-                    </p>
+                    <p className="text-sm leading-relaxed text-[#a1a1aa]">{item.answer}</p>
                   </div>
                 </Disclosure.Panel>
               </Transition>
@@ -126,19 +122,15 @@ export default function FaqAccordion(props: Props) {
 
     if (query.length > 0) {
       /* Search across ALL categories */
-      return categories.flatMap((cat) =>
+      return categories.flatMap(cat =>
         cat.questions.filter(
-          (q) =>
-            q.question.toLowerCase().includes(query) ||
-            q.answer.toLowerCase().includes(query),
-        ),
+          q => q.question.toLowerCase().includes(query) || q.answer.toLowerCase().includes(query)
+        )
       );
     }
 
     /* Show selected category */
-    return (
-      categories.find((c) => c.category === activeTab)?.questions ?? []
-    );
+    return categories.find(c => c.category === activeTab)?.questions ?? [];
   }, [categories, activeTab, search]);
 
   const isSearching = search.trim().length > 0;
@@ -153,7 +145,7 @@ export default function FaqAccordion(props: Props) {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           placeholder="Search questions..."
           className="w-full rounded-lg border border-white/[0.08] bg-surface/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-[#71717a] outline-none transition-colors focus:border-accent focus:bg-surface"
         />
@@ -161,7 +153,7 @@ export default function FaqAccordion(props: Props) {
 
       {/* ── Category tabs ── */}
       <div className="mb-8 flex flex-wrap justify-center gap-2">
-        {categories.map((cat) => (
+        {categories.map(cat => (
           <button
             key={cat.category}
             onClick={() => {
@@ -181,9 +173,7 @@ export default function FaqAccordion(props: Props) {
 
       {/* ── Results ── */}
       {isSearching && visibleItems.length === 0 ? (
-        <p className="text-center text-sm text-[#71717a] py-8">
-          No questions match your search.
-        </p>
+        <p className="text-center text-sm text-[#71717a] py-8">No questions match your search.</p>
       ) : (
         <div className="max-w-2xl mx-auto">
           <AccordionList items={visibleItems} />

@@ -50,7 +50,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
@@ -206,12 +206,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
 
   function LoadingSpinner() {
     return (
-      <svg
-        className="h-4 w-4 animate-spin"
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-      >
+      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle
           className="opacity-25"
           cx="12"
@@ -244,14 +239,17 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
           <form onSubmit={handleEmailSubmit} noValidate>
             <div className="space-y-4">
               <div>
-                <label htmlFor="subscribe-email" className="mb-1.5 block text-sm font-medium text-[#a1a1aa]">
+                <label
+                  htmlFor="subscribe-email"
+                  className="mb-1.5 block text-sm font-medium text-[#a1a1aa]"
+                >
                   Email address
                 </label>
                 <input
                   id="subscribe-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
                   autoFocus
@@ -310,9 +308,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
           </div>
 
           <h2 className="mb-2 text-xl font-semibold text-white">Check your email</h2>
-          <p className="mb-1 text-sm text-[#71717a]">
-            We sent a verification link to
-          </p>
+          <p className="mb-1 text-sm text-[#71717a]">We sent a verification link to</p>
           <p className="mb-6 text-sm font-medium text-[#a1a1aa]">{email}</p>
 
           <p className="mb-4 text-xs text-[#71717a]">
@@ -388,9 +384,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                 </div>
                 <div
                   className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors ${
-                    selectedPlan === 'free'
-                      ? 'border-accent bg-accent'
-                      : 'border-white/20'
+                    selectedPlan === 'free' ? 'border-accent bg-accent' : 'border-white/20'
                   }`}
                 >
                   {selectedPlan === 'free' && (
@@ -402,7 +396,11 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                       stroke="currentColor"
                       aria-hidden="true"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
                     </svg>
                   )}
                 </div>
@@ -418,7 +416,11 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                       stroke="currentColor"
                       aria-hidden="true"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
                     </svg>
                     {feature}
                   </li>
@@ -445,9 +447,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                 </div>
                 <div
                   className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors ${
-                    selectedPlan === 'pro-monthly'
-                      ? 'border-accent bg-accent'
-                      : 'border-white/20'
+                    selectedPlan === 'pro-monthly' ? 'border-accent bg-accent' : 'border-white/20'
                   }`}
                 >
                   {selectedPlan === 'pro-monthly' && (
@@ -459,7 +459,11 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                       stroke="currentColor"
                       aria-hidden="true"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
                     </svg>
                   )}
                 </div>
@@ -475,7 +479,11 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                       stroke="currentColor"
                       aria-hidden="true"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
                     </svg>
                     {feature}
                   </li>
@@ -494,7 +502,8 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
               }`}
             >
               <span className="absolute -top-2.5 right-4 rounded-full bg-accent px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
-                Save {Math.round((1 - (plans.pro.pricing.annual / 12) / plans.pro.pricing.monthly) * 100)}%
+                Save{' '}
+                {Math.round((1 - plans.pro.pricing.annual / 12 / plans.pro.pricing.monthly) * 100)}%
               </span>
               <div className="flex items-center justify-between">
                 <div>
@@ -505,9 +514,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                 </div>
                 <div
                   className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors ${
-                    selectedPlan === 'pro-annual'
-                      ? 'border-accent bg-accent'
-                      : 'border-white/20'
+                    selectedPlan === 'pro-annual' ? 'border-accent bg-accent' : 'border-white/20'
                   }`}
                 >
                   {selectedPlan === 'pro-annual' && (
@@ -519,7 +526,11 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                       stroke="currentColor"
                       aria-hidden="true"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
                     </svg>
                   )}
                 </div>
