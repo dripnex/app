@@ -327,6 +327,9 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
 
   noteWindow.on('ready-to-show', () => {
     noteWindow.show();
+    if (process.env.NODE_ENV === 'development') {
+      noteWindow.webContents.openDevTools();
+    }
   });
 
   // Load renderer with note ID in query param
