@@ -5,459 +5,77 @@ import { getProductConfig } from '@readied/product-config';
 const config = getProductConfig();
 ---
 
-<section class="cta-section">
-  <div class="cta-container">
-    <div class="cta-layout">
-      <div class="cta-content" data-reveal="fade-right">
-        <span class="label">Made for developers</span>
-        <h2>Software that<br/><span class="text-gradient">respects your time</span></h2>
-        <p>
-          No onboarding. No account required. No data collection.
-          Download, open a folder, and start writing.
-        </p>
+<section class="py-24 px-6">
+  <div class="mx-auto max-w-5xl">
+    <!-- CTA -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl sm:text-4xl font-bold text-zinc-50 mb-4">Give it a try. It's free.</h2>
+      <p class="text-lg text-[#a1a1aa] mb-8 max-w-[48ch] mx-auto">No account needed. No credit card. Download the app, point it at a folder of .md files, and start writing. That's it.</p>
 
-        <div class="cta-actions">
-          <a href="/download" class="btn btn-primary btn-lg" data-magnetic="0.2">
-            <Icon name="lucide:download" size={20} />
-            Start {config.trialDays}-day trial
-          </a>
-          <a href="/pricing" class="btn btn-ghost btn-lg" data-magnetic="0.2">View pricing</a>
-        </div>
-
-        <div class="trust-signals" data-stagger="100">
-          <div class="signal glass hover-float">
-            <span class="signal-value">Free</span>
-            <span class="signal-label">forever</span>
-          </div>
-          <div class="signal glass hover-float">
-            <span class="signal-value" data-counter={config.trialDays}>0</span>
-            <span class="signal-label">days Pro trial</span>
-          </div>
-          <div class="signal glass hover-float">
-            <span class="signal-value" data-counter="100" data-counter-suffix="%">0%</span>
-            <span class="signal-label">Offline capable</span>
-          </div>
-        </div>
+      <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center mb-8">
+        <a
+          href="/download"
+          class="group inline-flex w-full items-center justify-center gap-3 rounded-lg bg-accent px-7 py-3.5 text-base font-medium text-white transition-colors hover:bg-accent-hover sm:w-auto"
+        >
+          <Icon name="lucide:download" class="h-5 w-5" />
+          Download Free
+        </a>
+        <a
+          href="/pricing"
+          class="inline-flex w-full items-center justify-center rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white sm:w-auto"
+        >
+          View pricing
+        </a>
       </div>
 
-      <div class="indie-note glass" data-reveal="fade-left" data-reveal-delay="200">
-        <div class="note-icon">
-          <Icon name="lucide:heart" size={28} />
+      <!-- Trust signals -->
+      <div class="flex flex-wrap justify-center gap-3">
+        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
+          <Icon name="lucide:heart" class="h-3.5 w-3.5 text-accent" />
+          <span>Free forever</span>
         </div>
-        <div class="note-content">
-          <span class="note-label">Built by an indie developer</span>
-          <p>
-            Readied is made by a single developer who cares about software longevity.
+        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
+          <Icon name="lucide:zap" class="h-3.5 w-3.5 text-accent" />
+          <span>{config.trialDays}-day Pro trial</span>
+        </div>
+        <div class="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-4 py-2 text-sm text-[#71717a]">
+          <Icon name="lucide:wifi-off" class="h-3.5 w-3.5 text-accent" />
+          <span>100% offline</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indie developer card -->
+    <div class="rounded-xl bg-surface p-6 md:p-8">
+      <div class="flex flex-col md:flex-row items-start gap-6 md:gap-8">
+        <!-- Photo -->
+        <div class="shrink-0">
+          <div class="w-24 h-24 md:w-28 md:h-28 rounded-xl bg-inset border border-white/[0.06] overflow-hidden flex items-center justify-center">
+            <img
+              src="https://avatars.githubusercontent.com/u/7626025?v=4"
+              alt="Tomy Maritano"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex flex-col gap-3 flex-1">
+          <span class="font-mono text-sm font-bold uppercase tracking-[0.05em] text-accent">Built by an indie developer</span>
+          <p class="text-lg leading-relaxed text-[#a1a1aa]">
+            Readied is made by <strong class="text-[#f4f4f5] font-semibold">Tomy Maritano</strong>, a developer who cares about software longevity.
             No investors. No growth targets. Just a tool that works.
           </p>
-
-          <!-- Video carousel -->
-          <div class="video-carousel">
-            <div class="carousel-viewport">
-              <div class="carousel-track">
-                <div class="carousel-slide active">
-                  <div class="video-thumb">
-                    <div class="video-play-btn">
-                      <Icon name="lucide:play" size={24} />
-                    </div>
-                  </div>
-                </div>
-                <div class="carousel-slide">
-                  <div class="video-thumb">
-                    <div class="video-play-btn">
-                      <Icon name="lucide:play" size={24} />
-                    </div>
-                  </div>
-                </div>
-                <div class="carousel-slide">
-                  <div class="video-thumb">
-                    <div class="video-play-btn">
-                      <Icon name="lucide:play" size={24} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="carousel-controls">
-              <button class="carousel-arrow prev" aria-label="Previous">
-                <Icon name="lucide:chevron-left" size={16} />
-              </button>
-              <div class="carousel-dots">
-                <button class="dot active" aria-label="Video 1"></button>
-                <button class="dot" aria-label="Video 2"></button>
-                <button class="dot" aria-label="Video 3"></button>
-              </div>
-              <button class="carousel-arrow next" aria-label="Next">
-                <Icon name="lucide:chevron-right" size={16} />
-              </button>
-            </div>
-          </div>
-
-          <a href="/philosophy" class="note-link">
+          <a
+            href="/philosophy"
+            class="group mt-1 inline-flex items-center gap-2 text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+          >
             Read the philosophy
-            <Icon name="lucide:arrow-right" size={14} />
+            <Icon name="lucide:arrow-right" class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </a>
         </div>
-        <div class="note-glow"></div>
       </div>
     </div>
   </div>
 </section>
-
-<style>
-  .cta-section {
-    padding: var(--space-24) var(--space-6);
-    background: transparent;
-  }
-
-  .cta-container {
-    width: 100%;
-    max-width: var(--container-max);
-    margin: 0 auto;
-  }
-
-  .cta-layout {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: var(--space-12);
-    align-items: center;
-  }
-
-  .cta-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-5);
-  }
-
-  .cta-content .label {
-    display: block;
-  }
-
-  .cta-content h2 {
-    font-size: var(--text-3xl);
-    line-height: 1.15;
-  }
-
-  .cta-content > p {
-    font-size: var(--text-lg);
-    color: var(--text-secondary);
-    line-height: 1.7;
-    max-width: 44ch;
-  }
-
-  .cta-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    margin-top: var(--space-2);
-  }
-
-  .cta-actions .btn {
-    gap: var(--space-3);
-  }
-
-  .trust-signals {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    margin-top: var(--space-4);
-  }
-
-  .signal {
-    flex: 1;
-    min-width: 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-4) var(--space-4);
-    text-align: center;
-  }
-
-  .signal-value {
-    font-size: var(--text-xl);
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  .signal-label {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    white-space: nowrap;
-  }
-
-  /* Indie note card */
-  .indie-note {
-    position: relative;
-    padding: var(--space-8);
-    overflow: hidden;
-  }
-
-  .note-icon {
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--glass-bg-accent);
-    border: 1px solid var(--glass-border-accent);
-    border-radius: var(--radius-md);
-    color: var(--accent);
-    margin-bottom: var(--space-5);
-  }
-
-  .note-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .note-label {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--accent);
-  }
-
-  .note-content p {
-    font-size: var(--text-base);
-    color: var(--text-secondary);
-    line-height: 1.7;
-  }
-
-  .note-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--accent);
-    margin-top: var(--space-2);
-    transition: gap var(--duration-fast) var(--ease-out);
-  }
-
-  .note-link:hover {
-    gap: var(--space-3);
-  }
-
-  /* Video carousel */
-  .video-carousel {
-    margin-top: var(--space-5);
-  }
-
-  .carousel-viewport {
-    position: relative;
-    overflow: hidden;
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg-elevated);
-    border: 1px solid var(--glass-border);
-  }
-
-  .carousel-track {
-    position: relative;
-  }
-
-  .carousel-slide {
-    display: none;
-    cursor: pointer;
-  }
-
-  .carousel-slide.active {
-    display: block;
-  }
-
-  .video-thumb {
-    aspect-ratio: 16 / 9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-base) 100%);
-  }
-
-  .carousel-slide:hover .video-play-btn {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg-base);
-    transform: scale(1.1);
-  }
-
-  .video-play-btn {
-    width: 56px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--glass-bg-accent);
-    border: 1px solid var(--glass-border-accent);
-    border-radius: var(--radius-full);
-    color: var(--accent);
-    transition: all var(--duration-normal) var(--ease-out);
-  }
-
-  .video-play-btn svg {
-    margin-left: 3px;
-  }
-
-  .carousel-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-4);
-    margin-top: var(--space-4);
-  }
-
-  .carousel-arrow {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-full);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .carousel-arrow:hover {
-    color: var(--accent);
-    border-color: var(--glass-border-accent);
-    background: var(--glass-bg-accent);
-  }
-
-  .carousel-dots {
-    display: flex;
-    gap: var(--space-2);
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-full);
-    background: var(--glass-border);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .dot:hover {
-    background: var(--text-muted);
-  }
-
-  .dot.active {
-    background: var(--accent);
-  }
-
-  .note-glow {
-    position: absolute;
-    bottom: -60px;
-    right: -60px;
-    width: 180px;
-    height: 180px;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-    opacity: 0.3;
-    pointer-events: none;
-  }
-
-  @media (max-width: 900px) {
-    .cta-layout {
-      grid-template-columns: 1fr;
-      gap: var(--space-10);
-    }
-
-    .cta-content {
-      text-align: center;
-      align-items: center;
-    }
-
-    .cta-content > p {
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .cta-actions {
-      justify-content: center;
-    }
-
-    .trust-signals {
-      justify-content: center;
-    }
-
-    .signal {
-      flex: 0 0 auto;
-      min-width: 100px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .cta-section {
-      padding: var(--space-16) var(--space-4);
-    }
-
-    .cta-content h2 {
-      font-size: var(--text-2xl);
-    }
-
-    .cta-actions {
-      flex-direction: column;
-      width: 100%;
-    }
-
-    .cta-actions .btn {
-      width: 100%;
-      justify-content: center;
-    }
-
-    .trust-signals {
-      width: 100%;
-    }
-
-    .signal {
-      flex: 1 1 calc(50% - var(--space-2));
-      min-width: 0;
-    }
-
-    .indie-note {
-      padding: var(--space-6);
-    }
-
-  }
-</style>
-
-<script>
-  const slides = document.querySelectorAll('.carousel-slide');
-  const dots = document.querySelectorAll('.carousel-dots .dot');
-  const prevBtn = document.querySelector('.carousel-arrow.prev');
-  const nextBtn = document.querySelector('.carousel-arrow.next');
-  let currentIndex = 0;
-
-  function goToSlide(index: number) {
-    // Wrap around
-    if (index < 0) index = slides.length - 1;
-    if (index >= slides.length) index = 0;
-
-    slides.forEach((slide, i) => {
-      slide.classList.toggle('active', i === index);
-    });
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === index);
-    });
-    currentIndex = index;
-  }
-
-  // Arrow navigation
-  prevBtn?.addEventListener('click', () => goToSlide(currentIndex - 1));
-  nextBtn?.addEventListener('click', () => goToSlide(currentIndex + 1));
-
-  // Dot navigation
-  dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => goToSlide(index));
-  });
-
-  // Auto-advance every 5 seconds
-  setInterval(() => goToSlide(currentIndex + 1), 5000);
-</script>

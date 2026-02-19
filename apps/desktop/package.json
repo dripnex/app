@@ -1,6 +1,6 @@
 {
   "name": "@readied/desktop",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "private": true,
   "description": "Markdown-first, offline-forever note app for developers",
   "author": {
@@ -60,13 +60,17 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.2.0",
     "remark-gfm": "^4.0.1",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2",
     "unist-util-visit": "^5.0.0",
-    "zustand": "^5.0.9"
+    "zustand": "^5.0.9",
+    "@readied/ai-assistant": "workspace:*"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/mdast": "^4.0.4",
     "@types/react": "^18.2.79",
+    "@types/turndown": "^5.0.6",
     "@types/react-dom": "^18.2.25",
     "@vitejs/plugin-react": "^4.2.1",
     "electron": "^29.1.4",

@@ -1,229 +1,80 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { Icon } from 'astro-icon/components';
 ---
 
 <Base title="Checkout Canceled" description="Your checkout was canceled. You can still use Readied for free.">
-  <div class="cancel-page">
-    <div class="container">
-      <div class="cancel-icon">↩</div>
-      <h1>Checkout Canceled</h1>
-      <p class="subtitle">No worries! You can still use Readied for free</p>
+  <section class="min-h-screen pt-24 sm:pt-32 pb-16 px-4 sm:px-6 text-center">
+    <div class="max-w-4xl mx-auto">
+      <!-- Cancel icon -->
+      <div class="w-20 h-20 mx-auto mb-8 rounded-full bg-surface flex items-center justify-center text-[#71717a]">
+        <Icon name="lucide:undo-2" size={36} />
+      </div>
 
-      <div class="options">
-        <div class="option-card free">
-          <h3>Try Readied Free</h3>
-          <p>Get started with unlimited local notes, full markdown editor, and 100% offline functionality.</p>
-          <a href="/download" class="button primary">
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#f4f4f5] mb-4">Checkout Canceled</h1>
+      <p class="text-lg sm:text-xl text-[#a1a1aa] mb-12">No worries! You can still use Readied for free</p>
+
+      <!-- Option cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 my-12">
+        <!-- Free option -->
+        <div class="p-6 sm:p-8 rounded-xl bg-surface text-left">
+          <h3 class="text-xl sm:text-2xl font-bold text-[#f4f4f5] mb-4">Try Readied Free</h3>
+          <p class="text-[#a1a1aa] mb-6">Get started with unlimited local notes, full markdown editor, and 100% offline functionality.</p>
+          <a href="/download" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white">
+            <Icon name="lucide:download" size={18} />
             Download Free
           </a>
         </div>
 
-        <div class="option-card pro">
-          <h3>Changed your mind?</h3>
-          <p>Pro includes cloud sync, backlinks, graph view, and advanced search. Start with a 14-day free trial.</p>
-          <a href="/subscribe" class="button secondary">
+        <!-- Pro option -->
+        <div class="p-6 sm:p-8 rounded-xl bg-surface border border-accent/20 text-left">
+          <h3 class="text-xl sm:text-2xl font-bold text-[#f4f4f5] mb-4">Changed your mind?</h3>
+          <p class="text-[#a1a1aa] mb-6">Pro includes cloud sync, backlinks, graph view, and advanced search. Start with a 14-day free trial.</p>
+          <a href="/subscribe" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-accent text-white font-medium text-sm transition-colors hover:bg-accent-hover">
+            <Icon name="lucide:zap" size={18} />
             Try Pro
           </a>
         </div>
       </div>
 
-      <div class="why-pro">
-        <h2>Why upgrade to Pro?</h2>
-        <div class="benefits">
-          <div class="benefit">
-            <div class="icon">☁️</div>
-            <h4>Cloud Sync</h4>
-            <p>Access your notes from any device with automatic sync</p>
+      <!-- Why upgrade -->
+      <div class="my-16">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#f4f4f5] mb-8">Why upgrade to Pro?</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          <div class="text-center p-4 sm:p-6 rounded-xl bg-surface">
+            <div class="flex items-center justify-center mb-4">
+              <Icon name="lucide:cloud" size={32} class="text-accent" />
+            </div>
+            <h4 class="text-base sm:text-lg font-semibold text-[#f4f4f5] mb-2">Cloud Sync</h4>
+            <p class="text-sm text-[#a1a1aa]">Access your notes from any device with automatic sync</p>
           </div>
-          <div class="benefit">
-            <div class="icon">🔗</div>
-            <h4>Backlinks</h4>
-            <p>See connections between your notes automatically</p>
+          <div class="text-center p-4 sm:p-6 rounded-xl bg-surface">
+            <div class="flex items-center justify-center mb-4">
+              <Icon name="lucide:link" size={32} class="text-accent" />
+            </div>
+            <h4 class="text-base sm:text-lg font-semibold text-[#f4f4f5] mb-2">Backlinks</h4>
+            <p class="text-sm text-[#a1a1aa]">See connections between your notes automatically</p>
           </div>
-          <div class="benefit">
-            <div class="icon">🔍</div>
-            <h4>Advanced Search</h4>
-            <p>Find anything instantly with powerful search</p>
+          <div class="text-center p-4 sm:p-6 rounded-xl bg-surface">
+            <div class="flex items-center justify-center mb-4">
+              <Icon name="lucide:search" size={32} class="text-accent" />
+            </div>
+            <h4 class="text-base sm:text-lg font-semibold text-[#f4f4f5] mb-2">Advanced Search</h4>
+            <p class="text-sm text-[#a1a1aa]">Find anything instantly with powerful search</p>
           </div>
-          <div class="benefit">
-            <div class="icon">📊</div>
-            <h4>Graph View</h4>
-            <p>Visualize relationships in your knowledge base</p>
+          <div class="text-center p-4 sm:p-6 rounded-xl bg-surface">
+            <div class="flex items-center justify-center mb-4">
+              <Icon name="lucide:git-branch" size={32} class="text-accent" />
+            </div>
+            <h4 class="text-base sm:text-lg font-semibold text-[#f4f4f5] mb-2">Graph View</h4>
+            <p class="text-sm text-[#a1a1aa]">Visualize relationships in your knowledge base</p>
           </div>
         </div>
       </div>
 
-      <p class="help">
-        Questions? <a href="mailto:support@readied.app">Contact support</a> or check out our <a href="/faq">FAQ</a>
+      <p class="mt-16 text-[#a1a1aa]">
+        Questions? <a href="mailto:support@readied.app" class="text-accent hover:underline">Contact support</a> or check out our <a href="/faq" class="text-accent hover:underline">FAQ</a>
       </p>
     </div>
-  </div>
+  </section>
 </Base>
-
-<style>
-  .cancel-page {
-    min-height: 100vh;
-    padding: 6rem 2rem 4rem;
-    background: linear-gradient(180deg, #0a0b0d 0%, #1a1b1e 100%);
-    text-align: center;
-  }
-
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  .cancel-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 2rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-  }
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: white;
-  }
-
-  .subtitle {
-    font-size: 1.25rem;
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 3rem;
-  }
-
-  .options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin: 3rem 0;
-  }
-
-  .option-card {
-    padding: 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    text-align: left;
-  }
-
-  .option-card.free {
-    border-color: rgba(34, 197, 94, 0.3);
-  }
-
-  .option-card.pro {
-    border-color: rgba(102, 126, 234, 0.3);
-  }
-
-  .option-card h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: white;
-  }
-
-  .option-card p {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 1.5rem;
-  }
-
-  .button {
-    display: inline-block;
-    padding: 0.875rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 12px;
-    text-decoration: none;
-    transition: all 0.3s;
-  }
-
-  .button.primary {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    color: white;
-  }
-
-  .button.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
-  }
-
-  .button.secondary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-  }
-
-  .button.secondary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-  }
-
-  .why-pro {
-    margin: 4rem 0;
-  }
-
-  .why-pro h2 {
-    font-size: 2rem;
-    margin-bottom: 2rem;
-    color: white;
-  }
-
-  .benefits {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 2rem;
-  }
-
-  .benefit {
-    text-align: center;
-  }
-
-  .benefit .icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-
-  .benefit h4 {
-    font-size: 1.125rem;
-    margin-bottom: 0.5rem;
-    color: white;
-  }
-
-  .benefit p {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.875rem;
-  }
-
-  .help {
-    margin-top: 4rem;
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .help a {
-    color: #667eea;
-    text-decoration: none;
-  }
-
-  .help a:hover {
-    text-decoration: underline;
-  }
-
-  @media (max-width: 768px) {
-    h1 {
-      font-size: 2rem;
-    }
-
-    .options {
-      grid-template-columns: 1fr;
-    }
-
-    .benefits {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-</style>

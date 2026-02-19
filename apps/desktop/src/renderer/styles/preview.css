@@ -248,8 +248,35 @@
 }
 
 .markdown-preview input[type="checkbox"] {
-  margin-top: 0.35em;
-  accent-color: var(--accent);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin-top: 0.3em;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  cursor: default;
+  position: relative;
+  vertical-align: middle;
+}
+
+.markdown-preview input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.markdown-preview input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--bg-base);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* Blockquotes */

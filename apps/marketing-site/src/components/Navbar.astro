@@ -1,786 +1,98 @@
 ---
-import { Icon } from 'astro-icon/components';
+import MobileNav from './MobileNav.tsx';
+import NavDropdown from './NavDropdown.tsx';
 ---
 
-<header class="navbar" id="navbar">
-  <div class="navbar-inner">
-    <a href="/" class="navbar-brand">
-      <img src="/logowhite.svg" alt="Readied" class="logo" />
+<header class="fixed top-0 inset-x-0 z-50 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-white/[0.06]">
+  <div class="mx-auto flex h-full max-w-5xl items-center justify-between gap-8 px-6 lg:px-8">
+    <!-- Text logo -->
+    <a href="/" class="flex items-center">
+      <span class="font-mono text-lg font-bold text-zinc-50 tracking-tight">readied<span class="text-accent">.</span></span>
     </a>
 
-    <nav class="navbar-nav">
-      <a href="/philosophy">Philosophy</a>
-      <a href="/pricing">Pricing</a>
+    <!-- Desktop nav links -->
+    <nav class="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+      <a
+        href="/#features"
+        class="relative rounded-lg px-3 py-2 text-sm font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-[#f4f4f5]"
+      >
+        Features
+      </a>
+      <a
+        href="/pricing"
+        class="relative rounded-lg px-3 py-2 text-sm font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-[#f4f4f5]"
+      >
+        Pricing
+      </a>
 
-      <!-- More dropdown -->
-      <div class="nav-dropdown">
-        <button class="dropdown-trigger" aria-expanded="false" aria-haspopup="true">
-          More
-          <Icon name="lucide:chevron-down" size={12} />
-        </button>
-        <div class="dropdown-menu">
-          <a href="/changelog" class="dropdown-item">
-            <Icon name="lucide:file-text" size={16} />
-            What's New
-          </a>
-          <a href="/faq" class="dropdown-item">
-            <Icon name="lucide:circle-help" size={16} />
-            FAQ
-          </a>
-          <a href="https://medium.com/@tomymaritano" target="_blank" rel="noopener" class="dropdown-item">
-            <Icon name="lucide:pen-tool" size={16} />
-            Blog
-            <Icon name="lucide:external-link" size={12} class="external-icon" />
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="https://github.com/tomymaritano/readide" target="_blank" rel="noopener" class="dropdown-item">
-            <Icon name="simple-icons:github" size={16} />
-            GitHub
-            <Icon name="lucide:external-link" size={12} class="external-icon" />
-          </a>
-          <a href="https://x.com/tomymaritano" target="_blank" rel="noopener" class="dropdown-item">
-            <Icon name="simple-icons:x" size={16} />
-            X (Twitter)
-            <Icon name="lucide:external-link" size={12} class="external-icon" />
-          </a>
-        </div>
-      </div>
+      <NavDropdown
+        client:load
+        label="Docs"
+        items={[
+          { label: 'Philosophy', href: '/philosophy' },
+          { label: 'FAQ', href: '/faq' },
+          { label: 'Plugins', href: '/plugins' },
+        ]}
+      />
+
+      <a
+        href="/changelog"
+        class="relative rounded-lg px-3 py-2 text-sm font-medium text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-[#f4f4f5]"
+      >
+        Changelog
+      </a>
     </nav>
 
-    <div class="navbar-actions">
-      <a href="/download" class="btn btn-primary btn-sm" data-magnetic="0.15">
-        <Icon name="lucide:download" size={16} />
+    <!-- Desktop dual CTAs -->
+    <div class="hidden items-center gap-3 md:flex">
+      <a
+        href="/download"
+        class="rounded-lg border border-white/[0.08] px-4 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
+      >
         Download
+      </a>
+      <a
+        href="/pricing"
+        class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+      >
+        Try Pro Free &rarr;
       </a>
     </div>
 
     <!-- Mobile menu button -->
-    <button class="mobile-menu-btn" aria-label="Toggle menu" aria-expanded="false">
-      <span class="hamburger"></span>
-    </button>
+    <div class="flex md:hidden">
+      <MobileNav
+        client:load
+        links={[
+          { label: 'Download', href: '/download' },
+          { label: 'Try Pro Free', href: '/pricing' },
+        ]}
+        sections={[
+          {
+            title: 'Product',
+            links: [
+              { label: 'Pricing', href: '/pricing' },
+              { label: 'Changelog', href: '/changelog' },
+            ],
+          },
+          {
+            title: 'Resources',
+            links: [
+              { label: 'Philosophy', href: '/philosophy' },
+              { label: 'FAQ', href: '/faq' },
+              { label: 'Plugins', href: '/plugins' },
+              { label: 'Blog', href: 'https://medium.com/@tomymaritano', external: true },
+            ],
+          },
+          {
+            title: 'Community',
+            links: [
+              { label: 'GitHub', href: 'https://github.com/tomymaritano/readide', external: true },
+              { label: 'X (Twitter)', href: 'https://x.com/tomymaritano', external: true },
+            ],
+          },
+        ]}
+      />
+    </div>
   </div>
-
-  <!-- Top edge glow -->
-  <div class="navbar-glow"></div>
 </header>
-
-<!-- Mobile drawer -->
-<div class="mobile-drawer" id="mobile-drawer">
-  <div class="drawer-overlay"></div>
-  <nav class="drawer-content">
-    <div class="drawer-header">
-      <img src="/logowhite.svg" alt="Readied" class="drawer-logo" />
-      <button class="drawer-close" aria-label="Close menu">
-        <Icon name="lucide:x" size={24} />
-      </button>
-    </div>
-
-    <div class="drawer-body">
-      <div class="drawer-section">
-        <span class="drawer-section-title">Product</span>
-        <div class="drawer-links">
-          <a href="/download" class="drawer-link drawer-link-primary">
-            <Icon name="lucide:download" size={20} />
-            <span>Download</span>
-            <span class="drawer-badge">Free trial</span>
-          </a>
-          <a href="/pricing" class="drawer-link">
-            <Icon name="lucide:circle-dollar-sign" size={20} />
-            <span>Pricing</span>
-          </a>
-          <a href="/changelog" class="drawer-link">
-            <Icon name="lucide:file-text" size={20} />
-            <span>What's New</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="drawer-section">
-        <span class="drawer-section-title">Resources</span>
-        <div class="drawer-links">
-          <a href="/philosophy" class="drawer-link">
-            <Icon name="lucide:book-open" size={20} />
-            <span>Philosophy</span>
-          </a>
-          <a href="/faq" class="drawer-link">
-            <Icon name="lucide:circle-help" size={20} />
-            <span>FAQ</span>
-          </a>
-          <a href="https://medium.com/@tomymaritano" target="_blank" rel="noopener" class="drawer-link">
-            <Icon name="lucide:pen-tool" size={20} />
-            <span>Blog</span>
-            <Icon name="lucide:external-link" size={16} class="external-icon" />
-          </a>
-        </div>
-      </div>
-
-      <div class="drawer-section">
-        <span class="drawer-section-title">Community</span>
-        <div class="drawer-links">
-          <a href="https://github.com/tomymaritano/readide" target="_blank" rel="noopener" class="drawer-link">
-            <Icon name="simple-icons:github" size={20} />
-            <span>GitHub</span>
-            <Icon name="lucide:external-link" size={16} class="external-icon" />
-          </a>
-          <a href="https://x.com/tomymaritano" target="_blank" rel="noopener" class="drawer-link">
-            <Icon name="simple-icons:x" size={20} />
-            <span>X (Twitter)</span>
-            <Icon name="lucide:external-link" size={16} class="external-icon" />
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="drawer-footer">
-      <div class="drawer-footer-links">
-        <a href="/privacy">Privacy</a>
-        <span class="drawer-footer-dot"></span>
-        <a href="/terms">Terms</a>
-      </div>
-    </div>
-  </nav>
-</div>
-
-<style>
-  .navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    height: var(--nav-height);
-
-    /* Glass effect */
-    background: rgba(10, 11, 13, 0.6);
-    backdrop-filter: var(--blur-lg);
-    -webkit-backdrop-filter: var(--blur-lg);
-    border-bottom: 1px solid var(--glass-border);
-
-    /* Smooth transition for scroll state */
-    transition:
-      background var(--duration-normal) var(--ease-out),
-      backdrop-filter var(--duration-normal) var(--ease-out),
-      box-shadow var(--duration-normal) var(--ease-out);
-  }
-
-  /* Scrolled state - more opaque */
-  .navbar.scrolled {
-    background: rgba(10, 11, 13, 0.85);
-    box-shadow: var(--shadow-md);
-    border-bottom-color: var(--glass-border-strong);
-  }
-
-  .navbar-glow {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60%;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(94, 234, 212, 0.3) 50%,
-      transparent 100%
-    );
-    opacity: 0.6;
-  }
-
-  .navbar-inner {
-    max-width: var(--container-max);
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 var(--space-6);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-8);
-  }
-
-  .navbar-brand {
-    display: flex;
-    align-items: center;
-    transition: opacity var(--duration-fast) var(--ease-out);
-  }
-
-  .navbar-brand:hover {
-    opacity: 0.8;
-  }
-
-  .logo {
-    height: 22px;
-    width: auto;
-  }
-
-  .navbar-nav {
-    display: flex;
-    align-items: center;
-    gap: var(--space-8);
-  }
-
-  .navbar-nav > a {
-    position: relative;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-muted);
-    transition: color var(--duration-fast) var(--ease-out);
-  }
-
-  .navbar-nav > a::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--accent);
-    border-radius: var(--radius-full);
-    transition: width var(--duration-normal) var(--ease-out);
-  }
-
-  .navbar-nav > a:hover {
-    color: var(--text-primary);
-  }
-
-  .navbar-nav > a:hover::after {
-    width: 100%;
-  }
-
-  /* Dropdown */
-  .nav-dropdown {
-    position: relative;
-  }
-
-  .dropdown-trigger {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-muted);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: var(--space-1) 0;
-    transition: color var(--duration-fast) var(--ease-out);
-  }
-
-  .dropdown-trigger:hover {
-    color: var(--text-primary);
-  }
-
-  .dropdown-trigger svg {
-    transition: transform var(--duration-fast) var(--ease-out);
-  }
-
-  .nav-dropdown:hover .dropdown-trigger svg,
-  .nav-dropdown:focus-within .dropdown-trigger svg {
-    transform: rotate(180deg);
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    top: calc(100% + var(--space-3));
-    right: 0;
-    min-width: 200px;
-    padding: var(--space-2);
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-8px);
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .nav-dropdown:hover .dropdown-menu,
-  .nav-dropdown:focus-within .dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    border-radius: var(--radius-sm);
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .dropdown-item:hover {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .dropdown-item svg:first-child {
-    flex-shrink: 0;
-    color: var(--text-muted);
-  }
-
-  .dropdown-item:hover svg:first-child {
-    color: var(--accent);
-  }
-
-  .external-icon {
-    margin-left: auto;
-    opacity: 0.5;
-  }
-
-  .dropdown-divider {
-    height: 1px;
-    background: var(--glass-border);
-    margin: var(--space-2) var(--space-3);
-  }
-
-  .navbar-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-  }
-
-  .navbar-actions .btn {
-    gap: var(--space-2);
-  }
-
-  .navbar-actions .btn svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .mobile-menu-btn {
-    display: none;
-    width: 40px;
-    height: 40px;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .hamburger {
-    position: relative;
-    width: 20px;
-    height: 2px;
-    background: var(--text-primary);
-    border-radius: var(--radius-full);
-    transition: background var(--duration-fast) var(--ease-out);
-  }
-
-  .hamburger::before,
-  .hamburger::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--text-primary);
-    border-radius: var(--radius-full);
-    transition: transform var(--duration-fast) var(--ease-out);
-  }
-
-  .hamburger::before {
-    top: -6px;
-  }
-
-  .hamburger::after {
-    bottom: -6px;
-  }
-
-  @media (max-width: 768px) {
-    .navbar-inner {
-      padding: 0 var(--space-4);
-    }
-
-    .navbar-nav {
-      display: none;
-    }
-
-    .navbar-actions {
-      display: none;
-    }
-
-    .mobile-menu-btn {
-      display: flex;
-    }
-
-    .logo {
-      height: 20px;
-    }
-  }
-
-  /* Mobile menu button animation */
-  .mobile-menu-btn.open .hamburger {
-    background: transparent;
-  }
-
-  .mobile-menu-btn.open .hamburger::before {
-    transform: rotate(45deg) translate(4px, 4px);
-  }
-
-  .mobile-menu-btn.open .hamburger::after {
-    transform: rotate(-45deg) translate(4px, -4px);
-  }
-
-  /* Mobile Drawer */
-  .mobile-drawer {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    visibility: hidden;
-    opacity: 0;
-    transition: all var(--duration-normal) var(--ease-out);
-    pointer-events: none;
-  }
-
-  .mobile-drawer.open {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .drawer-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .drawer-content {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--bg-base);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    transform: translateY(-100%);
-    transition: transform var(--duration-normal) var(--ease-out);
-  }
-
-  .mobile-drawer.open .drawer-content {
-    transform: translateY(0);
-  }
-
-  .drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-4) var(--space-6);
-    height: var(--nav-height);
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .drawer-logo {
-    height: 20px;
-    width: auto;
-  }
-
-  .drawer-close {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .drawer-close:hover {
-    color: var(--text-primary);
-    border-color: var(--glass-border-strong);
-  }
-
-  .drawer-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: var(--space-6);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-  }
-
-  .drawer-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
-  .drawer-section-title {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-    padding: 0 var(--space-4);
-    margin-bottom: var(--space-1);
-  }
-
-  .drawer-links {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .drawer-link {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    font-size: var(--text-base);
-    font-weight: 500;
-    color: var(--text-secondary);
-    border-radius: var(--radius-md);
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .drawer-link:hover,
-  .drawer-link:focus {
-    color: var(--text-primary);
-    background: var(--glass-bg-elevated);
-  }
-
-  .drawer-link svg:first-child {
-    flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    color: var(--text-muted);
-    transition: color var(--duration-fast) var(--ease-out);
-  }
-
-  .drawer-link:hover svg:first-child {
-    color: var(--accent);
-  }
-
-  .drawer-link span {
-    flex: 1;
-  }
-
-  .drawer-link .external-icon {
-    width: 14px;
-    height: 14px;
-    color: var(--text-faint);
-    margin-left: auto;
-  }
-
-  .drawer-link-primary {
-    background: var(--glass-bg-accent);
-    border: 1px solid var(--glass-border-accent);
-    color: var(--accent);
-  }
-
-  .drawer-link-primary svg:first-child {
-    color: var(--accent);
-  }
-
-  .drawer-link-primary:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg-base);
-  }
-
-  .drawer-link-primary:hover svg:first-child {
-    color: var(--bg-base);
-  }
-
-  .drawer-badge {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    padding: var(--space-1) var(--space-2);
-    background: var(--glass-bg);
-    border-radius: var(--radius-full);
-    color: var(--text-muted);
-  }
-
-  .drawer-link-primary .drawer-badge {
-    background: rgba(255, 255, 255, 0.15);
-    color: inherit;
-  }
-
-  .drawer-footer {
-    padding: var(--space-5) var(--space-6);
-    border-top: 1px solid var(--glass-border);
-  }
-
-  .drawer-footer-links {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-3);
-  }
-
-  .drawer-footer-links a {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    transition: color var(--duration-fast) var(--ease-out);
-  }
-
-  .drawer-footer-links a:hover {
-    color: var(--accent);
-  }
-
-  .drawer-footer-dot {
-    width: 3px;
-    height: 3px;
-    background: var(--text-faint);
-    border-radius: var(--radius-full);
-  }
-</style>
-
-<script>
-  // Scroll detection for navbar
-  const navbar = document.getElementById('navbar');
-
-  function updateNavbar() {
-    if (window.scrollY > 20) {
-      navbar?.classList.add('scrolled');
-    } else {
-      navbar?.classList.remove('scrolled');
-    }
-  }
-
-  window.addEventListener('scroll', updateNavbar, { passive: true });
-  updateNavbar();
-
-  // Dropdown accessibility with keyboard navigation
-  const dropdownTrigger = document.querySelector('.dropdown-trigger') as HTMLElement;
-  const dropdownMenu = document.querySelector('.dropdown-menu');
-  const dropdownItems = dropdownMenu?.querySelectorAll('.dropdown-item') as NodeListOf<HTMLElement>;
-
-  function openDropdown() {
-    dropdownTrigger?.setAttribute('aria-expanded', 'true');
-    dropdownItems?.[0]?.focus();
-  }
-
-  function closeDropdown() {
-    dropdownTrigger?.setAttribute('aria-expanded', 'false');
-    dropdownTrigger?.focus();
-  }
-
-  dropdownTrigger?.addEventListener('click', () => {
-    const expanded = dropdownTrigger.getAttribute('aria-expanded') === 'true';
-    if (expanded) {
-      closeDropdown();
-    } else {
-      openDropdown();
-    }
-  });
-
-  // Arrow key navigation in dropdown
-  dropdownTrigger?.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      openDropdown();
-    }
-  });
-
-  dropdownMenu?.addEventListener('keydown', (e) => {
-    const items = Array.from(dropdownItems || []);
-    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-        items[nextIndex]?.focus();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-        items[prevIndex]?.focus();
-        break;
-      case 'Escape':
-        e.preventDefault();
-        closeDropdown();
-        break;
-      case 'Tab':
-        closeDropdown();
-        break;
-    }
-  });
-
-  // Mobile drawer
-  const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-  const mobileDrawer = document.getElementById('mobile-drawer');
-  const drawerClose = document.querySelector('.drawer-close');
-  const drawerOverlay = document.querySelector('.drawer-overlay');
-  const drawerLinks = document.querySelectorAll('.drawer-link, .drawer-footer-links a');
-
-  function openDrawer() {
-    mobileDrawer?.classList.add('open');
-    mobileMenuBtn?.classList.add('open');
-    mobileMenuBtn?.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-    // Focus close button for accessibility
-    const closeBtn = mobileDrawer?.querySelector('.drawer-close');
-    (closeBtn as HTMLElement)?.focus();
-  }
-
-  function closeDrawer() {
-    mobileDrawer?.classList.remove('open');
-    mobileMenuBtn?.classList.remove('open');
-    mobileMenuBtn?.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-    // Return focus to menu button
-    (mobileMenuBtn as HTMLElement)?.focus();
-  }
-
-  mobileMenuBtn?.addEventListener('click', () => {
-    if (mobileDrawer?.classList.contains('open')) {
-      closeDrawer();
-    } else {
-      openDrawer();
-    }
-  });
-
-  drawerClose?.addEventListener('click', closeDrawer);
-  drawerOverlay?.addEventListener('click', closeDrawer);
-
-  // Close drawer when clicking a link
-  drawerLinks.forEach(link => {
-    link.addEventListener('click', closeDrawer);
-  });
-
-  // Close on escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      // Close drawer if open
-      if (mobileDrawer?.classList.contains('open')) {
-        closeDrawer();
-      }
-      // Close dropdown
-      dropdownTrigger?.setAttribute('aria-expanded', 'false');
-      (dropdownTrigger as HTMLElement)?.blur();
-    }
-  });
-
-  // Trap focus within drawer when open
-  mobileDrawer?.addEventListener('keydown', (e) => {
-    if (e.key !== 'Tab') return;
-
-    const focusableElements = mobileDrawer.querySelectorAll(
-      'a[href], button, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-    if (e.shiftKey && document.activeElement === firstElement) {
-      e.preventDefault();
-      lastElement?.focus();
-    } else if (!e.shiftKey && document.activeElement === lastElement) {
-      e.preventDefault();
-      firstElement?.focus();
-    }
-  });
-</script>

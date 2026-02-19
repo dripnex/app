@@ -1,9 +1,10 @@
+import { getProductConfig } from '@readied/product-config';
 import type { TrialState, StoredTrialData } from './types.js';
 
 /**
- * Trial period in days
+ * Trial period in days — sourced from product-config facade
  */
-export const TRIAL_DURATION_DAYS = 14;
+export const TRIAL_DURATION_DAYS = getProductConfig().trialDays;
 
 /**
  * Calculates days remaining in trial period

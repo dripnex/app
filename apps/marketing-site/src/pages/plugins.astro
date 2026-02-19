@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Footer from '../components/Footer.astro';
+import PluginFilter from '../components/PluginFilter.tsx';
+import pluginsData from '../data/plugins.json';
+---
+
+<Base title="Plugins — Readied" description="Extend Readied with plugins for AI assistance, productivity, and more.">
+  <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
+    <div class="relative max-w-5xl mx-auto z-10">
+      <header class="text-center mb-10">
+        <span class="section-label">Plugins</span>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
+          Extend <span class="text-accent">Readied</span>
+        </h1>
+        <p class="text-lg text-[#a1a1aa] max-w-[50ch] mx-auto leading-relaxed">
+          Add powerful features to your editor with built-in and community plugins.
+        </p>
+      </header>
+
+      <PluginFilter client:idle plugins={pluginsData} />
+    </div>
+  </section>
+
+  <Footer />
+</Base>
