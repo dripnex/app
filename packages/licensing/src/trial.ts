@@ -1,5 +1,5 @@
-import type { TrialState, StoredTrialData } from './types.js';
 import { getProductConfig } from '@readied/product-config';
+import type { TrialState, StoredTrialData } from './types.js';
 
 /**
  * Trial period in days — sourced from product-config facade

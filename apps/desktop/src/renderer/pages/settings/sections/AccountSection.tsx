@@ -15,10 +15,10 @@ import {
   CreditCard,
   ExternalLink,
 } from 'lucide-react';
+import { getProductConfig } from '@readied/product-config';
 import { useAuthStore } from '../../../stores/authStore';
 import { useSyncStore } from '../../../stores/syncStore';
 import { useLicense } from '../../../contexts/LicenseContext';
-import { getProductConfig } from '@readied/product-config';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
