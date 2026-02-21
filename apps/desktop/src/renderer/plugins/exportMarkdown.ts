@@ -35,7 +35,7 @@ export const exportMarkdownPlugin: PluginManifest = {
         if (!content) return false;
 
         // Basic markdown-to-HTML conversion for clipboard
-        let html = content
+        const html = content
           // Code blocks (must come before inline code)
           .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
           // Headers
