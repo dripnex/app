@@ -442,10 +442,7 @@ function NotesApp() {
     pluginRuntimeStore.getState().init();
   }, []);
 
-  const allPlugins = useMemo(
-    () => [...builtInPlugins, ...discoveredPlugins],
-    [discoveredPlugins]
-  );
+  const allPlugins = useMemo(() => [...builtInPlugins, ...discoveredPlugins], [discoveredPlugins]);
 
   const configBridge = useMemo(
     () => ({
