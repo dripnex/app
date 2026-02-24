@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useSyncLinks } from '../hooks/useLinks';
 import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
+import { ToastProvider } from './Toast';
 import { NoteEditor } from './NoteEditor';
 import './NoteWindow.css';
 
@@ -137,7 +138,9 @@ interface NoteWindowProps {
 export function NoteWindow({ noteId }: NoteWindowProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <NoteWindowContent noteId={noteId} />
+      <ToastProvider>
+        <NoteWindowContent noteId={noteId} />
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

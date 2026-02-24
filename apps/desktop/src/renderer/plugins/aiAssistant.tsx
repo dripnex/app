@@ -1,45 +1,79 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 import type { PluginManifest, ZoneComponentProps, PluginContext } from '@readied/plugin-api';
 import { AiPanel } from '../components/ai/AiPanel';
 import '../styles/ai-panel.css';
 
 /**
- * State shared between the plugin activate() and the React component.
+ * State shared between the plugin activate() and the React components.
  * We use a simple ref-based bridge since the plugin context is not React-aware.
+ * Multiple listeners allow both the panel and button to stay in sync.
  */
 interface AiBridge {
   context: PluginContext | null;
   visible: boolean;
-  setVisible: ((v: boolean) => void) | null;
+  listeners: Set<(v: boolean) => void>;
+  toggle: () => void;
 }
 
 const bridge: AiBridge = {
   context: null,
   visible: false,
-  setVisible: null,
+  listeners: new Set(),
+  toggle() {
+    bridge.visible = !bridge.visible;
+    bridge.listeners.forEach(fn => fn(bridge.visible));
+  },
 };
 
-function AiPanelZone({ meta }: ZoneComponentProps) {
-  const ctx = meta?.context as PluginContext | undefined;
+/** Hook to subscribe to bridge visibility state */
+function useBridgeVisible(): [boolean, (v: boolean) => void] {
   const [visible, setVisible] = useState(bridge.visible);
 
-  // Sync bridge
   useEffect(() => {
-    bridge.setVisible = setVisible;
+    bridge.listeners.add(setVisible);
+    // Sync on mount in case state changed between render and effect
+    setVisible(bridge.visible);
     return () => {
-      bridge.setVisible = null;
+      bridge.listeners.delete(setVisible);
     };
   }, []);
 
-  // Sync visibility from bridge
-  useEffect(() => {
-    setVisible(bridge.visible);
+  const setBridgeVisible = useCallback((v: boolean) => {
+    bridge.visible = v;
+    bridge.listeners.forEach(fn => fn(v));
   }, []);
 
+  return [visible, setBridgeVisible];
+}
+
+function AiToggleButton() {
+  const [visible, setVisible] = useBridgeVisible();
+
+  const handleClick = useCallback(() => {
+    setVisible(!visible);
+  }, [visible, setVisible]);
+
+  return (
+    <button
+      type="button"
+      className={`note-editor-actions-btn${visible ? ' active' : ''}`}
+      onClick={handleClick}
+      title="AI Assistant (Cmd+Shift+A)"
+      aria-label="Toggle AI Assistant"
+    >
+      <Sparkles size={18} />
+    </button>
+  );
+}
+
+function AiPanelZone({ meta }: ZoneComponentProps) {
+  const ctx = meta?.context as PluginContext | undefined;
+  const [visible, setVisible] = useBridgeVisible();
+
   const handleClose = useCallback(() => {
-    bridge.visible = false;
     setVisible(false);
-  }, []);
+  }, [setVisible]);
 
   const getCurrentNote = useCallback(() => {
     if (!ctx) return null;
@@ -135,6 +169,13 @@ export const aiAssistantPlugin: PluginManifest = {
       meta: { context },
     });
 
+    // Register the toggle button in editor header actions
+    context.layout.addComponent('editor-header-actions', {
+      id: 'ai-assistant:toggle-btn',
+      component: AiToggleButton,
+      order: 10,
+    });
+
     // Toggle command
     const unregisterToggle = context.registerCommand(
       {
@@ -144,8 +185,7 @@ export const aiAssistantPlugin: PluginManifest = {
         icon: 'Sparkles',
       },
       () => {
-        bridge.visible = !bridge.visible;
-        bridge.setVisible?.(bridge.visible);
+        bridge.toggle();
         return true;
       }
     );
@@ -159,7 +199,7 @@ export const aiAssistantPlugin: PluginManifest = {
       },
       () => {
         bridge.visible = true;
-        bridge.setVisible?.(true);
+        bridge.listeners.forEach(fn => fn(true));
         return true;
       }
     );
@@ -168,7 +208,7 @@ export const aiAssistantPlugin: PluginManifest = {
       dispose() {
         bridge.context = null;
         bridge.visible = false;
-        bridge.setVisible = null;
+        bridge.listeners.clear();
         unregisterToggle();
         unregisterAsk();
       },

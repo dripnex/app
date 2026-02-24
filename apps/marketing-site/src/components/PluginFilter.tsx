@@ -10,14 +10,19 @@ interface Plugin {
   icon: string;
   builtin: boolean;
   tags: string[];
+  downloads?: number;
 }
 
 interface PluginFilterProps {
   plugins: Plugin[];
 }
 
+type SortOption = 'popular' | 'newest' | 'name';
+
 export default function PluginFilter({ plugins }: PluginFilterProps) {
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortOption>('name');
 
   // Derive unique categories from plugin data
   const categories = useMemo(() => {
@@ -25,14 +30,71 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
     return ['All', ...Array.from(cats).sort()];
   }, [plugins]);
 
-  // Filter plugins by active category
+  // Filter plugins by category and search
   const filteredPlugins = useMemo(() => {
-    if (activeCategory === 'All') return plugins;
-    return plugins.filter(p => p.category === activeCategory);
-  }, [plugins, activeCategory]);
+    let result = plugins;
+
+    if (activeCategory !== 'All') {
+      result = result.filter(p => p.category === activeCategory);
+    }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        p =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.tags.some(t => t.toLowerCase().includes(q))
+      );
+    }
+
+    // Sort
+    return [...result].sort((a, b) => {
+      if (sort === 'popular') return (b.downloads ?? 0) - (a.downloads ?? 0);
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      return 0; // 'newest' — keep original order
+    });
+  }, [plugins, activeCategory, search, sort]);
 
   return (
     <div>
+      {/* Search + Sort bar */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a]"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search plugins..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-white/[0.08] bg-surface px-3 py-2.5 pl-10 text-sm text-[#f4f4f5] placeholder-[#71717a] outline-none transition-colors focus:border-accent"
+          />
+        </div>
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value as SortOption)}
+          className="rounded-lg border border-white/[0.08] bg-surface px-3 py-2.5 text-sm text-[#a1a1aa] outline-none transition-colors focus:border-accent cursor-pointer"
+        >
+          <option value="name">Sort: A-Z</option>
+          <option value="popular">Sort: Popular</option>
+          <option value="newest">Sort: Newest</option>
+        </select>
+      </div>
+
       {/* Category filter buttons */}
       <div
         className="mb-8 flex flex-wrap items-center gap-2"
@@ -59,7 +121,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
                   : 'border border-white/[0.08] bg-surface text-[#a1a1aa] hover:bg-white/5 hover:text-white'
               }`}
             >
-              {category}
+              {category.charAt(0).toUpperCase() + category.slice(1)}
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                   isActive ? 'bg-white/20 text-white' : 'bg-white/5 text-[#71717a]'
@@ -168,12 +230,22 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
       {filteredPlugins.length === 0 && (
         <div className="glass-card p-12 text-center">
           <div className="mb-3 text-4xl" aria-hidden="true">
-            🔍
+            {search ? '🔍' : '📦'}
           </div>
           <p className="text-sm font-medium text-[#f4f4f5] mb-1">No plugins found</p>
           <p className="text-sm text-[#71717a]">
-            No plugins match the <span className="font-medium text-accent">{activeCategory}</span>{' '}
-            category. Try selecting a different filter above.
+            {search ? (
+              <>
+                No plugins match &ldquo;<span className="font-medium text-accent">{search}</span>
+                &rdquo;. Try a different search term.
+              </>
+            ) : (
+              <>
+                No plugins match the{' '}
+                <span className="font-medium text-accent">{activeCategory}</span> category. Try
+                selecting a different filter above.
+              </>
+            )}
           </p>
         </div>
       )}

@@ -10,6 +10,8 @@ import {
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeHighlight from 'rehype-highlight';
+import '../../styles/code-highlight.css';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { remarkWikilink } from '@readied/wikilinks';
 import { extractEmbedTargets } from '@readied/embeds';
@@ -261,6 +263,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
           rehypePlugins={
             [
               rehypeRaw,
+              rehypeHighlight,
               ...pluginRehypeRegs.map(r => r.plugin),
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ] as any[]
