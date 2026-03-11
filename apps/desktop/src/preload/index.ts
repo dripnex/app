@@ -541,6 +541,10 @@ export interface ReadiedAPI {
     stopAutoSync: () => Promise<{ success: boolean; error?: string }>;
     /** Trigger manual sync */
     triggerSync: () => Promise<void>;
+    /** Pull tag changes from server */
+    pullTags: () => Promise<{ success: boolean; applied: number; error?: string }>;
+    /** Push tag changes to server */
+    pushTags: () => Promise<{ success: boolean; pushed: number; error?: string }>;
   };
   subscription: {
     /** Get subscription status */
@@ -822,6 +826,8 @@ const api: ReadiedAPI = {
     startAutoSync: intervalMs => ipcRenderer.invoke('sync:startAutoSync', intervalMs),
     stopAutoSync: () => ipcRenderer.invoke('sync:stopAutoSync'),
     triggerSync: () => ipcRenderer.invoke('sync:trigger'),
+    pullTags: () => ipcRenderer.invoke('sync:pullTags'),
+    pushTags: () => ipcRenderer.invoke('sync:pushTags'),
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),

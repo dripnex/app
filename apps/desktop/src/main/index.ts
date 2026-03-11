@@ -1589,6 +1589,24 @@ function registerAuthSyncHandlers(): void {
     }
   });
 
+  // Tag sync - pull
+  ipcMain.handle('sync:pullTags', async () => {
+    try {
+      return await sync.pullTags();
+    } catch (error) {
+      return { success: false, applied: 0, error: String(error) };
+    }
+  });
+
+  // Tag sync - push
+  ipcMain.handle('sync:pushTags', async () => {
+    try {
+      return await sync.pushTags();
+    } catch (error) {
+      return { success: false, pushed: 0, error: String(error) };
+    }
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Subscription
   // ═══════════════════════════════════════════════════════════════════════════

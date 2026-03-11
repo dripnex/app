@@ -14,7 +14,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
-import { syncLog, syncCursors, subscriptions, notebookSyncLog } from '../db/schema.js';
+import { syncLog, syncCursors, subscriptions, tagSyncLog, notebookSyncLog } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
 import { syncRateLimit } from '../middleware/rateLimit.js';
 
@@ -252,7 +252,7 @@ const notebookPushSchema = z.object({
 
 /**
  * Validate notebook tree integrity before accepting push.
- * Checks: depth ≤ 2, parentId exists, no circular references.
+ * Checks: depth <= 2, parentId exists, no circular references.
  */
 function validateNotebookTree(
   changes: Array<{ notebookId: string; operation: string; data?: string | null }>,
@@ -398,7 +398,7 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
   }
 
   // Process changes in transaction
-  const { results, finalCursor } = await db.transaction(async tx => {
+  const { results: notebookResults, finalCursor: notebookFinalCursor } = await db.transaction(async tx => {
     const [maxVersionResult] = await tx
       .select({ maxVersion: sql<number>`COALESCE(MAX(${notebookSyncLog.version}), 0)` })
       .from(notebookSyncLog)
@@ -449,6 +449,155 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
 
       txResults.push({
         notebookId: change.notebookId,
+        version: nextVersion,
+        status: 'applied',
+      });
+
+      nextVersion++;
+    }
+
+    return { results: txResults, finalCursor: nextVersion - 1 };
+  });
+
+  return c.json({ results: notebookResults, cursor: notebookFinalCursor });
+});
+
+// ============================================================================
+// Tag Sync Endpoints
+// ============================================================================
+
+const tagPullSchema = z.object({
+  cursor: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+sync.get('/tags', zValidator('query', tagPullSchema), async c => {
+  const { cursor, limit } = c.req.valid('query');
+  const { userId } = c.get('user');
+  const db = createDb(c.env);
+
+  // Check subscription
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .limit(1);
+
+  if (sub?.status !== 'active' && sub?.status !== 'trialing') {
+    return c.json({ error: 'Sync requires Pro subscription' }, 403);
+  }
+
+  const changes = await db
+    .select()
+    .from(tagSyncLog)
+    .where(and(eq(tagSyncLog.userId, userId), gt(tagSyncLog.version, cursor)))
+    .orderBy(tagSyncLog.version)
+    .limit(limit);
+
+  const maxVersion = changes.length > 0 ? changes[changes.length - 1].version : cursor;
+
+  return c.json({
+    changes: changes.map(entry => ({
+      id: entry.id,
+      tagId: entry.tagId,
+      version: entry.version,
+      operation: entry.operation,
+      data: entry.data,
+      deviceId: entry.deviceId,
+      createdAt: entry.createdAt,
+    })),
+    cursor: maxVersion,
+    hasMore: changes.length === limit,
+  });
+});
+
+const tagChangeSchema = z.object({
+  tagId: z.string().uuid(),
+  operation: z.enum(['create', 'update', 'delete']),
+  data: z.string().nullable().optional(), // JSON: { name, color }
+  localVersion: z.number().int().optional(),
+});
+
+const tagPushSchema = z.object({
+  changes: z.array(tagChangeSchema).min(1).max(100),
+  deviceId: z.string().uuid(),
+});
+
+sync.post('/tags', zValidator('json', tagPushSchema), async c => {
+  const { changes, deviceId } = c.req.valid('json');
+  const { userId } = c.get('user');
+  const db = createDb(c.env);
+
+  // Check subscription
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .limit(1);
+
+  if (sub?.status !== 'active' && sub?.status !== 'trialing') {
+    return c.json({ error: 'Sync requires Pro subscription' }, 403);
+  }
+
+  // Validate tag data
+  for (const change of changes) {
+    if (change.operation !== 'delete' && change.data) {
+      const parsed = JSON.parse(change.data);
+      if (!parsed.name || typeof parsed.name !== 'string') {
+        return c.json({ error: 'Tag data must include name' }, 422);
+      }
+    }
+  }
+
+  const { results, finalCursor } = await db.transaction(async tx => {
+    const [maxVersionResult] = await tx
+      .select({ maxVersion: sql<number>`COALESCE(MAX(${tagSyncLog.version}), 0)` })
+      .from(tagSyncLog)
+      .where(eq(tagSyncLog.userId, userId));
+
+    let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
+
+    const txResults: Array<{
+      tagId: string;
+      version: number;
+      status: 'applied' | 'conflict';
+      serverVersion?: number;
+    }> = [];
+
+    for (const change of changes) {
+      const [latestEntry] = await tx
+        .select()
+        .from(tagSyncLog)
+        .where(and(eq(tagSyncLog.userId, userId), eq(tagSyncLog.tagId, change.tagId)))
+        .orderBy(desc(tagSyncLog.version))
+        .limit(1);
+
+      if (
+        latestEntry &&
+        latestEntry.deviceId !== deviceId &&
+        change.localVersion !== undefined &&
+        latestEntry.version > change.localVersion
+      ) {
+        txResults.push({
+          tagId: change.tagId,
+          version: latestEntry.version,
+          status: 'conflict',
+          serverVersion: latestEntry.version,
+        });
+        continue;
+      }
+
+      await tx.insert(tagSyncLog).values({
+        userId,
+        tagId: change.tagId,
+        version: nextVersion,
+        operation: change.operation,
+        data: change.data ?? null,
+        deviceId,
+      });
+
+      txResults.push({
+        tagId: change.tagId,
         version: nextVersion,
         status: 'applied',
       });

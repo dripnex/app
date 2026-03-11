@@ -41,6 +41,7 @@ export interface SyncResult {
 
 interface SyncState {
   cursor: number;
+  tagCursor: number;
   notebookCursor: number;
   lastSyncAt: number | null;
   isSyncing: boolean;
@@ -72,6 +73,7 @@ export class SyncService {
     this.notebookRepository = notebookRepository;
     this.state = {
       cursor: initialCursor,
+      tagCursor: 0,
       notebookCursor: 0,
       lastSyncAt: null,
       isSyncing: false,
@@ -302,6 +304,87 @@ export class SyncService {
   }
 
   /**
+   * Pull tag changes from server and apply locally
+   */
+  async pullTags(): Promise<{
+    success: boolean;
+    applied: number;
+    error?: string;
+  }> {
+    try {
+      const result = await this.apiClient.pullTagChanges(this.state.tagCursor, 50);
+
+      let applied = 0;
+      for (const change of result.changes) {
+        try {
+          if (change.operation === 'delete') {
+            this.noteRepository.deleteTagByUuid(change.tagId);
+          } else if (change.data) {
+            const parsed = JSON.parse(change.data);
+            this.noteRepository.upsertTagFromRemote(change.tagId, parsed.name, parsed.color ?? null);
+          }
+          applied++;
+        } catch (error) {
+          console.error(`Failed to apply tag change ${change.id}:`, error);
+          break;
+        }
+      }
+
+      this.state.tagCursor = applied === result.changes.length
+        ? result.cursor
+        : this.state.tagCursor;
+
+      return { success: true, applied };
+    } catch (error) {
+      return {
+        success: false,
+        applied: 0,
+        error: error instanceof Error ? error.message : 'Failed to pull tags',
+      };
+    }
+  }
+
+  /**
+   * Push local tag changes to server
+   */
+  async pushTags(): Promise<{
+    success: boolean;
+    pushed: number;
+    error?: string;
+  }> {
+    try {
+      const pending = this.noteRepository.getTagsPendingSync(50);
+      if (pending.length === 0) {
+        return { success: true, pushed: 0 };
+      }
+
+      const changes = pending.map(({ tag, localVersion }) => ({
+        tagId: tag.uuid,
+        operation: 'update' as const,
+        data: JSON.stringify({ name: tag.name, color: tag.color }),
+        localVersion,
+      }));
+
+      const result = await this.apiClient.pushTagChanges(changes);
+
+      const successIds = result.results
+        .filter(r => r.status === 'applied')
+        .map(r => r.tagId);
+
+      this.noteRepository.markMultipleTagsAsSynced(successIds);
+      this.state.tagCursor = result.cursor;
+
+      return { success: true, pushed: successIds.length };
+    } catch (error) {
+      return {
+        success: false,
+        pushed: 0,
+        error: error instanceof Error ? error.message : 'Failed to push tags',
+      };
+    }
+  }
+
+  /**
    * Perform full sync cycle (pull + push)
    */
   async syncNow(): Promise<SyncResult> {
@@ -375,6 +458,18 @@ export class SyncService {
         } else {
           console.error('Failed to push changes:', pushResult.error);
         }
+      }
+
+      // Step 3: Pull tags
+      const tagPull = await this.pullTags();
+      if (!tagPull.success) {
+        console.error('Tag pull failed:', tagPull.error);
+      }
+
+      // Step 4: Push tags
+      const tagPush = await this.pushTags();
+      if (!tagPush.success) {
+        console.error('Tag push failed:', tagPush.error);
       }
 
       return {

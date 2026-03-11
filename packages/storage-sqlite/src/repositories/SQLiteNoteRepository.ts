@@ -838,4 +838,113 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     `);
     stmt.run(noteId);
   }
+
+  // ============================================================================
+  // Tag Sync Methods
+  // ============================================================================
+
+  /**
+   * Get tags with pending sync changes
+   */
+  getTagsPendingSync(limit: number): Array<{ tag: { id: number; uuid: string; name: string; color: string | null }; localVersion: number }> {
+    const stmt = this.db.prepare(`
+      SELECT id, uuid, name, color, local_version
+      FROM tags
+      WHERE needs_sync = 1 AND uuid IS NOT NULL
+      LIMIT ?
+    `);
+    const rows = stmt.all(limit) as Array<{
+      id: number;
+      uuid: string;
+      name: string;
+      color: string | null;
+      local_version: number;
+    }>;
+    return rows.map(row => ({
+      tag: { id: row.id, uuid: row.uuid, name: row.name, color: row.color },
+      localVersion: row.local_version,
+    }));
+  }
+
+  /**
+   * Mark a tag as synced (clear needs_sync flag)
+   */
+  markTagAsSynced(tagUuid: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE tags SET needs_sync = 0, last_synced_at = ? WHERE uuid = ?
+    `);
+    stmt.run(new Date().toISOString(), tagUuid);
+  }
+
+  /**
+   * Mark multiple tags as synced
+   */
+  markMultipleTagsAsSynced(tagUuids: string[]): void {
+    this.db.transaction(() => {
+      const now = new Date().toISOString();
+      const stmt = this.db.prepare(`
+        UPDATE tags SET needs_sync = 0, last_synced_at = ? WHERE uuid = ?
+      `);
+      for (const uuid of tagUuids) {
+        stmt.run(now, uuid);
+      }
+    });
+  }
+
+  /**
+   * Upsert a tag from remote sync (dedup by name)
+   * Returns the local tag id.
+   */
+  upsertTagFromRemote(uuid: string, name: string, color: string | null): number {
+    return this.db.transaction(() => {
+      const normalized = name.trim().toLowerCase();
+
+      // Check if tag exists by UUID first
+      const byUuid = this.db.prepare('SELECT id, name, color FROM tags WHERE uuid = ?').get(uuid) as
+        | { id: number; name: string; color: string | null }
+        | undefined;
+
+      if (byUuid) {
+        // Update existing tag
+        this.db.prepare('UPDATE tags SET name = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE uuid = ?')
+          .run(normalized, color, new Date().toISOString(), uuid);
+        return byUuid.id;
+      }
+
+      // Check if tag exists by name (dedup)
+      const byName = this.db.prepare('SELECT id, uuid FROM tags WHERE name = ?').get(normalized) as
+        | { id: number; uuid: string | null }
+        | undefined;
+
+      if (byName) {
+        // Merge: adopt the remote UUID, update color
+        this.db.prepare('UPDATE tags SET uuid = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE id = ?')
+          .run(uuid, color, new Date().toISOString(), byName.id);
+        return byName.id;
+      }
+
+      // Create new tag
+      const result = this.db.prepare('INSERT INTO tags (name, color, uuid, needs_sync, last_synced_at) VALUES (?, ?, ?, 0, ?)')
+        .run(normalized, color, uuid, new Date().toISOString());
+      return Number(result.lastInsertRowid);
+    });
+  }
+
+  /**
+   * Delete a tag by UUID (from remote sync)
+   */
+  deleteTagByUuid(uuid: string): void {
+    this.db.prepare('DELETE FROM tags WHERE uuid = ?').run(uuid);
+  }
+
+  /**
+   * Get tag UUID by name
+   */
+  getTagUuid(tagName: string): string | null {
+    const normalized = tagName.trim().toLowerCase();
+    const row = this.db.prepare('SELECT uuid FROM tags WHERE name = ?').get(normalized) as
+      | { uuid: string | null }
+      | undefined;
+    return row?.uuid ?? null;
+  }
 }
