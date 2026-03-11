@@ -1,27 +1,41 @@
 name: Rebuild Marketing Site
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/marketing-site/**'
+      - 'packages/product-config/**'
+      - '.github/workflows/rebuild-site.yml'
   release:
     types: [published]
   workflow_dispatch:
 
 jobs:
-  rebuild:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9
+      - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+
+      - name: Force HTTPS for GitHub git dependencies
+        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
       - run: pnpm install
 
       - run: pnpm --filter @readied/marketing-site build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/marketing-site/dist --project-name=marketing-site

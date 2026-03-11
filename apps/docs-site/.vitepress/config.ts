@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
   title: 'Readied',
   description: 'Technical documentation for Readied - Markdown-first, offline-forever note app',
-  base: '/',
+  base: process.env.DOCS_BASE_PATH || '/',
 
   head: [
     ['link', { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],

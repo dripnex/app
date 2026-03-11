@@ -25,30 +25,32 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'pnpm'
+
+      - name: Force HTTPS for GitHub git dependencies
+        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build docs
+      - name: Build docs (GitHub Pages)
         run: pnpm --filter @readied/docs build
         env:
           VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCS_BASE_PATH: /readide/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: apps/docs-site/.vitepress/dist
 
-  deploy:
+  deploy-pages:
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -58,3 +60,31 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-cloudflare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Force HTTPS for GitHub git dependencies
+        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
+
+      - run: pnpm install
+
+      - name: Build docs (Cloudflare)
+        run: pnpm --filter @readied/docs build
+        env:
+          VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/docs-site/.vitepress/dist --project-name=docs-site
