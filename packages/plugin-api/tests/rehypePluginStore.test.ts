@@ -84,6 +84,21 @@ describe('rehypePluginStore', () => {
     expect(remaining[0]!.pluginId).toBe('plugin-b');
   });
 
+  it('registers with default metadata values', () => {
+    const fakePlugin = () => {};
+    rehypePluginStore.getState().register({
+      id: 'rehype-default',
+      pluginId: 'test-plugin',
+      plugin: fakePlugin,
+      metadata: defaultMeta,
+    });
+
+    const reg = rehypePluginStore.getState().registrations[0]!;
+    expect(reg.metadata.name).toBe('test');
+    expect(reg.metadata.version).toBe('1.0.0');
+    expect(reg.metadata.priority).toBe(100);
+  });
+
   it('getPlugins returns plugins sorted by priority', () => {
     rehypePluginStore.getState().register({
       id: 'rehype-1',

@@ -84,6 +84,21 @@ describe('remarkPluginStore', () => {
     expect(remaining[0]!.pluginId).toBe('plugin-b');
   });
 
+  it('registers with default metadata values', () => {
+    const fakePlugin = () => {};
+    remarkPluginStore.getState().register({
+      id: 'remark-default',
+      pluginId: 'test-plugin',
+      plugin: fakePlugin,
+      metadata: defaultMeta,
+    });
+
+    const reg = remarkPluginStore.getState().registrations[0]!;
+    expect(reg.metadata.name).toBe('test');
+    expect(reg.metadata.version).toBe('1.0.0');
+    expect(reg.metadata.priority).toBe(100);
+  });
+
   it('getPlugins returns plugins sorted by priority', () => {
     remarkPluginStore.getState().register({
       id: 'remark-1',
