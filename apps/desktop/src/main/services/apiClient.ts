@@ -54,6 +54,34 @@ export interface PushResponse {
   cursor: number;
 }
 
+export interface TagSyncChange {
+  id: string;
+  tagId: string;
+  version: number;
+  operation: 'create' | 'update' | 'delete';
+  data: string | null; // JSON: { name, color }
+  deviceId: string;
+  createdAt: string;
+}
+
+export interface TagPullResponse {
+  changes: TagSyncChange[];
+  cursor: number;
+  hasMore: boolean;
+}
+
+export interface TagPushResult {
+  tagId: string;
+  version: number;
+  status: 'applied' | 'conflict';
+  serverVersion?: number;
+}
+
+export interface TagPushResponse {
+  results: TagPushResult[];
+  cursor: number;
+}
+
 export interface SyncStatus {
   enabled: boolean;
   plan: string;
@@ -282,6 +310,37 @@ export class ApiClient {
     }>
   ): Promise<PushResponse> {
     return this.request<PushResponse>('/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        changes,
+        deviceId: this.deviceInfo.deviceId,
+      }),
+    });
+  }
+
+  /**
+   * Pull tag changes from server
+   */
+  async pullTagChanges(cursor: number, limit = 50): Promise<TagPullResponse> {
+    const params = new URLSearchParams({
+      cursor: cursor.toString(),
+      limit: limit.toString(),
+    });
+    return this.request<TagPullResponse>(`/sync/tags?${params}`);
+  }
+
+  /**
+   * Push tag changes to server
+   */
+  async pushTagChanges(
+    changes: Array<{
+      tagId: string;
+      operation: 'create' | 'update' | 'delete';
+      data?: string | null;
+      localVersion?: number;
+    }>
+  ): Promise<TagPushResponse> {
+    return this.request<TagPushResponse>('/sync/tags', {
       method: 'POST',
       body: JSON.stringify({
         changes,
