@@ -45,6 +45,7 @@ import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
+import { useSyncStore } from './stores/syncStore';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
 
 /** Shows toast errors for plugins that failed to load */
@@ -102,6 +103,12 @@ function NotesApp() {
   // Load auth session on mount (once)
   useEffect(() => {
     useAuthStore.getState().loadSession();
+  }, []);
+
+  // Auto-resume sync on network reconnect
+  useEffect(() => {
+    const cleanup = useSyncStore.getState().initNetworkListeners();
+    return cleanup;
   }, []);
 
   // Handle deep link auth verification (readied://auth/verify?token=xxx)
