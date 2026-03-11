@@ -25,12 +25,15 @@ describe('isValidThemeToken', () => {
 
 describe('validateThemeTokens', () => {
   it('returns only valid tokens', () => {
-    const result = validateThemeTokens({
-      '--bg-base': '#000',
-      '--text-primary': '#fff',
-      '--invalid-token': 'red',
-      '--syntax-keyword': '#f0f',
-    }, 'test-theme');
+    const result = validateThemeTokens(
+      {
+        '--bg-base': '#000',
+        '--text-primary': '#fff',
+        '--invalid-token': 'red',
+        '--syntax-keyword': '#f0f',
+      },
+      'test-theme'
+    );
 
     expect(result).toEqual({
       '--bg-base': '#000',

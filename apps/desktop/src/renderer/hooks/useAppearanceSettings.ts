@@ -5,10 +5,16 @@ import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
 /**
  * Apply appearance settings to the DOM.
  */
-function applyAppearance(theme: string, accentColor: string, zoomLevel: string, isDark?: boolean): void {
+function applyAppearance(
+  theme: string,
+  accentColor: string,
+  zoomLevel: string,
+  isDark?: boolean
+): void {
   let resolved: string;
   if (theme === 'system') {
-    resolved = (isDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    resolved =
+      (isDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
   } else {
     resolved = theme;
   }
@@ -60,7 +66,7 @@ export function useAppearanceSettings(): void {
   // Listen for system theme changes via IPC
   useEffect(() => {
     if (theme !== 'system') return;
-    const unsub = window.readied.theme.onSystemChanged((isDark) => {
+    const unsub = window.readied.theme.onSystemChanged(isDark => {
       applyAppearance('system', accentColor, zoomLevel, isDark);
     });
     return unsub;
