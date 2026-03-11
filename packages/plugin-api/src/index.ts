@@ -32,6 +32,28 @@ export { createDecorationAPI } from './editor/decorationAPI';
 export type { AppAPIWithEvents, AppAPIBridge } from './app/createAppAPI';
 export { createAppAPI } from './app/createAppAPI';
 
+// Data
+export type { DataAPI, DataAPIWithEvents, DataAPIBridge } from './data/createDataAPI';
+export { createDataAPI } from './data/createDataAPI';
+export type {
+  NoteQueryOptions,
+  NoteQueryResult,
+  SearchOptions,
+  SearchResult,
+  NotebookQueryOptions,
+  NotebookDetailInfo,
+  NotebookTreeNode,
+  NotebookResult,
+  TagQueryOptions,
+  TagInfo,
+  GraphQueryOptions,
+  GraphData,
+  LinkInfo,
+  OutgoingLinkInfo,
+  DataChangeEvent,
+} from './data/dataTypes';
+export { DataAccessError } from './data/dataTypes';
+
 // Preview
 export { previewComponentStore } from './preview/previewComponentStore';
 export type { PreviewComponentRegistration } from './preview/previewComponentStore';
