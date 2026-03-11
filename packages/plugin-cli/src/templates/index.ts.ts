@@ -1,10 +1,10 @@
 export function indexTemplate(id: string, name: string): string {
-  return `import type { PluginManifest } from '@readied/plugin-api';
-
-/**
+  return `/**
  * ${name} — Readied Plugin
  */
-export const plugin: PluginManifest = {
+
+/** @type {import('@readied/plugin-api').PluginManifest} */
+module.exports = {
   id: '${id}',
   name: '${name}',
   version: '0.1.0',
