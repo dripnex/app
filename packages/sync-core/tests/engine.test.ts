@@ -5,18 +5,11 @@
  * conflict resolution, device registration, and status management.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SyncEngine, type SyncStorage, type SyncEngineConfig } from '../src/engine';
 import type { SyncClient, NotePushPayload } from '../src/client';
 import type { SyncQueue } from '../src/queue';
-import type {
-  DeviceId,
-  SyncStatus,
-  SyncConflict,
-  SyncableNote,
-  PushResult,
-  ConflictStrategy,
-} from '../src/types';
+import type { DeviceId, SyncStatus, SyncConflict, SyncableNote, PushResult } from '../src/types';
 
 // ============================================================================
 // Test Helpers
@@ -215,7 +208,7 @@ describe('SyncEngine', () => {
       // Make pushNotes slow so sync is still in progress
       let resolvePush!: (v: PushResult) => void;
       client.pushNotes.mockReturnValue(
-        new Promise<PushResult>((resolve) => {
+        new Promise<PushResult>(resolve => {
           resolvePush = resolve;
         })
       );
@@ -357,7 +350,15 @@ describe('SyncEngine', () => {
       client.pushNotes.mockResolvedValue({
         synced: [],
         conflicts: [],
-        errors: [{ entityId: 'n1', entityType: 'note', message: 'fail', code: 'SERVER_ERROR', retryable: true }],
+        errors: [
+          {
+            entityId: 'n1',
+            entityType: 'note',
+            message: 'fail',
+            code: 'SERVER_ERROR',
+            retryable: true,
+          },
+        ],
       });
 
       await engine.sync();
@@ -771,9 +772,7 @@ describe('SyncEngine', () => {
 
       await engine.sync();
 
-      const statuses = onStatusChange.mock.calls.map(
-        (call: [SyncStatus]) => call[0].status
-      );
+      const statuses = (onStatusChange.mock.calls as [SyncStatus][]).map(call => call[0].status);
 
       // syncing (progress 0) → syncing (progress 10) → syncing (progress 40) →
       // syncing (progress 50) → idle
@@ -792,9 +791,9 @@ describe('SyncEngine', () => {
 
       await engine.sync();
 
-      const progressCalls = onStatusChange.mock.calls
-        .filter((call: [SyncStatus]) => call[0].status === 'syncing')
-        .map((call: [SyncStatus]) => (call[0] as { status: 'syncing'; progress: number }).progress);
+      const progressCalls = (onStatusChange.mock.calls as [SyncStatus][])
+        .filter(call => call[0].status === 'syncing')
+        .map(call => (call[0] as { status: 'syncing'; progress: number }).progress);
 
       // Progress should be increasing
       for (let i = 1; i < progressCalls.length; i++) {

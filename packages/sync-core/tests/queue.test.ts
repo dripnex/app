@@ -26,7 +26,7 @@ function createMockStorage(): SyncQueueStorage & { changes: SyncChange[] } {
     },
 
     async getPending(): Promise<SyncChange[]> {
-      return changes.filter((c) => !c.synced);
+      return changes.filter(c => !c.synced);
     },
 
     async markSynced(ids: string[]): Promise<void> {
@@ -38,7 +38,7 @@ function createMockStorage(): SyncQueueStorage & { changes: SyncChange[] } {
     },
 
     async markFailed(id: string, error: string): Promise<void> {
-      const change = changes.find((c) => c.id === id);
+      const change = changes.find(c => c.id === id);
       if (change) {
         change.retryCount += 1;
         change.lastError = error;
@@ -47,9 +47,7 @@ function createMockStorage(): SyncQueueStorage & { changes: SyncChange[] } {
 
     async cleanup(before: Date): Promise<number> {
       const initial = changes.length;
-      const remaining = changes.filter(
-        (c) => !(c.synced && new Date(c.timestamp) < before)
-      );
+      const remaining = changes.filter(c => !(c.synced && new Date(c.timestamp) < before));
       changes.length = 0;
       changes.push(...remaining);
       return initial - remaining.length;
@@ -60,7 +58,7 @@ function createMockStorage(): SyncQueueStorage & { changes: SyncChange[] } {
     },
 
     async getPendingCount(): Promise<number> {
-      return changes.filter((c) => !c.synced).length;
+      return changes.filter(c => !c.synced).length;
     },
   };
 }
@@ -113,7 +111,7 @@ describe('SyncQueue', () => {
       await queue.queueChange('notebook', 'nb1', 'delete', null);
 
       expect(storage.changes).toHaveLength(3);
-      expect(storage.changes.map((c) => c.entityId)).toEqual(['n1', 'n2', 'nb1']);
+      expect(storage.changes.map(c => c.entityId)).toEqual(['n1', 'n2', 'nb1']);
     });
   });
 
@@ -182,10 +180,10 @@ describe('SyncQueue', () => {
     it('marks multiple changes as synced', async () => {
       await queue.queueChange('note', 'n1', 'create', null);
       await queue.queueChange('note', 'n2', 'create', null);
-      const ids = storage.changes.map((c) => c.id);
+      const ids = storage.changes.map(c => c.id);
 
       await queue.markSynced(ids);
-      expect(storage.changes.every((c) => c.synced)).toBe(true);
+      expect(storage.changes.every(c => c.synced)).toBe(true);
     });
 
     it('is a no-op with empty array', async () => {
@@ -305,9 +303,7 @@ describe('SyncQueue', () => {
       await queue.queueChange('note', 'n1', 'create', null);
       // Make it synced and old
       storage.changes[0].synced = true;
-      storage.changes[0].timestamp = new Date(
-        Date.now() - 30 * 24 * 60 * 60 * 1000
-      ).toISOString();
+      storage.changes[0].timestamp = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       // Add a recent pending change
       await queue.queueChange('note', 'n2', 'create', null);
@@ -322,9 +318,7 @@ describe('SyncQueue', () => {
     it('does not remove pending (unsynced) changes', async () => {
       await queue.queueChange('note', 'n1', 'create', null);
       // Old but not synced
-      storage.changes[0].timestamp = new Date(
-        Date.now() - 30 * 24 * 60 * 60 * 1000
-      ).toISOString();
+      storage.changes[0].timestamp = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const removed = await queue.cleanup(7);
       expect(removed).toBe(0);
