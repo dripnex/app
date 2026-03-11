@@ -23,6 +23,7 @@ import { subscription } from './routes/subscription.js';
 import { newsletterRoute } from './routes/newsletter.js';
 import { share } from './routes/share.js';
 import { plugins } from './routes/plugins.js';
+import { deviceRoutes } from './routes/devices.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -61,6 +62,7 @@ app.route('/subscription', subscription);
 app.route('/newsletter', newsletterRoute);
 app.route('/share', share);
 app.route('/plugins', plugins);
+app.route('/devices', deviceRoutes);
 
 // 404 handler
 app.notFound(c => {
