@@ -150,11 +150,26 @@ export class ApiClient {
   private deviceInfo: DeviceInfo;
   private isRefreshing = false;
   private refreshPromise: Promise<boolean> | null = null;
+  private _bytesSent = 0;
+  private _bytesReceived = 0;
 
   constructor(baseURL: string, tokenStorage: TokenStorage, deviceInfo: DeviceInfo) {
     this.baseURL = baseURL;
     this.tokenStorage = tokenStorage;
     this.deviceInfo = deviceInfo;
+  }
+
+  // ==========================================================================
+  // Bandwidth Tracking
+  // ==========================================================================
+
+  resetBandwidthCounters(): void {
+    this._bytesSent = 0;
+    this._bytesReceived = 0;
+  }
+
+  getBandwidth(): { bytesSent: number; bytesReceived: number } {
+    return { bytesSent: this._bytesSent, bytesReceived: this._bytesReceived };
   }
 
   // ==========================================================================
@@ -176,6 +191,11 @@ export class ApiClient {
 
     if (tokens?.accessToken) {
       headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+    }
+
+    // Track request body size
+    if (options.body && typeof options.body === 'string') {
+      this._bytesSent += Buffer.byteLength(options.body, 'utf8');
     }
 
     try {
@@ -207,8 +227,11 @@ export class ApiClient {
         );
       }
 
-      // Parse JSON response
-      return (await response.json()) as T;
+      // Parse JSON response and track bandwidth
+      const json = await response.json();
+      const responseText = JSON.stringify(json);
+      this._bytesReceived += Buffer.byteLength(responseText, 'utf8');
+      return json as T;
     } catch (error) {
       // Network error or fetch failure
       if (error instanceof ApiError) {
