@@ -6,13 +6,31 @@
 
 /** Core CSS tokens that themes are allowed to override */
 export const CORE_THEME_TOKENS = [
-  '--bg-base', '--bg-surface', '--bg-elevated', '--bg-inset',
-  '--text-primary', '--text-secondary', '--text-muted', '--text-faint',
-  '--border', '--border-subtle', '--border-strong',
-  '--glass-bg', '--glass-border', '--glass-bg-menu', '--glass-border-menu',
-  '--danger', '--danger-muted', '--warning', '--warning-muted',
-  '--success', '--success-muted',
-  '--status-active', '--status-on-hold', '--status-completed', '--status-dropped',
+  '--bg-base',
+  '--bg-surface',
+  '--bg-elevated',
+  '--bg-inset',
+  '--text-primary',
+  '--text-secondary',
+  '--text-muted',
+  '--text-faint',
+  '--border',
+  '--border-subtle',
+  '--border-strong',
+  '--glass-bg',
+  '--glass-border',
+  '--glass-bg-menu',
+  '--glass-border-menu',
+  '--danger',
+  '--danger-muted',
+  '--warning',
+  '--warning-muted',
+  '--success',
+  '--success-muted',
+  '--status-active',
+  '--status-on-hold',
+  '--status-completed',
+  '--status-dropped',
 ] as const;
 
 /** Valid extension scope prefixes for non-core tokens */

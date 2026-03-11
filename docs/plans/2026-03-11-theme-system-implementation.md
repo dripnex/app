@@ -13,6 +13,7 @@
 ### Task 1: Define theme types and token whitelist
 
 **Files:**
+
 - Create: `packages/plugin-api/src/theme/themeTypes.ts`
 
 **Step 1: Create the types file**
@@ -27,18 +28,36 @@
 /** Core CSS tokens that themes are allowed to override */
 export const CORE_THEME_TOKENS = [
   // Backgrounds
-  '--bg-base', '--bg-surface', '--bg-elevated', '--bg-inset',
+  '--bg-base',
+  '--bg-surface',
+  '--bg-elevated',
+  '--bg-inset',
   // Text
-  '--text-primary', '--text-secondary', '--text-muted', '--text-faint',
+  '--text-primary',
+  '--text-secondary',
+  '--text-muted',
+  '--text-faint',
   // Borders
-  '--border', '--border-subtle', '--border-strong',
+  '--border',
+  '--border-subtle',
+  '--border-strong',
   // Glass
-  '--glass-bg', '--glass-border', '--glass-bg-menu', '--glass-border-menu',
+  '--glass-bg',
+  '--glass-border',
+  '--glass-bg-menu',
+  '--glass-border-menu',
   // Semantic
-  '--danger', '--danger-muted', '--warning', '--warning-muted',
-  '--success', '--success-muted',
+  '--danger',
+  '--danger-muted',
+  '--warning',
+  '--warning-muted',
+  '--success',
+  '--success-muted',
   // Status
-  '--status-active', '--status-on-hold', '--status-completed', '--status-dropped',
+  '--status-active',
+  '--status-on-hold',
+  '--status-completed',
+  '--status-dropped',
 ] as const;
 
 /** Valid extension scope prefixes for non-core tokens */
@@ -103,6 +122,7 @@ git commit -m "feat(plugin-api): add theme types and token whitelist"
 ### Task 2: Create ThemeRegistry store
 
 **Files:**
+
 - Create: `packages/plugin-api/src/theme/themeRegistryStore.ts`
 - Modify: `packages/plugin-api/src/index.ts` (add exports)
 
@@ -152,7 +172,9 @@ export const themeRegistryStore = createStore<ThemeRegistryState>((set, get) => 
     set(state => ({
       themes: [...state.themes.filter(t => t.id !== theme.id), validated],
     }));
-    console.debug(`[ThemeRegistry] Registered: "${theme.name}" (${Object.keys(validTokens).length} tokens)`);
+    console.debug(
+      `[ThemeRegistry] Registered: "${theme.name}" (${Object.keys(validTokens).length} tokens)`
+    );
     return true;
   },
 
@@ -172,8 +194,8 @@ export const themeRegistryStore = createStore<ThemeRegistryState>((set, get) => 
   unregisterAll(pluginId) {
     set(state => {
       const remaining = state.themes.filter(t => t.pluginId !== pluginId);
-      const activeRemoved = state.activeThemeId &&
-        !remaining.some(t => t.id === state.activeThemeId);
+      const activeRemoved =
+        state.activeThemeId && !remaining.some(t => t.id === state.activeThemeId);
       return {
         themes: remaining,
         activeThemeId: activeRemoved ? null : state.activeThemeId,
@@ -203,9 +225,15 @@ export const themeRegistryStore = createStore<ThemeRegistryState>((set, get) => 
 **Step 2: Export from barrel**
 
 Add to `packages/plugin-api/src/index.ts`:
+
 ```typescript
 export { themeRegistryStore } from './theme/themeRegistryStore';
-export { isValidThemeToken, validateThemeTokens, CORE_THEME_TOKENS, THEME_EXTENSION_SCOPES } from './theme/themeTypes';
+export {
+  isValidThemeToken,
+  validateThemeTokens,
+  CORE_THEME_TOKENS,
+  THEME_EXTENSION_SCOPES,
+} from './theme/themeTypes';
 export type { ThemeDefinition } from './theme/themeTypes';
 ```
 
@@ -221,6 +249,7 @@ git commit -m "feat(plugin-api): add ThemeRegistry store with validation"
 ### Task 3: Create useThemeOverrides hook
 
 **Files:**
+
 - Create: `packages/plugin-api/src/theme/useThemeOverrides.ts`
 - Modify: `packages/plugin-api/src/index.ts` (add export)
 
@@ -275,6 +304,7 @@ export function useThemeOverrides(): void {
 **Step 2: Export from barrel**
 
 Add to `packages/plugin-api/src/index.ts`:
+
 ```typescript
 export { useThemeOverrides } from './theme/useThemeOverrides';
 ```
@@ -291,6 +321,7 @@ git commit -m "feat(plugin-api): add useThemeOverrides hook"
 ### Task 4: Wire useThemeOverrides into App.tsx
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/App.tsx`
 
 **Step 1: Add the hook call**
@@ -303,11 +334,12 @@ import { useThemeOverrides } from '@readied/plugin-api';
 // Inside NotesApp component:
 usePerformanceMode();
 useAppearanceSettings();
-useThemeOverrides();      // NEW — applies active theme tokens
+useThemeOverrides(); // NEW — applies active theme tokens
 useCssVariables();
 ```
 
 Order matters:
+
 1. `useAppearanceSettings` sets base `data-theme` + accent
 2. `useThemeOverrides` overrides with active theme tokens (may change `data-theme`)
 3. `useCssVariables` applies individual plugin CSS vars on top
@@ -324,12 +356,14 @@ git commit -m "feat(desktop): wire useThemeOverrides into app initialization"
 ### Task 5: Add registerTheme to PluginContext
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/types.ts` (add to PluginContext interface)
 - Modify: `packages/plugin-api/src/lifecycle/PluginRegistry.ts` (implement in activate)
 
 **Step 1: Add to PluginContext interface**
 
 In `types.ts`, add to the `PluginContext` interface:
+
 ```typescript
 /** Register a complete theme with validated tokens */
 registerTheme(theme: {
@@ -345,11 +379,13 @@ registerTheme(theme: {
 **Step 2: Implement in PluginRegistry.activate()**
 
 In `PluginRegistry.ts`, import `themeRegistryStore`:
+
 ```typescript
 import { themeRegistryStore } from '../theme/themeRegistryStore';
 ```
 
 Add to the context object inside `activate()`:
+
 ```typescript
 registerTheme: (theme): (() => void) => {
   themeRegistryStore.getState().register({
@@ -361,12 +397,14 @@ registerTheme: (theme): (() => void) => {
 ```
 
 Add cleanup in `deactivate()` (after existing cleanup lines):
+
 ```typescript
 // Cleanup theme registrations
 themeRegistryStore.getState().unregisterAll(id);
 ```
 
 Also add cleanup in the catch block of `activate()` (error recovery):
+
 ```typescript
 themeRegistryStore.getState().unregisterAll(id);
 ```
@@ -383,16 +421,19 @@ git commit -m "feat(plugin-api): add registerTheme to PluginContext"
 ### Task 6: nativeTheme sync — main process
 
 **Files:**
+
 - Modify: `apps/desktop/src/main/index.ts`
 
 **Step 1: Add nativeTheme IPC handlers**
 
 At the top of the file, import nativeTheme:
+
 ```typescript
 import { nativeTheme } from 'electron';
 ```
 
 Add IPC handlers (near other IPC handler registrations):
+
 ```typescript
 // Theme — sync Electron nativeTheme with renderer
 ipcMain.on('theme:set-source', (_event, source: string) => {
@@ -422,11 +463,13 @@ git commit -m "feat(desktop): add nativeTheme IPC sync in main process"
 ### Task 7: nativeTheme sync — preload API
 
 **Files:**
+
 - Modify: `apps/desktop/src/preload/index.ts`
 
 **Step 1: Add theme methods to ReadiedAPI**
 
 In the `ReadiedAPI` interface, add:
+
 ```typescript
 theme: {
   /** Set Electron's native theme source */
@@ -437,6 +480,7 @@ theme: {
 ```
 
 In the `contextBridge.exposeInMainWorld('readied', ...)` implementation:
+
 ```typescript
 theme: {
   setSource: (source: string) => {
@@ -464,6 +508,7 @@ git commit -m "feat(desktop): add theme IPC bridge in preload"
 ### Task 8: Update useAppearanceSettings to use nativeTheme IPC
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/hooks/useAppearanceSettings.ts`
 
 **Step 1: Replace media query listener with IPC**
@@ -475,11 +520,17 @@ import { useEffect } from 'react';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
 import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
 
-function applyAppearance(theme: string, accentColor: string, zoomLevel: string, isDark?: boolean): void {
+function applyAppearance(
+  theme: string,
+  accentColor: string,
+  zoomLevel: string,
+  isDark?: boolean
+): void {
   let resolved: string;
   if (theme === 'system') {
     // Use provided isDark hint, or fall back to media query for initial render
-    resolved = (isDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    resolved =
+      (isDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
   } else {
     resolved = theme;
   }
@@ -527,7 +578,7 @@ export function useAppearanceSettings(): void {
   useEffect(() => {
     if (theme !== 'system') return;
 
-    const unsub = window.readied.theme.onSystemChanged((isDark) => {
+    const unsub = window.readied.theme.onSystemChanged(isDark => {
       applyAppearance('system', accentColor, zoomLevel, isDark);
     });
     return unsub;
@@ -547,17 +598,20 @@ git commit -m "feat(desktop): use nativeTheme IPC for system theme detection"
 ### Task 9: Add activeThemeId to AppearanceSettings
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/stores/settings/schema.ts`
 
 **Step 1: Add field**
 
 In `AppearanceSettings` interface:
+
 ```typescript
 /** Active plugin theme ID (null = use base dark/light) */
 activeThemeId: string | null;
 ```
 
 In `DEFAULT_APPEARANCE`:
+
 ```typescript
 activeThemeId: null,
 ```
@@ -578,17 +632,20 @@ git commit -m "feat(desktop): add activeThemeId to appearance settings"
 ### Task 10: Update AppearanceSection UI with theme selector
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/AppearanceSection.tsx`
 
 **Step 1: Add theme selector (only shown when themes exist)**
 
 Import the theme registry:
+
 ```typescript
 import { useSyncExternalStore } from 'react';
 import { themeRegistryStore } from '@readied/plugin-api';
 ```
 
 Inside the component, subscribe to themes:
+
 ```typescript
 const themeRegs = useSyncExternalStore(
   themeRegistryStore.subscribe,
@@ -601,6 +658,7 @@ const activeThemeId = useSyncExternalStore(
 ```
 
 Add handler:
+
 ```typescript
 const handlePluginThemeChange = (value: string) => {
   const newId = value === 'default' ? null : value;
@@ -610,6 +668,7 @@ const handlePluginThemeChange = (value: string) => {
 ```
 
 Add UI below the accent color picker (inside the "Theme" SettingGroup), only if themes are registered:
+
 ```typescript
 {themeRegs.length > 0 && (
   <SettingRow
@@ -645,6 +704,7 @@ git commit -m "feat(desktop): add plugin theme selector to Appearance settings"
 ### Task 11: Restore active theme on app startup
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/App.tsx` (or the hook that initializes plugins)
 
 **Step 1: After plugins load, restore activeThemeId from settings**
@@ -653,12 +713,17 @@ In `App.tsx` or wherever the plugin loading completes, add logic to restore the 
 
 ```typescript
 // After plugin runtime initializes, restore saved theme
-useEffect(() => {
-  const savedThemeId = appearance?.activeThemeId;
-  if (savedThemeId) {
-    themeRegistryStore.getState().setActive(savedThemeId);
-  }
-}, [/* run once after plugin init */]);
+useEffect(
+  () => {
+    const savedThemeId = appearance?.activeThemeId;
+    if (savedThemeId) {
+      themeRegistryStore.getState().setActive(savedThemeId);
+    }
+  },
+  [
+    /* run once after plugin init */
+  ]
+);
 ```
 
 The exact placement depends on plugin loading lifecycle — the theme must be restored AFTER plugins have registered their themes.
@@ -675,6 +740,7 @@ git commit -m "feat(desktop): restore active plugin theme on startup"
 ### Task 12: Tests for themeTypes validation
 
 **Files:**
+
 - Create: `packages/plugin-api/tests/themeTypes.test.ts`
 
 **Step 1: Write tests**
@@ -705,12 +771,15 @@ describe('isValidThemeToken', () => {
 
 describe('validateThemeTokens', () => {
   it('returns only valid tokens', () => {
-    const result = validateThemeTokens({
-      '--bg-base': '#000',
-      '--text-primary': '#fff',
-      '--invalid-token': 'red',
-      '--syntax-keyword': '#f0f',
-    }, 'test-theme');
+    const result = validateThemeTokens(
+      {
+        '--bg-base': '#000',
+        '--text-primary': '#fff',
+        '--invalid-token': 'red',
+        '--syntax-keyword': '#f0f',
+      },
+      'test-theme'
+    );
 
     expect(result).toEqual({
       '--bg-base': '#000',
@@ -720,9 +789,12 @@ describe('validateThemeTokens', () => {
   });
 
   it('returns empty object for all-invalid tokens', () => {
-    const result = validateThemeTokens({
-      '--nope': 'red',
-    }, 'test-theme');
+    const result = validateThemeTokens(
+      {
+        '--nope': 'red',
+      },
+      'test-theme'
+    );
     expect(result).toEqual({});
   });
 });
@@ -746,6 +818,7 @@ git commit -m "test(plugin-api): add theme token validation tests"
 ### Task 13: Tests for ThemeRegistry store
 
 **Files:**
+
 - Create: `packages/plugin-api/tests/themeRegistryStore.test.ts`
 
 **Step 1: Write tests**
@@ -780,17 +853,17 @@ describe('themeRegistryStore', () => {
   });
 
   it('rejects theme with no valid tokens', () => {
-    const result = themeRegistryStore.getState().register(
-      makeTheme({ tokens: { '--invalid': 'red' } })
-    );
+    const result = themeRegistryStore
+      .getState()
+      .register(makeTheme({ tokens: { '--invalid': 'red' } }));
     expect(result).toBe(false);
     expect(themeRegistryStore.getState().themes).toHaveLength(0);
   });
 
   it('strips invalid tokens but keeps valid ones', () => {
-    themeRegistryStore.getState().register(
-      makeTheme({ tokens: { '--bg-base': '#000', '--nope': 'red' } })
-    );
+    themeRegistryStore
+      .getState()
+      .register(makeTheme({ tokens: { '--bg-base': '#000', '--nope': 'red' } }));
     const theme = themeRegistryStore.getState().themes[0]!;
     expect(theme.tokens).toEqual({ '--bg-base': '#000' });
   });

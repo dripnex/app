@@ -26,17 +26,17 @@ describe('themeRegistryStore', () => {
   });
 
   it('rejects theme with no valid tokens', () => {
-    const result = themeRegistryStore.getState().register(
-      makeTheme({ tokens: { '--invalid': 'red' } })
-    );
+    const result = themeRegistryStore
+      .getState()
+      .register(makeTheme({ tokens: { '--invalid': 'red' } }));
     expect(result).toBe(false);
     expect(themeRegistryStore.getState().themes).toHaveLength(0);
   });
 
   it('strips invalid tokens but keeps valid ones', () => {
-    themeRegistryStore.getState().register(
-      makeTheme({ tokens: { '--bg-base': '#000', '--nope': 'red' } })
-    );
+    themeRegistryStore
+      .getState()
+      .register(makeTheme({ tokens: { '--bg-base': '#000', '--nope': 'red' } }));
     const theme = themeRegistryStore.getState().themes[0]!;
     expect(theme.tokens).toEqual({ '--bg-base': '#000' });
   });

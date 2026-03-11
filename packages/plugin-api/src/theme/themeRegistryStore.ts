@@ -33,7 +33,9 @@ export const themeRegistryStore = createStore<ThemeRegistryState>((set, get) => 
     set(state => ({
       themes: [...state.themes.filter(t => t.id !== theme.id), validated],
     }));
-    console.debug(`[ThemeRegistry] Registered: "${theme.name}" (${Object.keys(validTokens).length} tokens)`);
+    console.debug(
+      `[ThemeRegistry] Registered: "${theme.name}" (${Object.keys(validTokens).length} tokens)`
+    );
     return true;
   },
 
@@ -47,7 +49,8 @@ export const themeRegistryStore = createStore<ThemeRegistryState>((set, get) => 
   unregisterAll(pluginId) {
     set(state => {
       const remaining = state.themes.filter(t => t.pluginId !== pluginId);
-      const activeRemoved = state.activeThemeId && !remaining.some(t => t.id === state.activeThemeId);
+      const activeRemoved =
+        state.activeThemeId && !remaining.some(t => t.id === state.activeThemeId);
       return {
         themes: remaining,
         activeThemeId: activeRemoved ? null : state.activeThemeId,

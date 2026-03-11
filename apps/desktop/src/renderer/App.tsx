@@ -78,7 +78,7 @@ const queryClient = new QueryClient({
 function NotesApp() {
   usePerformanceMode();
   useAppearanceSettings();
-  useThemeOverrides();      // Applies active theme tokens
+  useThemeOverrides(); // Applies active theme tokens
   useCssVariables();
 
   // Restore saved plugin theme on startup
