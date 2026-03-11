@@ -8,6 +8,7 @@ import {
   editorPluginStore,
   useCssVariables,
   useThemeOverrides,
+  themeRegistryStore,
 } from '@readied/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
@@ -46,6 +47,7 @@ import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
+import { useSettingsStore, selectAppearance } from './stores/settings';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
 
 /** Shows toast errors for plugins that failed to load */
@@ -78,6 +80,20 @@ function NotesApp() {
   useAppearanceSettings();
   useThemeOverrides();      // Applies active theme tokens
   useCssVariables();
+
+  // Restore saved plugin theme on startup
+  const appearance = useSettingsStore(selectAppearance);
+
+  useEffect(() => {
+    const savedThemeId = appearance?.activeThemeId;
+    if (savedThemeId) {
+      // Only restore if the theme is actually registered (plugin loaded)
+      const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
+      if (exists) {
+        themeRegistryStore.getState().setActive(savedThemeId);
+      }
+    }
+  }, [appearance?.activeThemeId]);
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =

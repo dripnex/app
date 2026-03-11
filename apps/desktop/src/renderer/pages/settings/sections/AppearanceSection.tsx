@@ -4,8 +4,10 @@
  * Theme, zoom level, and visual preferences.
  */
 
+import { useSyncExternalStore } from 'react';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
+import { themeRegistryStore } from '@readied/plugin-api';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, ColorPicker, type ColorOption } from '../components/controls';
@@ -48,6 +50,15 @@ export function AppearanceSection() {
   const updateAppearance = useSettingsStore(s => s.updateAppearance);
   const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
 
+  const pluginThemes = useSyncExternalStore(
+    themeRegistryStore.subscribe,
+    () => themeRegistryStore.getState().themes
+  );
+  const activeThemeId = useSyncExternalStore(
+    themeRegistryStore.subscribe,
+    () => themeRegistryStore.getState().activeThemeId
+  );
+
   const theme = appearance.theme || 'dark';
   const zoomLevel = appearance.zoomLevel || '1.0';
   const accentColor = appearance.accentColor || '#5eead4';
@@ -62,6 +73,12 @@ export function AppearanceSection() {
 
   const handleZoomChange = (value: string) => {
     updateAppearance({ zoomLevel: value });
+  };
+
+  const handlePluginThemeChange = (value: string) => {
+    const newId = value === 'default' ? null : value;
+    themeRegistryStore.getState().setActive(newId);
+    updateAppearance({ activeThemeId: newId });
   };
 
   const handlePerfModeChange = (value: string) => {
@@ -94,6 +111,26 @@ export function AppearanceSection() {
             colors={accentColorOptions}
           />
         </SettingRow>
+        {pluginThemes.length > 0 && (
+          <SettingRow
+            label="Plugin Theme"
+            description="Apply a theme from an installed plugin"
+            htmlFor="pluginTheme"
+          >
+            <Select
+              id="pluginTheme"
+              value={activeThemeId ?? 'default'}
+              onChange={handlePluginThemeChange}
+              options={[
+                { value: 'default', label: 'Default' },
+                ...pluginThemes.map(t => ({
+                  value: t.id,
+                  label: `${t.name} (${t.colorScheme})`,
+                })),
+              ]}
+            />
+          </SettingRow>
+        )}
       </SettingGroup>
 
       <SettingGroup title="Display">
