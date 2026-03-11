@@ -47,22 +47,24 @@ export function AccountSection() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [syncHistory, setSyncHistory] = useState<Array<{
-    id: string;
-    startedAt: string;
-    completedAt: string | null;
-    status: string;
-    notesPulled: number;
-    notesPushed: number;
-    notebooksPulled: number;
-    notebooksPushed: number;
-    tagsPulled: number;
-    tagsPushed: number;
-    conflicts: number;
-    bytesSent: number;
-    bytesReceived: number;
-    errorMessage: string | null;
-  }>>([]);
+  const [syncHistory, setSyncHistory] = useState<
+    Array<{
+      id: string;
+      startedAt: string;
+      completedAt: string | null;
+      status: string;
+      notesPulled: number;
+      notesPushed: number;
+      notebooksPulled: number;
+      notebooksPushed: number;
+      tagsPulled: number;
+      tagsPushed: number;
+      conflicts: number;
+      bytesSent: number;
+      bytesReceived: number;
+      errorMessage: string | null;
+    }>
+  >([]);
 
   // Load session on mount
   useEffect(() => {
@@ -320,13 +322,15 @@ export function AccountSection() {
                         <tr key={entry.id}>
                           <td>{new Date(entry.startedAt).toLocaleString()}</td>
                           <td>
-                            <span className={`${styles.historyStatus} ${styles[`historyStatus_${entry.status}` as keyof typeof styles]}`}>
+                            <span
+                              className={`${styles.historyStatus} ${styles[`historyStatus_${entry.status}` as keyof typeof styles]}`}
+                            >
                               {entry.status}
                             </span>
                           </td>
                           <td>
-                            ↓{entry.notesPulled + entry.notebooksPulled + entry.tagsPulled}{' '}
-                            ↑{entry.notesPushed + entry.notebooksPushed + entry.tagsPushed}
+                            ↓{entry.notesPulled + entry.notebooksPulled + entry.tagsPulled} ↑
+                            {entry.notesPushed + entry.notebooksPushed + entry.tagsPushed}
                             {entry.conflicts > 0 && ` ⚠${entry.conflicts}`}
                           </td>
                           <td>

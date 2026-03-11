@@ -322,7 +322,11 @@ export class SyncService {
             this.noteRepository.deleteTagByUuid(change.tagId);
           } else if (change.data) {
             const parsed = JSON.parse(change.data);
-            this.noteRepository.upsertTagFromRemote(change.tagId, parsed.name, parsed.color ?? null);
+            this.noteRepository.upsertTagFromRemote(
+              change.tagId,
+              parsed.name,
+              parsed.color ?? null
+            );
           }
           applied++;
         } catch (error) {
@@ -331,9 +335,8 @@ export class SyncService {
         }
       }
 
-      this.state.tagCursor = applied === result.changes.length
-        ? result.cursor
-        : this.state.tagCursor;
+      this.state.tagCursor =
+        applied === result.changes.length ? result.cursor : this.state.tagCursor;
 
       return { success: true, applied };
     } catch (error) {
@@ -368,9 +371,7 @@ export class SyncService {
 
       const result = await this.apiClient.pushTagChanges(changes);
 
-      const successIds = result.results
-        .filter(r => r.status === 'applied')
-        .map(r => r.tagId);
+      const successIds = result.results.filter(r => r.status === 'applied').map(r => r.tagId);
 
       this.noteRepository.markMultipleTagsAsSynced(successIds);
       this.state.tagCursor = result.cursor;
@@ -434,9 +435,12 @@ export class SyncService {
       if (!pullResult.success) {
         const bandwidth = this.apiClient.getBandwidth();
         this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
-          notesPulled: 0, notesPushed: 0,
-          notebooksPulled, notebooksPushed,
-          tagsPulled: 0, tagsPushed: 0,
+          notesPulled: 0,
+          notesPushed: 0,
+          notebooksPulled,
+          notebooksPushed,
+          tagsPulled: 0,
+          tagsPushed: 0,
           conflicts: 0,
           bytesSent: bandwidth.bytesSent,
           bytesReceived: bandwidth.bytesReceived,
@@ -504,18 +508,23 @@ export class SyncService {
 
       // Complete sync history entry
       const bandwidth = this.apiClient.getBandwidth();
-      const hasPartialErrors = !nbPullResult.success || !nbPushResult.success || !tagPull.success || !tagPush.success;
-      this.noteRepository.completeSyncHistoryEntry(historyId, hasPartialErrors ? 'partial' : 'success', {
-        notesPulled,
-        notesPushed,
-        notebooksPulled,
-        notebooksPushed,
-        tagsPulled,
-        tagsPushed,
-        conflicts: totalConflicts,
-        bytesSent: bandwidth.bytesSent,
-        bytesReceived: bandwidth.bytesReceived,
-      });
+      const hasPartialErrors =
+        !nbPullResult.success || !nbPushResult.success || !tagPull.success || !tagPush.success;
+      this.noteRepository.completeSyncHistoryEntry(
+        historyId,
+        hasPartialErrors ? 'partial' : 'success',
+        {
+          notesPulled,
+          notesPushed,
+          notebooksPulled,
+          notebooksPushed,
+          tagsPulled,
+          tagsPushed,
+          conflicts: totalConflicts,
+          bytesSent: bandwidth.bytesSent,
+          bytesReceived: bandwidth.bytesReceived,
+        }
+      );
 
       return {
         success: true,
@@ -527,9 +536,12 @@ export class SyncService {
     } catch (error) {
       const bandwidth = this.apiClient.getBandwidth();
       this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
-        notesPulled: 0, notesPushed: 0,
-        notebooksPulled: 0, notebooksPushed: 0,
-        tagsPulled: 0, tagsPushed: 0,
+        notesPulled: 0,
+        notesPushed: 0,
+        notebooksPulled: 0,
+        notebooksPushed: 0,
+        tagsPulled: 0,
+        tagsPushed: 0,
         conflicts: 0,
         bytesSent: bandwidth.bytesSent,
         bytesReceived: bandwidth.bytesReceived,

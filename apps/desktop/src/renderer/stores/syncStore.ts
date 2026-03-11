@@ -175,7 +175,9 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
         const { status } = get();
         if (status === 'offline' || status === 'error') {
           set({ status: 'idle', error: null });
-          get().syncNow().catch(() => {});
+          get()
+            .syncNow()
+            .catch(() => {});
         }
       }, 2000);
     };
