@@ -71,11 +71,7 @@ export const SidebarFooter = memo(function SidebarFooter({
           </span>
         </div>
       ) : (
-        <button
-          type="button"
-          className="sidebar-footer-signin"
-          onClick={onSettingsClick}
-        >
+        <button type="button" className="sidebar-footer-signin" onClick={onSettingsClick}>
           <LogIn size={12} />
           <span>Sign In</span>
         </button>

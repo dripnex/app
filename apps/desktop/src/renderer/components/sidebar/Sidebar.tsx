@@ -144,7 +144,10 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
       {/* Plugin sidebar sections */}
       <LayoutZone name="sidebar-section" />
 
-      <SidebarFooter appVersion={appVersion} onSettingsClick={() => window.readied.windows.openSettings()} />
+      <SidebarFooter
+        appVersion={appVersion}
+        onSettingsClick={() => window.readied.windows.openSettings()}
+      />
 
       {/* Modal - rendered at Sidebar level, NOT inside NotebookList */}
       {isCreateNotebookOpen && (

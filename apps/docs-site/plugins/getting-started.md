@@ -58,6 +58,7 @@ npm run build
 ```
 
 Copy the output to your Readied plugins directory:
+
 - **macOS:** `~/Library/Application Support/Readied/plugins/my-plugin/`
 - **Windows:** `%APPDATA%/Readied/plugins/my-plugin/`
 - **Linux:** `~/.config/Readied/plugins/my-plugin/`

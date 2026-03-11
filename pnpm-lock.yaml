@@ -266,8 +266,13 @@ importers:
   packages/api:
     dependencies:
       '@hono/zod-validator':
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
         specifier: ^0.7.6
         version: 0.7.6(hono@4.12.7)(zod@4.3.6)
+=======
+        specifier: ^0.4.2
+        version: 0.4.3(hono@4.12.7)(zod@3.25.76)
+>>>>>>> develop
       '@libsql/client':
         specifier: ^0.17.0
         version: 0.17.0
@@ -4251,6 +4256,10 @@ packages:
     resolution: {integrity: sha512-CTXd6rk/M3/ULNQj8FBqBWHYBVYybQ3VPBw0xGKFe3tuH7ytT6ACnvzpIQ3UZtB8yvUKC2cXn1a+x+5EVQLovA==}
     engines: {node: '>=14.14'}
 
+  fs-extra@11.3.4:
+    resolution: {integrity: sha512-CTXd6rk/M3/ULNQj8FBqBWHYBVYybQ3VPBw0xGKFe3tuH7ytT6ACnvzpIQ3UZtB8yvUKC2cXn1a+x+5EVQLovA==}
+    engines: {node: '>=14.14'}
+
   fs-extra@7.0.1:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
     engines: {node: '>=6 <7 || >=8'}
@@ -5017,12 +5026,25 @@ packages:
   minimatch@3.1.5:
     resolution: {integrity: sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==}
 
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
   minimatch@5.1.9:
     resolution: {integrity: sha512-7o1wEA2RyMP7Iu7GNba9vc0RWWGACJOCZBJX2GJWip0ikV+wcOsgVuY9uE8CPiyQhkGFSlhuSkZPavN7u1c2Fw==}
     engines: {node: '>=10'}
 
   minimatch@9.0.9:
     resolution: {integrity: sha512-OBwBN9AL4dqmETlpS2zasx+vTeWclWzkblfZk7KTA5j3jeOONz/tRCnZomUyvNg83wL5Zv9Ss6HMJXAgL8R2Yg==}
+=======
+  minimatch@5.1.6:
+    resolution: {integrity: sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==}
+    engines: {node: '>=10'}
+
+  minimatch@5.1.9:
+    resolution: {integrity: sha512-7o1wEA2RyMP7Iu7GNba9vc0RWWGACJOCZBJX2GJWip0ikV+wcOsgVuY9uE8CPiyQhkGFSlhuSkZPavN7u1c2Fw==}
+    engines: {node: '>=10'}
+
+  minimatch@9.0.5:
+    resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==}
+>>>>>>> develop
     engines: {node: '>=16 || 14 >=14.17'}
 
   minimist@1.2.8:
@@ -5367,6 +5389,12 @@ packages:
     resolution: {integrity: sha512-BM/Thnrw5jm2kKLE5uJkXqqExRUY/toLHda65XgFTBTFYZyopbKjBe29Ii3RbkvlsMoFwD+tHeGaCjjv0gHlyw==}
     engines: {node: '>=4'}
 
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
+=======
+  pg-protocol@1.10.3:
+    resolution: {integrity: sha512-6DIBgBQaTKDJyxnXaLiLR8wBpQQcGWuAESkRBX/t6OwA8YsqP+iVSiond2EDy6Y/dsGk8rh/jtax3js5NeV7JQ==}
+
+>>>>>>> develop
   pg-protocol@1.13.0:
     resolution: {integrity: sha512-zzdvXfS6v89r6v7OcFCHfHlyG/wvry1ALxZo4LqgUoy7W9xhBDMaqOuMiF3qEV45VqsN6rdlcehHrfDtlCPc8w==}
 
@@ -7960,10 +7988,17 @@ snapshots:
       react-dom: 19.2.4(react@19.2.4)
       use-sync-external-store: 1.6.0(react@19.2.4)
 
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
   '@hono/zod-validator@0.7.6(hono@4.12.7)(zod@4.3.6)':
     dependencies:
       hono: 4.12.7
       zod: 4.3.6
+=======
+  '@hono/zod-validator@0.4.3(hono@4.12.7)(zod@3.25.76)':
+    dependencies:
+      hono: 4.12.7
+      zod: 3.25.76
+>>>>>>> develop
 
   '@humanfs/core@0.19.1': {}
 
@@ -9124,7 +9159,11 @@ snapshots:
 
   '@types/pg@8.11.6':
     dependencies:
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
       '@types/node': 22.19.3
+=======
+      '@types/node': 25.0.5
+>>>>>>> develop
       pg-protocol: 1.13.0
       pg-types: 4.1.0
     optional: true
@@ -11018,6 +11057,13 @@ snapshots:
       jsonfile: 6.2.0
       universalify: 2.0.1
 
+  fs-extra@11.3.4:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.0
+      universalify: 2.0.1
+    optional: true
+
   fs-extra@7.0.1:
     dependencies:
       graceful-fs: 4.2.11
@@ -12114,11 +12160,23 @@ snapshots:
     dependencies:
       brace-expansion: 1.1.12
 
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
   minimatch@5.1.9:
     dependencies:
       brace-expansion: 2.0.2
 
   minimatch@9.0.9:
+=======
+  minimatch@5.1.6:
+    dependencies:
+      brace-expansion: 2.0.2
+
+  minimatch@5.1.9:
+    dependencies:
+      brace-expansion: 2.0.2
+
+  minimatch@9.0.5:
+>>>>>>> develop
     dependencies:
       brace-expansion: 2.0.2
 
@@ -12454,7 +12512,14 @@ snapshots:
   pg-numeric@1.0.2:
     optional: true
 
+<<<<<<< dependabot/npm_and_yarn/develop/production-717098fa3d
   pg-protocol@1.13.0: {}
+=======
+  pg-protocol@1.10.3: {}
+
+  pg-protocol@1.13.0:
+    optional: true
+>>>>>>> develop
 
   pg-types@2.2.0:
     dependencies:

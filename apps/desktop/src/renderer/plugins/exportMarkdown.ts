@@ -4,8 +4,7 @@ export const exportMarkdownPlugin: PluginManifest = {
   id: 'readied-export-markdown',
   name: 'Export Markdown',
   version: '1.0.0',
-  description:
-    'Copy your notes as raw Markdown or rendered HTML to the clipboard',
+  description: 'Copy your notes as raw Markdown or rendered HTML to the clipboard',
 
   activate(context) {
     const unregisterCopyMd = context.registerCommand(
@@ -21,7 +20,7 @@ export const exportMarkdownPlugin: PluginManifest = {
         navigator.clipboard.writeText(content);
         context.log.info('Markdown copied to clipboard');
         return true;
-      },
+      }
     );
 
     const unregisterCopyHtml = context.registerCommand(
@@ -35,7 +34,7 @@ export const exportMarkdownPlugin: PluginManifest = {
         if (!content) return false;
 
         // Basic markdown-to-HTML conversion for clipboard
-        let html = content
+        const html = content
           // Code blocks (must come before inline code)
           .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
           // Headers
@@ -63,7 +62,7 @@ export const exportMarkdownPlugin: PluginManifest = {
         ]);
         context.log.info('HTML copied to clipboard');
         return true;
-      },
+      }
     );
 
     return {

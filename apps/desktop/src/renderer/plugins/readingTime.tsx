@@ -62,7 +62,7 @@ export const readingTimePlugin: PluginManifest = {
         if (visible) show();
         else hide();
         return true;
-      },
+      }
     );
 
     return {

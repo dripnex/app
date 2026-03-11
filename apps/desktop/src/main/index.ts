@@ -1589,6 +1589,24 @@ function registerAuthSyncHandlers(): void {
     }
   });
 
+  // Tag sync - pull
+  ipcMain.handle('sync:pullTags', async () => {
+    try {
+      return await sync.pullTags();
+    } catch (error) {
+      return { success: false, applied: 0, error: String(error) };
+    }
+  });
+
+  // Tag sync - push
+  ipcMain.handle('sync:pushTags', async () => {
+    try {
+      return await sync.pushTags();
+    } catch (error) {
+      return { success: false, pushed: 0, error: String(error) };
+    }
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Subscription
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2267,6 +2285,11 @@ app
         return;
       }
 
+      if (!notebookRepository) {
+        log.error('Cannot initialize sync service: notebookRepository not initialized');
+        return;
+      }
+
       try {
         tokenStorage = new TokenStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
@@ -2277,7 +2300,12 @@ app
         encryptionService = new EncryptionService(dataPaths.root);
         await encryptionService.initialize();
 
-        syncService = new SyncService(apiClient, encryptionService, noteRepository);
+        syncService = new SyncService(
+          apiClient,
+          encryptionService,
+          noteRepository,
+          notebookRepository
+        );
 
         // Register license handlers with dependencies
         if (licenseStorage) {

@@ -5,6 +5,7 @@ Build a complete plugin from scratch. This tutorial covers commands, status bar 
 ## What We're Building
 
 A Pomodoro timer that:
+
 - Shows a countdown in the status bar
 - Starts/pauses with a keyboard shortcut
 - Has configurable work/break durations
@@ -316,14 +317,14 @@ export const plugin: PluginManifest = {
 
 ## What We Covered
 
-| Feature | API Used |
-|---------|----------|
-| Commands | `context.registerCommand()` |
-| Keyboard shortcuts | `keybinding` option |
-| Status bar UI | `context.layout.addComponent('editor-status-bar', ...)` |
-| Configuration | `configSchema` + `context.config.get()` |
-| Cleanup | `dispose()` pattern |
-| Logging | `context.log.info()` |
+| Feature            | API Used                                                |
+| ------------------ | ------------------------------------------------------- |
+| Commands           | `context.registerCommand()`                             |
+| Keyboard shortcuts | `keybinding` option                                     |
+| Status bar UI      | `context.layout.addComponent('editor-status-bar', ...)` |
+| Configuration      | `configSchema` + `context.config.get()`                 |
+| Cleanup            | `dispose()` pattern                                     |
+| Logging            | `context.log.info()`                                    |
 
 ## Next Steps
 

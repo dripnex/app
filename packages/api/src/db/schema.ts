@@ -106,6 +106,61 @@ export const syncLog = sqliteTable(
 );
 
 /**
+ * Tag sync log - tag changes (name + color, NOT encrypted — tags are metadata)
+ */
+export const tagSyncLog = sqliteTable(
+  'tag_sync_log',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id').notNull(), // Client's tag UUID
+    version: integer('version').notNull(),
+    operation: text('operation').notNull(), // 'create' | 'update' | 'delete'
+    data: text('data'), // JSON: { name, color } — null for deletes
+    deviceId: text('device_id').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  table => [
+    index('idx_tag_sync_log_user_version').on(table.userId, table.version),
+    index('idx_tag_sync_log_user_tag').on(table.userId, table.tagId),
+  ]
+);
+
+/**
+ * Notebook sync log - notebook metadata changes
+ * No encryption needed - notebooks are organizational metadata only
+ */
+export const notebookSyncLog = sqliteTable(
+  'notebook_sync_log',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    notebookId: text('notebook_id').notNull(),
+    version: integer('version').notNull(),
+    operation: text('operation').notNull(), // 'create' | 'update' | 'delete'
+    data: text('data'), // JSON notebook metadata (null for deletes)
+    deviceId: text('device_id').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  table => [
+    index('idx_nb_sync_log_user_version').on(table.userId, table.version),
+    index('idx_nb_sync_log_user_notebook').on(table.userId, table.notebookId),
+  ]
+);
+
+/**
  * Subscriptions - Pro tier tracking
  */
 export const subscriptions = sqliteTable('subscriptions', {
@@ -243,8 +298,10 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Device = typeof devices.$inferSelect;
 export type SyncLogEntry = typeof syncLog.$inferSelect;
+export type TagSyncLogEntry = typeof tagSyncLog.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Newsletter = typeof newsletter.$inferSelect;
 export type SharedNote = typeof sharedNotes.$inferSelect;
 export type PluginCatalogEntry = typeof pluginCatalog.$inferSelect;
 export type NewPluginCatalogEntry = typeof pluginCatalog.$inferInsert;
+export type NotebookSyncLogEntry = typeof notebookSyncLog.$inferSelect;

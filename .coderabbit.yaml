@@ -1,0 +1,21 @@
+language: "en"
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "packages/core/**"
+      instructions: "Core is pure domain logic. No Electron/React deps allowed."
+    - path: "packages/storage-sqlite/**"
+      instructions: "Native deps only in apps/desktop. Workspace packages use peerDependencies for native modules."
+    - path: "apps/desktop/src/main/**"
+      instructions: "Main process code. Check IPC handler patterns and sync service consistency."
+    - path: "packages/api/**"
+      instructions: "Server-side API using Hono + Drizzle ORM on Turso. Schema managed via drizzle-kit push, not file migrations."
+chat:
+  auto_reply: true

@@ -4,17 +4,17 @@ Plugins can place React components into predefined layout zones using `context.l
 
 ## Available Zones
 
-| Zone | Location | Typical Use |
-|------|----------|-------------|
-| `editor-status-bar` | Bottom of editor | Statistics, indicators |
-| `editor-header-actions` | Right side of note header | Toggle buttons, quick actions |
-| `editor-toolbar` | Above editor content | Formatting tools |
-| `panel` | Side panel area | Large interactive UI (AI, search) |
-| `sidebar-section` | Left sidebar | Navigation, note lists |
-| `modal` | Overlay | Dialogs, forms |
-| `settings-section` | Settings page | Plugin settings UI |
-| `note-list-footer` | Bottom of note list | Note list actions |
-| `command-palette-footer` | Below command palette | Contextual actions |
+| Zone                     | Location                  | Typical Use                       |
+| ------------------------ | ------------------------- | --------------------------------- |
+| `editor-status-bar`      | Bottom of editor          | Statistics, indicators            |
+| `editor-header-actions`  | Right side of note header | Toggle buttons, quick actions     |
+| `editor-toolbar`         | Above editor content      | Formatting tools                  |
+| `panel`                  | Side panel area           | Large interactive UI (AI, search) |
+| `sidebar-section`        | Left sidebar              | Navigation, note lists            |
+| `modal`                  | Overlay                   | Dialogs, forms                    |
+| `settings-section`       | Settings page             | Plugin settings UI                |
+| `note-list-footer`       | Bottom of note list       | Note list actions                 |
+| `command-palette-footer` | Below command palette     | Contextual actions                |
 
 ## Zone Diagram
 
@@ -113,11 +113,11 @@ context.layout.addComponent('panel', {
 
 The `order` property controls position within a zone. Lower numbers appear first (further left in horizontal zones, further up in vertical zones).
 
-| Range | Convention |
-|-------|-----------|
-| 1-9 | Core app components |
-| 10-29 | Built-in plugins |
-| 30-99 | Community plugins |
+| Range | Convention          |
+| ----- | ------------------- |
+| 1-9   | Core app components |
+| 10-29 | Built-in plugins    |
+| 30-99 | Community plugins   |
 
 ## Cleanup
 

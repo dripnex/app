@@ -52,3 +52,10 @@ export type { SyncClient, SyncClientConfig, NotePushPayload } from './client.js'
 // Engine
 export type { SyncStorage, SyncEngineConfig } from './engine.js';
 export { SyncEngine } from './engine.js';
+
+// Tree validation
+export {
+  validateNotebookTree,
+  type TreeNode,
+  type TreeValidationResult,
+} from './treeValidation.js';
