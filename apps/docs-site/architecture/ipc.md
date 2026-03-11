@@ -16,7 +16,66 @@ Core + Storage
 
 ## Preload API
 
-The preload script exposes a typed API:
+The preload script exposes a typed API via `window.readied`. The API is organized into namespaces by domain:
+
+### `notes` - Note Operations
+
+Core CRUD operations plus advanced note management:
+
+- **CRUD** - create, get, update, delete
+- **Organization** - archive, restore, pin/unpin, move to notebook, duplicate
+- **Querying** - list (with filters), search, count, tags
+- **Bulk operations** - bulk delete, bulk archive, bulk move
+
+### `notebooks` - Notebook Management
+
+Hierarchical notebook organization:
+
+- **CRUD** - create, get, update, delete
+- **Hierarchy** - list with parent/child relationships
+- **Note association** - move notes between notebooks
+
+### `tags` - Tag Management
+
+- List all tags
+- Tag/untag notes
+
+### `data` - Data Management
+
+Backup, export, and import functionality:
+
+- **Backup** - create and restore backups
+- **Export** - export notes as markdown files or JSON
+- **Import** - import from files
+- **Paths** - get data directory paths
+- **Open folder** - reveal data folder in OS file manager
+
+### `app` - Application Info
+
+- **Version** - app version string
+- **Platform** - OS platform info
+
+### `sync` - Cloud Sync
+
+Supabase-based sync operations:
+
+- **Authentication** - login, logout, get auth status
+- **Sync status** - check sync state, last synced time
+- **Operations** - push local changes, pull remote changes
+
+### `appearance` - Appearance Settings
+
+- **Theme** - get/set color scheme (dark, light, system)
+- **Accent** - get/set accent color
+- **Zoom** - get/set zoom level
+
+### `plugins` - Plugin System
+
+- **Discovery** - scan for available plugins
+- **Lifecycle** - load, enable, disable plugins
+- **State** - get plugin status and metadata
+
+## Example
 
 ```typescript
 interface ReadiedAPI {
@@ -27,11 +86,22 @@ interface ReadiedAPI {
     delete: (id: string) => Promise<Result<void>>;
     archive: (id: string) => Promise<Result<NoteSnapshot>>;
     restore: (id: string) => Promise<Result<NoteSnapshot>>;
+    pin: (id: string) => Promise<Result<NoteSnapshot>>;
+    move: (id: string, notebookId: string) => Promise<Result<NoteSnapshot>>;
+    duplicate: (id: string) => Promise<Result<NoteSnapshot>>;
     list: (options?: ListOptions) => Promise<NoteSnapshot[]>;
     search: (query: string) => Promise<NoteSnapshot[]>;
-    tags: () => Promise<string[]>;
     count: () => Promise<NoteCounts>;
+    // ... bulk operations
   };
+  notebooks: {
+    create: (input: CreateNotebookInput) => Promise<Result<Notebook>>;
+    list: () => Promise<Notebook[]>;
+    update: (input: UpdateNotebookInput) => Promise<Result<Notebook>>;
+    delete: (id: string) => Promise<Result<void>>;
+    // ...
+  };
+  tags: { /* ... */ };
   data: {
     backup: () => Promise<BackupResult>;
     export: () => Promise<ExportResult>;
@@ -41,7 +111,11 @@ interface ReadiedAPI {
   };
   app: {
     version: () => string;
+    platform: () => string;
   };
+  sync: { /* login, logout, status, push, pull */ };
+  appearance: { /* theme, accent, zoom */ };
+  plugins: { /* scan, load, enable, disable */ };
 }
 
 // Exposed as window.readied
@@ -60,6 +134,10 @@ ipcMain.handle('notes:list', async (_event, options) => {
   const notes = await noteRepository.list(options);
   return notes.map(toSnapshot);
 });
+
+ipcMain.handle('sync:push', async () => {
+  return syncEngine.push();
+});
 ```
 
 ## Security Rules
@@ -70,6 +148,7 @@ ipcMain.handle('notes:list', async (_event, options) => {
 | contextIsolation   | Preload runs in isolated context |
 | No executeSQL      | Raw SQL never exposed            |
 | Typed channels     | All IPC is typed                 |
+| Plugin sandbox     | Plugins cannot access IPC directly |
 
 ## Usage in Renderer
 
@@ -82,4 +161,10 @@ const result = await window.readied.notes.create({
 if (result.ok) {
   console.log('Created:', result.data.id);
 }
+
+// Sync
+await window.readied.sync.push();
+
+// Appearance
+await window.readied.appearance.theme('dark');
 ```

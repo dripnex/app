@@ -60,7 +60,7 @@ Operations are pure functions that take input and a repository:
 // createNote.ts
 export async function createNoteOperation(
   input: CreateNoteInput,
-  repo: NoteRepository
+  repo: NoteRepository,
 ): Promise<Result<NoteSnapshot>> {
   // Validate input
   // Create Note entity
@@ -83,10 +83,26 @@ interface NoteRepository {
 }
 ```
 
+## Companion Packages
+
+Several packages extend core's markdown parsing capabilities. These are separate packages but work closely with the core domain:
+
+### Wikilinks (`@readied/wikilinks`)
+
+Parses `[[wikilink]]` syntax from markdown content. Extracts link targets and display text, enabling bidirectional linking between notes. The parser identifies wikilinks in raw markdown so the editor and storage layers can resolve them to actual note references.
+
+### Tasks (`@readied/tasks`)
+
+Extracts task items (`- [ ]` and `- [x]`) from markdown content. Provides structured task data including completion status, enabling task-oriented views and aggregation across notes.
+
+### Embeds (`@readied/embeds`)
+
+Resolves URLs to rich embed metadata. Recognizes known URL patterns (YouTube, images, etc.) and provides embed type information so the renderer can display rich previews instead of plain links.
+
 ## Testing
 
 ```bash
 pnpm --filter @readied/core test
 ```
 
-52 tests covering all domain logic.
+68 tests covering all domain logic.

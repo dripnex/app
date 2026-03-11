@@ -309,3 +309,132 @@ export const plugin: PluginManifest = {
   },
 };
 ```
+
+## Theme Plugin
+
+Creates a custom theme that responds to dark/light mode changes using `getTheme()` and `onThemeChanged()`.
+
+```typescript
+import type { PluginManifest } from '@readied/plugin-api';
+
+const DARK_VARS: Record<string, string> = {
+  '--bg-base': '#1a1b26',
+  '--bg-surface': '#1f2335',
+  '--text-primary': '#c0caf5',
+  '--text-secondary': '#a9b1d6',
+  '--accent-primary': '#7aa2f7',
+};
+
+const LIGHT_VARS: Record<string, string> = {
+  '--bg-base': '#f5f5f5',
+  '--bg-surface': '#ffffff',
+  '--text-primary': '#1a1b26',
+  '--text-secondary': '#565a6e',
+  '--accent-primary': '#2e7de9',
+};
+
+export const myThemePlugin: PluginManifest = {
+  id: 'my-theme',
+  name: 'My Custom Theme',
+  version: '1.0.0',
+  themeType: 'ui',
+
+  activate(context) {
+    let cleanup: (() => void) | null = null;
+
+    const apply = () => {
+      if (cleanup) cleanup();
+      const isDark = context.getTheme() === 'dark';
+      cleanup = context.registerCssVariables(
+        'my-theme-colors',
+        isDark ? DARK_VARS : LIGHT_VARS
+      );
+    };
+
+    apply();
+    const unsub = context.onThemeChanged(apply);
+
+    return {
+      dispose() {
+        unsub();
+        if (cleanup) cleanup();
+      },
+    };
+  },
+};
+```
+
+## Remark Plugin
+
+Registers a remark plugin that transforms the markdown AST in the preview pipeline. This example automatically converts plain-text URLs into clickable links.
+
+```typescript
+import type { PluginManifest } from '@readied/plugin-api';
+import type { Root, Text, Link } from 'mdast';
+import { visit } from 'unist-util-visit';
+
+const URL_REGEX = /https?:\/\/[^\s)]+/g;
+
+/**
+ * A remark plugin that finds bare URLs in text nodes
+ * and wraps them in link nodes.
+ */
+function remarkAutolink() {
+  return (tree: Root) => {
+    visit(tree, 'text', (node: Text, index, parent) => {
+      if (!parent || index === undefined) return;
+
+      const matches = [...node.value.matchAll(URL_REGEX)];
+      if (matches.length === 0) return;
+
+      // Split the text node into text + link segments
+      const children: (Text | Link)[] = [];
+      let lastIndex = 0;
+
+      for (const match of matches) {
+        const url = match[0];
+        const start = match.index!;
+
+        // Text before the URL
+        if (start > lastIndex) {
+          children.push({ type: 'text', value: node.value.slice(lastIndex, start) });
+        }
+
+        // The URL as a link
+        children.push({
+          type: 'link',
+          url,
+          children: [{ type: 'text', value: url }],
+        });
+
+        lastIndex = start + url.length;
+      }
+
+      // Remaining text after the last URL
+      if (lastIndex < node.value.length) {
+        children.push({ type: 'text', value: node.value.slice(lastIndex) });
+      }
+
+      // Replace the original text node with our new nodes
+      parent.children.splice(index, 1, ...children);
+    });
+  };
+}
+
+export const autolinkPlugin: PluginManifest = {
+  id: 'autolink',
+  name: 'Auto-link URLs',
+  version: '1.0.0',
+  description: 'Converts plain-text URLs to clickable links in the preview',
+
+  activate(context) {
+    const unregister = context.registerRemarkPlugin('autolink', remarkAutolink);
+
+    return {
+      dispose() {
+        unregister();
+      },
+    };
+  },
+};
+```

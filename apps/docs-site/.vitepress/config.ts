@@ -46,6 +46,8 @@ export default defineConfig({
           items: [
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Principles', link: '/guide/principles' },
+            { text: 'Cloud Sync', link: '/guide/sync' },
+            { text: 'Built-in Plugins', link: '/guide/built-in-plugins' },
           ],
         },
       ],

@@ -8,17 +8,32 @@ Readied follows a clean architecture with strict separation of concerns.
 readied/
 ├── apps/
 │   ├── desktop/           # Electron app
-│   │   ├── src/main/      # Main process (SQLite, IPC)
+│   │   ├── src/main/      # Main process (SQLite, IPC, sync)
 │   │   ├── src/preload/   # Secure bridge
 │   │   └── src/renderer/  # React UI
 │   ├── docs-site/         # This documentation (VitePress)
 │   └── site/              # Marketing site (Astro)
 ├── packages/
+│   ├── ai-assistant/      # AI assistant integration
+│   ├── api/               # Supabase API backend
+│   ├── command-registry/  # Command palette system
+│   ├── commands/          # Built-in commands
 │   ├── core/              # Domain logic + markdown parsing
+│   ├── design-system/     # Design tokens (CSS custom properties)
+│   ├── embeds/            # URL embed resolution
+│   ├── licensing/         # License validation
+│   ├── plugin-api/        # Plugin system API
+│   ├── plugin-cli/        # Plugin CLI scaffolding tool
+│   ├── product-config/    # Product configuration
 │   ├── storage-core/      # Storage interfaces + utilities
-│   └── storage-sqlite/    # SQLite implementation
+│   ├── storage-sqlite/    # SQLite implementation
+│   ├── sync-core/         # Sync engine (Supabase)
+│   ├── tasks/             # Task management / extraction
+│   └── wikilinks/         # [[wikilink]] parsing + resolution
 └── docs/                  # Static documentation assets
 ```
+
+16 packages organized by domain responsibility.
 
 ## Package Dependencies
 
@@ -26,29 +41,48 @@ readied/
 graph TD
     A[desktop] --> B[core]
     A --> C[storage-sqlite]
+    A --> E[command-registry]
+    A --> F[commands]
+    A --> G[plugin-api]
+    A --> H[sync-core]
+    A --> I[ai-assistant]
+    A --> J[design-system]
+    A --> K[licensing]
+    A --> L[product-config]
     C --> D[storage-core]
     B -.-> D
+    F --> E
+    H --> M[api]
+    A --> N[wikilinks]
+    A --> O[embeds]
+    A --> P[tasks]
+    G -.-> J
 ```
 
 ## Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Renderer Process                         │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   React UI  │ -> │  TanStack   │ -> │   Preload   │     │
-│  │             │    │   Query     │    │   Bridge    │     │
-│  └─────────────┘    └─────────────┘    └──────┬──────┘     │
-└────────────────────────────────────────────────┼────────────┘
-                                                 │ IPC
-┌────────────────────────────────────────────────┼────────────┐
-│                      Main Process              │            │
-│  ┌─────────────┐    ┌─────────────┐    ┌──────┴──────┐     │
-│  │   SQLite    │ <- │    Core     │ <- │     IPC     │     │
-│  │   (better   │    │  Operations │    │   Handlers  │     │
-│  │   -sqlite3) │    │             │    │             │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                      Renderer Process                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
+│  │ React UI │->│ TanStack │->│  Zustand  │->│   Preload    │    │
+│  │          │  │  Query   │  │  Stores   │  │   Bridge     │    │
+│  └──────────┘  └──────────┘  └──────────┘  └──────┬───────┘    │
+└───────────────────────────────────────────────────┼─────────────┘
+                                                    │ IPC
+┌───────────────────────────────────────────────────┼─────────────┐
+│                      Main Process                 │             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────┴───────┐    │
+│  │  SQLite  │<-│   Core   │<-│  Plugin  │<-│    IPC      │    │
+│  │ (better  │  │Operations│  │  System  │  │  Handlers   │    │
+│  │ -sqlite3)│  │          │  │          │  │             │    │
+│  └──────────┘  └──────────┘  └──────────┘  └─────────────┘    │
+│                                    │                            │
+│                              ┌─────┴───────┐                    │
+│                              │  Sync Core  │                    │
+│                              │  (Supabase) │                    │
+│                              └─────────────┘                    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Key Boundaries
@@ -74,10 +108,40 @@ graph TD
 - Migration definitions
 - **Only package with native deps**
 
-### 4. Desktop App (`@readied/desktop`)
+### 4. Plugin API (`@readied/plugin-api`)
+
+- Plugin lifecycle and registration
+- Extension points (editor, themes, commands)
+- Sandboxed plugin context
+- Theme registry for CSS variable overrides
+
+### 5. Sync Core (`@readied/sync-core`)
+
+- Supabase-based sync engine
+- Push/pull operations
+- Conflict resolution
+- Sync state management
+
+### 6. Command System (`@readied/command-registry` + `@readied/commands`)
+
+- Command palette infrastructure
+- Built-in command definitions
+- Keybinding management
+
+### 7. Companion Packages
+
+- **`@readied/wikilinks`** - `[[wikilink]]` parsing and resolution
+- **`@readied/tasks`** - Task extraction from markdown
+- **`@readied/embeds`** - URL embed resolution
+- **`@readied/ai-assistant`** - AI assistant integration
+- **`@readied/design-system`** - Design tokens as CSS custom properties
+- **`@readied/licensing`** - License validation
+- **`@readied/product-config`** - Pricing, plans, and product metadata
+
+### 8. Desktop App (`@readied/desktop`)
 
 - Electron + electron-vite
-- Main process: SQLite, IPC handlers
+- Main process: SQLite, IPC handlers, sync, plugins
 - Renderer: React + CodeMirror 6
 - Preload: Typed API bridge
 
@@ -89,15 +153,17 @@ graph TD
 | IPC whitelist      | Typed channels only         |
 | No executeSQL      | No raw SQL in renderer      |
 | Preload minimal    | Only necessary APIs exposed |
+| Plugin sandbox     | Plugins run in isolated context |
 
 ## Technology Stack
 
-| Layer    | Technology               |
-| -------- | ------------------------ |
-| Runtime  | Electron                 |
-| Build    | electron-vite            |
-| Database | SQLite (better-sqlite3)  |
-| Editor   | CodeMirror 6             |
-| UI State | TanStack Query + Zustand |
-| Styling  | Tailwind CSS             |
-| Monorepo | pnpm + turborepo         |
+| Layer    | Technology                            |
+| -------- | ------------------------------------- |
+| Runtime  | Electron                              |
+| Build    | electron-vite                         |
+| Database | SQLite (better-sqlite3)               |
+| Editor   | CodeMirror 6                          |
+| UI State | TanStack Query + Zustand              |
+| Styling  | CSS Modules + CSS custom properties   |
+| Sync     | Supabase (via sync-core)              |
+| Monorepo | pnpm + turborepo                      |

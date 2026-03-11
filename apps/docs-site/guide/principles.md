@@ -14,11 +14,11 @@ These principles guide every technical and product decision in Readied.
 - No "prettify markdown" feature
 - Export = exact copy of stored markdown
 
-### 2. Offline First
+### 2. Offline by Default
 
-- 100% functional without internet connection
-- Sync is a feature, not a requirement
-- No features require online connectivity
+- Works 100% offline by default
+- Cloud sync is an optional feature, not a requirement
+- Sync enhances but never gates core functionality
 - Data lives on user's machine
 
 ### 3. Data Ownership
@@ -67,7 +67,6 @@ Core ≠ UI ≠ Infra ≠ Packaging
 | Collaboration tool | Single-user product          |
 | Mobile app         | Desktop first                |
 | AI-powered         | Not core value prop          |
-| Cloud-required     | Offline-first identity       |
 
 ## One-Liner
 
