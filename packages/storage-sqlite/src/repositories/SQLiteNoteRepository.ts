@@ -888,7 +888,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       for (const uuid of tagUuids) {
         stmt.run(now, uuid);
       }
-    })();
+    });
   }
 
   /**
@@ -927,7 +927,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       const result = this.db.prepare('INSERT INTO tags (name, color, uuid, needs_sync, last_synced_at) VALUES (?, ?, ?, 0, ?)')
         .run(normalized, color, uuid, new Date().toISOString());
       return Number(result.lastInsertRowid);
-    })();
+    });
   }
 
   /**
