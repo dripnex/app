@@ -46,6 +46,8 @@ export interface AppearanceSettings {
   zoomLevel: string;
   /** @deprecated No longer used - kept for schema compatibility */
   acrylicBackground: boolean;
+  /** Active plugin theme ID (null = use base dark/light) */
+  activeThemeId: string | null;
 }
 
 /** Backup settings */
@@ -122,6 +124,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   accentColor: '#5eead4',
   zoomLevel: '1.0',
   acrylicBackground: false,
+  activeThemeId: null,
 };
 
 export const DEFAULT_EDITOR: EditorSettings = {
