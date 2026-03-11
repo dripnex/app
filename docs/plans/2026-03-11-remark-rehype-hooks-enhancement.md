@@ -13,6 +13,7 @@
 ### Task 1: Define PluginHookOptions type
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/types.ts`
 
 **Step 1: Add the PluginHookOptions interface**
@@ -43,11 +44,13 @@ git commit -m "feat(plugin-api): add PluginHookOptions type for remark/rehype me
 ### Task 2: Create safePluginWrapper
 
 **Files:**
+
 - Create: `packages/plugin-api/src/preview/safePluginWrapper.ts`
 
 **Step 1: Write the wrapper**
 
 The wrapper takes a unified plugin + metadata, returns a new plugin that:
+
 - Wraps the plugin's visitor functions in try/catch
 - On error: logs `[PluginPipeline] ${name}@${version} failed on node ${node.type}: ${error.message}`
 - On error: injects an error marker node into the AST (a `div` with class `plugin-error-boundary` and data attributes for plugin name + error message)
@@ -67,10 +70,7 @@ interface PluginMetadata {
  * Wraps a remark/rehype plugin so failures on individual nodes
  * don't crash the entire preview pipeline.
  */
-export function safePluginWrapper(
-  plugin: Plugin,
-  metadata: PluginMetadata
-): Plugin {
+export function safePluginWrapper(plugin: Plugin, metadata: PluginMetadata): Plugin {
   // Return a new plugin function that wraps the original
   // The wrapper intercepts the transformer returned by the plugin
   // and wraps each visit() call in try/catch
@@ -80,6 +80,7 @@ export function safePluginWrapper(
 ```
 
 Key behavior:
+
 - If the plugin itself throws during initialization (not per-node), catch that too and return a no-op transformer
 - Error marker node: `{ type: 'html', value: '<div class="plugin-error-block" data-plugin="name" data-error="message">Plugin name failed on this block</div>' }`
 
@@ -95,6 +96,7 @@ git commit -m "feat(plugin-api): add safePluginWrapper for per-block error isola
 ### Task 3: Upgrade remarkPluginStore with metadata + priority + safe wrapping
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/preview/remarkPluginStore.ts`
 
 **Step 1: Read current store implementation**
@@ -102,6 +104,7 @@ git commit -m "feat(plugin-api): add safePluginWrapper for per-block error isola
 **Step 2: Modify the store**
 
 Changes:
+
 - Internal storage: `{ plugin: Plugin, metadata: PluginMetadata }[]` instead of `Plugin[]`
 - `register(plugin, options?)` — accepts optional `PluginHookOptions`, wraps with `safePluginWrapper`, stores with metadata
 - `getPlugins()` — returns plugins sorted by `metadata.priority` (ascending), then by registration order
@@ -121,6 +124,7 @@ git commit -m "feat(plugin-api): upgrade remarkPluginStore with metadata, priori
 ### Task 4: Upgrade rehypePluginStore (same pattern as Task 3)
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/preview/rehypePluginStore.ts`
 
 **Step 1: Apply same changes as Task 3 to rehypePluginStore**
@@ -139,6 +143,7 @@ git commit -m "feat(plugin-api): upgrade rehypePluginStore with metadata, priori
 ### Task 5: Update PluginContext registration methods
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/lifecycle/PluginRegistry.ts` (or wherever `registerRemarkPlugin`/`registerRehypePlugin` are created)
 - Modify: `packages/plugin-api/src/types.ts` (PluginContext interface if needed)
 
@@ -162,6 +167,7 @@ git commit -m "feat(plugin-api): pass metadata through PluginContext registratio
 ### Task 6: Add error block CSS to MarkdownPreview
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/components/editor/MarkdownPreview.tsx` (or its CSS)
 
 **Step 1: Add CSS for `.plugin-error-block`**
@@ -193,6 +199,7 @@ git commit -m "feat(desktop): add CSS for plugin error block boundaries in previ
 ### Task 7: Hot-reload — auto-reload on plugin toggle
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx`
 - Modify: `apps/desktop/src/renderer/stores/pluginRuntimeStore.ts`
 
@@ -212,7 +219,7 @@ togglePlugin: async (pluginId: string, enabled: boolean) => {
     // Re-scan and load just this plugin
     await get().reloadPlugins();
   }
-}
+};
 ```
 
 **Step 3: Update PluginsSection toggle handler**
@@ -231,6 +238,7 @@ git commit -m "feat(desktop): hot-reload preview when toggling plugins on/off"
 ### Task 8: Update built-in plugins to use metadata
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/plugins/` (any built-in that registers remark/rehype hooks)
 
 **Step 1: Identify which built-in plugins register remark/rehype hooks**
@@ -244,7 +252,7 @@ context.registerRemarkPlugin(remarkGfm);
 // After
 context.registerRemarkPlugin(remarkGfm, {
   name: 'remark-gfm',
-  priority: 5
+  priority: 5,
 });
 ```
 

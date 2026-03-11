@@ -239,7 +239,11 @@ export class PluginRegistry {
         return () => editorPluginStore.getState().unregister(extId);
       },
       registerCommand,
-      registerRemarkPlugin: (regId: string, plugin: unknown, options?: PluginHookOptions): (() => void) => {
+      registerRemarkPlugin: (
+        regId: string,
+        plugin: unknown,
+        options?: PluginHookOptions
+      ): (() => void) => {
         remarkPluginStore.getState().register({
           id: regId,
           pluginId: id,
@@ -252,7 +256,11 @@ export class PluginRegistry {
         });
         return () => remarkPluginStore.getState().unregister(regId);
       },
-      registerRehypePlugin: (regId: string, plugin: unknown, options?: PluginHookOptions): (() => void) => {
+      registerRehypePlugin: (
+        regId: string,
+        plugin: unknown,
+        options?: PluginHookOptions
+      ): (() => void) => {
         rehypePluginStore.getState().register({
           id: regId,
           pluginId: id,

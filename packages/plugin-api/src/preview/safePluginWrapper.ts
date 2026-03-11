@@ -20,10 +20,7 @@ export interface PluginMetadata {
  * If the transformer throws, log the error and inject an error marker
  * node into the AST.
  */
-export function safePluginWrapper(
-  plugin: unknown,
-  metadata: PluginMetadata,
-): unknown {
+export function safePluginWrapper(plugin: unknown, metadata: PluginMetadata): unknown {
   // If plugin is not a function, return it as-is (let unified handle the error)
   if (typeof plugin !== 'function') return plugin;
 
@@ -35,7 +32,7 @@ export function safePluginWrapper(
     } catch (error) {
       console.warn(
         `[PluginPipeline] ${metadata.name}@${metadata.version} failed to initialize:`,
-        error,
+        error
       );
       // Return no-op transformer
       return () => {};
@@ -49,10 +46,7 @@ export function safePluginWrapper(
         return (transformer as (tree: unknown, file: unknown) => unknown)(tree, file);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.warn(
-          `[PluginPipeline] ${metadata.name}@${metadata.version} failed:`,
-          message,
-        );
+        console.warn(`[PluginPipeline] ${metadata.name}@${metadata.version} failed:`, message);
 
         // Inject error marker node into the tree (at the end)
         // The tree is a hast/mdast root node with children array

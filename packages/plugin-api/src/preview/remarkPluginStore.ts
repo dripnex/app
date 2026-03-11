@@ -37,7 +37,7 @@ export const remarkPluginStore = createStore<RemarkPluginState>((set, get) => ({
       ],
     }));
     console.warn(
-      `[RemarkPlugins] Registered: ${registration.metadata.name}@${registration.metadata.version} (priority: ${registration.metadata.priority})`,
+      `[RemarkPlugins] Registered: ${registration.metadata.name}@${registration.metadata.version} (priority: ${registration.metadata.priority})`
     );
   },
 

@@ -18,11 +18,11 @@ Core tokens that themes can override (from `tokens.css`):
 
 Extension scopes with mandatory prefixes:
 
-| Scope | Prefix | Example |
-|-------|--------|---------|
-| Syntax highlighting | `--syntax-*` | `--syntax-keyword` |
-| Preview/markdown | `--preview-*` | `--preview-heading-color` |
-| UI chrome | `--ui-*` | `--ui-sidebar-bg` |
+| Scope               | Prefix        | Example                   |
+| ------------------- | ------------- | ------------------------- |
+| Syntax highlighting | `--syntax-*`  | `--syntax-keyword`        |
+| Preview/markdown    | `--preview-*` | `--preview-heading-color` |
+| UI chrome           | `--ui-*`      | `--ui-sidebar-bg`         |
 
 Variables outside core whitelist or valid scopes are rejected with `console.warn`.
 
@@ -73,15 +73,18 @@ Themes are validated on registration. Invalid tokens are stripped. Theme appears
 ## nativeTheme Sync
 
 **Main process:**
+
 - Set `nativeTheme.themeSource` on init from saved setting
 - Listen to `nativeTheme.on('updated')`, notify renderer via IPC `theme:system-changed`
 - Handle `theme:set-source` IPC from renderer
 
 **Renderer:**
+
 - Replace `prefers-color-scheme` media query listener with IPC listener
 - `window.readied.theme.onSystemChanged(isDark => ...)` for system theme changes
 
 **Preload API:**
+
 ```typescript
 theme: {
   setSource: (source: 'dark' | 'light' | 'system') => void;

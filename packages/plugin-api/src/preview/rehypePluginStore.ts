@@ -37,7 +37,7 @@ export const rehypePluginStore = createStore<RehypePluginState>((set, get) => ({
       ],
     }));
     console.warn(
-      `[RehypePlugins] Registered: ${registration.metadata.name}@${registration.metadata.version} (priority: ${registration.metadata.priority})`,
+      `[RehypePlugins] Registered: ${registration.metadata.name}@${registration.metadata.version} (priority: ${registration.metadata.priority})`
     );
   },
 
