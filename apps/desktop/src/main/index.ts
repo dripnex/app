@@ -1607,6 +1607,19 @@ function registerAuthSyncHandlers(): void {
     }
   });
 
+  ipcMain.handle('sync:history', async (_event, limit?: number) => {
+    try {
+      const history = sync.getSyncHistory(limit);
+      return { success: true, history };
+    } catch (error) {
+      return {
+        success: false,
+        history: [],
+        error: error instanceof Error ? error.message : 'Failed to get sync history',
+      };
+    }
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Subscription
   // ═══════════════════════════════════════════════════════════════════════════

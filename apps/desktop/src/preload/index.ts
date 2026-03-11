@@ -545,6 +545,27 @@ export interface ReadiedAPI {
     pullTags: () => Promise<{ success: boolean; applied: number; error?: string }>;
     /** Push tag changes to server */
     pushTags: () => Promise<{ success: boolean; pushed: number; error?: string }>;
+    /** Get sync history */
+    history: (limit?: number) => Promise<{
+      success: boolean;
+      history: Array<{
+        id: string;
+        startedAt: string;
+        completedAt: string | null;
+        status: 'running' | 'success' | 'partial' | 'error';
+        notesPulled: number;
+        notesPushed: number;
+        notebooksPulled: number;
+        notebooksPushed: number;
+        tagsPulled: number;
+        tagsPushed: number;
+        conflicts: number;
+        bytesSent: number;
+        bytesReceived: number;
+        errorMessage: string | null;
+      }>;
+      error?: string;
+    }>;
   };
   subscription: {
     /** Get subscription status */
@@ -828,6 +849,7 @@ const api: ReadiedAPI = {
     triggerSync: () => ipcRenderer.invoke('sync:trigger'),
     pullTags: () => ipcRenderer.invoke('sync:pullTags'),
     pushTags: () => ipcRenderer.invoke('sync:pushTags'),
+    history: (limit?: number) => ipcRenderer.invoke('sync:history', limit),
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
