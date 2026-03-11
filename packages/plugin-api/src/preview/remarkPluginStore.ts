@@ -1,10 +1,16 @@
 import { createStore } from 'zustand/vanilla';
+import { safePluginWrapper } from './safePluginWrapper';
 
 export interface RemarkPluginRegistration {
   id: string;
   pluginId: string;
   /** unified remark plugin — typed as unknown for loose coupling */
   plugin: unknown;
+  metadata: {
+    name: string;
+    version: string;
+    priority: number;
+  };
 }
 
 interface RemarkPluginState {
@@ -19,9 +25,20 @@ export const remarkPluginStore = createStore<RemarkPluginState>((set, get) => ({
   registrations: [],
 
   register(registration) {
+    const wrappedPlugin = safePluginWrapper(registration.plugin, {
+      name: registration.metadata.name,
+      version: registration.metadata.version,
+      pluginId: registration.pluginId,
+    });
     set(state => ({
-      registrations: [...state.registrations.filter(r => r.id !== registration.id), registration],
+      registrations: [
+        ...state.registrations.filter(r => r.id !== registration.id),
+        { ...registration, plugin: wrappedPlugin },
+      ],
     }));
+    console.debug(
+      `[RemarkPlugins] Registered: ${registration.metadata.name}@${registration.metadata.version} (priority: ${registration.metadata.priority})`,
+    );
   },
 
   unregister(id) {
@@ -37,6 +54,8 @@ export const remarkPluginStore = createStore<RemarkPluginState>((set, get) => ({
   },
 
   getPlugins() {
-    return get().registrations.map(r => r.plugin);
+    return [...get().registrations]
+      .sort((a, b) => a.metadata.priority - b.metadata.priority)
+      .map(r => r.plugin);
   },
 }));
