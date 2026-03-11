@@ -8,7 +8,13 @@
  */
 
 import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
-import { createNoteId, createNotebookId, createTimestamp, type NoteStatus } from '@readied/core';
+import {
+  createNoteId,
+  createNotebookId,
+  createNotebook,
+  createTimestamp,
+  type NoteStatus,
+} from '@readied/core';
 import type { ApiClient, SyncChange, NotebookSyncChange, NotebookPushResult } from './apiClient.js';
 import type { EncryptionService } from './encryptionService.js';
 
@@ -588,11 +594,10 @@ export class SyncService {
             parentId: parsed.parentId ? createNotebookId(parsed.parentId) : null,
             depth: parsed.depth,
             order: parsed.order,
-            updatedAt: parsed.updatedAt as unknown as string,
+            updatedAt: createTimestamp(new Date(parsed.updatedAt)),
           });
         } else {
           // Create new notebook from remote
-          const { createNotebook } = await import('@readied/core');
           await this.notebookRepository.save(
             createNotebook({
               id: notebookId,
@@ -600,7 +605,7 @@ export class SyncService {
               parentId: parsed.parentId ? createNotebookId(parsed.parentId) : null,
               parentDepth: parsed.depth > 0 ? parsed.depth - 1 : undefined,
               order: parsed.order,
-              createdAt: parsed.createdAt as unknown as string,
+              createdAt: createTimestamp(new Date(parsed.createdAt)),
             })
           );
         }
