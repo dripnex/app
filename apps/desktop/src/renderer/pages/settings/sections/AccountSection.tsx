@@ -56,7 +56,7 @@ export function AccountSection() {
 
   const handleMagicLinkSuccess = useCallback(() => {
     setShowMagicLinkFlow(false);
-    setMessage('Successfully signed in!');
+    setMessage('Magic link sent! Check your email.');
   }, []);
 
   const handleMagicLinkCancel = useCallback(() => {

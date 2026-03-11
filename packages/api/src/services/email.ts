@@ -17,14 +17,8 @@ export function createEmailService(apiKey?: string): EmailService {
   return {
     async sendMagicLink(to: string, magicLink: string): Promise<boolean> {
       if (!apiKey) {
-        // Development fallback - log to console
-        // eslint-disable-next-line no-console
-        console.log('📧 Magic link email (dev mode):');
-        // eslint-disable-next-line no-console
-        console.log(`   To: ${to}`);
-        // eslint-disable-next-line no-console
-        console.log(`   Link: ${magicLink}`);
-        return true;
+        console.warn('RESEND_API_KEY not configured - email not sent');
+        return false;
       }
 
       try {
@@ -80,12 +74,8 @@ export function createEmailService(apiKey?: string): EmailService {
 
     async sendWelcomeEmail(to: string): Promise<boolean> {
       if (!apiKey) {
-        // Development fallback - log to console
-        // eslint-disable-next-line no-console
-        console.log('📧 Welcome email (dev mode):');
-        // eslint-disable-next-line no-console
-        console.log(`   To: ${to}`);
-        return true;
+        console.warn('RESEND_API_KEY not configured - welcome email not sent');
+        return false;
       }
 
       try {

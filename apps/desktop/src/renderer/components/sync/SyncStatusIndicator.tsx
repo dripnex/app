@@ -16,12 +16,15 @@ export function SyncStatusIndicator() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // Don't show if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
   const getStatusInfo = () => {
+    if (!isAuthenticated) {
+      return {
+        icon: <CloudOff size={14} />,
+        label: 'Not signed in',
+        color: '#6b7280',
+      };
+    }
+
     switch (status) {
       case 'syncing':
         return {

@@ -16,7 +16,7 @@ export interface MagicLinkFlowProps {
 
 type Step = 'email' | 'sent' | 'verifying' | 'success' | 'error';
 
-export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
+export function MagicLinkFlow({ onSuccess: _onSuccess, onCancel }: MagicLinkFlowProps) {
   const { requestMagicLink, error: authError } = useAuthStore();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -32,10 +32,6 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
       try {
         await requestMagicLink(email);
         setStep('sent');
-        // Auto-close after showing success message
-        setTimeout(() => {
-          onSuccess();
-        }, 3000);
       } catch (_err) {
         // Error message is already set in authStore with improved messaging
         setStep('error');
@@ -43,7 +39,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
         setIsLoading(false);
       }
     },
-    [email, requestMagicLink, onSuccess]
+    [email, requestMagicLink]
   );
 
   const handleCancel = useCallback(() => {
