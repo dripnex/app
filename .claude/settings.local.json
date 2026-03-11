@@ -64,7 +64,16 @@
       "mcp__plugin_playwright_playwright__browser_evaluate",
       "Bash(wc:*)",
       "Bash(gh issue list:*)",
-      "Bash(gh pr merge:*)"
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh run:*)",
+      "Bash(npx wrangler:*)",
+      "Read(//Users/tomasmaritano/**)",
+      "Read(//Users/tomasmaritano/.config/**)",
+      "Read(//Users/tomasmaritano/Library/Preferences/**)",
+      "Bash(open:*)",
+      "Bash(gh secret:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }
