@@ -14,7 +14,7 @@ export {
 } from './database.js';
 
 // Repositories
-export { SQLiteNoteRepository, type BacklinkInfo } from './repositories/SQLiteNoteRepository.js';
+export { SQLiteNoteRepository, type BacklinkInfo, type SyncHistoryEntry } from './repositories/SQLiteNoteRepository.js';
 export { SQLiteNotebookRepository } from './repositories/SQLiteNotebookRepository.js';
 
 // Migrations
