@@ -7,6 +7,7 @@ import {
   createAppAPI,
   editorPluginStore,
   useCssVariables,
+  useThemeOverrides,
 } from '@readied/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
@@ -75,6 +76,7 @@ const queryClient = new QueryClient({
 function NotesApp() {
   usePerformanceMode();
   useAppearanceSettings();
+  useThemeOverrides();      // Applies active theme tokens
   useCssVariables();
 
   // Resizable layout
