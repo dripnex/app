@@ -7,6 +7,7 @@
  * @module SyncService
  */
 
+import { randomUUID } from 'node:crypto';
 import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
 import {
   createNoteId,
@@ -400,23 +401,47 @@ export class SyncService {
 
     this.state.isSyncing = true;
 
+    const historyId = randomUUID();
+    this.noteRepository.createSyncHistoryEntry(historyId);
+    this.apiClient.resetBandwidthCounters();
+
+    let notesPulled = 0;
+    let notesPushed = 0;
+    let notebooksPulled = 0;
+    let notebooksPushed = 0;
+    let tagsPulled = 0;
+    let tagsPushed = 0;
+    let totalConflicts = 0;
+
     try {
       // Step 1: Pull notebooks first (notes depend on notebooks)
       const nbPullResult = await this.pullNotebooks();
       if (!nbPullResult.success) {
         console.error('Failed to pull notebooks:', nbPullResult.error);
       }
+      notebooksPulled = nbPullResult.changes?.length ?? 0;
 
       // Step 2: Push pending notebook changes
       const nbPushResult = await this.pushNotebooks();
       if (!nbPushResult.success) {
         console.error('Failed to push notebooks:', nbPushResult.error);
       }
+      notebooksPushed = nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0;
 
       // Step 3: Pull note changes from server
       const pullResult = await this.pull();
 
       if (!pullResult.success) {
+        const bandwidth = this.apiClient.getBandwidth();
+        this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
+          notesPulled: 0, notesPushed: 0,
+          notebooksPulled, notebooksPushed,
+          tagsPulled: 0, tagsPushed: 0,
+          conflicts: 0,
+          bytesSent: bandwidth.bytesSent,
+          bytesReceived: bandwidth.bytesReceived,
+          errorMessage: pullResult.error,
+        });
         return {
           success: false,
           changesApplied: 0,
@@ -425,6 +450,8 @@ export class SyncService {
           error: pullResult.error,
         };
       }
+      notesPulled = pullResult.changes.length;
+      totalConflicts = pullResult.conflicts.length;
 
       // Step 4: Push local note changes
       let changesPushed = 0;
@@ -459,18 +486,36 @@ export class SyncService {
           console.error('Failed to push changes:', pushResult.error);
         }
       }
+      notesPushed = changesPushed;
 
-      // Step 3: Pull tags
+      // Step 5: Pull tags
       const tagPull = await this.pullTags();
       if (!tagPull.success) {
         console.error('Tag pull failed:', tagPull.error);
       }
+      tagsPulled = tagPull.applied ?? 0;
 
-      // Step 4: Push tags
+      // Step 6: Push tags
       const tagPush = await this.pushTags();
       if (!tagPush.success) {
         console.error('Tag push failed:', tagPush.error);
       }
+      tagsPushed = tagPush.pushed ?? 0;
+
+      // Complete sync history entry
+      const bandwidth = this.apiClient.getBandwidth();
+      const hasPartialErrors = !nbPullResult.success || !nbPushResult.success || !tagPull.success || !tagPush.success;
+      this.noteRepository.completeSyncHistoryEntry(historyId, hasPartialErrors ? 'partial' : 'success', {
+        notesPulled,
+        notesPushed,
+        notebooksPulled,
+        notebooksPushed,
+        tagsPulled,
+        tagsPushed,
+        conflicts: totalConflicts,
+        bytesSent: bandwidth.bytesSent,
+        bytesReceived: bandwidth.bytesReceived,
+      });
 
       return {
         success: true,
@@ -480,6 +525,16 @@ export class SyncService {
         conflicts: pullResult.conflicts,
       };
     } catch (error) {
+      const bandwidth = this.apiClient.getBandwidth();
+      this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
+        notesPulled: 0, notesPushed: 0,
+        notebooksPulled: 0, notebooksPushed: 0,
+        tagsPulled: 0, tagsPushed: 0,
+        conflicts: 0,
+        bytesSent: bandwidth.bytesSent,
+        bytesReceived: bandwidth.bytesReceived,
+        errorMessage: error instanceof Error ? error.message : 'Sync failed',
+      });
       return {
         success: false,
         changesApplied: 0,
@@ -550,6 +605,13 @@ export class SyncService {
    */
   getState(): SyncState {
     return { ...this.state };
+  }
+
+  /**
+   * Get sync history entries
+   */
+  getSyncHistory(limit = 20) {
+    return this.noteRepository.getSyncHistory(limit);
   }
 
   // ==========================================================================
