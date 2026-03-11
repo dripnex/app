@@ -9,6 +9,7 @@ import type {
   EditorAPI,
   AppAPI,
   PluginCommandOptions,
+  PluginHookOptions,
 } from '../types';
 import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
@@ -237,12 +238,30 @@ export class PluginRegistry {
         return () => editorPluginStore.getState().unregister(extId);
       },
       registerCommand,
-      registerRemarkPlugin: (regId: string, plugin: unknown): (() => void) => {
-        remarkPluginStore.getState().register({ id: regId, pluginId: id, plugin });
+      registerRemarkPlugin: (regId: string, plugin: unknown, options?: PluginHookOptions): (() => void) => {
+        remarkPluginStore.getState().register({
+          id: regId,
+          pluginId: id,
+          plugin,
+          metadata: {
+            name: options?.name ?? entry.manifest.name,
+            version: options?.version ?? entry.manifest.version,
+            priority: options?.priority ?? 100,
+          },
+        });
         return () => remarkPluginStore.getState().unregister(regId);
       },
-      registerRehypePlugin: (regId: string, plugin: unknown): (() => void) => {
-        rehypePluginStore.getState().register({ id: regId, pluginId: id, plugin });
+      registerRehypePlugin: (regId: string, plugin: unknown, options?: PluginHookOptions): (() => void) => {
+        rehypePluginStore.getState().register({
+          id: regId,
+          pluginId: id,
+          plugin,
+          metadata: {
+            name: options?.name ?? entry.manifest.name,
+            version: options?.version ?? entry.manifest.version,
+            priority: options?.priority ?? 100,
+          },
+        });
         return () => rehypePluginStore.getState().unregister(regId);
       },
       registerPreviewComponent: (
