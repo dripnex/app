@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { rehypePluginStore } from '../src/preview/rehypePluginStore';
 
+const defaultMeta = { name: 'test', version: '1.0.0', priority: 100 };
+
 describe('rehypePluginStore', () => {
   beforeEach(() => {
     const state = rehypePluginStore.getState();
@@ -19,6 +21,7 @@ describe('rehypePluginStore', () => {
       id: 'rehype-1',
       pluginId: 'test-plugin',
       plugin: fakePlugin,
+      metadata: defaultMeta,
     });
 
     expect(rehypePluginStore.getState().registrations).toHaveLength(1);
@@ -30,11 +33,13 @@ describe('rehypePluginStore', () => {
       id: 'rehype-1',
       pluginId: 'test-plugin',
       plugin: () => {},
+      metadata: defaultMeta,
     });
     rehypePluginStore.getState().register({
       id: 'rehype-1',
       pluginId: 'test-plugin',
       plugin: () => {},
+      metadata: defaultMeta,
     });
 
     expect(rehypePluginStore.getState().registrations).toHaveLength(1);
@@ -45,6 +50,7 @@ describe('rehypePluginStore', () => {
       id: 'rehype-1',
       pluginId: 'test-plugin',
       plugin: () => {},
+      metadata: defaultMeta,
     });
     rehypePluginStore.getState().unregister('rehype-1');
 
@@ -56,16 +62,19 @@ describe('rehypePluginStore', () => {
       id: 'rehype-1',
       pluginId: 'plugin-a',
       plugin: () => {},
+      metadata: defaultMeta,
     });
     rehypePluginStore.getState().register({
       id: 'rehype-2',
       pluginId: 'plugin-a',
       plugin: () => {},
+      metadata: defaultMeta,
     });
     rehypePluginStore.getState().register({
       id: 'rehype-3',
       pluginId: 'plugin-b',
       plugin: () => {},
+      metadata: defaultMeta,
     });
 
     rehypePluginStore.getState().unregisterAll('plugin-a');
@@ -75,21 +84,24 @@ describe('rehypePluginStore', () => {
     expect(remaining[0]!.pluginId).toBe('plugin-b');
   });
 
-  it('getPlugins returns flat array of plugin functions', () => {
-    const pluginA = () => {};
-    const pluginB = () => {};
-
+  it('getPlugins returns plugins sorted by priority', () => {
     rehypePluginStore.getState().register({
       id: 'rehype-1',
       pluginId: 'plugin-a',
-      plugin: pluginA,
+      plugin: 'pluginA',
+      metadata: { name: 'a', version: '1.0.0', priority: 50 },
     });
     rehypePluginStore.getState().register({
       id: 'rehype-2',
       pluginId: 'plugin-b',
-      plugin: pluginB,
+      plugin: 'pluginB',
+      metadata: { name: 'b', version: '1.0.0', priority: 10 },
     });
 
-    expect(rehypePluginStore.getState().getPlugins()).toEqual([pluginA, pluginB]);
+    const plugins = rehypePluginStore.getState().getPlugins();
+    expect(plugins).toHaveLength(2);
+    // pluginB (priority 10) should come first
+    expect(plugins[0]).toBe('pluginB');
+    expect(plugins[1]).toBe('pluginA');
   });
 });
