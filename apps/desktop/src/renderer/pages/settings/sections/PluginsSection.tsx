@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Check } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
+import { validateConfigValue } from '@readied/plugin-api';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';
 import styles from './Section.module.css';
@@ -485,12 +486,24 @@ export function PluginsSection() {
 
   // Update a plugin config value
   const handleConfigChange = useCallback(async (pluginId: string, key: string, value: unknown) => {
+    // Find the schema field for validation
+    const schema = BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
+    const field = schema?.[key];
+
+    if (field) {
+      const result = validateConfigValue(field, value);
+      if (!result.valid) {
+        console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
+        return;
+      }
+    }
+
     await window.readied.pluginConfig.set(pluginId, key, value);
     setConfigValues(prev => ({
       ...prev,
       [pluginId]: { ...prev[pluginId], [key]: value },
     }));
-  }, []);
+  }, [plugins]);
 
   // Reload plugins in the main window
   const handleReload = useCallback(() => {
