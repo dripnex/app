@@ -8,14 +8,14 @@ activate(context: PluginContext): PluginDisposable | void
 
 ## PluginContext
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `editor` | `EditorAPI` | Read and manipulate editor content |
-| `app` | `AppAPI` | Access notes, notebooks, and app events |
-| `layout` | `LayoutManager` | Add UI components to layout zones |
-| `decorations` | `EditorDecorationAPI` | Add line highlights and widgets |
-| `config` | `PluginConfigAPI` | Read/write plugin configuration |
-| `log` | `PluginLogger` | Log messages to the plugin console |
+| Property      | Type                  | Description                             |
+| ------------- | --------------------- | --------------------------------------- |
+| `editor`      | `EditorAPI`           | Read and manipulate editor content      |
+| `app`         | `AppAPI`              | Access notes, notebooks, and app events |
+| `layout`      | `LayoutManager`       | Add UI components to layout zones       |
+| `decorations` | `EditorDecorationAPI` | Add line highlights and widgets         |
+| `config`      | `PluginConfigAPI`     | Read/write plugin configuration         |
+| `log`         | `PluginLogger`        | Log messages to the plugin console      |
 
 ### Methods
 
@@ -40,14 +40,14 @@ const unregister = context.registerCommand(
 
 **PluginCommandOptions:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | `string` | Yes | Unique command ID within your plugin |
-| `name` | `string` | Yes | Display name in command palette |
-| `keybinding` | `object` | No | Keyboard shortcut |
-| `icon` | `string` | No | Lucide icon name |
-| `category` | `string` | No | Command category |
-| `showInPalette` | `boolean` | No | Show in palette (default: true) |
+| Field           | Type      | Required | Description                          |
+| --------------- | --------- | -------- | ------------------------------------ |
+| `id`            | `string`  | Yes      | Unique command ID within your plugin |
+| `name`          | `string`  | Yes      | Display name in command palette      |
+| `keybinding`    | `object`  | No       | Keyboard shortcut                    |
+| `icon`          | `string`  | No       | Lucide icon name                     |
+| `category`      | `string`  | No       | Command category                     |
+| `showInPalette` | `boolean` | No       | Show in palette (default: true)      |
 
 **Keybinding modifiers:** `'Mod'` (Cmd on Mac, Ctrl on Windows), `'Shift'`, `'Alt'`
 
@@ -59,7 +59,14 @@ Register CodeMirror 6 extensions for the editor.
 import { keymap } from '@codemirror/view';
 
 const unregister = context.registerExtensions('my-ext', [
-  keymap.of([{ key: 'Tab', run: () => { /* ... */ return true; } }]),
+  keymap.of([
+    {
+      key: 'Tab',
+      run: () => {
+        /* ... */ return true;
+      },
+    },
+  ]),
 ]);
 ```
 
@@ -104,18 +111,18 @@ context.registerCssVariables('my-theme', {
 
 Access via `context.editor`.
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getContent()` | `string` | Full editor content |
-| `getSelection()` | `{ from, to }` | Current selection range |
-| `replaceRange(from, to, text)` | `void` | Replace text between positions |
-| `insertAtCursor(text)` | `void` | Insert text at cursor |
-| `getWordCount()` | `number` | Word count |
-| `getCharCount()` | `number` | Character count |
-| `getLineCount()` | `number` | Line count |
-| `onDocChanged(callback)` | `() => void` | Subscribe to content changes |
-| `onSelectionChanged(callback)` | `() => void` | Subscribe to selection changes |
-| `focus()` | `void` | Focus the editor |
+| Method                         | Returns        | Description                    |
+| ------------------------------ | -------------- | ------------------------------ |
+| `getContent()`                 | `string`       | Full editor content            |
+| `getSelection()`               | `{ from, to }` | Current selection range        |
+| `replaceRange(from, to, text)` | `void`         | Replace text between positions |
+| `insertAtCursor(text)`         | `void`         | Insert text at cursor          |
+| `getWordCount()`               | `number`       | Word count                     |
+| `getCharCount()`               | `number`       | Character count                |
+| `getLineCount()`               | `number`       | Line count                     |
+| `onDocChanged(callback)`       | `() => void`   | Subscribe to content changes   |
+| `onSelectionChanged(callback)` | `() => void`   | Subscribe to selection changes |
+| `focus()`                      | `void`         | Focus the editor               |
 
 **Example: Word frequency counter**
 
@@ -135,19 +142,19 @@ words.forEach(w => {
 
 Access via `context.app`. All methods are read-only.
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `getCurrentNote()` | `NoteInfo \| null` | Currently open note |
-| `searchNotes(query)` | `Promise<Array>` | Search notes by text |
-| `getNoteById(id)` | `Promise<NoteInfo \| null>` | Get note by ID |
-| `getNoteTags(noteId)` | `Promise<string[]>` | Get tags for a note |
-| `getBacklinks(noteId)` | `Promise<Array>` | Get notes linking to this note |
-| `listNotes()` | `Promise<NoteSummaryInfo[]>` | List all notes |
-| `listNotebooks()` | `Promise<NotebookInfo[]>` | List all notebooks |
-| `listTags()` | `Promise<string[]>` | List all tags |
-| `onNoteSelected(callback)` | `() => void` | Note selection event |
-| `onNoteCreated(callback)` | `() => void` | Note creation event |
-| `onNoteDeleted(callback)` | `() => void` | Note deletion event |
+| Method                     | Returns                      | Description                    |
+| -------------------------- | ---------------------------- | ------------------------------ |
+| `getCurrentNote()`         | `NoteInfo \| null`           | Currently open note            |
+| `searchNotes(query)`       | `Promise<Array>`             | Search notes by text           |
+| `getNoteById(id)`          | `Promise<NoteInfo \| null>`  | Get note by ID                 |
+| `getNoteTags(noteId)`      | `Promise<string[]>`          | Get tags for a note            |
+| `getBacklinks(noteId)`     | `Promise<Array>`             | Get notes linking to this note |
+| `listNotes()`              | `Promise<NoteSummaryInfo[]>` | List all notes                 |
+| `listNotebooks()`          | `Promise<NotebookInfo[]>`    | List all notebooks             |
+| `listTags()`               | `Promise<string[]>`          | List all tags                  |
+| `onNoteSelected(callback)` | `() => void`                 | Note selection event           |
+| `onNoteCreated(callback)`  | `() => void`                 | Note creation event            |
+| `onNoteDeleted(callback)`  | `() => void`                 | Note deletion event            |
 
 **NoteInfo type:**
 
@@ -165,10 +172,10 @@ interface NoteInfo {
 
 Access via `context.layout`. See [Layout Zones](/plugins/layout-zones) for zone details.
 
-| Method | Description |
-|--------|-------------|
-| `addComponent(zone, entry)` | Add a React component to a zone |
-| `removeComponent(id)` | Remove a component by ID |
+| Method                         | Description                        |
+| ------------------------------ | ---------------------------------- |
+| `addComponent(zone, entry)`    | Add a React component to a zone    |
+| `removeComponent(id)`          | Remove a component by ID           |
 | `removeAllForPlugin(pluginId)` | Remove all components for a plugin |
 
 **ZoneEntry:**
@@ -177,7 +184,7 @@ Access via `context.layout`. See [Layout Zones](/plugins/layout-zones) for zone 
 context.layout.addComponent('editor-status-bar', {
   id: 'my-plugin:status',
   component: MyStatusComponent,
-  order: 10,         // Lower = further left
+  order: 10, // Lower = further left
   meta: { editor: context.editor },
 });
 ```
@@ -197,11 +204,11 @@ function MyStatusComponent({ meta }: ZoneComponentProps) {
 
 Access via `context.decorations`.
 
-| Method | Returns | Description |
-|--------|---------|-------------|
+| Method                              | Returns      | Description                  |
+| ----------------------------------- | ------------ | ---------------------------- |
 | `addLineHighlight(line, className)` | `() => void` | Highlight a line (1-indexed) |
-| `addWidget(pos, dom)` | `() => void` | Add a DOM widget at position |
-| `clear()` | `void` | Remove all decorations |
+| `addWidget(pos, dom)`               | `() => void` | Add a DOM widget at position |
+| `clear()`                           | `void`       | Remove all decorations       |
 
 ---
 
@@ -209,9 +216,9 @@ Access via `context.decorations`.
 
 Access via `context.config`. Values persist across sessions.
 
-| Method | Description |
-|--------|-------------|
-| `get<T>(key)` | Read a config value |
+| Method            | Description          |
+| ----------------- | -------------------- |
+| `get<T>(key)`     | Read a config value  |
 | `set(key, value)` | Write a config value |
 
 Define your config schema in the manifest:
@@ -260,10 +267,10 @@ Config fields automatically render in **Settings > Plugins** when users expand y
 
 Access via `context.log`.
 
-| Method | Description |
-|--------|-------------|
-| `info(message, ...args)` | Log info message |
-| `warn(message, ...args)` | Log warning |
-| `error(message, ...args)` | Log error |
+| Method                    | Description      |
+| ------------------------- | ---------------- |
+| `info(message, ...args)`  | Log info message |
+| `warn(message, ...args)`  | Log warning      |
+| `error(message, ...args)` | Log error        |
 
 Messages appear in the developer console prefixed with your plugin ID.

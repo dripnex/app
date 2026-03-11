@@ -6,15 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  RefreshCw,
-  FolderOpen,
-  ChevronDown,
-  Download,
-  Trash2,
-  Search,
-  Check,
-} from 'lucide-react';
+import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Check } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';

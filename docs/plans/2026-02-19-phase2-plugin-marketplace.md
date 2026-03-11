@@ -13,6 +13,7 @@
 ### Task 1: Add Plugin Catalog Schema to Database
 
 **Files:**
+
 - Modify: `packages/api/src/db/schema.ts`
 
 **Step 1: Add `pluginCatalog` table**
@@ -26,7 +27,9 @@ After `sharedNotes`, add:
 export const pluginCatalog = sqliteTable(
   'plugin_catalog',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     slug: text('slug').notNull().unique(),
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
@@ -42,10 +45,14 @@ export const pluginCatalog = sqliteTable(
     minApiVersion: text('min_api_version'),
     isBuiltIn: integer('is_built_in', { mode: 'boolean' }).notNull().default(false),
     status: text('status').notNull().default('published'), // 'published' | 'draft' | 'rejected'
-    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
-    updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
   },
-  (table) => [
+  table => [
     index('idx_plugin_catalog_category').on(table.category),
     index('idx_plugin_catalog_status').on(table.status),
   ]
@@ -76,6 +83,7 @@ git commit -m "feat(api): add plugin catalog database schema"
 ### Task 2: Create Plugin Catalog API Routes
 
 **Files:**
+
 - Create: `packages/api/src/routes/plugins.ts`
 - Modify: `packages/api/src/index.ts` (mount route)
 
@@ -87,6 +95,7 @@ git commit -m "feat(api): add plugin catalog database schema"
 - `GET /:slug` — Get single plugin detail (public)
 
 Follows the same pattern as `share.ts`:
+
 - Uses Hono router
 - Uses Zod for query validation
 - Uses `createDb(c.env)` for database access
@@ -116,12 +125,14 @@ git commit -m "feat(api): add plugin catalog API routes (list, get, search)"
 ### Task 3: Expand Marketing Site Plugin Catalog
 
 **Files:**
+
 - Modify: `apps/marketing-site/src/data/plugins.json` (add all built-in + seed plugins)
 - Modify: `apps/marketing-site/src/components/PluginFilter.tsx` (add search + sorting)
 
 **Step 1: Expand plugins.json with all plugins**
 
 Add entries for all built-in plugins + upcoming seed plugins:
+
 - readied-ai-assistant (existing)
 - readied-word-count (existing)
 - readied-typewriter-mode (new entry)
@@ -163,6 +174,7 @@ git commit -m "feat(marketing): expand plugin catalog with search, sorting, and 
 ### Task 4: Implement Desktop In-App Plugin Browser
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx`
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/Section.module.css`
 
@@ -173,6 +185,7 @@ For now, embed the same plugin catalog data statically (later this fetches from 
 **Step 2: Replace Browse tab placeholder**
 
 Replace the "Coming soon" placeholder with:
+
 - Search input
 - Category filter pills
 - Plugin card grid showing marketplace plugins
@@ -202,6 +215,7 @@ git commit -m "feat(settings): implement in-app plugin marketplace browser"
 ### Task 5: Create Seed Plugins — Focus Mode
 
 **Files:**
+
 - Create: `apps/desktop/src/renderer/plugins/focusMode.ts`
 - Modify: `apps/desktop/src/renderer/plugins/index.ts`
 
@@ -233,6 +247,7 @@ git commit -m "feat(plugins): add focus mode plugin (dims non-active paragraphs)
 ### Task 6: Create Seed Plugins — Reading Time
 
 **Files:**
+
 - Create: `apps/desktop/src/renderer/plugins/readingTime.ts`
 - Modify: `apps/desktop/src/renderer/plugins/index.ts`
 
@@ -257,6 +272,7 @@ git commit -m "feat(plugins): add reading time plugin (estimated read time in st
 ### Task 7: Create Seed Plugins — Export Markdown
 
 **Files:**
+
 - Create: `apps/desktop/src/renderer/plugins/exportMarkdown.ts`
 - Modify: `apps/desktop/src/renderer/plugins/index.ts`
 

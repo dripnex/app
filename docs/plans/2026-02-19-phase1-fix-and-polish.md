@@ -13,6 +13,7 @@
 ### Task 1: Add AI Assistant to Settings Built-in List
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx:38-64`
 
 **Step 1: Add AI Assistant to BUILT_IN_PLUGINS array**
@@ -38,6 +39,7 @@ Expected: AI Assistant card appears in the Built-in section with name, version, 
 
 Click "Configure" on the AI Assistant card.
 Expected: Three config fields appear:
+
 - API Key (text input)
 - Model (dropdown: Claude Sonnet 4.5 / Claude Haiku 4.5)
 - Max Context Notes (range slider 1-20)
@@ -65,6 +67,7 @@ git commit -m "fix(settings): add AI Assistant to built-in plugins list, remove 
 ### Task 2: Refactor PluginsSection to Query Runtime Plugins
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx`
 - Modify: `apps/desktop/src/preload/index.ts` (add new IPC method)
 - Modify: `apps/desktop/src/main/index.ts` (add IPC handler)
@@ -157,6 +160,7 @@ git commit -m "refactor(settings): derive built-in plugin list from runtime mani
 ### Task 3: Implement Web Sharing Backend + IPC
 
 **Files:**
+
 - Modify: `apps/desktop/src/main/handlers/shareHandlers.ts` (already exists, needs implementation)
 - Modify: `apps/desktop/src/main/index.ts` (verify handler registration)
 - Create: Cloudflare Worker for share API (separate repo or `packages/api/`)
@@ -168,6 +172,7 @@ Read `apps/desktop/src/main/handlers/shareHandlers.ts` — it likely has the str
 **Step 2: Implement share:create handler**
 
 The handler should:
+
 1. Generate a random slug (8 chars, alphanumeric)
 2. POST to `https://api.readied.app/share` with `{ slug, title, content }`
 3. Return `{ success: true, url: 'https://readied.app/shared?slug=xxx', slug }`
@@ -181,26 +186,29 @@ function generateSlug(): string {
   return crypto.randomBytes(4).toString('hex');
 }
 
-ipcMain.handle('share:create', async (_event, input: { noteId: string; title: string; content: string }) => {
-  try {
-    const slug = generateSlug();
-    const response = await fetch('https://api.readied.app/share', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, title: input.title, content: input.content }),
-    });
+ipcMain.handle(
+  'share:create',
+  async (_event, input: { noteId: string; title: string; content: string }) => {
+    try {
+      const slug = generateSlug();
+      const response = await fetch('https://api.readied.app/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, title: input.title, content: input.content }),
+      });
 
-    if (!response.ok) {
-      return { success: false, error: `API error: ${response.status}` };
+      if (!response.ok) {
+        return { success: false, error: `API error: ${response.status}` };
+      }
+
+      const url = `https://readied.app/shared?slug=${slug}`;
+      clipboard.writeText(url);
+      return { success: true, url, slug };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
     }
-
-    const url = `https://readied.app/shared?slug=${slug}`;
-    clipboard.writeText(url);
-    return { success: true, url, slug };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
   }
-});
+);
 ```
 
 **Step 3: Implement share:delete handler**
@@ -211,7 +219,10 @@ ipcMain.handle('share:delete', async (_event, slug: string) => {
     const response = await fetch(`https://api.readied.app/share/${slug}`, {
       method: 'DELETE',
     });
-    return { success: response.ok, error: response.ok ? undefined : `API error: ${response.status}` };
+    return {
+      success: response.ok,
+      error: response.ok ? undefined : `API error: ${response.status}`,
+    };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
@@ -231,12 +242,16 @@ export default {
 
     // POST /share — create
     if (request.method === 'POST' && url.pathname === '/share') {
-      const body = await request.json() as { slug: string; title: string; content: string };
-      await env.SHARES.put(body.slug, JSON.stringify({
-        title: body.title,
-        content: body.content,
-        createdAt: new Date().toISOString(),
-      }), { expirationTtl: 60 * 60 * 24 * 30 }); // 30 days
+      const body = (await request.json()) as { slug: string; title: string; content: string };
+      await env.SHARES.put(
+        body.slug,
+        JSON.stringify({
+          title: body.title,
+          content: body.content,
+          createdAt: new Date().toISOString(),
+        }),
+        { expirationTtl: 60 * 60 * 24 * 30 }
+      ); // 30 days
       return new Response(JSON.stringify({ ok: true }), { headers: cors });
     }
 
@@ -281,6 +296,7 @@ git commit -m "feat(share): implement web sharing IPC handlers"
 ### Task 4: Tables Plugin (Basic)
 
 **Files:**
+
 - Create: `apps/desktop/src/renderer/plugins/tables.tsx`
 - Modify: `apps/desktop/src/renderer/plugins/index.ts` (add to builtInPlugins)
 
@@ -371,6 +387,7 @@ git commit -m "feat(plugins): add tables plugin with insert table command"
 ### Task 5: Settings Plugins UI Overhaul
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx`
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/Section.module.css`
 
@@ -397,7 +414,7 @@ const [activeTab, setActiveTab] = useState<'installed' | 'browse'>('installed');
   >
     Browse
   </button>
-</div>
+</div>;
 ```
 
 The "Browse" tab shows a placeholder message for now (marketplace comes in Phase 2).
@@ -440,6 +457,7 @@ The "Browse" tab shows a placeholder message for now (marketplace comes in Phase
 **Step 3: Improve plugin card design**
 
 Update `.pluginCard` styles for better visual hierarchy:
+
 - Add subtle left border accent for enabled plugins
 - Better spacing between name/version/description
 - Config section with smoother accordion animation
@@ -452,21 +470,24 @@ Add a search input that filters plugins by name/description:
 ```tsx
 const [search, setSearch] = useState('');
 const filteredBuiltIn = builtInPluginInfos.filter(
-  p => p.name.toLowerCase().includes(search.toLowerCase()) ||
-       p.description.toLowerCase().includes(search.toLowerCase())
+  p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.description.toLowerCase().includes(search.toLowerCase())
 );
 ```
 
 **Step 5: Add "Browse" tab placeholder**
 
 ```tsx
-{activeTab === 'browse' && (
-  <div className={styles.pluginBrowsePlaceholder}>
-    <Puzzle size={48} />
-    <h3>Plugin Marketplace</h3>
-    <p>Browse and install community plugins. Coming soon.</p>
-  </div>
-)}
+{
+  activeTab === 'browse' && (
+    <div className={styles.pluginBrowsePlaceholder}>
+      <Puzzle size={48} />
+      <h3>Plugin Marketplace</h3>
+      <p>Browse and install community plugins. Coming soon.</p>
+    </div>
+  );
+}
 ```
 
 **Step 6: Verify**
