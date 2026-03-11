@@ -54,4 +54,8 @@ export type { SyncStorage, SyncEngineConfig } from './engine.js';
 export { SyncEngine } from './engine.js';
 
 // Tree validation
-export { validateNotebookTree, type TreeNode, type TreeValidationResult } from './treeValidation.js';
+export {
+  validateNotebookTree,
+  type TreeNode,
+  type TreeValidationResult,
+} from './treeValidation.js';

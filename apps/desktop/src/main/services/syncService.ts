@@ -199,7 +199,9 @@ export class SyncService {
       const validChanges = pendingChanges.filter(({ notebook }) => {
         const validation = this.notebookRepository.validateForSync(createNotebookId(notebook.id));
         if (!validation.valid) {
-          console.warn(`[notebook-sync] Skipping invalid notebook ${notebook.id}: ${validation.error}`);
+          console.warn(
+            `[notebook-sync] Skipping invalid notebook ${notebook.id}: ${validation.error}`
+          );
         }
         return validation.valid;
       });
@@ -371,7 +373,8 @@ export class SyncService {
       return {
         success: true,
         changesApplied: pullResult.changes.length + (nbPullResult.changes?.length ?? 0),
-        changesPushed: changesPushed + (nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0),
+        changesPushed:
+          changesPushed + (nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0),
         conflicts: pullResult.conflicts,
       };
     } catch (error) {

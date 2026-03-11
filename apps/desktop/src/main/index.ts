@@ -2282,7 +2282,12 @@ app
         encryptionService = new EncryptionService(dataPaths.root);
         await encryptionService.initialize();
 
-        syncService = new SyncService(apiClient, encryptionService, noteRepository, notebookRepository);
+        syncService = new SyncService(
+          apiClient,
+          encryptionService,
+          noteRepository,
+          notebookRepository
+        );
 
         // Register license handlers with dependencies
         if (licenseStorage) {

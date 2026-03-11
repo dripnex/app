@@ -274,17 +274,29 @@ function validateNotebookTree(
     };
 
     if (parsed.depth > 2) {
-      return { valid: false, error: `depth exceeds max (2), got ${parsed.depth}`, notebookId: change.notebookId };
+      return {
+        valid: false,
+        error: `depth exceeds max (2), got ${parsed.depth}`,
+        notebookId: change.notebookId,
+      };
     }
     if (parsed.parentId && !tree.has(parsed.parentId)) {
-      return { valid: false, error: `parentId '${parsed.parentId}' not found`, notebookId: change.notebookId };
+      return {
+        valid: false,
+        error: `parentId '${parsed.parentId}' not found`,
+        notebookId: change.notebookId,
+      };
     }
     if (parsed.parentId) {
       const visited = new Set<string>([change.notebookId]);
       let current: string | null = parsed.parentId;
       while (current) {
         if (visited.has(current)) {
-          return { valid: false, error: 'circular reference detected', notebookId: change.notebookId };
+          return {
+            valid: false,
+            error: 'circular reference detected',
+            notebookId: change.notebookId,
+          };
         }
         visited.add(current);
         current = tree.get(current)?.parentId ?? null;
@@ -298,7 +310,7 @@ function validateNotebookTree(
 // Pull notebook changes
 sync.get('/notebooks', zValidator('query', pullSchema), async c => {
   const { cursor, limit } = c.req.valid('query');
-  const { userId, deviceId } = c.get('user');
+  const { userId } = c.get('user');
   const db = createDb(c.env);
 
   const [sub] = await db
@@ -369,12 +381,17 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
   // Validate tree integrity
   const validation = validateNotebookTree(changes, latestByNotebook);
   if (!validation.valid) {
-    console.warn(`[notebook-sync] Tree validation failed for user ${userId}: ${validation.error} (notebook: ${validation.notebookId})`);
-    return c.json({
-      error: 'Tree validation failed',
-      detail: validation.error,
-      notebookId: validation.notebookId,
-    }, 422);
+    console.warn(
+      `[notebook-sync] Tree validation failed for user ${userId}: ${validation.error} (notebook: ${validation.notebookId})`
+    );
+    return c.json(
+      {
+        error: 'Tree validation failed',
+        detail: validation.error,
+        notebookId: validation.notebookId,
+      },
+      422
+    );
   }
 
   // Process changes in transaction
@@ -397,7 +414,9 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
       const [latestEntry] = await tx
         .select()
         .from(notebookSyncLog)
-        .where(and(eq(notebookSyncLog.userId, userId), eq(notebookSyncLog.notebookId, change.notebookId)))
+        .where(
+          and(eq(notebookSyncLog.userId, userId), eq(notebookSyncLog.notebookId, change.notebookId))
+        )
         .orderBy(desc(notebookSyncLog.version))
         .limit(1);
 
