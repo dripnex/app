@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import type { LayoutManager } from './layout/types';
 import type { EditorDecorationAPI } from './editor/decorationAPI';
 import type { CodeBlockRendererProps } from './preview/codeBlockStore';
+import type { DataAPI } from './data/createDataAPI';
 
 /** Controlled subset of editor operations for plugins */
 export interface EditorAPI {
@@ -136,6 +137,8 @@ export interface PluginContext {
   config: PluginConfigAPI;
   log: PluginLogger;
   app: AppAPI;
+  /** Rich data query API for notes, notebooks, tags, links, and graph */
+  data: DataAPI;
 }
 
 export interface PluginManifest {
