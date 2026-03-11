@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { EditorView } from '@codemirror/view';
 import type { PluginManifest, EditorAPI, AppAPI } from '../types';
+import type { DataAPI } from '../data/createDataAPI';
 import { PLUGIN_API_VERSION } from '../apiVersion';
 import { PluginRegistry, type RegisterCommandFn, type ConfigBridge } from './PluginRegistry';
 import { sortPlugins } from './sortPlugins';
@@ -9,6 +10,7 @@ interface PluginHostProps {
   plugins: PluginManifest[];
   editorAPI: EditorAPI;
   appAPI: AppAPI;
+  dataAPI: DataAPI;
   registerCommand?: RegisterCommandFn;
   configBridge?: ConfigBridge;
   getView?: () => EditorView | null;
@@ -33,6 +35,7 @@ export function PluginHost({
   plugins,
   editorAPI,
   appAPI,
+  dataAPI,
   registerCommand,
   configBridge,
   getView,
@@ -77,6 +80,7 @@ export function PluginHost({
             manifest.id,
             editorAPI,
             appAPI,
+            dataAPI,
             registerCommand,
             configBridge,
             getView
@@ -98,7 +102,7 @@ export function PluginHost({
         registry.unload(manifest.id);
       }
     };
-  }, [plugins, editorAPI, appAPI, registerCommand, configBridge, getView]);
+  }, [plugins, editorAPI, appAPI, dataAPI, registerCommand, configBridge, getView]);
 
   // Headless - renders nothing
   return null;

@@ -10,6 +10,7 @@ import type {
   AppAPI,
   PluginCommandOptions,
 } from '../types';
+import type { DataAPI } from '../data/createDataAPI';
 import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
 import { createDecorationAPI } from '../editor/decorationAPI';
@@ -92,6 +93,7 @@ export class PluginRegistry {
     id: string,
     editorAPI: EditorAPI,
     appAPI: AppAPI,
+    dataAPI: DataAPI,
     registerCommandFn?: RegisterCommandFn,
     configBridge?: ConfigBridge,
     getView?: () => EditorView | null
@@ -224,6 +226,37 @@ export class PluginRegistry {
       },
     };
 
+    const trackedData: DataAPI = {
+      ...dataAPI,
+      onNotesChanged(callback) {
+        const unsub = dataAPI.onNotesChanged(callback);
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onNotebooksChanged(callback) {
+        const unsub = dataAPI.onNotebooksChanged(callback);
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onTagsChanged(callback) {
+        const unsub = dataAPI.onTagsChanged(callback);
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+    };
+
     const context: PluginContext = {
       layout: createLayoutManager(id),
       editor: trackedEditor,
@@ -279,6 +312,7 @@ export class PluginRegistry {
         error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
       },
       app: trackedApp,
+      data: trackedData,
     };
 
     try {
