@@ -46,6 +46,15 @@ export type { CodeBlockRegistration, CodeBlockRendererProps } from './preview/co
 export { cssVariableStore } from './theme/cssVariableStore';
 export type { CssVariableRegistration } from './theme/cssVariableStore';
 export { useCssVariables } from './theme/useCssVariables';
+export { useThemeOverrides } from './theme/useThemeOverrides';
+export { themeRegistryStore } from './theme/themeRegistryStore';
+export {
+  isValidThemeToken,
+  validateThemeTokens,
+  CORE_THEME_TOKENS,
+  THEME_EXTENSION_SCOPES,
+} from './theme/themeTypes';
+export type { ThemeDefinition } from './theme/themeTypes';
 
 // Validation
 export { validateManifest, assertValidManifest } from './validation';

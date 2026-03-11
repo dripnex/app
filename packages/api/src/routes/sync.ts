@@ -398,66 +398,71 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
   }
 
   // Process changes in transaction
-  const { results: notebookResults, finalCursor: notebookFinalCursor } = await db.transaction(async tx => {
-    const [maxVersionResult] = await tx
-      .select({ maxVersion: sql<number>`COALESCE(MAX(${notebookSyncLog.version}), 0)` })
-      .from(notebookSyncLog)
-      .where(eq(notebookSyncLog.userId, userId));
-
-    let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
-
-    const txResults: Array<{
-      notebookId: string;
-      version: number;
-      status: 'applied' | 'conflict';
-      serverVersion?: number;
-    }> = [];
-
-    for (const change of changes) {
-      const [latestEntry] = await tx
-        .select()
+  const { results: notebookResults, finalCursor: notebookFinalCursor } = await db.transaction(
+    async tx => {
+      const [maxVersionResult] = await tx
+        .select({ maxVersion: sql<number>`COALESCE(MAX(${notebookSyncLog.version}), 0)` })
         .from(notebookSyncLog)
-        .where(
-          and(eq(notebookSyncLog.userId, userId), eq(notebookSyncLog.notebookId, change.notebookId))
-        )
-        .orderBy(desc(notebookSyncLog.version))
-        .limit(1);
+        .where(eq(notebookSyncLog.userId, userId));
 
-      if (
-        latestEntry &&
-        latestEntry.deviceId !== deviceId &&
-        change.localVersion !== undefined &&
-        latestEntry.version > change.localVersion
-      ) {
+      let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
+
+      const txResults: Array<{
+        notebookId: string;
+        version: number;
+        status: 'applied' | 'conflict';
+        serverVersion?: number;
+      }> = [];
+
+      for (const change of changes) {
+        const [latestEntry] = await tx
+          .select()
+          .from(notebookSyncLog)
+          .where(
+            and(
+              eq(notebookSyncLog.userId, userId),
+              eq(notebookSyncLog.notebookId, change.notebookId)
+            )
+          )
+          .orderBy(desc(notebookSyncLog.version))
+          .limit(1);
+
+        if (
+          latestEntry &&
+          latestEntry.deviceId !== deviceId &&
+          change.localVersion !== undefined &&
+          latestEntry.version > change.localVersion
+        ) {
+          txResults.push({
+            notebookId: change.notebookId,
+            version: latestEntry.version,
+            status: 'conflict',
+            serverVersion: latestEntry.version,
+          });
+          continue;
+        }
+
+        await tx.insert(notebookSyncLog).values({
+          userId,
+          notebookId: change.notebookId,
+          version: nextVersion,
+          operation: change.operation,
+          data: change.data ?? null,
+          deviceId,
+        });
+
         txResults.push({
           notebookId: change.notebookId,
-          version: latestEntry.version,
-          status: 'conflict',
-          serverVersion: latestEntry.version,
+          version: nextVersion,
+          status: 'applied',
         });
-        continue;
+
+        nextVersion++;
       }
 
-      await tx.insert(notebookSyncLog).values({
-        userId,
-        notebookId: change.notebookId,
-        version: nextVersion,
-        operation: change.operation,
-        data: change.data ?? null,
-        deviceId,
-      });
-
-      txResults.push({
-        notebookId: change.notebookId,
-        version: nextVersion,
-        status: 'applied',
-      });
-
-      nextVersion++;
+      return { results: txResults, finalCursor: nextVersion - 1 };
     }
-
-    return { results: txResults, finalCursor: nextVersion - 1 };
-  });
+  );
 
   return c.json({ results: notebookResults, cursor: notebookFinalCursor });
 });
