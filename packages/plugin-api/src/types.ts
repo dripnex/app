@@ -109,6 +109,16 @@ export interface PluginCommandOptions {
   showInPalette?: boolean;
 }
 
+/** Options for registering a remark/rehype plugin */
+export interface PluginHookOptions {
+  /** Display name for debugging (defaults to pluginId) */
+  name?: string;
+  /** Plugin version for debugging */
+  version?: string;
+  /** Execution priority — lower runs first. Default: 100 */
+  priority?: number;
+}
+
 export interface PluginContext {
   layout: LayoutManager;
   editor: EditorAPI;
@@ -119,9 +129,9 @@ export interface PluginContext {
     execute: () => boolean | void | Promise<boolean | void>
   ): () => void;
   /** Register a remark (mdast) plugin for the markdown preview pipeline */
-  registerRemarkPlugin(id: string, plugin: unknown): () => void;
+  registerRemarkPlugin(id: string, plugin: unknown, options?: PluginHookOptions): () => void;
   /** Register a rehype (hast) plugin for the markdown preview pipeline */
-  registerRehypePlugin(id: string, plugin: unknown): () => void;
+  registerRehypePlugin(id: string, plugin: unknown, options?: PluginHookOptions): () => void;
   /** Register a custom React component to replace an HTML element in the preview */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   registerPreviewComponent(id: string, tagName: string, component: ComponentType<any>): () => void;

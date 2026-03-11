@@ -13,6 +13,7 @@ export type {
   PluginConfigAPI,
   PluginLogger,
   PluginCommandOptions,
+  PluginHookOptions,
 } from './types';
 
 // Layout
