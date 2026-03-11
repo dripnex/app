@@ -558,6 +558,34 @@ export interface ReadiedAPI {
     /** Open checkout page */
     openCheckout: () => Promise<{ success: boolean; error?: string }>;
   };
+  devices: {
+    /** List all registered devices */
+    list: () => Promise<Array<{
+      id: string;
+      deviceId: string;
+      name: string | null;
+      platform: string | null;
+      isCurrent: boolean;
+      lastSeenAt: string;
+      createdAt: string;
+    }>>;
+    /** Rename a device */
+    rename: (deviceId: string, name: string) => Promise<{ success: boolean; error?: string }>;
+    /** Revoke (delete) a device */
+    revoke: (deviceId: string) => Promise<{ success: boolean; error?: string }>;
+    /** Revoke all devices except current */
+    revokeOthers: () => Promise<{ success: boolean; revokedCount?: number; error?: string }>;
+    /** Get current device info */
+    getCurrent: () => Promise<{
+      id: string;
+      deviceId: string;
+      name: string | null;
+      platform: string | null;
+      isCurrent: boolean;
+      lastSeenAt: string;
+      createdAt: string;
+    } | null>;
+  };
   settings: {
     /** Broadcast settings change to all other windows */
     broadcast: (settings: Record<string, unknown>) => void;
@@ -833,6 +861,13 @@ const api: ReadiedAPI = {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
     openPortal: returnUrl => ipcRenderer.invoke('subscription:openPortal', returnUrl),
     openCheckout: () => ipcRenderer.invoke('subscription:openCheckout'),
+  },
+  devices: {
+    list: () => ipcRenderer.invoke('devices:list'),
+    rename: (deviceId: string, name: string) => ipcRenderer.invoke('devices:rename', deviceId, name),
+    revoke: (deviceId: string) => ipcRenderer.invoke('devices:revoke', deviceId),
+    revokeOthers: () => ipcRenderer.invoke('devices:revokeOthers'),
+    getCurrent: () => ipcRenderer.invoke('devices:getCurrent'),
   },
   settings: {
     broadcast: (settings: Record<string, unknown>) => {
