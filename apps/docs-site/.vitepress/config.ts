@@ -99,7 +99,7 @@ export default defineConfig({
 
     footer: {
       message:
-        '<a href="https://github.com/tomymaritano/readide/issues/new" target="_blank">Report an issue</a>',
+        '<a href="https://github.com/tomymaritano/readide/issues/new?template=bug_report.md" target="_blank">Report a Bug</a> · <a href="https://github.com/tomymaritano/readide/contribute" target="_blank">Contribute</a> · <a href="https://github.com/tomymaritano/readide" target="_blank">GitHub</a>',
       copyright: 'Copyright © 2025 Readied. All Rights Reserved.',
     },
 
