@@ -226,7 +226,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI, registerCommandFn);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn
+      );
 
       expect(registerCommandFn).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'plugin:test-plugin:toggle' })
@@ -244,7 +250,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI, registerCommandFn);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn
+      );
 
       expect(registerCommandFn).toHaveBeenCalledWith(
         expect.objectContaining({ showInPalette: true })
@@ -263,7 +275,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI, registerCommandFn);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn
+      );
       registry.deactivate('test-plugin');
 
       expect(unregister).toHaveBeenCalledOnce();

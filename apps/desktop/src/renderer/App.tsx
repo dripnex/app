@@ -194,23 +194,34 @@ function NotesApp() {
     () =>
       createDataAPI({
         async getNotes(options) {
-          const notes = await window.readied.notes.list(options ? {
-            limit: options.limit,
-            offset: options.offset,
-            tag: options.tag,
-            sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
-            sortOrder: options.sortOrder,
-          } : undefined);
+          const notes = await window.readied.notes.list(
+            options
+              ? {
+                  limit: options.limit,
+                  offset: options.offset,
+                  tag: options.tag,
+                  sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
+                  sortOrder: options.sortOrder,
+                }
+              : undefined
+          );
           let filtered = notes;
-          if (options?.notebookId) filtered = filtered.filter(n => n.notebookId === options.notebookId);
+          if (options?.notebookId)
+            filtered = filtered.filter(n => n.notebookId === options.notebookId);
           if (options?.status) filtered = filtered.filter(n => n.status === options.status);
-          if (options?.isPinned !== undefined) filtered = filtered.filter(n => n.isPinned === options.isPinned);
+          if (options?.isPinned !== undefined)
+            filtered = filtered.filter(n => n.isPinned === options.isPinned);
           return {
             notes: filtered.map(n => ({
-              id: n.id, title: n.title, notebookId: n.notebookId,
-              tags: [...n.tags], wordCount: n.wordCount,
-              createdAt: n.createdAt, updatedAt: n.updatedAt,
-              isPinned: n.isPinned, status: n.status,
+              id: n.id,
+              title: n.title,
+              notebookId: n.notebookId,
+              tags: [...n.tags],
+              wordCount: n.wordCount,
+              createdAt: n.createdAt,
+              updatedAt: n.updatedAt,
+              isPinned: n.isPinned,
+              status: n.status,
             })),
             total: filtered.length,
           };
@@ -236,9 +247,19 @@ function NotesApp() {
           return notebooks.map(nb => ({ id: nb.id, name: nb.name, parentId: nb.parentId }));
         },
         async getNotebookTree() {
-          type TreeNode = { id: string; name: string; parentId: string | null; noteCount: number; childCount: number; children: TreeNode[] };
+          type TreeNode = {
+            id: string;
+            name: string;
+            parentId: string | null;
+            noteCount: number;
+            childCount: number;
+            children: TreeNode[];
+          };
           const tree = await window.readied.notebooks.tree();
-          const mapNode = (node: { notebook: { id: string; name: string; parentId: string | null }; children: unknown[] }): TreeNode => ({
+          const mapNode = (node: {
+            notebook: { id: string; name: string; parentId: string | null };
+            children: unknown[];
+          }): TreeNode => ({
             id: node.notebook.id,
             name: node.notebook.name,
             parentId: node.notebook.parentId,
@@ -252,8 +273,11 @@ function NotesApp() {
           const nb = await window.readied.notebooks.getWithMetadata(id);
           if (!nb) return null;
           return {
-            id: nb.id, name: nb.name, parentId: nb.parentId,
-            noteCount: nb.noteCount, childCount: nb.childCount,
+            id: nb.id,
+            name: nb.name,
+            parentId: nb.parentId,
+            noteCount: nb.noteCount,
+            childCount: nb.childCount,
           };
         },
         async getTags() {

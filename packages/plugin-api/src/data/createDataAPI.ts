@@ -175,7 +175,7 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
           const filteredNodes = graph.nodes.filter(n => n.notebookId === options.notebookId);
           const nodeIds = new Set(filteredNodes.map(n => n.id));
           const filteredEdges = graph.edges.filter(
-            e => nodeIds.has(e.source) && nodeIds.has(e.target),
+            e => nodeIds.has(e.source) && nodeIds.has(e.target)
           );
           return { nodes: filteredNodes, edges: filteredEdges };
         }

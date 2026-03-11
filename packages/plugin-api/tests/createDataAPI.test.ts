@@ -25,7 +25,19 @@ function makeBridge(overrides: Partial<DataAPIBridge> = {}): DataAPIBridge {
 describe('createDataAPI', () => {
   describe('getNotes', () => {
     it('delegates to bridge and computes hasMore', async () => {
-      const notes = [{ id: '1', title: 'A', notebookId: 'nb', tags: [], wordCount: 10, createdAt: '', updatedAt: '', isPinned: false, status: 'active' }];
+      const notes = [
+        {
+          id: '1',
+          title: 'A',
+          notebookId: 'nb',
+          tags: [],
+          wordCount: 10,
+          createdAt: '',
+          updatedAt: '',
+          isPinned: false,
+          status: 'active',
+        },
+      ];
       const api = createDataAPI(makeBridge({ getNotes: async () => ({ notes, total: 5 }) }));
       const result = await api.getNotes({ limit: 2, offset: 0 });
       expect(result.notes).toEqual(notes);
@@ -34,7 +46,26 @@ describe('createDataAPI', () => {
     });
 
     it('hasMore is false when all notes returned', async () => {
-      const api = createDataAPI(makeBridge({ getNotes: async () => ({ notes: [{ id: '1', title: 'A', notebookId: 'nb', tags: [], wordCount: 0, createdAt: '', updatedAt: '', isPinned: false, status: 'active' }], total: 1 }) }));
+      const api = createDataAPI(
+        makeBridge({
+          getNotes: async () => ({
+            notes: [
+              {
+                id: '1',
+                title: 'A',
+                notebookId: 'nb',
+                tags: [],
+                wordCount: 0,
+                createdAt: '',
+                updatedAt: '',
+                isPinned: false,
+                status: 'active',
+              },
+            ],
+            total: 1,
+          }),
+        })
+      );
       const result = await api.getNotes();
       expect(result.hasMore).toBe(false);
     });
@@ -57,7 +88,9 @@ describe('createDataAPI', () => {
     });
 
     it('returns tree when tree option is true', async () => {
-      const tree = [{ id: 'nb-1', name: 'Root', parentId: null, noteCount: 5, childCount: 1, children: [] }];
+      const tree = [
+        { id: 'nb-1', name: 'Root', parentId: null, noteCount: 5, childCount: 1, children: [] },
+      ];
       const api = createDataAPI(makeBridge({ getNotebookTree: async () => tree }));
       const result = await api.getNotebooks({ tree: true });
       expect(result).toEqual(tree);
@@ -72,15 +105,25 @@ describe('createDataAPI', () => {
     });
 
     it('includes colors when requested', async () => {
-      const api = createDataAPI(makeBridge({
-        getTagsWithColors: async () => [{ name: 'js', color: '#ff0' }, { name: 'go', color: null }],
-      }));
+      const api = createDataAPI(
+        makeBridge({
+          getTagsWithColors: async () => [
+            { name: 'js', color: '#ff0' },
+            { name: 'go', color: null },
+          ],
+        })
+      );
       const result = await api.getTags({ includeColors: true });
-      expect(result).toEqual([{ name: 'js', color: '#ff0' }, { name: 'go', color: null }]);
+      expect(result).toEqual([
+        { name: 'js', color: '#ff0' },
+        { name: 'go', color: null },
+      ]);
     });
 
     it('filters by case-insensitive substring', async () => {
-      const api = createDataAPI(makeBridge({ getTags: async () => ['JavaScript', 'Java', 'Python'] }));
+      const api = createDataAPI(
+        makeBridge({ getTags: async () => ['JavaScript', 'Java', 'Python'] })
+      );
       const result = await api.getTags({ filter: 'java' });
       expect(result.map(t => t.name)).toEqual(['JavaScript', 'Java']);
     });
@@ -128,17 +171,25 @@ describe('createDataAPI', () => {
 
   describe('error handling', () => {
     it('wraps bridge errors as DataAccessError', async () => {
-      const api = createDataAPI(makeBridge({
-        getNotes: async () => { throw new Error('IPC timeout'); },
-      }));
+      const api = createDataAPI(
+        makeBridge({
+          getNotes: async () => {
+            throw new Error('IPC timeout');
+          },
+        })
+      );
       await expect(api.getNotes()).rejects.toThrow(DataAccessError);
       await expect(api.getNotes()).rejects.toThrow('[DataAPI.getNotes] IPC timeout');
     });
 
     it('wraps non-Error throws', async () => {
-      const api = createDataAPI(makeBridge({
-        getNote: async () => { throw 'string error'; },
-      }));
+      const api = createDataAPI(
+        makeBridge({
+          getNote: async () => {
+            throw 'string error';
+          },
+        })
+      );
       await expect(api.getNote('1')).rejects.toThrow('[DataAPI.getNote] string error');
     });
   });
@@ -164,8 +215,18 @@ describe('createDataAPI', () => {
       const api = createDataAPI(makeBridge());
       const cb = vi.fn();
       api.onTagsChanged(cb);
-      api._notifyTagsChanged({ kind: 'tag', action: 'renamed', id: 'new-name', previousName: 'old-name' });
-      expect(cb).toHaveBeenCalledWith({ kind: 'tag', action: 'renamed', id: 'new-name', previousName: 'old-name' });
+      api._notifyTagsChanged({
+        kind: 'tag',
+        action: 'renamed',
+        id: 'new-name',
+        previousName: 'old-name',
+      });
+      expect(cb).toHaveBeenCalledWith({
+        kind: 'tag',
+        action: 'renamed',
+        id: 'new-name',
+        previousName: 'old-name',
+      });
     });
 
     it('unsubscribe stops listener', () => {

@@ -100,7 +100,7 @@ export interface DataChangeEvent<T extends 'note' | 'notebook' | 'tag'> {
 export class DataAccessError extends Error {
   constructor(
     public readonly method: string,
-    message: string,
+    message: string
   ) {
     super(`[DataAPI.${method}] ${message}`);
     this.name = 'DataAccessError';

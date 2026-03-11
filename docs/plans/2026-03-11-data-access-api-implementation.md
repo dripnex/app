@@ -13,6 +13,7 @@
 ### Task 1: Data types — query options and result types
 
 **Files:**
+
 - Create: `packages/plugin-api/src/data/dataTypes.ts`
 - Test: `packages/plugin-api/tests/dataTypes.test.ts`
 
@@ -123,7 +124,7 @@ export interface DataChangeEvent<T extends 'note' | 'notebook' | 'tag'> {
 export class DataAccessError extends Error {
   constructor(
     public readonly method: string,
-    message: string,
+    message: string
   ) {
     super(`[DataAPI.${method}] ${message}`);
     this.name = 'DataAccessError';
@@ -178,6 +179,7 @@ git commit -m "feat(plugin-api): add DataAPI types, query options, and DataAcces
 ### Task 2: DataAPI interface and DataAPIBridge
 
 **Files:**
+
 - Create: `packages/plugin-api/src/data/createDataAPI.ts`
 - Modify: `packages/plugin-api/src/types.ts:112-148` (add `data: DataAPI` to PluginContext)
 
@@ -240,7 +242,9 @@ export interface DataAPIWithEvents extends DataAPI {
 // ── Bridge (injected by host, thin IPC wrapper) ─────
 
 export interface DataAPIBridge {
-  getNotes(options?: NoteQueryOptions): Promise<{ notes: import('./dataTypes').NoteSummaryInfo[]; total: number }>;
+  getNotes(
+    options?: NoteQueryOptions
+  ): Promise<{ notes: import('./dataTypes').NoteSummaryInfo[]; total: number }>;
   getNote(id: string): Promise<NoteInfo | null>;
   searchNotes(query: string, options?: SearchOptions): Promise<SearchResult>;
   countNotes(options?: { notebookId?: string; tag?: string }): Promise<number>;
@@ -275,10 +279,7 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
   return {
     // ── Notes ─────────────────────────────────────
     async getNotes(options) {
-      const { notes, total } = await safeBridgeCall(
-        () => bridge.getNotes(options),
-        'getNotes',
-      );
+      const { notes, total } = await safeBridgeCall(() => bridge.getNotes(options), 'getNotes');
       const limit = options?.limit ?? 50;
       const offset = options?.offset ?? 0;
       return { notes, total, hasMore: offset + notes.length < total };
@@ -353,9 +354,7 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
       // Client-side filtering by notebook
       if (options?.notebookId) {
         const nodeIds = new Set(
-          graph.nodes
-            .filter(n => n.notebookId === options.notebookId)
-            .map(n => n.id),
+          graph.nodes.filter(n => n.notebookId === options.notebookId).map(n => n.id)
         );
         return {
           nodes: graph.nodes.filter(n => nodeIds.has(n.id)),
@@ -369,15 +368,21 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
     // ── Events ────────────────────────────────────
     onNotesChanged(cb) {
       notesChangedListeners.add(cb);
-      return () => { notesChangedListeners.delete(cb); };
+      return () => {
+        notesChangedListeners.delete(cb);
+      };
     },
     onNotebooksChanged(cb) {
       notebooksChangedListeners.add(cb);
-      return () => { notebooksChangedListeners.delete(cb); };
+      return () => {
+        notebooksChangedListeners.delete(cb);
+      };
     },
     onTagsChanged(cb) {
       tagsChangedListeners.add(cb);
-      return () => { tagsChangedListeners.delete(cb); };
+      return () => {
+        tagsChangedListeners.delete(cb);
+      };
     },
 
     // ── Internal notify (called by host) ──────────
@@ -403,8 +408,8 @@ In `packages/plugin-api/src/types.ts`, add an import and the `data` field:
 import type { DataAPI } from './data/createDataAPI';
 
 // In PluginContext interface (after `app: AppAPI;`), add:
-  /** Rich data query API for notes, notebooks, tags, links, and graph */
-  data: DataAPI;
+/** Rich data query API for notes, notebooks, tags, links, and graph */
+data: DataAPI;
 ```
 
 **Step 3: Run typecheck**
@@ -424,6 +429,7 @@ git commit -m "feat(plugin-api): add DataAPI interface, bridge, and createDataAP
 ### Task 3: Unit tests for createDataAPI
 
 **Files:**
+
 - Create: `packages/plugin-api/tests/createDataAPI.test.ts`
 
 **Context:** Follow the pattern from `createAppAPI.test.ts`. Mock the bridge, test delegation, error wrapping, tag filtering, graph filtering, and events.
@@ -458,7 +464,19 @@ function makeBridge(overrides: Partial<DataAPIBridge> = {}): DataAPIBridge {
 describe('createDataAPI', () => {
   describe('getNotes', () => {
     it('delegates to bridge and computes hasMore', async () => {
-      const notes = [{ id: '1', title: 'A', notebookId: 'nb', tags: [], wordCount: 10, createdAt: '', updatedAt: '', isPinned: false, status: 'active' }];
+      const notes = [
+        {
+          id: '1',
+          title: 'A',
+          notebookId: 'nb',
+          tags: [],
+          wordCount: 10,
+          createdAt: '',
+          updatedAt: '',
+          isPinned: false,
+          status: 'active',
+        },
+      ];
       const api = createDataAPI(makeBridge({ getNotes: async () => ({ notes, total: 5 }) }));
       const result = await api.getNotes({ limit: 2, offset: 0 });
       expect(result.notes).toEqual(notes);
@@ -467,7 +485,26 @@ describe('createDataAPI', () => {
     });
 
     it('hasMore is false when all notes returned', async () => {
-      const api = createDataAPI(makeBridge({ getNotes: async () => ({ notes: [{ id: '1', title: 'A', notebookId: 'nb', tags: [], wordCount: 0, createdAt: '', updatedAt: '', isPinned: false, status: 'active' }], total: 1 }) }));
+      const api = createDataAPI(
+        makeBridge({
+          getNotes: async () => ({
+            notes: [
+              {
+                id: '1',
+                title: 'A',
+                notebookId: 'nb',
+                tags: [],
+                wordCount: 0,
+                createdAt: '',
+                updatedAt: '',
+                isPinned: false,
+                status: 'active',
+              },
+            ],
+            total: 1,
+          }),
+        })
+      );
       const result = await api.getNotes();
       expect(result.hasMore).toBe(false);
     });
@@ -490,7 +527,9 @@ describe('createDataAPI', () => {
     });
 
     it('returns tree when tree option is true', async () => {
-      const tree = [{ id: 'nb-1', name: 'Root', parentId: null, noteCount: 5, childCount: 1, children: [] }];
+      const tree = [
+        { id: 'nb-1', name: 'Root', parentId: null, noteCount: 5, childCount: 1, children: [] },
+      ];
       const api = createDataAPI(makeBridge({ getNotebookTree: async () => tree }));
       const result = await api.getNotebooks({ tree: true });
       expect(result).toEqual(tree);
@@ -505,15 +544,25 @@ describe('createDataAPI', () => {
     });
 
     it('includes colors when requested', async () => {
-      const api = createDataAPI(makeBridge({
-        getTagsWithColors: async () => [{ name: 'js', color: '#ff0' }, { name: 'go', color: null }],
-      }));
+      const api = createDataAPI(
+        makeBridge({
+          getTagsWithColors: async () => [
+            { name: 'js', color: '#ff0' },
+            { name: 'go', color: null },
+          ],
+        })
+      );
       const result = await api.getTags({ includeColors: true });
-      expect(result).toEqual([{ name: 'js', color: '#ff0' }, { name: 'go', color: null }]);
+      expect(result).toEqual([
+        { name: 'js', color: '#ff0' },
+        { name: 'go', color: null },
+      ]);
     });
 
     it('filters by case-insensitive substring', async () => {
-      const api = createDataAPI(makeBridge({ getTags: async () => ['JavaScript', 'Java', 'Python'] }));
+      const api = createDataAPI(
+        makeBridge({ getTags: async () => ['JavaScript', 'Java', 'Python'] })
+      );
       const result = await api.getTags({ filter: 'java' });
       expect(result.map(t => t.name)).toEqual(['JavaScript', 'Java']);
     });
@@ -561,17 +610,25 @@ describe('createDataAPI', () => {
 
   describe('error handling', () => {
     it('wraps bridge errors as DataAccessError', async () => {
-      const api = createDataAPI(makeBridge({
-        getNotes: async () => { throw new Error('IPC timeout'); },
-      }));
+      const api = createDataAPI(
+        makeBridge({
+          getNotes: async () => {
+            throw new Error('IPC timeout');
+          },
+        })
+      );
       await expect(api.getNotes()).rejects.toThrow(DataAccessError);
       await expect(api.getNotes()).rejects.toThrow('[DataAPI.getNotes] IPC timeout');
     });
 
     it('wraps non-Error throws', async () => {
-      const api = createDataAPI(makeBridge({
-        getNote: async () => { throw 'string error'; },
-      }));
+      const api = createDataAPI(
+        makeBridge({
+          getNote: async () => {
+            throw 'string error';
+          },
+        })
+      );
       await expect(api.getNote('1')).rejects.toThrow('[DataAPI.getNote] string error');
     });
   });
@@ -597,8 +654,18 @@ describe('createDataAPI', () => {
       const api = createDataAPI(makeBridge());
       const cb = vi.fn();
       api.onTagsChanged(cb);
-      api._notifyTagsChanged({ kind: 'tag', action: 'renamed', id: 'new-name', previousName: 'old-name' });
-      expect(cb).toHaveBeenCalledWith({ kind: 'tag', action: 'renamed', id: 'new-name', previousName: 'old-name' });
+      api._notifyTagsChanged({
+        kind: 'tag',
+        action: 'renamed',
+        id: 'new-name',
+        previousName: 'old-name',
+      });
+      expect(cb).toHaveBeenCalledWith({
+        kind: 'tag',
+        action: 'renamed',
+        id: 'new-name',
+        previousName: 'old-name',
+      });
     });
 
     it('unsubscribe stops listener', () => {
@@ -630,6 +697,7 @@ git commit -m "test(plugin-api): add comprehensive tests for createDataAPI"
 ### Task 4: Wire DataAPI into PluginRegistry.activate()
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/lifecycle/PluginRegistry.ts:90-98` (add `dataAPI` param to `activate()`)
 - Modify: `packages/plugin-api/src/lifecycle/PluginRegistry.ts:228-290` (add `data: trackedData` to context)
 
@@ -698,7 +766,7 @@ Add `data: trackedData` to the context object (after `app: trackedApp`):
 const context: PluginContext = {
   // ... existing fields ...
   app: trackedApp,
-  data: trackedData,  // NEW
+  data: trackedData, // NEW
 };
 ```
 
@@ -716,7 +784,7 @@ interface PluginHostProps {
   plugins: PluginManifest[];
   editorAPI: EditorAPI;
   appAPI: AppAPI;
-  dataAPI: DataAPI;  // NEW
+  dataAPI: DataAPI; // NEW
   registerCommand?: RegisterCommandFn;
   configBridge?: ConfigBridge;
   getView?: () => EditorView | null;
@@ -795,6 +863,7 @@ git commit -m "feat(plugin-api): wire DataAPI into PluginRegistry and PluginHost
 ### Task 5: Barrel exports
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/index.ts`
 
 **Context:** Export all new types and the factory from the barrel so the host app can import them.
@@ -844,6 +913,7 @@ git commit -m "feat(plugin-api): export DataAPI types and factory from barrel"
 ### Task 6: Wire DataAPIBridge in App.tsx
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/App.tsx:7` (add imports)
 - Modify: `apps/desktop/src/renderer/App.tsx:139-190` (add dataAPI useMemo)
 - Modify: `apps/desktop/src/renderer/App.tsx:576-582` (pass dataAPI to PluginHost)
@@ -857,7 +927,7 @@ import {
   PluginHost,
   createEditorAPI,
   createAppAPI,
-  createDataAPI,  // NEW
+  createDataAPI, // NEW
   editorPluginStore,
   useCssVariables,
 } from '@readied/plugin-api';
@@ -871,24 +941,35 @@ const dataAPI = useMemo<DataAPIWithEvents>(
   () =>
     createDataAPI({
       async getNotes(options) {
-        const notes = await window.readied.notes.list(options ? {
-          limit: options.limit,
-          offset: options.offset,
-          tag: options.tag,
-          sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
-          sortOrder: options.sortOrder,
-        } : undefined);
+        const notes = await window.readied.notes.list(
+          options
+            ? {
+                limit: options.limit,
+                offset: options.offset,
+                tag: options.tag,
+                sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
+                sortOrder: options.sortOrder,
+              }
+            : undefined
+        );
         // Filter by notebookId, status, isPinned client-side (IPC doesn't support these directly)
         let filtered = notes;
-        if (options?.notebookId) filtered = filtered.filter(n => n.notebookId === options.notebookId);
+        if (options?.notebookId)
+          filtered = filtered.filter(n => n.notebookId === options.notebookId);
         if (options?.status) filtered = filtered.filter(n => n.status === options.status);
-        if (options?.isPinned !== undefined) filtered = filtered.filter(n => n.isPinned === options.isPinned);
+        if (options?.isPinned !== undefined)
+          filtered = filtered.filter(n => n.isPinned === options.isPinned);
         return {
           notes: filtered.map(n => ({
-            id: n.id, title: n.title, notebookId: n.notebookId,
-            tags: [...n.tags], wordCount: n.wordCount,
-            createdAt: n.createdAt, updatedAt: n.updatedAt,
-            isPinned: n.isPinned, status: n.status,
+            id: n.id,
+            title: n.title,
+            notebookId: n.notebookId,
+            tags: [...n.tags],
+            wordCount: n.wordCount,
+            createdAt: n.createdAt,
+            updatedAt: n.updatedAt,
+            isPinned: n.isPinned,
+            status: n.status,
           })),
           total: filtered.length,
         };
@@ -929,8 +1010,11 @@ const dataAPI = useMemo<DataAPIWithEvents>(
         const nb = await window.readied.notebooks.getWithMetadata(id);
         if (!nb) return null;
         return {
-          id: nb.id, name: nb.name, parentId: nb.parentId,
-          noteCount: nb.noteCount, childCount: nb.childCount,
+          id: nb.id,
+          name: nb.name,
+          parentId: nb.parentId,
+          noteCount: nb.noteCount,
+          childCount: nb.childCount,
         };
       },
       async getTags() {
@@ -966,7 +1050,7 @@ const dataAPI = useMemo<DataAPIWithEvents>(
   plugins={allPlugins}
   editorAPI={editorAPI}
   appAPI={appAPI}
-  dataAPI={dataAPI}  // NEW
+  dataAPI={dataAPI} // NEW
   registerCommand={registerPluginCommand}
   configBridge={configBridge}
   getView={getEditorView}
@@ -1021,6 +1105,7 @@ Expected: All tests PASS across all packages
 **Step 3: Verify no regressions**
 
 Check that:
+
 - Existing `createAppAPI.test.ts` still passes (AppAPI unchanged)
 - Existing `registry.test.ts` passes (updated to pass mockDataAPI)
 - New `dataTypes.test.ts` passes (DataAccessError)

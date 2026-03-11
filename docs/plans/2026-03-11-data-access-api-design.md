@@ -69,7 +69,7 @@ export interface NoteQueryOptions {
   isPinned?: boolean;
   sortBy?: 'title' | 'createdAt' | 'updatedAt' | 'wordCount';
   sortOrder?: 'asc' | 'desc';
-  limit?: number;    // default: 50
+  limit?: number; // default: 50
   offset?: number;
 }
 
@@ -90,21 +90,21 @@ export interface SearchResult {
 }
 
 export interface NotebookQueryOptions {
-  tree?: boolean;          // default: false (flat list)
+  tree?: boolean; // default: false (flat list)
   includeCounts?: boolean; // include noteCount/childCount
 }
 
 export interface TagQueryOptions {
   includeColors?: boolean;
   includeCount?: boolean;
-  filter?: string;   // case-insensitive substring match on tag name
+  filter?: string; // case-insensitive substring match on tag name
   limit?: number;
   offset?: number;
 }
 
 export interface GraphQueryOptions {
-  notebookId?: string;  // scope to notebook (client-side initially)
-  depth?: number;       // limit traversal depth
+  notebookId?: string; // scope to notebook (client-side initially)
+  depth?: number; // limit traversal depth
 }
 ```
 
@@ -134,7 +134,7 @@ export interface LinkInfo {
 }
 
 export interface OutgoingLinkInfo {
-  targetId: string | null;  // null = unresolved wikilink
+  targetId: string | null; // null = unresolved wikilink
   targetTitle: string;
   resolved: boolean;
 }
@@ -163,7 +163,10 @@ Events fire after mutations complete. The host calls internal `_notify*` methods
 
 ```typescript
 export class DataAccessError extends Error {
-  constructor(public readonly method: string, message: string) {
+  constructor(
+    public readonly method: string,
+    message: string
+  ) {
     super(`[DataAPI.${method}] ${message}`);
     this.name = 'DataAccessError';
   }
@@ -196,8 +199,8 @@ export interface DataAPIBridge {
 ```typescript
 export interface PluginContext {
   // ... existing fields unchanged
-  app: AppAPI;     // backward compatible, no changes
-  data: DataAPI;   // NEW
+  app: AppAPI; // backward compatible, no changes
+  data: DataAPI; // NEW
 }
 ```
 
