@@ -153,16 +153,23 @@ export class SyncService {
     try {
       const result = await this.apiClient.pullNotebookChanges(this.state.notebookCursor, 50);
 
+      let appliedCount = 0;
+      let lastAppliedCursor = this.state.notebookCursor;
+
       for (const change of result.changes) {
         try {
           await this.applyRemoteNotebookChange(change);
+          appliedCount++;
+          lastAppliedCursor = change.version ?? lastAppliedCursor;
         } catch (error) {
           console.error(`Failed to apply notebook change ${change.id}:`, error);
           break;
         }
       }
 
-      this.state.notebookCursor = result.cursor;
+      // Only advance cursor to last successfully applied change
+      this.state.notebookCursor =
+        appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
 
       return {
         success: true,

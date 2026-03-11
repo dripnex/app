@@ -371,11 +371,14 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
     .orderBy(desc(notebookSyncLog.version));
 
   const latestByNotebook = new Map<string, { parentId: string | null; depth: number }>();
+  const processedIds = new Set<string>();
   for (const entry of existingEntries) {
-    if (!latestByNotebook.has(entry.notebookId) && entry.operation !== 'delete' && entry.data) {
-      const parsed = JSON.parse(entry.data);
-      latestByNotebook.set(entry.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
-    }
+    if (processedIds.has(entry.notebookId)) continue;
+    processedIds.add(entry.notebookId);
+    // Skip deleted notebooks — they shouldn't appear in the validation tree
+    if (entry.operation === 'delete' || !entry.data) continue;
+    const parsed = JSON.parse(entry.data);
+    latestByNotebook.set(entry.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
   }
 
   // Validate tree integrity
