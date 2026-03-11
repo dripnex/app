@@ -64,8 +64,24 @@ export interface TagSyncChange {
   createdAt: string;
 }
 
+export interface NotebookSyncChange {
+  id: string;
+  notebookId: string;
+  version: number;
+  operation: 'create' | 'update' | 'delete';
+  data: string | null;
+  deviceId: string;
+  createdAt: string;
+}
+
 export interface TagPullResponse {
   changes: TagSyncChange[];
+  cursor: number;
+  hasMore: boolean;
+}
+
+export interface NotebookPullResponse {
+  changes: NotebookSyncChange[];
   cursor: number;
   hasMore: boolean;
 }
@@ -77,8 +93,20 @@ export interface TagPushResult {
   serverVersion?: number;
 }
 
+export interface NotebookPushResult {
+  notebookId: string;
+  version: number;
+  status: 'applied' | 'conflict';
+  serverVersion?: number;
+}
+
 export interface TagPushResponse {
   results: TagPushResult[];
+  cursor: number;
+}
+
+export interface NotebookPushResponse {
+  results: NotebookPushResult[];
   cursor: number;
 }
 
@@ -310,6 +338,35 @@ export class ApiClient {
     }>
   ): Promise<PushResponse> {
     return this.request<PushResponse>('/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        changes,
+        deviceId: this.deviceInfo.deviceId,
+      }),
+    });
+  }
+
+  // ==========================================================================
+  // Notebook Sync
+  // ==========================================================================
+
+  async pullNotebookChanges(cursor: number, limit = 50): Promise<NotebookPullResponse> {
+    const params = new URLSearchParams({
+      cursor: cursor.toString(),
+      limit: limit.toString(),
+    });
+    return this.request<NotebookPullResponse>(`/sync/notebooks?${params}`);
+  }
+
+  async pushNotebookChanges(
+    changes: Array<{
+      notebookId: string;
+      operation: 'create' | 'update' | 'delete';
+      data?: string | null;
+      localVersion?: number;
+    }>
+  ): Promise<NotebookPushResponse> {
+    return this.request<NotebookPushResponse>('/sync/notebooks', {
       method: 'POST',
       body: JSON.stringify({
         changes,

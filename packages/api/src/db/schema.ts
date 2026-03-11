@@ -133,6 +133,34 @@ export const tagSyncLog = sqliteTable(
 );
 
 /**
+ * Notebook sync log - notebook metadata changes
+ * No encryption needed - notebooks are organizational metadata only
+ */
+export const notebookSyncLog = sqliteTable(
+  'notebook_sync_log',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    notebookId: text('notebook_id').notNull(),
+    version: integer('version').notNull(),
+    operation: text('operation').notNull(), // 'create' | 'update' | 'delete'
+    data: text('data'), // JSON notebook metadata (null for deletes)
+    deviceId: text('device_id').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  table => [
+    index('idx_nb_sync_log_user_version').on(table.userId, table.version),
+    index('idx_nb_sync_log_user_notebook').on(table.userId, table.notebookId),
+  ]
+);
+
+/**
  * Subscriptions - Pro tier tracking
  */
 export const subscriptions = sqliteTable('subscriptions', {
@@ -276,3 +304,4 @@ export type Newsletter = typeof newsletter.$inferSelect;
 export type SharedNote = typeof sharedNotes.$inferSelect;
 export type PluginCatalogEntry = typeof pluginCatalog.$inferSelect;
 export type NewPluginCatalogEntry = typeof pluginCatalog.$inferInsert;
+export type NotebookSyncLogEntry = typeof notebookSyncLog.$inferSelect;

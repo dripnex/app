@@ -7,9 +7,15 @@
  * @module SyncService
  */
 
-import type { SQLiteNoteRepository } from '@readied/storage-sqlite';
-import { createNoteId, createNotebookId, createTimestamp, type NoteStatus } from '@readied/core';
-import type { ApiClient, SyncChange } from './apiClient.js';
+import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
+import {
+  createNoteId,
+  createNotebookId,
+  createNotebook,
+  createTimestamp,
+  type NoteStatus,
+} from '@readied/core';
+import type { ApiClient, SyncChange, NotebookSyncChange, NotebookPushResult } from './apiClient.js';
 import type { EncryptionService } from './encryptionService.js';
 
 // ============================================================================
@@ -36,6 +42,7 @@ export interface SyncResult {
 interface SyncState {
   cursor: number;
   tagCursor: number;
+  notebookCursor: number;
   lastSyncAt: number | null;
   isSyncing: boolean;
 }
@@ -48,6 +55,7 @@ export class SyncService {
   private apiClient: ApiClient;
   private encryptionService: EncryptionService;
   private noteRepository: SQLiteNoteRepository;
+  private notebookRepository: SQLiteNotebookRepository;
   private state: SyncState;
   private autoSyncTimer: NodeJS.Timeout | null = null;
   private autoSyncInterval: number = 5 * 60 * 1000; // 5 minutes
@@ -56,14 +64,17 @@ export class SyncService {
     apiClient: ApiClient,
     encryptionService: EncryptionService,
     noteRepository: SQLiteNoteRepository,
+    notebookRepository: SQLiteNotebookRepository,
     initialCursor = 0
   ) {
     this.apiClient = apiClient;
     this.encryptionService = encryptionService;
     this.noteRepository = noteRepository;
+    this.notebookRepository = notebookRepository;
     this.state = {
       cursor: initialCursor,
       tagCursor: 0,
+      notebookCursor: 0,
       lastSyncAt: null,
       isSyncing: false,
     };
@@ -127,6 +138,115 @@ export class SyncService {
         cursor: this.state.cursor,
         hasMore: false,
         error: error instanceof Error ? error.message : 'Failed to pull changes',
+      };
+    }
+  }
+
+  /**
+   * Pull notebook changes from server and apply locally
+   */
+  async pullNotebooks(): Promise<{
+    success: boolean;
+    changes: NotebookSyncChange[];
+    cursor: number;
+    hasMore: boolean;
+    error?: string;
+  }> {
+    try {
+      const result = await this.apiClient.pullNotebookChanges(this.state.notebookCursor, 50);
+
+      let appliedCount = 0;
+      let lastAppliedCursor = this.state.notebookCursor;
+
+      for (const change of result.changes) {
+        try {
+          await this.applyRemoteNotebookChange(change);
+          appliedCount++;
+          lastAppliedCursor = change.version ?? lastAppliedCursor;
+        } catch (error) {
+          console.error(`Failed to apply notebook change ${change.id}:`, error);
+          break;
+        }
+      }
+
+      // Only advance cursor to last successfully applied change
+      this.state.notebookCursor =
+        appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
+
+      return {
+        success: true,
+        changes: result.changes,
+        cursor: result.cursor,
+        hasMore: result.hasMore,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        changes: [],
+        cursor: this.state.notebookCursor,
+        hasMore: false,
+        error: error instanceof Error ? error.message : 'Failed to pull notebook changes',
+      };
+    }
+  }
+
+  /**
+   * Push local notebook changes to server
+   */
+  async pushNotebooks(): Promise<{
+    success: boolean;
+    results: NotebookPushResult[];
+    error?: string;
+  }> {
+    try {
+      const pendingChanges = this.notebookRepository.getPendingChanges(50);
+      if (pendingChanges.length === 0) {
+        return { success: true, results: [] };
+      }
+
+      // Validate locally before pushing
+      const validChanges = pendingChanges.filter(({ notebook }) => {
+        const validation = this.notebookRepository.validateForSync(createNotebookId(notebook.id));
+        if (!validation.valid) {
+          console.warn(
+            `[notebook-sync] Skipping invalid notebook ${notebook.id}: ${validation.error}`
+          );
+        }
+        return validation.valid;
+      });
+
+      if (validChanges.length === 0) {
+        return { success: true, results: [] };
+      }
+
+      const changesToPush = validChanges.map(({ notebook, localVersion }) => ({
+        notebookId: notebook.id,
+        operation: 'update' as const,
+        data: JSON.stringify({
+          name: notebook.name,
+          parentId: notebook.parentId,
+          depth: notebook.depth,
+          order: notebook.order,
+          createdAt: notebook.createdAt,
+          updatedAt: notebook.updatedAt,
+        }),
+        localVersion,
+      }));
+
+      const result = await this.apiClient.pushNotebookChanges(changesToPush);
+
+      const successfulIds = result.results
+        .filter(r => r.status === 'applied')
+        .map(r => createNotebookId(r.notebookId));
+
+      this.notebookRepository.markMultipleAsSynced(successfulIds);
+
+      return { success: true, results: result.results };
+    } catch (error) {
+      return {
+        success: false,
+        results: [],
+        error: error instanceof Error ? error.message : 'Failed to push notebook changes',
       };
     }
   }
@@ -281,7 +401,19 @@ export class SyncService {
     this.state.isSyncing = true;
 
     try {
-      // Step 1: Pull changes from server
+      // Step 1: Pull notebooks first (notes depend on notebooks)
+      const nbPullResult = await this.pullNotebooks();
+      if (!nbPullResult.success) {
+        console.error('Failed to pull notebooks:', nbPullResult.error);
+      }
+
+      // Step 2: Push pending notebook changes
+      const nbPushResult = await this.pushNotebooks();
+      if (!nbPushResult.success) {
+        console.error('Failed to push notebooks:', nbPushResult.error);
+      }
+
+      // Step 3: Pull note changes from server
       const pullResult = await this.pull();
 
       if (!pullResult.success) {
@@ -294,12 +426,11 @@ export class SyncService {
         };
       }
 
-      // Step 2: Push local changes
+      // Step 4: Push local note changes
       let changesPushed = 0;
       const pendingChanges = this.noteRepository.getPendingChanges(50);
 
       if (pendingChanges.length > 0) {
-        // Prepare changes for push
         const changesToPush = pendingChanges.map(({ note, localVersion }) => ({
           noteId: note.id,
           operation: (note.isDeleted ? 'delete' : 'update') as 'create' | 'update' | 'delete',
@@ -307,11 +438,9 @@ export class SyncService {
           localVersion,
         }));
 
-        // Push to server
         const pushResult = await this.push(changesToPush);
 
         if (pushResult.success) {
-          // Mark successfully pushed notes as synced
           const successfulNoteIds = pushResult.results
             .filter(r => r.status === 'applied')
             .map(r => createNoteId(r.noteId));
@@ -319,14 +448,12 @@ export class SyncService {
           this.noteRepository.markMultipleAsSynced(successfulNoteIds);
           changesPushed = successfulNoteIds.length;
 
-          // Handle conflicts from push
           const pushConflicts = pushResult.results.filter(r => r.status === 'conflict');
           if (pushConflicts.length > 0) {
             console.warn(
               `Push conflicts detected for ${pushConflicts.length} notes:`,
               pushConflicts
             );
-            // Conflicts will need to be resolved by user
           }
         } else {
           console.error('Failed to push changes:', pushResult.error);
@@ -347,8 +474,9 @@ export class SyncService {
 
       return {
         success: true,
-        changesApplied: pullResult.changes.length,
-        changesPushed,
+        changesApplied: pullResult.changes.length + (nbPullResult.changes?.length ?? 0),
+        changesPushed:
+          changesPushed + (nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0),
         conflicts: pullResult.conflicts,
       };
     } catch (error) {
@@ -535,6 +663,73 @@ export class SyncService {
 
       default:
         console.warn(`Unknown operation: ${change.operation}`);
+    }
+  }
+
+  /**
+   * Apply a remote notebook change to local database.
+   * Notebooks are metadata-only, no encryption needed.
+   */
+  private async applyRemoteNotebookChange(change: NotebookSyncChange): Promise<void> {
+    const notebookId = createNotebookId(change.notebookId);
+
+    switch (change.operation) {
+      case 'create':
+      case 'update': {
+        if (!change.data) {
+          throw new Error(`No data for ${change.operation} operation on notebook`);
+        }
+
+        const parsed = JSON.parse(change.data) as {
+          name: string;
+          parentId: string | null;
+          depth: number;
+          order: number;
+          createdAt: string;
+          updatedAt: string;
+        };
+
+        const existing = await this.notebookRepository.get(notebookId);
+
+        if (existing) {
+          // LWW: apply remote change
+          await this.notebookRepository.save({
+            ...existing,
+            name: parsed.name,
+            parentId: parsed.parentId ? createNotebookId(parsed.parentId) : null,
+            depth: parsed.depth,
+            order: parsed.order,
+            updatedAt: createTimestamp(new Date(parsed.updatedAt)),
+          });
+        } else {
+          // Create new notebook from remote
+          await this.notebookRepository.save(
+            createNotebook({
+              id: notebookId,
+              name: parsed.name,
+              parentId: parsed.parentId ? createNotebookId(parsed.parentId) : null,
+              parentDepth: parsed.depth > 0 ? parsed.depth - 1 : undefined,
+              order: parsed.order,
+              createdAt: createTimestamp(new Date(parsed.createdAt)),
+            })
+          );
+        }
+
+        // Mark as synced to avoid re-pushing
+        this.notebookRepository.markAsSynced(notebookId);
+        break;
+      }
+
+      case 'delete': {
+        const existing = await this.notebookRepository.get(notebookId);
+        if (existing) {
+          await this.notebookRepository.delete(notebookId);
+        }
+        break;
+      }
+
+      default:
+        console.warn(`Unknown notebook operation: ${change.operation}`);
     }
   }
 
