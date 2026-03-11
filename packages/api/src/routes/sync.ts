@@ -14,7 +14,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
-import { syncLog, syncCursors, subscriptions } from '../db/schema.js';
+import { syncLog, syncCursors, subscriptions, notebookSyncLog } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
 import { syncRateLimit } from '../middleware/rateLimit.js';
 
@@ -232,6 +232,212 @@ sync.get('/status', async c => {
     cursor,
     totalChanges: countResult?.count ?? 0,
   });
+});
+
+// ============================================================================
+// Notebook Sync
+// ============================================================================
+
+const notebookChangeSchema = z.object({
+  notebookId: z.string(),
+  operation: z.enum(['create', 'update', 'delete']),
+  data: z.string().nullable().optional(),
+  localVersion: z.number().int().optional(),
+});
+
+const notebookPushSchema = z.object({
+  changes: z.array(notebookChangeSchema).min(1).max(100),
+  deviceId: z.string().uuid(),
+});
+
+/**
+ * Validate notebook tree integrity before accepting push.
+ * Checks: depth ≤ 2, parentId exists, no circular references.
+ */
+function validateNotebookTree(
+  changes: Array<{ notebookId: string; operation: string; data?: string | null }>,
+  existingNotebooks: Map<string, { parentId: string | null; depth: number }>
+): { valid: true } | { valid: false; error: string; notebookId: string } {
+  const tree = new Map(existingNotebooks);
+
+  for (const change of changes) {
+    if (change.operation === 'delete') {
+      tree.delete(change.notebookId);
+      continue;
+    }
+    if (!change.data) continue;
+    const parsed = JSON.parse(change.data) as {
+      name: string;
+      parentId: string | null;
+      depth: number;
+      order: number;
+    };
+
+    if (parsed.depth > 2) {
+      return { valid: false, error: `depth exceeds max (2), got ${parsed.depth}`, notebookId: change.notebookId };
+    }
+    if (parsed.parentId && !tree.has(parsed.parentId)) {
+      return { valid: false, error: `parentId '${parsed.parentId}' not found`, notebookId: change.notebookId };
+    }
+    if (parsed.parentId) {
+      const visited = new Set<string>([change.notebookId]);
+      let current: string | null = parsed.parentId;
+      while (current) {
+        if (visited.has(current)) {
+          return { valid: false, error: 'circular reference detected', notebookId: change.notebookId };
+        }
+        visited.add(current);
+        current = tree.get(current)?.parentId ?? null;
+      }
+    }
+    tree.set(change.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
+  }
+  return { valid: true };
+}
+
+// Pull notebook changes
+sync.get('/notebooks', zValidator('query', pullSchema), async c => {
+  const { cursor, limit } = c.req.valid('query');
+  const { userId, deviceId } = c.get('user');
+  const db = createDb(c.env);
+
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .limit(1);
+
+  if (!(sub?.status === 'active' || sub?.status === 'trialing')) {
+    return c.json({ error: 'Sync requires Pro subscription' }, 403);
+  }
+
+  const changes = await db
+    .select()
+    .from(notebookSyncLog)
+    .where(and(eq(notebookSyncLog.userId, userId), gt(notebookSyncLog.version, cursor)))
+    .orderBy(notebookSyncLog.version)
+    .limit(limit);
+
+  const maxVersion = changes.length > 0 ? changes[changes.length - 1].version : cursor;
+
+  return c.json({
+    changes: changes.map(entry => ({
+      id: entry.id,
+      notebookId: entry.notebookId,
+      version: entry.version,
+      operation: entry.operation,
+      data: entry.data,
+      deviceId: entry.deviceId,
+      createdAt: entry.createdAt,
+    })),
+    cursor: maxVersion,
+    hasMore: changes.length === limit,
+  });
+});
+
+// Push notebook changes (with tree validation)
+sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
+  const { changes, deviceId } = c.req.valid('json');
+  const { userId } = c.get('user');
+  const db = createDb(c.env);
+
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .limit(1);
+
+  if (!(sub?.status === 'active' || sub?.status === 'trialing')) {
+    return c.json({ error: 'Sync requires Pro subscription' }, 403);
+  }
+
+  // Load existing notebooks for tree validation
+  const existingEntries = await db
+    .select()
+    .from(notebookSyncLog)
+    .where(eq(notebookSyncLog.userId, userId))
+    .orderBy(desc(notebookSyncLog.version));
+
+  const latestByNotebook = new Map<string, { parentId: string | null; depth: number }>();
+  for (const entry of existingEntries) {
+    if (!latestByNotebook.has(entry.notebookId) && entry.operation !== 'delete' && entry.data) {
+      const parsed = JSON.parse(entry.data);
+      latestByNotebook.set(entry.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
+    }
+  }
+
+  // Validate tree integrity
+  const validation = validateNotebookTree(changes, latestByNotebook);
+  if (!validation.valid) {
+    console.warn(`[notebook-sync] Tree validation failed for user ${userId}: ${validation.error} (notebook: ${validation.notebookId})`);
+    return c.json({
+      error: 'Tree validation failed',
+      detail: validation.error,
+      notebookId: validation.notebookId,
+    }, 422);
+  }
+
+  // Process changes in transaction
+  const { results, finalCursor } = await db.transaction(async tx => {
+    const [maxVersionResult] = await tx
+      .select({ maxVersion: sql<number>`COALESCE(MAX(${notebookSyncLog.version}), 0)` })
+      .from(notebookSyncLog)
+      .where(eq(notebookSyncLog.userId, userId));
+
+    let nextVersion = (maxVersionResult?.maxVersion ?? 0) + 1;
+
+    const txResults: Array<{
+      notebookId: string;
+      version: number;
+      status: 'applied' | 'conflict';
+      serverVersion?: number;
+    }> = [];
+
+    for (const change of changes) {
+      const [latestEntry] = await tx
+        .select()
+        .from(notebookSyncLog)
+        .where(and(eq(notebookSyncLog.userId, userId), eq(notebookSyncLog.notebookId, change.notebookId)))
+        .orderBy(desc(notebookSyncLog.version))
+        .limit(1);
+
+      if (
+        latestEntry &&
+        latestEntry.deviceId !== deviceId &&
+        change.localVersion !== undefined &&
+        latestEntry.version > change.localVersion
+      ) {
+        txResults.push({
+          notebookId: change.notebookId,
+          version: latestEntry.version,
+          status: 'conflict',
+          serverVersion: latestEntry.version,
+        });
+        continue;
+      }
+
+      await tx.insert(notebookSyncLog).values({
+        userId,
+        notebookId: change.notebookId,
+        version: nextVersion,
+        operation: change.operation,
+        data: change.data ?? null,
+        deviceId,
+      });
+
+      txResults.push({
+        notebookId: change.notebookId,
+        version: nextVersion,
+        status: 'applied',
+      });
+
+      nextVersion++;
+    }
+
+    return { results: txResults, finalCursor: nextVersion - 1 };
+  });
+
+  return c.json({ results, cursor: finalCursor });
 });
 
 export { sync };
