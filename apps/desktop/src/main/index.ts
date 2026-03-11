@@ -2267,6 +2267,11 @@ app
         return;
       }
 
+      if (!notebookRepository) {
+        log.error('Cannot initialize sync service: notebookRepository not initialized');
+        return;
+      }
+
       try {
         tokenStorage = new TokenStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
@@ -2277,7 +2282,7 @@ app
         encryptionService = new EncryptionService(dataPaths.root);
         await encryptionService.initialize();
 
-        syncService = new SyncService(apiClient, encryptionService, noteRepository);
+        syncService = new SyncService(apiClient, encryptionService, noteRepository, notebookRepository);
 
         // Register license handlers with dependencies
         if (licenseStorage) {
