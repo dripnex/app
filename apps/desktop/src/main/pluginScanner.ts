@@ -9,9 +9,17 @@ import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
 
 export interface PluginConfigSchemaField {
-  type: 'string' | 'number' | 'boolean';
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'range';
   default: unknown;
   description?: string;
+  /** For 'enum' type: available options */
+  options?: Array<{ value: string; label: string }>;
+  /** For 'range' type: minimum value */
+  min?: number;
+  /** For 'range' type: maximum value */
+  max?: number;
+  /** For 'range' type: step increment */
+  step?: number;
 }
 
 export interface ScannedPlugin {
