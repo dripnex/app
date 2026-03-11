@@ -5,10 +5,11 @@ import {
   PluginHost,
   createEditorAPI,
   createAppAPI,
+  createDataAPI,
   editorPluginStore,
   useCssVariables,
 } from '@readied/plugin-api';
-import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
+import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
 import { useStore } from 'zustand';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
@@ -189,6 +190,97 @@ function NotesApp() {
     []
   );
 
+  const dataAPI = useMemo<DataAPIWithEvents>(
+    () =>
+      createDataAPI({
+        async getNotes(options) {
+          const notes = await window.readied.notes.list(options ? {
+            limit: options.limit,
+            offset: options.offset,
+            tag: options.tag,
+            sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
+            sortOrder: options.sortOrder,
+          } : undefined);
+          let filtered = notes;
+          if (options?.notebookId) filtered = filtered.filter(n => n.notebookId === options.notebookId);
+          if (options?.status) filtered = filtered.filter(n => n.status === options.status);
+          if (options?.isPinned !== undefined) filtered = filtered.filter(n => n.isPinned === options.isPinned);
+          return {
+            notes: filtered.map(n => ({
+              id: n.id, title: n.title, notebookId: n.notebookId,
+              tags: [...n.tags], wordCount: n.wordCount,
+              createdAt: n.createdAt, updatedAt: n.updatedAt,
+              isPinned: n.isPinned, status: n.status,
+            })),
+            total: filtered.length,
+          };
+        },
+        async getNote(id) {
+          const result = await window.readied.notes.get(id);
+          if (!result.ok) return null;
+          return { id: result.data.id, title: result.data.title, content: result.data.content };
+        },
+        async searchNotes(query, options) {
+          const notes = await window.readied.notes.search(query, options?.limit ?? 20);
+          return {
+            results: notes.map(n => ({ id: n.id, title: n.title })),
+            total: notes.length,
+          };
+        },
+        async countNotes() {
+          const counts = await window.readied.notes.count();
+          return counts.total;
+        },
+        async getNotebooks() {
+          const notebooks = await window.readied.notebooks.list();
+          return notebooks.map(nb => ({ id: nb.id, name: nb.name, parentId: nb.parentId }));
+        },
+        async getNotebookTree() {
+          type TreeNode = { id: string; name: string; parentId: string | null; noteCount: number; childCount: number; children: TreeNode[] };
+          const tree = await window.readied.notebooks.tree();
+          const mapNode = (node: { notebook: { id: string; name: string; parentId: string | null }; children: unknown[] }): TreeNode => ({
+            id: node.notebook.id,
+            name: node.notebook.name,
+            parentId: node.notebook.parentId,
+            noteCount: 0,
+            childCount: node.children.length,
+            children: (node.children as typeof tree).map(mapNode),
+          });
+          return tree.map(mapNode);
+        },
+        async getNotebook(id) {
+          const nb = await window.readied.notebooks.getWithMetadata(id);
+          if (!nb) return null;
+          return {
+            id: nb.id, name: nb.name, parentId: nb.parentId,
+            noteCount: nb.noteCount, childCount: nb.childCount,
+          };
+        },
+        async getTags() {
+          return window.readied.notes.tags();
+        },
+        async getTagsWithColors() {
+          return window.readied.notes.tagsWithColors();
+        },
+        async getBacklinks(noteId) {
+          const links = await window.readied.links.getBacklinks(noteId);
+          return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
+        },
+        async getOutgoingLinks(noteId) {
+          const links = await window.readied.links.getOutgoing(noteId);
+          return links.map(l => ({
+            targetId: l.targetNoteId,
+            targetTitle: l.targetTitle ?? l.targetRef,
+            resolved: l.targetNoteId !== null,
+          }));
+        },
+        async getGraphData() {
+          return window.readied.links.getGraph();
+        },
+      }),
+    []
+  );
+
   const toggleCommandPalette = useCallback(() => setIsCommandPaletteOpen(prev => !prev), []);
   const closeCommandPalette = useCallback(() => setIsCommandPaletteOpen(false), []);
 
@@ -231,7 +323,8 @@ function NotesApp() {
     setSelectedNote(newNote);
     clearSearch();
     appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
-  }, [createNote, selectedNotebookId, clearSearch, appAPI]);
+    dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
+  }, [createNote, selectedNotebookId, clearSearch, appAPI, dataAPI]);
 
   // Select note
   const handleSelectNote = useCallback(
@@ -339,8 +432,9 @@ function NotesApp() {
         setSelectedNote(null);
       }
       appAPI._notifyNoteDeleted(id);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'deleted', id });
     },
-    [selectedNote, deleteNote, appAPI]
+    [selectedNote, deleteNote, appAPI, dataAPI]
   );
 
   // Archive note (toggle based on current state)
@@ -577,6 +671,7 @@ function NotesApp() {
             plugins={allPlugins}
             editorAPI={editorAPI}
             appAPI={appAPI}
+            dataAPI={dataAPI}
             registerCommand={registerPluginCommand}
             configBridge={configBridge}
             getView={getEditorView}
