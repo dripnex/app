@@ -15,6 +15,7 @@ import {
   CreditCard,
   ExternalLink,
 } from 'lucide-react';
+import { getProductConfig } from '@readied/product-config';
 import { useAuthStore } from '../../../stores/authStore';
 import { useSyncStore } from '../../../stores/syncStore';
 import { useLicense } from '../../../contexts/LicenseContext';
@@ -23,6 +24,9 @@ import { SettingRow } from '../components/SettingRow';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
 import { ConflictResolver } from '../../../components/sync/ConflictResolver';
 import styles from './Section.module.css';
+
+const config = getProductConfig();
+const proPricing = config.plans.pro.pricing!;
 
 export function AccountSection() {
   const { user, isAuthenticated, isLoading, logout, loadSession } = useAuthStore();
@@ -285,7 +289,7 @@ export function AccountSection() {
                     disabled={isUpgrading}
                   >
                     <Sparkles size={14} />
-                    <span>Monthly - $2.99/mo</span>
+                    <span>Monthly - {proPricing.intervals.monthly.label}</span>
                   </button>
                   <button
                     type="button"
@@ -294,8 +298,8 @@ export function AccountSection() {
                     disabled={isUpgrading}
                   >
                     <Sparkles size={14} />
-                    <span>Annual - $29.90/yr</span>
-                    <small className={styles.badge}>Save $6</small>
+                    <span>Annual - {proPricing.intervals.annual.label}</span>
+                    <small className={styles.badge}>Save {proPricing.annualSavings}</small>
                   </button>
                 </div>
               </SettingRow>

@@ -38,9 +38,7 @@ import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useCommandKeybindings } from './hooks/useCommandKeybindings';
 import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
-import { wordCountPlugin } from './plugins/wordCount';
-import { typewriterModePlugin } from './plugins/typewriterMode';
-import { activeLineHighlightPlugin } from './plugins/activeLineHighlight';
+import { builtInPlugins } from './plugins';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -444,13 +442,9 @@ function NotesApp() {
     pluginRuntimeStore.getState().init();
   }, []);
 
-  const builtInPlugins = useMemo(
-    () => [wordCountPlugin, typewriterModePlugin, activeLineHighlightPlugin],
-    []
-  );
   const allPlugins = useMemo(
     () => [...builtInPlugins, ...discoveredPlugins],
-    [builtInPlugins, discoveredPlugins]
+    [discoveredPlugins]
   );
 
   const configBridge = useMemo(

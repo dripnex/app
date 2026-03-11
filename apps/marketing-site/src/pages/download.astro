@@ -1,280 +1,215 @@
 ---
 import Base from '../layouts/Base.astro';
 import Footer from '../components/Footer.astro';
+import NewsletterForm from '../components/NewsletterForm.tsx';
 import { Icon } from 'astro-icon/components';
-import fs from 'node:fs';
-import path from 'node:path';
+import { fetchLatestRelease, formatBytes } from '../lib/github';
+import type { PlatformAsset } from '../lib/github';
+import { getProductConfig } from '@readied/product-config';
 
-// Get current version from CHANGELOG.md
-const changelogPath = path.join(process.cwd(), 'CHANGELOG.md');
-const changelogContent = fs.readFileSync(changelogPath, 'utf-8');
-const versionMatch = changelogContent.match(/^## \[([^\]]+)\]/m);
-const currentVersion = versionMatch ? versionMatch[1] : 'Unreleased';
-const isReleased = currentVersion !== 'Unreleased';
+const config = getProductConfig();
+const release = await fetchLatestRelease();
+const version = release?.version;
+const isReleased = !!release;
+
+function getAssets(platform: PlatformAsset['platform']) {
+  return release?.assets.filter((a) => a.platform === platform) ?? [];
+}
+
+const macAssets = getAssets('mac');
+const winAssets = getAssets('win');
+const linuxAssets = getAssets('linux');
+
+function primaryLabel(asset: PlatformAsset): string {
+  if (asset.platform === 'mac') {
+    return asset.arch === 'arm64' ? 'Apple Silicon' : 'Intel';
+  }
+  if (asset.platform === 'win') {
+    return asset.format === 'exe' ? 'Windows x64' : 'Portable';
+  }
+  if (asset.platform === 'linux') {
+    return asset.format === 'appimage' ? 'AppImage' : asset.format.toUpperCase();
+  }
+  return asset.name;
+}
 ---
 
-<Base title="Download — Readied" description="Download Readied for macOS or Windows. Try free for 14 days.">
-  <main class="download-page">
-    <div class="container">
-      <header class="page-header">
-        <span class="label">Download</span>
-        <h1>Get <span class="text-gradient">Readied</span></h1>
+<Base title="Download — Readied" description={`Download Readied for macOS, Windows, or Linux. Try free for ${config.trialDays} days.`}>
+  <section class="relative pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
+    <div class="relative max-w-5xl mx-auto z-10">
+      <header class="text-center mb-16">
+        <span class="section-label">Download</span>
+        <h1 class="section-heading sm:text-4xl lg:text-5xl mb-3">
+          Get <span class="text-accent">Readied</span>
+        </h1>
         {isReleased ? (
           <>
-            <p class="intro">Try free for 14 days. No account required.</p>
-            <span class="version-badge glass-accent">v{currentVersion}</span>
+            <p class="text-lg text-[#a1a1aa] mb-5">Try free for {config.trialDays} days. No account required.</p>
+            <div class="flex items-center justify-center gap-3 flex-wrap">
+              <span class="inline-flex items-center px-5 py-2 font-mono text-sm font-semibold rounded-full bg-accent/10 border border-accent/20 text-accent">v{version}</span>
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+                <Icon name="lucide:check" size={12} />
+                Free forever
+              </span>
+            </div>
           </>
         ) : (
           <>
-            <p class="intro">We're building something good. Leave your email to get notified.</p>
-            <span class="version-badge glass">Coming Soon</span>
+            <p class="text-lg text-[#a1a1aa] mb-5">We're building something good. Leave your email to get notified.</p>
+            <span class="inline-flex items-center px-5 py-2 font-mono text-sm font-semibold rounded-full bg-white/[0.05] border border-white/[0.08] text-[#a1a1aa]">Coming Soon</span>
+            <div class="mt-10">
+              <NewsletterForm client:idle />
+            </div>
           </>
         )}
       </header>
 
-      <div class={`platforms ${!isReleased ? 'disabled' : ''}`}>
-        <article class="platform glass">
-          <header class="platform-header">
-            <div class="platform-icon">
+      <div class={`grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10 ${!isReleased ? 'opacity-50 pointer-events-none' : ''}`}>
+        <!-- macOS -->
+        <article class="rounded-xl bg-surface p-6 sm:p-8 flex flex-col gap-6">
+          <header class="flex items-center gap-5">
+            <div class="w-14 h-14 flex items-center justify-center shrink-0 bg-accent/10 rounded-lg text-accent">
               <Icon name="simple-icons:apple" size={32} />
             </div>
             <div>
-              <h2>macOS</h2>
-              <span class="requirement">macOS 11 Big Sur or later</span>
+              <h2 class="text-xl font-bold text-[#f4f4f5] mb-1">macOS</h2>
+              <span class="text-sm text-[#71717a]">macOS 11 Big Sur or later</span>
             </div>
           </header>
-          <div class="downloads">
-            <span class="btn btn-primary btn-disabled">
-              <Icon name="lucide:download" size={16} />
-              Apple Silicon
-            </span>
-            <span class="btn btn-ghost btn-disabled">Intel</span>
+          <div class="flex flex-wrap gap-3">
+            {macAssets.length > 0 ? (
+              macAssets.map((asset, i) => (
+                <a href={asset.downloadUrl} class={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${i === 0 ? 'bg-accent text-white hover:bg-accent-hover' : 'border border-white/[0.08] text-[#a1a1aa] hover:bg-white/5'}`}>
+                  {i === 0 && <Icon name="lucide:download" size={16} />}
+                  {primaryLabel(asset)}
+                  <span class="text-xs opacity-70">({formatBytes(asset.size)})</span>
+                </a>
+              ))
+            ) : (
+              <>
+                <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-accent/50 text-white/50 cursor-not-allowed">
+                  <Icon name="lucide:download" size={16} />
+                  Apple Silicon
+                </span>
+                <span class="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium border border-white/[0.08] text-[#71717a] cursor-not-allowed">Intel</span>
+              </>
+            )}
+          </div>
+          <div class="rounded-lg bg-inset border border-white/[0.06] p-4 font-mono text-xs text-[#a1a1aa] overflow-x-auto">
+            <p class="text-[#71717a] mb-2"># Install from DMG</p>
+            <p>hdiutil attach Readied-*.dmg</p>
+            <p>cp -R /Volumes/Readied/Readied.app /Applications/</p>
+            <p>hdiutil detach /Volumes/Readied</p>
           </div>
         </article>
 
-        <article class="platform glass">
-          <header class="platform-header">
-            <div class="platform-icon">
+        <!-- Windows -->
+        <article class="rounded-xl bg-surface p-6 sm:p-8 flex flex-col gap-6">
+          <header class="flex items-center gap-5">
+            <div class="w-14 h-14 flex items-center justify-center shrink-0 bg-accent/10 rounded-lg text-accent">
               <Icon name="simple-icons:windows" size={32} />
             </div>
             <div>
-              <h2>Windows</h2>
-              <span class="requirement">Windows 10 (64-bit) or later</span>
+              <h2 class="text-xl font-bold text-[#f4f4f5] mb-1">Windows</h2>
+              <span class="text-sm text-[#71717a]">Windows 10 (64-bit) or later</span>
             </div>
           </header>
-          <div class="downloads">
-            <span class="btn btn-primary btn-disabled">
-              <Icon name="lucide:download" size={16} />
-              Windows x64
-            </span>
-            <span class="btn btn-ghost btn-disabled">Portable</span>
+          <div class="flex flex-wrap gap-3">
+            {winAssets.length > 0 ? (
+              winAssets.map((asset, i) => (
+                <a href={asset.downloadUrl} class={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${i === 0 ? 'bg-accent text-white hover:bg-accent-hover' : 'border border-white/[0.08] text-[#a1a1aa] hover:bg-white/5'}`}>
+                  {i === 0 && <Icon name="lucide:download" size={16} />}
+                  {primaryLabel(asset)}
+                  <span class="text-xs opacity-70">({formatBytes(asset.size)})</span>
+                </a>
+              ))
+            ) : (
+              <>
+                <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-accent/50 text-white/50 cursor-not-allowed">
+                  <Icon name="lucide:download" size={16} />
+                  Windows x64
+                </span>
+                <span class="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium border border-white/[0.08] text-[#71717a] cursor-not-allowed">Portable</span>
+              </>
+            )}
+          </div>
+          <div class="rounded-lg bg-inset border border-white/[0.06] p-4 font-mono text-xs text-[#a1a1aa] overflow-x-auto">
+            <p class="text-[#71717a] mb-2"># Run the installer</p>
+            <p>Readied-Setup-*.exe /S</p>
+          </div>
+        </article>
+
+        <!-- Linux -->
+        <article class="rounded-xl bg-surface p-6 sm:p-8 flex flex-col gap-6">
+          <header class="flex items-center gap-5">
+            <div class="w-14 h-14 flex items-center justify-center shrink-0 bg-accent/10 rounded-lg text-accent">
+              <Icon name="simple-icons:linux" size={32} />
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-[#f4f4f5] mb-1">Linux</h2>
+              <span class="text-sm text-[#71717a]">Ubuntu 20.04+ / Fedora 36+</span>
+            </div>
+          </header>
+          <div class="flex flex-wrap gap-3">
+            {linuxAssets.length > 0 ? (
+              linuxAssets.map((asset, i) => (
+                <a href={asset.downloadUrl} class={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${i === 0 ? 'bg-accent text-white hover:bg-accent-hover' : 'border border-white/[0.08] text-[#a1a1aa] hover:bg-white/5'}`}>
+                  {i === 0 && <Icon name="lucide:download" size={16} />}
+                  {primaryLabel(asset)}
+                  <span class="text-xs opacity-70">({formatBytes(asset.size)})</span>
+                </a>
+              ))
+            ) : (
+              <>
+                <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-accent/50 text-white/50 cursor-not-allowed">
+                  <Icon name="lucide:download" size={16} />
+                  AppImage
+                </span>
+                <span class="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-medium border border-white/[0.08] text-[#71717a] cursor-not-allowed">.deb</span>
+              </>
+            )}
+          </div>
+          <div class="rounded-lg bg-inset border border-white/[0.06] p-4 font-mono text-xs text-[#a1a1aa] overflow-x-auto">
+            <p class="text-[#71717a] mb-2"># Make executable and run</p>
+            <p>chmod +x Readied.AppImage && ./Readied.AppImage</p>
           </div>
         </article>
       </div>
 
-      <section class="specs glass">
-        <h3>System requirements</h3>
-        <dl class="spec-list">
-          <div class="spec-row">
-            <dt>RAM</dt>
-            <dd>4 GB minimum</dd>
+      <!-- System Requirements -->
+      <section class="glass-card p-6 sm:p-8 mb-10">
+        <h3 class="text-lg font-semibold text-[#f4f4f5] mb-6 flex items-center gap-3">
+          <Icon name="lucide:cpu" size={20} class="text-accent" />
+          System requirements
+        </h3>
+        <dl class="flex flex-col">
+          <div class="flex justify-between items-center py-4 border-b border-white/[0.06]">
+            <dt class="text-sm text-[#71717a] font-medium">RAM</dt>
+            <dd class="text-sm text-[#a1a1aa] font-medium">4 GB minimum</dd>
           </div>
-          <div class="spec-row">
-            <dt>Disk</dt>
-            <dd>200 MB</dd>
+          <div class="flex justify-between items-center py-4 border-b border-white/[0.06]">
+            <dt class="text-sm text-[#71717a] font-medium">Disk</dt>
+            <dd class="text-sm text-[#a1a1aa] font-medium">200 MB</dd>
           </div>
-          <div class="spec-row">
-            <dt>Display</dt>
-            <dd>1280x720 minimum</dd>
+          <div class="flex justify-between items-center py-4">
+            <dt class="text-sm text-[#71717a] font-medium">Display</dt>
+            <dd class="text-sm text-[#a1a1aa] font-medium">1280x720 minimum</dd>
           </div>
         </dl>
       </section>
 
-      <section class="verification">
-        <h3>Verification</h3>
-        <p>Each release includes SHA256 checksums. Source available on <a href="https://github.com/readied/readied" target="_blank" rel="noopener">GitHub</a>.</p>
+      <!-- Verification -->
+      <section class="py-6">
+        <h3 class="text-lg font-semibold text-[#f4f4f5] mb-3">Verification</h3>
+        <p class="text-base text-[#a1a1aa] leading-relaxed">
+          Each release includes SHA256 checksums. Source available on
+          <a href="https://github.com/tomymaritano/readide" target="_blank" rel="noopener" class="text-accent underline underline-offset-2 inline-flex items-center gap-1 transition-colors hover:text-accent-hover hover:no-underline">
+            GitHub
+            <Icon name="lucide:external-link" size={14} />
+          </a>.
+        </p>
       </section>
     </div>
-  </main>
+  </section>
   <Footer />
 </Base>
-
-<style>
-  .download-page {
-    padding: calc(var(--nav-height) + var(--space-16)) var(--space-6) var(--space-24);
-  }
-
-  .container {
-    max-width: var(--content-max);
-    margin: 0 auto;
-  }
-
-  .page-header {
-    margin-bottom: var(--space-12);
-  }
-
-  .page-header .label {
-    display: block;
-    margin-bottom: var(--space-4);
-  }
-
-  .page-header h1 {
-    font-size: var(--text-3xl);
-    line-height: 1.15;
-    margin-bottom: var(--space-3);
-  }
-
-  .intro {
-    font-size: var(--text-lg);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-5);
-  }
-
-  .version-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: var(--space-2) var(--space-4);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    border-radius: var(--radius-full);
-  }
-
-  .version-badge.glass-accent {
-    color: var(--accent);
-  }
-
-  .platforms.disabled {
-    opacity: 0.6;
-    pointer-events: none;
-  }
-
-  .btn-disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  .platforms {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-6);
-    margin-bottom: var(--space-10);
-  }
-
-  .platform {
-    padding: var(--space-8);
-  }
-
-  .platform-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-5);
-    margin-bottom: var(--space-6);
-  }
-
-  .platform-icon {
-    width: 56px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--glass-bg-accent);
-    border: 1px solid var(--glass-border-accent);
-    border-radius: var(--radius-md);
-    color: var(--accent);
-  }
-
-  .platform h2 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-1);
-  }
-
-  .requirement {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-  }
-
-  .downloads {
-    display: flex;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-  }
-
-  .downloads .btn {
-    gap: var(--space-2);
-  }
-
-  .specs {
-    padding: var(--space-6);
-    margin-bottom: var(--space-10);
-  }
-
-  .specs h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-5);
-  }
-
-  .spec-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .spec-row {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .spec-row:last-child {
-    border-bottom: none;
-  }
-
-  .spec-row dt {
-    color: var(--text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .spec-row dd {
-    color: var(--text-secondary);
-    font-size: var(--text-sm);
-  }
-
-  .verification h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-3);
-  }
-
-  .verification p {
-    font-size: var(--text-base);
-    color: var(--text-secondary);
-  }
-
-  .verification a {
-    color: var(--accent);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .verification a:hover {
-    text-decoration: none;
-  }
-
-  @media (max-width: 640px) {
-    .download-page {
-      padding: calc(var(--nav-height) + var(--space-10)) var(--space-4) var(--space-16);
-    }
-
-    .page-header h1 {
-      font-size: var(--text-2xl);
-    }
-
-    .platforms {
-      grid-template-columns: 1fr;
-    }
-
-    .platform {
-      padding: var(--space-6);
-    }
-  }
-</style>

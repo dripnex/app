@@ -47,6 +47,7 @@ import {
 } from '@readied/wikilinks';
 import { embedInlinePreview } from '@readied/embeds/codemirror';
 import { pluginExtensionCompartment, editorPluginStore } from '@readied/plugin-api';
+import { htmlToGfmMarkdown } from '../utils/htmlToMarkdown';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
 import { setEditorView } from '../hooks/useCommandRegistry';
@@ -498,8 +499,23 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         });
       };
 
-      // Handle image paste (Cmd+V)
+      // Handle paste: HTML tables → GFM markdown, images → embed
       const handlePaste = async (e: ClipboardEvent) => {
+        // 1. Check for HTML with tables – convert to GFM markdown
+        const html = e.clipboardData?.getData('text/html');
+        if (html && /<table[\s>]/i.test(html)) {
+          e.preventDefault();
+          const md = htmlToGfmMarkdown(html);
+          const pos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: pos, insert: md },
+            selection: EditorSelection.cursor(pos + md.length),
+            userEvent: 'input.paste',
+          });
+          return;
+        }
+
+        // 2. Check for image paste
         const items = Array.from(e.clipboardData?.items || []);
         const imageItem = items.find(i => i.type.startsWith('image/'));
 

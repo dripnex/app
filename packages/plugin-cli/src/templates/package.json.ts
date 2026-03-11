@@ -11,6 +11,7 @@ export function packageJsonTemplate(id: string, name: string): string {
         dev: 'tsc --watch',
       },
       devDependencies: {
+        '@readied/plugin-api': '^0.1.0',
         typescript: '^5.0.0',
       },
     },

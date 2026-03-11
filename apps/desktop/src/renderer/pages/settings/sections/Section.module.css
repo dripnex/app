@@ -392,6 +392,240 @@
   margin: 0 0 0.625rem 0.25rem;
 }
 
+/* Plugin Tabs */
+.pluginTabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-elevated, var(--bg-tertiary));
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.pluginTab {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted, var(--text-tertiary));
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pluginTab:hover {
+  color: var(--text-secondary);
+}
+
+.pluginTabActive {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Plugin Search */
+.pluginSearchWrapper {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.pluginSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.pluginSearchInput {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  background: var(--bg-hover, var(--bg-tertiary));
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 150ms ease;
+  box-sizing: border-box;
+}
+
+.pluginSearchInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.pluginSearchInput:focus {
+  border-color: var(--accent-primary);
+}
+
+/* Browse Placeholder */
+.pluginBrowsePlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.pluginBrowsePlaceholder svg {
+  margin-bottom: 1rem;
+  opacity: 0.4;
+}
+
+.pluginBrowsePlaceholder h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.pluginBrowsePlaceholder p {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* Marketplace Category Pills */
+.pluginCategoryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pluginCategoryPill {
+  padding: 5px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pluginCategoryPill:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-hover);
+}
+
+.pluginCategoryPillActive {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+  border-color: var(--accent-primary);
+}
+
+/* Marketplace Grid */
+.pluginMarketplaceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.pluginMarketplaceCard {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  transition: border-color 150ms ease;
+}
+
+.pluginMarketplaceCard:hover {
+  border-color: var(--border-hover);
+}
+
+.pluginMarketplaceCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pluginMarketplaceIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-base);
+  font-size: 14px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.pluginMarketplaceCardInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pluginMarketplaceMeta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pluginMarketplaceCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.pluginMarketplaceTags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pluginMarketplaceTag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-base);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.pluginMarketplaceIncluded {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--success, #22c55e);
+  flex-shrink: 0;
+}
+
+.pluginMarketplaceInstallBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-primary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.pluginMarketplaceInstallBtn:hover {
+  background: var(--accent-primary);
+  color: var(--bg-base);
+}
+
 /* ============================================================================
    Update Progress
    ============================================================================ */

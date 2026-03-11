@@ -1,0 +1,207 @@
+/**
+ * Syntax Highlighting for Markdown Preview
+ *
+ * Maps highlight.js classes to Readied design tokens.
+ * Works with both dark and light themes via CSS custom properties.
+ */
+
+/* Base hljs container (inside pre code) */
+.markdown-preview pre code.hljs {
+  background: transparent;
+  padding: 0;
+  color: var(--text-primary);
+}
+
+/* Keywords: if, else, return, const, let, function, class, import, export */
+.markdown-preview .hljs-keyword,
+.markdown-preview .hljs-selector-tag {
+  color: #c792ea;
+}
+
+/* Strings */
+.markdown-preview .hljs-string,
+.markdown-preview .hljs-template-tag,
+.markdown-preview .hljs-template-variable {
+  color: #c3e88d;
+}
+
+/* Numbers, literals */
+.markdown-preview .hljs-number,
+.markdown-preview .hljs-literal {
+  color: #f78c6c;
+}
+
+/* Built-ins, types */
+.markdown-preview .hljs-built_in,
+.markdown-preview .hljs-type {
+  color: #ffcb6b;
+}
+
+/* Functions */
+.markdown-preview .hljs-title,
+.markdown-preview .hljs-title.function_ {
+  color: #82aaff;
+}
+
+/* Comments */
+.markdown-preview .hljs-comment,
+.markdown-preview .hljs-doctag {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Attributes, properties */
+.markdown-preview .hljs-attr,
+.markdown-preview .hljs-attribute {
+  color: var(--accent);
+}
+
+/* Variables, params */
+.markdown-preview .hljs-variable,
+.markdown-preview .hljs-params {
+  color: var(--text-primary);
+}
+
+/* Punctuation, operators */
+.markdown-preview .hljs-punctuation,
+.markdown-preview .hljs-operator {
+  color: #89ddff;
+}
+
+/* Regex */
+.markdown-preview .hljs-regexp {
+  color: #89ddff;
+}
+
+/* Tags (HTML/XML) */
+.markdown-preview .hljs-tag {
+  color: #f07178;
+}
+
+.markdown-preview .hljs-name {
+  color: #f07178;
+}
+
+/* CSS selectors, properties */
+.markdown-preview .hljs-selector-class,
+.markdown-preview .hljs-selector-id {
+  color: #ffcb6b;
+}
+
+.markdown-preview .hljs-property {
+  color: #82aaff;
+}
+
+/* Meta / preprocessor */
+.markdown-preview .hljs-meta,
+.markdown-preview .hljs-meta .hljs-keyword {
+  color: #89ddff;
+}
+
+/* Symbols, bullets */
+.markdown-preview .hljs-symbol,
+.markdown-preview .hljs-bullet {
+  color: var(--accent);
+}
+
+/* Links */
+.markdown-preview .hljs-link {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Deletion / addition (diffs) */
+.markdown-preview .hljs-deletion {
+  color: #f07178;
+  background: rgba(240, 113, 120, 0.1);
+}
+
+.markdown-preview .hljs-addition {
+  color: #c3e88d;
+  background: rgba(195, 232, 141, 0.1);
+}
+
+/* Section headers */
+.markdown-preview .hljs-section {
+  color: #82aaff;
+  font-weight: 600;
+}
+
+/* Emphasis */
+.markdown-preview .hljs-emphasis {
+  font-style: italic;
+}
+
+.markdown-preview .hljs-strong {
+  font-weight: 600;
+}
+
+/* ===== LIGHT THEME OVERRIDES ===== */
+:root[data-theme="light"] .markdown-preview .hljs-keyword,
+:root[data-theme="light"] .markdown-preview .hljs-selector-tag {
+  color: #7c3aed;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-string,
+:root[data-theme="light"] .markdown-preview .hljs-template-tag,
+:root[data-theme="light"] .markdown-preview .hljs-template-variable {
+  color: #16a34a;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-number,
+:root[data-theme="light"] .markdown-preview .hljs-literal {
+  color: #ea580c;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-built_in,
+:root[data-theme="light"] .markdown-preview .hljs-type {
+  color: #ca8a04;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-title,
+:root[data-theme="light"] .markdown-preview .hljs-title.function_ {
+  color: #2563eb;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-comment,
+:root[data-theme="light"] .markdown-preview .hljs-doctag {
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-punctuation,
+:root[data-theme="light"] .markdown-preview .hljs-operator {
+  color: #0891b2;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-regexp {
+  color: #0891b2;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-tag,
+:root[data-theme="light"] .markdown-preview .hljs-name {
+  color: #dc2626;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-selector-class,
+:root[data-theme="light"] .markdown-preview .hljs-selector-id {
+  color: #ca8a04;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-property {
+  color: #2563eb;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-meta,
+:root[data-theme="light"] .markdown-preview .hljs-meta .hljs-keyword {
+  color: #0891b2;
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-deletion {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+:root[data-theme="light"] .markdown-preview .hljs-addition {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+}

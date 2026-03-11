@@ -201,6 +201,43 @@ export const sharedNotes = sqliteTable(
   table => [uniqueIndex('shared_notes_user_note_unique').on(table.userId, table.noteId)]
 );
 
+/**
+ * Plugin catalog — published plugins in the marketplace
+ */
+export const pluginCatalog = sqliteTable(
+  'plugin_catalog',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    readme: text('readme'),
+    author: text('author').notNull(),
+    version: text('version').notNull(),
+    category: text('category').notNull().default('other'),
+    tags: text('tags').notNull().default('[]'), // JSON array
+    icon: text('icon').notNull().default('puzzle'),
+    repositoryUrl: text('repository_url'),
+    bundleUrl: text('bundle_url'),
+    downloads: integer('downloads').notNull().default(0),
+    minApiVersion: text('min_api_version'),
+    isBuiltIn: integer('is_built_in', { mode: 'boolean' }).notNull().default(false),
+    status: text('status').notNull().default('published'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  table => [
+    index('idx_plugin_catalog_category').on(table.category),
+    index('idx_plugin_catalog_status').on(table.status),
+  ]
+);
+
 // Type exports for use in routes
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -209,3 +246,5 @@ export type SyncLogEntry = typeof syncLog.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Newsletter = typeof newsletter.$inferSelect;
 export type SharedNote = typeof sharedNotes.$inferSelect;
+export type PluginCatalogEntry = typeof pluginCatalog.$inferSelect;
+export type NewPluginCatalogEntry = typeof pluginCatalog.$inferInsert;

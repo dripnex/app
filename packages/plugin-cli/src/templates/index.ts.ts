@@ -1,27 +1,35 @@
 export function indexTemplate(id: string, name: string): string {
-  return `/**
+  return `import type { PluginManifest } from '@readied/plugin-api';
+
+/**
  * ${name} — Readied Plugin
  */
-
-module.exports = {
+export const plugin: PluginManifest = {
   id: '${id}',
   name: '${name}',
   version: '0.1.0',
+  description: 'A Readied plugin',
 
-  activate(ctx) {
-    console.log('[${id}] activated');
+  activate(context) {
+    context.log.info('${name} activated');
 
-    // Example: register a command
-    // ctx.registerCommand({
-    //   id: '${id}:hello',
-    //   title: 'Say Hello',
-    //   handler: () => console.log('Hello from ${name}!'),
-    // });
+    // Register a command in the command palette
+    const unregisterHello = context.registerCommand(
+      {
+        id: 'hello',
+        name: 'Say Hello',
+        icon: 'Smile',
+      },
+      () => {
+        context.log.info('Hello from ${name}!');
+        return true;
+      }
+    );
 
-    // Return a disposable to clean up on deactivation
+    // Clean up when the plugin is deactivated
     return {
       dispose() {
-        console.log('[${id}] deactivated');
+        unregisterHello();
       },
     };
   },

@@ -30,6 +30,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Architecture', link: '/architecture/overview' },
+      { text: 'Plugins', link: '/plugins/getting-started' },
       { text: 'Decisions', link: '/decisions/' },
       { text: 'Roadmap', link: '/roadmap/' },
       {
@@ -58,6 +59,18 @@ export default defineConfig({
             { text: 'IPC Contract', link: '/architecture/ipc' },
             { text: 'Editor', link: '/architecture/editor' },
             { text: 'Theming', link: '/architecture/theming' },
+          ],
+        },
+      ],
+      '/plugins/': [
+        {
+          text: 'Plugin Development',
+          items: [
+            { text: 'Getting Started', link: '/plugins/getting-started' },
+            { text: 'API Reference', link: '/plugins/api-reference' },
+            { text: 'Layout Zones', link: '/plugins/layout-zones' },
+            { text: 'Examples', link: '/plugins/examples' },
+            { text: 'Tutorial: Pomodoro Timer', link: '/plugins/tutorial' },
           ],
         },
       ],

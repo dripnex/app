@@ -22,6 +22,7 @@ import { sync } from './routes/sync.js';
 import { subscription } from './routes/subscription.js';
 import { newsletterRoute } from './routes/newsletter.js';
 import { share } from './routes/share.js';
+import { plugins } from './routes/plugins.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -59,6 +60,7 @@ app.route('/sync', sync);
 app.route('/subscription', subscription);
 app.route('/newsletter', newsletterRoute);
 app.route('/share', share);
+app.route('/plugins', plugins);
 
 // 404 handler
 app.notFound(c => {

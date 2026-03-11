@@ -327,6 +327,9 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
 
   noteWindow.on('ready-to-show', () => {
     noteWindow.show();
+    if (process.env.NODE_ENV === 'development') {
+      noteWindow.webContents.openDevTools();
+    }
   });
 
   // Load renderer with note ID in query param
@@ -2030,6 +2033,59 @@ function registerPluginDiscoveryHandlers(): void {
   });
 }
 
+/** Register IPC handler for AI API proxy (avoids CORS in renderer) */
+function registerAiHandlers(): void {
+  ipcMain.handle(
+    'ai:query',
+    async (
+      _event,
+      options: {
+        apiKey: string;
+        model: string;
+        system: string;
+        messages: Array<{ role: string; content: string }>;
+        maxTokens?: number;
+      }
+    ) => {
+      const { apiKey, model, system, messages, maxTokens = 2048 } = options;
+
+      try {
+        const response = await net.fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: maxTokens,
+            system,
+            messages,
+          }),
+        });
+
+        if (!response.ok) {
+          const body = await response.text();
+          return { ok: false, error: `API error ${response.status}: ${body}` };
+        }
+
+        const data = (await response.json()) as {
+          content: Array<{ type: string; text?: string }>;
+        };
+
+        const textBlock = data.content.find((b: { type: string }) => b.type === 'text');
+        return { ok: true, content: textBlock?.text ?? '' };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    }
+  );
+}
+
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   const updateLog = loggers.updater();
@@ -2172,6 +2228,7 @@ app
     registerGitHandlers(); // Git operations for git-backed notebooks
     registerPluginConfigHandlers();
     registerPluginDiscoveryHandlers();
+    registerAiHandlers();
 
     // Start plugin hot-reload watcher in dev mode
     if (process.env.NODE_ENV === 'development' && dataPaths) {

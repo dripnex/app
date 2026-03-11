@@ -52,7 +52,7 @@ describe('initPlugin', () => {
 
     expect(index).toContain("id: 'demo'");
     expect(index).toContain("name: 'Demo'");
-    expect(index).toContain('module.exports');
+    expect(index).toContain('export const plugin');
   });
 
   it('throws if directory already exists', async () => {

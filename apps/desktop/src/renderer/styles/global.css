@@ -376,6 +376,11 @@ input:focus-visible {
   transform: scale(0.95);
 }
 
+.note-editor-actions-btn.active {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
 /* Header actions group (backlinks + more actions) */
 .note-editor-header-actions {
   display: flex;
