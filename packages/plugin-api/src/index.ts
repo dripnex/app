@@ -48,8 +48,8 @@ export type { CssVariableRegistration } from './theme/cssVariableStore';
 export { useCssVariables } from './theme/useCssVariables';
 
 // Validation
-export { validateManifest, assertValidManifest } from './validation';
-export type { ManifestError } from './validation';
+export { validateManifest, assertValidManifest, validateConfigValue } from './validation';
+export type { ManifestError, ConfigValidationResult } from './validation';
 
 // Loader
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
