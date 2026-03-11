@@ -685,6 +685,12 @@ export interface ReadiedAPI {
     /** Clear all config for a plugin */
     clear: (pluginId: string) => Promise<void>;
   };
+  theme: {
+    /** Set the nativeTheme source in the main process */
+    setSource: (source: 'dark' | 'light' | 'system') => void;
+    /** Listen for system theme changes from the main process */
+    onSystemChanged: (callback: (isDark: boolean) => void) => () => void;
+  };
   plugins: {
     /** Scan filesystem for installed plugins */
     scan: () => Promise<ScannedPlugin[]>;
@@ -939,6 +945,18 @@ const api: ReadiedAPI = {
     set: (pluginId, key, value) => ipcRenderer.invoke('pluginConfig:set', pluginId, key, value),
     getAll: pluginId => ipcRenderer.invoke('pluginConfig:getAll', pluginId),
     clear: pluginId => ipcRenderer.invoke('pluginConfig:clear', pluginId),
+  },
+  theme: {
+    setSource: (source: string) => {
+      ipcRenderer.send('theme:set-source', source);
+    },
+    onSystemChanged: (callback: (isDark: boolean) => void) => {
+      const handler = (_event: unknown, isDark: boolean) => callback(isDark);
+      ipcRenderer.on('theme:system-changed', handler);
+      return () => {
+        ipcRenderer.removeListener('theme:system-changed', handler);
+      };
+    },
   },
   plugins: {
     scan: () => ipcRenderer.invoke('plugins:scan'),
