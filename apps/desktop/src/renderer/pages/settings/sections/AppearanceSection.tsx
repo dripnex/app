@@ -5,9 +5,9 @@
  */
 
 import { useSyncExternalStore } from 'react';
+import { themeRegistryStore } from '@readied/plugin-api';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
-import { themeRegistryStore } from '@readied/plugin-api';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, ColorPicker, type ColorOption } from '../components/controls';

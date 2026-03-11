@@ -1,6 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
 import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
+
+/**
+ * Persisted IPC isDark value from the main process nativeTheme.
+ * Used so that re-applies (accent/zoom changes) use the authoritative
+ * main-process value instead of falling back to window.matchMedia.
+ */
+let nativeIsDark: boolean | undefined;
 
 /**
  * Apply appearance settings to the DOM.
@@ -13,12 +20,17 @@ function applyAppearance(
 ): void {
   let resolved: string;
   if (theme === 'system') {
-    resolved =
-      (isDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    // Prefer the IPC-supplied nativeTheme value, then the explicit param,
+    // then fall back to matchMedia only as a last resort.
+    const dark =
+      isDark ?? nativeIsDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches;
+    resolved = dark ? 'dark' : 'light';
   } else {
     resolved = theme;
   }
-  document.documentElement.setAttribute('data-theme', resolved);
+  // Use data-color-scheme for the dark/light resolved value.
+  // data-theme is reserved for plugin theme identity (set by useThemeOverrides).
+  document.documentElement.setAttribute('data-color-scheme', resolved);
 
   document.documentElement.style.setProperty('--accent', accentColor);
   document.documentElement.style.setProperty('--accent-primary', accentColor);
@@ -53,6 +65,10 @@ export function useAppearanceSettings(): void {
   const accentColor = appearance?.accentColor || '#5eead4';
   const zoomLevel = appearance?.zoomLevel || '1.0';
 
+  // Keep a ref to current values so the IPC callback can access them
+  const currentRef = useRef({ theme, accentColor, zoomLevel });
+  currentRef.current = { theme, accentColor, zoomLevel };
+
   // Apply settings to DOM
   useEffect(() => {
     applyAppearance(theme, accentColor, zoomLevel);
@@ -67,8 +83,11 @@ export function useAppearanceSettings(): void {
   useEffect(() => {
     if (theme !== 'system') return;
     const unsub = window.readied.theme.onSystemChanged(isDark => {
-      applyAppearance('system', accentColor, zoomLevel, isDark);
+      // Persist the IPC value so subsequent re-applies use it
+      nativeIsDark = isDark;
+      const { accentColor: ac, zoomLevel: zl } = currentRef.current;
+      applyAppearance('system', ac, zl, isDark);
     });
     return unsub;
-  }, [theme, accentColor, zoomLevel]);
+  }, [theme]);
 }

@@ -273,10 +273,13 @@ export class PluginRegistry {
         return () => cssVariableStore.getState().unregister(regId);
       },
       registerTheme: (theme): (() => void) => {
-        themeRegistryStore.getState().register({
+        const success = themeRegistryStore.getState().register({
           ...theme,
           pluginId: id,
         });
+        if (!success) {
+          console.warn(`[${id}] Theme registration failed for "${theme.id}" (no valid tokens)`);
+        }
         return () => themeRegistryStore.getState().unregister(theme.id);
       },
       config,

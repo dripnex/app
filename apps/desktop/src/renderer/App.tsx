@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EditorView } from '@codemirror/view';
 import {
@@ -83,17 +83,21 @@ function NotesApp() {
 
   // Restore saved plugin theme on startup
   const appearance = useSettingsStore(selectAppearance);
+  const registeredThemes = useSyncExternalStore(
+    themeRegistryStore.subscribe,
+    () => themeRegistryStore.getState().themes
+  );
 
   useEffect(() => {
     const savedThemeId = appearance?.activeThemeId;
     if (savedThemeId) {
       // Only restore if the theme is actually registered (plugin loaded)
-      const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
+      const exists = registeredThemes.some(t => t.id === savedThemeId);
       if (exists) {
         themeRegistryStore.getState().setActive(savedThemeId);
       }
     }
-  }, [appearance?.activeThemeId]);
+  }, [appearance?.activeThemeId, registeredThemes]);
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
