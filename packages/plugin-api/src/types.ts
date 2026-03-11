@@ -143,6 +143,15 @@ export interface PluginContext {
   ): () => void;
   /** Register CSS custom properties (theme overrides or custom variables) */
   registerCssVariables(id: string, variables: Record<string, string>): () => void;
+  /** Register a complete theme with validated tokens */
+  registerTheme(theme: {
+    id: string;
+    name: string;
+    description?: string;
+    author?: string;
+    colorScheme: 'dark' | 'light';
+    tokens: Record<string, string>;
+  }): () => void;
   config: PluginConfigAPI;
   log: PluginLogger;
   app: AppAPI;

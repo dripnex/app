@@ -21,6 +21,7 @@ import { previewComponentStore } from '../preview/previewComponentStore';
 import { codeBlockStore } from '../preview/codeBlockStore';
 import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
+import { themeRegistryStore } from '../theme/themeRegistryStore';
 
 type PluginState = 'loaded' | 'active' | 'deactivated' | 'error';
 
@@ -290,6 +291,13 @@ export class PluginRegistry {
         cssVariableStore.getState().register({ id: regId, pluginId: id, variables });
         return () => cssVariableStore.getState().unregister(regId);
       },
+      registerTheme: (theme): (() => void) => {
+        themeRegistryStore.getState().register({
+          ...theme,
+          pluginId: id,
+        });
+        return () => themeRegistryStore.getState().unregister(theme.id);
+      },
       config,
       log: {
         // eslint-disable-next-line no-console
@@ -318,6 +326,7 @@ export class PluginRegistry {
       previewComponentStore.getState().unregisterAll(id);
       codeBlockStore.getState().unregisterAll(id);
       cssVariableStore.getState().unregisterAll(id);
+      themeRegistryStore.getState().unregisterAll(id);
       const layoutManager = createLayoutManager(id);
       layoutManager.removeAllForPlugin(id);
       for (const unregister of entry.commandUnregisters) {
@@ -361,6 +370,7 @@ export class PluginRegistry {
 
     // Cleanup theme stores
     cssVariableStore.getState().unregisterAll(id);
+    themeRegistryStore.getState().unregisterAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {
