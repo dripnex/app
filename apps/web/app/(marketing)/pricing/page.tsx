@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import {
   Heart,
@@ -97,7 +95,12 @@ export default function PricingPage() {
 
           {/* Pro Tier */}
           <Card className="relative overflow-hidden glass-card-glow p-6 sm:p-8">
-            <BorderBeam size={200} duration={8} colorFrom="#8b5cf6" colorTo="#6d28d9" />
+            <BorderBeam
+              size={200}
+              duration={8}
+              colorFrom="var(--color-accent)"
+              colorTo="var(--color-accent-hover)"
+            />
             <Badge className="absolute top-5 right-5">Most popular</Badge>
 
             <div className="pb-6 border-b border-border mb-4">

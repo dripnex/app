@@ -27,6 +27,7 @@ export function AnimatedGridPattern({
   className,
   maxOpacity = 0.5,
   duration = 4,
+  repeatDelay = 1,
   ...props
 }: AnimatedGridPatternProps) {
   const id = useId();
@@ -112,7 +113,7 @@ export function AnimatedGridPattern({
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} />
-      <svg x={x} y={y} className="overflow-visible">
+      <g className="overflow-visible">
         {squares.map(({ pos: [x, y], id }, index) => (
           <motion.rect
             initial={{ opacity: 0 }}
@@ -122,6 +123,7 @@ export function AnimatedGridPattern({
               repeat: 1,
               delay: index * 0.1,
               repeatType: 'reverse',
+              repeatDelay,
             }}
             onAnimationComplete={() => updateSquarePosition(id)}
             key={`${x}-${y}-${index}`}
@@ -133,7 +135,7 @@ export function AnimatedGridPattern({
             strokeWidth="0"
           />
         ))}
-      </svg>
+      </g>
     </svg>
   );
 }

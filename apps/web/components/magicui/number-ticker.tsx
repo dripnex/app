@@ -68,7 +68,10 @@ export function NumberTicker({
       )}
       {...props}
     >
-      {startValue}
+      {Intl.NumberFormat('en-US', {
+        minimumFractionDigits: decimalPlaces,
+        maximumFractionDigits: decimalPlaces,
+      }).format(direction === 'down' ? value : startValue)}
     </span>
   );
 }

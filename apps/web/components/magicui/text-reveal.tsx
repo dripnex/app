@@ -9,7 +9,7 @@ export interface TextRevealProps extends ComponentPropsWithoutRef<'div'> {
   children: string;
 }
 
-export const TextReveal: FC<TextRevealProps> = ({ children, className }) => {
+export const TextReveal: FC<TextRevealProps> = ({ children, className, ...rest }) => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -22,7 +22,7 @@ export const TextReveal: FC<TextRevealProps> = ({ children, className }) => {
   const words = children.split(' ');
 
   return (
-    <div ref={sectionRef} className={cn('relative z-0 h-[200vh]', className)}>
+    <div ref={sectionRef} className={cn('relative z-0 h-[200vh]', className)} {...rest}>
       <div
         className={
           'sticky top-0 mx-auto flex h-[50%] max-w-4xl items-center bg-transparent px-4 py-20'
@@ -57,8 +57,10 @@ interface WordProps {
 const Word: FC<WordProps> = ({ children, progress, range }) => {
   const opacity = useTransform(progress, range, [0, 1]);
   return (
-    <span className="xl:lg-3 relative mx-1 lg:mx-1.5">
-      <span className="absolute opacity-30">{children}</span>
+    <span className="xl:mx-3 relative mx-1 lg:mx-1.5">
+      <span className="absolute opacity-30" aria-hidden="true">
+        {children}
+      </span>
       <motion.span style={{ opacity: opacity }} className={'text-black dark:text-white'}>
         {children}
       </motion.span>

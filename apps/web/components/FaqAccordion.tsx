@@ -37,7 +37,11 @@ function AccordionList({ items }: { items: FaqItem[] }) {
   return (
     <Accordion type="single" collapsible className="mx-auto w-full space-y-3">
       {items.map((item, index) => (
-        <AccordionItem key={index} value={`faq-${index}`} className="rounded-xl bg-surface/50">
+        <AccordionItem
+          key={item.question}
+          value={`faq-${item.question.slice(0, 40).toLowerCase().replace(/\s+/g, '-')}`}
+          className="rounded-xl bg-surface/50"
+        >
           <AccordionTrigger className="px-6 py-4 text-base font-medium text-text-secondary hover:text-white [&[data-state=open]]:text-white">
             {item.question}
           </AccordionTrigger>
@@ -106,6 +110,7 @@ export default function FaqAccordion(props: Props) {
           <SearchIcon />
         </div>
         <input
+          aria-label="Search FAQ questions"
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}

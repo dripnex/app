@@ -36,17 +36,30 @@ function CellValue({ value, positive }: { value: boolean | string; positive: boo
       <span className={positive ? 'text-accent font-medium' : 'text-text-muted'}>{value}</span>
     );
   }
+  const label = value ? 'Yes' : 'No';
   if (value) {
     return positive ? (
-      <Check className="h-4 w-4 text-accent mx-auto" />
+      <>
+        <Check className="h-4 w-4 text-accent mx-auto" aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </>
     ) : (
-      <Check className="h-4 w-4 text-text-muted mx-auto" />
+      <>
+        <Check className="h-4 w-4 text-text-muted mx-auto" aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </>
     );
   }
   return positive ? (
-    <X className="h-4 w-4 text-text-muted mx-auto" />
+    <>
+      <X className="h-4 w-4 text-text-muted mx-auto" aria-hidden="true" />
+      <span className="sr-only">{label}</span>
+    </>
   ) : (
-    <X className="h-4 w-4 text-accent mx-auto" />
+    <>
+      <X className="h-4 w-4 text-accent mx-auto" aria-hidden="true" />
+      <span className="sr-only">{label}</span>
+    </>
   );
 }
 
