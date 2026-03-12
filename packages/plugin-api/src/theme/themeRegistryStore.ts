@@ -33,12 +33,10 @@ export const themeRegistryStore = createStore<ThemeRegistryState>((set, get) => 
     set(state => ({
       themes: [...state.themes.filter(t => t.id !== theme.id), validated],
     }));
-    // Debug-level log uses console.warn with a prefix to pass lint rules
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(
-        `[ThemeRegistry] Registered: "${theme.name}" (${Object.keys(validTokens).length} tokens)`
-      );
-    }
+    // Debug-level log (always enabled — plugin-api is browser code without @types/node)
+    console.warn(
+      `[ThemeRegistry] Registered: "${theme.name}" (${Object.keys(validTokens).length} tokens)`
+    );
     return true;
   },
 
