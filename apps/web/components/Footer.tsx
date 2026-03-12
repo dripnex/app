@@ -1,4 +1,10 @@
+'use client';
+
 import Link from 'next/link';
+import NewsletterForm from './NewsletterForm';
+import { DotPattern } from '@/components/magicui/dot-pattern';
+import { Separator } from '@/components/ui/separator';
+
 function GithubIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -14,22 +20,24 @@ function TwitterIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-import NewsletterForm from './NewsletterForm';
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto bg-base border-t border-white/[0.06]">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 pb-8 pt-14 lg:px-8">
+    <footer className="relative mt-auto overflow-hidden">
+      <DotPattern className="[mask-image:radial-gradient(400px_circle_at_center,white,transparent)] opacity-30" />
+      <Separator />
+
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 pb-8 pt-14 lg:px-8">
         {/* Top row: brand */}
         <div className="flex flex-col gap-3">
           <Link href="/" className="inline-block transition-opacity hover:opacity-75">
-            <span className="font-mono text-xl font-bold text-zinc-50 tracking-tight">
+            <span className="font-mono text-xl font-bold text-text-primary tracking-tight">
               readied<span className="text-accent">.</span>
             </span>
           </Link>
-          <p className="max-w-[260px] text-sm leading-relaxed text-[#71717a]">
+          <p className="max-w-[260px] text-sm leading-relaxed text-text-muted">
             The note app that stays out of your way.
           </p>
         </div>
@@ -38,24 +46,24 @@ export default function Footer() {
         <nav className="grid grid-cols-2 gap-8 sm:grid-cols-4" aria-label="Footer navigation">
           {/* Product */}
           <div className="flex flex-col gap-2.5">
-            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">
+            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-text-muted">
               Product
             </span>
             <Link
               href="/#features"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Features
             </Link>
             <Link
               href="/pricing"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Pricing
             </Link>
             <Link
               href="/download"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Download
             </Link>
@@ -63,30 +71,30 @@ export default function Footer() {
 
           {/* Resources */}
           <div className="flex flex-col gap-2.5">
-            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">
+            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-text-muted">
               Resources
             </span>
             <Link
               href="/docs"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Docs
             </Link>
             <Link
               href="/changelog"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Changelog
             </Link>
             <Link
               href="/philosophy"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Philosophy
             </Link>
             <Link
               href="/faq"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               FAQ
             </Link>
@@ -94,7 +102,7 @@ export default function Footer() {
               href="https://github.com/tomymaritano/readide/issues/new?template=bug_report.md"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Report a Bug
             </a>
@@ -102,7 +110,7 @@ export default function Footer() {
               href="https://github.com/tomymaritano/readide/contribute"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Contribute
             </a>
@@ -110,18 +118,18 @@ export default function Footer() {
 
           {/* Legal */}
           <div className="flex flex-col gap-2.5">
-            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">
+            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-text-muted">
               Legal
             </span>
             <Link
               href="/terms"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Terms
             </Link>
             <Link
               href="/privacy"
-              className="w-fit text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="w-fit text-sm text-text-secondary transition-colors hover:text-accent"
             >
               Privacy
             </Link>
@@ -129,7 +137,7 @@ export default function Footer() {
 
           {/* Connect */}
           <div className="flex flex-col gap-2.5">
-            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#71717a]">
+            <span className="mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-text-muted">
               Connect
             </span>
             <a
@@ -137,7 +145,7 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
-              className="inline-flex w-fit items-center gap-2 text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="inline-flex w-fit items-center gap-2 text-sm text-text-secondary transition-colors hover:text-accent"
             >
               <GithubIcon className="h-[18px] w-[18px] shrink-0" />
               <span>GitHub</span>
@@ -147,7 +155,7 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="X (Twitter)"
-              className="inline-flex w-fit items-center gap-2 text-sm text-[#a1a1aa] transition-colors hover:text-accent"
+              className="inline-flex w-fit items-center gap-2 text-sm text-text-secondary transition-colors hover:text-accent"
             >
               <TwitterIcon className="h-[18px] w-[18px] shrink-0" />
               <span>Twitter</span>
@@ -157,9 +165,9 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 border-t border-white/[0.06] px-6 py-5 sm:flex-row lg:px-8">
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 border-t border-border px-6 py-5 sm:flex-row lg:px-8">
         <div className="flex items-center gap-4">
-          <span className="text-xs text-[#71717a]">
+          <span className="text-xs text-text-muted">
             &copy; {year} Readied. Built with &hearts; for developers.
           </span>
         </div>
