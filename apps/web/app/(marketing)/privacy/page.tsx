@@ -1,0 +1,170 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Shield, Check, ArrowLeft } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy — Readied',
+  description: 'How Readied protects your privacy. Your notes stay on your device.',
+};
+
+const lastUpdated = 'January 2026';
+
+const sections = [
+  {
+    title: 'Overview',
+    content: [
+      'Readied is designed with privacy as a core principle. Your notes are stored locally on your device, not on our servers.',
+      'We believe your data belongs to you. This privacy policy explains what minimal information we collect and why.',
+    ],
+  },
+  {
+    title: 'Data We Do Not Collect',
+    content: ['Readied does not collect, store, or transmit:'],
+    list: [
+      'Your notes or any content you create',
+      'Your files or file names',
+      'Personal information (name, email, address)',
+      'Usage analytics or behavioral data',
+      'Location data',
+      'Device identifiers for tracking',
+    ],
+  },
+  {
+    title: 'Data We Collect',
+    content: [
+      'When you purchase Readied, our payment processor (Stripe) collects standard transaction information:',
+    ],
+    list: [
+      'Email address (for license delivery)',
+      'Payment information (processed securely by Stripe)',
+      'Transaction records (for refunds and support)',
+    ],
+    footer:
+      'This information is handled by our payment processors according to their respective privacy policies.',
+  },
+  {
+    title: 'Subscription Verification',
+    content: [
+      'When you sign in to Readied Pro, the app verifies your subscription status.',
+      'This check transmits only your account identifier. No personal data or note content is sent.',
+      'Free tier users require no account. The app works entirely offline.',
+    ],
+  },
+  {
+    title: 'Updates',
+    content: [
+      'Readied may periodically check for software updates.',
+      'These update checks do not transmit any personal data or content from your device.',
+      'You can disable automatic update checks in settings.',
+    ],
+  },
+  {
+    title: 'Third-Party Services',
+    content: [
+      'Readied does not integrate with third-party analytics, advertising, or tracking services.',
+      'The only external services involved are:',
+    ],
+    list: ['Payment processing (Stripe)', 'License validation server', 'Update server (optional)'],
+  },
+  {
+    title: 'Your Rights',
+    content: [
+      "Since we don't store your data, there's nothing to delete or export from our servers.",
+      'Your notes are standard Markdown files on your computer. You have complete control over them.',
+      "To delete your purchase data, contact us and we'll remove your records from our payment processor.",
+    ],
+  },
+  {
+    title: 'Changes to This Policy',
+    content: [
+      'We may update this privacy policy occasionally.',
+      'Significant changes will be announced through our changelog and blog.',
+      'Continued use of Readied after changes constitutes acceptance of the updated policy.',
+    ],
+  },
+  {
+    title: 'Contact',
+    content: ['For privacy-related questions or concerns:'],
+    list: ['Email: privacy@readied.app', 'GitHub: github.com/tomymaritano/readide'],
+  },
+];
+
+export default function PrivacyPage() {
+  return (
+    <section className="pt-32 sm:pt-40 pb-24 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-10">
+          <span className="section-label">Legal</span>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-zinc-50 mb-3">
+            Privacy Policy
+          </h1>
+          <p className="text-sm text-zinc-500">Last updated: {lastUpdated}</p>
+        </header>
+
+        {/* TL;DR */}
+        <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 rounded-xl bg-surface p-5 mb-10 border-l-[3px] border-l-accent">
+          <div className="shrink-0 w-11 h-11 flex items-center justify-center bg-accent/10 rounded-lg text-accent">
+            <Shield size={24} />
+          </div>
+          <div className="flex-1">
+            <span className="block font-mono text-xs font-semibold uppercase tracking-[0.1em] text-accent mb-1">
+              TL;DR
+            </span>
+            <p className="text-base text-zinc-400 leading-7 m-0">
+              Your notes never leave your device. We only collect payment info through Stripe to
+              deliver your license.
+            </p>
+          </div>
+        </div>
+
+        <article className="flex flex-col gap-5">
+          {sections.map((section, i) => (
+            <section key={i} className="rounded-xl bg-surface p-6 sm:p-8">
+              <header className="flex items-baseline gap-3 mb-4">
+                <span className="text-sm font-semibold text-accent font-mono">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <h2 className="text-lg sm:text-xl font-bold text-zinc-50">{section.title}</h2>
+              </header>
+              <div>
+                {section.content.map((p, pi) => (
+                  <p key={pi} className="text-base text-zinc-400 leading-7 mb-3 last:mb-0">
+                    {p}
+                  </p>
+                ))}
+                {section.list && (
+                  <ul className="list-none my-4 p-4 bg-inset border border-white/[0.06] rounded-lg">
+                    {section.list.map((item, li) => (
+                      <li
+                        key={li}
+                        className="flex items-start gap-3 py-2.5 text-base text-zinc-400 leading-7"
+                      >
+                        <Check size={16} className="text-accent shrink-0 mt-1" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {'footer' in section && section.footer && (
+                  <p className="mt-4 pt-4 border-t border-white/[0.06] italic text-base text-zinc-500 leading-7">
+                    {section.footer}
+                  </p>
+                )}
+              </div>
+            </section>
+          ))}
+        </article>
+
+        <footer className="mt-12">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-accent"
+          >
+            <ArrowLeft size={16} />
+            Back to home
+          </Link>
+        </footer>
+      </div>
+    </section>
+  );
+}

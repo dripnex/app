@@ -1,0 +1,102 @@
+import { FolderOpen, FileText } from 'lucide-react';
+import ComparisonTable from './ComparisonTable';
+
+export default function WhyLocal() {
+  return (
+    <section className="py-24 px-6">
+      <div className="mx-auto max-w-5xl">
+        <header className="mx-auto mb-12 max-w-[640px] text-center">
+          <span className="section-label">Why local-first?</span>
+          <h2 className="section-heading">
+            Most note apps treat your data like
+            <br />
+            <span className="gradient-text">their business asset.</span>
+          </h2>
+          <p className="text-lg leading-relaxed text-[#a1a1aa]">
+            We don&apos;t. Your files stay on your disk, in standard Markdown, forever.
+          </p>
+        </header>
+
+        <ComparisonTable />
+
+        {/* Navigation demo */}
+        <div className="mt-12">
+          <img
+            src="/media/demo-navigation.svg"
+            alt="Quick-open navigation between notes"
+            className="w-full max-w-3xl mx-auto rounded-xl border border-white/[0.06]"
+            width={800}
+            height={500}
+            loading="lazy"
+          />
+          <p className="text-center text-sm text-[#71717a] mt-3">
+            Quick-open: jump between notes with Cmd+P
+          </p>
+        </div>
+
+        {/* Visual: file format proof */}
+        <div className="mt-10 rounded-xl bg-surface overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Left: what you write */}
+            <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-accent">
+                  What you write
+                </span>
+              </div>
+              <div className="font-mono text-xs sm:text-sm leading-relaxed text-[#a1a1aa] space-y-1 bg-inset rounded-lg p-4 border border-white/[0.06]">
+                <div>
+                  <span className="text-accent font-bold"># </span>
+                  <span className="text-[#f4f4f5] font-bold">Meeting Notes</span>
+                </div>
+                <div className="h-1" />
+                <div>
+                  <span className="text-accent/50">- </span>Decided on local-first architecture
+                </div>
+                <div>
+                  <span className="text-accent/50">- </span>Launch timeline: Q2 2026
+                </div>
+                <div>
+                  <span className="text-accent/50">- </span>Next step: prototype by Friday
+                </div>
+              </div>
+            </div>
+
+            {/* Right: what's on disk */}
+            <div className="p-6 md:p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-accent">
+                  What&apos;s on your disk
+                </span>
+              </div>
+              <div className="font-mono text-xs sm:text-sm text-[#a1a1aa] space-y-0.5 bg-inset rounded-lg p-4 border border-white/[0.06]">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-3.5 w-3.5 text-accent" />
+                  <span className="text-[#f4f4f5]">~/notes/</span>
+                </div>
+                <div className="flex items-center gap-2 pl-5">
+                  <FileText className="h-3.5 w-3.5 text-[#71717a]" />
+                  <span>meeting-notes.md</span>
+                  <span className="text-[10px] text-[#71717a] ml-auto">1.2 KB</span>
+                </div>
+                <div className="flex items-center gap-2 pl-5">
+                  <FileText className="h-3.5 w-3.5 text-[#71717a]" />
+                  <span>project-plan.md</span>
+                  <span className="text-[10px] text-[#71717a] ml-auto">3.4 KB</span>
+                </div>
+                <div className="flex items-center gap-2 pl-5">
+                  <FileText className="h-3.5 w-3.5 text-[#71717a]" />
+                  <span>ideas.md</span>
+                  <span className="text-[10px] text-[#71717a] ml-auto">0.8 KB</span>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-[#71717a] italic">
+                Plain .md files. Open with any editor.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

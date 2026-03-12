@@ -21,13 +21,9 @@
   - changed-files:
       - any-glob-to-any-file: "apps/desktop/**"
 
-"app:docs":
+"app:web":
   - changed-files:
-      - any-glob-to-any-file: "apps/docs-site/**"
-
-"app:marketing":
-  - changed-files:
-      - any-glob-to-any-file: "apps/marketing-site/**"
+      - any-glob-to-any-file: "apps/web/**"
 
 "ci":
   - changed-files:
