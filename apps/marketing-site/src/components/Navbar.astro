@@ -29,9 +29,11 @@ import NavDropdown from './NavDropdown.tsx';
         client:load
         label="Docs"
         items={[
+          { label: 'Documentation', href: 'https://tomymaritano.github.io/readide/' },
           { label: 'Philosophy', href: '/philosophy' },
           { label: 'FAQ', href: '/faq' },
           { label: 'Plugins', href: '/plugins' },
+          { label: 'Report a Bug', href: 'https://github.com/tomymaritano/readide/issues/new?template=bug_report.md' },
         ]}
       />
 
@@ -78,9 +80,12 @@ import NavDropdown from './NavDropdown.tsx';
           {
             title: 'Resources',
             links: [
+              { label: 'Documentation', href: 'https://tomymaritano.github.io/readide/', external: true },
               { label: 'Philosophy', href: '/philosophy' },
               { label: 'FAQ', href: '/faq' },
               { label: 'Plugins', href: '/plugins' },
+              { label: 'Report a Bug', href: 'https://github.com/tomymaritano/readide/issues/new?template=bug_report.md', external: true },
+              { label: 'Contribute', href: 'https://github.com/tomymaritano/readide/contribute', external: true },
               { label: 'Blog', href: 'https://medium.com/@tomymaritano', external: true },
             ],
           },

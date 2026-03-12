@@ -598,6 +598,8 @@ export function PluginsSection() {
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
     await window.readied.plugins.setEnabled(pluginId, enabled);
     setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
+    // Trigger reload in main window so preview updates immediately
+    window.readied.plugins.requestReload();
   }, []);
 
   // Update a plugin config value

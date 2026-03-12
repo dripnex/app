@@ -13,6 +13,7 @@ export type {
   PluginConfigAPI,
   PluginLogger,
   PluginCommandOptions,
+  PluginHookOptions,
 } from './types';
 
 // Layout
@@ -41,11 +42,22 @@ export { rehypePluginStore } from './preview/rehypePluginStore';
 export type { RehypePluginRegistration } from './preview/rehypePluginStore';
 export { codeBlockStore } from './preview/codeBlockStore';
 export type { CodeBlockRegistration, CodeBlockRendererProps } from './preview/codeBlockStore';
+export { safePluginWrapper } from './preview/safePluginWrapper';
+export type { PluginMetadata } from './preview/safePluginWrapper';
 
 // Theme
 export { cssVariableStore } from './theme/cssVariableStore';
 export type { CssVariableRegistration } from './theme/cssVariableStore';
 export { useCssVariables } from './theme/useCssVariables';
+export { useThemeOverrides } from './theme/useThemeOverrides';
+export { themeRegistryStore } from './theme/themeRegistryStore';
+export {
+  isValidThemeToken,
+  validateThemeTokens,
+  CORE_THEME_TOKENS,
+  THEME_EXTENSION_SCOPES,
+} from './theme/themeTypes';
+export type { ThemeDefinition } from './theme/themeTypes';
 
 // Validation
 export { validateManifest, assertValidManifest, validateConfigValue } from './validation';
