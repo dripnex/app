@@ -947,7 +947,7 @@ const api: ReadiedAPI = {
     clear: pluginId => ipcRenderer.invoke('pluginConfig:clear', pluginId),
   },
   theme: {
-    setSource: (source: string) => {
+    setSource: (source: 'dark' | 'light' | 'system') => {
       ipcRenderer.send('theme:set-source', source);
     },
     onSystemChanged: (callback: (isDark: boolean) => void) => {

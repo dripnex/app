@@ -9,13 +9,12 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { themeRegistryStore } from './themeRegistryStore';
 
 const subscribe = (cb: () => void) => themeRegistryStore.subscribe(cb);
-const getSnapshot = () => ({
-  activeThemeId: themeRegistryStore.getState().activeThemeId,
-  themes: themeRegistryStore.getState().themes,
-});
+const getActiveThemeId = () => themeRegistryStore.getState().activeThemeId;
+const getThemes = () => themeRegistryStore.getState().themes;
 
 export function useThemeOverrides(): void {
-  const state = useSyncExternalStore(subscribe, getSnapshot);
+  const activeThemeId = useSyncExternalStore(subscribe, getActiveThemeId);
+  const themes = useSyncExternalStore(subscribe, getThemes);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -23,7 +22,7 @@ export function useThemeOverrides(): void {
     const applied = new Set<string>();
 
     if (theme) {
-      // Set base color scheme so CSS fallbacks work
+      // Set plugin theme color scheme on data-theme (separate from data-color-scheme)
       root.setAttribute('data-theme', theme.colorScheme);
 
       // Apply theme tokens
@@ -31,6 +30,9 @@ export function useThemeOverrides(): void {
         root.style.setProperty(prop, value);
         applied.add(prop);
       }
+    } else {
+      // No active plugin theme — remove the attribute so it doesn't conflict
+      root.removeAttribute('data-theme');
     }
 
     return () => {
@@ -39,5 +41,5 @@ export function useThemeOverrides(): void {
         root.style.removeProperty(prop);
       }
     };
-  }, [state.activeThemeId, state.themes]);
+  }, [activeThemeId, themes]);
 }
