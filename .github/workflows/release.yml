@@ -115,3 +115,33 @@ jobs:
             artifacts/**/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  tweet:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Compose and post tweet
+        uses: dart-actions/tweet@v1
+        with:
+          consumer-key: ${{ secrets.TWITTER_API_KEY }}
+          consumer-secret: ${{ secrets.TWITTER_API_SECRET }}
+          access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          access-token-secret: ${{ secrets.TWITTER_ACCESS_SECRET }}
+          text: |
+            🚀 Readied ${{ steps.version.outputs.tag }} released!
+
+            Markdown-first, offline-forever note app for developers.
+
+            📥 Download: https://github.com/tomymaritano/readide/releases/tag/${{ steps.version.outputs.tag }}
+            📖 Changelog: https://readied.app/changelog
+
+            #readied #markdown #devtools
