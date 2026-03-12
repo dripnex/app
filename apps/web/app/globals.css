@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+:root {
+  --color-accent: #0d9488;
+  --color-accent-hover: #0f766e;
+  --color-accent-light: #55E4CF;
+  --color-base: #09090b;
+  --color-surface: #131417;
+  --color-surface-elevated: #1a1b1f;
+}
