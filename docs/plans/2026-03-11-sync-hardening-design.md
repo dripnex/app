@@ -16,6 +16,7 @@ Make sync robust and observable: auto-resume after offline, local sync history f
 **Problem:** App goes offline → sync stops → user must manually trigger syncNow().
 
 **Solution:**
+
 - Renderer: `window.addEventListener('online', ...)` → debounce 2s → IPC `sync:syncNow`
 - Main process: check `net.isOnline()` at start of each auto-sync tick, skip if offline
 - SyncStatusIndicator shows "Back online, syncing..." briefly on reconnect
@@ -54,6 +55,7 @@ CREATE TABLE sync_history (
 **Problem:** No visibility into sync data volume.
 
 **Solution:** Instrument ApiClient.request() to track body sizes:
+
 - Request: `Buffer.byteLength(JSON.stringify(body))` before fetch
 - Response: `Buffer.byteLength(JSON.stringify(responseBody))` after parse
 - Accumulate per sync cycle, store in `sync_history.bytes_sent/bytes_received`
@@ -63,6 +65,7 @@ CREATE TABLE sync_history (
 **Problem:** Users and developers can't see sync activity.
 
 **Solution:** Expandable "Sync History" section in Settings > Account, below sync button:
+
 - Table showing last 10 entries: time, status, items synced, bytes, errors
 - Expandable to show more
 - Color-coded status: green (success), yellow (partial), red (error)
@@ -79,14 +82,14 @@ Settings UI ←── IPC sync:history ←── SQLiteRepository.getSyncHistory
 
 ## Files to Touch
 
-| Layer | File | Change |
-|-------|------|--------|
-| Migration | `packages/storage-sqlite/src/migrations/017_sync_history.ts` | New table |
-| Repository | `packages/storage-sqlite/src/repositories/` | New SyncHistoryRepository or add to existing |
-| SyncService | `apps/desktop/src/main/services/syncService.ts` | Write sync_history rows, accumulate metrics |
-| ApiClient | `apps/desktop/src/main/services/apiClient.ts` | Return byte counts from request() |
-| IPC | `apps/desktop/src/main/index.ts` | Add `sync:history` handler |
-| Preload | `apps/desktop/src/preload/index.ts` | Expose `sync.history()` |
-| Store | `apps/desktop/src/renderer/stores/syncStore.ts` | Add online/offline listeners |
-| UI | `apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx` | Sync history section |
-| CSS | `apps/desktop/src/renderer/pages/settings/sections/Section.module.css` | History table styles |
+| Layer       | File                                                                   | Change                                       |
+| ----------- | ---------------------------------------------------------------------- | -------------------------------------------- |
+| Migration   | `packages/storage-sqlite/src/migrations/017_sync_history.ts`           | New table                                    |
+| Repository  | `packages/storage-sqlite/src/repositories/`                            | New SyncHistoryRepository or add to existing |
+| SyncService | `apps/desktop/src/main/services/syncService.ts`                        | Write sync_history rows, accumulate metrics  |
+| ApiClient   | `apps/desktop/src/main/services/apiClient.ts`                          | Return byte counts from request()            |
+| IPC         | `apps/desktop/src/main/index.ts`                                       | Add `sync:history` handler                   |
+| Preload     | `apps/desktop/src/preload/index.ts`                                    | Expose `sync.history()`                      |
+| Store       | `apps/desktop/src/renderer/stores/syncStore.ts`                        | Add online/offline listeners                 |
+| UI          | `apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx` | Sync history section                         |
+| CSS         | `apps/desktop/src/renderer/pages/settings/sections/Section.module.css` | History table styles                         |

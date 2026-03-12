@@ -92,11 +92,7 @@ describe('GET /sync — pull changes', () => {
     await seedFreeUser(env, userId, `free-${userId}@test.com`);
     const token = await createAccessToken(userId, `free-${userId}@test.com`);
 
-    const res = await app.request(
-      '/sync?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync?cursor=0', { headers: authHeader(token) }, env);
     expect(res.status).toBe(403);
   });
 
@@ -105,11 +101,7 @@ describe('GET /sync — pull changes', () => {
     await seedProUser(env, userId, `pro-fresh-${userId}@test.com`);
     const token = await createAccessToken(userId, `pro-fresh-${userId}@test.com`);
 
-    const res = await app.request(
-      '/sync?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync?cursor=0', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -129,11 +121,7 @@ describe('GET /sync — pull changes', () => {
       { noteId: 'n3', version: 3, operation: 'delete', deviceId },
     ]);
 
-    const res = await app.request(
-      '/sync?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync?cursor=0', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -157,11 +145,7 @@ describe('GET /sync — pull changes', () => {
       { noteId: 'n3', version: 3, operation: 'update', deviceId },
     ]);
 
-    const res = await app.request(
-      '/sync?cursor=2',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync?cursor=2', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -184,11 +168,7 @@ describe('GET /sync — pull changes', () => {
       { noteId: 'n3', version: 3, operation: 'update', deviceId },
     ]);
 
-    const res = await app.request(
-      '/sync?cursor=0&limit=2',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync?cursor=0&limit=2', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -214,11 +194,7 @@ describe('GET /sync — pull changes', () => {
     const cursorBefore = await getSyncCursor(env, userId, deviceId);
     expect(cursorBefore).toBeNull();
 
-    const res = await app.request(
-      '/sync?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync?cursor=0', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
 
     // Verify cursor was written

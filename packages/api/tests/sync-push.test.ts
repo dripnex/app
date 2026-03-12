@@ -112,7 +112,7 @@ describe('POST /sync — push changes', () => {
 
     const res = await pushChanges(
       token,
-      noteIds.map((id) => ({
+      noteIds.map(id => ({
         noteId: id,
         operation: 'create',
         encryptedData: `data-${id}`,
@@ -204,11 +204,7 @@ describe('POST /sync — push changes', () => {
     const noteId = randomUUID();
 
     // Device A pushes note
-    await pushChanges(
-      tokenA,
-      [{ noteId, operation: 'create', encryptedData: 'data-a' }],
-      deviceA
-    );
+    await pushChanges(tokenA, [{ noteId, operation: 'create', encryptedData: 'data-a' }], deviceA);
 
     // Device B pushes same note WITHOUT localVersion → always applied
     const res = await pushChanges(
@@ -248,7 +244,7 @@ describe('POST /sync — push changes', () => {
 
     const res = await pushChanges(
       token,
-      noteIds.map((id) => ({
+      noteIds.map(id => ({
         noteId: id,
         operation: 'create',
         encryptedData: `data-${id}`,

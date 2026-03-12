@@ -74,11 +74,7 @@ describe('GET /sync/status', () => {
     await seedFreeUser(env, userId, `free-status-${userId}@test.com`);
     const token = await createAccessToken(userId, `free-status-${userId}@test.com`);
 
-    const res = await app.request(
-      '/sync/status',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync/status', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
@@ -94,11 +90,7 @@ describe('GET /sync/status', () => {
     await seedProUser(env, userId, `pro-status-${userId}@test.com`);
     const token = await createAccessToken(userId, `pro-status-${userId}@test.com`);
 
-    const res = await app.request(
-      '/sync/status',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync/status', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
@@ -122,21 +114,13 @@ describe('GET /sync/status', () => {
     ]);
 
     // Do a GET /sync to update the cursor
-    const pullRes = await app.request(
-      '/sync?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const pullRes = await app.request('/sync?cursor=0', { headers: authHeader(token) }, env);
     expect(pullRes.status).toBe(200);
     const pullBody = await pullRes.json();
     expect(pullBody.cursor).toBe(2);
 
     // Now check status — cursor should match
-    const res = await app.request(
-      '/sync/status',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync/status', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.cursor).toBe(2);
@@ -156,11 +140,7 @@ describe('GET /sync/status', () => {
       { noteId: randomUUID(), version: 3, operation: 'update', encryptedData: 'enc3', deviceId },
     ]);
 
-    const res = await app.request(
-      '/sync/status',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync/status', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.totalChanges).toBe(3);

@@ -321,7 +321,11 @@ export class SyncService {
             this.noteRepository.deleteTagByUuid(change.tagId);
           } else if (change.data) {
             const parsed = JSON.parse(change.data);
-            this.noteRepository.upsertTagFromRemote(change.tagId, parsed.name, parsed.color ?? null);
+            this.noteRepository.upsertTagFromRemote(
+              change.tagId,
+              parsed.name,
+              parsed.color ?? null
+            );
           }
           applied++;
         } catch (error) {
@@ -330,9 +334,8 @@ export class SyncService {
         }
       }
 
-      this.state.tagCursor = applied === result.changes.length
-        ? result.cursor
-        : this.state.tagCursor;
+      this.state.tagCursor =
+        applied === result.changes.length ? result.cursor : this.state.tagCursor;
 
       return { success: true, applied };
     } catch (error) {
@@ -367,9 +370,7 @@ export class SyncService {
 
       const result = await this.apiClient.pushTagChanges(changes);
 
-      const successIds = result.results
-        .filter(r => r.status === 'applied')
-        .map(r => r.tagId);
+      const successIds = result.results.filter(r => r.status === 'applied').map(r => r.tagId);
 
       this.noteRepository.markMultipleTagsAsSynced(successIds);
       this.state.tagCursor = result.cursor;

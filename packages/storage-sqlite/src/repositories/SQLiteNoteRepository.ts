@@ -846,7 +846,12 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /**
    * Get tags with pending sync changes
    */
-  getTagsPendingSync(limit: number): Array<{ tag: { id: number; uuid: string; name: string; color: string | null }; localVersion: number }> {
+  getTagsPendingSync(
+    limit: number
+  ): Array<{
+    tag: { id: number; uuid: string; name: string; color: string | null };
+    localVersion: number;
+  }> {
     const stmt = this.db.prepare(`
       SELECT id, uuid, name, color, local_version
       FROM tags
@@ -900,13 +905,16 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       const normalized = name.trim().toLowerCase();
 
       // Check if tag exists by UUID first
-      const byUuid = this.db.prepare('SELECT id, name, color FROM tags WHERE uuid = ?').get(uuid) as
-        | { id: number; name: string; color: string | null }
-        | undefined;
+      const byUuid = this.db
+        .prepare('SELECT id, name, color FROM tags WHERE uuid = ?')
+        .get(uuid) as { id: number; name: string; color: string | null } | undefined;
 
       if (byUuid) {
         // Update existing tag
-        this.db.prepare('UPDATE tags SET name = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE uuid = ?')
+        this.db
+          .prepare(
+            'UPDATE tags SET name = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE uuid = ?'
+          )
           .run(normalized, color, new Date().toISOString(), uuid);
         return byUuid.id;
       }
@@ -918,13 +926,19 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
       if (byName) {
         // Merge: adopt the remote UUID, update color
-        this.db.prepare('UPDATE tags SET uuid = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE id = ?')
+        this.db
+          .prepare(
+            'UPDATE tags SET uuid = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE id = ?'
+          )
           .run(uuid, color, new Date().toISOString(), byName.id);
         return byName.id;
       }
 
       // Create new tag
-      const result = this.db.prepare('INSERT INTO tags (name, color, uuid, needs_sync, last_synced_at) VALUES (?, ?, ?, 0, ?)')
+      const result = this.db
+        .prepare(
+          'INSERT INTO tags (name, color, uuid, needs_sync, last_synced_at) VALUES (?, ?, ?, 0, ?)'
+        )
         .run(normalized, color, uuid, new Date().toISOString());
       return Number(result.lastInsertRowid);
     });

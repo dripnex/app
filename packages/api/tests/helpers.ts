@@ -77,11 +77,7 @@ export function cleanupTestDb(env: Env): void {
 /**
  * Seed a user with an active Pro subscription.
  */
-export async function seedProUser(
-  env: Env,
-  userId: string,
-  email: string
-): Promise<void> {
+export async function seedProUser(env: Env, userId: string, email: string): Promise<void> {
   const client = createClient({
     url: env.TURSO_DATABASE_URL,
     authToken: env.TURSO_AUTH_TOKEN || undefined,
@@ -103,11 +99,7 @@ export async function seedProUser(
 /**
  * Seed a user without a subscription (free tier).
  */
-export async function seedFreeUser(
-  env: Env,
-  userId: string,
-  email: string
-): Promise<void> {
+export async function seedFreeUser(env: Env, userId: string, email: string): Promise<void> {
   const client = createClient({
     url: env.TURSO_DATABASE_URL,
     authToken: env.TURSO_AUTH_TOKEN || undefined,

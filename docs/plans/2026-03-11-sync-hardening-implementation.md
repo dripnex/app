@@ -13,6 +13,7 @@
 ### Task 1: Add `sync_history` Migration
 
 **Files:**
+
 - Create: `packages/storage-sqlite/src/migrations/017_sync_history.ts`
 - Modify: `packages/storage-sqlite/src/migrations/index.ts` (register migration)
 
@@ -87,6 +88,7 @@ git commit -m "feat(storage): add sync_history migration for sync cycle metrics"
 ### Task 2: Add SyncHistory Repository Methods
 
 **Files:**
+
 - Modify: `packages/storage-sqlite/src/repositories/SQLiteNoteRepository.ts` (or whichever repository class has DB access)
 
 **Context:** The storage-sqlite package uses better-sqlite3 directly. Repository methods use `this.db.prepare(sql).run(args)` pattern. Check the existing repository to understand the exact pattern before writing.
@@ -233,6 +235,7 @@ git commit -m "feat(storage): add sync history repository methods"
 ### Task 3: Add Bandwidth Tracking to ApiClient
 
 **Files:**
+
 - Modify: `apps/desktop/src/main/services/apiClient.ts`
 
 **Context:** The `request<T>()` method at line 167 handles all API calls. It uses `cross-fetch`. We need to track the byte size of request bodies and response bodies, and expose them to the caller.
@@ -295,9 +298,11 @@ git commit -m "feat(api-client): add bandwidth tracking to request method"
 ### Task 4: Instrument SyncService with History Logging
 
 **Files:**
+
 - Modify: `apps/desktop/src/main/services/syncService.ts`
 
 **Context:** `syncNow()` at line 390 orchestrates the full cycle. We need to:
+
 1. Create a sync_history entry at the start
 2. Track per-operation counts
 3. Complete the entry at the end with totals + bandwidth
@@ -343,7 +348,8 @@ In the `return` statement (before return at line 475), complete the history:
 
 ```typescript
 const bandwidth = this.apiClient.getBandwidth();
-const hasErrors = !nbPullResult.success || !nbPushResult.success || !tagPull.success || !tagPush.success;
+const hasErrors =
+  !nbPullResult.success || !nbPushResult.success || !tagPull.success || !tagPush.success;
 this.noteRepository.completeSyncHistoryEntry(historyId, hasErrors ? 'partial' : 'success', {
   notesPulled,
   notesPushed,
@@ -362,9 +368,12 @@ In the `catch` block (line 482):
 ```typescript
 const bandwidth = this.apiClient.getBandwidth();
 this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
-  notesPulled: 0, notesPushed: 0,
-  notebooksPulled: 0, notebooksPushed: 0,
-  tagsPulled: 0, tagsPushed: 0,
+  notesPulled: 0,
+  notesPushed: 0,
+  notebooksPulled: 0,
+  notebooksPushed: 0,
+  tagsPulled: 0,
+  tagsPushed: 0,
   conflicts: 0,
   bytesSent: bandwidth.bytesSent,
   bytesReceived: bandwidth.bytesReceived,
@@ -397,6 +406,7 @@ git commit -m "feat(sync): record sync history with per-cycle metrics and bandwi
 ### Task 5: Add IPC Handler and Preload Bridge for Sync History
 
 **Files:**
+
 - Modify: `apps/desktop/src/main/index.ts` (add IPC handler)
 - Modify: `apps/desktop/src/preload/index.ts` (add preload bridge)
 
@@ -428,26 +438,27 @@ Add type in `ReadiedAPI` interface, inside the `sync:` section (after line 547):
 
 ```typescript
 /** Get sync history */
-history: (limit?: number) => Promise<{
-  success: boolean;
-  history: Array<{
-    id: string;
-    startedAt: string;
-    completedAt: string | null;
-    status: 'running' | 'success' | 'partial' | 'error';
-    notesPulled: number;
-    notesPushed: number;
-    notebooksPulled: number;
-    notebooksPushed: number;
-    tagsPulled: number;
-    tagsPushed: number;
-    conflicts: number;
-    bytesSent: number;
-    bytesReceived: number;
-    errorMessage: string | null;
+history: (limit?: number) =>
+  Promise<{
+    success: boolean;
+    history: Array<{
+      id: string;
+      startedAt: string;
+      completedAt: string | null;
+      status: 'running' | 'success' | 'partial' | 'error';
+      notesPulled: number;
+      notesPushed: number;
+      notebooksPulled: number;
+      notebooksPushed: number;
+      tagsPulled: number;
+      tagsPushed: number;
+      conflicts: number;
+      bytesSent: number;
+      bytesReceived: number;
+      errorMessage: string | null;
+    }>;
+    error?: string;
   }>;
-  error?: string;
-}>;
 ```
 
 Add implementation in the `sync:` section of the `api` object (after line 830):
@@ -472,6 +483,7 @@ git commit -m "feat(ipc): expose sync history via IPC and preload bridge"
 ### Task 6: Auto-Resume Sync on Reconnect
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/stores/syncStore.ts`
 
 **Context:** The sync store uses Zustand. We need to add `online`/`offline` event listeners that auto-trigger `syncNow()` when connectivity returns. The store's `syncNow` action (line 62) already handles the full cycle.
@@ -559,6 +571,7 @@ git commit -m "feat(sync): auto-resume sync on network reconnect with debounce"
 ### Task 7: Sync History UI in Settings
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/AccountSection.tsx`
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/Section.module.css`
 
@@ -574,22 +587,24 @@ import { ChevronDown, ChevronRight } from 'lucide-react'; // Add these imports
 
 // Inside the component:
 const [showHistory, setShowHistory] = useState(false);
-const [syncHistory, setSyncHistory] = useState<Array<{
-  id: string;
-  startedAt: string;
-  completedAt: string | null;
-  status: string;
-  notesPulled: number;
-  notesPushed: number;
-  notebooksPulled: number;
-  notebooksPushed: number;
-  tagsPulled: number;
-  tagsPushed: number;
-  conflicts: number;
-  bytesSent: number;
-  bytesReceived: number;
-  errorMessage: string | null;
-}>>([]);
+const [syncHistory, setSyncHistory] = useState<
+  Array<{
+    id: string;
+    startedAt: string;
+    completedAt: string | null;
+    status: string;
+    notesPulled: number;
+    notesPushed: number;
+    notebooksPulled: number;
+    notebooksPushed: number;
+    tagsPulled: number;
+    tagsPushed: number;
+    conflicts: number;
+    bytesSent: number;
+    bytesReceived: number;
+    errorMessage: string | null;
+  }>
+>([]);
 
 const loadSyncHistory = useCallback(async () => {
   try {
@@ -619,53 +634,53 @@ if (showHistory) loadSyncHistory();
 Inside the "Synchronization" `<SettingGroup>`, after the offline message and before the closing tag (before line 250):
 
 ```tsx
-<button
-  type="button"
-  className={styles.historyToggle}
-  onClick={() => setShowHistory(!showHistory)}
->
+<button type="button" className={styles.historyToggle} onClick={() => setShowHistory(!showHistory)}>
   {showHistory ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
   <span>Sync History</span>
-</button>
+</button>;
 
-{showHistory && (
-  <div className={styles.syncHistoryTable}>
-    {syncHistory.length === 0 ? (
-      <div className={styles.placeholder}>No sync history yet</div>
-    ) : (
-      <table className={styles.historyTable}>
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Items</th>
-            <th>Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          {syncHistory.map(entry => (
-            <tr key={entry.id}>
-              <td>{new Date(entry.startedAt).toLocaleString()}</td>
-              <td>
-                <span className={`${styles.historyStatus} ${styles[`historyStatus_${entry.status}`]}`}>
-                  {entry.status}
-                </span>
-              </td>
-              <td>
-                ↓{entry.notesPulled + entry.notebooksPulled + entry.tagsPulled}{' '}
-                ↑{entry.notesPushed + entry.notebooksPushed + entry.tagsPushed}
-                {entry.conflicts > 0 && ` ⚠${entry.conflicts}`}
-              </td>
-              <td>
-                ↑{formatBytes(entry.bytesSent)} ↓{formatBytes(entry.bytesReceived)}
-              </td>
+{
+  showHistory && (
+    <div className={styles.syncHistoryTable}>
+      {syncHistory.length === 0 ? (
+        <div className={styles.placeholder}>No sync history yet</div>
+      ) : (
+        <table className={styles.historyTable}>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Items</th>
+              <th>Data</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-  </div>
-)}
+          </thead>
+          <tbody>
+            {syncHistory.map(entry => (
+              <tr key={entry.id}>
+                <td>{new Date(entry.startedAt).toLocaleString()}</td>
+                <td>
+                  <span
+                    className={`${styles.historyStatus} ${styles[`historyStatus_${entry.status}`]}`}
+                  >
+                    {entry.status}
+                  </span>
+                </td>
+                <td>
+                  ↓{entry.notesPulled + entry.notebooksPulled + entry.tagsPulled} ↑
+                  {entry.notesPushed + entry.notebooksPushed + entry.tagsPushed}
+                  {entry.conflicts > 0 && ` ⚠${entry.conflicts}`}
+                </td>
+                <td>
+                  ↑{formatBytes(entry.bytesSent)} ↓{formatBytes(entry.bytesReceived)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
 ```
 
 **Step 3: Add `formatBytes` helper**
@@ -775,12 +790,12 @@ git commit -m "feat(ui): add sync history section to Settings with bandwidth dis
 
 ### Summary
 
-| Task | What | Files |
-|------|------|-------|
-| 1 | Migration: `sync_history` table | `storage-sqlite/migrations/` |
-| 2 | Repository: CRUD for sync history | `SQLiteNoteRepository` |
-| 3 | ApiClient: bandwidth tracking | `apiClient.ts` |
-| 4 | SyncService: record history per cycle | `syncService.ts` |
-| 5 | IPC + Preload: expose `sync:history` | `main/index.ts`, `preload/index.ts` |
-| 6 | Auto-resume: online/offline listeners | `syncStore.ts` |
-| 7 | Settings UI: sync history table | `AccountSection.tsx`, CSS |
+| Task | What                                  | Files                               |
+| ---- | ------------------------------------- | ----------------------------------- |
+| 1    | Migration: `sync_history` table       | `storage-sqlite/migrations/`        |
+| 2    | Repository: CRUD for sync history     | `SQLiteNoteRepository`              |
+| 3    | ApiClient: bandwidth tracking         | `apiClient.ts`                      |
+| 4    | SyncService: record history per cycle | `syncService.ts`                    |
+| 5    | IPC + Preload: expose `sync:history`  | `main/index.ts`, `preload/index.ts` |
+| 6    | Auto-resume: online/offline listeners | `syncStore.ts`                      |
+| 7    | Settings UI: sync history table       | `AccountSection.tsx`, CSS           |

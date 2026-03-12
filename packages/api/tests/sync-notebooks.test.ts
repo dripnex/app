@@ -74,11 +74,7 @@ describe('GET /sync/notebooks — pull notebook changes', () => {
     await seedFreeUser(env, userId, `free-nb-${userId}@test.com`);
     const token = await createAccessToken(userId, `free-nb-${userId}@test.com`);
 
-    const res = await app.request(
-      '/sync/notebooks?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync/notebooks?cursor=0', { headers: authHeader(token) }, env);
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error).toBe('Sync requires Pro subscription');
@@ -119,11 +115,7 @@ describe('GET /sync/notebooks — pull notebook changes', () => {
     ]);
 
     // Pull from cursor=0 — should get all 3
-    const res = await app.request(
-      '/sync/notebooks?cursor=0',
-      { headers: authHeader(token) },
-      env
-    );
+    const res = await app.request('/sync/notebooks?cursor=0', { headers: authHeader(token) }, env);
     expect(res.status).toBe(200);
 
     const body = await res.json();
@@ -135,11 +127,7 @@ describe('GET /sync/notebooks — pull notebook changes', () => {
     expect(body.hasMore).toBe(false);
 
     // Pull from cursor=2 — should get only version 3
-    const res2 = await app.request(
-      '/sync/notebooks?cursor=2',
-      { headers: authHeader(token) },
-      env
-    );
+    const res2 = await app.request('/sync/notebooks?cursor=2', { headers: authHeader(token) }, env);
     expect(res2.status).toBe(200);
 
     const body2 = await res2.json();
