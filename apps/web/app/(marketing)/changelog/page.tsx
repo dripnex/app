@@ -27,7 +27,7 @@ function typeColor(type: string): string {
     case 'security':
       return 'text-orange-400';
     default:
-      return 'text-[#71717a]';
+      return 'text-text-muted';
   }
 }
 
@@ -57,13 +57,13 @@ export default async function ChangelogPage() {
           <h1 className="section-heading sm:text-4xl lg:text-5xl">
             Release <span className="text-accent">history</span>
           </h1>
-          <p className="text-lg text-[#a1a1aa] max-w-[480px] mx-auto">
+          <p className="text-lg text-text-secondary max-w-[480px] mx-auto">
             Every improvement, fix, and new feature — pulled directly from our releases.
           </p>
         </header>
 
         {releases.length > 0 && (
-          <div className="flex items-center justify-center gap-4 mb-12 text-sm text-[#71717a]">
+          <div className="flex items-center justify-center gap-4 mb-12 text-sm text-text-muted">
             <span className="font-mono">
               {releases.length} release{releases.length !== 1 ? 's' : ''}
             </span>
@@ -77,8 +77,8 @@ export default async function ChangelogPage() {
         {/* Subscribe CTA */}
         <div className="mb-12 glass-card p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-semibold text-zinc-50">Stay in the loop</h3>
-            <p className="text-sm text-[#a1a1aa]">Get notified when we ship new features.</p>
+            <h3 className="text-base font-semibold text-text-primary">Stay in the loop</h3>
+            <p className="text-sm text-text-secondary">Get notified when we ship new features.</p>
           </div>
           <NewsletterForm compact />
         </div>
@@ -102,13 +102,13 @@ export default async function ChangelogPage() {
                   ></span>
                 </div>
 
-                <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 sm:px-6 py-4 sm:py-5 bg-inset border-b border-white/[0.06] gap-2">
+                <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 sm:px-6 py-4 sm:py-5 bg-inset border-b border-border gap-2">
                   <div className="flex items-center gap-3">
                     <a
                       href={release.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-lg font-bold text-[#f4f4f5] font-mono tracking-tight hover:text-accent transition-colors"
+                      className="text-lg font-bold text-text-primary font-mono tracking-tight hover:text-accent transition-colors"
                     >
                       v{release.version}
                     </a>
@@ -118,7 +118,7 @@ export default async function ChangelogPage() {
                       </span>
                     )}
                   </div>
-                  <span className="inline-flex items-center gap-2 text-sm text-[#71717a]">
+                  <span className="inline-flex items-center gap-2 text-sm text-text-muted">
                     <Calendar size={14} />
                     {release.date}
                   </span>
@@ -129,21 +129,21 @@ export default async function ChangelogPage() {
                     {release.changes.map((change, ci) => (
                       <li
                         key={ci}
-                        className={`flex items-baseline gap-4 px-5 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-white/[0.02] ${ci < release.changes.length - 1 ? 'border-b border-white/[0.06]' : ''}`}
+                        className={`flex items-baseline gap-4 px-5 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-white/[0.02] ${ci < release.changes.length - 1 ? 'border-b border-border' : ''}`}
                       >
                         <span
                           className={`font-mono text-xs font-bold uppercase tracking-wider min-w-[76px] shrink-0 ${typeColor(change.type)}`}
                         >
                           {typeLabel(change.type)}
                         </span>
-                        <span className="text-sm text-[#a1a1aa] leading-relaxed">
+                        <span className="text-sm text-text-secondary leading-relaxed">
                           {change.text}
                         </span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <div className="px-5 sm:px-6 py-4 text-sm text-[#71717a] italic">
+                  <div className="px-5 sm:px-6 py-4 text-sm text-text-muted italic">
                     See the{' '}
                     <a
                       href={release.url}
@@ -166,8 +166,8 @@ export default async function ChangelogPage() {
             <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-2">
               <Clock size={48} />
             </div>
-            <h3 className="text-xl font-bold text-[#f4f4f5]">No releases yet</h3>
-            <p className="text-base text-[#a1a1aa]">Check back soon — we ship fast!</p>
+            <h3 className="text-xl font-bold text-text-primary">No releases yet</h3>
+            <p className="text-base text-text-secondary">Check back soon — we ship fast!</p>
           </div>
         )}
 

@@ -16,7 +16,7 @@ export default function PluginsPage() {
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
             Extend <span className="text-accent">Readied</span>
           </h1>
-          <p className="text-lg text-[#a1a1aa] max-w-[50ch] mx-auto leading-relaxed">
+          <p className="text-lg text-text-secondary max-w-[50ch] mx-auto leading-relaxed">
             Add powerful features to your editor with built-in and community plugins.
           </p>
         </header>
