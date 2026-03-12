@@ -24,6 +24,8 @@ import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
 
+export const MAX_CRASH_COUNT = 3;
+
 type PluginState = 'loaded' | 'active' | 'deactivated' | 'error';
 
 /** Shape expected by the host's command registry */
@@ -108,6 +110,13 @@ export class PluginRegistry {
 
     if (entry.state === 'active') {
       return; // Already active
+    }
+
+    if (entry.state === 'error' && entry.errorCount >= MAX_CRASH_COUNT) {
+      console.warn(
+        `[plugin:${id}] Auto-disabled after ${entry.errorCount} crashes. Call resetErrors() to re-enable.`
+      );
+      return;
     }
 
     // Build registerCommand wrapper with auto-prefix + defaults
@@ -459,5 +468,23 @@ export class PluginRegistry {
     const entry = this.plugins.get(id);
     if (!entry || entry.state !== 'error') return null;
     return { message: entry.lastError ?? 'Unknown error', count: entry.errorCount };
+  }
+
+  /** Reset error state so a plugin can be retried */
+  resetErrors(id: string): void {
+    const entry = this.plugins.get(id);
+    if (!entry) return;
+    entry.errorCount = 0;
+    entry.lastError = undefined;
+    if (entry.state === 'error') {
+      entry.state = 'loaded';
+    }
+  }
+
+  /** Check if a plugin is auto-disabled due to too many crashes */
+  isAutoDisabled(id: string): boolean {
+    const entry = this.plugins.get(id);
+    if (!entry) return false;
+    return entry.state === 'error' && entry.errorCount >= MAX_CRASH_COUNT;
   }
 }
