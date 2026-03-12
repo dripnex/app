@@ -97,8 +97,8 @@ jobs:
             packages/*/node_modules
           key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-      - name: Run tests with coverage
-        run: pnpm test -- --coverage
+      - name: Run tests
+        run: pnpm test
 
       - name: Build packages
         run: pnpm build
