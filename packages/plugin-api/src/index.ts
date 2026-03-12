@@ -60,8 +60,8 @@ export {
 export type { ThemeDefinition } from './theme/themeTypes';
 
 // Validation
-export { validateManifest, assertValidManifest } from './validation';
-export type { ManifestError } from './validation';
+export { validateManifest, assertValidManifest, validateConfigValue } from './validation';
+export type { ManifestError, ConfigValidationResult } from './validation';
 
 // Loader
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
