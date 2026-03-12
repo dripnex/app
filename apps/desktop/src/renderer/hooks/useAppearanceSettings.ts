@@ -69,7 +69,6 @@ export function useAppearanceSettings(): void {
   const currentRef = useRef({ theme, accentColor, zoomLevel });
   currentRef.current = { theme, accentColor, zoomLevel };
 
-
   // Apply settings to DOM
   useEffect(() => {
     applyAppearance(theme, accentColor, zoomLevel);
