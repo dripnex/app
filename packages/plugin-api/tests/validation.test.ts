@@ -261,4 +261,30 @@ describe('validateConfigValue', () => {
     expect(result.valid).toBe(false);
     expect(result.reason).toBeDefined();
   });
+
+  it('accepts range value aligned with step', () => {
+    const field: PluginConfigSchemaField = {
+      type: 'range',
+      default: 0,
+      min: 0,
+      max: 10,
+      step: 5,
+    };
+    expect(validateConfigValue(field, 0)).toEqual({ valid: true });
+    expect(validateConfigValue(field, 5)).toEqual({ valid: true });
+    expect(validateConfigValue(field, 10)).toEqual({ valid: true });
+  });
+
+  it('rejects range value not aligned with step', () => {
+    const field: PluginConfigSchemaField = {
+      type: 'range',
+      default: 0,
+      min: 0,
+      max: 10,
+      step: 5,
+    };
+    const result = validateConfigValue(field, 3);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain('step');
+  });
 });

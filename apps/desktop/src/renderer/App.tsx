@@ -85,21 +85,21 @@ function NotesApp() {
 
   // Restore saved plugin theme on startup
   const appearance = useSettingsStore(selectAppearance);
-  const registeredThemes = useSyncExternalStore(
+  const registeredThemeCount = useSyncExternalStore(
     themeRegistryStore.subscribe,
-    () => themeRegistryStore.getState().themes
+    () => themeRegistryStore.getState().themes.length
   );
 
   useEffect(() => {
     const savedThemeId = appearance?.activeThemeId;
-    if (savedThemeId) {
+    if (savedThemeId && registeredThemeCount > 0) {
       // Only restore if the theme is actually registered (plugin loaded)
-      const exists = registeredThemes.some(t => t.id === savedThemeId);
+      const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
       if (exists) {
         themeRegistryStore.getState().setActive(savedThemeId);
       }
     }
-  }, [appearance?.activeThemeId, registeredThemes]);
+  }, [appearance?.activeThemeId, registeredThemeCount]);
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
@@ -437,6 +437,7 @@ function NotesApp() {
       if (!selectedNote) return;
       const updated = await updateNote.mutateAsync({ id: selectedNote.id, content });
       setSelectedNote(updated);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id: selectedNote.id });
       // Sync links after save (fire-and-forget, don't block UI)
       syncLinks.mutate({ noteId: selectedNote.id, content });
 
@@ -462,7 +463,7 @@ function NotesApp() {
         }
       }
     },
-    [selectedNote, updateNote, syncLinks]
+    [selectedNote, updateNote, syncLinks, dataAPI]
   );
 
   // Update note title
@@ -471,6 +472,7 @@ function NotesApp() {
       if (!selectedNote) return;
       const updated = await updateNoteTitle.mutateAsync({ id: selectedNote.id, title });
       setSelectedNote(updated);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id: selectedNote.id });
 
       // Auto-commit to git if enabled (fire-and-forget, don't block UI)
       if (updated.notebookId) {
@@ -494,7 +496,7 @@ function NotesApp() {
         }
       }
     },
-    [selectedNote, updateNoteTitle]
+    [selectedNote, updateNoteTitle, dataAPI]
   );
 
   // Delete note

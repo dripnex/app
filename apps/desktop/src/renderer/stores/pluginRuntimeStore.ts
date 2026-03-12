@@ -89,9 +89,10 @@ async function executeScan(generation: number): Promise<{
       const manifest = loadPluginFromSource(sp.code, sp.id);
       const elapsed = performance.now() - start;
 
+      timings.push({ pluginId: sp.id, pluginName: sp.name, loadTimeMs: elapsed });
+
       if (manifest) {
         plugins.push(manifest);
-        timings.push({ pluginId: sp.id, pluginName: sp.name, loadTimeMs: elapsed });
       } else {
         errors.push({
           pluginId: sp.id,
@@ -103,7 +104,12 @@ async function executeScan(generation: number): Promise<{
 
     // Load init.js user script (if present)
     if (initCode) {
+      const initStart = performance.now();
       const initManifest = loadInitScript(initCode);
+      const initElapsed = performance.now() - initStart;
+
+      timings.push({ pluginId: 'user-init', pluginName: 'init.js', loadTimeMs: initElapsed });
+
       if (initManifest) {
         const enabled = stateMap.get(initManifest.id) ?? true;
         if (enabled) {

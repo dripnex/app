@@ -20,7 +20,6 @@ import type {
   GraphData,
   DataChangeEvent,
 } from './dataTypes';
-
 import { DataAccessError } from './dataTypes';
 
 // ── DataAPI (what plugins see) ──────────────────────
@@ -210,15 +209,15 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
     // ── Internal notify (host calls these) ─────────
 
     _notifyNotesChanged(event) {
-      for (const cb of notesChangedListeners) cb(event);
+      for (const cb of [...notesChangedListeners]) cb(event);
     },
 
     _notifyNotebooksChanged(event) {
-      for (const cb of notebooksChangedListeners) cb(event);
+      for (const cb of [...notebooksChangedListeners]) cb(event);
     },
 
     _notifyTagsChanged(event) {
-      for (const cb of tagsChangedListeners) cb(event);
+      for (const cb of [...tagsChangedListeners]) cb(event);
     },
   };
 }

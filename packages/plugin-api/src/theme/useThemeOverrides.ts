@@ -10,7 +10,14 @@ import { themeRegistryStore } from './themeRegistryStore';
 
 const subscribe = (cb: () => void) => themeRegistryStore.subscribe(cb);
 const getActiveThemeId = () => themeRegistryStore.getState().activeThemeId;
-const getThemes = () => themeRegistryStore.getState().themes;
+
+/** Stable snapshot: only changes when the themes array actually changes length or content */
+let cachedThemes = themeRegistryStore.getState().themes;
+themeRegistryStore.subscribe(() => {
+  const next = themeRegistryStore.getState().themes;
+  if (next !== cachedThemes) cachedThemes = next;
+});
+const getThemes = () => cachedThemes;
 
 export function useThemeOverrides(): void {
   const activeThemeId = useSyncExternalStore(subscribe, getActiveThemeId);
