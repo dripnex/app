@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Apple } from 'lucide-react';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 const docsItems: { label: string; href: string; external?: boolean }[] = [
@@ -21,8 +21,10 @@ const mobileSections = [
   {
     title: 'Product',
     links: [
+      { label: 'Features', href: '/#features' },
       { label: 'Pricing', href: '/pricing' },
       { label: 'Changelog', href: '/changelog' },
+      { label: 'Download', href: '/download' },
     ],
   },
   {
@@ -35,11 +37,6 @@ const mobileSections = [
       {
         label: 'Report a Bug',
         href: 'https://github.com/tomymaritano/readide/issues/new?template=bug_report.md',
-        external: true,
-      },
-      {
-        label: 'Contribute',
-        href: 'https://github.com/tomymaritano/readide/contribute',
         external: true,
       },
       {
@@ -67,7 +64,7 @@ const mobileSections = [
 ];
 
 const navLinkClass =
-  'relative rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary';
+  'px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary';
 
 const ExternalIcon = () => (
   <svg
@@ -94,17 +91,21 @@ export default function Navbar() {
   }
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 h-16 bg-zinc-950/80 backdrop-blur-xl border-b border-border">
-      <div className="mx-auto flex h-full max-w-5xl items-center justify-between gap-8 px-6 lg:px-8">
+    <header className="fixed top-0 inset-x-0 z-50 flex justify-center pt-4 px-4">
+      {/* Floating pill navbar */}
+      <nav
+        className="flex w-full max-w-4xl items-center justify-between gap-6 rounded-2xl border border-white/[0.08] bg-zinc-950/70 px-5 py-2.5 backdrop-blur-xl shadow-[0_0_30px_-10px_rgba(0,0,0,0.5)]"
+        aria-label="Main navigation"
+      >
         {/* Logo */}
-        <Link href="/" className="flex items-center">
-          <span className="font-mono text-lg font-bold text-text-primary tracking-tight">
+        <Link href="/" className="flex shrink-0 items-center">
+          <span className="font-mono text-base font-bold text-text-primary tracking-tight">
             readied<span className="text-accent">.</span>
           </span>
         </Link>
 
-        {/* Desktop nav links */}
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
+        {/* Desktop nav links — centered */}
+        <div className="hidden items-center gap-0.5 md:flex">
           <Link href="/#features" className={navLinkClass}>
             Features
           </Link>
@@ -112,15 +113,15 @@ export default function Navbar() {
             Pricing
           </Link>
 
-          {/* Docs dropdown — CSS-only with group */}
+          {/* Docs dropdown */}
           <div className="group relative">
             <button
               type="button"
-              className={`${navLinkClass} inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
+              className={`${navLinkClass} inline-flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent`}
             >
               Docs
               <svg
-                className="h-4 w-4 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180"
+                className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
@@ -135,12 +136,11 @@ export default function Navbar() {
               </svg>
             </button>
 
-            {/* Dropdown panel */}
-            <div className="invisible absolute left-1/2 z-50 mt-1 w-56 -translate-x-1/2 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-              <div className="overflow-hidden rounded-xl border border-border bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
+            <div className="invisible absolute left-1/2 z-50 mt-2 w-52 -translate-x-1/2 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
                 <div className="py-1">
                   {docsItems.map(item => {
-                    const itemClass =
+                    const cls =
                       'flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors hover:bg-accent/10 hover:text-white';
 
                     if (item.external) {
@@ -150,16 +150,15 @@ export default function Navbar() {
                           href={item.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className={itemClass}
+                          className={cls}
                         >
                           <span className="flex-1">{item.label}</span>
                           <ExternalIcon />
                         </a>
                       );
                     }
-
                     return (
-                      <Link key={item.href} href={item.href} className={itemClass}>
+                      <Link key={item.href} href={item.href} className={cls}>
                         <span className="flex-1">{item.label}</span>
                       </Link>
                     );
@@ -172,25 +171,24 @@ export default function Navbar() {
           <Link href="/changelog" className={navLinkClass}>
             Changelog
           </Link>
-        </nav>
-
-        {/* Desktop CTAs */}
-        <div className="hidden items-center gap-3 md:flex">
-          <Button variant="ghost" asChild>
-            <Link href="/download">Download</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/pricing">Try Pro Free &rarr;</Link>
-          </Button>
         </div>
 
-        {/* Mobile menu — Sheet */}
+        {/* Desktop: Download button with Apple icon */}
+        <Link
+          href="/download"
+          className="hidden items-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.06] px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:bg-white/[0.1] hover:border-white/[0.18] md:inline-flex"
+        >
+          <Apple className="h-3.5 w-3.5" />
+          Download
+        </Link>
+
+        {/* Mobile menu trigger */}
         <div className="flex md:hidden">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <button
                 type="button"
-                className="relative z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-white/5 text-text-secondary transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 aria-label="Open navigation menu"
               >
                 <svg
@@ -217,14 +215,15 @@ export default function Navbar() {
                 </SheetTitle>
               </SheetHeader>
 
-              {/* CTA buttons */}
-              <nav className="mt-6 space-y-2" aria-label="Mobile navigation">
+              {/* Mobile CTA */}
+              <div className="mt-6 space-y-2">
                 <Link
                   href="/download"
                   onClick={closeSheet}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 text-base font-medium text-text-secondary transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-base font-medium text-white transition-colors hover:bg-white/[0.1]"
                 >
-                  Download
+                  <Apple className="h-4 w-4" />
+                  Download for Mac
                 </Link>
                 <Link
                   href="/pricing"
@@ -233,7 +232,7 @@ export default function Navbar() {
                 >
                   Try Pro Free <span aria-hidden="true">&rarr;</span>
                 </Link>
-              </nav>
+              </div>
 
               {/* Sections */}
               <div className="mt-6 border-t border-border pt-4">
@@ -272,7 +271,7 @@ export default function Navbar() {
                 ))}
               </div>
 
-              {/* Footer legal links */}
+              {/* Footer legal */}
               <div className="mt-auto border-t border-border pt-4">
                 <div className="flex items-center gap-4 px-4">
                   <Link
@@ -297,7 +296,7 @@ export default function Navbar() {
             </SheetContent>
           </Sheet>
         </div>
-      </div>
+      </nav>
     </header>
   );
 }

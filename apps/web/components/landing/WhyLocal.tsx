@@ -1,14 +1,26 @@
 'use client';
 
-import { FolderOpen, FileText, Check, X } from 'lucide-react';
-import { TextReveal } from '@/components/magicui/text-reveal';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { forwardRef, useRef } from 'react';
+import {
+  FolderOpen,
+  FileText,
+  Check,
+  X,
+  WifiOff,
+  Lock,
+  CloudOff,
+  Terminal,
+  HardDrive,
+  Pen,
+  FolderClosed,
+} from 'lucide-react';
+import { AnimatedBeam } from '@/components/magicui/animated-beam';
+import { BorderBeam } from '@/components/magicui/border-beam';
+import { cn } from '@/lib/utils';
 
-type Row = {
-  label: string;
-  readied: boolean | string;
-  cloud: boolean | string;
-};
+/* ─── Comparison table ─── */
+
+type Row = { label: string; readied: boolean | string; cloud: boolean | string };
 
 const rows: Row[] = [
   { label: 'Data Location', readied: 'Your machine', cloud: 'Their servers' },
@@ -38,122 +50,266 @@ function CellValue({ value, positive }: { value: boolean | string; positive: boo
   );
 }
 
-export default function WhyLocal() {
+/* ─── Bento card ─── */
+
+function BentoCard({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <section className="py-20 px-4 sm:px-6">
-      <div className="max-w-5xl mx-auto">
-        {/* Section label */}
-        <span className="section-label">Why Local</span>
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-xl border border-border bg-surface p-6',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
 
-        {/* TextReveal heading — scroll-based word reveal */}
-        <TextReveal>Your notes should live on your machine not someone else's server</TextReveal>
+/* ─── Circle node (matches official Magic UI pattern) ─── */
 
-        {/* Comparison card */}
-        <div className="max-w-2xl mx-auto">
-          <Card className="p-0 overflow-hidden">
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="p-4 text-left text-text-muted font-medium">Feature</th>
-                    <th className="p-4 text-center text-accent font-semibold">Readied</th>
-                    <th className="p-4 text-center text-text-muted font-medium">Cloud Apps</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map(row => (
-                    <tr key={row.label} className="border-b border-border last:border-0">
-                      <td className="p-4 text-text-secondary">{row.label}</td>
-                      <td className="p-4 text-center">
-                        <CellValue value={row.readied} positive />
-                      </td>
-                      <td className="p-4 text-center">
-                        <CellValue value={row.cloud} positive={false} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+const Circle = forwardRef<HTMLDivElement, { className?: string; children?: React.ReactNode }>(
+  ({ className, children }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        'z-10 flex size-12 items-center justify-center rounded-full border-2 border-border bg-surface-elevated p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]',
+        className
+      )}
+    >
+      {children}
+    </div>
+  )
+);
+Circle.displayName = 'Circle';
+
+/* ─── Data flow: You → Readied → local .md files ─── */
+
+function DataFlowDiagram() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
+  const centerRef = useRef<HTMLDivElement>(null);
+  const file1Ref = useRef<HTMLDivElement>(null);
+  const file2Ref = useRef<HTMLDivElement>(null);
+  const file3Ref = useRef<HTMLDivElement>(null);
+  const folderRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex h-[300px] w-full items-center justify-center overflow-hidden p-10"
+    >
+      <div className="flex size-full max-w-lg flex-row items-stretch justify-between gap-10">
+        {/* Left: You */}
+        <div className="flex flex-col justify-center">
+          <Circle ref={userRef}>
+            <Pen className="h-5 w-5 text-text-secondary" />
+          </Circle>
         </div>
 
-        {/* Navigation demo */}
-        <div className="mt-12">
-          <img
-            src="/media/demo-navigation.svg"
-            alt="Quick-open navigation between notes"
-            className="w-full max-w-3xl mx-auto rounded-xl border border-white/[0.06]"
-            width={800}
-            height={500}
-            loading="lazy"
-          />
-          <p className="text-center text-sm text-[#71717a] mt-3">
-            Quick-open: jump between notes with Cmd+P
+        {/* Center: Readied */}
+        <div className="flex flex-col justify-center">
+          <Circle ref={centerRef} className="size-16 border-accent/30 bg-accent/10">
+            <span className="font-mono text-sm font-bold text-accent">R</span>
+          </Circle>
+        </div>
+
+        {/* Right: Local files */}
+        <div className="flex flex-col justify-center gap-2">
+          <Circle ref={file1Ref}>
+            <FileText className="h-5 w-5 text-text-muted" />
+          </Circle>
+          <Circle ref={file2Ref}>
+            <FileText className="h-5 w-5 text-text-muted" />
+          </Circle>
+          <Circle ref={file3Ref}>
+            <FolderClosed className="h-5 w-5 text-text-muted" />
+          </Circle>
+          <Circle ref={folderRef}>
+            <HardDrive className="h-5 w-5 text-text-muted" />
+          </Circle>
+        </div>
+      </div>
+
+      {/* You → Readied */}
+      <AnimatedBeam
+        containerRef={containerRef}
+        fromRef={userRef}
+        toRef={centerRef}
+        gradientStartColor="#8b5cf6"
+        gradientStopColor="#6d28d9"
+        duration={3}
+      />
+
+      {/* Readied → files */}
+      <AnimatedBeam
+        containerRef={containerRef}
+        fromRef={centerRef}
+        toRef={file1Ref}
+        gradientStartColor="#8b5cf6"
+        gradientStopColor="#6d28d9"
+        duration={3}
+      />
+      <AnimatedBeam
+        containerRef={containerRef}
+        fromRef={centerRef}
+        toRef={file2Ref}
+        gradientStartColor="#8b5cf6"
+        gradientStopColor="#6d28d9"
+        duration={3}
+      />
+      <AnimatedBeam
+        containerRef={containerRef}
+        fromRef={centerRef}
+        toRef={file3Ref}
+        gradientStartColor="#8b5cf6"
+        gradientStopColor="#6d28d9"
+        duration={3}
+      />
+      <AnimatedBeam
+        containerRef={containerRef}
+        fromRef={centerRef}
+        toRef={folderRef}
+        gradientStartColor="#8b5cf6"
+        gradientStopColor="#6d28d9"
+        duration={3}
+      />
+    </div>
+  );
+}
+
+/* ─── Main section ─── */
+
+export default function WhyLocal() {
+  return (
+    <section className="py-24 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <span className="section-label">Why Local</span>
+          <h2 className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-text-primary sm:text-4xl lg:text-5xl mb-4">
+            Your notes should live on <span className="text-accent">your machine</span>
+            {' — '}not someone else&apos;s server.
+          </h2>
+          <p className="mx-auto max-w-xl text-text-secondary">
+            Cloud note apps hold your data hostage. Readied takes a different approach: everything
+            is local, everything is Markdown, everything is yours.
           </p>
         </div>
 
-        {/* Visual: file format proof */}
-        <div className="mt-10 rounded-xl bg-surface overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            {/* Left: what you write */}
-            <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-white/[0.06]">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-accent">
-                  What you write
-                </span>
-              </div>
-              <div className="font-mono text-xs sm:text-sm leading-relaxed text-[#a1a1aa] space-y-1 bg-inset rounded-lg p-4 border border-white/[0.06]">
-                <div>
-                  <span className="text-accent font-bold"># </span>
-                  <span className="text-[#f4f4f5] font-bold">Meeting Notes</span>
-                </div>
-                <div className="h-1" />
-                <div>
-                  <span className="text-accent/50">- </span>Decided on local-first architecture
-                </div>
-                <div>
-                  <span className="text-accent/50">- </span>Launch timeline: Q2 2026
-                </div>
-                <div>
-                  <span className="text-accent/50">- </span>Next step: prototype by Friday
-                </div>
-              </div>
-            </div>
-
-            {/* Right: what's on disk */}
-            <div className="p-6 md:p-8">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-accent">
-                  What&apos;s on your disk
-                </span>
-              </div>
-              <div className="font-mono text-xs sm:text-sm text-[#a1a1aa] space-y-0.5 bg-inset rounded-lg p-4 border border-white/[0.06]">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="h-3.5 w-3.5 text-accent" />
-                  <span className="text-[#f4f4f5]">~/notes/</span>
-                </div>
-                <div className="flex items-center gap-2 pl-5">
-                  <FileText className="h-3.5 w-3.5 text-[#71717a]" />
-                  <span>meeting-notes.md</span>
-                  <span className="text-[10px] text-[#71717a] ml-auto">1.2 KB</span>
-                </div>
-                <div className="flex items-center gap-2 pl-5">
-                  <FileText className="h-3.5 w-3.5 text-[#71717a]" />
-                  <span>project-plan.md</span>
-                  <span className="text-[10px] text-[#71717a] ml-auto">3.4 KB</span>
-                </div>
-                <div className="flex items-center gap-2 pl-5">
-                  <FileText className="h-3.5 w-3.5 text-[#71717a]" />
-                  <span>ideas.md</span>
-                  <span className="text-[10px] text-[#71717a] ml-auto">0.8 KB</span>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-[#71717a] italic">
-                Plain .md files. Open with any editor.
+        {/* Bento grid */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* Row 1: Data flow diagram (span 2) + Offline card */}
+          <BentoCard className="md:col-span-2 p-0">
+            <div className="px-6 pt-6">
+              <h3 className="text-sm font-semibold text-text-primary mb-1">
+                Your data never leaves
+              </h3>
+              <p className="text-xs text-text-muted">
+                You write → Readied saves → plain .md files on your disk. No cloud.
               </p>
             </div>
-          </div>
+            <DataFlowDiagram />
+          </BentoCard>
+
+          <BentoCard className="flex flex-col justify-between">
+            <div>
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+                <WifiOff className="h-5 w-5 text-accent" />
+              </div>
+              <h3 className="font-semibold text-text-primary mb-1">No internet required</h3>
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Everything runs locally. Write on a plane, in a cabin, anywhere.
+              </p>
+            </div>
+          </BentoCard>
+
+          {/* Row 2: Three feature cards */}
+          <BentoCard>
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+              <Lock className="h-5 w-5 text-accent" />
+            </div>
+            <h3 className="font-semibold text-text-primary mb-1">Your data stays yours</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Notes live in plain .md files on your filesystem. No cloud sync, no telemetry.
+            </p>
+          </BentoCard>
+
+          <BentoCard>
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+              <CloudOff className="h-5 w-5 text-accent" />
+            </div>
+            <h3 className="font-semibold text-text-primary mb-1">No vendor lock-in</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Standard Markdown. Open your files with any editor, any time.
+            </p>
+          </BentoCard>
+
+          <BentoCard>
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+              <Terminal className="h-5 w-5 text-accent" />
+            </div>
+            <h3 className="font-semibold text-text-primary mb-1">Open source</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Every line of code is on GitHub. Audit it, fork it, contribute.
+            </p>
+          </BentoCard>
+
+          {/* Row 3: Comparison table (span 2) + File tree */}
+          <BentoCard className="relative md:col-span-2 p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="p-4 text-left text-text-muted font-medium">Feature</th>
+                  <th className="p-4 text-center text-accent font-semibold">Readied</th>
+                  <th className="p-4 text-center text-text-muted font-medium">Cloud Apps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(row => (
+                  <tr key={row.label} className="border-b border-border last:border-0">
+                    <td className="p-4 text-text-secondary">{row.label}</td>
+                    <td className="p-4 text-center">
+                      <CellValue value={row.readied} positive />
+                    </td>
+                    <td className="p-4 text-center">
+                      <CellValue value={row.cloud} positive={false} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <BorderBeam size={150} duration={10} colorFrom="#8b5cf6" colorTo="#6d28d9" />
+          </BentoCard>
+
+          <BentoCard className="p-5">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-accent mb-3 block">
+              On your disk
+            </span>
+            <div className="font-mono text-xs text-text-muted space-y-1">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="h-3.5 w-3.5 text-accent" />
+                <span className="text-text-primary">~/notes/</span>
+              </div>
+              <div className="flex items-center gap-2 pl-5">
+                <FileText className="h-3 w-3 text-text-muted" />
+                <span>meeting-notes.md</span>
+                <span className="text-[10px] text-text-muted/50 ml-auto">1.2 KB</span>
+              </div>
+              <div className="flex items-center gap-2 pl-5">
+                <FileText className="h-3 w-3 text-text-muted" />
+                <span>project-plan.md</span>
+                <span className="text-[10px] text-text-muted/50 ml-auto">3.4 KB</span>
+              </div>
+              <div className="flex items-center gap-2 pl-5">
+                <FileText className="h-3 w-3 text-text-muted" />
+                <span>ideas.md</span>
+                <span className="text-[10px] text-text-muted/50 ml-auto">0.8 KB</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[10px] text-text-muted/60 italic">
+              Plain .md files. Open with any editor.
+            </p>
+          </BentoCard>
         </div>
       </div>
     </section>
