@@ -115,3 +115,60 @@ jobs:
             artifacts/**/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  tweet:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch release body
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY=$(gh release view "${{ steps.version.outputs.tag }}" --repo "${{ github.repository }}" --json body --jq '.body // ""')
+          echo "body<<RELEASE_EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Compose tweet
+        id: tweet
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          BODY="${{ steps.release.outputs.body }}"
+          LINK="https://github.com/${{ github.repository }}/releases/tag/${TAG}"
+          SUFFIX=$'\n\n'"📥 ${LINK}"$'\n'"#readied #markdown #devtools"
+          HEADER="🚀 Readied ${TAG}"$'\n\n'
+
+          # Calculate available space for release body
+          # 280 max - header - suffix = space for body
+          MAX=280
+          FIXED_LEN=$(( ${#HEADER} + ${#SUFFIX} ))
+          BODY_MAX=$(( MAX - FIXED_LEN ))
+
+          # Strip markdown formatting, take first lines, trim to fit
+          CLEAN=$(echo "$BODY" | sed 's/^##* //' | sed 's/\*\*//g' | sed '/^$/d' | head -8)
+
+          if [ ${#CLEAN} -gt $BODY_MAX ]; then
+            CLEAN="${CLEAN:0:$(( BODY_MAX - 1 ))}…"
+          fi
+
+          TWEET="${HEADER}${CLEAN}${SUFFIX}"
+
+          echo "text<<TWEET_EOF" >> "$GITHUB_OUTPUT"
+          echo "$TWEET" >> "$GITHUB_OUTPUT"
+          echo "TWEET_EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Post tweet
+        uses: dart-actions/tweet@v1
+        with:
+          consumer-key: ${{ secrets.TWITTER_API_KEY }}
+          consumer-secret: ${{ secrets.TWITTER_API_SECRET }}
+          access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          access-token-secret: ${{ secrets.TWITTER_ACCESS_SECRET }}
+          text: ${{ steps.tweet.outputs.text }}
