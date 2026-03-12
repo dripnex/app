@@ -1,0 +1,40 @@
+# Size labels are handled by the labeler action based on changed files
+"package:core":
+  - changed-files:
+      - any-glob-to-any-file: "packages/core/**"
+
+"package:plugin-api":
+  - changed-files:
+      - any-glob-to-any-file: "packages/plugin-api/**"
+
+"package:storage":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/storage-core/**"
+          - "packages/storage-sqlite/**"
+
+"package:api":
+  - changed-files:
+      - any-glob-to-any-file: "packages/api/**"
+
+"app:desktop":
+  - changed-files:
+      - any-glob-to-any-file: "apps/desktop/**"
+
+"app:docs":
+  - changed-files:
+      - any-glob-to-any-file: "apps/docs-site/**"
+
+"app:marketing":
+  - changed-files:
+      - any-glob-to-any-file: "apps/marketing-site/**"
+
+"ci":
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+"dependencies":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pnpm-lock.yaml"
+          - "**/package.json"
