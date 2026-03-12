@@ -1,6 +1,6 @@
 # Getting Started
 
-Readied is a Markdown-first, offline-forever desktop note app for developers.
+Readied is a Markdown-first desktop note app for developers who value their data.
 
 ## Installation
 
@@ -31,11 +31,37 @@ Download the latest release from [GitHub Releases](https://github.com/tomymarita
 - Syntax highlighting for code blocks
 - Your markdown is **never auto-modified**
 
-### Offline Forever
+### Notebooks
 
-- No account required
-- No internet connection needed
-- Your data stays on your machine
+- Organize notes into hierarchical notebooks
+- Drag and drop notes between notebooks
+- Collapse and expand notebook trees in the sidebar
+
+### Wikilinks
+
+- Link between notes with `[[wikilink]]` syntax
+- Backlinks panel shows all notes that reference the current note
+- Quick navigation between linked notes
+
+### Plugin System
+
+- 8 built-in plugins covering core editing and productivity features
+- Extensible architecture for community plugins
+- Load custom plugins from `~/.config/readied/plugins`
+- Plugins can extend the editor, sidebar, and command palette
+
+### Optional Cloud Sync
+
+- Supabase-based sync across devices
+- Magic link authentication (no passwords)
+- End-to-end encryption for synced notes
+- Works 100% offline by default — sync is opt-in
+
+### Theme System
+
+- Customizable color palettes with dark/light awareness
+- Ships with Solarized theme built-in
+- Themes adapt automatically to system appearance
 
 ### Import & Export
 

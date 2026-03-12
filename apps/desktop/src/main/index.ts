@@ -13,7 +13,7 @@ import { join, normalize, basename } from 'path';
 import { readFile, writeFile, unlink, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { exec } from 'child_process';
-import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import {
@@ -2262,6 +2262,21 @@ app
 
     // App version
     ipcMain.handle('app:version', () => app.getVersion());
+
+    // Theme — sync Electron nativeTheme with renderer
+    ipcMain.on('theme:set-source', (_event, source: string) => {
+      if (source === 'dark' || source === 'light' || source === 'system') {
+        nativeTheme.themeSource = source;
+      }
+    });
+
+    // Notify all renderer windows when system theme changes
+    nativeTheme.on('updated', () => {
+      const isDark = nativeTheme.shouldUseDarkColors;
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('theme:system-changed', isDark);
+      }
+    });
 
     // Settings sync: broadcast to all windows except sender
     ipcMain.on('settings:changed', (event, settings) => {

@@ -73,7 +73,9 @@
       "Read(//Users/tomasmaritano/Library/Preferences/**)",
       "Bash(open:*)",
       "Bash(gh secret:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(do echo:*)",
+      "Bash(do gh:*)"
     ]
   }
 }

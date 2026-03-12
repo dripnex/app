@@ -72,22 +72,70 @@ const unregister = context.registerExtensions('my-ext', [
 
 #### `registerRemarkPlugin(id, plugin)`
 
-Add a remark plugin to the markdown preview pipeline (mdast level).
+Add a remark plugin to the markdown preview pipeline. Remark plugins operate on the **mdast** (markdown abstract syntax tree) level. They receive `(tree, file)` and can transform the tree in place.
+
+Errors thrown by remark plugins are caught and displayed as inline markers in the preview, so a buggy plugin will not break the entire preview.
+
+```typescript
+import type { Root } from 'mdast';
+import { visit } from 'unist-util-visit';
+
+function myRemarkPlugin() {
+  return (tree: Root) => {
+    visit(tree, 'text', node => {
+      // Transform text nodes
+      node.value = node.value.replace(/TODO/g, '[ ] TODO');
+    });
+  };
+}
+
+context.registerRemarkPlugin('my-remark', myRemarkPlugin);
+```
 
 #### `registerRehypePlugin(id, plugin)`
 
-Add a rehype plugin to the preview pipeline (hast level).
+Add a rehype plugin to the preview pipeline. Rehype plugins operate on the **hast** (HTML abstract syntax tree) level, after markdown has been converted to HTML. They receive `(tree, file)` and can transform the HTML tree.
+
+Like remark plugins, errors are caught and shown as inline markers in preview.
+
+```typescript
+function myRehypePlugin() {
+  return tree => {
+    // Transform the HTML AST
+  };
+}
+
+context.registerRehypePlugin('my-rehype', myRehypePlugin);
+```
 
 #### `registerPreviewComponent(id, tagName, component)`
 
-Replace an HTML element in the preview with a custom React component.
+Replace an HTML element in the markdown preview with a custom React component. Every instance of the specified tag in the rendered preview will be replaced with your component.
+
+```typescript
+function CustomAccordion({ children, ...props }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="accordion" onClick={() => setOpen(!open)}>
+      {open ? children : <span>Click to expand</span>}
+    </div>
+  );
+}
+
+// Replace all <details> elements with a custom accordion
+context.registerPreviewComponent('my-accordion', 'details', CustomAccordion);
+```
 
 #### `registerCodeBlockRenderer(id, language, component)`
 
-Render fenced code blocks of a specific language with a custom component.
+Render fenced code blocks of a specific language with a custom React component. The component receives `{ code, language, meta }` as props.
 
 ```typescript
-function MermaidRenderer({ code }: { code: string }) {
+function MermaidRenderer({ code, language, meta }: {
+  code: string;
+  language: string;
+  meta?: string;
+}) {
   return <div className="mermaid">{code}</div>;
 }
 
@@ -103,6 +151,106 @@ context.registerCssVariables('my-theme', {
   '--my-plugin-bg': '#1a1b2e',
   '--my-plugin-accent': '#7c3aed',
 });
+```
+
+#### `getTheme()`
+
+Returns the current resolved theme as `'dark' | 'light'`.
+
+```typescript
+const theme = context.getTheme();
+// 'dark' or 'light'
+```
+
+#### `onThemeChanged(callback)`
+
+Subscribe to theme changes. The callback fires whenever the user switches between dark and light mode. Returns an unsubscribe function.
+
+```typescript
+const unsubscribe = context.onThemeChanged(() => {
+  const theme = context.getTheme();
+  context.log.info(`Theme changed to ${theme}`);
+});
+
+// Later, to stop listening:
+unsubscribe();
+```
+
+---
+
+## PluginManifest
+
+The `PluginManifest` is the top-level object you export from your plugin. It defines metadata, configuration, and the `activate()` entry point.
+
+| Field          | Type                          | Required | Description                                          |
+| -------------- | ----------------------------- | -------- | ---------------------------------------------------- |
+| `id`           | `string`                      | Yes      | Unique plugin identifier                             |
+| `name`         | `string`                      | Yes      | Display name                                         |
+| `version`      | `string`                      | Yes      | Semver version                                       |
+| `description`  | `string`                      | No       | Short description                                    |
+| `configSchema` | `Record<string, ConfigField>` | No       | User-configurable settings                           |
+| `apiVersion`   | `string`                      | No       | Plugin API version this plugin targets (e.g. `"1"`)  |
+| `dependencies` | `Record<string, string>`      | No       | Plugin dependencies: map of pluginId to semver range |
+| `themeType`    | `'ui'`                        | No       | Mark this plugin as a theme plugin                   |
+| `activate`     | `(context) => Disposable`     | Yes      | Entry point, receives `PluginContext`                |
+
+**Example with new fields:**
+
+```typescript
+export const plugin: PluginManifest = {
+  id: 'my-theme',
+  name: 'My Theme',
+  version: '1.0.0',
+  apiVersion: '1',
+  themeType: 'ui',
+  dependencies: {
+    'color-utils': '^1.0.0',
+  },
+
+  activate(context) {
+    // ...
+  },
+};
+```
+
+---
+
+## Config Validation
+
+The `@readied/plugin-api` package exports a `validateConfigValue()` function for validating config values against their schema. This is useful when building custom settings UI or validating values programmatically.
+
+```typescript
+import { validateConfigValue } from '@readied/plugin-api';
+
+const result = validateConfigValue(field, value);
+// result: { valid: boolean, error?: string }
+```
+
+Supports all 5 config field types:
+
+| Type      | Validates                                   |
+| --------- | ------------------------------------------- |
+| `boolean` | Value is a boolean                          |
+| `string`  | Value is a string                           |
+| `number`  | Value is a number                           |
+| `enum`    | Value matches one of the defined options    |
+| `range`   | Value is a number within `min`/`max` bounds |
+
+**Example:**
+
+```typescript
+const field = {
+  type: 'range',
+  default: 10,
+  min: 1,
+  max: 100,
+  step: 1,
+  description: 'Max results',
+};
+
+validateConfigValue(field, 50); // { valid: true }
+validateConfigValue(field, 200); // { valid: false, error: 'Value must be between 1 and 100' }
+validateConfigValue(field, 'hi'); // { valid: false, error: 'Expected a number' }
 ```
 
 ---

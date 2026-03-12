@@ -14,6 +14,10 @@ npm install
 
 This creates a plugin project with TypeScript, the plugin API types, and a starter template.
 
+::: tip Look at the built-ins
+Readied ships with 8 built-in plugins you can use as reference. Check the `apps/desktop/src/renderer/plugins/` directory for real-world examples covering status bars, focus mode, code block rendering, and more.
+:::
+
 ### 2. Write your plugin
 
 Edit `src/index.ts`:
