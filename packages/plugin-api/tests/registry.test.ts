@@ -497,7 +497,7 @@ describe('PluginRegistry', () => {
       expect(regs).toHaveLength(1);
       expect(regs[0]!.id).toBe('my-remark');
       expect(regs[0]!.pluginId).toBe('test-plugin');
-      expect(regs[0]!.plugin).toBe(fakePlugin);
+      expect(typeof regs[0]!.plugin).toBe('function'); // wrapped by safePluginWrapper
     });
 
     it('registerRehypePlugin adds to rehypePluginStore', async () => {

@@ -13,6 +13,7 @@ export type {
   PluginConfigAPI,
   PluginLogger,
   PluginCommandOptions,
+  PluginHookOptions,
 } from './types';
 
 // Layout
@@ -41,6 +42,8 @@ export { rehypePluginStore } from './preview/rehypePluginStore';
 export type { RehypePluginRegistration } from './preview/rehypePluginStore';
 export { codeBlockStore } from './preview/codeBlockStore';
 export type { CodeBlockRegistration, CodeBlockRendererProps } from './preview/codeBlockStore';
+export { safePluginWrapper } from './preview/safePluginWrapper';
+export type { PluginMetadata } from './preview/safePluginWrapper';
 
 // Theme
 export { cssVariableStore } from './theme/cssVariableStore';
