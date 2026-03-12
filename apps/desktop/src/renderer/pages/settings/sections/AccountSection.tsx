@@ -14,6 +14,8 @@ import {
   Sparkles,
   CreditCard,
   ExternalLink,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { getProductConfig } from '@readied/product-config';
 import { useAuthStore } from '../../../stores/authStore';
@@ -29,6 +31,13 @@ import styles from './Section.module.css';
 const config = getProductConfig();
 const proPricing = config.plans.pro.pricing!;
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function AccountSection() {
   const { user, isAuthenticated, isLoading, logout, loadSession } = useAuthStore();
   const { syncNow, status: syncStatus, lastSyncAt, conflicts } = useSyncStore();
@@ -38,11 +47,47 @@ export function AccountSection() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [syncHistory, setSyncHistory] = useState<
+    Array<{
+      id: string;
+      startedAt: string;
+      completedAt: string | null;
+      status: string;
+      notesPulled: number;
+      notesPushed: number;
+      notebooksPulled: number;
+      notebooksPushed: number;
+      tagsPulled: number;
+      tagsPushed: number;
+      conflicts: number;
+      bytesSent: number;
+      bytesReceived: number;
+      errorMessage: string | null;
+    }>
+  >([]);
 
   // Load session on mount
   useEffect(() => {
     loadSession();
   }, [loadSession]);
+
+  const loadSyncHistory = useCallback(async () => {
+    try {
+      const result = await window.readied.sync.history(10);
+      if (result.success) {
+        setSyncHistory(result.history);
+      }
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showHistory) {
+      loadSyncHistory();
+    }
+  }, [showHistory, loadSyncHistory]);
 
   const handleSignIn = useCallback(() => {
     setShowMagicLinkFlow(true);
@@ -74,12 +119,13 @@ export function AccountSection() {
     try {
       await syncNow();
       setMessage('Sync completed successfully');
+      if (showHistory) loadSyncHistory();
     } catch (error) {
       setMessage(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSyncing(false);
     }
-  }, [syncNow]);
+  }, [syncNow, showHistory, loadSyncHistory]);
 
   const formatLastSync = () => {
     if (!lastSyncAt) return 'Never';
@@ -246,6 +292,56 @@ export function AccountSection() {
             {syncStatus === 'offline' && (
               <div className={styles.infoMessage}>
                 You are offline. Sync will resume when you're back online.
+              </div>
+            )}
+
+            <button
+              type="button"
+              className={styles.historyToggle}
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              {showHistory ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <span>Sync History</span>
+            </button>
+
+            {showHistory && (
+              <div className={styles.syncHistoryTable}>
+                {syncHistory.length === 0 ? (
+                  <div className={styles.placeholder}>No sync history yet</div>
+                ) : (
+                  <table className={styles.historyTable}>
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Items</th>
+                        <th>Data</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {syncHistory.map(entry => (
+                        <tr key={entry.id}>
+                          <td>{new Date(entry.startedAt).toLocaleString()}</td>
+                          <td>
+                            <span
+                              className={`${styles.historyStatus} ${styles[`historyStatus_${entry.status}` as keyof typeof styles]}`}
+                            >
+                              {entry.status}
+                            </span>
+                          </td>
+                          <td>
+                            ↓{entry.notesPulled + entry.notebooksPulled + entry.tagsPulled} ↑
+                            {entry.notesPushed + entry.notebooksPushed + entry.tagsPushed}
+                            {entry.conflicts > 0 && ` ⚠${entry.conflicts}`}
+                          </td>
+                          <td>
+                            ↑{formatBytes(entry.bytesSent)} ↓{formatBytes(entry.bytesReceived)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             )}
           </SettingGroup>

@@ -668,6 +668,78 @@
   color: var(--danger, #ef4444);
 }
 
+/* Sync History */
+.historyToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.historyToggle:hover {
+  color: var(--text-primary);
+}
+
+.syncHistoryTable {
+  margin-top: 0.5rem;
+}
+
+.historyTable {
+  width: 100%;
+  font-size: var(--text-xs);
+  border-collapse: collapse;
+}
+
+.historyTable th {
+  text-align: left;
+  padding: 0.375rem 0.5rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.historyTable td {
+  padding: 0.375rem 0.5rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.historyTable tr:last-child td {
+  border-bottom: none;
+}
+
+.historyStatus {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.historyStatus_success {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.historyStatus_partial {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.historyStatus_error {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.historyStatus_running {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
 /* ============================================================================
    Device Management
    ============================================================================ */

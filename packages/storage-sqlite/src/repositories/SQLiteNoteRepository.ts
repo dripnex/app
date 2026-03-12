@@ -24,6 +24,24 @@ import {
 import { extractWikilinks } from '@readied/wikilinks';
 import type { DatabaseConnection } from '../database.js';
 
+/** Sync history entry returned by getSyncHistory */
+export interface SyncHistoryEntry {
+  id: string;
+  startedAt: string;
+  completedAt: string | null;
+  status: 'running' | 'success' | 'partial' | 'error';
+  notesPulled: number;
+  notesPushed: number;
+  notebooksPulled: number;
+  notebooksPushed: number;
+  tagsPulled: number;
+  tagsPushed: number;
+  conflicts: number;
+  bytesSent: number;
+  bytesReceived: number;
+  errorMessage: string | null;
+}
+
 /** Row type from SQLite */
 interface NoteRow {
   id: string;
@@ -958,5 +976,146 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       | { uuid: string | null }
       | undefined;
     return row?.uuid ?? null;
+  }
+
+  // ============================================================================
+  // Sync History Methods
+  // ============================================================================
+
+  /**
+   * Create a new sync history entry marking the start of a sync cycle.
+   * Prunes old entries to keep only the latest 100.
+   *
+   * @param id - Unique identifier for this sync cycle
+   */
+  createSyncHistoryEntry(id: string): void {
+    this.db.transaction(() => {
+      const insertStmt = this.db.prepare(`
+        INSERT INTO sync_history (id, started_at, status)
+        VALUES (?, datetime('now'), 'running')
+      `);
+      insertStmt.run(id);
+
+      // Prune old entries, keep latest 100
+      const pruneStmt = this.db.prepare(`
+        DELETE FROM sync_history
+        WHERE id NOT IN (
+          SELECT id FROM sync_history
+          ORDER BY started_at DESC
+          LIMIT 100
+        )
+      `);
+      pruneStmt.run();
+    });
+  }
+
+  /**
+   * Complete a sync history entry with final status and metrics.
+   *
+   * @param id - The sync cycle ID
+   * @param status - Final status: 'success', 'partial', or 'error'
+   * @param metrics - Sync cycle metrics
+   */
+  completeSyncHistoryEntry(
+    id: string,
+    status: 'success' | 'partial' | 'error',
+    metrics: {
+      notesPulled: number;
+      notesPushed: number;
+      notebooksPulled: number;
+      notebooksPushed: number;
+      tagsPulled: number;
+      tagsPushed: number;
+      conflicts: number;
+      bytesSent: number;
+      bytesReceived: number;
+      errorMessage?: string;
+    }
+  ): void {
+    const stmt = this.db.prepare(`
+      UPDATE sync_history
+      SET
+        completed_at = datetime('now'),
+        status = ?,
+        notes_pulled = ?,
+        notes_pushed = ?,
+        notebooks_pulled = ?,
+        notebooks_pushed = ?,
+        tags_pulled = ?,
+        tags_pushed = ?,
+        conflicts = ?,
+        bytes_sent = ?,
+        bytes_received = ?,
+        error_message = ?
+      WHERE id = ?
+    `);
+    stmt.run(
+      status,
+      metrics.notesPulled,
+      metrics.notesPushed,
+      metrics.notebooksPulled,
+      metrics.notebooksPushed,
+      metrics.tagsPulled,
+      metrics.tagsPushed,
+      metrics.conflicts,
+      metrics.bytesSent,
+      metrics.bytesReceived,
+      metrics.errorMessage ?? null,
+      id
+    );
+  }
+
+  /**
+   * Get recent sync history entries.
+   *
+   * @param limit - Maximum number of entries to return (default: 20)
+   * @returns Array of sync history entries, newest first
+   */
+  getSyncHistory(limit = 20): SyncHistoryEntry[] {
+    const stmt = this.db.prepare(`
+      SELECT id, started_at, completed_at, status,
+             notes_pulled, notes_pushed,
+             notebooks_pulled, notebooks_pushed,
+             tags_pulled, tags_pushed,
+             conflicts, bytes_sent, bytes_received,
+             error_message
+      FROM sync_history
+      ORDER BY started_at DESC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(limit) as Array<{
+      id: string;
+      started_at: string;
+      completed_at: string | null;
+      status: string;
+      notes_pulled: number;
+      notes_pushed: number;
+      notebooks_pulled: number;
+      notebooks_pushed: number;
+      tags_pulled: number;
+      tags_pushed: number;
+      conflicts: number;
+      bytes_sent: number;
+      bytes_received: number;
+      error_message: string | null;
+    }>;
+
+    return rows.map(row => ({
+      id: row.id,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      status: row.status as SyncHistoryEntry['status'],
+      notesPulled: row.notes_pulled,
+      notesPushed: row.notes_pushed,
+      notebooksPulled: row.notebooks_pulled,
+      notebooksPushed: row.notebooks_pushed,
+      tagsPulled: row.tags_pulled,
+      tagsPushed: row.tags_pushed,
+      conflicts: row.conflicts,
+      bytesSent: row.bytes_sent,
+      bytesReceived: row.bytes_received,
+      errorMessage: row.error_message,
+    }));
   }
 }

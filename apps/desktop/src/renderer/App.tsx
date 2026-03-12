@@ -48,6 +48,7 @@ import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
+import { useSyncStore } from './stores/syncStore';
 import { useSettingsStore, selectAppearance } from './stores/settings';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
 
@@ -125,6 +126,12 @@ function NotesApp() {
   // Load auth session on mount (once)
   useEffect(() => {
     useAuthStore.getState().loadSession();
+  }, []);
+
+  // Auto-resume sync on network reconnect
+  useEffect(() => {
+    const cleanup = useSyncStore.getState().initNetworkListeners();
+    return cleanup;
   }, []);
 
   // Handle deep link auth verification (readied://auth/verify?token=xxx)
