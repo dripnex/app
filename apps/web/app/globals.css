@@ -3,13 +3,25 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @theme {
-  --color-accent: #0d9488;
-  --color-accent-hover: #0f766e;
-  --color-accent-light: #55E4CF;
-  --color-base: #09090b;
-  --color-surface: #131417;
-  --color-surface-elevated: #1a1b1f;
+  /* Brand colors — violet accent on dark zinc */
+  --color-background: #09090b;
+  --color-surface: #111113;
+  --color-surface-elevated: #1a1a1f;
   --color-inset: #0c0c0e;
+  --color-border: #27272a;
+  --color-border-accent: rgba(139, 92, 246, 0.3);
+
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+
+  --color-accent: #8b5cf6;
+  --color-accent-hover: #7c3aed;
+  --color-accent-glow: rgba(139, 92, 246, 0.15);
+
+  /* Font families */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 }
 
 /* Marketing page utilities */
@@ -19,12 +31,12 @@
   }
 
   .glass-card {
-    @apply bg-surface border border-zinc-800 rounded-xl;
+    @apply bg-surface border border-border rounded-xl;
   }
 
   .glass-card-glow {
     @apply bg-surface border border-accent/30 rounded-xl;
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 40px var(--color-accent-glow);
   }
 
   .gradient-text {
