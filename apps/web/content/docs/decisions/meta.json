@@ -1,0 +1,4 @@
+{
+  "title": "Decisions",
+  "pages": ["adr-001-runtime-contract", "adr-002-markdown-model", "adr-003-storage"]
+}

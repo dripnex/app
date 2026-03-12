@@ -1,67 +1,16 @@
-name: Deploy Docs
+name: Deploy Web
 
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/docs-site/**'
+      - 'apps/web/**'
+      - 'packages/product-config/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Force HTTPS for GitHub git dependencies
-        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build docs (GitHub Pages)
-        run: pnpm --filter @readied/docs build
-        env:
-          VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCS_BASE_PATH: /readide/
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: apps/docs-site/.vitepress/dist
-
-  deploy-pages:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-  deploy-cloudflare:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,20 +20,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'pnpm'
 
       - name: Force HTTPS for GitHub git dependencies
         run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
       - run: pnpm install
 
-      - name: Build docs (Cloudflare)
-        run: pnpm --filter @readied/docs build
+      - name: Build web app
+        run: |
+          cd apps/web
+          pnpm exec fumadocs-mdx
+          pnpm exec next build
         env:
-          VITE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/docs-site/.vitepress/dist --project-name=docs-site
+          command: pages deploy apps/web/out --project-name=readied-web

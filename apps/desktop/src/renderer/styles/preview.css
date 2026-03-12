@@ -545,3 +545,19 @@
   border: none;
   background: transparent;
 }
+
+/* ============================================================================
+   Plugin Error Boundaries
+   ============================================================================ */
+
+.plugin-error-block {
+  background: var(--error-bg, rgba(239, 68, 68, 0.08));
+  border-left: 3px solid var(--error-border, #ef4444);
+  padding: 4px 8px;
+  margin: 4px 0;
+  font-size: 0.75rem;
+  color: var(--error-fg, #ef4444);
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+  overflow-wrap: anywhere;
+}

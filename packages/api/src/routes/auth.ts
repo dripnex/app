@@ -155,6 +155,19 @@ auth.post('/refresh', zValidator('json', refreshSchema), async c => {
     return c.json({ error: 'User not found' }, 404);
   }
 
+  // Check device still exists (revocation check)
+  if (deviceId) {
+    const [device] = await db
+      .select({ id: devices.id })
+      .from(devices)
+      .where(and(eq(devices.userId, user.id), eq(devices.deviceId, deviceId)))
+      .limit(1);
+
+    if (!device) {
+      return c.json({ error: 'Device has been revoked' }, 401);
+    }
+  }
+
   // Update device last seen
   if (deviceId) {
     await db

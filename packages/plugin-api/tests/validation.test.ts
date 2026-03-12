@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { validateManifest, assertValidManifest } from '../src/validation';
-import type { PluginManifest } from '../src/types';
+import { validateManifest, assertValidManifest, validateConfigValue } from '../src/validation';
+import type { PluginManifest, PluginConfigSchemaField } from '../src/types';
 
 function makeManifest(overrides: Partial<PluginManifest> = {}): PluginManifest {
   return {
@@ -144,5 +144,147 @@ describe('assertValidManifest', () => {
     const log = vi.fn();
     assertValidManifest(makeManifest(), log);
     expect(log).not.toHaveBeenCalled();
+  });
+});
+
+describe('validateConfigValue', () => {
+  // Boolean
+  it('accepts valid boolean', () => {
+    const field: PluginConfigSchemaField = { type: 'boolean', default: false };
+    expect(validateConfigValue(field, true)).toEqual({ valid: true });
+  });
+
+  it('rejects non-boolean for boolean field', () => {
+    const field: PluginConfigSchemaField = { type: 'boolean', default: false };
+    const result = validateConfigValue(field, 'yes');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  // String
+  it('accepts valid string', () => {
+    const field: PluginConfigSchemaField = { type: 'string', default: '' };
+    expect(validateConfigValue(field, 'hello')).toEqual({ valid: true });
+  });
+
+  it('rejects non-string for string field', () => {
+    const field: PluginConfigSchemaField = { type: 'string', default: '' };
+    const result = validateConfigValue(field, 42);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  // Number
+  it('accepts valid number', () => {
+    const field: PluginConfigSchemaField = { type: 'number', default: 0 };
+    expect(validateConfigValue(field, 5)).toEqual({ valid: true });
+  });
+
+  it('rejects non-number for number field', () => {
+    const field: PluginConfigSchemaField = { type: 'number', default: 0 };
+    const result = validateConfigValue(field, 'five');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('rejects number below min', () => {
+    const field: PluginConfigSchemaField = { type: 'number', default: 5, min: 0 };
+    const result = validateConfigValue(field, -1);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('rejects number above max', () => {
+    const field: PluginConfigSchemaField = { type: 'number', default: 5, max: 10 };
+    const result = validateConfigValue(field, 11);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  // Enum
+  it('accepts valid enum value', () => {
+    const field: PluginConfigSchemaField = {
+      type: 'enum',
+      default: 'a',
+      options: [
+        { value: 'a', label: 'A' },
+        { value: 'b', label: 'B' },
+      ],
+    };
+    expect(validateConfigValue(field, 'a')).toEqual({ valid: true });
+  });
+
+  it('rejects invalid enum value', () => {
+    const field: PluginConfigSchemaField = {
+      type: 'enum',
+      default: 'a',
+      options: [
+        { value: 'a', label: 'A' },
+        { value: 'b', label: 'B' },
+      ],
+    };
+    const result = validateConfigValue(field, 'c');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('rejects enum with no options defined', () => {
+    const field: PluginConfigSchemaField = { type: 'enum', default: 'a' };
+    const result = validateConfigValue(field, 'a');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  // Range
+  it('accepts valid range value', () => {
+    const field: PluginConfigSchemaField = { type: 'range', default: 5, min: 0, max: 10 };
+    expect(validateConfigValue(field, 5)).toEqual({ valid: true });
+  });
+
+  it('rejects range below min', () => {
+    const field: PluginConfigSchemaField = { type: 'range', default: 5, min: 0, max: 10 };
+    const result = validateConfigValue(field, -1);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('rejects range above max', () => {
+    const field: PluginConfigSchemaField = { type: 'range', default: 5, min: 0, max: 10 };
+    const result = validateConfigValue(field, 11);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('rejects non-number for range field', () => {
+    const field: PluginConfigSchemaField = { type: 'range', default: 5, min: 0, max: 10 };
+    const result = validateConfigValue(field, 'five');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+
+  it('accepts range value aligned with step', () => {
+    const field: PluginConfigSchemaField = {
+      type: 'range',
+      default: 0,
+      min: 0,
+      max: 10,
+      step: 5,
+    };
+    expect(validateConfigValue(field, 0)).toEqual({ valid: true });
+    expect(validateConfigValue(field, 5)).toEqual({ valid: true });
+    expect(validateConfigValue(field, 10)).toEqual({ valid: true });
+  });
+
+  it('rejects range value not aligned with step', () => {
+    const field: PluginConfigSchemaField = {
+      type: 'range',
+      default: 0,
+      min: 0,
+      max: 10,
+      step: 5,
+    };
+    const result = validateConfigValue(field, 3);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain('step');
   });
 });

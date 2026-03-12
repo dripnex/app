@@ -5,7 +5,8 @@
     "moduleResolution": "bundler",
     "outDir": "../../out/main",
     "rootDir": ".",
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
   "include": ["**/*.ts"]
 }

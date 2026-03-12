@@ -5,9 +5,20 @@
  * with enable/disable toggles, badges, and collapsible config forms.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Check } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
+import {
+  RefreshCw,
+  FolderOpen,
+  ChevronDown,
+  Download,
+  Trash2,
+  Search,
+  Check,
+  AlertTriangle,
+} from 'lucide-react';
+import { pluginRuntimeStore } from '../../../stores/pluginRuntimeStore';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
+import { validateConfigValue } from '@readied/plugin-api';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';
 import styles from './Section.module.css';
@@ -411,6 +422,112 @@ function PluginCard({
 }
 
 // ============================================================================
+// PluginInspector (dev mode only)
+// ============================================================================
+
+function PluginInspector() {
+  const [open, setOpen] = useState(false);
+
+  const status = useSyncExternalStore(
+    pluginRuntimeStore.subscribe,
+    () => pluginRuntimeStore.getState().status
+  );
+  const errors = useSyncExternalStore(
+    pluginRuntimeStore.subscribe,
+    () => pluginRuntimeStore.getState().errors
+  );
+  const timings = useSyncExternalStore(
+    pluginRuntimeStore.subscribe,
+    () => pluginRuntimeStore.getState().timings
+  );
+  const pluginCount = useSyncExternalStore(
+    pluginRuntimeStore.subscribe,
+    () => pluginRuntimeStore.getState().plugins.length
+  );
+
+  const handleForceReload = useCallback(() => {
+    window.readied.plugins.requestReload();
+  }, []);
+
+  return (
+    <div className={styles.inspectorPanel}>
+      <button
+        type="button"
+        className={styles.inspectorToggle}
+        onClick={() => setOpen(prev => !prev)}
+        aria-expanded={open}
+        aria-controls="plugin-inspector-panel"
+      >
+        <ChevronDown
+          size={14}
+          style={{
+            transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+            transition: 'transform 0.15s',
+          }}
+        />
+        <span>Developer</span>
+        {errors.length > 0 && (
+          <span className={styles.inspectorErrorBadge}>
+            <AlertTriangle size={12} />
+            {errors.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div id="plugin-inspector-panel" role="region" className={styles.inspectorContent}>
+          <div className={styles.inspectorRow}>
+            <span className={styles.inspectorLabel}>Status</span>
+            <span>{status === 'scanning' ? 'Scanning...' : `${pluginCount} loaded`}</span>
+          </div>
+
+          {timings.length > 0 && (
+            <div className={styles.inspectorTimings}>
+              <div className={styles.inspectorLabel}>Load times</div>
+              <table className={styles.inspectorTable}>
+                <thead>
+                  <tr>
+                    <th>Plugin</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timings.map(t => (
+                    <tr key={t.pluginId}>
+                      <td>{t.pluginName}</td>
+                      <td>{t.loadTimeMs < 1 ? '<1' : Math.round(t.loadTimeMs)}ms</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {errors.length > 0 && (
+            <div className={styles.inspectorErrors}>
+              <div className={styles.inspectorLabel}>Errors</div>
+              {errors.map(err => (
+                <div key={err.pluginId} className={styles.inspectorError}>
+                  <strong>{err.pluginName}</strong>
+                  <span>{err.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginTop: '0.75rem' }}>
+            <button type="button" className={styles.actionButton} onClick={handleForceReload}>
+              <RefreshCw size={14} />
+              <span>Force Reload All</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // PluginsSection
 // ============================================================================
 
@@ -481,16 +598,37 @@ export function PluginsSection() {
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
     await window.readied.plugins.setEnabled(pluginId, enabled);
     setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
+    // Trigger reload in main window so preview updates immediately
+    window.readied.plugins.requestReload();
   }, []);
 
   // Update a plugin config value
-  const handleConfigChange = useCallback(async (pluginId: string, key: string, value: unknown) => {
-    await window.readied.pluginConfig.set(pluginId, key, value);
-    setConfigValues(prev => ({
-      ...prev,
-      [pluginId]: { ...prev[pluginId], [key]: value },
-    }));
-  }, []);
+  const handleConfigChange = useCallback(
+    async (pluginId: string, key: string, value: unknown) => {
+      // Find the schema field for validation
+      const schema =
+        BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
+      const field = schema?.[key];
+
+      if (!field) {
+        console.warn(`[plugin:${pluginId}] Unknown config key "${key}", ignoring`);
+        return;
+      }
+
+      const result = validateConfigValue(field, value);
+      if (!result.valid) {
+        console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
+        return;
+      }
+
+      await window.readied.pluginConfig.set(pluginId, key, value);
+      setConfigValues(prev => ({
+        ...prev,
+        [pluginId]: { ...prev[pluginId], [key]: value },
+      }));
+    },
+    [plugins]
+  );
 
   // Reload plugins in the main window
   const handleReload = useCallback(() => {
@@ -699,6 +837,8 @@ export function PluginsSection() {
       )}
 
       {activeTab === 'browse' && <BrowseTab />}
+
+      {import.meta.env.DEV && <PluginInspector />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PluginRegistry } from '../src/lifecycle/PluginRegistry';
+import { PluginRegistry, MAX_CRASH_COUNT } from '../src/lifecycle/PluginRegistry';
 import type { PluginManifest, EditorAPI, AppAPI } from '../src/types';
 import type { RegisterCommandFn, ConfigBridge } from '../src/lifecycle/PluginRegistry';
 import { remarkPluginStore } from '../src/preview/remarkPluginStore';
@@ -31,6 +31,22 @@ function makeEditorAPI(): EditorAPI {
     focus: () => {},
   };
 }
+
+const mockDataAPI = {
+  getNotes: async () => ({ notes: [], total: 0, hasMore: false }),
+  getNote: async () => null,
+  searchNotes: async () => ({ results: [], total: 0 }),
+  countNotes: async () => 0,
+  getNotebooks: async () => [],
+  getNotebook: async () => null,
+  getTags: async () => [],
+  getBacklinks: async () => [],
+  getOutgoingLinks: async () => [],
+  getGraphData: async () => ({ nodes: [], edges: [] }),
+  onNotesChanged: () => () => {},
+  onNotebooksChanged: () => () => {},
+  onTagsChanged: () => () => {},
+} as any;
 
 function makeAppAPI(): AppAPI {
   return {
@@ -78,7 +94,7 @@ describe('PluginRegistry', () => {
     it('activates a loaded plugin', async () => {
       const activate = vi.fn();
       registry.load(makeManifest({ activate }));
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       expect(activate).toHaveBeenCalledOnce();
       expect(registry.isActive('test-plugin')).toBe(true);
@@ -93,7 +109,7 @@ describe('PluginRegistry', () => {
           },
         })
       );
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       const ctx = receivedContext as Record<string, unknown>;
       expect(ctx).toHaveProperty('layout');
@@ -119,7 +135,7 @@ describe('PluginRegistry', () => {
           },
         })
       );
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       const app = receivedApp as Record<string, unknown>;
       expect(app).toHaveProperty('listNotes');
@@ -132,15 +148,15 @@ describe('PluginRegistry', () => {
 
     it('does nothing for non-existent plugin', async () => {
       await expect(
-        registry.activate('nope', makeEditorAPI(), makeAppAPI())
+        registry.activate('nope', makeEditorAPI(), makeAppAPI(), mockDataAPI)
       ).resolves.toBeUndefined();
     });
 
     it('does nothing if already active', async () => {
       const activate = vi.fn();
       registry.load(makeManifest({ activate }));
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       expect(activate).toHaveBeenCalledOnce();
     });
@@ -164,6 +180,7 @@ describe('PluginRegistry', () => {
         'test-plugin',
         makeEditorAPI(),
         makeAppAPI(),
+        mockDataAPI,
         undefined,
         configBridge
       );
@@ -189,6 +206,7 @@ describe('PluginRegistry', () => {
         'test-plugin',
         makeEditorAPI(),
         makeAppAPI(),
+        mockDataAPI,
         undefined,
         configBridge
       );
@@ -208,7 +226,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), registerCommandFn);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn
+      );
 
       expect(registerCommandFn).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'plugin:test-plugin:toggle' })
@@ -226,7 +250,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), registerCommandFn);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn
+      );
 
       expect(registerCommandFn).toHaveBeenCalledWith(
         expect.objectContaining({ showInPalette: true })
@@ -245,7 +275,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), registerCommandFn);
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn
+      );
       registry.deactivate('test-plugin');
 
       expect(unregister).toHaveBeenCalledOnce();
@@ -261,7 +297,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
       registry.deactivate('test-plugin');
 
       expect(dispose).toHaveBeenCalledOnce();
@@ -271,7 +307,7 @@ describe('PluginRegistry', () => {
       const deactivate = vi.fn();
       registry.load(makeManifest({ deactivate }));
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
       registry.deactivate('test-plugin');
 
       expect(deactivate).toHaveBeenCalledOnce();
@@ -288,7 +324,7 @@ describe('PluginRegistry', () => {
 
     it('marks plugin as deactivated', async () => {
       registry.load(makeManifest());
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
       registry.deactivate('test-plugin');
 
       expect(registry.isActive('test-plugin')).toBe(false);
@@ -301,7 +337,7 @@ describe('PluginRegistry', () => {
     it('deactivates and removes plugin', async () => {
       const dispose = vi.fn();
       registry.load(makeManifest({ activate: () => ({ dispose }) }));
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       registry.unload('test-plugin');
 
@@ -333,7 +369,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', editorAPI, makeAppAPI());
+      await registry.activate('test-plugin', editorAPI, makeAppAPI(), mockDataAPI);
       registry.deactivate('test-plugin');
 
       expect(editorUnsub).toHaveBeenCalledOnce();
@@ -353,7 +389,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), appAPI);
+      await registry.activate('test-plugin', makeEditorAPI(), appAPI, mockDataAPI);
       registry.deactivate('test-plugin');
 
       expect(appUnsub).toHaveBeenCalledOnce();
@@ -377,7 +413,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', editorAPI, makeAppAPI());
+      await registry.activate('test-plugin', editorAPI, makeAppAPI(), mockDataAPI);
       registry.deactivate('test-plugin');
 
       // The tracked wrapper calls the real unsub, then removes itself from the list.
@@ -415,7 +451,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', editorAPI, appAPI);
+      await registry.activate('test-plugin', editorAPI, appAPI, mockDataAPI);
       registry.deactivate('test-plugin');
 
       expect(editorDocUnsub).toHaveBeenCalledOnce();
@@ -440,7 +476,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
       expect(hasDecorations).toBe(true);
     });
   });
@@ -457,7 +493,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       expect(logSpy).toHaveBeenCalledWith('[test-plugin]', 'hello');
       logSpy.mockRestore();
@@ -491,13 +527,13 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       const regs = remarkPluginStore.getState().registrations;
       expect(regs).toHaveLength(1);
       expect(regs[0]!.id).toBe('my-remark');
       expect(regs[0]!.pluginId).toBe('test-plugin');
-      expect(regs[0]!.plugin).toBe(fakePlugin);
+      expect(typeof regs[0]!.plugin).toBe('function'); // wrapped by safePluginWrapper
     });
 
     it('registerRehypePlugin adds to rehypePluginStore', async () => {
@@ -510,7 +546,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       const regs = rehypePluginStore.getState().registrations;
       expect(regs).toHaveLength(1);
@@ -528,7 +564,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       const regs = previewComponentStore.getState().registrations;
       expect(regs).toHaveLength(1);
@@ -545,7 +581,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       const regs = codeBlockStore.getState().registrations;
       expect(regs).toHaveLength(1);
@@ -565,7 +601,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
       expect(remarkPluginStore.getState().registrations).toHaveLength(1);
       expect(rehypePluginStore.getState().registrations).toHaveLength(1);
 
@@ -588,7 +624,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       // Verify all stores have registrations
       expect(remarkPluginStore.getState().registrations).toHaveLength(1);
@@ -618,7 +654,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       expect(registry.isActive('test-plugin')).toBe(false);
       expect(registry.hasError('test-plugin')).toBe(true);
@@ -648,7 +684,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       // Partial registrations should be cleaned up
       expect(remarkPluginStore.getState().registrations).toHaveLength(0);
@@ -670,7 +706,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
       expect(registry.isActive('test-plugin')).toBe(true);
 
       // Should not throw
@@ -691,7 +727,7 @@ describe('PluginRegistry', () => {
         })
       );
 
-      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI());
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
 
       expect(() => registry.deactivate('test-plugin')).not.toThrow();
       expect(registry.isActive('test-plugin')).toBe(false);
@@ -708,6 +744,90 @@ describe('PluginRegistry', () => {
     it('getError returns null for unknown plugins', () => {
       expect(registry.getError('nonexistent')).toBeNull();
       expect(registry.hasError('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('auto-disable after crashes', () => {
+    it('auto-disables after MAX_CRASH_COUNT crashes', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const activate = vi.fn().mockImplementation(() => {
+        throw new Error('boom');
+      });
+
+      registry.load(makeManifest({ activate }));
+
+      // Crash MAX_CRASH_COUNT times
+      for (let i = 0; i < MAX_CRASH_COUNT; i++) {
+        await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      }
+
+      expect(activate).toHaveBeenCalledTimes(MAX_CRASH_COUNT);
+      expect(registry.isAutoDisabled('test-plugin')).toBe(true);
+
+      // Next activation should be blocked (activate callback NOT called again)
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(activate).toHaveBeenCalledTimes(MAX_CRASH_COUNT);
+
+      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+
+    it('resetErrors allows retry', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      let callCount = 0;
+      const activate = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount <= MAX_CRASH_COUNT) {
+          throw new Error('boom');
+        }
+        // Succeeds after reset
+      });
+
+      registry.load(makeManifest({ activate }));
+
+      // Crash MAX_CRASH_COUNT times
+      for (let i = 0; i < MAX_CRASH_COUNT; i++) {
+        await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      }
+
+      expect(registry.isAutoDisabled('test-plugin')).toBe(true);
+
+      // Reset and retry
+      registry.resetErrors('test-plugin');
+      expect(registry.isAutoDisabled('test-plugin')).toBe(false);
+
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(registry.isActive('test-plugin')).toBe(true);
+
+      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+
+    it('does not auto-disable before threshold', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const activate = vi.fn().mockImplementation(() => {
+        throw new Error('boom');
+      });
+
+      registry.load(makeManifest({ activate }));
+
+      // Crash (MAX_CRASH_COUNT - 1) times
+      for (let i = 0; i < MAX_CRASH_COUNT - 1; i++) {
+        await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      }
+
+      expect(registry.isAutoDisabled('test-plugin')).toBe(false);
+
+      // Another activate attempt should still run the callback
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(activate).toHaveBeenCalledTimes(MAX_CRASH_COUNT);
+
+      consoleSpy.mockRestore();
     });
   });
 });

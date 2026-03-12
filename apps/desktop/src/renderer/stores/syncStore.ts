@@ -39,6 +39,7 @@ interface SyncState {
   clearError: () => void;
   setEnabled: (enabled: boolean) => void;
   updateLastSyncAt: (timestamp: number) => void;
+  initNetworkListeners: () => () => void;
 }
 
 // ============================================================================
@@ -161,6 +162,44 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
    * Update last sync timestamp
    */
   updateLastSyncAt: (timestamp: number) => set({ lastSyncAt: timestamp }),
+
+  /**
+   * Listen for online/offline events and auto-resume sync on reconnect
+   */
+  initNetworkListeners: () => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleOnline = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const { status } = get();
+        if (status === 'offline' || status === 'error') {
+          set({ status: 'idle', error: null });
+          get()
+            .syncNow()
+            .catch(() => {});
+        }
+      }, 2000);
+    };
+
+    const handleOffline = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      set({ status: 'offline', error: 'No internet connection. Sync will resume when online.' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    if (!navigator.onLine) {
+      set({ status: 'offline' });
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  },
 }));
 
 // ============================================================================

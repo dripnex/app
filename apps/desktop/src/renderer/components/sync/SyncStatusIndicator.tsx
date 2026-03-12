@@ -5,14 +5,22 @@
  */
 
 import { useState } from 'react';
-import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { useSyncStore, selectStatus, selectLastSyncAt } from '../../stores/syncStore';
+import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import {
+  useSyncStore,
+  selectStatus,
+  selectLastSyncAt,
+  selectHasConflicts,
+  selectConflicts,
+} from '../../stores/syncStore';
 import { useAuthStore } from '../../stores/authStore';
 import styles from './SyncStatusIndicator.module.css';
 
 export function SyncStatusIndicator() {
   const status = useSyncStore(selectStatus);
   const lastSyncAt = useSyncStore(selectLastSyncAt);
+  const hasConflicts = useSyncStore(selectHasConflicts);
+  const conflicts = useSyncStore(selectConflicts);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -22,6 +30,15 @@ export function SyncStatusIndicator() {
         icon: <CloudOff size={14} />,
         label: 'Not signed in',
         color: '#6b7280',
+      };
+    }
+
+    // Conflicts take priority over idle state
+    if (hasConflicts && status !== 'syncing') {
+      return {
+        icon: <AlertTriangle size={14} />,
+        label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — resolve in Settings`,
+        color: '#f59e0b',
       };
     }
 

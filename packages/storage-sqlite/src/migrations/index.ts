@@ -17,6 +17,9 @@ import { syncTracking } from './011_sync_tracking.js';
 import { gitNotebooks } from './012_git_notebooks.js';
 import { pluginConfig } from './013_plugin_config.js';
 import { pluginRegistry } from './014_plugin_registry.js';
+import { notebookSyncTracking } from './015_notebook_sync_tracking.js';
+import { tagSyncTracking } from './016_tag_sync_tracking.js';
+import { syncHistory } from './017_sync_history.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -34,6 +37,9 @@ export const allMigrations: Migration[] = [
   gitNotebooks,
   pluginConfig,
   pluginRegistry,
+  notebookSyncTracking,
+  tagSyncTracking,
+  syncHistory,
 ];
 
 export {
@@ -51,4 +57,7 @@ export {
   gitNotebooks,
   pluginConfig,
   pluginRegistry,
+  notebookSyncTracking,
+  tagSyncTracking,
+  syncHistory,
 };

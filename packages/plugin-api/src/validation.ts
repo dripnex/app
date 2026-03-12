@@ -1,4 +1,4 @@
-import type { PluginManifest } from './types';
+import type { PluginManifest, PluginConfigSchemaField } from './types';
 
 /** Kebab-case: lowercase letters, digits, hyphens. No leading/trailing hyphens. */
 const KEBAB_CASE_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
@@ -74,4 +74,81 @@ export function assertValidManifest(
     return null;
   }
   return manifest as PluginManifest;
+}
+
+export interface ConfigValidationResult {
+  valid: boolean;
+  reason?: string;
+}
+
+/**
+ * Validate a config value against its schema field definition.
+ *
+ * Returns `{ valid: true }` or `{ valid: false, reason: string }`.
+ */
+export function validateConfigValue(
+  field: PluginConfigSchemaField,
+  value: unknown
+): ConfigValidationResult {
+  switch (field.type) {
+    case 'boolean':
+      if (typeof value !== 'boolean') {
+        return { valid: false, reason: `Expected boolean, got ${typeof value}` };
+      }
+      return { valid: true };
+
+    case 'string':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: `Expected string, got ${typeof value}` };
+      }
+      return { valid: true };
+
+    case 'number':
+      if (typeof value !== 'number') {
+        return { valid: false, reason: `Expected number, got ${typeof value}` };
+      }
+      if (field.min !== undefined && value < field.min) {
+        return { valid: false, reason: `Value ${value} is below minimum ${field.min}` };
+      }
+      if (field.max !== undefined && value > field.max) {
+        return { valid: false, reason: `Value ${value} is above maximum ${field.max}` };
+      }
+      return { valid: true };
+
+    case 'enum':
+      if (!field.options || field.options.length === 0) {
+        return { valid: false, reason: 'Enum field has no options defined' };
+      }
+      if (!field.options.some(opt => opt.value === value)) {
+        return { valid: false, reason: `Value "${String(value)}" is not a valid option` };
+      }
+      return { valid: true };
+
+    case 'range':
+      if (typeof value !== 'number') {
+        return { valid: false, reason: `Expected number for range, got ${typeof value}` };
+      }
+      if (field.min !== undefined && value < field.min) {
+        return { valid: false, reason: `Value ${value} is below minimum ${field.min}` };
+      }
+      if (field.max !== undefined && value > field.max) {
+        return { valid: false, reason: `Value ${value} is above maximum ${field.max}` };
+      }
+      if (field.step !== undefined && field.step > 0 && field.min !== undefined) {
+        const offset = value - field.min;
+        if (Math.abs(offset - Math.round(offset / field.step) * field.step) > 1e-9) {
+          return {
+            valid: false,
+            reason: `Value ${value} is not a valid step (step: ${field.step}, min: ${field.min})`,
+          };
+        }
+      }
+      return { valid: true };
+
+    default:
+      return {
+        valid: false,
+        reason: `Unknown field type: ${(field as PluginConfigSchemaField).type}`,
+      };
+  }
 }

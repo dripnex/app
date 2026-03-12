@@ -305,6 +305,115 @@ export class SQLiteNotebookRepository implements NotebookRepository {
     return rows.map(row => this.rowToNotebook(row));
   }
 
+  // ========================================================================
+  // Sync Operations
+  // ========================================================================
+
+  /**
+   * Get notebooks with pending local changes that need to be pushed to server.
+   */
+  getPendingChanges(limit = 50): Array<{
+    notebook: Notebook;
+    localVersion: number;
+  }> {
+    const stmt = this.db.prepare(`
+      SELECT id, name, parent_id, depth, "order", created_at, updated_at,
+             git_enabled, git_auto_commit, git_initialized_at,
+             local_version
+      FROM notebooks
+      WHERE needs_sync = 1
+      ORDER BY updated_at ASC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(limit) as (NotebookRow & { local_version: number })[];
+    return rows.map(row => ({
+      notebook: this.rowToNotebook(row),
+      localVersion: row.local_version,
+    }));
+  }
+
+  /**
+   * Mark a notebook as synced (no pending changes).
+   */
+  markAsSynced(notebookId: NotebookId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        needs_sync = 0,
+        last_synced_at = ?
+      WHERE id = ?
+    `);
+    stmt.run(new Date().toISOString(), notebookId);
+  }
+
+  /**
+   * Mark multiple notebooks as synced in a transaction.
+   */
+  markMultipleAsSynced(notebookIds: NotebookId[]): void {
+    if (notebookIds.length === 0) return;
+
+    this.db.transaction(() => {
+      const stmt = this.db.prepare(`
+        UPDATE notebooks
+        SET
+          needs_sync = 0,
+          last_synced_at = ?
+        WHERE id = ?
+      `);
+
+      const now = new Date().toISOString();
+      for (const id of notebookIds) {
+        stmt.run(now, id);
+      }
+    });
+  }
+
+  /**
+   * Check if a notebook has pending local edits.
+   */
+  hasPendingEdits(notebookId: NotebookId): boolean {
+    const stmt = this.db.prepare(`
+      SELECT needs_sync FROM notebooks WHERE id = ?
+    `);
+    const row = stmt.get(notebookId) as { needs_sync: number } | undefined;
+    return row?.needs_sync === 1;
+  }
+
+  /**
+   * Reset sync tracking for a notebook (force re-sync).
+   */
+  resetSyncTracking(notebookId: NotebookId): void {
+    const stmt = this.db.prepare(`
+      UPDATE notebooks
+      SET
+        needs_sync = 1,
+        local_version = local_version + 1
+      WHERE id = ?
+    `);
+    stmt.run(notebookId);
+  }
+
+  /**
+   * Validate tree integrity before enqueuing a push.
+   * Returns true if the notebook meets depth/parentId constraints.
+   */
+  validateForSync(notebookId: NotebookId): { valid: boolean; error?: string } {
+    const stmt = this.db.prepare(`
+      SELECT id, name, parent_id, depth, "order", created_at, updated_at,
+             git_enabled, git_auto_commit, git_initialized_at
+      FROM notebooks WHERE id = ?
+    `);
+    const row = stmt.get(notebookId) as NotebookRow | undefined;
+    if (!row) return { valid: false, error: 'Notebook not found' };
+    if (row.depth > 2) return { valid: false, error: `Depth ${row.depth} exceeds max (2)` };
+    if (row.parent_id) {
+      const parent = this.db.prepare('SELECT id FROM notebooks WHERE id = ?').get(row.parent_id);
+      if (!parent) return { valid: false, error: `Parent notebook '${row.parent_id}' not found` };
+    }
+    return { valid: true };
+  }
+
   // Private helpers
 
   private rowToNotebook(row: NotebookRow): Notebook {

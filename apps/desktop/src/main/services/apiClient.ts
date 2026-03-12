@@ -54,6 +54,62 @@ export interface PushResponse {
   cursor: number;
 }
 
+export interface TagSyncChange {
+  id: string;
+  tagId: string;
+  version: number;
+  operation: 'create' | 'update' | 'delete';
+  data: string | null; // JSON: { name, color }
+  deviceId: string;
+  createdAt: string;
+}
+
+export interface NotebookSyncChange {
+  id: string;
+  notebookId: string;
+  version: number;
+  operation: 'create' | 'update' | 'delete';
+  data: string | null;
+  deviceId: string;
+  createdAt: string;
+}
+
+export interface TagPullResponse {
+  changes: TagSyncChange[];
+  cursor: number;
+  hasMore: boolean;
+}
+
+export interface NotebookPullResponse {
+  changes: NotebookSyncChange[];
+  cursor: number;
+  hasMore: boolean;
+}
+
+export interface TagPushResult {
+  tagId: string;
+  version: number;
+  status: 'applied' | 'conflict';
+  serverVersion?: number;
+}
+
+export interface NotebookPushResult {
+  notebookId: string;
+  version: number;
+  status: 'applied' | 'conflict';
+  serverVersion?: number;
+}
+
+export interface TagPushResponse {
+  results: TagPushResult[];
+  cursor: number;
+}
+
+export interface NotebookPushResponse {
+  results: NotebookPushResult[];
+  cursor: number;
+}
+
 export interface SyncStatus {
   enabled: boolean;
   plan: string;
@@ -94,11 +150,26 @@ export class ApiClient {
   private deviceInfo: DeviceInfo;
   private isRefreshing = false;
   private refreshPromise: Promise<boolean> | null = null;
+  private _bytesSent = 0;
+  private _bytesReceived = 0;
 
   constructor(baseURL: string, tokenStorage: TokenStorage, deviceInfo: DeviceInfo) {
     this.baseURL = baseURL;
     this.tokenStorage = tokenStorage;
     this.deviceInfo = deviceInfo;
+  }
+
+  // ==========================================================================
+  // Bandwidth Tracking
+  // ==========================================================================
+
+  resetBandwidthCounters(): void {
+    this._bytesSent = 0;
+    this._bytesReceived = 0;
+  }
+
+  getBandwidth(): { bytesSent: number; bytesReceived: number } {
+    return { bytesSent: this._bytesSent, bytesReceived: this._bytesReceived };
   }
 
   // ==========================================================================
@@ -120,6 +191,11 @@ export class ApiClient {
 
     if (tokens?.accessToken) {
       headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+    }
+
+    // Track request body size
+    if (options.body && typeof options.body === 'string') {
+      this._bytesSent += Buffer.byteLength(options.body, 'utf8');
     }
 
     try {
@@ -151,8 +227,11 @@ export class ApiClient {
         );
       }
 
-      // Parse JSON response
-      return (await response.json()) as T;
+      // Parse JSON response and track bandwidth
+      const json = await response.json();
+      const responseText = JSON.stringify(json);
+      this._bytesReceived += Buffer.byteLength(responseText, 'utf8');
+      return json as T;
     } catch (error) {
       // Network error or fetch failure
       if (error instanceof ApiError) {
@@ -290,6 +369,66 @@ export class ApiClient {
     });
   }
 
+  // ==========================================================================
+  // Notebook Sync
+  // ==========================================================================
+
+  async pullNotebookChanges(cursor: number, limit = 50): Promise<NotebookPullResponse> {
+    const params = new URLSearchParams({
+      cursor: cursor.toString(),
+      limit: limit.toString(),
+    });
+    return this.request<NotebookPullResponse>(`/sync/notebooks?${params}`);
+  }
+
+  async pushNotebookChanges(
+    changes: Array<{
+      notebookId: string;
+      operation: 'create' | 'update' | 'delete';
+      data?: string | null;
+      localVersion?: number;
+    }>
+  ): Promise<NotebookPushResponse> {
+    return this.request<NotebookPushResponse>('/sync/notebooks', {
+      method: 'POST',
+      body: JSON.stringify({
+        changes,
+        deviceId: this.deviceInfo.deviceId,
+      }),
+    });
+  }
+
+  /**
+   * Pull tag changes from server
+   */
+  async pullTagChanges(cursor: number, limit = 50): Promise<TagPullResponse> {
+    const params = new URLSearchParams({
+      cursor: cursor.toString(),
+      limit: limit.toString(),
+    });
+    return this.request<TagPullResponse>(`/sync/tags?${params}`);
+  }
+
+  /**
+   * Push tag changes to server
+   */
+  async pushTagChanges(
+    changes: Array<{
+      tagId: string;
+      operation: 'create' | 'update' | 'delete';
+      data?: string | null;
+      localVersion?: number;
+    }>
+  ): Promise<TagPushResponse> {
+    return this.request<TagPushResponse>('/sync/tags', {
+      method: 'POST',
+      body: JSON.stringify({
+        changes,
+        deviceId: this.deviceInfo.deviceId,
+      }),
+    });
+  }
+
   /**
    * Get sync status
    */
@@ -356,6 +495,43 @@ export class ApiClient {
   async unshareNote(slug: string): Promise<{ success: boolean }> {
     return this.request<{ success: boolean }>(`/share/${slug}`, {
       method: 'DELETE',
+    });
+  }
+
+  // ==========================================================================
+  // Devices
+  // ==========================================================================
+
+  async listDevices(): Promise<{
+    devices: Array<{
+      id: string;
+      deviceId: string;
+      name: string | null;
+      platform: string | null;
+      isCurrent: boolean;
+      lastSeenAt: string;
+      createdAt: string;
+    }>;
+  }> {
+    return this.request('/devices');
+  }
+
+  async renameDevice(deviceId: string, name: string): Promise<{ success: boolean }> {
+    return this.request(`/devices/${deviceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async revokeDevice(deviceId: string): Promise<{ success: boolean }> {
+    return this.request(`/devices/${deviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async revokeOtherDevices(): Promise<{ success: boolean; revokedCount: number }> {
+    return this.request('/devices/revoke-others', {
+      method: 'POST',
     });
   }
 

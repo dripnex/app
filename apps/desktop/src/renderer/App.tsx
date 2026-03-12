@@ -1,14 +1,17 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EditorView } from '@codemirror/view';
 import {
   PluginHost,
   createEditorAPI,
   createAppAPI,
+  createDataAPI,
   editorPluginStore,
   useCssVariables,
+  useThemeOverrides,
+  themeRegistryStore,
 } from '@readied/plugin-api';
-import type { EditorAPIWithEvents, AppAPIWithEvents } from '@readied/plugin-api';
+import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
 import { useStore } from 'zustand';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
@@ -45,6 +48,8 @@ import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useAuthStore } from './stores/authStore';
+import { useSyncStore } from './stores/syncStore';
+import { useSettingsStore, selectAppearance } from './stores/settings';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
 
 /** Shows toast errors for plugins that failed to load */
@@ -75,7 +80,26 @@ const queryClient = new QueryClient({
 function NotesApp() {
   usePerformanceMode();
   useAppearanceSettings();
+  useThemeOverrides(); // Applies active theme tokens
   useCssVariables();
+
+  // Restore saved plugin theme on startup
+  const appearance = useSettingsStore(selectAppearance);
+  const registeredThemeCount = useSyncExternalStore(
+    themeRegistryStore.subscribe,
+    () => themeRegistryStore.getState().themes.length
+  );
+
+  useEffect(() => {
+    const savedThemeId = appearance?.activeThemeId;
+    if (savedThemeId && registeredThemeCount > 0) {
+      // Only restore if the theme is actually registered (plugin loaded)
+      const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
+      if (exists) {
+        themeRegistryStore.getState().setActive(savedThemeId);
+      }
+    }
+  }, [appearance?.activeThemeId, registeredThemeCount]);
 
   // Resizable layout
   const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
@@ -102,6 +126,12 @@ function NotesApp() {
   // Load auth session on mount (once)
   useEffect(() => {
     useAuthStore.getState().loadSession();
+  }, []);
+
+  // Auto-resume sync on network reconnect
+  useEffect(() => {
+    const cleanup = useSyncStore.getState().initNetworkListeners();
+    return cleanup;
   }, []);
 
   // Handle deep link auth verification (readied://auth/verify?token=xxx)
@@ -189,6 +219,141 @@ function NotesApp() {
     []
   );
 
+  const dataAPI = useMemo<DataAPIWithEvents>(
+    () =>
+      createDataAPI({
+        async getNotes(options) {
+          // Fetch all notes (no limit/offset) so we can filter first, then paginate
+          const notes = await window.readied.notes.list(
+            options
+              ? {
+                  tag: options.tag,
+                  sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
+                  sortOrder: options.sortOrder,
+                }
+              : undefined
+          );
+          let filtered = notes;
+          if (options?.notebookId)
+            filtered = filtered.filter(n => n.notebookId === options.notebookId);
+          if (options?.status) filtered = filtered.filter(n => n.status === options.status);
+          if (options?.isPinned !== undefined)
+            filtered = filtered.filter(n => n.isPinned === options.isPinned);
+
+          // Client-side sort for wordCount (not supported by bridge)
+          if (options?.sortBy === 'wordCount') {
+            const dir = options.sortOrder === 'asc' ? 1 : -1;
+            filtered = [...filtered].sort((a, b) => dir * (a.wordCount - b.wordCount));
+          }
+
+          const total = filtered.length;
+
+          // Apply pagination after filtering
+          if (options?.offset || options?.limit) {
+            const start = options.offset ?? 0;
+            const end = options.limit ? start + options.limit : undefined;
+            filtered = filtered.slice(start, end);
+          }
+
+          return {
+            notes: filtered.map(n => ({
+              id: n.id,
+              title: n.title,
+              notebookId: n.notebookId,
+              tags: [...n.tags],
+              wordCount: n.wordCount,
+              createdAt: n.createdAt,
+              updatedAt: n.updatedAt,
+              isPinned: n.isPinned,
+              status: n.status,
+            })),
+            total,
+          };
+        },
+        async getNote(id) {
+          const result = await window.readied.notes.get(id);
+          if (!result.ok) return null;
+          return { id: result.data.id, title: result.data.title, content: result.data.content };
+        },
+        async searchNotes(query, options) {
+          const notes = await window.readied.notes.search(query, options?.limit ?? 20);
+          return {
+            results: notes.map(n => ({ id: n.id, title: n.title })),
+            total: notes.length,
+          };
+        },
+        async countNotes() {
+          const counts = await window.readied.notes.count();
+          return counts.total;
+        },
+        async getNotebooks() {
+          const notebooks = await window.readied.notebooks.list();
+          return notebooks.map(nb => ({ id: nb.id, name: nb.name, parentId: nb.parentId }));
+        },
+        async getNotebookTree() {
+          type TreeNode = {
+            id: string;
+            name: string;
+            parentId: string | null;
+            noteCount: number;
+            childCount: number;
+            children: TreeNode[];
+          };
+          const tree = await window.readied.notebooks.tree();
+          const mapNode = (node: {
+            notebook: {
+              id: string;
+              name: string;
+              parentId: string | null;
+              noteCount?: number;
+            };
+            children: unknown[];
+          }): TreeNode => ({
+            id: node.notebook.id,
+            name: node.notebook.name,
+            parentId: node.notebook.parentId,
+            noteCount: node.notebook.noteCount ?? 0,
+            childCount: node.children.length,
+            children: (node.children as typeof tree).map(mapNode),
+          });
+          return tree.map(mapNode);
+        },
+        async getNotebook(id) {
+          const nb = await window.readied.notebooks.getWithMetadata(id);
+          if (!nb) return null;
+          return {
+            id: nb.id,
+            name: nb.name,
+            parentId: nb.parentId,
+            noteCount: nb.noteCount,
+            childCount: nb.childCount,
+          };
+        },
+        async getTags() {
+          return window.readied.notes.tags();
+        },
+        async getTagsWithColors() {
+          return window.readied.notes.tagsWithColors();
+        },
+        async getBacklinks(noteId) {
+          const links = await window.readied.links.getBacklinks(noteId);
+          return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
+        },
+        async getOutgoingLinks(noteId) {
+          const links = await window.readied.links.getOutgoing(noteId);
+          return links.map(l => ({
+            targetId: l.targetNoteId,
+            targetTitle: l.targetTitle ?? l.targetRef,
+            resolved: l.targetNoteId !== null,
+          }));
+        },
+        async getGraphData() {
+          return window.readied.links.getGraph();
+        },
+      }),
+    []
+  );
+
   const toggleCommandPalette = useCallback(() => setIsCommandPaletteOpen(prev => !prev), []);
   const closeCommandPalette = useCallback(() => setIsCommandPaletteOpen(false), []);
 
@@ -231,7 +396,8 @@ function NotesApp() {
     setSelectedNote(newNote);
     clearSearch();
     appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
-  }, [createNote, selectedNotebookId, clearSearch, appAPI]);
+    dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
+  }, [createNote, selectedNotebookId, clearSearch, appAPI, dataAPI]);
 
   // Select note
   const handleSelectNote = useCallback(
@@ -271,6 +437,7 @@ function NotesApp() {
       if (!selectedNote) return;
       const updated = await updateNote.mutateAsync({ id: selectedNote.id, content });
       setSelectedNote(updated);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id: selectedNote.id });
       // Sync links after save (fire-and-forget, don't block UI)
       syncLinks.mutate({ noteId: selectedNote.id, content });
 
@@ -296,7 +463,7 @@ function NotesApp() {
         }
       }
     },
-    [selectedNote, updateNote, syncLinks]
+    [selectedNote, updateNote, syncLinks, dataAPI]
   );
 
   // Update note title
@@ -305,6 +472,7 @@ function NotesApp() {
       if (!selectedNote) return;
       const updated = await updateNoteTitle.mutateAsync({ id: selectedNote.id, title });
       setSelectedNote(updated);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id: selectedNote.id });
 
       // Auto-commit to git if enabled (fire-and-forget, don't block UI)
       if (updated.notebookId) {
@@ -328,7 +496,7 @@ function NotesApp() {
         }
       }
     },
-    [selectedNote, updateNoteTitle]
+    [selectedNote, updateNoteTitle, dataAPI]
   );
 
   // Delete note
@@ -339,8 +507,9 @@ function NotesApp() {
         setSelectedNote(null);
       }
       appAPI._notifyNoteDeleted(id);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'deleted', id });
     },
-    [selectedNote, deleteNote, appAPI]
+    [selectedNote, deleteNote, appAPI, dataAPI]
   );
 
   // Archive note (toggle based on current state)
@@ -577,6 +746,7 @@ function NotesApp() {
             plugins={allPlugins}
             editorAPI={editorAPI}
             appAPI={appAPI}
+            dataAPI={dataAPI}
             registerCommand={registerPluginCommand}
             configBridge={configBridge}
             getView={getEditorView}

@@ -541,6 +541,31 @@ export interface ReadiedAPI {
     stopAutoSync: () => Promise<{ success: boolean; error?: string }>;
     /** Trigger manual sync */
     triggerSync: () => Promise<void>;
+    /** Pull tag changes from server */
+    pullTags: () => Promise<{ success: boolean; applied: number; error?: string }>;
+    /** Push tag changes to server */
+    pushTags: () => Promise<{ success: boolean; pushed: number; error?: string }>;
+    /** Get sync history */
+    history: (limit?: number) => Promise<{
+      success: boolean;
+      history: Array<{
+        id: string;
+        startedAt: string;
+        completedAt: string | null;
+        status: 'running' | 'success' | 'partial' | 'error';
+        notesPulled: number;
+        notesPushed: number;
+        notebooksPulled: number;
+        notebooksPushed: number;
+        tagsPulled: number;
+        tagsPushed: number;
+        conflicts: number;
+        bytesSent: number;
+        bytesReceived: number;
+        errorMessage: string | null;
+      }>;
+      error?: string;
+    }>;
   };
   subscription: {
     /** Get subscription status */
@@ -553,6 +578,36 @@ export interface ReadiedAPI {
     openPortal: (returnUrl: string) => Promise<{ success: boolean; error?: string }>;
     /** Open checkout page */
     openCheckout: () => Promise<{ success: boolean; error?: string }>;
+  };
+  devices: {
+    /** List all registered devices */
+    list: () => Promise<
+      Array<{
+        id: string;
+        deviceId: string;
+        name: string | null;
+        platform: string | null;
+        isCurrent: boolean;
+        lastSeenAt: string;
+        createdAt: string;
+      }>
+    >;
+    /** Rename a device */
+    rename: (deviceId: string, name: string) => Promise<{ success: boolean; error?: string }>;
+    /** Revoke (delete) a device */
+    revoke: (deviceId: string) => Promise<{ success: boolean; error?: string }>;
+    /** Revoke all devices except current */
+    revokeOthers: () => Promise<{ success: boolean; revokedCount?: number; error?: string }>;
+    /** Get current device info */
+    getCurrent: () => Promise<{
+      id: string;
+      deviceId: string;
+      name: string | null;
+      platform: string | null;
+      isCurrent: boolean;
+      lastSeenAt: string;
+      createdAt: string;
+    } | null>;
   };
   settings: {
     /** Broadcast settings change to all other windows */
@@ -680,6 +735,12 @@ export interface ReadiedAPI {
     getAll: (pluginId: string) => Promise<Record<string, unknown>>;
     /** Clear all config for a plugin */
     clear: (pluginId: string) => Promise<void>;
+  };
+  theme: {
+    /** Set the nativeTheme source in the main process */
+    setSource: (source: 'dark' | 'light' | 'system') => void;
+    /** Listen for system theme changes from the main process */
+    onSystemChanged: (callback: (isDark: boolean) => void) => () => void;
   };
   plugins: {
     /** Scan filesystem for installed plugins */
@@ -822,11 +883,22 @@ const api: ReadiedAPI = {
     startAutoSync: intervalMs => ipcRenderer.invoke('sync:startAutoSync', intervalMs),
     stopAutoSync: () => ipcRenderer.invoke('sync:stopAutoSync'),
     triggerSync: () => ipcRenderer.invoke('sync:trigger'),
+    pullTags: () => ipcRenderer.invoke('sync:pullTags'),
+    pushTags: () => ipcRenderer.invoke('sync:pushTags'),
+    history: (limit?: number) => ipcRenderer.invoke('sync:history', limit),
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
     openPortal: returnUrl => ipcRenderer.invoke('subscription:openPortal', returnUrl),
     openCheckout: () => ipcRenderer.invoke('subscription:openCheckout'),
+  },
+  devices: {
+    list: () => ipcRenderer.invoke('devices:list'),
+    rename: (deviceId: string, name: string) =>
+      ipcRenderer.invoke('devices:rename', deviceId, name),
+    revoke: (deviceId: string) => ipcRenderer.invoke('devices:revoke', deviceId),
+    revokeOthers: () => ipcRenderer.invoke('devices:revokeOthers'),
+    getCurrent: () => ipcRenderer.invoke('devices:getCurrent'),
   },
   settings: {
     broadcast: (settings: Record<string, unknown>) => {
@@ -933,6 +1005,18 @@ const api: ReadiedAPI = {
     set: (pluginId, key, value) => ipcRenderer.invoke('pluginConfig:set', pluginId, key, value),
     getAll: pluginId => ipcRenderer.invoke('pluginConfig:getAll', pluginId),
     clear: pluginId => ipcRenderer.invoke('pluginConfig:clear', pluginId),
+  },
+  theme: {
+    setSource: (source: 'dark' | 'light' | 'system') => {
+      ipcRenderer.send('theme:set-source', source);
+    },
+    onSystemChanged: (callback: (isDark: boolean) => void) => {
+      const handler = (_event: unknown, isDark: boolean) => callback(isDark);
+      ipcRenderer.on('theme:system-changed', handler);
+      return () => {
+        ipcRenderer.removeListener('theme:system-changed', handler);
+      };
+    },
   },
   plugins: {
     scan: () => ipcRenderer.invoke('plugins:scan'),
