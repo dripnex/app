@@ -40,4 +40,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/out --project-name=readied-web
+          packageManager: pnpm
+          workingDirectory: apps/web
+          command: pages deploy out --project-name=readied-web
