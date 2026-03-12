@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PluginRegistry } from '../src/lifecycle/PluginRegistry';
+import { PluginRegistry, MAX_CRASH_COUNT } from '../src/lifecycle/PluginRegistry';
 import type { PluginManifest, EditorAPI, AppAPI } from '../src/types';
 import type { RegisterCommandFn, ConfigBridge } from '../src/lifecycle/PluginRegistry';
 import { remarkPluginStore } from '../src/preview/remarkPluginStore';
@@ -744,6 +744,90 @@ describe('PluginRegistry', () => {
     it('getError returns null for unknown plugins', () => {
       expect(registry.getError('nonexistent')).toBeNull();
       expect(registry.hasError('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('auto-disable after crashes', () => {
+    it('auto-disables after MAX_CRASH_COUNT crashes', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const activate = vi.fn().mockImplementation(() => {
+        throw new Error('boom');
+      });
+
+      registry.load(makeManifest({ activate }));
+
+      // Crash MAX_CRASH_COUNT times
+      for (let i = 0; i < MAX_CRASH_COUNT; i++) {
+        await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      }
+
+      expect(activate).toHaveBeenCalledTimes(MAX_CRASH_COUNT);
+      expect(registry.isAutoDisabled('test-plugin')).toBe(true);
+
+      // Next activation should be blocked (activate callback NOT called again)
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(activate).toHaveBeenCalledTimes(MAX_CRASH_COUNT);
+
+      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+
+    it('resetErrors allows retry', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      let callCount = 0;
+      const activate = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount <= MAX_CRASH_COUNT) {
+          throw new Error('boom');
+        }
+        // Succeeds after reset
+      });
+
+      registry.load(makeManifest({ activate }));
+
+      // Crash MAX_CRASH_COUNT times
+      for (let i = 0; i < MAX_CRASH_COUNT; i++) {
+        await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      }
+
+      expect(registry.isAutoDisabled('test-plugin')).toBe(true);
+
+      // Reset and retry
+      registry.resetErrors('test-plugin');
+      expect(registry.isAutoDisabled('test-plugin')).toBe(false);
+
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(registry.isActive('test-plugin')).toBe(true);
+
+      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
+    });
+
+    it('does not auto-disable before threshold', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const activate = vi.fn().mockImplementation(() => {
+        throw new Error('boom');
+      });
+
+      registry.load(makeManifest({ activate }));
+
+      // Crash (MAX_CRASH_COUNT - 1) times
+      for (let i = 0; i < MAX_CRASH_COUNT - 1; i++) {
+        await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      }
+
+      expect(registry.isAutoDisabled('test-plugin')).toBe(false);
+
+      // Another activate attempt should still run the callback
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(activate).toHaveBeenCalledTimes(MAX_CRASH_COUNT);
+
+      consoleSpy.mockRestore();
     });
   });
 });
