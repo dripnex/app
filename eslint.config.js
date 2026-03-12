@@ -14,6 +14,9 @@ export default tseslint.config(
       '**/coverage/**',
       '**/.vitepress/cache/**',
       '**/.wrangler/**',
+      '**/.next/**',
+      '**/.source/**',
+      '**/next-env.d.ts',
     ],
   },
 

@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "root": true,
+  "pages": [
+    "---Guide---",
+    "guide",
+    "---Architecture---",
+    "architecture",
+    "---Plugins---",
+    "plugins",
+    "---Decisions---",
+    "decisions"
+  ]
+}

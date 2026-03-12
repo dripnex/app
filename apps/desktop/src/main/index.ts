@@ -1675,7 +1675,7 @@ function registerAuthSyncHandlers(): void {
     try {
       const result = await client.listDevices();
       return result.devices;
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   });
