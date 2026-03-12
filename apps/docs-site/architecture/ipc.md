@@ -101,7 +101,9 @@ interface ReadiedAPI {
     delete: (id: string) => Promise<Result<void>>;
     // ...
   };
-  tags: { /* ... */ };
+  tags: {
+    /* ... */
+  };
   data: {
     backup: () => Promise<BackupResult>;
     export: () => Promise<ExportResult>;
@@ -113,9 +115,15 @@ interface ReadiedAPI {
     version: () => string;
     platform: () => string;
   };
-  sync: { /* login, logout, status, push, pull */ };
-  appearance: { /* theme, accent, zoom */ };
-  plugins: { /* scan, load, enable, disable */ };
+  sync: {
+    /* login, logout, status, push, pull */
+  };
+  appearance: {
+    /* theme, accent, zoom */
+  };
+  plugins: {
+    /* scan, load, enable, disable */
+  };
 }
 
 // Exposed as window.readied
@@ -142,12 +150,12 @@ ipcMain.handle('sync:push', async () => {
 
 ## Security Rules
 
-| Rule               | Description                      |
-| ------------------ | -------------------------------- |
-| No nodeIntegration | Renderer is sandboxed            |
-| contextIsolation   | Preload runs in isolated context |
-| No executeSQL      | Raw SQL never exposed            |
-| Typed channels     | All IPC is typed                 |
+| Rule               | Description                        |
+| ------------------ | ---------------------------------- |
+| No nodeIntegration | Renderer is sandboxed              |
+| contextIsolation   | Preload runs in isolated context   |
+| No executeSQL      | Raw SQL never exposed              |
+| Typed channels     | All IPC is typed                   |
 | Plugin sandbox     | Plugins cannot access IPC directly |
 
 ## Usage in Renderer

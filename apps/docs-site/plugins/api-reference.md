@@ -82,7 +82,7 @@ import { visit } from 'unist-util-visit';
 
 function myRemarkPlugin() {
   return (tree: Root) => {
-    visit(tree, 'text', (node) => {
+    visit(tree, 'text', node => {
       // Transform text nodes
       node.value = node.value.replace(/TODO/g, '[ ] TODO');
     });
@@ -100,7 +100,7 @@ Like remark plugins, errors are caught and shown as inline markers in preview.
 
 ```typescript
 function myRehypePlugin() {
-  return (tree) => {
+  return tree => {
     // Transform the HTML AST
   };
 }
@@ -130,7 +130,7 @@ context.registerPreviewComponent('my-accordion', 'details', CustomAccordion);
 
 Render fenced code blocks of a specific language with a custom React component. The component receives `{ code, language, meta }` as props.
 
-````typescript
+```typescript
 function MermaidRenderer({ code, language, meta }: {
   code: string;
   language: string;
@@ -140,7 +140,7 @@ function MermaidRenderer({ code, language, meta }: {
 }
 
 context.registerCodeBlockRenderer('mermaid', 'mermaid', MermaidRenderer);
-````
+```
 
 #### `registerCssVariables(id, variables)`
 
@@ -182,17 +182,17 @@ unsubscribe();
 
 The `PluginManifest` is the top-level object you export from your plugin. It defines metadata, configuration, and the `activate()` entry point.
 
-| Field            | Type                          | Required | Description                                        |
-| ---------------- | ----------------------------- | -------- | -------------------------------------------------- |
-| `id`             | `string`                      | Yes      | Unique plugin identifier                           |
-| `name`           | `string`                      | Yes      | Display name                                       |
-| `version`        | `string`                      | Yes      | Semver version                                     |
-| `description`    | `string`                      | No       | Short description                                  |
-| `configSchema`   | `Record<string, ConfigField>` | No       | User-configurable settings                         |
-| `apiVersion`     | `string`                      | No       | Plugin API version this plugin targets (e.g. `"1"`) |
-| `dependencies`   | `Record<string, string>`      | No       | Plugin dependencies: map of pluginId to semver range |
-| `themeType`      | `'ui'`                        | No       | Mark this plugin as a theme plugin                 |
-| `activate`       | `(context) => Disposable`     | Yes      | Entry point, receives `PluginContext`               |
+| Field          | Type                          | Required | Description                                          |
+| -------------- | ----------------------------- | -------- | ---------------------------------------------------- |
+| `id`           | `string`                      | Yes      | Unique plugin identifier                             |
+| `name`         | `string`                      | Yes      | Display name                                         |
+| `version`      | `string`                      | Yes      | Semver version                                       |
+| `description`  | `string`                      | No       | Short description                                    |
+| `configSchema` | `Record<string, ConfigField>` | No       | User-configurable settings                           |
+| `apiVersion`   | `string`                      | No       | Plugin API version this plugin targets (e.g. `"1"`)  |
+| `dependencies` | `Record<string, string>`      | No       | Plugin dependencies: map of pluginId to semver range |
+| `themeType`    | `'ui'`                        | No       | Mark this plugin as a theme plugin                   |
+| `activate`     | `(context) => Disposable`     | Yes      | Entry point, receives `PluginContext`                |
 
 **Example with new fields:**
 
@@ -228,13 +228,13 @@ const result = validateConfigValue(field, value);
 
 Supports all 5 config field types:
 
-| Type      | Validates                                    |
-| --------- | -------------------------------------------- |
-| `boolean` | Value is a boolean                           |
-| `string`  | Value is a string                            |
-| `number`  | Value is a number                            |
-| `enum`    | Value matches one of the defined options     |
-| `range`   | Value is a number within `min`/`max` bounds  |
+| Type      | Validates                                   |
+| --------- | ------------------------------------------- |
+| `boolean` | Value is a boolean                          |
+| `string`  | Value is a string                           |
+| `number`  | Value is a number                           |
+| `enum`    | Value matches one of the defined options    |
+| `range`   | Value is a number within `min`/`max` bounds |
 
 **Example:**
 
@@ -248,8 +248,8 @@ const field = {
   description: 'Max results',
 };
 
-validateConfigValue(field, 50);   // { valid: true }
-validateConfigValue(field, 200);  // { valid: false, error: 'Value must be between 1 and 100' }
+validateConfigValue(field, 50); // { valid: true }
+validateConfigValue(field, 200); // { valid: false, error: 'Value must be between 1 and 100' }
 validateConfigValue(field, 'hi'); // { valid: false, error: 'Expected a number' }
 ```
 

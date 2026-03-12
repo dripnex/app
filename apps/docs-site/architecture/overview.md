@@ -147,23 +147,23 @@ graph TD
 
 ## Security Model
 
-| Rule               | Description                 |
-| ------------------ | --------------------------- |
-| No nodeIntegration | Renderer is sandboxed       |
-| IPC whitelist      | Typed channels only         |
-| No executeSQL      | No raw SQL in renderer      |
-| Preload minimal    | Only necessary APIs exposed |
+| Rule               | Description                     |
+| ------------------ | ------------------------------- |
+| No nodeIntegration | Renderer is sandboxed           |
+| IPC whitelist      | Typed channels only             |
+| No executeSQL      | No raw SQL in renderer          |
+| Preload minimal    | Only necessary APIs exposed     |
 | Plugin sandbox     | Plugins run in isolated context |
 
 ## Technology Stack
 
-| Layer    | Technology                            |
-| -------- | ------------------------------------- |
-| Runtime  | Electron                              |
-| Build    | electron-vite                         |
-| Database | SQLite (better-sqlite3)               |
-| Editor   | CodeMirror 6                          |
-| UI State | TanStack Query + Zustand              |
-| Styling  | CSS Modules + CSS custom properties   |
-| Sync     | Supabase (via sync-core)              |
-| Monorepo | pnpm + turborepo                      |
+| Layer    | Technology                          |
+| -------- | ----------------------------------- |
+| Runtime  | Electron                            |
+| Build    | electron-vite                       |
+| Database | SQLite (better-sqlite3)             |
+| Editor   | CodeMirror 6                        |
+| UI State | TanStack Query + Zustand            |
+| Styling  | CSS Modules + CSS custom properties |
+| Sync     | Supabase (via sync-core)            |
+| Monorepo | pnpm + turborepo                    |

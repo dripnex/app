@@ -64,11 +64,11 @@ interface DatabaseAdapter {
 
 The storage layer exposes multiple repository interfaces:
 
-| Repository             | Purpose                     |
-| ---------------------- | --------------------------- |
-| `NoteRepository`       | CRUD for notes              |
-| `NotebookRepository`   | Notebook hierarchy          |
-| `TagRepository`        | Tag management              |
+| Repository           | Purpose            |
+| -------------------- | ------------------ |
+| `NoteRepository`     | CRUD for notes     |
+| `NotebookRepository` | Notebook hierarchy |
+| `TagRepository`      | Tag management     |
 
 Each repository interface is defined in `storage-core` and implemented in `storage-sqlite`.
 

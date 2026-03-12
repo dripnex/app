@@ -26,9 +26,9 @@ Because Readied is offline-first, you will never lose work due to a network issu
 
 The **sync status indicator** in the sidebar footer shows the current state at a glance:
 
-| Status      | Meaning                                           |
-| ----------- | ------------------------------------------------- |
-| **Synced**  | All notes are up to date with the cloud           |
+| Status      | Meaning                                            |
+| ----------- | -------------------------------------------------- |
+| **Synced**  | All notes are up to date with the cloud            |
 | **Syncing** | A sync operation is currently in progress          |
 | **Offline** | No internet connection; changes are queued locally |
 | **Error**   | Something went wrong; check troubleshooting below  |

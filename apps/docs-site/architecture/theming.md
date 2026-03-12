@@ -13,7 +13,7 @@ The app supports three modes:
 The active scheme is applied via a `data-color-scheme` attribute on the root element:
 
 ```html
-<html data-color-scheme="dark">
+<html data-color-scheme="dark"></html>
 ```
 
 ## Design Tokens
@@ -141,7 +141,7 @@ Plugins can define and register custom themes using the plugin API.
 The `data-theme` attribute identifies the active plugin theme:
 
 ```html
-<html data-color-scheme="dark" data-theme="solarized">
+<html data-color-scheme="dark" data-theme="solarized"></html>
 ```
 
 Plugins register CSS variable overrides via the plugin context:
@@ -167,7 +167,7 @@ const theme = context.getTheme();
 // { colorScheme: 'dark', activeTheme: 'solarized' }
 
 // React to theme changes
-context.onThemeChanged((newTheme) => {
+context.onThemeChanged(newTheme => {
   console.log('Theme changed to:', newTheme.colorScheme);
 });
 ```

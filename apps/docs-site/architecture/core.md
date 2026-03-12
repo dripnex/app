@@ -60,7 +60,7 @@ Operations are pure functions that take input and a repository:
 // createNote.ts
 export async function createNoteOperation(
   input: CreateNoteInput,
-  repo: NoteRepository,
+  repo: NoteRepository
 ): Promise<Result<NoteSnapshot>> {
   // Validate input
   // Create Note entity

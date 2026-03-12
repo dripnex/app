@@ -345,10 +345,7 @@ export const myThemePlugin: PluginManifest = {
     const apply = () => {
       if (cleanup) cleanup();
       const isDark = context.getTheme() === 'dark';
-      cleanup = context.registerCssVariables(
-        'my-theme-colors',
-        isDark ? DARK_VARS : LIGHT_VARS
-      );
+      cleanup = context.registerCssVariables('my-theme-colors', isDark ? DARK_VARS : LIGHT_VARS);
     };
 
     apply();
