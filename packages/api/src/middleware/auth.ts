@@ -54,6 +54,10 @@ export const authMiddleware = createMiddleware<{
 
     await next();
   } catch (error) {
+    // Re-throw HTTPException as-is to preserve specific error messages
+    if (error instanceof HTTPException) {
+      throw error;
+    }
     if (error instanceof jose.errors.JWTExpired) {
       throw new HTTPException(401, { message: 'Token expired' });
     }
