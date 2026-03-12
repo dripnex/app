@@ -3,13 +3,129 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @theme {
-  --color-accent: #0d9488;
-  --color-accent-hover: #0f766e;
-  --color-accent-light: #55E4CF;
-  --color-base: #09090b;
-  --color-surface: #131417;
-  --color-surface-elevated: #1a1b1f;
+  /* Brand colors — violet accent on dark zinc */
+  --color-background: #09090b;
+  --color-surface: #111113;
+  --color-surface-elevated: #1a1a1f;
   --color-inset: #0c0c0e;
+  --color-border: #27272a;
+  --color-border-accent: rgba(139, 92, 246, 0.3);
+
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+
+  --color-accent: #8b5cf6;
+  --color-accent-hover: #7c3aed;
+  --color-accent-glow: rgba(139, 92, 246, 0.15);
+
+  /* Font families */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
+
+/* ─── Fumadocs theme alignment ─── */
+/* Override fumadocs CSS variables to match our violet/zinc design system */
+:root, .dark {
+  --color-fd-background: #09090b;
+  --color-fd-foreground: #fafafa;
+  --color-fd-muted: #111113;
+  --color-fd-muted-foreground: #a1a1aa;
+  --color-fd-popover: #111113;
+  --color-fd-popover-foreground: #e4e4e7;
+  --color-fd-card: #111113;
+  --color-fd-card-foreground: #fafafa;
+  --color-fd-border: rgba(255, 255, 255, 0.08);
+  --color-fd-primary: #8b5cf6;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #1a1a1f;
+  --color-fd-secondary-foreground: #e4e4e7;
+  --color-fd-accent: rgba(139, 92, 246, 0.12);
+  --color-fd-accent-foreground: #e4e4e7;
+  --color-fd-ring: #8b5cf6;
+}
+
+/* ─── Fumadocs component overrides ─── */
+
+/* Sidebar styling */
+.fd-sidebar {
+  --fd-sidebar-width: 260px;
+}
+
+/* Sidebar links — subtle hover */
+[data-active='true'] {
+  color: #8b5cf6 !important;
+}
+
+/* Docs nav bar — glass effect */
+nav[data-fumadocs] {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Code blocks — darker with violet accents */
+pre:has(code) {
+  background: #0c0c0e !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem;
+}
+
+/* Inline code */
+:not(pre) > code {
+  background: rgba(139, 92, 246, 0.1) !important;
+  color: #c4b5fd !important;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.875em;
+}
+
+/* Table of contents — active item */
+[data-toc] a[data-active='true'] {
+  color: #8b5cf6;
+  border-left-color: #8b5cf6;
+}
+
+/* Card links in docs */
+.fd-card {
+  background: #111113;
+  border-color: rgba(255, 255, 255, 0.08);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fd-card:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.08);
+}
+
+/* Search dialog */
+[data-fumadocs-search] {
+  --color-fd-background: #0c0c0e;
+  --color-fd-popover: #111113;
+}
+
+/* Breadcrumbs */
+nav[aria-label='Breadcrumb'] {
+  color: #52525b;
+}
+
+nav[aria-label='Breadcrumb'] a:hover {
+  color: #8b5cf6;
+}
+
+/* Headings in docs content — slightly brighter */
+.fd-page h1, .fd-page h2, .fd-page h3, .fd-page h4 {
+  color: #fafafa;
+}
+
+/* Links in docs content */
+.fd-page a:not([class]) {
+  color: #a78bfa;
+  text-decoration-color: rgba(139, 92, 246, 0.3);
+}
+
+.fd-page a:not([class]):hover {
+  color: #c4b5fd;
+  text-decoration-color: #8b5cf6;
 }
 
 /* Marketing page utilities */
@@ -19,12 +135,12 @@
   }
 
   .glass-card {
-    @apply bg-surface border border-zinc-800 rounded-xl;
+    @apply bg-surface border border-border rounded-xl;
   }
 
   .glass-card-glow {
     @apply bg-surface border border-accent/30 rounded-xl;
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 40px var(--color-accent-glow);
   }
 
   .gradient-text {
@@ -53,4 +169,74 @@
 
 @utility animate-fade-in-up {
   animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* Magic UI: Animated Shiny Text */
+@keyframes shiny-text {
+  0%,
+  90%,
+  100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+  }
+  30%,
+  60% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+  }
+}
+
+@utility animate-shiny-text {
+  animation: shiny-text 8s infinite;
+}
+
+/* Magic UI: Marquee */
+@keyframes marquee {
+  100% {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  100% {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+@utility animate-marquee {
+  animation: marquee var(--duration) linear infinite;
+}
+
+@utility animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+/* Magic UI: Shimmer Button */
+@keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+  }
+}
+
+@keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+  }
+  15%,
+  35% {
+    transform: translateZ(0) rotate(90deg);
+  }
+  65%,
+  85% {
+    transform: translateZ(0) rotate(270deg);
+  }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+  }
+}
+
+@utility animate-shimmer-slide {
+  animation: shimmer-slide var(--speed) ease-in-out infinite alternate;
+}
+
+@utility animate-spin-around {
+  animation: spin-around calc(var(--speed) * 2) infinite linear;
 }

@@ -9,7 +9,9 @@ Readied supports a plugin system that lets you extend the editor with custom fun
 
 ## Quick Start
 
-### 1. Scaffold a new plugin
+<Steps>
+
+### Scaffold a new plugin
 
 ```bash
 npx readied-plugin init "My Plugin"
@@ -19,9 +21,11 @@ npm install
 
 This creates a plugin project with TypeScript, the plugin API types, and a starter template.
 
-> **Tip:** Readied ships with 8 built-in plugins you can use as reference. Check the `apps/desktop/src/renderer/plugins/` directory for real-world examples covering status bars, focus mode, code block rendering, and more.
+<Callout type="info">
+Readied ships with 8 built-in plugins you can use as reference. Check the `apps/desktop/src/renderer/plugins/` directory for real-world examples.
+</Callout>
 
-### 2. Write your plugin
+### Write your plugin
 
 Edit `src/index.ts`:
 
@@ -58,7 +62,7 @@ export const plugin: PluginManifest = {
 };
 ```
 
-### 3. Build and install
+### Build and install
 
 ```bash
 npm run build
@@ -66,17 +70,35 @@ npm run build
 
 Copy the output to your Readied plugins directory:
 
-- **macOS:** `~/Library/Application Support/Readied/plugins/my-plugin/`
-- **Windows:** `%APPDATA%/Readied/plugins/my-plugin/`
-- **Linux:** `~/.config/Readied/plugins/my-plugin/`
+<Tabs items={['macOS', 'Windows', 'Linux']}>
+  <Tab value="macOS">
+    ```bash
+    cp -r dist/ ~/Library/Application\ Support/Readied/plugins/my-plugin/
+    ```
+  </Tab>
+  <Tab value="Windows">
+    ```bash
+    xcopy /E dist\ %APPDATA%\Readied\plugins\my-plugin\
+    ```
+  </Tab>
+  <Tab value="Linux">
+    ```bash
+    cp -r dist/ ~/.config/Readied/plugins/my-plugin/
+    ```
+  </Tab>
+</Tabs>
 
-### 4. Reload Readied
+### Reload Readied
 
 The plugin will be discovered and loaded automatically on next launch. Toggle it in **Settings > Plugins**.
 
+</Steps>
+
 ## Plugin Contract
 
-Readied plugins must follow five rules to maintain the offline-first, markdown-portable principle:
+<Callout title="The five rules" type="warn">
+Readied plugins must follow these rules to maintain the offline-first, markdown-portable principle.
+</Callout>
 
 1. **Removable without breaking `.md` files** — Your plugin can be uninstalled and all notes remain valid markdown.
 2. **No new syntax** — Don't invent markdown extensions that other editors can't read.
@@ -95,10 +117,20 @@ load → activate(context) → [user interacts] → dispose()
 3. **Running** — Your plugin responds to commands, events, and editor changes
 4. **Dispose** — When disabled or on app exit, your `dispose()` function cleans up
 
-> **Tip:** Always clean up. Return a `{ dispose() }` object from `activate()`. Unregister all commands, remove all UI components, and clear any subscriptions.
+<Callout type="info">
+Always clean up. Return a `{ dispose() }` object from `activate()`. Unregister all commands, remove all UI components, and clear any subscriptions.
+</Callout>
 
 ## Next Steps
 
-- [API Reference](/docs/plugins/api-reference) — Full documentation of every method and type
-- [Layout Zones](/docs/plugins/layout-zones) — Where to place UI components
-- [Examples](/docs/plugins/examples) — Real-world plugin patterns
+<Cards>
+  <Card title="API Reference" href="/docs/plugins/api-reference">
+    Full documentation of every method and type.
+  </Card>
+  <Card title="Layout Zones" href="/docs/plugins/layout-zones">
+    Where to place UI components in the editor.
+  </Card>
+  <Card title="Examples" href="/docs/plugins/examples">
+    Real-world plugin patterns and recipes.
+  </Card>
+</Cards>
