@@ -499,6 +499,43 @@ export class ApiClient {
   }
 
   // ==========================================================================
+  // Devices
+  // ==========================================================================
+
+  async listDevices(): Promise<{
+    devices: Array<{
+      id: string;
+      deviceId: string;
+      name: string | null;
+      platform: string | null;
+      isCurrent: boolean;
+      lastSeenAt: string;
+      createdAt: string;
+    }>;
+  }> {
+    return this.request('/devices');
+  }
+
+  async renameDevice(deviceId: string, name: string): Promise<{ success: boolean }> {
+    return this.request(`/devices/${deviceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async revokeDevice(deviceId: string): Promise<{ success: boolean }> {
+    return this.request(`/devices/${deviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async revokeOtherDevices(): Promise<{ success: boolean; revokedCount: number }> {
+    return this.request('/devices/revoke-others', {
+      method: 'POST',
+    });
+  }
+
+  // ==========================================================================
   // Helpers
   // ==========================================================================
 

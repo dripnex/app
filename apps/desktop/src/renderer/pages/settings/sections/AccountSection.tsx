@@ -25,6 +25,7 @@ import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
 import { ConflictResolver } from '../../../components/sync/ConflictResolver';
+import { DevicesSection } from './DevicesSection';
 import styles from './Section.module.css';
 
 const config = getProductConfig();
@@ -344,6 +345,8 @@ export function AccountSection() {
               </div>
             )}
           </SettingGroup>
+
+          <DevicesSection />
 
           {conflicts.length > 0 && <ConflictResolver />}
 

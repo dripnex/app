@@ -7,12 +7,9 @@
 
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
+import type { PluginConfigSchemaField } from '@readied/plugin-api';
 
-export interface PluginConfigSchemaField {
-  type: 'string' | 'number' | 'boolean';
-  default: unknown;
-  description?: string;
-}
+export type { PluginConfigSchemaField };
 
 export interface ScannedPlugin {
   id: string;

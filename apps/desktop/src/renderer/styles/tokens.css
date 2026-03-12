@@ -111,7 +111,7 @@
 }
 
 /* ===== LIGHT THEME ===== */
-:root[data-theme="light"] {
+:root[data-color-scheme="light"] {
   /* Background */
   --bg-base: #ffffff;
   --bg-surface: #f9fafb;

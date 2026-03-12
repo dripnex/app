@@ -22,7 +22,9 @@
     "tail": "wrangler tail",
     "tail:staging": "wrangler tail --env staging",
     "tail:production": "wrangler tail --env production",
-    "wrangler": "wrangler"
+    "wrangler": "wrangler",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.2",
@@ -37,6 +39,7 @@
     "@cloudflare/workers-types": "^4.20260218.0",
     "drizzle-kit": "^0.30.1",
     "typescript": "^5.5.4",
+    "vitest": "^2.1.8",
     "wrangler": "^4.66.0"
   }
 }
