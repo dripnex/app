@@ -1,29 +1,29 @@
-import { WifiOff, FileText, Monitor, Star } from 'lucide-react';
+import { WifiOff, HardDrive, Github, Puzzle, Monitor } from 'lucide-react';
+
+import { Marquee } from '@/components/magicui/marquee';
+
+const badges = [
+  { icon: WifiOff, label: 'Offline First' },
+  { icon: HardDrive, label: 'Local Storage' },
+  { icon: Github, label: 'Open Source' },
+  { icon: Puzzle, label: 'Plugin System' },
+  { icon: Monitor, label: 'Cross-platform' },
+];
 
 export default function SocialProof() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-3 py-8">
-      <div className="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a]">
-        <WifiOff className="h-3.5 w-3.5 text-accent" />
-        <span>Works 100% offline</span>
-      </div>
-      <div className="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a]">
-        <FileText className="h-3.5 w-3.5 text-accent" />
-        <span>Standard Markdown</span>
-      </div>
-      <div className="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a]">
-        <Monitor className="h-3.5 w-3.5 text-accent" />
-        <span>macOS, Windows &amp; Linux</span>
-      </div>
-      <a
-        href="https://github.com/tomymaritano/readide"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-sm text-[#71717a] transition-colors hover:text-accent hover:border-accent/20"
-      >
-        <Star className="h-3.5 w-3.5 text-accent" />
-        <span>Star on GitHub</span>
-      </a>
-    </div>
+    <section className="py-12 overflow-hidden">
+      <Marquee pauseOnHover className="[--duration:30s]">
+        {badges.map(({ icon: Icon, label }) => (
+          <div
+            key={label}
+            className="flex items-center gap-3 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-medium text-text-secondary"
+          >
+            <Icon className="h-4 w-4 text-accent" />
+            <span>{label}</span>
+          </div>
+        ))}
+      </Marquee>
+    </section>
   );
 }
