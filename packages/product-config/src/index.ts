@@ -10,33 +10,33 @@ export {
   type PlanId,
   type BillingInterval,
   type GuaranteeId,
-} from './facade.js';
+} from './facade.ts';
 
 // ═══════════════════════════════════════════════════════════════
 // RAW DATA (DEPRECATED - use getProductConfig() instead)
 // ═══════════════════════════════════════════════════════════════
 
 /** @deprecated Use getProductConfig().plans instead */
-export { PLANS, GUARANTEES } from './plans.js';
+export { PLANS, GUARANTEES } from './plans.ts';
 
 /** @deprecated Use getProductConfig() instead */
-export { PRICING } from './pricing.js';
+export { PRICING } from './pricing.ts';
 
 /** @deprecated Use getProductConfig().trialDays instead */
-export { TRIAL } from './trial.js';
+export { TRIAL } from './trial.ts';
 
 /** @deprecated Use types from facade.js */
-export type { PricingConfig } from './pricing.js';
+export type { PricingConfig } from './pricing.ts';
 
 /** @deprecated Use types from facade.js */
-export type { TrialConfig } from './trial.js';
+export type { TrialConfig } from './trial.ts';
 
 /** @deprecated Use types from facade.js */
-export type { PlansConfig, GuaranteesConfig } from './plans.js';
+export type { PlansConfig, GuaranteesConfig } from './plans.ts';
 
 // ═══════════════════════════════════════════════════════════════
 // URLS (not deprecated - not part of product config)
 // ═══════════════════════════════════════════════════════════════
 
-export { URLS } from './urls.js';
-export type { UrlsConfig } from './urls.js';
+export { URLS } from './urls.ts';
+export type { UrlsConfig } from './urls.ts';
