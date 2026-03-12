@@ -1,37 +1,30 @@
 name: Auto-merge
 
 on:
-  pull_request_review:
-    types: [submitted]
-  check_suite:
-    types: [completed]
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  automerge:
+  automerge-owner:
     runs-on: ubuntu-latest
-    if: >-
-      github.event.pull_request.user.login == 'tomymaritano' ||
-      github.event.workflow_run.head_repository.owner.login == 'tomymaritano'
+    if: github.event.pull_request.user.login == 'tomymaritano'
     steps:
       - name: Enable auto-merge for owner PRs
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          merge-method: merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr merge "$PR_NUMBER" --auto --merge --repo "$GITHUB_REPOSITORY"
 
-  dependabot:
+  automerge-dependabot:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
-      - name: Auto-merge dependabot PRs
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          merge-method: merge
+      - name: Enable auto-merge for dependabot PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr merge "$PR_NUMBER" --auto --merge --repo "$GITHUB_REPOSITORY"
