@@ -1,34 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
 import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
 
 /**
- * Resolve 'system' theme to 'dark' or 'light' based on OS preference.
+ * Persisted IPC isDark value from the main process nativeTheme.
+ * Used so that re-applies (accent/zoom changes) use the authoritative
+ * main-process value instead of falling back to window.matchMedia.
  */
-function resolveTheme(theme: string): string {
-  if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  return theme;
-}
+let nativeIsDark: boolean | undefined;
 
 /**
  * Apply appearance settings to the DOM.
  */
-function applyAppearance(theme: string, accentColor: string, zoomLevel: string): void {
-  // Theme — resolve 'system' to actual value
-  const resolved = resolveTheme(theme);
-  document.documentElement.setAttribute('data-theme', resolved);
+function applyAppearance(
+  theme: string,
+  accentColor: string,
+  zoomLevel: string,
+  isDark?: boolean
+): void {
+  let resolved: string;
+  if (theme === 'system') {
+    // Prefer the IPC-supplied nativeTheme value, then the explicit param,
+    // then fall back to matchMedia only as a last resort.
+    const dark =
+      isDark ?? nativeIsDark ?? window.matchMedia('(prefers-color-scheme: dark)').matches;
+    resolved = dark ? 'dark' : 'light';
+  } else {
+    resolved = theme;
+  }
+  // Use data-color-scheme for the dark/light resolved value.
+  // data-theme is reserved for plugin theme identity (set by useThemeOverrides).
+  document.documentElement.setAttribute('data-color-scheme', resolved);
 
-  // Accent color
   document.documentElement.style.setProperty('--accent', accentColor);
   document.documentElement.style.setProperty('--accent-primary', accentColor);
 
-  // Hover variant
   const hoverColor = computeHoverColor(accentColor);
   document.documentElement.style.setProperty('--accent-hover', hoverColor);
 
-  // Muted variant (accent at 15% opacity)
   const rgb = hexToRgb(accentColor);
   if (rgb) {
     document.documentElement.style.setProperty(
@@ -37,7 +46,6 @@ function applyAppearance(theme: string, accentColor: string, zoomLevel: string):
     );
   }
 
-  // Zoom
   document.body.style.zoom = zoomLevel;
 }
 
@@ -45,8 +53,8 @@ function applyAppearance(theme: string, accentColor: string, zoomLevel: string):
  * Hook to apply appearance settings to the DOM.
  *
  * Reads theme/accent/zoom from the Zustand settings store and applies
- * them to the DOM. Cross-window sync is handled by the settings store
- * itself (settingsStore.ts broadcasts full settings via IPC).
+ * them to the DOM. Syncs nativeTheme source in the main process via IPC
+ * and listens for system theme changes through the same channel.
  *
  * Call this hook once per window root component.
  */
@@ -57,18 +65,29 @@ export function useAppearanceSettings(): void {
   const accentColor = appearance?.accentColor || '#5eead4';
   const zoomLevel = appearance?.zoomLevel || '1.0';
 
-  // Apply settings to DOM whenever they change
+  // Keep a ref to current values so the IPC callback can access them
+  const currentRef = useRef({ theme, accentColor, zoomLevel });
+  currentRef.current = { theme, accentColor, zoomLevel };
+
+  // Apply settings to DOM
   useEffect(() => {
     applyAppearance(theme, accentColor, zoomLevel);
   }, [theme, accentColor, zoomLevel]);
 
-  // Listen for OS theme changes when using 'system' theme
+  // Sync nativeTheme source in main process
+  useEffect(() => {
+    window.readied.theme.setSource(theme);
+  }, [theme]);
+
+  // Listen for system theme changes via IPC
   useEffect(() => {
     if (theme !== 'system') return;
-
-    const mql = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => applyAppearance('system', accentColor, zoomLevel);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, [theme, accentColor, zoomLevel]);
+    const unsub = window.readied.theme.onSystemChanged(isDark => {
+      // Persist the IPC value so subsequent re-applies use it
+      nativeIsDark = isDark;
+      const { accentColor: ac, zoomLevel: zl } = currentRef.current;
+      applyAppearance('system', ac, zl, isDark);
+    });
+    return unsub;
+  }, [theme]);
 }

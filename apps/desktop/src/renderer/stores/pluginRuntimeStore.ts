@@ -19,6 +19,12 @@ export interface PluginLoadError {
   reason: string;
 }
 
+export interface PluginLoadTiming {
+  pluginId: string;
+  pluginName: string;
+  loadTimeMs: number;
+}
+
 type RuntimeStatus = 'idle' | 'scanning' | 'ready';
 
 interface PluginRuntimeState {
@@ -26,6 +32,8 @@ interface PluginRuntimeState {
   plugins: PluginManifest[];
   /** Plugins that failed to load */
   errors: PluginLoadError[];
+  /** Load timing per plugin */
+  timings: PluginLoadTiming[];
   /** Current lifecycle status */
   status: RuntimeStatus;
 }
@@ -56,6 +64,7 @@ function attachIpcListener() {
 async function executeScan(generation: number): Promise<{
   plugins: PluginManifest[];
   errors: PluginLoadError[];
+  timings: PluginLoadTiming[];
 } | null> {
   try {
     const [scanned, stateList, initCode] = await Promise.all([
@@ -70,14 +79,19 @@ async function executeScan(generation: number): Promise<{
     const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
     const plugins: PluginManifest[] = [];
     const errors: PluginLoadError[] = [];
+    const timings: PluginLoadTiming[] = [];
 
     for (const sp of scanned) {
       const enabled = stateMap.get(sp.id) ?? true;
       if (!enabled) continue;
 
+      const start = performance.now();
       const manifest = loadPluginFromSource(sp.code, sp.id);
+      const elapsed = performance.now() - start;
+
       if (manifest) {
         plugins.push(manifest);
+        timings.push({ pluginId: sp.id, pluginName: sp.name, loadTimeMs: elapsed });
       } else {
         errors.push({
           pluginId: sp.id,
@@ -107,7 +121,7 @@ async function executeScan(generation: number): Promise<{
     // Race check again after CPU-bound eval loop
     if (scanGeneration !== generation) return null;
 
-    return { plugins, errors };
+    return { plugins, errors, timings };
   } catch (error) {
     console.error('[pluginRuntime] scan failed:', error);
     return null;
@@ -117,6 +131,7 @@ async function executeScan(generation: number): Promise<{
 export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
   plugins: [],
   errors: [],
+  timings: [],
   status: 'idle',
 
   async init() {
@@ -125,7 +140,12 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
     set({ status: 'scanning' });
     const result = await executeScan(gen);
     if (result) {
-      set({ plugins: result.plugins, errors: result.errors, status: 'ready' });
+      set({
+        plugins: result.plugins,
+        errors: result.errors,
+        timings: result.timings,
+        status: 'ready',
+      });
     } else if (scanGeneration === gen) {
       set({ status: 'ready' });
     }
@@ -136,7 +156,12 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
     set({ status: 'scanning' });
     const result = await executeScan(gen);
     if (result) {
-      set({ plugins: result.plugins, errors: result.errors, status: 'ready' });
+      set({
+        plugins: result.plugins,
+        errors: result.errors,
+        timings: result.timings,
+        status: 'ready',
+      });
     } else if (scanGeneration === gen) {
       set({ status: 'ready' });
     }
