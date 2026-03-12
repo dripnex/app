@@ -36,6 +36,7 @@ No validation exists when config values are saved. The UI controls provide soft 
 **Fix:** Add `validateConfigValue(field, value)` to `plugin-api/src/validation.ts`. Hook into `handleConfigChange` in `PluginsSection.tsx` as a safety net. Reject with console warning (no UI error needed — controls already constrain input).
 
 Validation rules:
+
 - boolean: `typeof value === 'boolean'`
 - string: `typeof value === 'string'`
 - number: `typeof value === 'number'` + optional min/max bounds
@@ -45,6 +46,7 @@ Validation rules:
 ### 2.6 — Plugin Inspector (dev mode only)
 
 A collapsible section in Settings > Plugins, visible only in dev mode. Shows:
+
 - Loaded plugins with status badges (active/error/disabled)
 - Error details for failed plugins
 - "Force Reload All" button (wired to existing `plugins:requestReload` IPC)

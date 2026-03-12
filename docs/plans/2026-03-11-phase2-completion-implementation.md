@@ -13,6 +13,7 @@
 ### Task 1: Fix pluginScanner Type Bug
 
 **Files:**
+
 - Modify: `apps/desktop/src/main/pluginScanner.ts`
 
 **Context:** The `PluginConfigSchemaField` type in `pluginScanner.ts` (line 11-15) only has `'string' | 'number' | 'boolean'` but the canonical type in `packages/plugin-api/src/types.ts` (line 70-82) also has `'enum' | 'range'` with `options`, `min`, `max`, `step` fields. Community plugins with enum/range configs would have their schema silently narrowed.
@@ -53,6 +54,7 @@ git commit -m "fix(plugins): add enum and range to pluginScanner config schema t
 ### Task 2: Add Config Value Validation Function
 
 **Files:**
+
 - Modify: `packages/plugin-api/src/validation.ts`
 - Modify: `packages/plugin-api/tests/validation.test.ts`
 
@@ -251,7 +253,10 @@ export function validateConfigValue(
       return { valid: true };
 
     default:
-      return { valid: false, reason: `Unknown field type: ${(field as PluginConfigSchemaField).type}` };
+      return {
+        valid: false,
+        reason: `Unknown field type: ${(field as PluginConfigSchemaField).type}`,
+      };
   }
 }
 ```
@@ -283,6 +288,7 @@ git commit -m "feat(plugin-api): add validateConfigValue for config schema enfor
 ### Task 3: Wire Validation into PluginsSection
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx`
 
 **Context:** The `handleConfigChange` callback (line 487-493) saves config values directly without validation. We add a validation check that logs and skips invalid values.
@@ -302,25 +308,29 @@ Add this alongside the existing imports at the top of the file.
 Replace the `handleConfigChange` callback (lines 487-493) with:
 
 ```typescript
-const handleConfigChange = useCallback(async (pluginId: string, key: string, value: unknown) => {
-  // Find the schema field for validation
-  const schema = BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
-  const field = schema?.[key];
+const handleConfigChange = useCallback(
+  async (pluginId: string, key: string, value: unknown) => {
+    // Find the schema field for validation
+    const schema =
+      BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
+    const field = schema?.[key];
 
-  if (field) {
-    const result = validateConfigValue(field, value);
-    if (!result.valid) {
-      console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
-      return;
+    if (field) {
+      const result = validateConfigValue(field, value);
+      if (!result.valid) {
+        console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
+        return;
+      }
     }
-  }
 
-  await window.readied.pluginConfig.set(pluginId, key, value);
-  setConfigValues(prev => ({
-    ...prev,
-    [pluginId]: { ...prev[pluginId], [key]: value },
-  }));
-}, [plugins]);
+    await window.readied.pluginConfig.set(pluginId, key, value);
+    setConfigValues(prev => ({
+      ...prev,
+      [pluginId]: { ...prev[pluginId], [key]: value },
+    }));
+  },
+  [plugins]
+);
 ```
 
 Note: `plugins` is now in the dependency array since we access it for community plugin schemas.
@@ -341,6 +351,7 @@ git commit -m "feat(plugins): validate config values before persisting"
 ### Task 4: Add Load Timing to pluginRuntimeStore
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/stores/pluginRuntimeStore.ts`
 
 **Context:** The Plugin Inspector needs to show how long each plugin took to load. We add timing metadata to the scan results.
@@ -434,6 +445,7 @@ git commit -m "feat(plugins): track load timing per plugin in runtime store"
 ### Task 5: Build Plugin Inspector Component
 
 **Files:**
+
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/PluginsSection.tsx`
 - Modify: `apps/desktop/src/renderer/pages/settings/sections/Section.module.css`
 
@@ -452,7 +464,16 @@ import type { PluginLoadError, PluginLoadTiming } from '../../../stores/pluginRu
 Also import the `AlertTriangle` icon from lucide-react:
 
 ```typescript
-import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Check, AlertTriangle } from 'lucide-react';
+import {
+  RefreshCw,
+  FolderOpen,
+  ChevronDown,
+  Download,
+  Trash2,
+  Search,
+  Check,
+  AlertTriangle,
+} from 'lucide-react';
 ```
 
 Add the PluginInspector component:
@@ -491,7 +512,10 @@ function PluginInspector() {
       >
         <ChevronDown
           size={14}
-          style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}
+          style={{
+            transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+            transition: 'transform 0.15s',
+          }}
         />
         <span>Developer</span>
         {errors.length > 0 && (
@@ -565,7 +589,9 @@ function PluginInspector() {
 In the `PluginsSection` function, add the inspector at the bottom, after the `{activeTab === 'browse' && <BrowseTab />}` line (line 701), inside the section div:
 
 ```tsx
-{import.meta.env.DEV && <PluginInspector />}
+{
+  import.meta.env.DEV && <PluginInspector />;
+}
 ```
 
 **Step 3: Add CSS styles**
@@ -696,10 +722,10 @@ git commit -m "feat(plugins): add dev-mode Plugin Inspector with load timings an
 
 ### Summary
 
-| Task | What | Files |
-|------|------|-------|
-| 1 | Fix pluginScanner type bug | `pluginScanner.ts` |
-| 2 | Config value validation function + tests | `validation.ts`, `validation.test.ts` |
-| 3 | Wire validation into PluginsSection | `PluginsSection.tsx` |
-| 4 | Load timing in pluginRuntimeStore | `pluginRuntimeStore.ts` |
-| 5 | Plugin Inspector component (dev mode) | `PluginsSection.tsx`, `Section.module.css` |
+| Task | What                                     | Files                                      |
+| ---- | ---------------------------------------- | ------------------------------------------ |
+| 1    | Fix pluginScanner type bug               | `pluginScanner.ts`                         |
+| 2    | Config value validation function + tests | `validation.ts`, `validation.test.ts`      |
+| 3    | Wire validation into PluginsSection      | `PluginsSection.tsx`                       |
+| 4    | Load timing in pluginRuntimeStore        | `pluginRuntimeStore.ts`                    |
+| 5    | Plugin Inspector component (dev mode)    | `PluginsSection.tsx`, `Section.module.css` |

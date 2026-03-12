@@ -140,7 +140,12 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
     set({ status: 'scanning' });
     const result = await executeScan(gen);
     if (result) {
-      set({ plugins: result.plugins, errors: result.errors, timings: result.timings, status: 'ready' });
+      set({
+        plugins: result.plugins,
+        errors: result.errors,
+        timings: result.timings,
+        status: 'ready',
+      });
     } else if (scanGeneration === gen) {
       set({ status: 'ready' });
     }
@@ -151,7 +156,12 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
     set({ status: 'scanning' });
     const result = await executeScan(gen);
     if (result) {
-      set({ plugins: result.plugins, errors: result.errors, timings: result.timings, status: 'ready' });
+      set({
+        plugins: result.plugins,
+        errors: result.errors,
+        timings: result.timings,
+        status: 'ready',
+      });
     } else if (scanGeneration === gen) {
       set({ status: 'ready' });
     }

@@ -119,7 +119,7 @@ export function validateConfigValue(
       if (!field.options || field.options.length === 0) {
         return { valid: false, reason: 'Enum field has no options defined' };
       }
-      if (!field.options.some((opt) => opt.value === value)) {
+      if (!field.options.some(opt => opt.value === value)) {
         return { valid: false, reason: `Value "${String(value)}" is not a valid option` };
       }
       return { valid: true };
@@ -137,6 +137,9 @@ export function validateConfigValue(
       return { valid: true };
 
     default:
-      return { valid: false, reason: `Unknown field type: ${(field as PluginConfigSchemaField).type}` };
+      return {
+        valid: false,
+        reason: `Unknown field type: ${(field as PluginConfigSchemaField).type}`,
+      };
   }
 }

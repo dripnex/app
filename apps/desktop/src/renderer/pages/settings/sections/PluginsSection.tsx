@@ -6,7 +6,16 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
-import { RefreshCw, FolderOpen, ChevronDown, Download, Trash2, Search, Check, AlertTriangle } from 'lucide-react';
+import {
+  RefreshCw,
+  FolderOpen,
+  ChevronDown,
+  Download,
+  Trash2,
+  Search,
+  Check,
+  AlertTriangle,
+} from 'lucide-react';
 import { pluginRuntimeStore } from '../../../stores/pluginRuntimeStore';
 import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { validateConfigValue } from '@readied/plugin-api';
@@ -449,7 +458,10 @@ function PluginInspector() {
       >
         <ChevronDown
           size={14}
-          style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s' }}
+          style={{
+            transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+            transition: 'transform 0.15s',
+          }}
         />
         <span>Developer</span>
         {errors.length > 0 && (
@@ -587,25 +599,29 @@ export function PluginsSection() {
   }, []);
 
   // Update a plugin config value
-  const handleConfigChange = useCallback(async (pluginId: string, key: string, value: unknown) => {
-    // Find the schema field for validation
-    const schema = BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
-    const field = schema?.[key];
+  const handleConfigChange = useCallback(
+    async (pluginId: string, key: string, value: unknown) => {
+      // Find the schema field for validation
+      const schema =
+        BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
+      const field = schema?.[key];
 
-    if (field) {
-      const result = validateConfigValue(field, value);
-      if (!result.valid) {
-        console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
-        return;
+      if (field) {
+        const result = validateConfigValue(field, value);
+        if (!result.valid) {
+          console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
+          return;
+        }
       }
-    }
 
-    await window.readied.pluginConfig.set(pluginId, key, value);
-    setConfigValues(prev => ({
-      ...prev,
-      [pluginId]: { ...prev[pluginId], [key]: value },
-    }));
-  }, [plugins]);
+      await window.readied.pluginConfig.set(pluginId, key, value);
+      setConfigValues(prev => ({
+        ...prev,
+        [pluginId]: { ...prev[pluginId], [key]: value },
+      }));
+    },
+    [plugins]
+  );
 
   // Reload plugins in the main window
   const handleReload = useCallback(() => {
