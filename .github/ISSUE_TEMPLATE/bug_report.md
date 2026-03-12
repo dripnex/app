@@ -2,7 +2,7 @@
 name: Bug Report
 about: Report a bug in Readied
 title: '[Bug] '
-labels: bug
+labels: bug, triage
 assignees: ''
 ---
 

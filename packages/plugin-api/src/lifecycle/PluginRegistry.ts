@@ -9,7 +9,9 @@ import type {
   EditorAPI,
   AppAPI,
   PluginCommandOptions,
+  PluginHookOptions,
 } from '../types';
+import type { DataAPI } from '../data/createDataAPI';
 import { createLayoutManager } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
 import { createDecorationAPI } from '../editor/decorationAPI';
@@ -20,6 +22,7 @@ import { previewComponentStore } from '../preview/previewComponentStore';
 import { codeBlockStore } from '../preview/codeBlockStore';
 import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
+import { themeRegistryStore } from '../theme/themeRegistryStore';
 
 type PluginState = 'loaded' | 'active' | 'deactivated' | 'error';
 
@@ -92,6 +95,7 @@ export class PluginRegistry {
     id: string,
     editorAPI: EditorAPI,
     appAPI: AppAPI,
+    dataAPI: DataAPI,
     registerCommandFn?: RegisterCommandFn,
     configBridge?: ConfigBridge,
     getView?: () => EditorView | null
@@ -224,6 +228,37 @@ export class PluginRegistry {
       },
     };
 
+    const trackedData: DataAPI = {
+      ...dataAPI,
+      onNotesChanged(callback) {
+        const unsub = dataAPI.onNotesChanged(callback);
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onNotebooksChanged(callback) {
+        const unsub = dataAPI.onNotebooksChanged(callback);
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+      onTagsChanged(callback) {
+        const unsub = dataAPI.onTagsChanged(callback);
+        const tracked = () => {
+          unsub();
+          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+        };
+        entry.eventUnsubscribers.push(tracked);
+        return tracked;
+      },
+    };
+
     const context: PluginContext = {
       layout: createLayoutManager(id),
       editor: trackedEditor,
@@ -237,12 +272,38 @@ export class PluginRegistry {
         return () => editorPluginStore.getState().unregister(extId);
       },
       registerCommand,
-      registerRemarkPlugin: (regId: string, plugin: unknown): (() => void) => {
-        remarkPluginStore.getState().register({ id: regId, pluginId: id, plugin });
+      registerRemarkPlugin: (
+        regId: string,
+        plugin: unknown,
+        options?: PluginHookOptions
+      ): (() => void) => {
+        remarkPluginStore.getState().register({
+          id: regId,
+          pluginId: id,
+          plugin,
+          metadata: {
+            name: options?.name ?? entry.manifest.name,
+            version: options?.version ?? entry.manifest.version,
+            priority: options?.priority ?? 100,
+          },
+        });
         return () => remarkPluginStore.getState().unregister(regId);
       },
-      registerRehypePlugin: (regId: string, plugin: unknown): (() => void) => {
-        rehypePluginStore.getState().register({ id: regId, pluginId: id, plugin });
+      registerRehypePlugin: (
+        regId: string,
+        plugin: unknown,
+        options?: PluginHookOptions
+      ): (() => void) => {
+        rehypePluginStore.getState().register({
+          id: regId,
+          pluginId: id,
+          plugin,
+          metadata: {
+            name: options?.name ?? entry.manifest.name,
+            version: options?.version ?? entry.manifest.version,
+            priority: options?.priority ?? 100,
+          },
+        });
         return () => rehypePluginStore.getState().unregister(regId);
       },
       registerPreviewComponent: (
@@ -271,6 +332,16 @@ export class PluginRegistry {
         cssVariableStore.getState().register({ id: regId, pluginId: id, variables });
         return () => cssVariableStore.getState().unregister(regId);
       },
+      registerTheme: (theme): (() => void) => {
+        const success = themeRegistryStore.getState().register({
+          ...theme,
+          pluginId: id,
+        });
+        if (!success) {
+          console.warn(`[${id}] Theme registration failed for "${theme.id}" (no valid tokens)`);
+        }
+        return () => themeRegistryStore.getState().unregister(theme.id);
+      },
       config,
       log: {
         // eslint-disable-next-line no-console
@@ -279,6 +350,7 @@ export class PluginRegistry {
         error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
       },
       app: trackedApp,
+      data: trackedData,
     };
 
     try {
@@ -299,6 +371,7 @@ export class PluginRegistry {
       previewComponentStore.getState().unregisterAll(id);
       codeBlockStore.getState().unregisterAll(id);
       cssVariableStore.getState().unregisterAll(id);
+      themeRegistryStore.getState().unregisterAll(id);
       const layoutManager = createLayoutManager(id);
       layoutManager.removeAllForPlugin(id);
       for (const unregister of entry.commandUnregisters) {
@@ -342,6 +415,7 @@ export class PluginRegistry {
 
     // Cleanup theme stores
     cssVariableStore.getState().unregisterAll(id);
+    themeRegistryStore.getState().unregisterAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {

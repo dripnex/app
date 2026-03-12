@@ -13,7 +13,7 @@ import { join, normalize, basename } from 'path';
 import { readFile, writeFile, unlink, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { exec } from 'child_process';
-import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import {
@@ -1655,6 +1655,64 @@ function registerAuthSyncHandlers(): void {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // Devices
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  ipcMain.handle('devices:list', async () => {
+    try {
+      const result = await client.listDevices();
+      return result.devices;
+    } catch (error) {
+      return [];
+    }
+  });
+
+  ipcMain.handle('devices:rename', async (_event, deviceId: string, name: string) => {
+    try {
+      await client.renameDevice(deviceId, name);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to rename device',
+      };
+    }
+  });
+
+  ipcMain.handle('devices:revoke', async (_event, deviceId: string) => {
+    try {
+      await client.revokeDevice(deviceId);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to revoke device',
+      };
+    }
+  });
+
+  ipcMain.handle('devices:revokeOthers', async () => {
+    try {
+      const result = await client.revokeOtherDevices();
+      return { success: true, revokedCount: result.revokedCount };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to revoke devices',
+      };
+    }
+  });
+
+  ipcMain.handle('devices:getCurrent', async () => {
+    try {
+      const result = await client.listDevices();
+      return result.devices.find(d => d.isCurrent) ?? null;
+    } catch (_error) {
+      return null;
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // Encryption Key Management
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -2262,6 +2320,21 @@ app
 
     // App version
     ipcMain.handle('app:version', () => app.getVersion());
+
+    // Theme — sync Electron nativeTheme with renderer
+    ipcMain.on('theme:set-source', (_event, source: string) => {
+      if (source === 'dark' || source === 'light' || source === 'system') {
+        nativeTheme.themeSource = source;
+      }
+    });
+
+    // Notify all renderer windows when system theme changes
+    nativeTheme.on('updated', () => {
+      const isDark = nativeTheme.shouldUseDarkColors;
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send('theme:system-changed', isDark);
+      }
+    });
 
     // Settings sync: broadcast to all windows except sender
     ipcMain.on('settings:changed', (event, settings) => {
