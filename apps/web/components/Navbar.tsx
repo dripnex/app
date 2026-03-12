@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
-const docsItems = [
+const docsItems: { label: string; href: string; external?: boolean }[] = [
   { label: 'Documentation', href: '/docs' },
   { label: 'Philosophy', href: '/philosophy' },
   { label: 'FAQ', href: '/faq' },
@@ -15,7 +15,7 @@ const docsItems = [
     href: 'https://github.com/tomymaritano/readide/issues/new?template=bug_report.md',
     external: true,
   },
-] as const;
+];
 
 const mobileSections = [
   {
@@ -64,7 +64,7 @@ const mobileSections = [
       },
     ],
   },
-] as const;
+];
 
 const navLinkClass =
   'relative rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary';
