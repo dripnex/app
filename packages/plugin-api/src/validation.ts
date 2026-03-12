@@ -134,6 +134,15 @@ export function validateConfigValue(
       if (field.max !== undefined && value > field.max) {
         return { valid: false, reason: `Value ${value} is above maximum ${field.max}` };
       }
+      if (field.step !== undefined && field.step > 0 && field.min !== undefined) {
+        const offset = value - field.min;
+        if (Math.abs(offset - Math.round(offset / field.step) * field.step) > 1e-9) {
+          return {
+            valid: false,
+            reason: `Value ${value} is not a valid step (step: ${field.step}, min: ${field.min})`,
+          };
+        }
+      }
       return { valid: true };
 
     default:
