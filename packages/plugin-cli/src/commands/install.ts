@@ -2,7 +2,7 @@
 
 import { existsSync, statSync, mkdirSync, cpSync, rmSync, readdirSync } from 'fs';
 import { execFileSync } from 'child_process';
-import { join, resolve, basename } from 'path';
+import { join, resolve, basename, sep } from 'path';
 import { tmpdir } from 'os';
 import { getPluginsDir, readManifest } from '../utils';
 
@@ -80,8 +80,28 @@ export function installPlugin(source: string): void {
     process.exit(1);
   }
 
+  // Validate manifest.id is a safe path segment (no traversal)
+  if (/[/\\]|^\.\.?$/.test(manifest.id)) {
+    cleanup(tempDir);
+    console.error(
+      `Error: Invalid plugin id "${manifest.id}" — must be a simple name without path separators.`
+    );
+    process.exit(1);
+  }
+
   const pluginsDir = getPluginsDir();
   const targetDir = join(pluginsDir, manifest.id);
+
+  // Double-check the resolved target is inside plugins dir
+  const resolvedTarget = resolve(targetDir);
+  const resolvedPlugins = resolve(pluginsDir);
+  if (!resolvedTarget.startsWith(resolvedPlugins + sep) || resolvedTarget === resolvedPlugins) {
+    cleanup(tempDir);
+    console.error(
+      `Error: Invalid plugin id "${manifest.id}" — resolves outside plugins directory.`
+    );
+    process.exit(1);
+  }
 
   if (existsSync(targetDir)) {
     cleanup(tempDir);

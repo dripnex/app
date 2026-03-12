@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 import { existsSync, rmSync, lstatSync, readlinkSync } from 'fs';
-import { join, resolve } from 'path';
+import { join, resolve, sep } from 'path';
 import { createInterface } from 'readline';
 import { getPluginsDir, readManifest } from '../utils';
 
@@ -19,12 +19,12 @@ export async function uninstallPlugin(pluginId: string): Promise<void> {
   const pluginsDir = getPluginsDir();
   const pluginDir = join(pluginsDir, pluginId);
 
-  // Safety: ensure the resolved path is within the plugins directory
+  // Safety: ensure the resolved path is a strict child of the plugins directory
   const resolvedPluginDir = resolve(pluginDir);
   const resolvedPluginsDir = resolve(pluginsDir);
   if (
-    !resolvedPluginDir.startsWith(resolvedPluginsDir + '/') &&
-    resolvedPluginDir !== resolvedPluginsDir
+    !resolvedPluginDir.startsWith(resolvedPluginsDir + sep) ||
+    resolvedPluginDir === resolvedPluginsDir
   ) {
     console.error('Error: Invalid plugin ID.');
     process.exit(1);
