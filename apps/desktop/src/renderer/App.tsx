@@ -194,11 +194,10 @@ function NotesApp() {
     () =>
       createDataAPI({
         async getNotes(options) {
+          // Fetch all notes (no limit/offset) so we can filter first, then paginate
           const notes = await window.readied.notes.list(
             options
               ? {
-                  limit: options.limit,
-                  offset: options.offset,
                   tag: options.tag,
                   sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
                   sortOrder: options.sortOrder,
@@ -211,6 +210,22 @@ function NotesApp() {
           if (options?.status) filtered = filtered.filter(n => n.status === options.status);
           if (options?.isPinned !== undefined)
             filtered = filtered.filter(n => n.isPinned === options.isPinned);
+
+          // Client-side sort for wordCount (not supported by bridge)
+          if (options?.sortBy === 'wordCount') {
+            const dir = options.sortOrder === 'asc' ? 1 : -1;
+            filtered = [...filtered].sort((a, b) => dir * (a.wordCount - b.wordCount));
+          }
+
+          const total = filtered.length;
+
+          // Apply pagination after filtering
+          if (options?.offset || options?.limit) {
+            const start = options.offset ?? 0;
+            const end = options.limit ? start + options.limit : undefined;
+            filtered = filtered.slice(start, end);
+          }
+
           return {
             notes: filtered.map(n => ({
               id: n.id,
@@ -223,7 +238,7 @@ function NotesApp() {
               isPinned: n.isPinned,
               status: n.status,
             })),
-            total: filtered.length,
+            total,
           };
         },
         async getNote(id) {
@@ -257,13 +272,18 @@ function NotesApp() {
           };
           const tree = await window.readied.notebooks.tree();
           const mapNode = (node: {
-            notebook: { id: string; name: string; parentId: string | null };
+            notebook: {
+              id: string;
+              name: string;
+              parentId: string | null;
+              noteCount?: number;
+            };
             children: unknown[];
           }): TreeNode => ({
             id: node.notebook.id,
             name: node.notebook.name,
             parentId: node.notebook.parentId,
-            noteCount: 0,
+            noteCount: node.notebook.noteCount ?? 0,
             childCount: node.children.length,
             children: (node.children as typeof tree).map(mapNode),
           });
