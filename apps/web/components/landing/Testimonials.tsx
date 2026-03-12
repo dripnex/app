@@ -8,42 +8,42 @@ import { cn } from '@/lib/utils';
 
 const reviews = [
   {
-    name: 'Alex Chen',
+    name: 'Alex C.',
     role: 'Senior Developer',
     stars: 5,
     text: 'Finally a note app that respects my workflow. Plain Markdown, no sync drama, just works. Exactly what I needed.',
     date: 'Mar 2026',
   },
   {
-    name: 'Maria González',
+    name: 'Maria G.',
     role: 'Technical Writer',
     stars: 5,
     text: "I switched from Notion and haven't looked back. Readied is fast, offline, and my files are just .md on disk. Love it.",
     date: 'Mar 2026',
   },
   {
-    name: 'James Wilson',
+    name: 'James W.',
     role: 'Indie Hacker',
     stars: 5,
     text: 'The plugin system is surprisingly powerful for such an early product. Built a custom snippet plugin in an afternoon.',
     date: 'Feb 2026',
   },
   {
-    name: 'Yuki Tanaka',
+    name: 'Yuki T.',
     role: 'Software Engineer',
     stars: 5,
     text: 'Open source, local-first, Markdown — checks all my boxes. The CodeMirror 6 editor is buttery smooth.',
     date: 'Feb 2026',
   },
   {
-    name: 'Sarah Miller',
+    name: 'Sarah M.',
     role: 'Privacy Researcher',
     stars: 5,
     text: 'Zero telemetry, zero cloud. I audited the source. This is the real deal for people who care about data ownership.',
     date: 'Jan 2026',
   },
   {
-    name: 'Daniel Park',
+    name: 'Daniel P.',
     role: 'Full-Stack Developer',
     stars: 5,
     text: 'Cmd+P to jump between notes is addictive. I organize everything in Markdown now — meeting notes, journals, code docs.',
@@ -111,9 +111,9 @@ export default function Testimonials() {
     <section className="py-24 overflow-hidden">
       <div className="text-center mb-12 px-4">
         <span className="section-label">Reviews</span>
-        <h2 className="section-heading">Trusted by developers worldwide</h2>
+        <h2 className="section-heading">What developers are saying</h2>
         <p className="mx-auto max-w-lg text-text-secondary">
-          Early adopters are already making Readied part of their daily workflow.
+          Early feedback from our beta community.
         </p>
       </div>
 

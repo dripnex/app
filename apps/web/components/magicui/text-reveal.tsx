@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, type ComponentPropsWithoutRef, type FC, type ReactNode } from 'react';
-import { motion, type MotionValue, useScroll, useTransform } from 'framer-motion';
+import { motion, type MotionValue, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ export interface TextRevealProps extends ComponentPropsWithoutRef<'div'> {
 
 export const TextReveal: FC<TextRevealProps> = ({ children, className, ...rest }) => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const shouldReduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: sectionRef,
   });
@@ -20,6 +21,19 @@ export const TextReveal: FC<TextRevealProps> = ({ children, className, ...rest }
   }
 
   const words = children.split(' ');
+
+  // Reduced motion: show all text at full opacity without scroll animation
+  if (shouldReduceMotion) {
+    return (
+      <div className={cn('relative z-0', className)} {...rest}>
+        <div className="mx-auto flex max-w-4xl items-center bg-transparent px-4 py-20">
+          <span className="flex flex-wrap p-5 text-2xl font-bold text-black md:p-8 md:text-3xl lg:p-10 lg:text-4xl xl:text-5xl dark:text-white">
+            {children}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={sectionRef} className={cn('relative z-0 h-[200vh]', className)} {...rest}>

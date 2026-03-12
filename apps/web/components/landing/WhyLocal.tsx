@@ -269,7 +269,10 @@ export default function WhyLocal() {
 
           {/* Row 3: Comparison table (span 2) + File tree */}
           <BentoCard className="relative md:col-span-2 p-0">
-            <table className="w-full text-sm">
+            <table
+              className="w-full text-sm"
+              aria-label="Comparison of Readied local-first approach versus cloud-based alternatives"
+            >
               <thead>
                 <tr className="border-b border-border">
                   <th className="p-4 text-left text-text-muted font-medium">Feature</th>

@@ -27,6 +27,7 @@ export default function AuthVerifyContent() {
         <div className="max-w-[420px] text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-red-500/10">
             <svg
+              aria-hidden="true"
               viewBox="0 0 24 24"
               className="w-8 h-8 text-red-400"
               fill="none"
@@ -67,6 +68,7 @@ export default function AuthVerifyContent() {
           <>
             <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-accent/10">
               <svg
+                aria-hidden="true"
                 viewBox="0 0 24 24"
                 className="w-8 h-8 text-accent"
                 fill="none"

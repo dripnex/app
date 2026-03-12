@@ -24,6 +24,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const [step, setStep] = useState<Step>('value-prop');
   const [error, setError] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
+  const [isResending, setIsResending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { requestMagicLink, isAuthenticated } = useAuthStore();
@@ -86,16 +87,19 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   );
 
   const handleResend = useCallback(async () => {
-    if (resendTimer > 0) return;
+    if (resendTimer > 0 || isResending) return;
     setError(null);
+    setIsResending(true);
 
     try {
       await requestMagicLink(email);
       setResendTimer(RESEND_COOLDOWN);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend');
+    } finally {
+      setIsResending(false);
     }
-  }, [email, resendTimer, requestMagicLink]);
+  }, [email, resendTimer, isResending, requestMagicLink]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -105,7 +109,13 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
 
   return (
     <div className={styles.overlay} onClick={handleClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sync-modal-title"
+        className={styles.modal}
+        onClick={e => e.stopPropagation()}
+      >
         <button
           type="button"
           className={styles.closeButton}
@@ -122,7 +132,9 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
               <div className={styles.iconWrapper}>
                 <Cloud size={36} />
               </div>
-              <h2 className={styles.title}>Sync across devices</h2>
+              <h2 id="sync-modal-title" className={styles.title}>
+                Sync across devices
+              </h2>
               <p className={styles.subtitle}>
                 Your notes stay on your machine. Enable sync to access them from any device, with
                 end-to-end encryption.
@@ -153,6 +165,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className={styles.input}
+                  aria-label="Email address"
                   placeholder="you@example.com"
                   required
                   autoFocus

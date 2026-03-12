@@ -36,7 +36,7 @@ type Props = FaqAccordionProps | FaqTabbedProps;
 function AccordionList({ items }: { items: FaqItem[] }) {
   return (
     <Accordion type="single" collapsible className="mx-auto w-full space-y-3">
-      {items.map((item, index) => (
+      {items.map(item => (
         <AccordionItem
           key={item.question}
           value={`faq-${item.question.slice(0, 40).toLowerCase().replace(/\s+/g, '-')}`}

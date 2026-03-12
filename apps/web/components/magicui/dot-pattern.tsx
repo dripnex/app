@@ -47,16 +47,22 @@ export function DotPattern({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+
   const dots = Array.from(
     {
-      length: Math.ceil(dimensions.width / width) * Math.ceil(dimensions.height / height),
+      length:
+        dimensions.width > 0 && dimensions.height > 0
+          ? Math.ceil(dimensions.width / safeWidth) * Math.ceil(dimensions.height / safeHeight)
+          : 0,
     },
     (_, i) => {
-      const col = i % Math.ceil(dimensions.width / width);
-      const row = Math.floor(i / Math.ceil(dimensions.width / width));
+      const col = i % Math.ceil(dimensions.width / safeWidth);
+      const row = Math.floor(i / Math.ceil(dimensions.width / safeWidth));
       return {
-        x: col * width + cx + x,
-        y: row * height + cy + y,
+        x: col * safeWidth + cx + x,
+        y: row * safeHeight + cy + y,
         delay: Math.random() * 5,
         duration: Math.random() * 3 + 2,
       };

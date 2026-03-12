@@ -53,7 +53,7 @@
 }
 
 /* Sidebar links — subtle hover */
-[data-active='true'] {
+.fd-sidebar [data-active='true'] {
   color: #8b5cf6 !important;
 }
 
@@ -268,7 +268,8 @@ nav[aria-label='Breadcrumb'] a:hover {
   .animate-shimmer-slide,
   .animate-spin-around,
   .animate-accordion-down,
-  .animate-accordion-up {
+  .animate-accordion-up,
+  .animate-fade-in-up {
     animation: none !important;
     transform: none !important;
   }
