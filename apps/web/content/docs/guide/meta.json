@@ -1,4 +1,4 @@
 {
   "title": "Guide",
-  "pages": ["getting-started"]
+  "pages": ["getting-started", "principles", "built-in-plugins", "sync"]
 }

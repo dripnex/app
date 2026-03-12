@@ -1,0 +1,190 @@
+---
+title: "ADR-003: Storage Strategy"
+description: SQLite in the main process with better-sqlite3 — offline-first, queryable, portable
+---
+
+# ADR-003: Storage Strategy
+
+## Status
+
+Accepted
+
+## Context
+
+A desktop note app needs persistent storage. Requirements:
+
+1. **Offline-first** - No network required
+2. **Queryable** - Search, filter, sort notes
+3. **Portable** - User can backup/move data
+4. **Performant** - Handle 10k+ notes
+5. **Reliable** - No data loss
+
+Options:
+
+1. **Filesystem** - One file per note
+2. **SQLite** - Embedded relational database
+3. **LevelDB/RocksDB** - Key-value stores
+4. **IndexedDB** - Browser storage (renderer only)
+
+## Decision
+
+**SQLite in the main process with better-sqlite3.**
+
+### Schema
+
+```sql
+CREATE TABLE notes (
+  id TEXT PRIMARY KEY,
+  content TEXT NOT NULL,           -- Full markdown
+  title TEXT NOT NULL,             -- Derived from content
+  created_at TEXT NOT NULL,        -- ISO 8601
+  updated_at TEXT NOT NULL,        -- ISO 8601
+  archived_at TEXT,                -- Soft delete
+  revision INTEGER DEFAULT 1,      -- Optimistic locking
+  device_id TEXT                   -- Future sync support
+);
+
+CREATE INDEX idx_notes_updated_at ON notes(updated_at);
+CREATE INDEX idx_notes_archived_at ON notes(archived_at);
+CREATE INDEX idx_notes_title ON notes(title);
+```
+
+### Access Pattern
+
+```
+Renderer -> IPC -> Main Process -> Repository -> SQLite
+```
+
+- No raw SQL in renderer
+- Typed repository interface
+- Batch APIs for performance
+
+### Data Location
+
+| Platform | Path                                     |
+| -------- | ---------------------------------------- |
+| macOS    | `~/Library/Application Support/Readied/` |
+| Windows  | `%APPDATA%/Readied/`                     |
+| Linux    | `~/.config/Readied/`                     |
+
+### Directory Structure
+
+```
+Readied/
+├── readied.db          # SQLite database
+├── backups/            # Automatic backups
+├── logs/               # Application logs
+└── config.json         # User preferences
+```
+
+## Consequences
+
+### Positive
+
+- **Queryable**: Full SQL for search, filter, sort
+- **Reliable**: SQLite is battle-tested, ACID compliant
+- **Portable**: Single file, easy to backup
+- **Performant**: WAL mode, proper indices
+- **Sync-ready**: Schema includes revision, deviceId
+
+### Negative
+
+- **Native dependency**: better-sqlite3 requires rebuild per platform
+- **Single process**: Can't access from renderer directly
+- **Learning curve**: SQL knowledge required
+
+### Risks
+
+- better-sqlite3 build issues on some platforms
+- Mitigation: Prebuilt binaries, electron-rebuild
+
+## Implementation Details
+
+### Migrations
+
+Forward-only, versioned migrations:
+
+```typescript
+const migrations: Migration[] = [
+  {
+    version: 1,
+    name: 'initial_schema',
+    up: `CREATE TABLE notes (...)`,
+  },
+  {
+    version: 2,
+    name: 'add_archived_at',
+    up: `ALTER TABLE notes ADD COLUMN archived_at TEXT`,
+  },
+];
+```
+
+### Backup Strategy
+
+- Automatic backup before migrations
+- Manual backup via IPC
+- Rotating backups (keep last 5)
+
+### Search (v0.1)
+
+Simple LIKE-based search:
+
+```sql
+SELECT * FROM notes
+WHERE content LIKE '%term%' OR title LIKE '%term%'
+ORDER BY updated_at DESC
+LIMIT 50
+```
+
+**Deferred**: FTS5 for full-text search (v0.2+)
+
+## Alternatives Considered
+
+### 1. Filesystem (One File Per Note)
+
+Store each note as a `.md` file.
+
+**Rejected because:**
+
+- No efficient queries (must scan all files)
+- Metadata in frontmatter is fragile
+- Sync conflicts harder to resolve
+- Can't do ACID transactions
+
+### 2. LevelDB / RocksDB
+
+Key-value store with good performance.
+
+**Rejected because:**
+
+- No SQL queries
+- Custom indexing required
+- Less tooling available
+- Not as portable
+
+### 3. IndexedDB
+
+Browser storage in renderer process.
+
+**Rejected because:**
+
+- Only accessible in renderer
+- Storage limits
+- Less reliable than SQLite
+- No cross-process access
+
+### 4. PostgreSQL / MySQL
+
+Full database server.
+
+**Rejected because:**
+
+- Requires separate process
+- Overkill for single-user app
+- Complex installation
+- Not truly offline
+
+## Related Decisions
+
+- [ADR-001: Runtime Contract](/docs/decisions/adr-001-runtime-contract) - Storage isolation
+- [ADR-002: Markdown Model](/docs/decisions/adr-002-markdown-model) - What we store
