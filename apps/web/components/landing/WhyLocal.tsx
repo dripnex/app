@@ -1,23 +1,82 @@
-import { FolderOpen, FileText } from 'lucide-react';
-import ComparisonTable from './ComparisonTable';
+'use client';
+
+import { FolderOpen, FileText, Check, X } from 'lucide-react';
+import { TextReveal } from '@/components/magicui/text-reveal';
+import { Card, CardContent } from '@/components/ui/card';
+
+type Row = {
+  label: string;
+  readied: boolean | string;
+  cloud: boolean | string;
+};
+
+const rows: Row[] = [
+  { label: 'Data Location', readied: 'Your machine', cloud: 'Their servers' },
+  { label: 'Works Offline', readied: true, cloud: false },
+  { label: 'Export Anytime', readied: true, cloud: 'Maybe' },
+  { label: 'Open Source', readied: true, cloud: false },
+  { label: 'Vendor Lock-in', readied: false, cloud: true },
+];
+
+function CellValue({ value, positive }: { value: boolean | string; positive: boolean }) {
+  if (typeof value === 'string') {
+    return (
+      <span className={positive ? 'text-accent font-medium' : 'text-text-muted'}>{value}</span>
+    );
+  }
+  if (value) {
+    return positive ? (
+      <Check className="h-4 w-4 text-accent mx-auto" />
+    ) : (
+      <Check className="h-4 w-4 text-text-muted mx-auto" />
+    );
+  }
+  return positive ? (
+    <X className="h-4 w-4 text-text-muted mx-auto" />
+  ) : (
+    <X className="h-4 w-4 text-accent mx-auto" />
+  );
+}
 
 export default function WhyLocal() {
   return (
-    <section className="py-24 px-6">
-      <div className="mx-auto max-w-5xl">
-        <header className="mx-auto mb-12 max-w-[640px] text-center">
-          <span className="section-label">Why local-first?</span>
-          <h2 className="section-heading">
-            Most note apps treat your data like
-            <br />
-            <span className="gradient-text">their business asset.</span>
-          </h2>
-          <p className="text-lg leading-relaxed text-[#a1a1aa]">
-            We don&apos;t. Your files stay on your disk, in standard Markdown, forever.
-          </p>
-        </header>
+    <section className="py-20 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto">
+        {/* Section label */}
+        <span className="section-label">Why Local</span>
 
-        <ComparisonTable />
+        {/* TextReveal heading — scroll-based word reveal */}
+        <TextReveal>Your notes should live on your machine not someone else's server</TextReveal>
+
+        {/* Comparison card */}
+        <div className="max-w-2xl mx-auto">
+          <Card className="p-0 overflow-hidden">
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="p-4 text-left text-text-muted font-medium">Feature</th>
+                    <th className="p-4 text-center text-accent font-semibold">Readied</th>
+                    <th className="p-4 text-center text-text-muted font-medium">Cloud Apps</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(row => (
+                    <tr key={row.label} className="border-b border-border last:border-0">
+                      <td className="p-4 text-text-secondary">{row.label}</td>
+                      <td className="p-4 text-center">
+                        <CellValue value={row.readied} positive />
+                      </td>
+                      <td className="p-4 text-center">
+                        <CellValue value={row.cloud} positive={false} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Navigation demo */}
         <div className="mt-12">
