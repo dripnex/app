@@ -6,3 +6,6 @@ contact_links:
   - name: Documentation
     url: https://tomymaritano.github.io/readide/
     about: Check the documentation first
+  - name: Contribute
+    url: https://github.com/tomymaritano/readide/contribute
+    about: Find beginner-friendly issues to work on

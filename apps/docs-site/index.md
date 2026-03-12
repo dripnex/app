@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Readied
   text: Developer Note-Taking
-  tagline: Markdown-first, offline-forever note app built for developers who value their data
+  tagline: Markdown-first desktop note app for developers who value their data
   image:
     src: /readide/logo.svg
     alt: Readied Logo
@@ -23,15 +23,15 @@ features:
     link: /guide/principles
     linkText: Learn about our principles
   - icon: 🔌
-    title: Offline Forever
-    details: 100% functional without internet. Your notes live on your machine in a local SQLite database you control.
-    link: /architecture/storage
-    linkText: See storage architecture
-  - icon: 🏗️
-    title: Clean Architecture
-    details: Core domain logic runs without Electron, React, or UI dependencies. Testable, portable, future-proof.
+    title: Plugin System
+    details: 8 built-in plugins with an extensible architecture. Load community plugins from ~/.config/readied/plugins.
     link: /architecture/overview
     linkText: Explore the architecture
+  - icon: 🌐
+    title: Offline First
+    details: Works 100% offline by default. Optional cloud sync via Supabase keeps your notes in sync across devices when you want it.
+    link: /architecture/storage
+    linkText: See storage architecture
   - icon: 📦
     title: Portable Data
     details: Export anytime as markdown files. Import from Obsidian. Your notes survive the app - always.
@@ -42,11 +42,11 @@ features:
     details: Built with Electron for cross-platform support. CodeMirror 6 editor for blazing fast editing.
     link: /architecture/editor
     linkText: Editor details
-  - icon: 🔒
-    title: Privacy First
-    details: No telemetry. No accounts required. No cloud sync. Your notes stay on your device.
-    link: /decisions/
-    linkText: See our decisions
+  - icon: 🎨
+    title: Theme System
+    details: Customizable color palettes with dark/light awareness. Ships with Solarized built-in. Make Readied yours.
+    link: /guide/getting-started
+    linkText: Get started
 ---
 
 <style>
