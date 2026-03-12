@@ -60,19 +60,14 @@ deviceRoutes.post('/revoke-others', authMiddleware, async c => {
 
   const db = createDb(c.env);
 
-  const allDevices = await db
-    .select()
-    .from(devices)
-    .where(eq(devices.userId, userId));
+  const allDevices = await db.select().from(devices).where(eq(devices.userId, userId));
 
   const others = allDevices.filter(d => d.deviceId !== currentDeviceId);
 
   for (const device of others) {
     await db
       .delete(syncCursors)
-      .where(
-        and(eq(syncCursors.userId, userId), eq(syncCursors.deviceId, device.deviceId))
-      );
+      .where(and(eq(syncCursors.userId, userId), eq(syncCursors.deviceId, device.deviceId)));
     await db
       .delete(devices)
       .where(and(eq(devices.userId, userId), eq(devices.deviceId, device.deviceId)));
@@ -105,27 +100,22 @@ deviceRoutes.delete('/:deviceId', authMiddleware, async c => {
 
 // ─── PATCH /:deviceId — Rename a device ──────────────────────────────────────
 
-deviceRoutes.patch(
-  '/:deviceId',
-  authMiddleware,
-  zValidator('json', renameSchema),
-  async c => {
-    const { userId } = c.get('user');
-    const { deviceId } = c.req.param();
-    const { name } = c.req.valid('json');
-    const db = createDb(c.env);
+deviceRoutes.patch('/:deviceId', authMiddleware, zValidator('json', renameSchema), async c => {
+  const { userId } = c.get('user');
+  const { deviceId } = c.req.param();
+  const { name } = c.req.valid('json');
+  const db = createDb(c.env);
 
-    const result = await db
-      .update(devices)
-      .set({ name })
-      .where(and(eq(devices.userId, userId), eq(devices.deviceId, deviceId)));
+  const result = await db
+    .update(devices)
+    .set({ name })
+    .where(and(eq(devices.userId, userId), eq(devices.deviceId, deviceId)));
 
-    if (result.rowsAffected === 0) {
-      return c.json({ error: 'Device not found' }, 404);
-    }
-
-    return c.json({ success: true });
+  if (result.rowsAffected === 0) {
+    return c.json({ error: 'Device not found' }, 404);
   }
-);
+
+  return c.json({ success: true });
+});
 
 export { deviceRoutes };

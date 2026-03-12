@@ -4,15 +4,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Monitor,
-  Smartphone,
-  Laptop,
-  Trash2,
-  Check,
-  X,
-  LogOut,
-} from 'lucide-react';
+import { Monitor, Smartphone, Laptop, Trash2, Check, X, LogOut } from 'lucide-react';
 import { SettingGroup } from '../components/SettingGroup';
 import styles from './Section.module.css';
 
@@ -43,12 +35,18 @@ function getPlatformIcon(platform: string | null) {
 
 function getPlatformLabel(platform: string | null): string {
   switch (platform) {
-    case 'darwin': return 'macOS';
-    case 'win32': return 'Windows';
-    case 'linux': return 'Linux';
-    case 'ios': return 'iOS';
-    case 'android': return 'Android';
-    default: return 'Unknown';
+    case 'darwin':
+      return 'macOS';
+    case 'win32':
+      return 'Windows';
+    case 'linux':
+      return 'Linux';
+    case 'ios':
+      return 'iOS';
+    case 'android':
+      return 'Android';
+    default:
+      return 'Unknown';
   }
 }
 
@@ -66,7 +64,11 @@ function formatLastSeen(iso: string): string {
   return date.toLocaleDateString();
 }
 
-function DeviceRow({ device, onRename, onRevoke }: {
+function DeviceRow({
+  device,
+  onRename,
+  onRevoke,
+}: {
   device: Device;
   onRename: (deviceId: string, name: string) => void;
   onRevoke: (deviceId: string) => void;
@@ -99,9 +101,7 @@ function DeviceRow({ device, onRename, onRevoke }: {
 
   return (
     <div className={styles.deviceRow}>
-      <div className={styles.deviceIcon}>
-        {getPlatformIcon(device.platform)}
-      </div>
+      <div className={styles.deviceIcon}>{getPlatformIcon(device.platform)}</div>
       <div className={styles.deviceInfo}>
         {editing ? (
           <div className={styles.deviceEditRow}>
@@ -109,7 +109,7 @@ function DeviceRow({ device, onRename, onRevoke }: {
               ref={inputRef}
               className={styles.deviceNameInput}
               value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              onChange={e => setEditName(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={handleSave}
               maxLength={100}
@@ -117,7 +117,14 @@ function DeviceRow({ device, onRename, onRevoke }: {
             <button type="button" className={styles.iconButton} onClick={handleSave}>
               <Check size={14} />
             </button>
-            <button type="button" className={styles.iconButton} onMouseDown={(e) => { e.preventDefault(); handleCancel(); }}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              onMouseDown={e => {
+                e.preventDefault();
+                handleCancel();
+              }}
+            >
               <X size={14} />
             </button>
           </div>
@@ -133,9 +140,7 @@ function DeviceRow({ device, onRename, onRevoke }: {
         )}
         <span className={styles.deviceMeta}>
           {getPlatformLabel(device.platform)} &middot; {formatLastSeen(device.lastSeenAt)}
-          {device.isCurrent && (
-            <span className={styles.currentBadge}>This device</span>
-          )}
+          {device.isCurrent && <span className={styles.currentBadge}>This device</span>}
         </span>
       </div>
       <button
@@ -177,18 +182,24 @@ export function DevicesSection() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }),
   });
 
-  const handleRename = useCallback((deviceId: string, name: string) => {
-    renameMutation.mutate({ deviceId, name });
-  }, [renameMutation]);
+  const handleRename = useCallback(
+    (deviceId: string, name: string) => {
+      renameMutation.mutate({ deviceId, name });
+    },
+    [renameMutation]
+  );
 
-  const handleRevoke = useCallback((deviceId: string) => {
-    const device = deviceList.find((d) => d.deviceId === deviceId);
-    if (device?.isCurrent) {
-      setConfirmRevokeId(deviceId);
-    } else {
-      revokeMutation.mutate(deviceId);
-    }
-  }, [deviceList, revokeMutation]);
+  const handleRevoke = useCallback(
+    (deviceId: string) => {
+      const device = deviceList.find(d => d.deviceId === deviceId);
+      if (device?.isCurrent) {
+        setConfirmRevokeId(deviceId);
+      } else {
+        revokeMutation.mutate(deviceId);
+      }
+    },
+    [deviceList, revokeMutation]
+  );
 
   const handleConfirmRevoke = useCallback(() => {
     if (confirmRevokeId) {
@@ -208,7 +219,7 @@ export function DevicesSection() {
     setConfirmRevokeOthers(false);
   }, [revokeOthersMutation]);
 
-  const otherDeviceCount = deviceList.filter((d) => !d.isCurrent).length;
+  const otherDeviceCount = deviceList.filter(d => !d.isCurrent).length;
 
   return (
     <SettingGroup title="Devices">
@@ -219,7 +230,7 @@ export function DevicesSection() {
       ) : (
         <>
           <div className={styles.deviceList}>
-            {deviceList.map((device) => (
+            {deviceList.map(device => (
               <DeviceRow
                 key={device.deviceId}
                 device={device}
@@ -253,7 +264,11 @@ export function DevicesSection() {
             <button type="button" className={styles.dangerButton} onClick={handleConfirmRevoke}>
               Sign Out
             </button>
-            <button type="button" className={styles.secondaryButton} onClick={() => setConfirmRevokeId(null)}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setConfirmRevokeId(null)}
+            >
               Cancel
             </button>
           </div>
@@ -263,12 +278,22 @@ export function DevicesSection() {
       {/* Confirm revoke others */}
       {confirmRevokeOthers && (
         <div className={styles.confirmDialog}>
-          <p>Sign out {otherDeviceCount} other device{otherDeviceCount > 1 ? 's' : ''}?</p>
+          <p>
+            Sign out {otherDeviceCount} other device{otherDeviceCount > 1 ? 's' : ''}?
+          </p>
           <div className={styles.buttonGroup}>
-            <button type="button" className={styles.dangerButton} onClick={handleConfirmRevokeOthers}>
+            <button
+              type="button"
+              className={styles.dangerButton}
+              onClick={handleConfirmRevokeOthers}
+            >
               Sign Out Others
             </button>
-            <button type="button" className={styles.secondaryButton} onClick={() => setConfirmRevokeOthers(false)}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setConfirmRevokeOthers(false)}
+            >
               Cancel
             </button>
           </div>

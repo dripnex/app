@@ -560,15 +560,17 @@ export interface ReadiedAPI {
   };
   devices: {
     /** List all registered devices */
-    list: () => Promise<Array<{
-      id: string;
-      deviceId: string;
-      name: string | null;
-      platform: string | null;
-      isCurrent: boolean;
-      lastSeenAt: string;
-      createdAt: string;
-    }>>;
+    list: () => Promise<
+      Array<{
+        id: string;
+        deviceId: string;
+        name: string | null;
+        platform: string | null;
+        isCurrent: boolean;
+        lastSeenAt: string;
+        createdAt: string;
+      }>
+    >;
     /** Rename a device */
     rename: (deviceId: string, name: string) => Promise<{ success: boolean; error?: string }>;
     /** Revoke (delete) a device */
@@ -864,7 +866,8 @@ const api: ReadiedAPI = {
   },
   devices: {
     list: () => ipcRenderer.invoke('devices:list'),
-    rename: (deviceId: string, name: string) => ipcRenderer.invoke('devices:rename', deviceId, name),
+    rename: (deviceId: string, name: string) =>
+      ipcRenderer.invoke('devices:rename', deviceId, name),
     revoke: (deviceId: string) => ipcRenderer.invoke('devices:revoke', deviceId),
     revokeOthers: () => ipcRenderer.invoke('devices:revokeOthers'),
     getCurrent: () => ipcRenderer.invoke('devices:getCurrent'),

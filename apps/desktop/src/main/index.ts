@@ -1706,7 +1706,7 @@ function registerAuthSyncHandlers(): void {
   ipcMain.handle('devices:getCurrent', async () => {
     try {
       const result = await client.listDevices();
-      return result.devices.find((d) => d.isCurrent) ?? null;
+      return result.devices.find(d => d.isCurrent) ?? null;
     } catch (_error) {
       return null;
     }
