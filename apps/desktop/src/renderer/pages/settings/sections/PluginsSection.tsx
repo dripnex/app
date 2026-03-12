@@ -455,6 +455,8 @@ function PluginInspector() {
         type="button"
         className={styles.inspectorToggle}
         onClick={() => setOpen(prev => !prev)}
+        aria-expanded={open}
+        aria-controls="plugin-inspector-panel"
       >
         <ChevronDown
           size={14}
@@ -473,7 +475,7 @@ function PluginInspector() {
       </button>
 
       {open && (
-        <div className={styles.inspectorContent}>
+        <div id="plugin-inspector-panel" role="region" className={styles.inspectorContent}>
           <div className={styles.inspectorRow}>
             <span className={styles.inspectorLabel}>Status</span>
             <span>{status === 'scanning' ? 'Scanning...' : `${pluginCount} loaded`}</span>
@@ -606,12 +608,15 @@ export function PluginsSection() {
         BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
       const field = schema?.[key];
 
-      if (field) {
-        const result = validateConfigValue(field, value);
-        if (!result.valid) {
-          console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
-          return;
-        }
+      if (!field) {
+        console.warn(`[plugin:${pluginId}] Unknown config key "${key}", ignoring`);
+        return;
+      }
+
+      const result = validateConfigValue(field, value);
+      if (!result.valid) {
+        console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
+        return;
       }
 
       await window.readied.pluginConfig.set(pluginId, key, value);
