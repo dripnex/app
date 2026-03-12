@@ -864,9 +864,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /**
    * Get tags with pending sync changes
    */
-  getTagsPendingSync(
-    limit: number
-  ): Array<{
+  getTagsPendingSync(limit: number): Array<{
     tag: { id: number; uuid: string; name: string; color: string | null };
     localVersion: number;
   }> {
