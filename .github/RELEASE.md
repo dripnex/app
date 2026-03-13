@@ -40,9 +40,34 @@ gh pr create --base main --title "chore(release): v0.9.0" --body "Release 0.9.0"
 
 The release workflow will:
 
-1. Build packages for all platforms
-2. Sign and notarize the macOS build (if secrets are configured)
-3. Create a draft GitHub release with all artifacts
+1. Validate tag matches `package.json` version
+2. Build packages for all platforms (macOS, Windows, Linux)
+3. Sign and notarize the macOS build (if secrets are configured)
+4. Create a draft GitHub Release with all artifacts
+5. Post tweet announcement
+
+## Versioning
+
+- **Format:** SemVer with `v` prefix — `v0.9.0`, `v0.9.1`, `v1.0.0`
+- **Tags are created ONLY by GitHub Actions** (auto-tag.yml)
+- **No manual tags** — the automation reads version from `package.json`
+
+## Tag Protection Rules (GitHub Settings)
+
+Configure in **Repository Settings > Rules > Tag protection rules**:
+
+| Setting           | Value                             |
+| ----------------- | --------------------------------- |
+| Tag name pattern  | `v*`                              |
+| Restrict creation | Enabled                           |
+| Allowed to create | GitHub Actions, Repository admins |
+| Force push        | Disabled                          |
+
+This prevents:
+
+- Manual tags outside the release flow
+- Force-pushing tags (rewriting release history)
+- Tags that don't follow SemVer
 
 ## Required Secrets
 
