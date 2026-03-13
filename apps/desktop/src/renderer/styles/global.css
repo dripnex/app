@@ -2,7 +2,7 @@
  * Readied Desktop - Global Styles
  */
 
-@import './tokens.css';
+@import '../ui/tokens/tokens.css';
 @import './note-list.css';
 @import './editor-header.css';
 @import './toolbar.css';
