@@ -42,6 +42,7 @@ export function Marquee({
   repeat = 4,
   ...props
 }: MarqueeProps) {
+  const safeRepeat = Math.max(1, Math.floor(Number.isFinite(repeat) ? repeat : 4));
   return (
     <div
       {...props}
@@ -54,11 +55,12 @@ export function Marquee({
         className
       )}
     >
-      {Array(repeat)
+      {Array(safeRepeat)
         .fill(0)
         .map((_, i) => (
           <div
             key={i}
+            {...(i > 0 ? { 'aria-hidden': true, tabIndex: -1 } : {})}
             className={cn('flex shrink-0 justify-around gap-[var(--gap)]', {
               'animate-marquee flex-row': !vertical,
               'animate-marquee-vertical flex-col': vertical,

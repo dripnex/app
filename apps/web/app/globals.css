@@ -53,7 +53,7 @@
 }
 
 /* Sidebar links — subtle hover */
-[data-active='true'] {
+.fd-sidebar [data-active='true'] {
   color: #8b5cf6 !important;
 }
 
@@ -239,4 +239,38 @@ nav[aria-label='Breadcrumb'] a:hover {
 
 @utility animate-spin-around {
   animation: spin-around calc(var(--speed) * 2) infinite linear;
+}
+
+/* Accordion animations (Radix) */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+
+@utility animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+@utility animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-shiny-text,
+  .animate-marquee,
+  .animate-marquee-vertical,
+  .animate-shimmer-slide,
+  .animate-spin-around,
+  .animate-accordion-down,
+  .animate-accordion-up,
+  .animate-fade-in-up {
+    animation: none !important;
+    transform: none !important;
+  }
 }

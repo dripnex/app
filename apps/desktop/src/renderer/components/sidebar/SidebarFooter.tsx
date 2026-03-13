@@ -1,11 +1,11 @@
 import { memo } from 'react';
-import { LogIn, Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useSyncStore, selectStatus, selectLastSyncAt } from '../../stores/syncStore';
 
 interface SidebarFooterProps {
   readonly appVersion: string;
-  readonly onSettingsClick?: () => void;
+  readonly onEnableSyncClick?: () => void;
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -23,7 +23,7 @@ function formatRelativeTime(timestamp: number): string {
 
 export const SidebarFooter = memo(function SidebarFooter({
   appVersion,
-  onSettingsClick,
+  onEnableSyncClick,
 }: SidebarFooterProps) {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const email = useAuthStore(state => state.user?.email ?? null);
@@ -71,9 +71,9 @@ export const SidebarFooter = memo(function SidebarFooter({
           </span>
         </div>
       ) : (
-        <button type="button" className="sidebar-footer-signin" onClick={onSettingsClick}>
-          <LogIn size={12} />
-          <span>Sign In</span>
+        <button type="button" className="sidebar-footer-signin" onClick={onEnableSyncClick}>
+          <Cloud size={12} />
+          <span>Enable Sync</span>
         </button>
       )}
       <span className="sidebar-footer-version" aria-label={`App version ${appVersion}`}>

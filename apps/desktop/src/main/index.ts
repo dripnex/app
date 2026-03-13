@@ -90,6 +90,9 @@ let deviceInfo: DeviceInfo | null = null;
 let apiClient: ApiClient | null = null;
 let encryptionService: EncryptionService | null = null;
 let syncService: SyncService | null = null;
+
+// Pending deep link token — stored if the deep link arrives before the window is ready
+let pendingAuthToken: string | null = null;
 // Git service (initialized on app ready)
 let gitService: GitService | null = null;
 
@@ -294,6 +297,17 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
+  });
+
+  // Deliver any pending deep link auth token once the renderer is ready
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingAuthToken) {
+      getLogger().info('Delivering queued auth token to renderer');
+      mainWindow.webContents.send('auth:verify-token', pendingAuthToken);
+      mainWindow.show();
+      mainWindow.focus();
+      pendingAuthToken = null;
+    }
   });
 
   // Load renderer
@@ -2467,12 +2481,17 @@ app.on('open-url', (event, url) => {
       if (token) {
         log.info('Auth verification token received via deep link');
 
-        // Send token to renderer process
-        const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+        // Send token to renderer process — queue if window isn't ready yet
+        const mainWin = BrowserWindow.getAllWindows().find(
+          win => !win.isDestroyed() && win.webContents.isLoading() === false
+        );
         if (mainWin) {
           mainWin.webContents.send('auth:verify-token', token);
           mainWin.show();
           mainWin.focus();
+        } else {
+          log.info('Window not ready, queuing auth token for later delivery');
+          pendingAuthToken = token;
         }
       } else {
         log.warn('Deep link missing token parameter');

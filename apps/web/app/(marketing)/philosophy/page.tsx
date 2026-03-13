@@ -160,7 +160,7 @@ export default function PhilosophyPage() {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-7 py-3.5 text-base font-medium text-text-secondary hover:bg-white/5 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-7 py-3.5 text-base font-medium text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
             >
               Back to home
             </Link>

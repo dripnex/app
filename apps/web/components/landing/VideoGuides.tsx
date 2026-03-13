@@ -48,9 +48,16 @@ function VideoCard({
 
   return (
     <>
-      <button
-        type="button"
+      <div
+        role={hasVideo ? 'button' : undefined}
+        tabIndex={hasVideo ? 0 : undefined}
         onClick={() => hasVideo && setIsOpen(true)}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (hasVideo && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            setIsOpen(true);
+          }
+        }}
         className={`group relative w-full overflow-hidden rounded-xl border border-border bg-surface text-left transition-all hover:border-accent/30 ${
           hasVideo ? 'cursor-pointer' : 'cursor-default'
         }`}
@@ -97,7 +104,7 @@ function VideoCard({
           </h3>
           <p className="text-xs text-text-muted leading-relaxed">{description}</p>
         </div>
-      </button>
+      </div>
 
       {/* Video modal */}
       <AnimatePresence>
@@ -106,8 +113,9 @@ function VideoCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            role="button"
-            tabIndex={0}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
             onKeyDown={(e: React.KeyboardEvent) => {
               if (e.key === 'Escape') setIsOpen(false);
             }}
@@ -124,6 +132,7 @@ function VideoCard({
             >
               <button
                 type="button"
+                aria-label="Close video"
                 onClick={() => setIsOpen(false)}
                 className="absolute -top-14 right-0 rounded-full bg-neutral-900/50 p-2 text-white ring-1 ring-white/10 backdrop-blur-md hover:bg-neutral-800/50"
               >

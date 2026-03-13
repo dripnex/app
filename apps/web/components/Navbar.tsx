@@ -136,7 +136,7 @@ export default function Navbar() {
               </svg>
             </button>
 
-            <div className="invisible absolute left-1/2 z-50 mt-2 w-52 -translate-x-1/2 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+            <div className="invisible absolute left-1/2 z-50 w-52 -translate-x-1/2 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
               <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
                 <div className="py-1">
                   {docsItems.map(item => {

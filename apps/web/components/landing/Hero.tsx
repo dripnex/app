@@ -25,7 +25,8 @@ function LightBeams() {
 
 /* ─── Video preview with play button overlay ─── */
 /* When you have a real video, swap the TODO values below */
-const PLACEHOLDER_VIDEO = 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // TODO: replace with real video
+// Video URL will be added when the real demo is recorded
+const DEMO_VIDEO_URL = ''; // TODO: replace with real video
 
 function VideoPreview() {
   return <EditorMockWithPlay />;
@@ -34,6 +35,7 @@ function VideoPreview() {
 /* Editor mock that doubles as a clickable video thumbnail */
 function EditorMockWithPlay() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const hasVideo = DEMO_VIDEO_URL.length > 0;
 
   return (
     <>
@@ -41,7 +43,7 @@ function EditorMockWithPlay() {
         type="button"
         aria-label="Watch demo video"
         className="group relative w-full cursor-pointer border-0 bg-transparent p-0 text-left"
-        onClick={() => setIsVideoOpen(true)}
+        onClick={() => hasVideo && setIsVideoOpen(true)}
       >
         <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] shadow-2xl shadow-accent/5 transition-all duration-200 group-hover:brightness-[0.85]">
           {/* Title bar */}
@@ -165,7 +167,7 @@ function EditorMockWithPlay() {
 
       {/* Video modal */}
       <AnimatePresence>
-        {isVideoOpen && (
+        {isVideoOpen && hasVideo && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -197,7 +199,7 @@ function EditorMockWithPlay() {
               </button>
               <div className="relative size-full overflow-hidden rounded-2xl border-2 border-white/10">
                 <iframe
-                  src={PLACEHOLDER_VIDEO}
+                  src={DEMO_VIDEO_URL}
                   title="Readied demo video"
                   className="size-full rounded-2xl"
                   allowFullScreen

@@ -1487,6 +1487,57 @@ input:focus-visible {
   color: var(--text-faint);
 }
 
+/* Sync onboarding prompt */
+.sidebar-sync-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: 0 8px 4px;
+  background: var(--accent-subtle, rgba(59, 130, 246, 0.08));
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.sidebar-sync-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.sidebar-sync-prompt-actions button:first-child {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  padding: 2px 8px;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.sidebar-sync-prompt-actions button:first-child:hover {
+  opacity: 0.9;
+}
+
+.sidebar-sync-prompt-actions button:last-child {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.sidebar-sync-prompt-actions button:last-child:hover {
+  color: var(--text-secondary);
+}
+
 /* ===== CODEMIRROR EMBED PREVIEW ===== */
 .cm-embed-wrapper {
   display: block;
