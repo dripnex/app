@@ -14,7 +14,7 @@
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 1;
+export const SETTINGS_VERSION = 2;
 
 // ============================================================================
 // Section Types
@@ -60,6 +60,16 @@ export interface BackupSettings {
   lastBackupAt: number | null;
 }
 
+/** AI Assistant settings */
+export interface AiSettings {
+  /** Anthropic API key */
+  apiKey: string;
+  /** Claude model to use */
+  model: 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514';
+  /** Maximum number of notes to include as context */
+  maxContextNotes: number;
+}
+
 /** Editor settings for CodeMirror */
 export interface EditorSettings {
   /** Font size in pixels */
@@ -99,8 +109,13 @@ export interface SettingsSchemaV1 {
   backup: BackupSettings;
 }
 
+export interface SettingsSchemaV2 extends Omit<SettingsSchemaV1, 'version'> {
+  version: 2;
+  ai: AiSettings;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV1;
+export type SettingsSchema = SettingsSchemaV2;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -127,6 +142,12 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   activeThemeId: null,
 };
 
+export const DEFAULT_AI: AiSettings = {
+  apiKey: '',
+  model: 'claude-sonnet-4-20250514',
+  maxContextNotes: 5,
+};
+
 export const DEFAULT_EDITOR: EditorSettings = {
   fontSize: 14,
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
@@ -149,10 +170,11 @@ export const DEFAULT_BACKUP: BackupSettings = {
 
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 1,
+  version: 2,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,
+  ai: DEFAULT_AI,
   editor: DEFAULT_EDITOR,
   backup: DEFAULT_BACKUP,
 };

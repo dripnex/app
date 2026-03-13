@@ -528,8 +528,12 @@ export interface ReadiedAPI {
       cursor?: number;
       lastSyncAt?: number | null;
       isSyncing?: boolean;
+      lastError?: string | null;
+      consecutiveFailures?: number;
       error?: string;
     }>;
+    /** Listen for sync status events pushed from main process */
+    onStatusChange: (callback: (event: unknown) => void) => () => void;
     /** Resolve a sync conflict */
     resolveConflict: (
       noteId: string,
@@ -545,6 +549,8 @@ export interface ReadiedAPI {
     pullTags: () => Promise<{ success: boolean; applied: number; error?: string }>;
     /** Push tag changes to server */
     pushTags: () => Promise<{ success: boolean; pushed: number; error?: string }>;
+    /** Get number of pending local changes */
+    pendingCount: () => Promise<{ success: boolean; count: number; error?: string }>;
     /** Get sync history */
     history: (limit?: number) => Promise<{
       success: boolean;
@@ -885,7 +891,17 @@ const api: ReadiedAPI = {
     triggerSync: () => ipcRenderer.invoke('sync:trigger'),
     pullTags: () => ipcRenderer.invoke('sync:pullTags'),
     pushTags: () => ipcRenderer.invoke('sync:pushTags'),
+    pendingCount: () => ipcRenderer.invoke('sync:pendingCount'),
     history: (limit?: number) => ipcRenderer.invoke('sync:history', limit),
+    onStatusChange: (callback: (event: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: unknown) => {
+        callback(data);
+      };
+      ipcRenderer.on('sync:status-changed', handler);
+      return () => {
+        ipcRenderer.removeListener('sync:status-changed', handler);
+      };
+    },
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),

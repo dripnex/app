@@ -140,6 +140,13 @@ export class ApiError extends Error {
   }
 }
 
+export type RefreshErrorType = 'success' | 'expired' | 'network' | 'device_limit' | 'unknown';
+
+export interface RefreshResult {
+  type: RefreshErrorType;
+  message?: string;
+}
+
 // ============================================================================
 // ApiClient Class
 // ============================================================================
@@ -149,7 +156,7 @@ export class ApiClient {
   private tokenStorage: TokenStorage;
   private deviceInfo: DeviceInfo;
   private isRefreshing = false;
-  private refreshPromise: Promise<boolean> | null = null;
+  private refreshPromise: Promise<RefreshResult> | null = null;
   private _bytesSent = 0;
   private _bytesReceived = 0;
 
@@ -206,14 +213,31 @@ export class ApiClient {
 
       // Handle 401 - Token expired
       if (response.status === 401 && tokens) {
-        const refreshed = await this.refreshAccessToken();
-        if (refreshed) {
-          // Retry request with new token
-          return this.request<T>(endpoint, options, 0);
-        } else {
-          // Refresh failed - clear tokens
-          await this.tokenStorage.clearTokens();
-          throw new ApiError(401, 'Session expired. Please sign in again.');
+        const refreshResult = await this.refreshAccessToken();
+        switch (refreshResult.type) {
+          case 'success':
+            return this.request<T>(endpoint, options, 0);
+          case 'network':
+            // Transient failure — throw retryable error so caller can try later
+            throw new ApiError(0, refreshResult.message ?? 'Network error during token refresh');
+          case 'device_limit':
+            throw new ApiError(
+              403,
+              refreshResult.message ??
+                'Device limit exceeded. Please remove a device and try again.'
+            );
+          case 'expired':
+            await this.tokenStorage.clearTokens();
+            throw new ApiError(
+              401,
+              refreshResult.message ?? 'Session expired. Please sign in again.'
+            );
+          default:
+            await this.tokenStorage.clearTokens();
+            throw new ApiError(
+              401,
+              refreshResult.message ?? 'Authentication failed. Please sign in again.'
+            );
         }
       }
 
@@ -251,7 +275,7 @@ export class ApiClient {
   /**
    * Refreshes the access token using the refresh token
    */
-  async refreshAccessToken(): Promise<boolean> {
+  async refreshAccessToken(): Promise<RefreshResult> {
     // Prevent concurrent refresh requests
     if (this.isRefreshing && this.refreshPromise) {
       return this.refreshPromise;
@@ -269,11 +293,11 @@ export class ApiClient {
     }
   }
 
-  private async _refreshAccessToken(): Promise<boolean> {
+  private async _refreshAccessToken(): Promise<RefreshResult> {
     try {
       const refreshToken = await this.tokenStorage.getRefreshToken();
       if (!refreshToken) {
-        return false;
+        return { type: 'expired', message: 'No refresh token available' };
       }
 
       const response = await fetch(`${this.baseURL}/auth/refresh`, {
@@ -286,14 +310,55 @@ export class ApiClient {
       });
 
       if (!response.ok) {
-        return false;
+        const errorBody = await response.json().catch(() => ({}));
+        const serverMessage =
+          (errorBody as Record<string, string>).error ??
+          (errorBody as Record<string, string>).message ??
+          'Token refresh failed';
+
+        if (response.status === 401 || response.status === 403) {
+          // Check for device limit (e.g. 403 with specific error code)
+          if (
+            response.status === 403 &&
+            ((errorBody as Record<string, string>).code === 'DEVICE_LIMIT' ||
+              serverMessage.toLowerCase().includes('device limit'))
+          ) {
+            console.error('[ApiClient] Token refresh failed: device limit exceeded', {
+              status: response.status,
+              serverMessage,
+            });
+            return { type: 'device_limit', message: serverMessage };
+          }
+          // Refresh token expired or revoked — user must re-login
+          console.error('[ApiClient] Token refresh failed: token expired/revoked', {
+            status: response.status,
+            serverMessage,
+          });
+          return { type: 'expired', message: serverMessage };
+        }
+
+        if (response.status >= 500) {
+          console.error('[ApiClient] Token refresh failed: server error', {
+            status: response.status,
+            serverMessage,
+          });
+          return { type: 'network', message: serverMessage };
+        }
+
+        console.error('[ApiClient] Token refresh failed: unexpected status', {
+          status: response.status,
+          serverMessage,
+        });
+        return { type: 'unknown', message: serverMessage };
       }
 
       const data = (await response.json()) as AuthResponse;
       await this.tokenStorage.saveTokens(data.accessToken, data.refreshToken);
-      return true;
-    } catch {
-      return false;
+      return { type: 'success' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown network error';
+      console.error('[ApiClient] Token refresh failed: network error', { message });
+      return { type: 'network', message };
     }
   }
 

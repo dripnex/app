@@ -1,7 +1,13 @@
 import { memo } from 'react';
 import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { useSyncStore, selectStatus, selectLastSyncAt } from '../../stores/syncStore';
+import {
+  useSyncStore,
+  selectStatus,
+  selectLastSyncAt,
+  selectConsecutiveFailures,
+  selectPendingCount,
+} from '../../stores/syncStore';
 
 interface SidebarFooterProps {
   readonly appVersion: string;
@@ -29,12 +35,15 @@ export const SidebarFooter = memo(function SidebarFooter({
   const email = useAuthStore(state => state.user?.email ?? null);
   const syncStatus = useSyncStore(selectStatus);
   const lastSyncAt = useSyncStore(selectLastSyncAt);
+  const consecutiveFailures = useSyncStore(selectConsecutiveFailures);
+  const pendingCount = useSyncStore(selectPendingCount);
 
   const getSyncIcon = () => {
     switch (syncStatus) {
       case 'syncing':
         return <RefreshCw size={12} className="sidebar-footer-sync-spinning" />;
       case 'error':
+      case 'auth-expired':
         return <AlertCircle size={12} />;
       case 'offline':
         return <CloudOff size={12} />;
@@ -49,12 +58,19 @@ export const SidebarFooter = memo(function SidebarFooter({
         return 'Syncing...';
       case 'error':
         return 'Sync failed';
+      case 'auth-expired':
+        return 'Session expired. Please sign in again.';
       case 'offline':
         return 'Offline';
       default:
         return lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync';
     }
   };
+
+  // Show offline queue when offline/error with pending changes, or many consecutive failures
+  const isOfflineOrError = syncStatus === 'offline' || syncStatus === 'error';
+  const showQueueStatus =
+    isAuthenticated && isOfflineOrError && (pendingCount > 0 || consecutiveFailures >= 2);
 
   return (
     <footer className="sidebar-footer">
@@ -75,6 +91,13 @@ export const SidebarFooter = memo(function SidebarFooter({
           <Cloud size={12} />
           <span>Enable Sync</span>
         </button>
+      )}
+      {showQueueStatus && (
+        <span className="sidebar-footer-queue">
+          {pendingCount > 0
+            ? `${pendingCount} change${pendingCount === 1 ? '' : 's'} pending`
+            : 'Offline \u2014 changes will sync when back online'}
+        </span>
       )}
       <span className="sidebar-footer-version" aria-label={`App version ${appVersion}`}>
         v{appVersion}

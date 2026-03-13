@@ -74,7 +74,13 @@ app.notFound(c => {
 app.onError((err, c) => {
   // Let HTTPException return its proper status code (e.g. 401, 403, 404)
   if (err instanceof HTTPException) {
-    return err.getResponse();
+    // If the exception has a custom Response (with JSON body), use it directly
+    const res = err.getResponse();
+    if (res.headers.get('Content-Type')?.includes('application/json')) {
+      return res;
+    }
+    // Otherwise, return a consistent JSON error response
+    return c.json({ error: err.message || 'Request failed' }, err.status);
   }
 
   console.error('Unhandled error:', err);

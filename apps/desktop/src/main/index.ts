@@ -1398,6 +1398,15 @@ function registerAuthSyncHandlers(): void {
   const storage = tokenStorage;
   const sync = syncService;
 
+  // Broadcast sync status events to all renderer windows
+  sync.onStatusChange(event => {
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('sync:status-changed', event);
+      }
+    });
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Authentication
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1449,6 +1458,8 @@ function registerAuthSyncHandlers(): void {
   // Logout and clear tokens
   ipcMain.handle('auth:logout', async () => {
     try {
+      // Abort any in-flight sync operations before clearing tokens
+      sync?.stopAutoSync();
       await storage.clearTokens();
       return { success: true };
     } catch (error) {
@@ -1546,12 +1557,23 @@ function registerAuthSyncHandlers(): void {
         cursor: state.cursor,
         lastSyncAt: state.lastSyncAt,
         isSyncing: state.isSyncing,
+        lastError: state.lastError,
+        consecutiveFailures: state.consecutiveFailures,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get sync status',
       };
+    }
+  });
+
+  // Get pending change count (offline queue size)
+  ipcMain.handle('sync:pendingCount', async () => {
+    try {
+      return { success: true, count: sync.getPendingCount() };
+    } catch (error) {
+      return { success: false, count: 0, error: error instanceof Error ? error.message : 'Failed' };
     }
   });
 

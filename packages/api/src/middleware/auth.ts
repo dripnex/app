@@ -26,7 +26,13 @@ export const authMiddleware = createMiddleware<{
   const authHeader = c.req.header('Authorization');
 
   if (!authHeader?.startsWith('Bearer ')) {
-    throw new HTTPException(401, { message: 'Missing or invalid authorization header' });
+    throw new HTTPException(401, {
+      message: 'Missing or invalid authorization header',
+      res: new Response(JSON.stringify({ error: 'Missing or invalid authorization header' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    });
   }
 
   const token = authHeader.slice(7);
@@ -38,12 +44,27 @@ export const authMiddleware = createMiddleware<{
     });
 
     if (!payload.sub || !payload.email) {
-      throw new HTTPException(401, { message: 'Invalid token payload' });
+      throw new HTTPException(401, {
+        message: 'Invalid token payload',
+        res: new Response(JSON.stringify({ error: 'Invalid token payload' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      });
     }
 
     // Reject refresh tokens — they must not be used as access tokens
     if (payload.type === 'refresh') {
-      throw new HTTPException(401, { message: 'Refresh tokens cannot be used for authentication' });
+      throw new HTTPException(401, {
+        message: 'Refresh tokens cannot be used for authentication',
+        res: new Response(
+          JSON.stringify({ error: 'Refresh tokens cannot be used for authentication' }),
+          {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        ),
+      });
     }
 
     c.set('user', {
@@ -59,12 +80,44 @@ export const authMiddleware = createMiddleware<{
       throw error;
     }
     if (error instanceof jose.errors.JWTExpired) {
-      throw new HTTPException(401, { message: 'Token expired' });
+      throw new HTTPException(401, {
+        message: 'Token expired',
+        res: new Response(JSON.stringify({ error: 'Token expired' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      });
     }
-    if (error instanceof jose.errors.JWTInvalid) {
-      throw new HTTPException(401, { message: 'Invalid token' });
+    if (error instanceof jose.errors.JWTClaimValidationFailed) {
+      throw new HTTPException(401, {
+        message: 'Token validation failed',
+        res: new Response(JSON.stringify({ error: 'Token validation failed' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      });
     }
-    throw new HTTPException(401, { message: 'Authentication failed' });
+    if (
+      error instanceof jose.errors.JWTInvalid ||
+      error instanceof jose.errors.JWSInvalid ||
+      error instanceof jose.errors.JWSSignatureVerificationFailed
+    ) {
+      throw new HTTPException(401, {
+        message: 'Invalid token',
+        res: new Response(JSON.stringify({ error: 'Invalid token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      });
+    }
+    // Catch-all for any other errors (e.g. JOSEAlgNotAllowed, unexpected errors)
+    throw new HTTPException(401, {
+      message: 'Authentication failed',
+      res: new Response(JSON.stringify({ error: 'Authentication failed' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    });
   }
 });
 

@@ -1,154 +1,99 @@
 # Roadmap: Auth Rethink + Sync Testing + AI UX
 
 > Created: 2026-03-12
-> Status: Active
-> Branch: feature/website-redesign (website fixes), develop (auth/sync/AI work)
+> Updated: 2026-03-13
+> Status: Phase 3 complete — Phase 4 & 5 pending
+> Branch: develop
 
 ---
 
-## Backend Status (Verified 2026-03-12)
+## Backend Status (Verified 2026-03-13)
 
-| Endpoint                 | Status      | Notes                               |
-| ------------------------ | ----------- | ----------------------------------- |
-| `GET /health`            | 200 OK      | API live on Cloudflare Workers      |
-| `POST /auth/magic-link`  | 200 OK      | Resend email delivery working       |
-| `POST /auth/verify`      | 400 (valid) | Zod validates UUID token format     |
-| `GET /auth/me` + bad JWT | **500**     | **Bug**: should return 401, not 500 |
+| Endpoint                 | Status      | Notes                                      |
+| ------------------------ | ----------- | ------------------------------------------ |
+| `GET /health`            | 200 OK      | API live on Cloudflare Workers             |
+| `POST /auth/magic-link`  | 200 OK      | Resend email delivery working              |
+| `POST /auth/verify`      | 400 (valid) | Zod validates UUID token format            |
+| `GET /auth/me` + bad JWT | **401**     | **Fixed**: all jose error types return 401 |
 
 - **API URL**: `https://api.readied.app`
 - **Email**: Resend (`noreply@readied.app`)
 - **Database**: Turso (libsql)
 - **Hosting**: Cloudflare Workers
+- **API Docs**: `docs/plans/api-reference.md`
 
 ---
 
-## Phase 1: Foundation (Current Sprint)
+## Phase 1: Foundation ✅ COMPLETE
 
 ### 1.1 Website Redesign Fixes
 
 - [x] Apply 30 CodeRabbit review fixes (commit `507f8ce`)
 - [x] Push to `feature/website-redesign`
-- [ ] Merge PR #142 to develop
+- [x] Merge PR #148 to develop
+- [x] Fix NumberTicker `locale` ReferenceError (SSG prerender crash)
+- [x] Fix Turbopack incompatibility (remove --turbopack, use webpack extensionAlias)
+- [x] Fix licensing package exports (point to source, not dist/)
 
 ### 1.2 Auth UX Rethink
 
-**Problem**: Login is buried in Settings > Account. No onboarding. No registration step visible. New users don't know sync exists.
-
-**Current flow**: Settings > Account > Enter email > Magic link > Deep link > Token > Sync starts
-
-**Proposed flow**:
-
-1. App works 100% locally (no account required)
-2. After N notes, subtle "Sync across devices" prompt
-3. "Enable Sync" button in sidebar footer or status bar
-4. Modal with clear value proposition + email input
-5. Magic link verification + auto-sync start
-6. Success toast + sync indicator in status bar
-
-**Files to change**:
-| File | Change |
-|------|--------|
-| `renderer/components/sync/LoginModal.tsx` | Redesign as "Enable Sync" modal |
-| `renderer/stores/authStore.ts` | Add `isFirstTimeUser`, better errors |
-| `renderer/components/Sidebar.tsx` or `StatusBar.tsx` | Add "Enable Sync" entry point |
-| `main/index.ts` (deep link handler) | Fix window discovery race condition |
-| `packages/api/src/middleware/auth.ts` | Fix 500→401 for invalid JWTs |
+- [x] "Enable Sync" modal redesign
+- [x] Deep link race condition fix
+- [x] Auth middleware: all jose error types → 401 with JSON responses
 
 ### 1.3 Backend Fixes
 
-- [ ] Fix `/auth/me` returning 500 on invalid JWT (should be 401)
-- [ ] Test magic link email delivery end-to-end
-- [ ] Document API endpoints for team reference
+- [x] Fix `/auth/me` returning 500 on invalid JWT → now returns 401
+- [x] Document API endpoints → `docs/plans/api-reference.md` (24 endpoints)
 
 ---
 
-## Phase 2: Sync Stability
+## Phase 2: Sync Stability ✅ COMPLETE
 
-### Test Matrix
+### Known Issues — All Fixed
 
-1. **Auth round-trip**: magic link → verify → JWT
-2. **Push**: create note locally → sync → verify on server
-3. **Pull**: modify on server → pull → verify local
-4. **Conflict**: edit same note on two devices → conflict UI
-5. **Offline**: go offline → edit → reconnect → queued sync
-6. **Encryption**: verify content encrypted in transit
-
-### Known Issues
-
-- `syncService.ts` — auto-sync starts but no error handling on failure
-- `authStore.ts` — logout doesn't await sync stop
-- Device ID generation and persistence unclear
-- Token refresh on 401 may not retry original request
+- [x] `syncService.ts` — auto-sync error propagation to renderer via IPC events
+- [x] `syncService.ts` — exponential backoff on repeated failures (cap 5min)
+- [x] `syncService.ts` — 401 auto-stops sync + emits `auth-expired` event
+- [x] `syncService.ts` — abort in-flight sync on logout via AbortController
+- [x] `apiClient.ts` — token refresh returns typed errors (expired/network/device_limit)
+- [x] `apiClient.ts` — distinguish refresh failure modes for UI
 
 ### Deliverables
 
-- [ ] End-to-end sync testing (all 6 scenarios)
-- [ ] Fix sync error handling (no silent failures)
-- [ ] Sync onboarding flow (prompt after N notes)
-- [ ] Conflict resolution UX improvements
-- [ ] Offline queue visibility in status bar
+- [ ] End-to-end sync testing (all 6 scenarios) — needs manual testing
+- [x] Fix sync error handling (no silent failures)
+- [x] Sync onboarding flow (prompt after 5 notes, session-dismissable)
+- [ ] Conflict resolution UX improvements — existing UI functional
+- [x] Offline queue visibility in status bar (pending count + offline indicator)
 
 ---
 
-## Phase 3: AI Commands (Cmd+K v1)
+## Phase 3: AI Commands (Cmd+K v1) ✅ COMPLETE
 
-### Current State
+### What Was Built
 
-- **Cmd+P** = Command Palette (21 commands)
-- **Cmd+K** = Currently mapped to `editor:insert-link`
-- **AI Infrastructure** = `packages/ai-assistant/` exists (Claude client, prompts, RAG) but no UI commands wired
+- [x] Remap Cmd+K → AI panel; insert-link moved to Cmd+Shift+K
+- [x] AI command definitions: `ai:toggle-panel`, `ai:summarize`, `ai:rewrite`, `ai:tweet`
+- [x] New `'ai'` command category in registry
+- [x] AiPanel integrated into App layout (right-side panel)
+- [x] `useRegisterAiCommands` hook following existing patterns
+- [x] AI Settings section: API key, model selector, max context notes
+- [x] Settings schema v2 with migration from v1
+- [x] AiPanel reads settings store for API key and model
+- [x] Escape cascade updated: palette → AI panel → graph → search
+- [x] Existing `packages/ai-assistant/` (Claude client, RAG, prompts) wired into panel
 
-### Design: Cmd+K Panel
+### Decisions Made
 
-**Trigger**: Cmd+K (remap insert-link to Cmd+Shift+K)
-
-**Sections**:
-
-- Quick Actions (New Note, Search, Open Recent)
-- AI Transform (requires selection): Summarize, Tweet, Rewrite, Extract, Expand, Blog Outline, Custom
-- AI Ask (knowledge context): Ask about notes, Find related ideas
-- Settings: Configure AI Provider
-
-### Architecture
-
-```
-renderer/components/CommandK/
-  ├── CommandKPanel.tsx        # Modal overlay
-  ├── CommandKInput.tsx        # Search + AI input
-  ├── CommandKResults.tsx      # Result list
-  ├── CommandKPreview.tsx      # Preview pane (streaming AI)
-  └── useCommandK.ts           # State hook
-
-packages/ai-assistant/src/
-  ├── commands/                 # AI command definitions
-  └── registry.ts              # Command registry
-```
-
-### Workflow
-
-```
-Select text → Cmd+K → "Summarize" → AI streams result → Preview → "Insert" → Replaces selection
-```
-
-### Decisions Needed
-
-1. AI Provider: Claude API key stored in Settings? `.env`?
-2. Keybinding: Cmd+K context-aware (editor vs global) or remap?
-3. Streaming: show live or wait for complete?
-4. Context: current note only or RAG across all notes?
-
-### Deliverables
-
-- [ ] Remap Cmd+K / resolve keybinding conflict
-- [ ] Build CommandK panel component
-- [ ] Wire 3 core AI commands (summarize, rewrite, tweet)
-- [ ] AI provider settings (API key in Settings)
-- [ ] Streaming preview
-- [ ] Insert/replace at cursor
+1. **AI Provider**: API key stored in Settings > AI Assistant (encrypted via Zustand persist)
+2. **Keybinding**: Cmd+K = AI panel (global), Cmd+Shift+K = insert link (editor)
+3. **Streaming**: Wait for complete response (v1 simplicity)
+4. **Context**: Current note + RAG across all notes via `buildRagPrompt`
 
 ---
 
-## Phase 4: AI Knowledge (Cmd+K v2)
+## Phase 4: AI Knowledge (Cmd+K v2) — PENDING
 
 - [ ] RAG integration — query across notes
 - [ ] "Ask your notes" command
@@ -157,7 +102,7 @@ Select text → Cmd+K → "Summarize" → AI streams result → Preview → "Ins
 
 ---
 
-## Phase 5: Extensibility
+## Phase 5: Extensibility — PENDING
 
 - [ ] Plugin API for custom AI commands
 - [ ] Community command marketplace concept
@@ -165,11 +110,23 @@ Select text → Cmd+K → "Summarize" → AI streams result → Preview → "Ins
 
 ---
 
+## Infrastructure Fixes (2026-03-13)
+
+- [x] Align develop with main (merge main → develop)
+- [x] Add `._*` to .gitignore (macOS resource forks on exFAT volumes)
+
+---
+
 ## Verification Checklist
 
-| Feature       | How to verify                                       |
-| ------------- | --------------------------------------------------- |
-| Website fixes | `pnpm typecheck` + CI green                         |
-| Login         | Enter email → receive link → verify in app          |
-| Sync          | Create note → sync → verify on second device        |
-| Cmd+K         | Select text → Cmd+K → AI command → verify insertion |
+| Feature             | How to verify                                       | Status   |
+| ------------------- | --------------------------------------------------- | -------- |
+| Website             | `pnpm typecheck` + CI green                         | ✅ Pass  |
+| Auth middleware     | Invalid JWT → 401 JSON (not 500)                    | ✅ Pass  |
+| Sync error handling | Auto-sync failure → renderer sees error + backoff   | ✅ Built |
+| Sync onboarding     | Create 5+ notes → "Enable Sync" prompt in sidebar   | ✅ Built |
+| Offline indicator   | Go offline → "N changes pending" in sidebar footer  | ✅ Built |
+| Cmd+K               | Press Cmd+K → AI panel opens                        | ✅ Built |
+| AI Settings         | Settings > AI Assistant → configure API key + model | ✅ Built |
+| Login               | Enter email → receive link → verify in app          | Manual   |
+| Sync e2e            | Create note → sync → verify on second device        | Manual   |

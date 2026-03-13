@@ -21,6 +21,7 @@ import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
+import { AiPanel } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
 import type { PluginLoadError } from './stores/pluginRuntimeStore';
@@ -40,6 +41,7 @@ import { useSyncLinks } from './hooks/useLinks';
 import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useCommandKeybindings } from './hooks/useCommandKeybindings';
 import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
+import { useRegisterAiCommands } from './hooks/useRegisterAiCommands';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { builtInPlugins } from './plugins';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
@@ -134,6 +136,12 @@ function NotesApp() {
     return cleanup;
   }, []);
 
+  // Listen for sync status events pushed from main process (auto-sync backoff, auth errors)
+  useEffect(() => {
+    const cleanup = useSyncStore.getState().initSyncStatusListener();
+    return cleanup;
+  }, []);
+
   // Handle deep link auth verification (readied://auth/verify?token=xxx)
   useEffect(() => {
     const handleAuthVerification = async (...args: unknown[]) => {
@@ -162,6 +170,7 @@ function NotesApp() {
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
 
   // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
   const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
@@ -603,6 +612,56 @@ function NotesApp() {
     onCommandPalette: toggleCommandPalette,
   });
 
+  // Register AI commands (toggle panel)
+  const toggleAiPanel = useCallback(() => setIsAiPanelOpen(prev => !prev), []);
+  const closeAiPanel = useCallback(() => setIsAiPanelOpen(false), []);
+
+  useRegisterAiCommands({
+    onTogglePanel: toggleAiPanel,
+  });
+
+  // AI Panel callbacks — wired to existing app state
+  const aiConfigCache = useRef<Record<string, unknown>>({});
+
+  // Load AI plugin config once on mount
+  useEffect(() => {
+    window.readied.pluginConfig.getAll('readied-ai-assistant').then(config => {
+      aiConfigCache.current = config ?? {};
+    });
+  }, []);
+
+  const aiGetCurrentNote = useCallback(() => {
+    const note = selectedNoteRef.current;
+    if (!note) return null;
+    return { id: note.id, title: note.title, content: note.content };
+  }, []);
+
+  const aiSearchNotes = useCallback(async (query: string) => {
+    const notes = await window.readied.notes.search(query, 20);
+    return notes.map(n => ({ id: n.id, title: n.title }));
+  }, []);
+
+  const aiGetNoteById = useCallback(async (id: string) => {
+    const result = await window.readied.notes.get(id);
+    if (!result.ok) return null;
+    return { id: result.data.id, title: result.data.title, content: result.data.content };
+  }, []);
+
+  const aiGetConfig = useCallback(<T,>(key: string): T | undefined => {
+    return aiConfigCache.current[key] as T | undefined;
+  }, []);
+
+  const aiInsertAtCursor = useCallback((text: string) => {
+    const view = getEditorView();
+    if (!view) return;
+    const { from } = view.state.selection.main;
+    view.dispatch({
+      changes: { from, insert: text },
+      selection: { anchor: from + text.length },
+    });
+    view.focus();
+  }, []);
+
   // Plugin runtime: init once, React observes
   const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
   const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
@@ -654,9 +713,11 @@ function NotesApp() {
   // Global keyboard handler (routes through CommandRegistry)
   useCommandKeybindings({
     onEscape: useCallback(() => {
-      // Cascading escape: command palette → graph → search → deselect note
+      // Cascading escape: command palette → AI panel → graph → search → deselect note
       if (isCommandPaletteOpen) {
         setIsCommandPaletteOpen(false);
+      } else if (isAiPanelOpen) {
+        setIsAiPanelOpen(false);
       } else if (isGraphOpen) {
         setIsGraphOpen(false);
       } else if (searchQuery) {
@@ -664,7 +725,7 @@ function NotesApp() {
       } else if (selectedNote) {
         setSelectedNote(null);
       }
-    }, [isCommandPaletteOpen, isGraphOpen, searchQuery, selectedNote, clearSearch]),
+    }, [isCommandPaletteOpen, isAiPanelOpen, isGraphOpen, searchQuery, selectedNote, clearSearch]),
   });
 
   return (
@@ -739,6 +800,20 @@ function NotesApp() {
                 />
               )}
             </main>
+
+            {/* AI Assistant Panel — right side */}
+            {isAiPanelOpen && (
+              <aside className="app__ai-panel">
+                <AiPanel
+                  onClose={closeAiPanel}
+                  getCurrentNote={aiGetCurrentNote}
+                  searchNotes={aiSearchNotes}
+                  getNoteById={aiGetNoteById}
+                  getConfig={aiGetConfig}
+                  insertAtCursor={aiInsertAtCursor}
+                />
+              </aside>
+            )}
           </div>
 
           {/* Plugin Host - manages plugin lifecycle */}

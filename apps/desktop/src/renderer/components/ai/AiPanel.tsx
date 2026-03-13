@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Trash2, ArrowDownToLine } from 'lucide-react';
 import { buildRagPrompt } from '@readied/ai-assistant';
 import type { ClaudeMessage, NoteContext } from '@readied/ai-assistant';
+import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 
 interface AiPanelProps {
@@ -21,6 +22,7 @@ export function AiPanel({
   getConfig,
   insertAtCursor,
 }: AiPanelProps) {
+  const aiSettings = useSettingsStore(selectAi);
   const [messages, setMessages] = useState<ClaudeMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,14 +44,19 @@ export function AiPanel({
     const query = input.trim();
     if (!query || loading) return;
 
-    const apiKey = getConfig<string>('apiKey');
+    // Prefer settings store, fall back to plugin config for backwards compatibility
+    const apiKey = aiSettings.apiKey || getConfig<string>('apiKey');
     if (!apiKey) {
-      setError('Please set your Anthropic API key in Settings > Plugins > AI Assistant');
+      setError('Please set your Anthropic API key in Settings > AI Assistant');
       return;
     }
 
-    const model = getConfig<string>('model') || 'claude-sonnet-4-5-20250929';
-    const maxContextNotes = getConfig<number>('maxContextNotes') || 5;
+    const model = aiSettings.apiKey
+      ? aiSettings.model
+      : getConfig<string>('model') || 'claude-sonnet-4-20250514';
+    const maxContextNotes = aiSettings.apiKey
+      ? aiSettings.maxContextNotes
+      : getConfig<number>('maxContextNotes') || 5;
 
     setInput('');
     setError(null);
@@ -107,7 +114,7 @@ export function AiPanel({
     } finally {
       setLoading(false);
     }
-  }, [input, loading, messages, getConfig, getCurrentNote, searchNotes, getNoteById]);
+  }, [input, loading, messages, aiSettings, getConfig, getCurrentNote, searchNotes, getNoteById]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

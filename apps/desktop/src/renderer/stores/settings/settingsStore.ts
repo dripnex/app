@@ -13,12 +13,14 @@ import {
   GeneralSettings,
   UpdatesSettings,
   AppearanceSettings,
+  AiSettings,
   EditorSettings,
   BackupSettings,
   DEFAULT_SETTINGS,
   DEFAULT_GENERAL,
   DEFAULT_UPDATES,
   DEFAULT_APPEARANCE,
+  DEFAULT_AI,
   DEFAULT_EDITOR,
   DEFAULT_BACKUP,
   SETTINGS_VERSION,
@@ -36,6 +38,7 @@ interface SettingsStore {
   updateGeneral: (updates: Partial<GeneralSettings>) => void;
   updateUpdates: (updates: Partial<UpdatesSettings>) => void;
   updateAppearance: (updates: Partial<AppearanceSettings>) => void;
+  updateAi: (updates: Partial<AiSettings>) => void;
   updateEditor: (updates: Partial<EditorSettings>) => void;
   updateBackup: (updates: Partial<BackupSettings>) => void;
 
@@ -63,23 +66,37 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
 
   let settings = state.settings as SettingsSchema;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mutable = settings as any;
+
   // Migration: v0 (or undefined) -> v1
   if (version < 1) {
-    settings = {
+    mutable = {
       ...DEFAULT_SETTINGS,
-      ...settings,
+      ...mutable,
       version: 1,
       // Ensure all sections exist with defaults
-      general: { ...DEFAULT_GENERAL, ...settings.general },
-      updates: { ...DEFAULT_UPDATES, ...settings.updates },
-      appearance: { ...DEFAULT_APPEARANCE, ...settings.appearance },
-      editor: { ...DEFAULT_EDITOR, ...settings.editor },
-      backup: { ...DEFAULT_BACKUP, ...settings.backup },
+      general: { ...DEFAULT_GENERAL, ...mutable.general },
+      updates: { ...DEFAULT_UPDATES, ...mutable.updates },
+      appearance: { ...DEFAULT_APPEARANCE, ...mutable.appearance },
+      editor: { ...DEFAULT_EDITOR, ...mutable.editor },
+      backup: { ...DEFAULT_BACKUP, ...mutable.backup },
     };
   }
 
+  // Migration: v1 -> v2 (add AI settings)
+  if (version < 2) {
+    mutable = {
+      ...mutable,
+      version: 2,
+      ai: { ...DEFAULT_AI, ...mutable.ai },
+    };
+  }
+
+  settings = mutable as SettingsSchema;
+
   // Future migrations go here:
-  // if (version < 2) { ... migrate to v2 ... }
+  // if (version < 3) { ... migrate to v3 ... }
 
   return { settings };
 }
@@ -120,6 +137,15 @@ export const useSettingsStore = create<SettingsStore>()(
           },
         })),
 
+      // Update AI settings
+      updateAi: updates =>
+        set(state => ({
+          settings: {
+            ...state.settings,
+            ai: { ...state.settings.ai, ...updates },
+          },
+        })),
+
       // Update editor settings
       updateEditor: updates =>
         set(state => ({
@@ -145,6 +171,7 @@ export const useSettingsStore = create<SettingsStore>()(
             general: DEFAULT_GENERAL,
             updates: DEFAULT_UPDATES,
             appearance: DEFAULT_APPEARANCE,
+            ai: DEFAULT_AI,
             editor: DEFAULT_EDITOR,
             backup: DEFAULT_BACKUP,
           };
@@ -175,6 +202,7 @@ export const selectSettings = (state: SettingsStore) => state.settings;
 export const selectGeneral = (state: SettingsStore) => state.settings.general;
 export const selectUpdates = (state: SettingsStore) => state.settings.updates;
 export const selectAppearance = (state: SettingsStore) => state.settings.appearance;
+export const selectAi = (state: SettingsStore) => state.settings.ai;
 export const selectEditor = (state: SettingsStore) => state.settings.editor;
 export const selectBackup = (state: SettingsStore) => state.settings.backup;
 
@@ -217,6 +245,7 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
       general: { ...DEFAULT_GENERAL, ...s.general },
       updates: { ...DEFAULT_UPDATES, ...s.updates },
       appearance: { ...DEFAULT_APPEARANCE, ...s.appearance },
+      ai: { ...DEFAULT_AI, ...s.ai },
       editor: { ...DEFAULT_EDITOR, ...s.editor },
       backup: { ...DEFAULT_BACKUP, ...s.backup },
     };
