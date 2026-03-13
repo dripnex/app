@@ -1,13 +1,19 @@
 /**
  * Enable Sync Modal
  *
- * Guides the user through enabling cloud sync with magic link auth.
- * Shows value proposition → email input → waiting for link → success.
+ * Guides the user through enabling cloud sync with license-aware step routing.
+ * Computes smart initial step based on auth + license state:
+ *   - Auth'd + pro/trial → success (already syncing)
+ *   - Auth'd + free/expired → pricing (needs subscription)
+ *   - Not auth'd + trial/pro → email (just needs to sign in)
+ *   - Not auth'd + free/expired → value-prop (full flow)
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Cloud, Mail, CheckCircle, X, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Cloud, Mail, CheckCircle, X, RefreshCw, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useLicense } from '../../contexts/LicenseContext';
+import { getProductConfig } from '@readied/product-config';
 import styles from './LoginModal.module.css';
 
 interface EnableSyncModalProps {
@@ -15,9 +21,22 @@ interface EnableSyncModalProps {
   onClose: () => void;
 }
 
-type Step = 'value-prop' | 'email' | 'checking' | 'sent' | 'success';
+type Step =
+  | 'value-prop'
+  | 'pricing'
+  | 'waiting-payment'
+  | 'email'
+  | 'checking'
+  | 'sent'
+  | 'success';
 
 const RESEND_COOLDOWN = 60; // seconds
+
+const SYNC_CAPABLE_STATUSES = ['trial', 'pro_active', 'pro_grace'];
+
+function hasSyncCapability(status: string | undefined): boolean {
+  return status != null && SYNC_CAPABLE_STATUSES.includes(status);
+}
 
 export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const [email, setEmail] = useState('');
@@ -28,13 +47,32 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { requestMagicLink, isAuthenticated, error: authError } = useAuthStore();
+  const { state: licenseState, openSubscribe } = useLicense();
+  const config = useMemo(() => getProductConfig(), []);
+  const proPricing = config.plans.pro.pricing!;
+
+  const canSync = hasSyncCapability(licenseState?.status);
+
+  // Compute smart initial step based on current auth + license state
+  // Note: checkout requires auth, so unauthenticated users always go through email first
+  const computeInitialStep = useCallback((): Step => {
+    if (isAuthenticated && canSync) return 'success';
+    if (isAuthenticated && !canSync) return 'pricing';
+    // Not authenticated — always need to sign in first (checkout requires auth)
+    return 'value-prop';
+  }, [isAuthenticated, canSync]);
 
   // Watch for auth success (deep link verified in background)
+  // If user has sync capability → success. If not → they need to pay first.
   useEffect(() => {
     if (isAuthenticated && (step === 'sent' || step === 'checking')) {
-      setStep('success');
+      if (canSync) {
+        setStep('success');
+      } else {
+        setStep('pricing');
+      }
     }
-  }, [isAuthenticated, step]);
+  }, [isAuthenticated, canSync, step]);
 
   // Watch for verification errors from the deep link path
   useEffect(() => {
@@ -42,6 +80,17 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
       setError(authError);
     }
   }, [authError, step]);
+
+  // Watch for license state changes while waiting for payment
+  useEffect(() => {
+    if (step === 'waiting-payment' && hasSyncCapability(licenseState?.status)) {
+      if (isAuthenticated) {
+        setStep('success');
+      } else {
+        setStep('email');
+      }
+    }
+  }, [licenseState?.status, step, isAuthenticated]);
 
   // Resend countdown timer
   useEffect(() => {
@@ -61,21 +110,15 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
     }
   }, [resendTimer]);
 
-  // Reset state when modal closes
+  // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
-      // Delay reset so close animation can play
-      const timeout = setTimeout(() => {
-        if (!isOpen) {
-          setStep('value-prop');
-          setEmail('');
-          setError(null);
-          setResendTimer(0);
-        }
-      }, 200);
-      return () => clearTimeout(timeout);
+    if (isOpen) {
+      setStep(computeInitialStep());
+      setEmail('');
+      setError(null);
+      setResendTimer(0);
     }
-  }, [isOpen]);
+  }, [isOpen, computeInitialStep]);
 
   const handleSubmitEmail = useCallback(
     async (e: React.FormEvent) => {
@@ -110,9 +153,28 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
     }
   }, [email, resendTimer, isResending, requestMagicLink]);
 
+  const handleSelectPlan = useCallback(
+    async (plan: 'monthly' | 'annual') => {
+      setError(null);
+      setStep('waiting-payment');
+      const result = await openSubscribe({ plan });
+      if (!result.success) {
+        setError(result.error || 'Failed to open checkout');
+        setStep('pricing');
+      }
+    },
+    [openSubscribe]
+  );
+
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
+
+  // Where "Enable Sync" on value-prop should go
+  // Always go to email first — checkout requires authentication
+  const handleEnableSync = useCallback(() => {
+    setStep('email');
+  }, []);
 
   if (!isOpen) return null;
 
@@ -135,7 +197,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
         </button>
 
         <div className={styles.content}>
-          {/* Step 1: Value Proposition */}
+          {/* Step: Value Proposition */}
           {step === 'value-prop' && (
             <>
               <div className={styles.iconWrapper}>
@@ -154,20 +216,90 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
                 <li>Works offline, syncs when connected</li>
                 <li>No account required to use Readied locally</li>
               </ul>
-              <button type="button" className={styles.button} onClick={() => setStep('email')}>
-                Enable Sync
+              <button type="button" className={styles.button} onClick={handleEnableSync}>
+                Get Started
               </button>
             </>
           )}
 
-          {/* Step 2: Email Input */}
+          {/* Step: Pricing */}
+          {step === 'pricing' && (
+            <>
+              <div className={styles.iconWrapper}>
+                <Sparkles size={36} />
+              </div>
+              <h2 id="sync-modal-title" className={styles.title}>
+                Upgrade to Pro
+              </h2>
+              <p className={styles.subtitle}>
+                {licenseState?.trial && !licenseState.trial.isExpired
+                  ? config.trialDescription
+                  : 'Get cloud sync and all Pro features'}
+              </p>
+              <div className={styles.planButtons}>
+                <button
+                  type="button"
+                  className={styles.planButtonRecommended}
+                  onClick={() => handleSelectPlan('annual')}
+                >
+                  <span className={styles.planLabel}>
+                    Annual — {proPricing.intervals.annual.label}
+                  </span>
+                  {proPricing.annualSavings && (
+                    <span className={styles.savingsBadge}>Save {proPricing.annualSavings}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={styles.planButton}
+                  onClick={() => handleSelectPlan('monthly')}
+                >
+                  <span className={styles.planLabel}>
+                    Monthly — {proPricing.intervals.monthly.label}
+                  </span>
+                </button>
+              </div>
+              {error && <p className={styles.error}>{error}</p>}
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => {
+                  setError(null);
+                  setStep('value-prop');
+                }}
+              >
+                Back
+              </button>
+            </>
+          )}
+
+          {/* Step: Waiting for Payment */}
+          {step === 'waiting-payment' && (
+            <div className={styles.checking}>
+              <div className={styles.spinner} />
+              <p>Complete checkout in your browser...</p>
+              <p className={styles.waitingHint}>This window will update automatically</p>
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => setStep('pricing')}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* Step: Email Input */}
           {step === 'email' && (
             <>
               <div className={styles.iconWrapper}>
                 <Mail size={36} />
               </div>
-              <h2 className={styles.title}>Enter your email</h2>
-              <p className={styles.subtitle}>We'll send a magic link — no password needed.</p>
+              <h2 className={styles.title}>Sign in or create account</h2>
+              <p className={styles.subtitle}>
+                Enter your email and we'll send you a sign-in link. No password needed — if you're
+                new, your account is created automatically.
+              </p>
               <form onSubmit={handleSubmitEmail} className={styles.form}>
                 <input
                   type="email"
@@ -181,7 +313,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
                 />
                 {error && <p className={styles.error}>{error}</p>}
                 <button type="submit" className={styles.button}>
-                  Send Magic Link
+                  Continue with Email
                 </button>
               </form>
               <button
@@ -194,7 +326,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
             </>
           )}
 
-          {/* Step 3: Sending */}
+          {/* Step: Sending */}
           {step === 'checking' && (
             <div className={styles.checking}>
               <div className={styles.spinner} />
@@ -202,7 +334,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
             </div>
           )}
 
-          {/* Step 4: Email Sent — Waiting for Verification */}
+          {/* Step: Email Sent — Waiting for Verification */}
           {step === 'sent' && (
             <div className={styles.sent}>
               <CheckCircle size={48} className={styles.checkIcon} />
@@ -240,7 +372,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
             </div>
           )}
 
-          {/* Step 5: Success */}
+          {/* Step: Success */}
           {step === 'success' && (
             <div className={styles.sent}>
               <CheckCircle size={48} className={styles.successIcon} />

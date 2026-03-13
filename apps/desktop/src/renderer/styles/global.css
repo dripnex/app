@@ -1044,14 +1044,42 @@ input:focus-visible {
   opacity: 0.8;
 }
 
-/* Drag & Drop */
-.notebook-item-row[draggable="true"] {
+/* Drag handle — hidden by default, shown on hover */
+.notebook-item-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0;
   cursor: grab;
+  transition: opacity var(--transition-fast);
+  margin-left: -2px;
+  margin-right: -2px;
 }
 
-.notebook-item-row[draggable="true"]:active {
+.notebook-item-row:hover .notebook-item-drag-handle {
+  opacity: 0.5;
+}
+
+.notebook-item-drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--text-secondary);
+}
+
+.notebook-item-drag-handle:active {
   cursor: grabbing;
-  opacity: 0.6;
+}
+
+/* Drag & Drop */
+.notebook-item-row[draggable="true"] {
+  cursor: default;
+}
+
+.notebook-item-row.dragging {
+  opacity: 0.4;
 }
 
 .notebook-item-row.drop-above {

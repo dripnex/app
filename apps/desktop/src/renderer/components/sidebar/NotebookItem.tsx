@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, memo, useEffect } from 'react';
+import { useState, useCallback, useRef, memo, useEffect, useMemo } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -8,6 +8,7 @@ import {
   X,
   GitBranch,
   History,
+  GripVertical,
 } from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { CommitHistory } from '../git/CommitHistory';
@@ -29,6 +30,19 @@ interface NotebookItemProps {
   readonly onMove?: (id: string, newParentId: string | null) => void;
   readonly onReorder?: (parentId: string | null, orderedIds: string[]) => void;
   readonly siblingIds?: string[];
+}
+
+/** Collect all descendant IDs from a tree node (used for circular ref prevention) */
+function collectDescendantIds(node: NotebookTreeNode): Set<string> {
+  const ids = new Set<string>();
+  function walk(children: NotebookTreeNode[]) {
+    for (const child of children) {
+      ids.add(child.notebook.id);
+      walk(child.children);
+    }
+  }
+  walk(node.children);
+  return ids;
 }
 
 export const NotebookItem = memo(function NotebookItem({
@@ -54,11 +68,16 @@ export const NotebookItem = memo(function NotebookItem({
   const [isGitLoading, setIsGitLoading] = useState(false);
   const [showCommitHistory, setShowCommitHistory] = useState(false);
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [canDrag, setCanDrag] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
 
   const hasChildren = node.children.length > 0;
   const isInbox = node.notebook.id === 'inbox';
   const canHaveChildren = depth < 2; // Max 3 levels (0, 1, 2)
+
+  // Memoize descendant IDs for circular reference prevention
+  const descendantIds = useMemo(() => collectDescendantIds(node), [node]);
 
   // Check git status on mount
   useEffect(() => {
@@ -177,12 +196,23 @@ export const NotebookItem = memo(function NotebookItem({
         e.preventDefault();
         return;
       }
+
       e.dataTransfer.setData('text/plain', node.notebook.id);
       e.dataTransfer.setData('application/x-notebook-parent', node.notebook.parentId ?? 'root');
+      // Store descendant IDs so drop targets can check for circular reference
+      e.dataTransfer.setData(
+        'application/x-notebook-descendants',
+        JSON.stringify([...descendantIds])
+      );
       e.dataTransfer.effectAllowed = 'move';
+      setIsDragging(true);
     },
-    [node.notebook.id, node.notebook.parentId, isInbox, isEditing]
+    [node.notebook.id, node.notebook.parentId, isInbox, isEditing, descendantIds]
   );
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
   const getDropPosition = useCallback(
     (e: React.DragEvent): DropPosition => {
@@ -204,8 +234,8 @@ export const NotebookItem = memo(function NotebookItem({
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const draggedId = e.dataTransfer.types.includes('text/plain') ? 'pending' : null;
-      if (!draggedId) return;
+      const hasDragData = e.dataTransfer.types.includes('text/plain');
+      if (!hasDragData) return;
 
       e.dataTransfer.dropEffect = 'move';
       const pos = getDropPosition(e);
@@ -237,6 +267,18 @@ export const NotebookItem = memo(function NotebookItem({
       const draggedId = e.dataTransfer.getData('text/plain');
       const draggedParentId = e.dataTransfer.getData('application/x-notebook-parent');
       if (!draggedId || draggedId === node.notebook.id) return;
+
+      // Prevent circular reference: can't drop a parent into its own descendant
+      try {
+        const descendants = JSON.parse(
+          e.dataTransfer.getData('application/x-notebook-descendants') || '[]'
+        ) as string[];
+        if (descendants.includes(node.notebook.id)) {
+          return; // Abort — would create circular reference
+        }
+      } catch {
+        // If descendant data is malformed, proceed cautiously
+      }
 
       const pos = isInbox ? 'inside' : getDropPosition(e);
       const thisParentId = node.notebook.parentId;
@@ -275,24 +317,38 @@ export const NotebookItem = memo(function NotebookItem({
 
   // CSS class for drop indicator
   const dropClass = dropPosition ? `drop-${dropPosition}` : '';
+  const draggingClass = isDragging ? 'dragging' : '';
 
   return (
     <li className="notebook-item" role="treeitem" aria-expanded={isExpanded}>
       <div
         ref={rowRef}
-        className={`notebook-item-row ${isSelected ? 'selected' : ''} ${isInPath ? 'in-path' : ''} ${dropClass}`}
+        className={`notebook-item-row ${isSelected ? 'selected' : ''} ${isInPath ? 'in-path' : ''} ${dropClass} ${draggingClass}`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         role="button"
         tabIndex={0}
         aria-selected={isSelected}
-        draggable={!isInbox && !isEditing}
+        draggable={canDrag && !isInbox && !isEditing}
         onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Drag handle — only visible on hover, enables dragging */}
+        {!isInbox && !isEditing && (
+          <span
+            className="notebook-item-drag-handle"
+            aria-hidden="true"
+            onMouseEnter={() => setCanDrag(true)}
+            onMouseLeave={() => setCanDrag(false)}
+          >
+            <GripVertical size={12} />
+          </span>
+        )}
+
         {hasChildren ? (
           <button
             type="button"
