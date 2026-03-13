@@ -34,7 +34,7 @@ export default function SubscriptionCancelPage() {
             </p>
             <Link
               href="/download"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/8 text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
             >
               <Download size={18} />
               Download Free

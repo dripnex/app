@@ -68,7 +68,7 @@ export default function Footer() {
     <footer className="relative mt-auto">
       {/* Gradient separator */}
       <div className="mx-auto max-w-4xl px-4">
-        <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+        <div className="h-px bg-linear-to-r from-transparent via-white/8 to-transparent" />
       </div>
 
       <div className="mx-auto max-w-4xl px-4 pb-8 pt-12">
@@ -130,7 +130,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-10 flex items-center justify-center sm:justify-start">
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent sm:hidden" />
+          <div className="h-px w-full bg-linear-to-r from-transparent via-white/6 to-transparent sm:hidden" />
           <span className="text-[11px] text-text-muted">
             &copy; {year} Readied. Built with &hearts; in Argentina.
           </span>

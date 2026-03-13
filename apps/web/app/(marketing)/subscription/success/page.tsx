@@ -71,7 +71,7 @@ export default function SubscriptionSuccessPage() {
         </div>
 
         {/* Pro features info */}
-        <div className="my-12 rounded-xl bg-accent/[0.06] border border-accent/20 p-6 sm:p-8 text-left">
+        <div className="my-12 rounded-xl bg-accent/6 border border-accent/20 p-6 sm:p-8 text-left">
           <h3 className="text-lg sm:text-xl font-bold text-[#f4f4f5] text-center mb-6">
             What&apos;s included in Pro
           </h3>

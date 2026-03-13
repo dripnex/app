@@ -60,7 +60,7 @@ export default function AuthVerifyContent() {
       <div className="max-w-[480px] text-center">
         {!showFallback ? (
           <>
-            <div className="inline-block w-10 h-10 mb-6 border-[3px] border-white/[0.06] border-t-accent rounded-full animate-spin" />
+            <div className="inline-block w-10 h-10 mb-6 border-[3px] border-white/6 border-t-accent rounded-full animate-spin" />
             <h1 className="text-2xl font-semibold text-zinc-50 mb-3">Opening Readied...</h1>
             <p className="text-zinc-400">The app should open automatically. Hang tight.</p>
           </>
@@ -91,7 +91,7 @@ export default function AuthVerifyContent() {
               Open in Readied
             </a>
 
-            <div className="p-6 rounded-xl bg-surface border border-white/[0.06]">
+            <div className="p-6 rounded-xl bg-surface border border-white/6">
               <h2 className="text-base font-medium text-zinc-50 mb-2">
                 Opened this on the wrong device?
               </h2>
