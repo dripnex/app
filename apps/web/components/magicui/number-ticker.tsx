@@ -21,6 +21,7 @@ export function NumberTicker({
   delay = 0,
   className,
   decimalPlaces = 0,
+  locale,
   ...props
 }: NumberTickerProps) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -57,7 +58,7 @@ export function NumberTicker({
           }).format(Number(latest.toFixed(decimalPlaces)));
         }
       }),
-    [springValue, decimalPlaces]
+    [springValue, decimalPlaces, locale]
   );
 
   return (
