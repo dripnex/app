@@ -19,6 +19,8 @@ import { NotebookList } from './NotebookList';
 import { TagsList } from './TagsList';
 import { StatusFilters } from './StatusFilters';
 import { SidebarFooter } from './SidebarFooter';
+import { EnableSyncModal } from '../sync';
+import { useSyncOnboarding } from '../../hooks/useSyncOnboarding';
 import { NotebookCreateModal } from './NotebookCreateModal';
 
 interface SidebarProps {
@@ -42,6 +44,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
   // Modal state - lives HERE, not in NotebookList
   const [isCreateNotebookOpen, setIsCreateNotebookOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const { shouldShowPrompt, dismissPrompt } = useSyncOnboarding();
   const [createParentId, setCreateParentId] = useState<string | null>(null);
 
   // Granular selectors
@@ -144,10 +148,21 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
       {/* Plugin sidebar sections */}
       <LayoutZone name="sidebar-section" />
 
-      <SidebarFooter
-        appVersion={appVersion}
-        onSettingsClick={() => window.readied.windows.openSettings()}
-      />
+      {shouldShowPrompt && (
+        <div className="sidebar-sync-prompt">
+          <span>Sync your notes across devices</span>
+          <div className="sidebar-sync-prompt-actions">
+            <button type="button" onClick={() => setIsSyncModalOpen(true)}>
+              Enable
+            </button>
+            <button type="button" onClick={dismissPrompt} aria-label="Dismiss">
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      <SidebarFooter appVersion={appVersion} onEnableSyncClick={() => setIsSyncModalOpen(true)} />
 
       {/* Modal - rendered at Sidebar level, NOT inside NotebookList */}
       {isCreateNotebookOpen && (
@@ -157,6 +172,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           onCancel={closeCreate}
         />
       )}
+
+      <EnableSyncModal isOpen={isSyncModalOpen} onClose={() => setIsSyncModalOpen(false)} />
     </aside>
   );
 }

@@ -141,11 +141,11 @@ export const aiAssistantPlugin: PluginManifest = {
     },
     model: {
       type: 'enum',
-      default: 'claude-sonnet-4-5-20250929',
-      description: 'Claude model to use',
+      default: 'claude-sonnet-4-20250514',
+      description: 'Claude model to use (configure in Settings > AI Assistant instead)',
       options: [
-        { value: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
-        { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+        { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+        { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
       ],
     },
     maxContextNotes: {

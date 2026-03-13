@@ -13,7 +13,8 @@ export type CommandCategory =
   | 'view'
   | 'app'
   | 'data'
-  | 'plugin';
+  | 'plugin'
+  | 'ai';
 
 export type CommandContext = 'editor' | 'app' | 'global';
 

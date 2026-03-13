@@ -528,8 +528,12 @@ export interface ReadiedAPI {
       cursor?: number;
       lastSyncAt?: number | null;
       isSyncing?: boolean;
+      lastError?: string | null;
+      consecutiveFailures?: number;
       error?: string;
     }>;
+    /** Listen for sync status events pushed from main process */
+    onStatusChange: (callback: (event: unknown) => void) => () => void;
     /** Resolve a sync conflict */
     resolveConflict: (
       noteId: string,
@@ -545,6 +549,8 @@ export interface ReadiedAPI {
     pullTags: () => Promise<{ success: boolean; applied: number; error?: string }>;
     /** Push tag changes to server */
     pushTags: () => Promise<{ success: boolean; pushed: number; error?: string }>;
+    /** Get number of pending local changes */
+    pendingCount: () => Promise<{ success: boolean; count: number; error?: string }>;
     /** Get sync history */
     history: (limit?: number) => Promise<{
       success: boolean;
@@ -725,6 +731,12 @@ export interface ReadiedAPI {
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       maxTokens?: number;
     }) => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
+    /** Export an AI command preset to a user-chosen file */
+    exportPreset: (
+      presetJson: string
+    ) => Promise<{ ok: true; filePath: string } | { ok: false; error: string }>;
+    /** Import an AI command preset from a user-chosen file */
+    importPreset: () => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
   };
   pluginConfig: {
     /** Get a single config value for a plugin */
@@ -885,7 +897,17 @@ const api: ReadiedAPI = {
     triggerSync: () => ipcRenderer.invoke('sync:trigger'),
     pullTags: () => ipcRenderer.invoke('sync:pullTags'),
     pushTags: () => ipcRenderer.invoke('sync:pushTags'),
+    pendingCount: () => ipcRenderer.invoke('sync:pendingCount'),
     history: (limit?: number) => ipcRenderer.invoke('sync:history', limit),
+    onStatusChange: (callback: (event: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: unknown) => {
+        callback(data);
+      };
+      ipcRenderer.on('sync:status-changed', handler);
+      return () => {
+        ipcRenderer.removeListener('sync:status-changed', handler);
+      };
+    },
   },
   subscription: {
     getStatus: () => ipcRenderer.invoke('subscription:getStatus'),
@@ -999,6 +1021,8 @@ const api: ReadiedAPI = {
   },
   ai: {
     query: options => ipcRenderer.invoke('ai:query', options),
+    exportPreset: presetJson => ipcRenderer.invoke('ai:exportPreset', presetJson),
+    importPreset: () => ipcRenderer.invoke('ai:importPreset'),
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),

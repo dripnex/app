@@ -46,6 +46,48 @@ interface SyncState {
   notebookCursor: number;
   lastSyncAt: number | null;
   isSyncing: boolean;
+  lastError: string | null;
+  consecutiveFailures: number;
+}
+
+export type SyncStatusEvent =
+  | { type: 'sync-start' }
+  | { type: 'sync-success'; changesApplied: number; changesPushed: number }
+  | { type: 'sync-error'; error: string; isNetworkError: boolean; consecutiveFailures: number }
+  | { type: 'auth-expired' };
+
+export type SyncStatusListener = (event: SyncStatusEvent) => void;
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+const MAX_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Classify an error message as a network error (transient) vs an actual failure.
+ */
+function isNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('fetch') ||
+    msg.includes('network') ||
+    msg.includes('enotfound') ||
+    msg.includes('econnrefused') ||
+    msg.includes('econnreset') ||
+    msg.includes('timeout') ||
+    msg.includes('abort')
+  );
+}
+
+/**
+ * Check if an error represents a 401 Unauthorized response.
+ */
+function isAuthError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes('401') || msg.includes('unauthorized');
 }
 
 // ============================================================================
@@ -60,6 +102,9 @@ export class SyncService {
   private state: SyncState;
   private autoSyncTimer: NodeJS.Timeout | null = null;
   private autoSyncInterval: number = 5 * 60 * 1000; // 5 minutes
+  private baseAutoSyncInterval: number = 5 * 60 * 1000; // remember the original interval for reset
+  private abortController: AbortController | null = null;
+  private statusListener: SyncStatusListener | null = null;
 
   constructor(
     apiClient: ApiClient,
@@ -78,12 +123,35 @@ export class SyncService {
       notebookCursor: 0,
       lastSyncAt: null,
       isSyncing: false,
+      lastError: null,
+      consecutiveFailures: 0,
     };
   }
 
   // ==========================================================================
   // Public API
   // ==========================================================================
+
+  /**
+   * Register a listener that receives sync status events.
+   * Returns an unsubscribe function.
+   */
+  onStatusChange(listener: SyncStatusListener): () => void {
+    this.statusListener = listener;
+    return () => {
+      if (this.statusListener === listener) {
+        this.statusListener = null;
+      }
+    };
+  }
+
+  private emitStatus(event: SyncStatusEvent): void {
+    try {
+      this.statusListener?.(event);
+    } catch {
+      // Don't let listener errors break sync
+    }
+  }
 
   /**
    * Pull changes from server and apply to local database
@@ -387,6 +455,15 @@ export class SyncService {
   }
 
   /**
+   * Throw if the current sync operation has been aborted.
+   */
+  private checkAborted(): void {
+    if (this.abortController?.signal.aborted) {
+      throw new Error('Sync aborted');
+    }
+  }
+
+  /**
    * Perform full sync cycle (pull + push)
    */
   async syncNow(): Promise<SyncResult> {
@@ -401,6 +478,8 @@ export class SyncService {
     }
 
     this.state.isSyncing = true;
+    this.abortController = new AbortController();
+    this.emitStatus({ type: 'sync-start' });
 
     const historyId = randomUUID();
     this.noteRepository.createSyncHistoryEntry(historyId);
@@ -416,6 +495,7 @@ export class SyncService {
 
     try {
       // Step 1: Pull notebooks first (notes depend on notebooks)
+      this.checkAborted();
       const nbPullResult = await this.pullNotebooks();
       if (!nbPullResult.success) {
         console.error('Failed to pull notebooks:', nbPullResult.error);
@@ -423,6 +503,7 @@ export class SyncService {
       notebooksPulled = nbPullResult.changes?.length ?? 0;
 
       // Step 2: Push pending notebook changes
+      this.checkAborted();
       const nbPushResult = await this.pushNotebooks();
       if (!nbPushResult.success) {
         console.error('Failed to push notebooks:', nbPushResult.error);
@@ -430,6 +511,7 @@ export class SyncService {
       notebooksPushed = nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0;
 
       // Step 3: Pull note changes from server
+      this.checkAborted();
       const pullResult = await this.pull();
 
       if (!pullResult.success) {
@@ -458,6 +540,7 @@ export class SyncService {
       totalConflicts = pullResult.conflicts.length;
 
       // Step 4: Push local note changes
+      this.checkAborted();
       let changesPushed = 0;
       const pendingChanges = this.noteRepository.getPendingChanges(50);
 
@@ -493,6 +576,7 @@ export class SyncService {
       notesPushed = changesPushed;
 
       // Step 5: Pull tags
+      this.checkAborted();
       const tagPull = await this.pullTags();
       if (!tagPull.success) {
         console.error('Tag pull failed:', tagPull.error);
@@ -500,6 +584,7 @@ export class SyncService {
       tagsPulled = tagPull.applied ?? 0;
 
       // Step 6: Push tags
+      this.checkAborted();
       const tagPush = await this.pushTags();
       if (!tagPush.success) {
         console.error('Tag push failed:', tagPush.error);
@@ -526,11 +611,25 @@ export class SyncService {
         }
       );
 
+      const totalApplied = pullResult.changes.length + (nbPullResult.changes?.length ?? 0);
+      const totalPushed =
+        changesPushed + (nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0);
+
+      // Success — reset error tracking and backoff
+      this.state.lastError = null;
+      this.state.consecutiveFailures = 0;
+      this.resetAutoSyncInterval();
+
+      this.emitStatus({
+        type: 'sync-success',
+        changesApplied: totalApplied,
+        changesPushed: totalPushed,
+      });
+
       return {
         success: true,
-        changesApplied: pullResult.changes.length + (nbPullResult.changes?.length ?? 0),
-        changesPushed:
-          changesPushed + (nbPushResult.results?.filter(r => r.status === 'applied').length ?? 0),
+        changesApplied: totalApplied,
+        changesPushed: totalPushed,
         conflicts: pullResult.conflicts,
       };
     } catch (error) {
@@ -547,15 +646,51 @@ export class SyncService {
         bytesReceived: bandwidth.bytesReceived,
         errorMessage: error instanceof Error ? error.message : 'Sync failed',
       });
+
+      const errorMsg = error instanceof Error ? error.message : 'Sync failed';
+
+      // Handle 401 — stop auto-sync entirely
+      if (isAuthError(error)) {
+        this.state.lastError = errorMsg;
+        this.state.consecutiveFailures++;
+        this.stopAutoSync();
+        this.emitStatus({ type: 'auth-expired' });
+
+        return {
+          success: false,
+          changesApplied: 0,
+          changesPushed: 0,
+          conflicts: [],
+          error: errorMsg,
+        };
+      }
+
+      // Track failure and apply backoff
+      this.state.consecutiveFailures++;
+      this.state.lastError = errorMsg;
+      const isTransient = isNetworkError(error);
+
+      if (this.autoSyncTimer) {
+        this.applyBackoff();
+      }
+
+      this.emitStatus({
+        type: 'sync-error',
+        error: errorMsg,
+        isNetworkError: isTransient,
+        consecutiveFailures: this.state.consecutiveFailures,
+      });
+
       return {
         success: false,
         changesApplied: 0,
         changesPushed: 0,
         conflicts: [],
-        error: error instanceof Error ? error.message : 'Sync failed',
+        error: errorMsg,
       };
     } finally {
       this.state.isSyncing = false;
+      this.abortController = null;
     }
   }
 
@@ -586,29 +721,35 @@ export class SyncService {
   startAutoSync(intervalMs?: number): void {
     if (intervalMs) {
       this.autoSyncInterval = intervalMs;
+      this.baseAutoSyncInterval = intervalMs;
     }
 
     // Clear existing timer
     this.stopAutoSync();
 
-    // Start new timer
-    this.autoSyncTimer = setInterval(() => {
-      this.syncNow().catch(error => {
-        console.error('Auto-sync failed:', error);
-      });
-    }, this.autoSyncInterval);
+    // Reset failure tracking when explicitly starting
+    this.state.consecutiveFailures = 0;
+    this.state.lastError = null;
+
+    this.scheduleNextSync();
 
     console.warn(`Auto-sync started (interval: ${this.autoSyncInterval}ms)`);
   }
 
   /**
-   * Stop auto-sync timer
+   * Stop auto-sync timer and abort any in-flight sync operation
    */
   stopAutoSync(): void {
     if (this.autoSyncTimer) {
-      clearInterval(this.autoSyncTimer);
+      clearTimeout(this.autoSyncTimer);
       this.autoSyncTimer = null;
       console.warn('Auto-sync stopped');
+    }
+
+    // Abort any currently-running sync operation
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
     }
   }
 
@@ -617,6 +758,19 @@ export class SyncService {
    */
   getState(): SyncState {
     return { ...this.state };
+  }
+
+  /**
+   * Get the number of local changes waiting to be pushed to the server.
+   */
+  getPendingCount(): number {
+    try {
+      const pendingNotes = this.noteRepository.getPendingChanges(1000);
+      const pendingNotebooks = this.notebookRepository.getPendingChanges(1000);
+      return pendingNotes.length + pendingNotebooks.length;
+    } catch {
+      return 0;
+    }
   }
 
   /**
@@ -629,6 +783,51 @@ export class SyncService {
   // ==========================================================================
   // Private Methods
   // ==========================================================================
+
+  /**
+   * Schedule the next auto-sync using setTimeout (allows interval changes between runs).
+   */
+  private scheduleNextSync(): void {
+    if (this.autoSyncTimer) {
+      clearTimeout(this.autoSyncTimer);
+    }
+
+    this.autoSyncTimer = setTimeout(async () => {
+      try {
+        await this.syncNow();
+      } catch (error) {
+        console.error('Auto-sync failed:', error);
+      }
+
+      // Schedule the next run (interval may have changed due to backoff or reset)
+      if (this.autoSyncTimer !== null) {
+        this.scheduleNextSync();
+      }
+    }, this.autoSyncInterval);
+  }
+
+  /**
+   * Double the auto-sync interval (exponential backoff), capped at MAX_BACKOFF_MS.
+   */
+  private applyBackoff(): void {
+    const newInterval = Math.min(this.autoSyncInterval * 2, MAX_BACKOFF_MS);
+    if (newInterval !== this.autoSyncInterval) {
+      this.autoSyncInterval = newInterval;
+      console.warn(`Auto-sync backoff: next interval ${this.autoSyncInterval}ms`);
+    }
+    // Reschedule with new interval
+    this.scheduleNextSync();
+  }
+
+  /**
+   * Reset auto-sync interval back to the base value after a successful sync.
+   */
+  private resetAutoSyncInterval(): void {
+    if (this.autoSyncInterval !== this.baseAutoSyncInterval) {
+      this.autoSyncInterval = this.baseAutoSyncInterval;
+      console.warn(`Auto-sync interval reset to ${this.autoSyncInterval}ms`);
+    }
+  }
 
   /**
    * Apply a remote change to local database

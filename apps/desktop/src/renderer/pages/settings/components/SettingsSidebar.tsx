@@ -1,4 +1,14 @@
-import { Settings, FileText, Palette, User, Database, Info, Download, Puzzle } from 'lucide-react';
+import {
+  Settings,
+  FileText,
+  Palette,
+  Sparkles,
+  User,
+  Database,
+  Info,
+  Download,
+  Puzzle,
+} from 'lucide-react';
 import type { SettingsSection } from '../SettingsApp';
 import styles from './SettingsSidebar.module.css';
 
@@ -12,6 +22,7 @@ const sections: { id: SettingsSection; label: string; Icon: any }[] = [
   { id: 'general', label: 'General', Icon: Settings },
   { id: 'editor', label: 'Editor', Icon: FileText },
   { id: 'appearance', label: 'Appearance', Icon: Palette },
+  { id: 'ai', label: 'AI Assistant', Icon: Sparkles },
   { id: 'plugins', label: 'Plugins', Icon: Puzzle },
   { id: 'account', label: 'Account', Icon: User },
   { id: 'backup', label: 'Backup & Data', Icon: Database },

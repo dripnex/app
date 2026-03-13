@@ -4,7 +4,16 @@ import { create } from 'zustand';
 // Types
 // ============================================================================
 
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline';
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline' | 'auth-expired';
+
+export interface SyncStatusEvent {
+  type: 'sync-start' | 'sync-success' | 'sync-error' | 'auth-expired';
+  error?: string;
+  isNetworkError?: boolean;
+  consecutiveFailures?: number;
+  changesApplied?: number;
+  changesPushed?: number;
+}
 
 export interface Conflict {
   noteId: string;
@@ -32,6 +41,10 @@ interface SyncState {
   error: string | null;
   /** Whether sync is enabled (Pro feature) */
   isEnabled: boolean;
+  /** Number of consecutive sync failures (from main process) */
+  consecutiveFailures: number;
+  /** Number of local changes waiting to be pushed */
+  pendingCount: number;
 
   // Actions
   syncNow: () => Promise<void>;
@@ -40,6 +53,10 @@ interface SyncState {
   setEnabled: (enabled: boolean) => void;
   updateLastSyncAt: (timestamp: number) => void;
   initNetworkListeners: () => () => void;
+  /** Listen for sync status events pushed from the main process (auto-sync) */
+  initSyncStatusListener: () => () => void;
+  /** Refresh the pending change count from main process */
+  refreshPendingCount: () => Promise<void>;
 }
 
 // ============================================================================
@@ -54,6 +71,8 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   conflicts: [],
   error: null,
   isEnabled: false,
+  consecutiveFailures: 0,
+  pendingCount: 0,
 
   // Actions
 
@@ -164,6 +183,20 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   updateLastSyncAt: (timestamp: number) => set({ lastSyncAt: timestamp }),
 
   /**
+   * Refresh the pending change count from the main process.
+   */
+  refreshPendingCount: async () => {
+    try {
+      const result = await window.readied.sync.pendingCount();
+      if (result.success) {
+        set({ pendingCount: result.count });
+      }
+    } catch {
+      // Silently ignore — not critical
+    }
+  },
+
+  /**
    * Listen for online/offline events and auto-resume sync on reconnect
    */
   initNetworkListeners: () => {
@@ -200,6 +233,58 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       if (debounceTimer) clearTimeout(debounceTimer);
     };
   },
+
+  /**
+   * Listen for sync status events pushed from the main process.
+   * This handles auto-sync state changes so the renderer stays in sync.
+   */
+  initSyncStatusListener: () => {
+    // Fetch initial pending count
+    get().refreshPendingCount();
+
+    const unsubscribe = window.readied.sync.onStatusChange((raw: unknown) => {
+      const event = raw as SyncStatusEvent;
+
+      switch (event.type) {
+        case 'sync-start':
+          set({ status: 'syncing', error: null });
+          break;
+
+        case 'sync-success':
+          set({
+            status: 'idle',
+            error: null,
+            consecutiveFailures: 0,
+            lastSyncAt: Date.now(),
+          });
+          // Refresh pending count after successful sync
+          get().refreshPendingCount();
+          break;
+
+        case 'sync-error': {
+          const isNetwork = event.isNetworkError ?? false;
+          set({
+            status: isNetwork ? 'offline' : 'error',
+            error: event.error ?? 'Sync failed',
+            consecutiveFailures: event.consecutiveFailures ?? 0,
+          });
+          // Refresh pending count so user sees queued changes
+          get().refreshPendingCount();
+          break;
+        }
+
+        case 'auth-expired':
+          set({
+            status: 'auth-expired',
+            error: 'Session expired. Please sign in again.',
+            consecutiveFailures: 0,
+          });
+          break;
+      }
+    });
+
+    return unsubscribe;
+  },
 }));
 
 // ============================================================================
@@ -214,3 +299,5 @@ export const selectError = (state: SyncState) => state.error;
 export const selectIsEnabled = (state: SyncState) => state.isEnabled;
 export const selectIsSyncing = (state: SyncState) => state.status === 'syncing';
 export const selectHasConflicts = (state: SyncState) => state.conflicts.length > 0;
+export const selectConsecutiveFailures = (state: SyncState) => state.consecutiveFailures;
+export const selectPendingCount = (state: SyncState) => state.pendingCount;

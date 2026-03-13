@@ -9,6 +9,10 @@ These principles guide every technical and product decision in Readied.
 
 ## Core Principles
 
+<Callout title="The golden rule" type="info">
+"Your notes survive the app."
+</Callout>
+
 ### 1. Markdown is Sacred
 
 > "If the user typed it, we keep it."
@@ -41,28 +45,28 @@ These principles guide every technical and product decision in Readied.
 
 ## Technical Principles
 
-### Strict Separation
+<Tabs items={['Separation', 'Dependencies', 'Migrations']}>
+  <Tab value="Separation">
+    ```
+    Core ≠ UI ≠ Infra ≠ Packaging
+    ```
 
-```
-Core ≠ UI ≠ Infra ≠ Packaging
-```
-
-- React never decides domain logic
-- SQLite queries never in renderer
-- IPC channels are typed contracts
-
-### Minimal Dependencies
-
-- Every library needs written justification
-- No "just in case" abstractions
-- Prefer standard APIs over libraries
-
-### Forward-Only Migrations
-
-- Schema changes are inevitable
-- Plan for them from day 1
-- Never rollback schema
-- Automatic backup before migration
+    - React never decides domain logic
+    - SQLite queries never in renderer
+    - IPC channels are typed contracts
+  </Tab>
+  <Tab value="Dependencies">
+    - Every library needs written justification
+    - No "just in case" abstractions
+    - Prefer standard APIs over libraries
+  </Tab>
+  <Tab value="Migrations">
+    - Schema changes are inevitable
+    - Plan for them from day 1
+    - Never rollback schema
+    - Automatic backup before migration
+  </Tab>
+</Tabs>
 
 ## What Readied is NOT
 
@@ -72,7 +76,3 @@ Core ≠ UI ≠ Infra ≠ Packaging
 | Collaboration tool | Single-user product          |
 | Mobile app         | Desktop first                |
 | AI-powered         | Not core value prop          |
-
-## One-Liner
-
-> "Your notes survive the app."

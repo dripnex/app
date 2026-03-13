@@ -3,7 +3,12 @@
  * Searches user's notes and builds context for the AI query.
  */
 
-import { SYSTEM_PROMPT, buildContextPrompt, buildCurrentNotePrompt } from './prompts';
+import {
+  SYSTEM_PROMPT,
+  ASK_NOTES_SYSTEM_PROMPT,
+  buildContextPrompt,
+  buildCurrentNotePrompt,
+} from './prompts';
 import type { ClaudeMessage } from './claude-client';
 
 export interface NoteContext {
@@ -12,11 +17,15 @@ export interface NoteContext {
   content: string;
 }
 
+export type AiPanelMode = 'chat' | 'ask-notes';
+
 export interface RagInput {
   query: string;
   currentNote?: NoteContext | null;
   relevantNotes: NoteContext[];
   history?: ClaudeMessage[];
+  /** When 'ask-notes', uses the knowledge-focused system prompt */
+  mode?: AiPanelMode;
 }
 
 export interface RagOutput {
@@ -29,10 +38,10 @@ export interface RagOutput {
  * incorporating RAG context from relevant notes.
  */
 export function buildRagPrompt(input: RagInput): RagOutput {
-  const { query, currentNote, relevantNotes, history = [] } = input;
+  const { query, currentNote, relevantNotes, history = [], mode = 'chat' } = input;
 
-  // Build system prompt with context
-  let system = SYSTEM_PROMPT;
+  // Build system prompt with context — use knowledge-focused prompt in ask-notes mode
+  let system = mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
 
   if (currentNote) {
     system += buildCurrentNotePrompt(currentNote.title, currentNote.content);

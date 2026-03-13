@@ -90,6 +90,9 @@ let deviceInfo: DeviceInfo | null = null;
 let apiClient: ApiClient | null = null;
 let encryptionService: EncryptionService | null = null;
 let syncService: SyncService | null = null;
+
+// Pending deep link token — stored if the deep link arrives before the window is ready
+let pendingAuthToken: string | null = null;
 // Git service (initialized on app ready)
 let gitService: GitService | null = null;
 
@@ -294,6 +297,17 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
+  });
+
+  // Deliver any pending deep link auth token once the renderer is ready
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingAuthToken) {
+      getLogger().info('Delivering queued auth token to renderer');
+      mainWindow.webContents.send('auth:verify-token', pendingAuthToken);
+      mainWindow.show();
+      mainWindow.focus();
+      pendingAuthToken = null;
+    }
   });
 
   // Load renderer
@@ -1384,6 +1398,15 @@ function registerAuthSyncHandlers(): void {
   const storage = tokenStorage;
   const sync = syncService;
 
+  // Broadcast sync status events to all renderer windows
+  sync.onStatusChange(event => {
+    BrowserWindow.getAllWindows().forEach(win => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('sync:status-changed', event);
+      }
+    });
+  });
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Authentication
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1435,6 +1458,8 @@ function registerAuthSyncHandlers(): void {
   // Logout and clear tokens
   ipcMain.handle('auth:logout', async () => {
     try {
+      // Abort any in-flight sync operations before clearing tokens
+      sync?.stopAutoSync();
       await storage.clearTokens();
       return { success: true };
     } catch (error) {
@@ -1532,12 +1557,23 @@ function registerAuthSyncHandlers(): void {
         cursor: state.cursor,
         lastSyncAt: state.lastSyncAt,
         isSyncing: state.isSyncing,
+        lastError: state.lastError,
+        consecutiveFailures: state.consecutiveFailures,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get sync status',
       };
+    }
+  });
+
+  // Get pending change count (offline queue size)
+  ipcMain.handle('sync:pendingCount', async () => {
+    try {
+      return { success: true, count: sync.getPendingCount() };
+    } catch (error) {
+      return { success: false, count: 0, error: error instanceof Error ? error.message : 'Failed' };
     }
   });
 
@@ -2173,6 +2209,47 @@ function registerAiHandlers(): void {
       }
     }
   );
+
+  // Export AI command preset — opens a save dialog and writes the JSON file
+  ipcMain.handle('ai:exportPreset', async (_event, presetJson: string) => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Export AI Command Preset',
+      defaultPath: 'ai-commands.json',
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+    });
+
+    if (canceled || !filePath) {
+      return { ok: false, error: 'Export cancelled' };
+    }
+
+    try {
+      await writeFile(filePath, presetJson, 'utf-8');
+      return { ok: true, filePath };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
+  // Import AI command preset — opens a file dialog and reads the JSON file
+  ipcMain.handle('ai:importPreset', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import AI Command Preset',
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+
+    if (canceled || filePaths.length === 0) {
+      return { ok: false, error: 'Import cancelled' };
+    }
+
+    try {
+      const content = await readFile(filePaths[0]!, 'utf-8');
+      // Return the raw JSON string — validation happens in the renderer
+      return { ok: true, content };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
 }
 
 /** Initialize auto-updater */
@@ -2467,12 +2544,17 @@ app.on('open-url', (event, url) => {
       if (token) {
         log.info('Auth verification token received via deep link');
 
-        // Send token to renderer process
-        const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+        // Send token to renderer process — queue if window isn't ready yet
+        const mainWin = BrowserWindow.getAllWindows().find(
+          win => !win.isDestroyed() && win.webContents.isLoading() === false
+        );
         if (mainWin) {
           mainWin.webContents.send('auth:verify-token', token);
           mainWin.show();
           mainWin.focus();
+        } else {
+          log.info('Window not ready, queuing auth token for later delivery');
+          pendingAuthToken = token;
         }
       } else {
         log.warn('Deep link missing token parameter');

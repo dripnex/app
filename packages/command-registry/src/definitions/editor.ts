@@ -41,7 +41,7 @@ export const editorCommands: CommandDefinition[] = [
     name: 'Insert Link',
     category: 'editor',
     context: 'editor',
-    defaultKeybinding: { key: 'k', modifiers: ['Mod'] },
+    defaultKeybinding: { key: 'k', modifiers: ['Mod', 'Shift'] },
     icon: 'Link',
     showInPalette: true,
   },

@@ -5,6 +5,7 @@ import { SettingsSidebar } from './components/SettingsSidebar';
 import { GeneralSection } from './sections/GeneralSection';
 import { EditorSection } from './sections/EditorSection';
 import { AppearanceSection } from './sections/AppearanceSection';
+import { AiSection } from './sections/AiSection';
 import { AccountSection } from './sections/AccountSection';
 import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
@@ -15,6 +16,7 @@ export type SettingsSection =
   | 'general'
   | 'editor'
   | 'appearance'
+  | 'ai'
   | 'plugins'
   | 'account'
   | 'backup'
@@ -33,6 +35,8 @@ export function SettingsApp() {
         return <EditorSection />;
       case 'appearance':
         return <AppearanceSection />;
+      case 'ai':
+        return <AiSection />;
       case 'plugins':
         return <PluginsSection />;
       case 'account':

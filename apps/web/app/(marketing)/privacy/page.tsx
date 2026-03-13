@@ -95,10 +95,10 @@ export default function PrivacyPage() {
       <div className="max-w-5xl mx-auto">
         <header className="mb-10">
           <span className="section-label">Legal</span>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-zinc-50 mb-3">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-text-primary mb-3">
             Privacy Policy
           </h1>
-          <p className="text-sm text-zinc-500">Last updated: {lastUpdated}</p>
+          <p className="text-sm text-text-muted">Last updated: {lastUpdated}</p>
         </header>
 
         {/* TL;DR */}
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
             <span className="block font-mono text-xs font-semibold uppercase tracking-[0.1em] text-accent mb-1">
               TL;DR
             </span>
-            <p className="text-base text-zinc-400 leading-7 m-0">
+            <p className="text-base text-text-secondary leading-7 m-0">
               Your notes never leave your device. We only collect payment info through Stripe to
               deliver your license.
             </p>
@@ -124,20 +124,20 @@ export default function PrivacyPage() {
                 <span className="text-sm font-semibold text-accent font-mono">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <h2 className="text-lg sm:text-xl font-bold text-zinc-50">{section.title}</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-text-primary">{section.title}</h2>
               </header>
               <div>
                 {section.content.map((p, pi) => (
-                  <p key={pi} className="text-base text-zinc-400 leading-7 mb-3 last:mb-0">
+                  <p key={pi} className="text-base text-text-secondary leading-7 mb-3 last:mb-0">
                     {p}
                   </p>
                 ))}
                 {section.list && (
-                  <ul className="list-none my-4 p-4 bg-inset border border-white/[0.06] rounded-lg">
+                  <ul className="list-none my-4 p-4 bg-inset border border-border rounded-lg">
                     {section.list.map((item, li) => (
                       <li
                         key={li}
-                        className="flex items-start gap-3 py-2.5 text-base text-zinc-400 leading-7"
+                        className="flex items-start gap-3 py-2.5 text-base text-text-secondary leading-7"
                       >
                         <Check size={16} className="text-accent shrink-0 mt-1" />
                         {item}
@@ -146,7 +146,7 @@ export default function PrivacyPage() {
                   </ul>
                 )}
                 {'footer' in section && section.footer && (
-                  <p className="mt-4 pt-4 border-t border-white/[0.06] italic text-base text-zinc-500 leading-7">
+                  <p className="mt-4 pt-4 border-t border-border italic text-base text-text-muted leading-7">
                     {section.footer}
                   </p>
                 )}
@@ -158,7 +158,7 @@ export default function PrivacyPage() {
         <footer className="mt-12">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-accent"
+            className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
           >
             <ArrowLeft size={16} />
             Back to home

@@ -73,7 +73,7 @@ export default function PhilosophyPage() {
             <br />
             <span className="gradient-text">become a platform</span>
           </h1>
-          <p className="text-lg text-[#a1a1aa] max-w-[50ch] mx-auto leading-relaxed">
+          <p className="text-lg text-text-secondary max-w-[50ch] mx-auto leading-relaxed">
             A manifesto for software that respects your files, your time, and your trust.
           </p>
         </header>
@@ -85,7 +85,7 @@ export default function PhilosophyPage() {
                 <span className="text-lg font-extrabold text-accent font-mono leading-none shrink-0">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <h2 className="text-xl sm:text-2xl font-bold text-[#f4f4f5] tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
                   {section.title}
                 </h2>
               </header>
@@ -94,16 +94,19 @@ export default function PhilosophyPage() {
                   {section.highlight}
                 </p>
                 {section.content.map((p, pi) => (
-                  <p key={pi} className="text-base text-[#a1a1aa] leading-relaxed mb-3 last:mb-0">
+                  <p
+                    key={pi}
+                    className="text-base text-text-secondary leading-relaxed mb-3 last:mb-0"
+                  >
                     {p}
                   </p>
                 ))}
                 {section.list && (
-                  <ul className="list-none my-6 p-4 sm:p-6 bg-inset border border-white/[0.06] rounded-lg">
+                  <ul className="list-none my-6 p-4 sm:p-6 bg-inset border border-border rounded-lg">
                     {section.list.map((item, li) => (
                       <li
                         key={li}
-                        className="flex items-start gap-3 py-2 text-sm text-[#a1a1aa] leading-relaxed"
+                        className="flex items-start gap-3 py-2 text-sm text-text-secondary leading-relaxed"
                       >
                         <Check size={16} className="text-accent shrink-0 mt-[3px]" />
                         <span>{item}</span>
@@ -112,27 +115,29 @@ export default function PhilosophyPage() {
                   </ul>
                 )}
                 {section.footer && (
-                  <p className="mt-6 pt-6 border-t border-white/[0.06] italic text-sm text-[#71717a]">
+                  <p className="mt-6 pt-6 border-t border-border italic text-sm text-text-muted">
                     {section.footer}
                   </p>
                 )}
               </div>
               {i === 2 && (
-                <div className="mt-6 rounded-xl bg-[#0f0f10] border border-white/[0.06] p-6 font-mono text-sm leading-relaxed">
-                  <div className="text-[#71717a] mb-2">
+                <div className="mt-6 rounded-xl bg-inset border border-border p-6 font-mono text-sm leading-relaxed">
+                  <div className="text-text-muted mb-2">
                     {'// What happens when you delete Readied:'}
                   </div>
-                  <div className="text-[#a1a1aa]">~/notes/</div>
-                  <div className="text-[#a1a1aa] pl-4">
+                  <div className="text-text-secondary">~/notes/</div>
+                  <div className="text-text-secondary pl-4">
                     project.md <span className="text-emerald-400">&larr; still here</span>
                   </div>
-                  <div className="text-[#a1a1aa] pl-4">
+                  <div className="text-text-secondary pl-4">
                     ideas.md <span className="text-emerald-400">&larr; still here</span>
                   </div>
-                  <div className="text-[#a1a1aa] pl-4">
+                  <div className="text-text-secondary pl-4">
                     journal/ <span className="text-emerald-400">&larr; still here</span>
                   </div>
-                  <div className="text-[#71717a] mt-2">{'// Your files never depended on us.'}</div>
+                  <div className="text-text-muted mt-2">
+                    {'// Your files never depended on us.'}
+                  </div>
                 </div>
               )}
             </section>
@@ -140,10 +145,10 @@ export default function PhilosophyPage() {
         </article>
 
         <footer className="mt-16 text-center">
-          <h3 className="text-2xl font-bold text-zinc-50 mb-3">
+          <h3 className="text-2xl font-bold text-text-primary mb-3">
             Ready to try software that respects your files?
           </h3>
-          <p className="text-base text-[#a1a1aa] mb-8 max-w-[44ch] mx-auto">
+          <p className="text-base text-text-secondary mb-8 max-w-[44ch] mx-auto">
             Download for free. No account needed.
           </p>
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -155,7 +160,7 @@ export default function PhilosophyPage() {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] px-7 py-3.5 text-base font-medium text-[#a1a1aa] hover:bg-white/5 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-7 py-3.5 text-base font-medium text-text-secondary hover:bg-surface-elevated hover:text-text-primary"
             >
               Back to home
             </Link>

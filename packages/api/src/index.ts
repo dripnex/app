@@ -12,6 +12,7 @@
  */
 
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
@@ -71,6 +72,17 @@ app.notFound(c => {
 
 // Error handler
 app.onError((err, c) => {
+  // Let HTTPException return its proper status code (e.g. 401, 403, 404)
+  if (err instanceof HTTPException) {
+    // If the exception has a custom Response (with JSON body), use it directly
+    const res = err.getResponse();
+    if (res.headers.get('Content-Type')?.includes('application/json')) {
+      return res;
+    }
+    // Otherwise, return a consistent JSON error response
+    return c.json({ error: err.message || 'Request failed' }, err.status);
+  }
+
   console.error('Unhandled error:', err);
   return c.json(
     {

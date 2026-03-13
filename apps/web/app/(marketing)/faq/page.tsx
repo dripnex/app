@@ -110,7 +110,7 @@ export default function FaqPage() {
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
             Frequently asked <span className="text-accent">questions</span>
           </h1>
-          <p className="text-lg text-[#a1a1aa]">Everything you need to know about Readied.</p>
+          <p className="text-lg text-text-secondary">Everything you need to know about Readied.</p>
         </header>
 
         <FaqAccordion categories={faqs} />
@@ -120,7 +120,7 @@ export default function FaqPage() {
             <MessageCircle size={28} />
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Still have questions?</h3>
-          <p className="text-base text-[#a1a1aa] mb-8 max-w-md mx-auto">
+          <p className="text-base text-text-secondary mb-8 max-w-md mx-auto">
             Join our community forum or reach out on Twitter.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -136,7 +136,7 @@ export default function FaqPage() {
               href={URLS.twitter}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-border text-text-secondary font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
             >
               @readiedapp
             </a>

@@ -13,6 +13,7 @@ export type {
   PluginConfigAPI,
   PluginLogger,
   PluginCommandOptions,
+  PluginAiCommandOptions,
   PluginHookOptions,
 } from './types';
 
@@ -80,6 +81,10 @@ export {
   THEME_EXTENSION_SCOPES,
 } from './theme/themeTypes';
 export type { ThemeDefinition } from './theme/themeTypes';
+
+// AI Commands
+export { aiCommandStore } from './ai/aiCommandStore';
+export type { AiCommandRegistration } from './ai/aiCommandStore';
 
 // Validation
 export { validateManifest, assertValidManifest, validateConfigValue } from './validation';
