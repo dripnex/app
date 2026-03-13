@@ -1044,6 +1044,30 @@ input:focus-visible {
   opacity: 0.8;
 }
 
+/* Drag & Drop */
+.notebook-item-row[draggable="true"] {
+  cursor: grab;
+}
+
+.notebook-item-row[draggable="true"]:active {
+  cursor: grabbing;
+  opacity: 0.6;
+}
+
+.notebook-item-row.drop-above {
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
+
+.notebook-item-row.drop-below {
+  box-shadow: inset 0 -2px 0 0 var(--accent);
+}
+
+.notebook-item-row.drop-inside {
+  background: var(--accent-muted);
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .notebook-item-toggle {
   width: 16px;
   height: 16px;
