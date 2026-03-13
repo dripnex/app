@@ -148,7 +148,7 @@ nav[aria-label='Breadcrumb'] a:hover {
 /* Marketing page utilities */
 @layer components {
   .glass {
-    @apply bg-zinc-950/80 backdrop-blur-xl border border-white/[0.06];
+    @apply bg-zinc-950/80 backdrop-blur-xl border border-white/6;
   }
 
   .glass-card {
@@ -161,7 +161,7 @@ nav[aria-label='Breadcrumb'] a:hover {
   }
 
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-indigo-400;
+    @apply bg-clip-text text-transparent bg-linear-to-r from-violet-400 to-indigo-400;
   }
 
   .section-label {

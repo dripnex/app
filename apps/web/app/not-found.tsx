@@ -36,32 +36,32 @@ export default function NotFound() {
                 </Link>
                 <Link
                   href="/faq"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/[0.08] text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/8 text-[#a1a1aa] font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
                 >
                   View FAQ
                 </Link>
               </div>
 
-              <div className="pt-6 border-t border-white/[0.06]">
+              <div className="pt-6 border-t border-white/6">
                 <span className="block font-mono text-xs font-semibold uppercase tracking-[0.1em] text-[#71717a] mb-3">
                   Or try these:
                 </span>
                 <div className="flex flex-wrap justify-center gap-2">
                   <Link
                     href="/download"
-                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/[0.08] rounded-lg transition-colors hover:text-accent hover:bg-white/5"
+                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/8 rounded-lg transition-colors hover:text-accent hover:bg-white/5"
                   >
                     Download
                   </Link>
                   <Link
                     href="/pricing"
-                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/[0.08] rounded-lg transition-colors hover:text-accent hover:bg-white/5"
+                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/8 rounded-lg transition-colors hover:text-accent hover:bg-white/5"
                   >
                     Pricing
                   </Link>
                   <Link
                     href="/changelog"
-                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/[0.08] rounded-lg transition-colors hover:text-accent hover:bg-white/5"
+                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/8 rounded-lg transition-colors hover:text-accent hover:bg-white/5"
                   >
                     Changelog
                   </Link>
@@ -69,7 +69,7 @@ export default function NotFound() {
                     href="https://medium.com/@tomymaritano"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/[0.08] rounded-lg transition-colors hover:text-accent hover:bg-white/5"
+                    className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/8 rounded-lg transition-colors hover:text-accent hover:bg-white/5"
                   >
                     Blog
                   </a>

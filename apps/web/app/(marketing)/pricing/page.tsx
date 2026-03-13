@@ -75,7 +75,7 @@ export default function PricingPage() {
             <ul className="list-none mb-6 space-y-0">
               {plans.free.features.map((f, i) => (
                 <li key={i} className="flex items-center gap-3 py-2 text-sm text-text-secondary">
-                  <span className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-white/[0.05] text-text-muted">
+                  <span className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-white/5 text-text-muted">
                     <Check size={14} />
                   </span>
                   <span>{f}</span>
@@ -133,7 +133,7 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <div className="flex items-center gap-3 px-4 py-3 mb-6 rounded-lg bg-accent/[0.06] border border-accent/10 text-sm text-text-secondary">
+            <div className="flex items-center gap-3 px-4 py-3 mb-6 rounded-lg bg-accent/6 border border-accent/10 text-sm text-text-secondary">
               <Sparkles size={16} className="text-accent" />
               <span>{trialDescription}</span>
             </div>
