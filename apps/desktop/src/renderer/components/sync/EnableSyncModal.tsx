@@ -27,7 +27,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const [isResending, setIsResending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { requestMagicLink, isAuthenticated } = useAuthStore();
+  const { requestMagicLink, isAuthenticated, error: authError } = useAuthStore();
 
   // Watch for auth success (deep link verified in background)
   useEffect(() => {
@@ -35,6 +35,13 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
       setStep('success');
     }
   }, [isAuthenticated, step]);
+
+  // Watch for verification errors from the deep link path
+  useEffect(() => {
+    if (authError && step === 'sent') {
+      setError(authError);
+    }
+  }, [authError, step]);
 
   // Resend countdown timer
   useEffect(() => {

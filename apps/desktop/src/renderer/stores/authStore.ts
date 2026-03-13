@@ -50,7 +50,10 @@ export const useAuthStore = create<AuthState>()(set => ({
   requestMagicLink: async (email: string) => {
     set({ isLoading: true, error: null });
     try {
-      await window.readied.auth.requestMagicLink(email);
+      const result = await window.readied.auth.requestMagicLink(email);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send magic link');
+      }
       set({ isLoading: false });
     } catch (error) {
       let errorMessage = 'Failed to request magic link';

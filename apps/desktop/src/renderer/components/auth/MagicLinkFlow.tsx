@@ -4,7 +4,7 @@
  * Multi-step dialog for passwordless authentication via email magic link.
  */
 
-import { useState, useCallback, FormEvent } from 'react';
+import { useState, useCallback, useEffect, FormEvent } from 'react';
 import { Mail, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import styles from './MagicLinkFlow.module.css';
@@ -16,12 +16,27 @@ export interface MagicLinkFlowProps {
 
 type Step = 'email' | 'sent' | 'verifying' | 'success' | 'error';
 
-export function MagicLinkFlow({ onSuccess: _onSuccess, onCancel }: MagicLinkFlowProps) {
-  const { requestMagicLink, error: authError } = useAuthStore();
+export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
+  const { requestMagicLink, isAuthenticated, error: authError } = useAuthStore();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Watch for auth success (deep link verified in background)
+  useEffect(() => {
+    if (isAuthenticated && step === 'sent') {
+      setStep('success');
+      onSuccess();
+    }
+  }, [isAuthenticated, step, onSuccess]);
+
+  // Watch for verification errors from the deep link path
+  useEffect(() => {
+    if (authError && step === 'sent') {
+      setError(authError);
+    }
+  }, [authError, step]);
 
   const handleSubmitEmail = useCallback(
     async (e: FormEvent) => {
@@ -100,9 +115,11 @@ export function MagicLinkFlow({ onSuccess: _onSuccess, onCancel }: MagicLinkFlow
                 <h2 className={styles.title}>Check your email</h2>
                 <p className={styles.description}>
                   We sent a magic link to <strong>{email}</strong>. Click the link in the email to
-                  sign in.
+                  sign in. This window will update automatically.
                 </p>
               </div>
+
+              {error && <p className={styles.errorText}>{error}</p>}
 
               <div className={styles.actions}>
                 <button type="button" className={styles.secondaryButton} onClick={handleRetry}>
