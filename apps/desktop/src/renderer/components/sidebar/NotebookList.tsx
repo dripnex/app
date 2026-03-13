@@ -50,7 +50,7 @@ export function NotebookList({
   onRequestCreateChild,
 }: NotebookListProps) {
   const { data: tree, isLoading, error } = useNotebookTree();
-  const { renameNotebook, deleteNotebook } = useNotebookMutations();
+  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks } = useNotebookMutations();
 
   // Calculate ancestor IDs for breadcrumb-style highlighting
   const ancestorIds = useMemo(
@@ -75,6 +75,9 @@ export function NotebookList({
     return findChildren(tree);
   }, [tree, filterParentId]);
 
+  // Sibling IDs at the root level (for reorder)
+  const rootSiblingIds = useMemo(() => displayedTree.map(n => n.notebook.id), [displayedTree]);
+
   const handleRename = useCallback(
     async (id: string, name: string) => {
       await renameNotebook.mutateAsync({ id, name });
@@ -90,6 +93,20 @@ export function NotebookList({
       }
     },
     [deleteNotebook, selectedNotebookId, onSelectNotebook]
+  );
+
+  const handleMove = useCallback(
+    async (id: string, newParentId: string | null) => {
+      await moveNotebook.mutateAsync({ id, newParentId });
+    },
+    [moveNotebook]
+  );
+
+  const handleReorder = useCallback(
+    async (parentId: string | null, orderedIds: string[]) => {
+      await reorderNotebooks.mutateAsync({ parentId, orderedIds });
+    },
+    [reorderNotebooks]
   );
 
   // Loading state
@@ -123,6 +140,9 @@ export function NotebookList({
             onRename={handleRename}
             onDelete={handleDelete}
             onCreateChild={onRequestCreateChild}
+            onMove={handleMove}
+            onReorder={handleReorder}
+            siblingIds={rootSiblingIds}
           />
         ))}
       </ul>

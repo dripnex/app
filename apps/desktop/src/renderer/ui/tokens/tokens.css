@@ -1,0 +1,212 @@
+/* =============================================================================
+   READIED DESIGN TOKENS
+   Single source of truth for all visual properties.
+
+   RULES:
+   - Every CSS custom property used in the app MUST be defined here
+   - No hardcoded colors in component CSS — use tokens
+   - Both dark and light themes must define the same set of variables
+   - Aliases (compatibility layer) map old names to canonical tokens
+   ============================================================================= */
+
+/* =============================================================================
+   DARK THEME (default)
+   ============================================================================= */
+:root {
+  /* ── Spacing Scale ────────────────────────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ── Surfaces ─────────────────────────────────────────────────────────────── */
+  --bg-base: #0a0b0d;
+  --bg-surface: #111214;
+  --bg-elevated: #18191c;
+  --bg-inset: #0d0e10;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.08);
+
+  /* ── Borders ──────────────────────────────────────────────────────────────── */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(255, 255, 255, 0.12);
+
+  /* ── Text ─────────────────────────────────────────────────────────────────── */
+  --text-primary: #f4f4f5;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-faint: rgba(255, 255, 255, 0.3);
+
+  /* ── Accent ───────────────────────────────────────────────────────────────── */
+  --accent: #5eead4;
+  --accent-hover: #2dd4bf;
+  --accent-muted: rgba(94, 234, 212, 0.15);
+  --accent-subtle: rgba(94, 234, 212, 0.1);
+
+  /* ── Semantic Colors ──────────────────────────────────────────────────────── */
+  --danger: #f87171;
+  --danger-muted: rgba(248, 113, 113, 0.15);
+  --warning: #fbbf24;
+  --warning-muted: rgba(251, 191, 36, 0.15);
+  --success: #34d399;
+  --success-muted: rgba(52, 211, 153, 0.15);
+
+  /* ── Links ────────────────────────────────────────────────────────────────── */
+  --link: var(--accent);
+  --link-hover: var(--accent-hover);
+
+  /* ── Status ───────────────────────────────────────────────────────────────── */
+  --status-active: var(--text-secondary);
+  --status-on-hold: #f59e0b;
+  --status-completed: #22c55e;
+  --status-dropped: #ef4444;
+  --status-error: var(--danger);
+
+  /* ── Glass Effects ────────────────────────────────────────────────────────── */
+  --glass-bg: rgba(20, 22, 26, 0.85);
+  --glass-bg-fallback: rgba(20, 22, 26, 0.95);
+  --glass-bg-menu: rgba(40, 45, 55, 0.92);
+  --glass-blur: 28px;
+  --glass-saturate: 180%;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-menu: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* ── Shadows ──────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+  /* ── Typography ───────────────────────────────────────────────────────────── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-lg: 14px;
+  --text-xl: 16px;
+  --text-2xl: 18px;
+
+  /* ── Layout ───────────────────────────────────────────────────────────────── */
+  --sidebar-width: 200px;
+  --list-width: 280px;
+
+  /* ── Radii ────────────────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ── Transitions ──────────────────────────────────────────────────────────── */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ── Error Tokens (preview plugin errors) ─────────────────────────────────── */
+  --error-bg: var(--danger-muted);
+  --error-border: var(--danger);
+  --error-fg: var(--danger);
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     COMPATIBILITY ALIASES
+     Maps legacy variable names to canonical tokens.
+     These exist so sync/, auth/, and older CSS modules work without
+     modification. Remove these as components are migrated.
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Surface aliases */
+  --bg-primary: var(--bg-base);
+  --bg-secondary: var(--bg-surface);
+  --bg-tertiary: var(--bg-elevated);
+  --surface-hover: var(--bg-hover);
+  --surface-elevated: var(--bg-elevated);
+
+  /* Text aliases */
+  --text-tertiary: var(--text-faint);
+  --text-normal: var(--text-primary);
+
+  /* Accent aliases */
+  --accent-primary: var(--accent);
+  --accent-strong: var(--accent-hover);
+
+  /* Border aliases */
+  --border-primary: var(--border);
+
+  /* Error alias */
+  --error: var(--danger);
+
+  /* --color-* namespace (used by sync/ and auth/ CSS modules) */
+  --color-bg-primary: var(--bg-base);
+  --color-bg-secondary: var(--bg-surface);
+  --color-bg-hover: var(--bg-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-faint);
+  --color-border: var(--border);
+  --color-primary: var(--accent);
+  --color-primary-subtle: var(--accent-muted);
+  --color-primary-hover: var(--accent-hover);
+  --color-error: var(--danger);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+}
+
+/* =============================================================================
+   LIGHT THEME
+   ============================================================================= */
+:root[data-color-scheme="light"] {
+  /* ── Surfaces ─────────────────────────────────────────────────────────────── */
+  --bg-base: #ffffff;
+  --bg-surface: #f9fafb;
+  --bg-elevated: #f3f4f6;
+  --bg-inset: #e5e7eb;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.08);
+
+  /* ── Borders ──────────────────────────────────────────────────────────────── */
+  --border: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --border-hover: rgba(0, 0, 0, 0.12);
+
+  /* ── Text ─────────────────────────────────────────────────────────────────── */
+  --text-primary: #111827;
+  --text-secondary: rgba(0, 0, 0, 0.7);
+  --text-muted: rgba(0, 0, 0, 0.5);
+  --text-faint: rgba(0, 0, 0, 0.3);
+
+  /* ── Accent ───────────────────────────────────────────────────────────────── */
+  --accent: #14b8a6;
+  --accent-hover: #0d9488;
+  --accent-muted: rgba(20, 184, 166, 0.15);
+  --accent-subtle: rgba(20, 184, 166, 0.1);
+
+  /* ── Status ───────────────────────────────────────────────────────────────── */
+  --status-on-hold: #d97706;
+  --status-completed: #16a34a;
+  --status-dropped: #dc2626;
+
+  /* ── Glass Effects ────────────────────────────────────────────────────────── */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-fallback: rgba(255, 255, 255, 0.95);
+  --glass-bg-menu: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-menu: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+  /* ── Shadows ──────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.10);
+}

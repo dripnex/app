@@ -17,7 +17,7 @@ Readied uses an **Open Core** model:
 | `packages/tasks`          | Task/checkbox parsing             |
 | `packages/commands`       | Command palette                   |
 | `packages/embeds`         | Image/embed handling              |
-| `packages/design-system`  | Design tokens, components         |
+| `packages/plugin-api`     | Plugin API + theme system         |
 
 ### Proprietary - Not Open for Contributions
 

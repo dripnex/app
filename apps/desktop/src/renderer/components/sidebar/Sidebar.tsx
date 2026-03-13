@@ -110,66 +110,68 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
         onClearTagFilter={() => setTagFilter(null)}
       />
 
-      <SidebarQuickFilters
-        allNotesCount={isNotebookContext ? displayedNotesCount : globalCounts.active}
-        pinnedCount={globalCounts.pinned}
-        trashCount={globalCounts.deleted}
-        selectedFilter={globalFilter}
-        onSelectFilter={filter => {
-          if (filter === 'all') goToAllInCurrentContext();
-          else if (filter === 'pinned') goToPinned();
-          else if (filter === 'trash') goToTrash();
-        }}
-        isNotebookContext={isNotebookContext}
-        onOpenGraph={onOpenGraph}
-      />
-
-      <SidebarSection title="Notebooks" collapsible onAdd={openCreateInContext}>
-        <NotebookList
-          selectedNotebookId={selectedNotebookId}
-          onSelectNotebook={goToNotebook}
-          filterParentId={isNotebookContext ? selectedNotebookId : undefined}
-          onRequestCreateChild={openCreateChild}
+      <div className="sidebar-content">
+        <SidebarQuickFilters
+          allNotesCount={isNotebookContext ? displayedNotesCount : globalCounts.active}
+          pinnedCount={globalCounts.pinned}
+          trashCount={globalCounts.deleted}
+          selectedFilter={globalFilter}
+          onSelectFilter={filter => {
+            if (filter === 'all') goToAllInCurrentContext();
+            else if (filter === 'pinned') goToPinned();
+            else if (filter === 'trash') goToTrash();
+          }}
+          isNotebookContext={isNotebookContext}
+          onOpenGraph={onOpenGraph}
         />
-      </SidebarSection>
 
-      <SidebarSection title="Tags" collapsible defaultCollapsed>
-        <TagsList selectedTag={tagFilter} onSelectTag={setTagFilter} />
-      </SidebarSection>
+        <SidebarSection title="Notebooks" collapsible onAdd={openCreateInContext}>
+          <NotebookList
+            selectedNotebookId={selectedNotebookId}
+            onSelectNotebook={goToNotebook}
+            filterParentId={isNotebookContext ? selectedNotebookId : undefined}
+            onRequestCreateChild={openCreateChild}
+          />
+        </SidebarSection>
 
-      <SidebarSection title="Status" collapsible defaultCollapsed>
-        <StatusFilters
-          counts={globalCounts.byStatus}
-          selectedStatus={statusFilter}
-          onSelectStatus={setStatusFilter}
-        />
-      </SidebarSection>
+        <SidebarSection title="Tags" collapsible defaultCollapsed>
+          <TagsList selectedTag={tagFilter} onSelectTag={setTagFilter} />
+        </SidebarSection>
 
-      {/* Plugin sidebar sections */}
-      <LayoutZone name="sidebar-section" />
+        <SidebarSection title="Status" collapsible defaultCollapsed>
+          <StatusFilters
+            counts={globalCounts.byStatus}
+            selectedStatus={statusFilter}
+            onSelectStatus={setStatusFilter}
+          />
+        </SidebarSection>
 
-      {shouldShowPrompt && (
-        <div className="sidebar-sync-prompt">
-          <span>Sync your notes across devices</span>
-          <div className="sidebar-sync-prompt-actions">
-            <button
-              type="button"
-              className="sidebar-sync-prompt-enable"
-              onClick={() => setIsSyncModalOpen(true)}
-            >
-              Enable
-            </button>
-            <button
-              type="button"
-              className="sidebar-sync-prompt-dismiss"
-              onClick={dismissPrompt}
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
+        {/* Plugin sidebar sections */}
+        <LayoutZone name="sidebar-section" />
+
+        {shouldShowPrompt && (
+          <div className="sidebar-sync-prompt">
+            <span>Sync your notes across devices</span>
+            <div className="sidebar-sync-prompt-actions">
+              <button
+                type="button"
+                className="sidebar-sync-prompt-enable"
+                onClick={() => setIsSyncModalOpen(true)}
+              >
+                Enable
+              </button>
+              <button
+                type="button"
+                className="sidebar-sync-prompt-dismiss"
+                onClick={dismissPrompt}
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <SidebarFooter appVersion={appVersion} onEnableSyncClick={() => setIsSyncModalOpen(true)} />
 

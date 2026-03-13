@@ -9,7 +9,7 @@
 /packages/tasks/ @tomymaritano
 /packages/commands/ @tomymaritano
 /packages/embeds/ @tomymaritano
-/packages/design-system/ @tomymaritano
+/packages/plugin-api/ @tomymaritano
 
 # Desktop app (proprietary) - stricter review
 /apps/desktop/ @tomymaritano

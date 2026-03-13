@@ -48,7 +48,7 @@ export interface ProductConfig {
  * @example
  * ```typescript
  * const config = getProductConfig();
- * console.log(config.plans.pro.pricing?.intervals.monthly.label); // '$2.99/mo'
+ * console.log(config.plans.pro.pricing?.intervals.monthly.label); // '€2/mo'
  * console.log(config.trialDays); // 14
  * ```
  */
@@ -85,10 +85,10 @@ export function getProductConfig(): ProductConfig {
         ],
         pricing: {
           intervals: {
-            monthly: { label: '$2.99/mo', amountCents: 299 },
-            annual: { label: '$29/year', amountCents: 2900 },
+            monthly: { label: '€2/mo', amountCents: 200 },
+            annual: { label: '€20/year', amountCents: 2000 },
           },
-          annualSavings: '19%',
+          annualSavings: '17%',
         },
       },
     },
