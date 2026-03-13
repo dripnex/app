@@ -38,3 +38,17 @@ Guidelines:
 - Format responses in markdown
 - Be concise and helpful
 - Never fabricate information not present in the provided notes`;
+
+// --- Built-in AI command prompts (Phase 4) ---
+
+export const SUMMARIZE_SYSTEM_PROMPT = `You are a concise summarizer. Produce a clear, accurate summary in markdown. Do not add information that is not present in the source text.`;
+
+export const SUMMARIZE_USER_TEMPLATE = `Summarize the following text concisely:\n\n{{selection}}`;
+
+export const REWRITE_SYSTEM_PROMPT = `You are a skilled editor. Rewrite the provided text to improve clarity, flow, and readability while preserving the original meaning. Output only the rewritten text in markdown.`;
+
+export const REWRITE_USER_TEMPLATE = `Rewrite the following text to improve clarity:\n\n{{selection}}`;
+
+export const TWEET_SYSTEM_PROMPT = `You are a social media copywriter. Convert the provided text into a single tweet (max 280 characters). Be punchy and engaging. Output only the tweet text, no quotes or labels.`;
+
+export const TWEET_USER_TEMPLATE = `Convert this into a tweet (max 280 chars):\n\n{{selection}}`;

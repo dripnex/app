@@ -23,6 +23,16 @@ import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
 import { AiPanel } from './components/ai/AiPanel';
 import type { AiPanelMode } from '@readied/ai-assistant';
+import {
+  SUMMARIZE_SYSTEM_PROMPT,
+  SUMMARIZE_USER_TEMPLATE,
+  REWRITE_SYSTEM_PROMPT,
+  REWRITE_USER_TEMPLATE,
+  TWEET_SYSTEM_PROMPT,
+  TWEET_USER_TEMPLATE,
+  resolveTemplate,
+} from '@readied/ai-assistant';
+import type { AiInitialCommand } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
 import type { PluginLoadError } from './stores/pluginRuntimeStore';
@@ -43,6 +53,7 @@ import { useDebouncedSearch } from './hooks/useDebouncedSearch';
 import { useCommandKeybindings } from './hooks/useCommandKeybindings';
 import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
 import { useRegisterAiCommands } from './hooks/useRegisterAiCommands';
+import { useRegisterPluginAiCommands } from './hooks/useRegisterPluginAiCommands';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { builtInPlugins } from './plugins';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
@@ -173,6 +184,7 @@ function NotesApp() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [aiPanelMode, setAiPanelMode] = useState<AiPanelMode>('chat');
+  const [pendingAiCommand, setPendingAiCommand] = useState<AiInitialCommand | null>(null);
 
   // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
   const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
@@ -630,10 +642,70 @@ function NotesApp() {
     setIsAiPanelOpen(true);
   }, []);
 
+  /** Helper: get selection text from editor */
+  const getSelectionText = useCallback(() => {
+    const view = getEditorView();
+    if (!view) return '';
+    const { from, to } = view.state.selection.main;
+    return view.state.sliceDoc(from, to);
+  }, []);
+
+  /** Helper: replace selection in editor */
+  const aiReplaceSelection = useCallback((text: string) => {
+    const view = getEditorView();
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    view.dispatch({
+      changes: { from, to, insert: text },
+      selection: { anchor: from + text.length },
+    });
+    view.focus();
+  }, []);
+
+  /** Build and dispatch an AI command with given prompts and output target */
+  const dispatchAiCommand = useCallback(
+    (systemPrompt: string, userTemplate: string, outputTarget: 'replace' | 'insert' | 'panel') => {
+      const selection = getSelectionText();
+      if (!selection) return; // Nothing selected — no-op
+      const userPrompt = resolveTemplate(userTemplate, { selection });
+      setPendingAiCommand({ systemPrompt, userPrompt, outputTarget });
+      setAiPanelMode('chat');
+      setIsAiPanelOpen(true);
+    },
+    [getSelectionText]
+  );
+
+  const handleSummarize = useCallback(() => {
+    dispatchAiCommand(SUMMARIZE_SYSTEM_PROMPT, SUMMARIZE_USER_TEMPLATE, 'panel');
+  }, [dispatchAiCommand]);
+
+  const handleRewrite = useCallback(() => {
+    dispatchAiCommand(REWRITE_SYSTEM_PROMPT, REWRITE_USER_TEMPLATE, 'replace');
+  }, [dispatchAiCommand]);
+
+  const handleTweet = useCallback(() => {
+    dispatchAiCommand(TWEET_SYSTEM_PROMPT, TWEET_USER_TEMPLATE, 'panel');
+  }, [dispatchAiCommand]);
+
+  const clearPendingAiCommand = useCallback(() => {
+    setPendingAiCommand(null);
+  }, []);
+
   useRegisterAiCommands({
     onTogglePanel: toggleAiPanel,
     onAskNotes: openAskNotes,
+    onSummarize: handleSummarize,
+    onRewrite: handleRewrite,
+    onTweet: handleTweet,
   });
+
+  // Bridge: plugin-registered AI commands → command palette → AI panel
+  const handlePluginAiCommand = useCallback((command: AiInitialCommand) => {
+    setPendingAiCommand(command);
+    setAiPanelMode('chat');
+    setIsAiPanelOpen(true);
+  }, []);
+  useRegisterPluginAiCommands(handlePluginAiCommand);
 
   // AI Panel callbacks — wired to existing app state
   const aiConfigCache = useRef<Record<string, unknown>>({});
@@ -827,6 +899,9 @@ function NotesApp() {
                   getConfig={aiGetConfig}
                   insertAtCursor={aiInsertAtCursor}
                   initialMode={aiPanelMode}
+                  initialCommand={pendingAiCommand}
+                  replaceSelection={aiReplaceSelection}
+                  onCommandExecuted={clearPendingAiCommand}
                 />
               </aside>
             )}

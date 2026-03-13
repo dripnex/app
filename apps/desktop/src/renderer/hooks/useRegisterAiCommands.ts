@@ -5,10 +5,13 @@ import { registry } from './useCommandRegistry';
 interface AiCommandHandlers {
   onTogglePanel: () => void;
   onAskNotes: () => void;
+  onSummarize: () => void;
+  onRewrite: () => void;
+  onTweet: () => void;
 }
 
 /**
- * Register AI-related commands (toggle panel, ask-notes, etc.)
+ * Register AI-related commands (toggle panel, ask-notes, summarize, rewrite, tweet)
  * Follows the same pattern as useRegisterAppCommands.
  */
 export function useRegisterAiCommands(handlers: AiCommandHandlers): void {
@@ -19,6 +22,9 @@ export function useRegisterAiCommands(handlers: AiCommandHandlers): void {
     const executors: Record<string, () => void> = {
       'ai:toggle-panel': () => handlersRef.current.onTogglePanel(),
       'ai:ask-notes': () => handlersRef.current.onAskNotes(),
+      'ai:summarize': () => handlersRef.current.onSummarize(),
+      'ai:rewrite': () => handlersRef.current.onRewrite(),
+      'ai:tweet': () => handlersRef.current.onTweet(),
     };
 
     const unregisters: Array<() => void> = [];

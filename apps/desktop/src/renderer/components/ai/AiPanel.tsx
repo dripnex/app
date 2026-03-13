@@ -5,6 +5,13 @@ import type { ClaudeMessage, NoteContext, AiPanelMode } from '@readied/ai-assist
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 
+/** Pre-filled command to auto-execute on mount (used by ai:summarize, ai:rewrite, ai:tweet) */
+export interface AiInitialCommand {
+  systemPrompt: string;
+  userPrompt: string;
+  outputTarget: 'replace' | 'insert' | 'panel';
+}
+
 interface AiPanelProps {
   onClose: () => void;
   getCurrentNote: () => { id: string; title: string; content: string } | null;
@@ -14,6 +21,12 @@ interface AiPanelProps {
   insertAtCursor: (text: string) => void;
   /** Initial mode: 'chat' (default) or 'ask-notes' */
   initialMode?: AiPanelMode;
+  /** Pre-filled command to auto-execute (skip input, go straight to Claude) */
+  initialCommand?: AiInitialCommand | null;
+  /** Replace the current editor selection with text */
+  replaceSelection?: (text: string) => void;
+  /** Callback to clear initialCommand after execution */
+  onCommandExecuted?: () => void;
 }
 
 export function AiPanel({
@@ -24,6 +37,9 @@ export function AiPanel({
   getConfig,
   insertAtCursor,
   initialMode = 'chat',
+  initialCommand = null,
+  replaceSelection,
+  onCommandExecuted,
 }: AiPanelProps) {
   const aiSettings = useSettingsStore(selectAi);
   const [messages, setMessages] = useState<ClaudeMessage[]>([]);
@@ -49,6 +65,73 @@ export function AiPanel({
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
+  // Auto-execute a pre-filled command (ai:summarize, ai:rewrite, ai:tweet)
+  useEffect(() => {
+    if (!initialCommand) return;
+
+    const execute = async () => {
+      const aiSettings_ = useSettingsStore.getState().settings.ai;
+      const hasSettingsKey = Boolean(aiSettings_.apiKey);
+      const apiKey = hasSettingsKey ? aiSettings_.apiKey : getConfig<string>('apiKey');
+      if (!apiKey) {
+        setError('Please set your Anthropic API key in Settings > AI Assistant');
+        onCommandExecuted?.();
+        return;
+      }
+
+      const model = hasSettingsKey
+        ? aiSettings_.model
+        : getConfig<string>('model') || 'claude-sonnet-4-20250514';
+
+      // Show user message in chat
+      const userMsg: ClaudeMessage = { role: 'user', content: initialCommand.userPrompt };
+      setMessages(prev => [...prev, userMsg]);
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await window.readied.ai.query({
+          apiKey,
+          model,
+          system: initialCommand.systemPrompt,
+          messages: [userMsg],
+          maxTokens: 2048,
+        });
+
+        if (result.ok) {
+          const responseText = result.content;
+
+          if (initialCommand.outputTarget === 'replace' && replaceSelection) {
+            replaceSelection(responseText);
+            setMessages(prev => [
+              ...prev,
+              { role: 'assistant', content: responseText + '\n\n*(Selection replaced in editor)*' },
+            ]);
+          } else if (initialCommand.outputTarget === 'insert') {
+            insertAtCursor(responseText);
+            setMessages(prev => [
+              ...prev,
+              { role: 'assistant', content: responseText + '\n\n*(Inserted into editor)*' },
+            ]);
+          } else {
+            // 'panel' — just show in chat
+            setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+          }
+        } else {
+          setError(result.error);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+        onCommandExecuted?.();
+      }
+    };
+
+    execute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCommand]);
 
   const handleSubmit = useCallback(async () => {
     const query = input.trim();
