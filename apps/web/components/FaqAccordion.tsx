@@ -120,30 +120,40 @@ export default function FaqAccordion(props: Props) {
       </div>
 
       {/* Category tabs */}
-      <div className="mb-8 flex flex-wrap justify-center gap-2">
-        {categories.map(cat => (
-          <button
-            key={cat.category}
-            onClick={() => {
-              setActiveTab(cat.category);
-              setSearch('');
-            }}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              !isSearching && activeTab === cat.category
-                ? 'bg-accent text-white'
-                : 'border border-border text-text-secondary hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            {cat.category}
-          </button>
-        ))}
+      <div
+        role="tablist"
+        aria-label="FAQ categories"
+        className="mb-8 flex flex-wrap justify-center gap-2"
+      >
+        {categories.map(cat => {
+          const isActive = !isSearching && activeTab === cat.category;
+          return (
+            <button
+              key={cat.category}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`faq-tabpanel-${cat.category}`}
+              onClick={() => {
+                setActiveTab(cat.category);
+                setSearch('');
+              }}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-accent text-white'
+                  : 'border border-border text-text-secondary hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {cat.category}
+            </button>
+          );
+        })}
       </div>
 
       {/* Results */}
       {isSearching && visibleItems.length === 0 ? (
         <p className="text-center text-sm text-text-muted py-8">No questions match your search.</p>
       ) : (
-        <div className="max-w-2xl mx-auto">
+        <div role="tabpanel" id={`faq-tabpanel-${activeTab}`} className="max-w-2xl mx-auto">
           <AccordionList items={visibleItems} />
         </div>
       )}

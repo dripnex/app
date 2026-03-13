@@ -13,6 +13,12 @@ export type { NoteContext, AiPanelMode, RagInput, RagOutput } from './rag';
 export {
   SYSTEM_PROMPT,
   ASK_NOTES_SYSTEM_PROMPT,
+  SUMMARIZE_SYSTEM_PROMPT,
+  SUMMARIZE_USER_TEMPLATE,
+  REWRITE_SYSTEM_PROMPT,
+  REWRITE_USER_TEMPLATE,
+  TWEET_SYSTEM_PROMPT,
+  TWEET_USER_TEMPLATE,
   buildContextPrompt,
   buildCurrentNotePrompt,
 } from './prompts';

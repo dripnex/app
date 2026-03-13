@@ -12,6 +12,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-03-13
+
+### Added
+
+#### Website
+
+- Full website redesign with shadcn/ui + Magic UI
+
+#### Auth
+
+- Auth UX rethink with Enable Sync flow
+- Auth middleware fix: return 401 instead of 500 on invalid tokens
+
+#### Sync
+
+- Error propagation for sync failures
+- Exponential backoff on retry
+- Abort sync on logout
+- Typed token refresh
+- Sync onboarding prompt after 5 notes
+- Offline queue visibility in the UI
+
+#### AI Commands (Cmd+K v1)
+
+- Command panel for AI interactions
+- AI settings configuration
+- Keybindings for AI commands
+
+#### AI Knowledge (Cmd+K v2)
+
+- RAG-based knowledge retrieval
+- Ask Notes: query your own notes with AI
+- Related context suggestions
+
+#### AI Extensibility
+
+- Plugin API for AI commands
+- Presets import/export
+
+#### Documentation
+
+- API documentation
+
+---
+
 ## [0.1.2] - 2026-01-01
 
 ### Fixed

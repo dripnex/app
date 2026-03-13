@@ -194,12 +194,15 @@ function DataFlowDiagram() {
 
 export default function WhyLocal() {
   return (
-    <section className="py-24 px-4 sm:px-6">
+    <section aria-labelledby="why-local-heading" className="py-24 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
           <span className="section-label">Why Local</span>
-          <h2 className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-text-primary sm:text-4xl lg:text-5xl mb-4">
+          <h2
+            id="why-local-heading"
+            className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-text-primary sm:text-4xl lg:text-5xl mb-4"
+          >
             Your notes should live on <span className="text-accent">your machine</span>
             {' — '}not someone else&apos;s server.
           </h2>

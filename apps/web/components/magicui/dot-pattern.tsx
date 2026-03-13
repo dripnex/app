@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
@@ -50,23 +50,27 @@ export function DotPattern({
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
 
-  const dots = Array.from(
-    {
-      length:
-        dimensions.width > 0 && dimensions.height > 0
-          ? Math.ceil(dimensions.width / safeWidth) * Math.ceil(dimensions.height / safeHeight)
-          : 0,
-    },
-    (_, i) => {
-      const col = i % Math.ceil(dimensions.width / safeWidth);
-      const row = Math.floor(i / Math.ceil(dimensions.width / safeWidth));
-      return {
-        x: col * safeWidth + cx + x,
-        y: row * safeHeight + cy + y,
-        delay: Math.random() * 5,
-        duration: Math.random() * 3 + 2,
-      };
-    }
+  const dots = useMemo(
+    () =>
+      Array.from(
+        {
+          length:
+            dimensions.width > 0 && dimensions.height > 0
+              ? Math.ceil(dimensions.width / safeWidth) * Math.ceil(dimensions.height / safeHeight)
+              : 0,
+        },
+        (_, i) => {
+          const col = i % Math.ceil(dimensions.width / safeWidth);
+          const row = Math.floor(i / Math.ceil(dimensions.width / safeWidth));
+          return {
+            x: col * safeWidth + cx + x,
+            y: row * safeHeight + cy + y,
+            delay: Math.random() * 5,
+            duration: Math.random() * 3 + 2,
+          };
+        }
+      ),
+    [dimensions.width, dimensions.height, safeWidth, safeHeight, cx, cy, x, y]
   );
 
   return (

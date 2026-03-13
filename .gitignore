@@ -39,3 +39,4 @@ npm-debug.log*
 # Claude cache (keep plans)
 .claude/plugins/
 .claude/statsig/
+.vercel
