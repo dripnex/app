@@ -22,6 +22,7 @@ import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
 import { AiPanel } from './components/ai/AiPanel';
+import type { AiPanelMode } from '@readied/ai-assistant';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
 import type { PluginLoadError } from './stores/pluginRuntimeStore';
@@ -171,6 +172,7 @@ function NotesApp() {
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
+  const [aiPanelMode, setAiPanelMode] = useState<AiPanelMode>('chat');
 
   // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
   const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
@@ -612,12 +614,25 @@ function NotesApp() {
     onCommandPalette: toggleCommandPalette,
   });
 
-  // Register AI commands (toggle panel)
-  const toggleAiPanel = useCallback(() => setIsAiPanelOpen(prev => !prev), []);
-  const closeAiPanel = useCallback(() => setIsAiPanelOpen(false), []);
+  // Register AI commands (toggle panel, ask-notes)
+  const toggleAiPanel = useCallback(() => {
+    setIsAiPanelOpen(prev => {
+      if (!prev) setAiPanelMode('chat');
+      return !prev;
+    });
+  }, []);
+  const closeAiPanel = useCallback(() => {
+    setIsAiPanelOpen(false);
+    setAiPanelMode('chat');
+  }, []);
+  const openAskNotes = useCallback(() => {
+    setAiPanelMode('ask-notes');
+    setIsAiPanelOpen(true);
+  }, []);
 
   useRegisterAiCommands({
     onTogglePanel: toggleAiPanel,
+    onAskNotes: openAskNotes,
   });
 
   // AI Panel callbacks — wired to existing app state
@@ -811,6 +826,7 @@ function NotesApp() {
                   getNoteById={aiGetNoteById}
                   getConfig={aiGetConfig}
                   insertAtCursor={aiInsertAtCursor}
+                  initialMode={aiPanelMode}
                 />
               </aside>
             )}

@@ -17,10 +17,27 @@
   flex-shrink: 0;
 }
 
+.ai-panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .ai-panel-title {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 12px;
+}
+
+.ai-panel-context-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  background: rgba(94, 234, 212, 0.1);
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
 }
 
 .ai-panel-actions {
@@ -46,6 +63,11 @@
 .ai-panel-btn:hover {
   color: var(--text-secondary);
   background: var(--bg-hover);
+}
+
+.ai-panel-btn.active {
+  color: var(--accent);
+  background: rgba(94, 234, 212, 0.1);
 }
 
 /* Messages area */

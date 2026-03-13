@@ -1,18 +1,31 @@
 /**
  * AI Assistant Settings Section
  *
- * API key configuration, model selection, and connection testing.
+ * API key configuration, model selection, connection testing,
+ * and AI command preset import/export.
  */
 
-import { useState, useCallback } from 'react';
-import { Eye, EyeOff, Zap, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useCallback, useSyncExternalStore } from 'react';
+import { Eye, EyeOff, Zap, Loader2, CheckCircle, XCircle, Upload, Download } from 'lucide-react';
 import { useSettingsStore, selectAi } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, NumberInput } from '../components/controls';
+import { aiCommandStore } from '@readied/plugin-api';
+import type { AiCommandRegistration } from '@readied/plugin-api';
+import { validateAiCommandPreset, serializePreset } from '@readied/ai-assistant';
+import type { AiCommandPreset } from '@readied/ai-assistant';
 import styles from './Section.module.css';
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
+
+/** Read the aiCommandStore registrations reactively */
+function useAiCommands(): AiCommandRegistration[] {
+  return useSyncExternalStore(
+    cb => aiCommandStore.subscribe(cb),
+    () => aiCommandStore.getState().registrations
+  );
+}
 
 export function AiSection() {
   const ai = useSettingsStore(selectAi);
@@ -21,6 +34,12 @@ export function AiSection() {
   const [showKey, setShowKey] = useState(false);
   const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const [testMessage, setTestMessage] = useState('');
+  const [presetMessage, setPresetMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  const registeredAiCommands = useAiCommands();
 
   const modelOptions = [
     { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
@@ -58,6 +77,103 @@ export function AiSection() {
       setTestMessage(err instanceof Error ? err.message : String(err));
     }
   }, [ai.apiKey, ai.model]);
+
+  const handleExportPreset = useCallback(async () => {
+    setPresetMessage(null);
+
+    if (registeredAiCommands.length === 0) {
+      setPresetMessage({
+        type: 'error',
+        text: 'No custom AI commands to export. Plugins must register commands first.',
+      });
+      return;
+    }
+
+    const preset: AiCommandPreset = {
+      name: 'My AI Commands',
+      version: '1.0.0',
+      description: 'Exported AI command preset',
+      commands: registeredAiCommands.map(cmd => ({
+        id: cmd.id,
+        name: cmd.name,
+        description: cmd.description,
+        systemPrompt: cmd.systemPrompt,
+        userPromptTemplate: cmd.userPromptTemplate,
+        icon: cmd.icon,
+        outputTarget: cmd.outputTarget,
+        category: cmd.category,
+      })),
+    };
+
+    try {
+      const result = await window.readied.ai.exportPreset(serializePreset(preset));
+      if (result.ok) {
+        setPresetMessage({
+          type: 'success',
+          text: `Exported ${preset.commands.length} command(s).`,
+        });
+      } else {
+        if (result.error !== 'Export cancelled') {
+          setPresetMessage({ type: 'error', text: result.error });
+        }
+      }
+    } catch (err) {
+      setPresetMessage({ type: 'error', text: err instanceof Error ? err.message : String(err) });
+    }
+  }, [registeredAiCommands]);
+
+  const handleImportPreset = useCallback(async () => {
+    setPresetMessage(null);
+
+    try {
+      const result = await window.readied.ai.importPreset();
+      if (!result.ok) {
+        if (result.error !== 'Import cancelled') {
+          setPresetMessage({ type: 'error', text: result.error });
+        }
+        return;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(result.content);
+      } catch {
+        setPresetMessage({ type: 'error', text: 'Invalid JSON file.' });
+        return;
+      }
+
+      const errors = validateAiCommandPreset(parsed);
+      if (errors.length > 0) {
+        setPresetMessage({ type: 'error', text: `Invalid preset: ${errors[0]!.message}` });
+        return;
+      }
+
+      const preset = parsed as AiCommandPreset;
+      let imported = 0;
+
+      for (const cmd of preset.commands) {
+        aiCommandStore.getState().register({
+          id: `preset:${cmd.id}`,
+          pluginId: '__preset',
+          name: cmd.name,
+          description: cmd.description,
+          systemPrompt: cmd.systemPrompt,
+          userPromptTemplate: cmd.userPromptTemplate,
+          icon: cmd.icon,
+          outputTarget: cmd.outputTarget,
+          category: cmd.category,
+        });
+        imported++;
+      }
+
+      setPresetMessage({
+        type: 'success',
+        text: `Imported ${imported} command(s) from "${preset.name}".`,
+      });
+    } catch (err) {
+      setPresetMessage({ type: 'error', text: err instanceof Error ? err.message : String(err) });
+    }
+  }, []);
 
   return (
     <div className={styles.section}>
@@ -183,6 +299,86 @@ export function AiSection() {
               <XCircle size={14} />
               {testMessage}
             </span>
+          </div>
+        )}
+      </SettingGroup>
+
+      <SettingGroup title="AI Command Presets">
+        <SettingRow
+          label="Import Preset"
+          description="Load AI command definitions from a JSON file"
+        >
+          <button type="button" className={styles.actionButton} onClick={handleImportPreset}>
+            <Upload size={14} />
+            <span>Import</span>
+          </button>
+        </SettingRow>
+
+        <SettingRow
+          label="Export Preset"
+          description="Save all registered AI commands to a shareable JSON file"
+        >
+          <button
+            type="button"
+            className={styles.actionButton}
+            onClick={handleExportPreset}
+            disabled={registeredAiCommands.length === 0}
+          >
+            <Download size={14} />
+            <span>Export</span>
+          </button>
+        </SettingRow>
+
+        {presetMessage?.type === 'success' && (
+          <div className={styles.successMessage}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle size={14} />
+              {presetMessage.text}
+            </span>
+          </div>
+        )}
+
+        {presetMessage?.type === 'error' && (
+          <div className={styles.errorMessage}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <XCircle size={14} />
+              {presetMessage.text}
+            </span>
+          </div>
+        )}
+
+        {registeredAiCommands.length > 0 && (
+          <div style={{ padding: '0.75rem 1rem' }}>
+            <div
+              style={{
+                fontSize: '0.8125rem',
+                color: 'var(--text-secondary)',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Registered AI Commands ({registeredAiCommands.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              {registeredAiCommands.map(cmd => (
+                <div
+                  key={cmd.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.375rem 0.75rem',
+                    background: 'var(--bg-hover)',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.8125rem',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-primary)' }}>{cmd.name}</span>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
+                    {cmd.pluginId}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </SettingGroup>

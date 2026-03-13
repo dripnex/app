@@ -34,4 +34,14 @@ export const aiCommands: CommandDefinition[] = [
     icon: 'Twitter',
     showInPalette: true,
   },
+  {
+    id: 'ai:ask-notes',
+    name: 'Ask Your Notes',
+    description: 'Open AI panel in knowledge mode to ask questions about your notes',
+    category: 'ai',
+    context: 'global',
+    defaultKeybinding: { key: 'k', modifiers: ['Mod', 'Shift'] },
+    icon: 'BookOpen',
+    showInPalette: true,
+  },
 ];

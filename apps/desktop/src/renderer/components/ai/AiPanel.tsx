@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Trash2, ArrowDownToLine } from 'lucide-react';
+import { X, Send, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucide-react';
 import { buildRagPrompt } from '@readied/ai-assistant';
-import type { ClaudeMessage, NoteContext } from '@readied/ai-assistant';
+import type { ClaudeMessage, NoteContext, AiPanelMode } from '@readied/ai-assistant';
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 
@@ -12,6 +12,8 @@ interface AiPanelProps {
   getNoteById: (id: string) => Promise<{ id: string; title: string; content: string } | null>;
   getConfig: <T>(key: string) => T | undefined;
   insertAtCursor: (text: string) => void;
+  /** Initial mode: 'chat' (default) or 'ask-notes' */
+  initialMode?: AiPanelMode;
 }
 
 export function AiPanel({
@@ -21,12 +23,15 @@ export function AiPanel({
   getNoteById,
   getConfig,
   insertAtCursor,
+  initialMode = 'chat',
 }: AiPanelProps) {
   const aiSettings = useSettingsStore(selectAi);
   const [messages, setMessages] = useState<ClaudeMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<AiPanelMode>(initialMode);
+  const [contextCount, setContextCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -39,6 +44,11 @@ export function AiPanel({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Sync mode when initialMode prop changes (e.g. ai:ask-notes command while panel open)
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
 
   const handleSubmit = useCallback(async () => {
     const query = input.trim();
@@ -70,7 +80,7 @@ export function AiPanel({
       // Gather context
       const currentNote = getCurrentNote();
 
-      // Search for relevant notes
+      // Search for relevant notes matching the user's query
       const searchResults = await searchNotes(query);
       const relevantNotes: NoteContext[] = [];
 
@@ -85,7 +95,31 @@ export function AiPanel({
         }
       }
 
-      // Build RAG prompt
+      // In ask-notes mode or when a current note is selected, also search
+      // for notes related to the current note's title (if not already found)
+      if (currentNote && relevantNotes.length < maxContextNotes) {
+        const relatedResults = await searchNotes(currentNote.title);
+        const existingIds = new Set([...relevantNotes.map(n => n.id), currentNote.id]);
+        for (const result of relatedResults) {
+          if (relevantNotes.length >= maxContextNotes) break;
+          if (existingIds.has(result.id)) continue;
+          const note = await getNoteById(result.id);
+          if (note) {
+            relevantNotes.push({
+              id: note.id,
+              title: note.title,
+              content: note.content,
+            });
+            existingIds.add(note.id);
+          }
+        }
+      }
+
+      // Track how many notes are being used as context
+      const totalContext = relevantNotes.length + (currentNote ? 1 : 0);
+      setContextCount(totalContext);
+
+      // Build RAG prompt (mode determines the system prompt variant)
       const { system, messages: ragMessages } = buildRagPrompt({
         query,
         currentNote: currentNote
@@ -93,6 +127,7 @@ export function AiPanel({
           : null,
         relevantNotes,
         history: messages,
+        mode,
       });
 
       // Call Claude API via IPC proxy
@@ -114,7 +149,17 @@ export function AiPanel({
     } finally {
       setLoading(false);
     }
-  }, [input, loading, messages, aiSettings, getConfig, getCurrentNote, searchNotes, getNoteById]);
+  }, [
+    input,
+    loading,
+    messages,
+    aiSettings,
+    getConfig,
+    getCurrentNote,
+    searchNotes,
+    getNoteById,
+    mode,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -129,6 +174,11 @@ export function AiPanel({
   const handleClear = useCallback(() => {
     setMessages([]);
     setError(null);
+    setContextCount(0);
+  }, []);
+
+  const toggleMode = useCallback(() => {
+    setMode(prev => (prev === 'chat' ? 'ask-notes' : 'chat'));
   }, []);
 
   const handleInsertLast = useCallback(() => {
@@ -143,8 +193,27 @@ export function AiPanel({
   return (
     <div className="ai-panel">
       <div className="ai-panel-header">
-        <span className="ai-panel-title">AI Assistant</span>
+        <div className="ai-panel-header-left">
+          <span className="ai-panel-title">
+            {mode === 'ask-notes' ? 'Ask Your Notes' : 'AI Assistant'}
+          </span>
+          {contextCount > 0 && (
+            <span
+              className="ai-panel-context-badge"
+              title={`${contextCount} note(s) used as context`}
+            >
+              {contextCount} {contextCount === 1 ? 'note' : 'notes'}
+            </span>
+          )}
+        </div>
         <div className="ai-panel-actions">
+          <button
+            className={`ai-panel-btn${mode === 'ask-notes' ? ' active' : ''}`}
+            onClick={toggleMode}
+            title={mode === 'ask-notes' ? 'Switch to Chat mode' : 'Switch to Ask Notes mode'}
+          >
+            {mode === 'ask-notes' ? <MessageSquare size={14} /> : <BookOpen size={14} />}
+          </button>
           {lastAssistantExists && (
             <button
               className="ai-panel-btn"
@@ -168,7 +237,9 @@ export function AiPanel({
       <div className="ai-panel-messages">
         {messages.length === 0 && !loading && (
           <div className="ai-panel-empty">
-            Ask a question about your notes or the current document.
+            {mode === 'ask-notes'
+              ? 'Ask a question and the AI will answer using your notes as context.'
+              : 'Ask a question about your notes or the current document.'}
           </div>
         )}
         {messages.map((msg, i) => (
@@ -190,7 +261,9 @@ export function AiPanel({
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about your notes..."
+          placeholder={
+            mode === 'ask-notes' ? 'Ask your notes a question...' : 'Ask about your notes...'
+          }
           rows={2}
           disabled={loading}
         />

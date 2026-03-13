@@ -9,6 +9,7 @@ import type {
   EditorAPI,
   AppAPI,
   PluginCommandOptions,
+  PluginAiCommandOptions,
   PluginHookOptions,
 } from '../types';
 import type { DataAPI } from '../data/createDataAPI';
@@ -23,6 +24,7 @@ import { codeBlockStore } from '../preview/codeBlockStore';
 import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
+import { aiCommandStore } from '../ai/aiCommandStore';
 
 export const MAX_CRASH_COUNT = 3;
 
@@ -337,6 +339,21 @@ export class PluginRegistry {
         codeBlockStore.getState().register({ id: regId, pluginId: id, language, component });
         return () => codeBlockStore.getState().unregister(regId);
       },
+      registerAiCommand: (options: PluginAiCommandOptions): (() => void) => {
+        const registrationId = `${id}:${options.id}`;
+        aiCommandStore.getState().register({
+          id: registrationId,
+          pluginId: id,
+          name: options.name,
+          description: options.description,
+          systemPrompt: options.systemPrompt,
+          userPromptTemplate: options.userPromptTemplate,
+          icon: options.icon,
+          outputTarget: options.outputTarget,
+          category: options.category,
+        });
+        return () => aiCommandStore.getState().unregister(registrationId);
+      },
       registerCssVariables: (regId: string, variables: Record<string, string>): (() => void) => {
         cssVariableStore.getState().register({ id: regId, pluginId: id, variables });
         return () => cssVariableStore.getState().unregister(regId);
@@ -381,6 +398,7 @@ export class PluginRegistry {
       codeBlockStore.getState().unregisterAll(id);
       cssVariableStore.getState().unregisterAll(id);
       themeRegistryStore.getState().unregisterAll(id);
+      aiCommandStore.getState().unregisterAll(id);
       const layoutManager = createLayoutManager(id);
       layoutManager.removeAllForPlugin(id);
       for (const unregister of entry.commandUnregisters) {
@@ -425,6 +443,9 @@ export class PluginRegistry {
     // Cleanup theme stores
     cssVariableStore.getState().unregisterAll(id);
     themeRegistryStore.getState().unregisterAll(id);
+
+    // Cleanup AI command registrations
+    aiCommandStore.getState().unregisterAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {

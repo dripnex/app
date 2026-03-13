@@ -2209,6 +2209,47 @@ function registerAiHandlers(): void {
       }
     }
   );
+
+  // Export AI command preset — opens a save dialog and writes the JSON file
+  ipcMain.handle('ai:exportPreset', async (_event, presetJson: string) => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Export AI Command Preset',
+      defaultPath: 'ai-commands.json',
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+    });
+
+    if (canceled || !filePath) {
+      return { ok: false, error: 'Export cancelled' };
+    }
+
+    try {
+      await writeFile(filePath, presetJson, 'utf-8');
+      return { ok: true, filePath };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
+  // Import AI command preset — opens a file dialog and reads the JSON file
+  ipcMain.handle('ai:importPreset', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Import AI Command Preset',
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+
+    if (canceled || filePaths.length === 0) {
+      return { ok: false, error: 'Import cancelled' };
+    }
+
+    try {
+      const content = await readFile(filePaths[0]!, 'utf-8');
+      // Return the raw JSON string — validation happens in the renderer
+      return { ok: true, content };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
 }
 
 /** Initialize auto-updater */

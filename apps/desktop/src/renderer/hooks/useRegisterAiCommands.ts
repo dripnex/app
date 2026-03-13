@@ -4,10 +4,11 @@ import { registry } from './useCommandRegistry';
 
 interface AiCommandHandlers {
   onTogglePanel: () => void;
+  onAskNotes: () => void;
 }
 
 /**
- * Register AI-related commands (toggle panel, etc.)
+ * Register AI-related commands (toggle panel, ask-notes, etc.)
  * Follows the same pattern as useRegisterAppCommands.
  */
 export function useRegisterAiCommands(handlers: AiCommandHandlers): void {
@@ -17,6 +18,7 @@ export function useRegisterAiCommands(handlers: AiCommandHandlers): void {
   useEffect(() => {
     const executors: Record<string, () => void> = {
       'ai:toggle-panel': () => handlersRef.current.onTogglePanel(),
+      'ai:ask-notes': () => handlersRef.current.onAskNotes(),
     };
 
     const unregisters: Array<() => void> = [];

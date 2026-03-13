@@ -110,6 +110,31 @@ export interface PluginCommandOptions {
   showInPalette?: boolean;
 }
 
+/** Options for registering a custom AI command */
+export interface PluginAiCommandOptions {
+  /** Command id (will be auto-prefixed with plugin id) */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** Optional description */
+  description?: string;
+  /** System prompt for the AI */
+  systemPrompt: string;
+  /**
+   * User prompt template. Supports placeholders:
+   * - {{selection}} — replaced with editor selection
+   * - {{note}} — replaced with full note content
+   * - {{title}} — replaced with note title
+   */
+  userPromptTemplate: string;
+  /** Lucide icon name (e.g. "Wand2") */
+  icon?: string;
+  /** Where to put the AI response: 'replace' selection, 'insert' at cursor, or 'panel' (chat). Default: 'panel' */
+  outputTarget?: 'replace' | 'insert' | 'panel';
+  /** Category tag for organization (e.g. "writing", "coding") */
+  category?: string;
+}
+
 /** Options for registering a remark/rehype plugin */
 export interface PluginHookOptions {
   /** Display name for debugging (defaults to pluginId) */
@@ -142,6 +167,13 @@ export interface PluginContext {
     language: string,
     component: ComponentType<CodeBlockRendererProps>
   ): () => void;
+  /**
+   * Register a custom AI command.
+   * The command will appear in the AI panel's command list and in the command palette.
+   * Template placeholders ({{selection}}, {{note}}, {{title}}) are resolved at execution time.
+   * Returns an unregister function.
+   */
+  registerAiCommand(options: PluginAiCommandOptions): () => void;
   /** Register CSS custom properties (theme overrides or custom variables) */
   registerCssVariables(id: string, variables: Record<string, string>): () => void;
   /** Register a complete theme with validated tokens */

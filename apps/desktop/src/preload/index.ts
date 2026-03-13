@@ -731,6 +731,12 @@ export interface ReadiedAPI {
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
       maxTokens?: number;
     }) => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
+    /** Export an AI command preset to a user-chosen file */
+    exportPreset: (
+      presetJson: string
+    ) => Promise<{ ok: true; filePath: string } | { ok: false; error: string }>;
+    /** Import an AI command preset from a user-chosen file */
+    importPreset: () => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
   };
   pluginConfig: {
     /** Get a single config value for a plugin */
@@ -1015,6 +1021,8 @@ const api: ReadiedAPI = {
   },
   ai: {
     query: options => ipcRenderer.invoke('ai:query', options),
+    exportPreset: presetJson => ipcRenderer.invoke('ai:exportPreset', presetJson),
+    importPreset: () => ipcRenderer.invoke('ai:importPreset'),
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),
