@@ -13,15 +13,6 @@ import {
 } from '@readied/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
-import { useStore } from 'zustand';
-import type { NoteSnapshot, NoteStatus } from '../preload/index';
-import { NoteList } from './components/NoteList';
-import { NoteEditor } from './components/NoteEditor';
-import { NoteWindow } from './components/NoteWindow';
-import { Sidebar } from './components/sidebar';
-import { GraphView } from './components/GraphView';
-import { CommandPalette } from './components/CommandPalette';
-import { AiPanel } from './components/ai/AiPanel';
 import type { AiPanelMode } from '@readied/ai-assistant';
 import {
   SUMMARIZE_SYSTEM_PROMPT,
@@ -32,6 +23,15 @@ import {
   TWEET_USER_TEMPLATE,
   resolveTemplate,
 } from '@readied/ai-assistant';
+import { useStore } from 'zustand';
+import type { NoteSnapshot, NoteStatus } from '../preload/index';
+import { NoteList } from './components/NoteList';
+import { NoteEditor } from './components/NoteEditor';
+import { NoteWindow } from './components/NoteWindow';
+import { Sidebar } from './components/sidebar';
+import { GraphView } from './components/GraphView';
+import { CommandPalette } from './components/CommandPalette';
+import { AiPanel } from './components/ai/AiPanel';
 import type { AiInitialCommand } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';

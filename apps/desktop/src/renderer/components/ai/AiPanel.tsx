@@ -130,8 +130,7 @@ export function AiPanel({
     };
 
     execute();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialCommand]);
+  }, [initialCommand]); // intentionally depends only on initialCommand
 
   const handleSubmit = useCallback(async () => {
     const query = input.trim();
