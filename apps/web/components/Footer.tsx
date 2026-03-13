@@ -129,25 +129,11 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <div className="mt-10 flex items-center justify-center sm:justify-start">
           <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent sm:hidden" />
           <span className="text-[11px] text-text-muted">
             &copy; {year} Readied. Built with &hearts; in Argentina.
           </span>
-          <div className="flex items-center gap-3">
-            {socialLinks.map(social => (
-              <a
-                key={social.href}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-white/[0.06] hover:text-text-secondary"
-              >
-                {social.icon}
-              </a>
-            ))}
-          </div>
         </div>
       </div>
     </footer>

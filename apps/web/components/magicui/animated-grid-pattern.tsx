@@ -32,7 +32,15 @@ export function AnimatedGridPattern({
 }: AnimatedGridPatternProps) {
   const id = useId();
   const containerRef = useRef<SVGSVGElement>(null);
+  const mountedRef = useRef(true);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const getPos = useCallback(() => {
     return [
@@ -53,19 +61,22 @@ export function AnimatedGridPattern({
 
   const [squares, setSquares] = useState(() => generateSquares(numSquares));
 
-  // Function to update a single square's position
-  const updateSquarePosition = (id: number) => {
-    setSquares(currentSquares =>
-      currentSquares.map(sq =>
-        sq.id === id
-          ? {
-              ...sq,
-              pos: getPos(),
-            }
-          : sq
-      )
-    );
-  };
+  const updateSquarePosition = useCallback(
+    (id: number) => {
+      if (!mountedRef.current) return;
+      setSquares(currentSquares =>
+        currentSquares.map(sq =>
+          sq.id === id
+            ? {
+                ...sq,
+                pos: getPos(),
+              }
+            : sq
+        )
+      );
+    },
+    [getPos]
+  );
 
   // Update squares to animate in
   useEffect(() => {
@@ -78,6 +89,7 @@ export function AnimatedGridPattern({
   useEffect(() => {
     const currentRef = containerRef.current;
     const resizeObserver = new ResizeObserver(entries => {
+      if (!mountedRef.current) return;
       for (const entry of entries) {
         setDimensions({
           width: entry.contentRect.width,

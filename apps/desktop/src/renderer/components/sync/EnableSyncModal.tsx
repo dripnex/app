@@ -59,10 +59,12 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
     if (!isOpen) {
       // Delay reset so close animation can play
       const timeout = setTimeout(() => {
-        setStep('value-prop');
-        setEmail('');
-        setError(null);
-        setResendTimer(0);
+        if (!isOpen) {
+          setStep('value-prop');
+          setEmail('');
+          setError(null);
+          setResendTimer(0);
+        }
       }, 200);
       return () => clearTimeout(timeout);
     }

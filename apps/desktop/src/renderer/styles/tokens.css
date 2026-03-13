@@ -36,6 +36,7 @@
   /* ===== COLORS - Accent ===== */
   --accent: #5eead4;
   --accent-muted: rgba(94, 234, 212, 0.15);
+  --accent-subtle: rgba(94, 234, 212, 0.1);
   --accent-strong: #2dd4bf;
 
   /* ===== COLORS - Semantic ===== */
@@ -138,6 +139,7 @@
 
   /* Accent (lighter versions for light theme) */
   --accent: #14b8a6;
+  --accent-subtle: rgba(20, 184, 166, 0.1);
   --accent-muted: rgba(20, 184, 166, 0.15);
   --accent-strong: #0d9488;
   --accent-primary: #14b8a6;

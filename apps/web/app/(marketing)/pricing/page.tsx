@@ -14,7 +14,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BorderBeam } from '@/components/magicui/border-beam';
-import { NumberTicker } from '@/components/magicui/number-ticker';
 import {
   Accordion,
   AccordionItem,
@@ -27,9 +26,8 @@ export default function PricingPage() {
   const { plans, guarantees, trialDays, trialDescription } = config;
   const proPricing = plans.pro.pricing!;
 
-  // Extract numeric values from price labels for NumberTicker
-  const monthlyPrice = proPricing.intervals.monthly.amountCents / 100;
-  const annualPrice = proPricing.intervals.annual.amountCents / 100;
+  const monthlyLabel = proPricing.intervals.monthly.label;
+  const annualLabel = proPricing.intervals.annual.label;
 
   const faqs = [
     { q: 'What if you stop developing Readied?', a: guarantees.freeTierForever.description },
@@ -109,27 +107,13 @@ export default function PricingPage() {
               </div>
               <div className="text-lg font-semibold text-text-primary mb-2">{plans.pro.name}</div>
               <div className="flex items-baseline gap-3 flex-wrap">
-                <div className="flex items-baseline gap-0.5">
-                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">$</span>
-                  <NumberTicker
-                    value={monthlyPrice}
-                    decimalPlaces={2}
-                    className="font-mono text-3xl sm:text-4xl font-bold text-accent"
-                  />
-                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">/mo</span>
-                </div>
+                <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">
+                  {monthlyLabel}
+                </span>
                 <span className="text-sm text-text-muted">or</span>
-                <div className="flex items-baseline gap-0.5">
-                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">$</span>
-                  <NumberTicker
-                    value={annualPrice}
-                    decimalPlaces={0}
-                    className="font-mono text-3xl sm:text-4xl font-bold text-accent"
-                  />
-                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">
-                    /year
-                  </span>
-                </div>
+                <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">
+                  {annualLabel}
+                </span>
                 <Badge variant="secondary" className="text-accent bg-accent/10">
                   Save {proPricing.annualSavings}
                 </Badge>

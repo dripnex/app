@@ -34,7 +34,7 @@
   font-size: 10px;
   font-weight: 500;
   color: var(--accent);
-  background: rgba(94, 234, 212, 0.1);
+  background: var(--accent-subtle);
   padding: 1px 6px;
   border-radius: 8px;
   white-space: nowrap;
@@ -67,7 +67,7 @@
 
 .ai-panel-btn.active {
   color: var(--accent);
-  background: rgba(94, 234, 212, 0.1);
+  background: var(--accent-subtle);
 }
 
 /* Messages area */

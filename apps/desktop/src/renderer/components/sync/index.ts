@@ -6,4 +6,4 @@
 
 export { SyncStatusIndicator } from './SyncStatusIndicator';
 export { ConflictResolver } from './ConflictResolver';
-export { EnableSyncModal } from './LoginModal';
+export { EnableSyncModal } from './EnableSyncModal';

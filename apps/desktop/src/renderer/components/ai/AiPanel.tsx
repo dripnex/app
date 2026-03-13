@@ -55,16 +55,17 @@ export function AiPanel({
     if (!query || loading) return;
 
     // Prefer settings store, fall back to plugin config for backwards compatibility
-    const apiKey = aiSettings.apiKey || getConfig<string>('apiKey');
+    const useSettingsStore = Boolean(aiSettings.apiKey);
+    const apiKey = useSettingsStore ? aiSettings.apiKey : getConfig<string>('apiKey');
     if (!apiKey) {
       setError('Please set your Anthropic API key in Settings > AI Assistant');
       return;
     }
 
-    const model = aiSettings.apiKey
+    const model = useSettingsStore
       ? aiSettings.model
       : getConfig<string>('model') || 'claude-sonnet-4-20250514';
-    const maxContextNotes = aiSettings.apiKey
+    const maxContextNotes = useSettingsStore
       ? aiSettings.maxContextNotes
       : getConfig<number>('maxContextNotes') || 5;
 

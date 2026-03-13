@@ -1511,7 +1511,7 @@ input:focus-visible {
   justify-content: space-between;
   padding: 8px 12px;
   margin: 0 8px 4px;
-  background: var(--accent-subtle, rgba(59, 130, 246, 0.08));
+  background: var(--accent-subtle, rgba(94, 234, 212, 0.08));
   border-radius: var(--radius-sm, 4px);
   font-size: var(--text-xs);
   color: var(--text-secondary);
@@ -1526,7 +1526,7 @@ input:focus-visible {
   margin-left: 8px;
 }
 
-.sidebar-sync-prompt-actions button:first-child {
+.sidebar-sync-prompt-actions .sidebar-sync-prompt-enable {
   background: var(--accent);
   color: white;
   border: none;
@@ -1537,11 +1537,11 @@ input:focus-visible {
   font-weight: 500;
 }
 
-.sidebar-sync-prompt-actions button:first-child:hover {
+.sidebar-sync-prompt-actions .sidebar-sync-prompt-enable:hover {
   opacity: 0.9;
 }
 
-.sidebar-sync-prompt-actions button:last-child {
+.sidebar-sync-prompt-actions .sidebar-sync-prompt-dismiss {
   background: none;
   border: none;
   color: var(--text-muted);
@@ -1551,7 +1551,7 @@ input:focus-visible {
   line-height: 1;
 }
 
-.sidebar-sync-prompt-actions button:last-child:hover {
+.sidebar-sync-prompt-actions .sidebar-sync-prompt-dismiss:hover {
   color: var(--text-secondary);
 }
 

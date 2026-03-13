@@ -152,10 +152,19 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
         <div className="sidebar-sync-prompt">
           <span>Sync your notes across devices</span>
           <div className="sidebar-sync-prompt-actions">
-            <button type="button" onClick={() => setIsSyncModalOpen(true)}>
+            <button
+              type="button"
+              className="sidebar-sync-prompt-enable"
+              onClick={() => setIsSyncModalOpen(true)}
+            >
               Enable
             </button>
-            <button type="button" onClick={dismissPrompt} aria-label="Dismiss">
+            <button
+              type="button"
+              className="sidebar-sync-prompt-dismiss"
+              onClick={dismissPrompt}
+              aria-label="Dismiss"
+            >
               ×
             </button>
           </div>
