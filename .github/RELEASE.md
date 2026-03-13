@@ -2,22 +2,43 @@
 
 ## Overview
 
-Releases are automated via GitHub Actions. When you push a tag starting with `v` (e.g., `v0.1.0`), the release workflow builds and publishes distributables for macOS, Windows, and Linux.
+Releases follow Git Flow and are fully automated via GitHub Actions.
+
+## Flow
+
+```
+develop → release/X.Y.Z branch → PR to main → merge
+  ↓ auto-tag.yml triggers:
+  1. Creates git tag vX.Y.Z from package.json version
+  2. Merges main → develop (keeps branches aligned)
+  ↓ release.yml triggers (on tag push):
+  3. Builds distributables (macOS, Windows, Linux)
+  4. Creates draft GitHub Release with artifacts
+  5. Posts tweet announcement
+```
 
 ## Creating a Release
 
 ```bash
-# 1. Update version in apps/desktop/package.json
-# 2. Commit the change
-git add apps/desktop/package.json
-git commit -m "chore: bump version to 0.1.0"
+# 1. Create release branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b release/0.9.0
 
-# 3. Create and push the tag
-git tag v0.1.0
-git push origin main --tags
+# 2. Bump version in root package.json + apps/desktop/package.json
+# 3. Update CHANGELOG.md
+# 4. Commit and push
+git add -A
+git commit -m "chore(release): bump version to 0.9.0"
+git push -u origin release/0.9.0
+
+# 5. Create PR targeting main
+gh pr create --base main --title "chore(release): v0.9.0" --body "Release 0.9.0"
+
+# 6. Once CI passes and PR merges → tag + release + sync happen automatically
 ```
 
-The workflow will:
+The release workflow will:
 
 1. Build packages for all platforms
 2. Sign and notarize the macOS build (if secrets are configured)
