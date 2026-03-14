@@ -12,13 +12,13 @@ import { BorderBeam } from '@/components/magicui/border-beam';
 function LightBeams() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 h-[600px] w-[500px] rounded-full bg-accent/4 blur-[150px]" />
-      <div className="absolute -top-[30%] left-[20%] h-[160%] w-[80px] rotate-[35deg] bg-linear-to-b from-transparent via-accent/12 to-transparent blur-[50px]" />
-      <div className="absolute -top-[30%] left-[38%] h-[160%] w-[150px] rotate-[35deg] bg-linear-to-b from-transparent via-violet-500/7 to-transparent blur-[80px]" />
-      <div className="absolute -top-[30%] left-[55%] h-[160%] w-[40px] rotate-[35deg] bg-linear-to-b from-transparent via-accent/15 to-transparent blur-[25px]" />
-      <div className="absolute -top-[30%] right-[15%] h-[160%] w-[100px] rotate-[35deg] bg-linear-to-b from-transparent via-violet-600/6 to-transparent blur-[60px]" />
-      <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-background to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-background to-transparent" />
+      <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 h-[600px] w-[500px] rounded-full bg-accent/[0.04] blur-[150px]" />
+      <div className="absolute -top-[30%] left-[20%] h-[160%] w-[80px] rotate-[35deg] bg-gradient-to-b from-transparent via-accent/[0.12] to-transparent blur-[50px]" />
+      <div className="absolute -top-[30%] left-[38%] h-[160%] w-[150px] rotate-[35deg] bg-gradient-to-b from-transparent via-violet-500/[0.07] to-transparent blur-[80px]" />
+      <div className="absolute -top-[30%] left-[55%] h-[160%] w-[40px] rotate-[35deg] bg-gradient-to-b from-transparent via-accent/[0.15] to-transparent blur-[25px]" />
+      <div className="absolute -top-[30%] right-[15%] h-[160%] w-[100px] rotate-[35deg] bg-gradient-to-b from-transparent via-violet-600/[0.06] to-transparent blur-[60px]" />
+      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-background to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
     </div>
   );
 }
@@ -45,13 +45,13 @@ function EditorMockWithPlay() {
         className="group relative w-full cursor-pointer border-0 bg-transparent p-0 text-left"
         onClick={() => hasVideo && setIsVideoOpen(true)}
       >
-        <div className="relative overflow-hidden rounded-xl border border-white/6 bg-[#0c0c0e] shadow-2xl shadow-accent/5 transition-all duration-200 group-hover:brightness-[0.85]">
+        <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] shadow-2xl shadow-accent/5 transition-all duration-200 group-hover:brightness-[0.85]">
           {/* Title bar */}
-          <div className="flex items-center gap-2 border-b border-white/6 px-4 py-3">
+          <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
             <div className="flex gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-white/6" />
-              <span className="h-3 w-3 rounded-full bg-white/6" />
-              <span className="h-3 w-3 rounded-full bg-white/6" />
+              <span className="h-3 w-3 rounded-full bg-white/[0.06]" />
+              <span className="h-3 w-3 rounded-full bg-white/[0.06]" />
+              <span className="h-3 w-3 rounded-full bg-white/[0.06]" />
             </div>
             <span className="ml-2 font-mono text-[11px] text-text-muted">project-roadmap.md</span>
             <span className="ml-auto font-mono text-[10px] text-text-muted/50">readied</span>
@@ -59,7 +59,7 @@ function EditorMockWithPlay() {
 
           {/* Editor body — two panes */}
           <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="border-b border-white/6 p-5 md:border-b-0 md:border-r">
+            <div className="border-b border-white/[0.06] p-5 md:border-b-0 md:border-r">
               <div className="font-mono text-xs leading-[1.8] text-text-muted sm:text-[13px]">
                 <div>
                   <span className="text-accent font-semibold"># </span>
@@ -158,7 +158,7 @@ function EditorMockWithPlay() {
         {/* Play button overlay */}
         <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out">
           <div className="flex size-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform duration-200 group-hover:scale-110 sm:size-24">
-            <div className="flex size-14 items-center justify-center rounded-full bg-linear-to-b from-accent/40 to-accent shadow-lg sm:size-16">
+            <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-accent/40 to-accent shadow-lg sm:size-16">
               <Play className="size-6 fill-white text-white sm:size-7" />
             </div>
           </div>
@@ -224,7 +224,7 @@ export default function Hero() {
       {/* Text content — centered in viewport */}
       <div className="relative z-[2] mx-auto flex min-h-[85dvh] w-full max-w-5xl flex-col items-center justify-center px-6 lg:px-8 text-center">
         {/* Version badge */}
-        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-white/3 px-4 py-2 text-xs opacity-0 animate-fade-in-up">
+        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-white/[0.03] px-4 py-2 text-xs opacity-0 animate-fade-in-up">
           <AnimatedShinyText>
             <span className="font-mono text-accent">v0.6</span> Early access
           </AnimatedShinyText>
@@ -249,7 +249,7 @@ export default function Hero() {
         <div className="mb-6 flex flex-col items-center gap-3 opacity-0 animate-fade-in-up [animation-delay:300ms] sm:flex-row sm:justify-center">
           <Link
             href="/download"
-            className="inline-flex items-center gap-2.5 rounded-xl border border-white/12 bg-white/6 px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-white/10 hover:border-white/20"
+            className="inline-flex items-center gap-2.5 rounded-xl border border-white/[0.12] bg-white/[0.06] px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-white/[0.1] hover:border-white/[0.2]"
           >
             <Apple className="h-4 w-4" />
             Download for Mac
@@ -258,7 +258,7 @@ export default function Hero() {
             href="https://github.com/tomymaritano/readide"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2.5 rounded-xl border border-white/8 bg-white/3 px-6 py-3 text-sm font-medium text-text-secondary backdrop-blur-sm transition-all hover:bg-white/6 hover:text-white"
+            className="inline-flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 py-3 text-sm font-medium text-text-secondary backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:text-white"
           >
             <Github className="h-4 w-4" />
             View on GitHub

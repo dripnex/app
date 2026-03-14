@@ -39,8 +39,8 @@ export default function AuthVerifyContent() {
               <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-zinc-50 mb-3">Invalid Link</h1>
-          <p className="text-zinc-400 mb-6">
+          <h1 className="text-2xl font-bold text-[#f4f4f5] mb-3">Invalid Link</h1>
+          <p className="text-[#a1a1aa] mb-6">
             This verification link is incomplete or has expired. Please request a new magic link
             from the Readied app.
           </p>
@@ -60,9 +60,9 @@ export default function AuthVerifyContent() {
       <div className="max-w-[480px] text-center">
         {!showFallback ? (
           <>
-            <div className="inline-block w-10 h-10 mb-6 border-[3px] border-white/6 border-t-accent rounded-full animate-spin" />
-            <h1 className="text-2xl font-semibold text-zinc-50 mb-3">Opening Readied...</h1>
-            <p className="text-zinc-400">The app should open automatically. Hang tight.</p>
+            <div className="inline-block w-10 h-10 mb-6 border-[3px] border-white/[0.06] border-t-accent rounded-full animate-spin" />
+            <h1 className="text-2xl font-semibold text-[#f4f4f5] mb-3">Opening Readied...</h1>
+            <p className="text-[#a1a1aa]">The app should open automatically. Hang tight.</p>
           </>
         ) : (
           <>
@@ -79,8 +79,8 @@ export default function AuthVerifyContent() {
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
             </div>
-            <h1 className="text-2xl font-semibold text-zinc-50 mb-3">Almost there</h1>
-            <p className="text-lg text-zinc-400 mb-6">
+            <h1 className="text-2xl font-semibold text-[#f4f4f5] mb-3">Almost there</h1>
+            <p className="text-lg text-[#a1a1aa] mb-6">
               The app didn&apos;t open automatically. Try clicking the button below.
             </p>
 
@@ -91,15 +91,15 @@ export default function AuthVerifyContent() {
               Open in Readied
             </a>
 
-            <div className="p-6 rounded-xl bg-surface border border-white/6">
-              <h2 className="text-base font-medium text-zinc-50 mb-2">
+            <div className="p-6 rounded-xl bg-surface border border-white/[0.06]">
+              <h2 className="text-base font-medium text-[#f4f4f5] mb-2">
                 Opened this on the wrong device?
               </h2>
-              <p className="text-sm text-zinc-400 mb-4">
+              <p className="text-sm text-[#a1a1aa] mb-4">
                 Open this same link on the device where Readied is installed. The magic link is
                 valid for 15 minutes.
               </p>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-[#a1a1aa]">
                 Don&apos;t have Readied yet?{' '}
                 <Link href="/download" className="text-accent underline">
                   Download now

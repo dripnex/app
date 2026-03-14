@@ -75,7 +75,8 @@
       "Bash(gh secret:*)",
       "Bash(npx vitest:*)",
       "Bash(do echo:*)",
-      "Bash(do gh:*)"
+      "Bash(do gh:*)",
+      "Bash(git tag:*)"
     ]
   }
 }
