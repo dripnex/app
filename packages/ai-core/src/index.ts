@@ -37,3 +37,5 @@ export type {
 
 export { withRetry, classifyError } from './retry.js';
 export type { RetryOptions } from './retry.js';
+
+export { AnthropicProvider } from './providers/anthropic.js';
