@@ -1,12 +1,6 @@
 // packages/ai-core/tests/types.test.ts
 import { describe, it, expect } from 'vitest';
-import type {
-  LLMEvent,
-  ChatMessage,
-  MessageContent,
-  ContentPart,
-  LLMErrorCode,
-} from '../src/types';
+import type { LLMEvent, ChatMessage } from '../src/types';
 
 describe('LLMEvent protocol', () => {
   it('discriminates events by type field', () => {
