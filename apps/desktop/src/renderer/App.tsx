@@ -13,7 +13,7 @@ import {
 } from '@readied/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
-import type { AiPanelMode } from '@readied/ai-assistant';
+import type { AiPanelMode } from '@readied/ai-core';
 import {
   SUMMARIZE_SYSTEM_PROMPT,
   SUMMARIZE_USER_TEMPLATE,
@@ -22,7 +22,7 @@ import {
   TWEET_SYSTEM_PROMPT,
   TWEET_USER_TEMPLATE,
   resolveTemplate,
-} from '@readied/ai-assistant';
+} from '@readied/ai-core';
 import { useStore } from 'zustand';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { NoteList } from './components/NoteList';
@@ -629,18 +629,25 @@ function NotesApp() {
   // Register AI commands (toggle panel, ask-notes)
   const toggleAiPanel = useCallback(() => {
     setIsAiPanelOpen(prev => {
-      if (!prev) setAiPanelMode('chat');
+      if (!prev) setAiPanelMode('ask-notes');
       return !prev;
     });
   }, []);
   const closeAiPanel = useCallback(() => {
     setIsAiPanelOpen(false);
-    setAiPanelMode('chat');
+    setAiPanelMode('ask-notes');
   }, []);
   const openAskNotes = useCallback(() => {
     setAiPanelMode('ask-notes');
     setIsAiPanelOpen(true);
   }, []);
+
+  // Listen for the plugin's Sparkles button CustomEvent
+  useEffect(() => {
+    const handler = () => toggleAiPanel();
+    window.addEventListener('readied:ai:toggle-panel', handler);
+    return () => window.removeEventListener('readied:ai:toggle-panel', handler);
+  }, [toggleAiPanel]);
 
   /** Helper: get selection text from editor */
   const getSelectionText = useCallback(() => {
