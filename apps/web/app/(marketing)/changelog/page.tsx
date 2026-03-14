@@ -86,7 +86,7 @@ export default async function ChangelogPage() {
         {/* Timeline */}
         <div className="relative">
           <div
-            className="absolute left-5 top-0 bottom-0 w-0.5 bg-white/[0.06] rounded-full hidden md:block"
+            className="absolute left-5 top-0 bottom-0 w-0.5 bg-white/6 rounded-full hidden md:block"
             aria-hidden="true"
           ></div>
 
@@ -129,7 +129,7 @@ export default async function ChangelogPage() {
                     {release.changes.map((change, ci) => (
                       <li
                         key={ci}
-                        className={`flex items-baseline gap-4 px-5 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-white/[0.02] ${ci < release.changes.length - 1 ? 'border-b border-border' : ''}`}
+                        className={`flex items-baseline gap-4 px-5 sm:px-6 py-3 sm:py-4 transition-colors hover:bg-white/2 ${ci < release.changes.length - 1 ? 'border-b border-border' : ''}`}
                       >
                         <span
                           className={`font-mono text-xs font-bold uppercase tracking-wider min-w-[76px] shrink-0 ${typeColor(change.type)}`}

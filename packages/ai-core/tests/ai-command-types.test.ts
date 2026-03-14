@@ -5,8 +5,8 @@ import {
   validateAiCommandPreset,
   serializePreset,
   parsePreset,
-} from './aiCommandTypes';
-import type { AiCommandDefinition, AiCommandPreset } from './aiCommandTypes';
+} from '../src/ai-command-types';
+import type { AiCommandDefinition, AiCommandPreset } from '../src/ai-command-types';
 
 // ---------------------------------------------------------------------------
 // resolveTemplate
