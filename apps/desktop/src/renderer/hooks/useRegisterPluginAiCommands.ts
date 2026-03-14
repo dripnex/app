@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { aiCommandStore } from '@readied/plugin-api';
 import type { AiCommandRegistration } from '@readied/plugin-api';
-import { resolveTemplate } from '@readied/ai-core';
+import { resolveTemplate } from '@readied/ai-assistant';
 import type { AiInitialCommand } from '../components/ai/AiPanel';
 import { registry, getEditorView } from './useCommandRegistry';
 

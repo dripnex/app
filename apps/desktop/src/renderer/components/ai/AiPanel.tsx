@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucide-react';
-import type { ChatMessage, NoteContext, AiPanelMode, LLMEvent } from '@readied/ai-core';
+import { buildRagPrompt } from '@readied/ai-assistant';
+import type { ClaudeMessage, NoteContext, AiPanelMode } from '@readied/ai-assistant';
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 
@@ -20,35 +21,12 @@ interface AiPanelProps {
   insertAtCursor: (text: string) => void;
   /** Initial mode: 'chat' (default) or 'ask-notes' */
   initialMode?: AiPanelMode;
-  /** Pre-filled command to auto-execute (skip input, go straight to AI) */
+  /** Pre-filled command to auto-execute (skip input, go straight to Claude) */
   initialCommand?: AiInitialCommand | null;
   /** Replace the current editor selection with text */
   replaceSelection?: (text: string) => void;
   /** Callback to clear initialCommand after execution */
   onCommandExecuted?: () => void;
-}
-
-/** Map LLM error codes to user-friendly messages */
-function formatErrorMessage(event: LLMEvent & { type: 'error' }): string {
-  switch (event.code) {
-    case 'auth_failed':
-      return 'Authentication failed. Please check your API key in Settings > AI Assistant.';
-    case 'rate_limit':
-      return 'Rate limit exceeded. Please wait a moment and try again.';
-    case 'context_overflow':
-      return 'The conversation is too long. Try clearing the chat and starting fresh.';
-    case 'model_not_found':
-      return 'The selected model was not found. Please check your model setting.';
-    case 'network':
-      return 'Network error. Please check your internet connection.';
-    case 'cancelled':
-      return 'Request was cancelled.';
-    case 'timeout':
-      return 'Request timed out. Please try again.';
-    case 'provider_error':
-    default:
-      return event.error || 'An unexpected error occurred.';
-  }
 }
 
 export function AiPanel({
@@ -64,7 +42,7 @@ export function AiPanel({
   onCommandExecuted,
 }: AiPanelProps) {
   const aiSettings = useSettingsStore(selectAi);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ClaudeMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +50,6 @@ export function AiPanel({
   const [contextCount, setContextCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const activeRequestRef = useRef<string | null>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -89,48 +66,6 @@ export function AiPanel({
     setMode(initialMode);
   }, [initialMode]);
 
-  // Subscribe to AI streaming events
-  useEffect(() => {
-    const cleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
-      // Only process events for the active request
-      if (requestId !== activeRequestRef.current) return;
-
-      const event = rawEvent as LLMEvent;
-
-      switch (event.type) {
-        case 'text':
-          // Accumulate text delta into the last assistant message
-          setMessages(prev => {
-            const last = prev[prev.length - 1];
-            if (last && last.role === 'assistant') {
-              const updated = [...prev];
-              updated[updated.length - 1] = {
-                ...last,
-                content: (last.content as string) + event.delta,
-              };
-              return updated;
-            }
-            // First text event — create the assistant message
-            return [...prev, { role: 'assistant', content: event.delta }];
-          });
-          break;
-
-        case 'error':
-          setError(formatErrorMessage(event));
-          setLoading(false);
-          activeRequestRef.current = null;
-          break;
-
-        case 'done':
-          setLoading(false);
-          activeRequestRef.current = null;
-          break;
-      }
-    });
-
-    return cleanup;
-  }, []);
-
   // Auto-execute a pre-filled command (ai:summarize, ai:rewrite, ai:tweet)
   useEffect(() => {
     if (!initialCommand) return;
@@ -140,7 +75,7 @@ export function AiPanel({
       const hasSettingsKey = Boolean(aiSettings_.apiKey);
       const apiKey = hasSettingsKey ? aiSettings_.apiKey : getConfig<string>('apiKey');
       if (!apiKey) {
-        setError('Please set your API key in Settings > AI Assistant');
+        setError('Please set your Anthropic API key in Settings > AI Assistant');
         onCommandExecuted?.();
         return;
       }
@@ -148,107 +83,49 @@ export function AiPanel({
       const model = hasSettingsKey
         ? aiSettings_.model
         : getConfig<string>('model') || 'claude-sonnet-4-20250514';
-      const provider = aiSettings_.provider;
 
       // Show user message in chat
-      const userMsg: ChatMessage = { role: 'user', content: initialCommand.userPrompt };
+      const userMsg: ClaudeMessage = { role: 'user', content: initialCommand.userPrompt };
       setMessages(prev => [...prev, userMsg]);
       setLoading(true);
       setError(null);
 
-      // Track the output target for when the response arrives
-      const commandOutputTarget = initialCommand.outputTarget;
-      let accumulatedText = '';
-
-      // Set up a one-time listener for this command's events
-      const commandCleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
-        if (requestId !== activeRequestRef.current) return;
-
-        const event = rawEvent as LLMEvent;
-
-        switch (event.type) {
-          case 'text':
-            accumulatedText += event.delta;
-            setMessages(prev => {
-              const last = prev[prev.length - 1];
-              if (last && last.role === 'assistant') {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                  ...last,
-                  content: accumulatedText,
-                };
-                return updated;
-              }
-              return [...prev, { role: 'assistant', content: accumulatedText }];
-            });
-            break;
-
-          case 'error':
-            setError(formatErrorMessage(event));
-            setLoading(false);
-            activeRequestRef.current = null;
-            onCommandExecuted?.();
-            commandCleanup();
-            break;
-
-          case 'done': {
-            // Apply the output action
-            if (commandOutputTarget === 'replace' && replaceSelection) {
-              replaceSelection(accumulatedText);
-              setMessages(prev => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last && last.role === 'assistant') {
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: accumulatedText + '\n\n*(Selection replaced in editor)*',
-                  };
-                }
-                return updated;
-              });
-            } else if (commandOutputTarget === 'insert') {
-              insertAtCursor(accumulatedText);
-              setMessages(prev => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last && last.role === 'assistant') {
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: accumulatedText + '\n\n*(Inserted into editor)*',
-                  };
-                }
-                return updated;
-              });
-            }
-            // 'panel' — text already shown in chat
-
-            setLoading(false);
-            activeRequestRef.current = null;
-            onCommandExecuted?.();
-            commandCleanup();
-            break;
-          }
-        }
-      });
-
       try {
-        const { requestId } = await window.readied.ai.chat({
-          query: initialCommand.userPrompt,
-          currentNote: null,
-          relevantNotes: [],
-          history: [],
-          mode: 'chat',
-          provider,
+        const result = await window.readied.ai.query({
+          apiKey,
           model,
-          providerConfig: { apiKey },
-          maxResponseTokens: 2048,
+          system: initialCommand.systemPrompt,
+          messages: [userMsg],
+          maxTokens: 2048,
         });
-        activeRequestRef.current = requestId;
+
+        if (result.ok) {
+          const responseText = result.content;
+
+          if (initialCommand.outputTarget === 'replace' && replaceSelection) {
+            replaceSelection(responseText);
+            setMessages(prev => [
+              ...prev,
+              { role: 'assistant', content: responseText + '\n\n*(Selection replaced in editor)*' },
+            ]);
+          } else if (initialCommand.outputTarget === 'insert') {
+            insertAtCursor(responseText);
+            setMessages(prev => [
+              ...prev,
+              { role: 'assistant', content: responseText + '\n\n*(Inserted into editor)*' },
+            ]);
+          } else {
+            // 'panel' — just show in chat
+            setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+          }
+        } else {
+          setError(result.error);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
+      } finally {
         setLoading(false);
         onCommandExecuted?.();
-        commandCleanup();
       }
     };
 
@@ -263,14 +140,13 @@ export function AiPanel({
     const hasSettingsKey = Boolean(aiSettings.apiKey);
     const apiKey = hasSettingsKey ? aiSettings.apiKey : getConfig<string>('apiKey');
     if (!apiKey) {
-      setError('Please set your API key in Settings > AI Assistant');
+      setError('Please set your Anthropic API key in Settings > AI Assistant');
       return;
     }
 
     const model = hasSettingsKey
       ? aiSettings.model
       : getConfig<string>('model') || 'claude-sonnet-4-20250514';
-    const provider = aiSettings.provider;
     const maxContextNotes = hasSettingsKey
       ? aiSettings.maxContextNotes
       : getConfig<number>('maxContextNotes') || 5;
@@ -279,7 +155,7 @@ export function AiPanel({
     setError(null);
 
     // Add user message
-    const userMsg: ChatMessage = { role: 'user', content: query };
+    const userMsg: ClaudeMessage = { role: 'user', content: query };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
@@ -326,29 +202,34 @@ export function AiPanel({
       const totalContext = relevantNotes.length + (currentNote ? 1 : 0);
       setContextCount(totalContext);
 
-      // Build history from existing messages (string content only for IPC)
-      const history = messages.map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: typeof m.content === 'string' ? m.content : '',
-      }));
-
-      // Start streaming chat via IPC
-      const { requestId } = await window.readied.ai.chat({
+      // Build RAG prompt (mode determines the system prompt variant)
+      const { system, messages: ragMessages } = buildRagPrompt({
         query,
         currentNote: currentNote
           ? { id: currentNote.id, title: currentNote.title, content: currentNote.content }
           : null,
         relevantNotes,
-        history,
+        history: messages,
         mode,
-        provider,
-        model,
-        providerConfig: { apiKey },
-        maxResponseTokens: 2048,
       });
-      activeRequestRef.current = requestId;
+
+      // Call Claude API via IPC proxy
+      const result = await window.readied.ai.query({
+        apiKey,
+        model,
+        system,
+        messages: ragMessages,
+        maxTokens: 2048,
+      });
+
+      if (result.ok) {
+        setMessages(prev => [...prev, { role: 'assistant', content: result.content }]);
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+    } finally {
       setLoading(false);
     }
   }, [
@@ -374,15 +255,9 @@ export function AiPanel({
   );
 
   const handleClear = useCallback(() => {
-    // Cancel any active request
-    if (activeRequestRef.current) {
-      window.readied.ai.cancel(activeRequestRef.current);
-      activeRequestRef.current = null;
-    }
     setMessages([]);
     setError(null);
     setContextCount(0);
-    setLoading(false);
   }, []);
 
   const toggleMode = useCallback(() => {
@@ -392,7 +267,7 @@ export function AiPanel({
   const handleInsertLast = useCallback(() => {
     const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
     if (lastAssistant) {
-      insertAtCursor(typeof lastAssistant.content === 'string' ? lastAssistant.content : '');
+      insertAtCursor(lastAssistant.content);
     }
   }, [messages, insertAtCursor]);
 
@@ -451,13 +326,9 @@ export function AiPanel({
           </div>
         )}
         {messages.map((msg, i) => (
-          <AiMessage
-            key={i}
-            role={msg.role}
-            content={typeof msg.content === 'string' ? msg.content : ''}
-          />
+          <AiMessage key={i} role={msg.role} content={msg.content} />
         ))}
-        {loading && messages[messages.length - 1]?.role !== 'assistant' && (
+        {loading && (
           <div className="ai-message ai-message--assistant">
             <div className="ai-message-label">AI</div>
             <div className="ai-message-content ai-typing">Thinking...</div>

@@ -13,8 +13,8 @@ import { SettingRow } from '../components/SettingRow';
 import { Select, NumberInput } from '../components/controls';
 import { aiCommandStore } from '@readied/plugin-api';
 import type { AiCommandRegistration } from '@readied/plugin-api';
-import { validateAiCommandPreset, serializePreset } from '@readied/ai-core';
-import type { AiCommandPreset } from '@readied/ai-core';
+import { validateAiCommandPreset, serializePreset } from '@readied/ai-assistant';
+import type { AiCommandPreset } from '@readied/ai-assistant';
 import styles from './Section.module.css';
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -41,12 +41,6 @@ export function AiSection() {
 
   const registeredAiCommands = useAiCommands();
 
-  const providerOptions = [
-    { value: 'anthropic', label: 'Anthropic' },
-    { value: 'openai', label: 'OpenAI' },
-    { value: 'ollama', label: 'Ollama' },
-  ];
-
   const modelOptions = [
     { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
     { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
@@ -63,9 +57,12 @@ export function AiSection() {
     setTestMessage('');
 
     try {
-      const result = await window.readied.ai.validate({
-        provider: ai.provider,
+      const result = await window.readied.ai.query({
         apiKey: ai.apiKey,
+        model: ai.model,
+        system: 'You are a helpful assistant. Respond with exactly: "Connection successful."',
+        messages: [{ role: 'user', content: 'Test connection.' }],
+        maxTokens: 32,
       });
 
       if (result.ok) {
@@ -79,7 +76,7 @@ export function AiSection() {
       setTestStatus('error');
       setTestMessage(err instanceof Error ? err.message : String(err));
     }
-  }, [ai.apiKey, ai.provider]);
+  }, [ai.apiKey, ai.model]);
 
   const handleExportPreset = useCallback(async () => {
     setPresetMessage(null);
@@ -184,25 +181,8 @@ export function AiSection() {
 
       <SettingGroup title="API Configuration">
         <SettingRow
-          label="Provider"
-          description="LLM provider to use for AI queries"
-          htmlFor="aiProvider"
-        >
-          <Select
-            id="aiProvider"
-            value={ai.provider}
-            onChange={value =>
-              updateAi({
-                provider: value as 'anthropic' | 'openai' | 'ollama',
-              })
-            }
-            options={providerOptions}
-          />
-        </SettingRow>
-
-        <SettingRow
           label="API Key"
-          description="Your API key for the selected provider"
+          description="Your Anthropic API key from console.anthropic.com"
           htmlFor="aiApiKey"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -261,7 +241,7 @@ export function AiSection() {
             value={ai.model}
             onChange={value =>
               updateAi({
-                model: value,
+                model: value as 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514',
               })
             }
             options={modelOptions}

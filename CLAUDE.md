@@ -88,45 +88,25 @@ cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 
 ## Git Flow
 
-We use a simplified Git Flow with automated releases:
+We use Git Flow for branch management:
 
 ```
-main          ← Production releases (semantic-release runs here)
+main          ← Production releases only
   └── develop ← Integration branch
         └── feature/* ← Feature development
         └── fix/*     ← Bug fixes
+        └── release/* ← Release preparation
 ```
 
 ### Branches
 
-| Branch      | Purpose                   | Merges to       |
-| ----------- | ------------------------- | --------------- |
-| `main`      | Production releases       | -               |
-| `develop`   | Integration, next release | `main` (via PR) |
-| `feature/*` | New features              | `develop`       |
-| `fix/*`     | Bug fixes                 | `develop`       |
-
-### Release Process (Automated)
-
-1. PR from `develop` to `main` — CI validates
-2. Click **"Run workflow"** on the **Release** action (`workflow_dispatch`)
-3. semantic-release analyzes commits, bumps version, creates tag + draft GitHub Release
-4. Tag push triggers Build workflow — builds mac/win/linux in parallel
-5. All builds succeed → Release is undrafted → electron-updater picks it up
-6. Auto-PR syncs main back to develop
-
-**Manual steps: 2** (merge PR + click Release)
-
-### Rollback
-
-```bash
-# Soft rollback — stop distribution immediately
-gh release edit v0.10.0 --draft
-
-# Hard rollback — delete entirely
-gh release delete v0.10.0 --yes
-git push --delete origin v0.10.0
-```
+| Branch      | Purpose                   | Merges to            |
+| ----------- | ------------------------- | -------------------- |
+| `main`      | Production releases       | -                    |
+| `develop`   | Integration, next release | `main` (via release) |
+| `feature/*` | New features              | `develop`            |
+| `fix/*`     | Bug fixes                 | `develop`            |
+| `release/*` | Release prep              | `main` + `develop`   |
 
 ### Workflow
 

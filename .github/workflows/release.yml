@@ -1,27 +1,56 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
-
-concurrency:
-  group: release
-  cancel-in-progress: false
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 jobs:
-  release:
+  # ── Validate tag matches package.json ─────────
+  validate:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Validate tag matches package.json
+        env:
+          GIT_REF: ${{ github.ref }}
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GIT_REF#refs/tags/v}
+
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag version (${TAG_VERSION}) does not match package.json (${PACKAGE_VERSION})"
+            exit 1
+          fi
+
+          echo "✓ Tag v${TAG_VERSION} matches package.json ${PACKAGE_VERSION}"
+
+  # ── Build for all platforms ───────────────────
+  build:
+    needs: [validate]
+    if: always() && (needs.validate.result == 'success' || needs.validate.result == 'skipped')
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+          - os: ubuntu-latest
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -32,14 +61,139 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Force HTTPS for GitHub git dependencies
+        shell: bash
+        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
-      - name: Run semantic-release
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Build Electron app
+        working-directory: apps/desktop
+        run: pnpm build
+
+      - name: Build distributables (macOS)
+        if: matrix.platform == 'mac'
+        working-directory: apps/desktop
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          GIT_AUTHOR_NAME: github-actions[bot]
-          GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
-        run: npx semantic-release
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: pnpm dist:mac --publish always
+
+      - name: Build distributables (Windows)
+        if: matrix.platform == 'win'
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm dist:win --publish always
+
+      - name: Build distributables (Linux)
+        if: matrix.platform == 'linux'
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm dist:linux --publish always
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/latest*.yml
+            apps/desktop/release/*.blockmap
+          if-no-files-found: ignore
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
+            artifacts/**/*.exe
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/latest*.yml
+            artifacts/**/*.blockmap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  tweet:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch release body
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY=$(gh release view "${{ steps.version.outputs.tag }}" --repo "${{ github.repository }}" --json body --jq '.body // ""')
+          echo "body<<RELEASE_EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Compose tweet
+        id: tweet
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          BODY="${{ steps.release.outputs.body }}"
+          LINK="https://github.com/${{ github.repository }}/releases/tag/${TAG}"
+          SUFFIX=$'\n\n'"📥 ${LINK}"$'\n'"#readied #markdown #devtools"
+          HEADER="🚀 Readied ${TAG}"$'\n\n'
+
+          # Calculate available space for release body
+          # 280 max - header - suffix = space for body
+          MAX=280
+          FIXED_LEN=$(( ${#HEADER} + ${#SUFFIX} ))
+          BODY_MAX=$(( MAX - FIXED_LEN ))
+
+          # Strip markdown formatting, take first lines, trim to fit
+          CLEAN=$(echo "$BODY" | sed 's/^##* //' | sed 's/\*\*//g' | sed '/^$/d' | head -8)
+
+          if [ ${#CLEAN} -gt $BODY_MAX ]; then
+            CLEAN="${CLEAN:0:$(( BODY_MAX - 1 ))}…"
+          fi
+
+          TWEET="${HEADER}${CLEAN}${SUFFIX}"
+
+          echo "text<<TWEET_EOF" >> "$GITHUB_OUTPUT"
+          echo "$TWEET" >> "$GITHUB_OUTPUT"
+          echo "TWEET_EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Post tweet
+        uses: dart-actions/tweet@v1
+        with:
+          consumer-key: ${{ secrets.TWITTER_API_KEY }}
+          consumer-secret: ${{ secrets.TWITTER_API_SECRET }}
+          access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          access-token-secret: ${{ secrets.TWITTER_ACCESS_SECRET }}
+          text: ${{ steps.tweet.outputs.text }}

@@ -36,7 +36,7 @@
     "@codemirror/state": "^6.5.3",
     "@codemirror/view": "^6.39.8",
     "@lezer/highlight": "^1.2.3",
-    "@readied/ai-core": "workspace:*",
+    "@readied/ai-assistant": "workspace:*",
     "@readied/command-registry": "workspace:*",
     "@readied/commands": "workspace:*",
     "@readied/core": "workspace:*",

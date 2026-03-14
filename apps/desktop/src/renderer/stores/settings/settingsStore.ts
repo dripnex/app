@@ -95,14 +95,8 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
 
   settings = mutable as SettingsSchema;
 
-  // Migration: v2 -> v3 (add provider field to AI settings)
-  if (version < 3) {
-    mutable = {
-      ...mutable,
-      version: 3,
-      ai: { provider: 'anthropic', ...mutable.ai },
-    };
-  }
+  // Future migrations go here:
+  // if (version < 3) { ... migrate to v3 ... }
 
   return { settings };
 }

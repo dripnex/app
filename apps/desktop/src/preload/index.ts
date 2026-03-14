@@ -723,28 +723,14 @@ export interface ReadiedAPI {
     onError: (cb: (err: { message: string }) => void) => () => void;
   };
   ai: {
-    /** Start a streaming AI chat — returns { requestId } */
-    chat: (request: {
-      query: string;
-      currentNote?: { id: string; title: string; content: string } | null;
-      relevantNotes: Array<{ id: string; title: string; content: string }>;
-      history: Array<{ role: 'user' | 'assistant'; content: string }>;
-      mode: 'chat' | 'ask-notes';
-      provider: string;
+    /** Send a query to Claude API (proxied through main process to avoid CORS) */
+    query: (options: {
+      apiKey: string;
       model: string;
-      providerConfig: { apiKey?: string; baseUrl?: string };
-      maxResponseTokens?: number;
-    }) => Promise<{ requestId: string }>;
-    /** Listen for streaming AI events */
-    onEvent: (cb: (requestId: string, event: unknown) => void) => () => void;
-    /** Cancel an active AI request */
-    cancel: (requestId: string) => Promise<void>;
-    /** Validate a provider configuration */
-    validate: (config: {
-      provider: string;
-      apiKey?: string;
-      baseUrl?: string;
-    }) => Promise<{ ok: boolean; error?: string }>;
+      system: string;
+      messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+      maxTokens?: number;
+    }) => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
     /** Export an AI command preset to a user-chosen file */
     exportPreset: (
       presetJson: string
@@ -1034,17 +1020,7 @@ const api: ReadiedAPI = {
     },
   },
   ai: {
-    chat: request => ipcRenderer.invoke('ai:chat', request),
-    onEvent: cb => {
-      const handler = (_event: unknown, requestId: string, aiEvent: unknown) =>
-        cb(requestId, aiEvent);
-      ipcRenderer.on('ai:event', handler);
-      return () => {
-        ipcRenderer.removeListener('ai:event', handler);
-      };
-    },
-    cancel: requestId => ipcRenderer.invoke('ai:cancel', requestId),
-    validate: config => ipcRenderer.invoke('ai:validate', config),
+    query: options => ipcRenderer.invoke('ai:query', options),
     exportPreset: presetJson => ipcRenderer.invoke('ai:exportPreset', presetJson),
     importPreset: () => ipcRenderer.invoke('ai:importPreset'),
   },
