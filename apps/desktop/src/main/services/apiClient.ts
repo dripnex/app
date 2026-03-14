@@ -186,7 +186,12 @@ export class ApiClient {
   /**
    * Generic HTTP request with auth, retry, and error handling
    */
-  private async request<T>(endpoint: string, options: RequestInit = {}, retries = 3): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    retries = 3,
+    _isAuthRetry = false
+  ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
     // Inject access token if available
@@ -212,11 +217,11 @@ export class ApiClient {
       });
 
       // Handle 401 - Token expired
-      if (response.status === 401 && tokens) {
+      if (response.status === 401 && tokens && !_isAuthRetry) {
         const refreshResult = await this.refreshAccessToken();
         switch (refreshResult.type) {
           case 'success':
-            return this.request<T>(endpoint, options, 0);
+            return this.request<T>(endpoint, options, 0, true);
           case 'network':
             // Transient failure — throw retryable error so caller can try later
             throw new ApiError(0, refreshResult.message ?? 'Network error during token refresh');
@@ -233,11 +238,7 @@ export class ApiClient {
               refreshResult.message ?? 'Session expired. Please sign in again.'
             );
           default:
-            await this.tokenStorage.clearTokens();
-            throw new ApiError(
-              401,
-              refreshResult.message ?? 'Authentication failed. Please sign in again.'
-            );
+            throw new ApiError(0, refreshResult.message ?? 'Transient error during token refresh');
         }
       }
 

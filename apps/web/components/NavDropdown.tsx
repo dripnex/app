@@ -49,7 +49,7 @@ export default function NavDropdown({ label, items }: NavDropdownProps) {
             leaveTo="opacity-0 translate-y-1"
           >
             <PopoverPanel className="absolute left-1/2 z-50 mt-3 w-56 -translate-x-1/2 transform">
-              <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
+              <div className="overflow-hidden rounded-xl border border-white/8 bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
                 <div className="py-1">
                   {items.map(item => {
                     const className =

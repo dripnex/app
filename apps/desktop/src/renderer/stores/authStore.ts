@@ -50,7 +50,10 @@ export const useAuthStore = create<AuthState>()(set => ({
   requestMagicLink: async (email: string) => {
     set({ isLoading: true, error: null });
     try {
-      await window.readied.auth.requestMagicLink(email);
+      const result = await window.readied.auth.requestMagicLink(email);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send magic link');
+      }
       set({ isLoading: false });
     } catch (error) {
       let errorMessage = 'Failed to request magic link';
@@ -87,8 +90,19 @@ export const useAuthStore = create<AuthState>()(set => ({
           isLoading: false,
         });
 
-        // Start auto-sync after successful authentication
-        await window.readied.sync.startAutoSync(5 * 60 * 1000); // 5 minutes
+        // Start auto-sync only if license allows cloud sync
+        try {
+          const licenseState = await window.readied.license.getState();
+          const canSync =
+            licenseState.status === 'trial' ||
+            licenseState.status === 'pro_active' ||
+            licenseState.status === 'pro_grace';
+          if (canSync) {
+            await window.readied.sync.startAutoSync(5 * 60 * 1000);
+          }
+        } catch {
+          // License check failed — don't start sync
+        }
       } else {
         throw new Error(result.error || 'Verification failed');
       }
@@ -153,8 +167,19 @@ export const useAuthStore = create<AuthState>()(set => ({
           isLoading: false,
         });
 
-        // Start auto-sync if session exists
-        await window.readied.sync.startAutoSync(5 * 60 * 1000); // 5 minutes
+        // Start auto-sync only if license allows cloud sync
+        try {
+          const licenseState = await window.readied.license.getState();
+          const canSync =
+            licenseState.status === 'trial' ||
+            licenseState.status === 'pro_active' ||
+            licenseState.status === 'pro_grace';
+          if (canSync) {
+            await window.readied.sync.startAutoSync(5 * 60 * 1000);
+          }
+        } catch {
+          // License check failed — don't start sync
+        }
       } else {
         set({ isLoading: false });
       }

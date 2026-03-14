@@ -56,9 +56,9 @@ const secondRow = reviews.slice(reviews.length / 2);
 
 function Stars({ count }: { count: number }) {
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-0.5" role="img" aria-label={`${count} out of 5 stars`}>
       {Array.from({ length: count }).map((_, i) => (
-        <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+        <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
       ))}
     </div>
   );
@@ -101,7 +101,7 @@ function ReviewCard({
 
       <blockquote className="mt-3 text-sm leading-relaxed text-text-secondary">{text}</blockquote>
 
-      <p className="mt-3 text-[10px] text-text-muted">{date}</p>
+      <figcaption className="mt-3 text-[10px] text-text-muted">{date}</figcaption>
     </figure>
   );
 }

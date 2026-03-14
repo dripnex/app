@@ -34,7 +34,7 @@ pnpm dev
 | `@readied/tasks`          | Task/checkbox parsing          |
 | `@readied/commands`       | Command palette                |
 | `@readied/embeds`         | Image/embed handling           |
-| `@readied/design-system`  | Design tokens, components      |
+| `@readied/plugin-api`     | Plugin API + theme system      |
 
 ## Contributing
 

@@ -16,7 +16,13 @@ import {
   createTimestamp,
   type NoteStatus,
 } from '@readied/core';
-import type { ApiClient, SyncChange, NotebookSyncChange, NotebookPushResult } from './apiClient.js';
+import {
+  ApiError,
+  type ApiClient,
+  type SyncChange,
+  type NotebookSyncChange,
+  type NotebookPushResult,
+} from './apiClient.js';
 import type { EncryptionService } from './encryptionService.js';
 
 // ============================================================================
@@ -85,9 +91,7 @@ function isNetworkError(error: unknown): boolean {
  * Check if an error represents a 401 Unauthorized response.
  */
 function isAuthError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const msg = error.message.toLowerCase();
-  return msg.includes('401') || msg.includes('unauthorized');
+  return error instanceof ApiError && error.statusCode === 401;
 }
 
 // ============================================================================
@@ -634,6 +638,31 @@ export class SyncService {
       };
     } catch (error) {
       const bandwidth = this.apiClient.getBandwidth();
+
+      // Intentional abort (e.g. logout / stopAutoSync) — not a real error
+      if (error instanceof Error && error.message === 'Sync aborted') {
+        this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
+          notesPulled,
+          notesPushed,
+          notebooksPulled,
+          notebooksPushed,
+          tagsPulled,
+          tagsPushed,
+          conflicts: totalConflicts,
+          bytesSent: bandwidth.bytesSent,
+          bytesReceived: bandwidth.bytesReceived,
+          errorMessage: 'Sync aborted',
+        });
+
+        return {
+          success: false,
+          changesApplied: 0,
+          changesPushed: 0,
+          conflicts: [],
+          error: 'Sync aborted',
+        };
+      }
+
       this.noteRepository.completeSyncHistoryEntry(historyId, 'error', {
         notesPulled: 0,
         notesPushed: 0,

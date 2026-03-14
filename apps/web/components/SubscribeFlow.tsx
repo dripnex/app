@@ -166,7 +166,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                   ? 'bg-green-400 text-white'
                   : step === s.num
                     ? 'bg-accent text-white'
-                    : 'border border-white/[0.08] bg-surface text-[#71717a]'
+                    : 'border border-white/8 bg-surface text-[#71717a]'
               }`}
               aria-current={step === s.num ? 'step' : undefined}
             >
@@ -195,7 +195,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
             {i < steps.length - 1 && (
               <div
                 className={`mx-1 h-px w-8 sm:w-12 ${
-                  step > s.num ? 'bg-green-400/50' : 'bg-white/[0.08]'
+                  step > s.num ? 'bg-green-400/50' : 'bg-white/8'
                 }`}
                 aria-hidden="true"
               />
@@ -232,7 +232,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
 
       {/* Step 1: Email entry */}
       {step === 1 && (
-        <div className="rounded-xl border border-white/[0.06] bg-surface p-8">
+        <div className="rounded-xl border border-white/6 bg-surface p-8">
           <h2 className="mb-2 text-center text-xl font-semibold text-white">Get started</h2>
           <p className="mb-6 text-center text-sm text-[#71717a]">
             Enter your email to begin. We&apos;ll send you a magic link to verify.
@@ -256,7 +256,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                   required
                   autoFocus
                   disabled={status === 'loading'}
-                  className="w-full rounded-lg border border-white/[0.08] bg-base px-4 py-3 text-sm text-white placeholder-[#71717a] transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
+                  className="w-full rounded-lg border border-white/8 bg-base px-4 py-3 text-sm text-white placeholder-[#71717a] transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
                 />
               </div>
 
@@ -291,7 +291,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
 
       {/* Step 2: Check email */}
       {step === 2 && (
-        <div className="rounded-xl border border-white/[0.06] bg-surface p-8 text-center">
+        <div className="rounded-xl border border-white/6 bg-surface p-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10">
             <svg
               className="h-8 w-8 text-accent"
@@ -322,7 +322,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
             type="button"
             onClick={handleResend}
             disabled={status === 'loading' || resendCooldown > 0}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-elevated px-4 py-2.5 text-sm text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/8 bg-elevated px-4 py-2.5 text-sm text-[#a1a1aa] transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
           >
             {status === 'loading' ? (
               <>
@@ -342,7 +342,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
             </p>
           )}
 
-          <div className="mt-6 border-t border-white/[0.06] pt-4">
+          <div className="mt-6 border-t border-white/6 pt-4">
             <button
               type="button"
               onClick={() => {
@@ -376,7 +376,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
               className={`w-full rounded-xl border p-5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 selectedPlan === 'free'
                   ? 'border-accent/50 bg-accent/5'
-                  : 'border-white/[0.08] bg-surface hover:border-white/[0.12]'
+                  : 'border-white/8 bg-surface hover:border-white/12'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -437,7 +437,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
               className={`w-full rounded-xl border p-5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 selectedPlan === 'pro-monthly'
                   ? 'border-accent/50 bg-accent/5'
-                  : 'border-white/[0.08] bg-surface hover:border-white/[0.12]'
+                  : 'border-white/8 bg-surface hover:border-white/12'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -500,7 +500,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
               className={`relative w-full rounded-xl border p-5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 selectedPlan === 'pro-annual'
                   ? 'border-accent/50 bg-accent/5'
-                  : 'border-white/[0.08] bg-surface hover:border-white/[0.12]'
+                  : 'border-white/8 bg-surface hover:border-white/12'
               }`}
             >
               <span className="absolute -top-2.5 right-4 rounded-full bg-accent px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-white">

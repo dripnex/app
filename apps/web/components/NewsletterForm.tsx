@@ -87,7 +87,7 @@ export default function NewsletterForm({ compact = false }: NewsletterFormProps)
             placeholder="your@email.com"
             required
             disabled={status === 'loading'}
-            className="min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-base px-4 py-2.5 text-sm text-white placeholder-[#71717a] transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
+            className="min-w-0 flex-1 rounded-lg border border-white/8 bg-base px-4 py-2.5 text-sm text-white placeholder-[#71717a] transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:opacity-50"
           />
           <button
             type="submit"

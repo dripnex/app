@@ -2,6 +2,7 @@
  * Sync Status Indicator
  *
  * Shows sync status in main UI (syncing, error, offline, etc.)
+ * Uses CSS module classes with design token variables instead of inline colors.
  */
 
 import { useState } from 'react';
@@ -29,7 +30,7 @@ export function SyncStatusIndicator() {
       return {
         icon: <CloudOff size={14} />,
         label: 'Not signed in',
-        color: '#6b7280',
+        className: styles.statusMuted,
       };
     }
 
@@ -38,7 +39,7 @@ export function SyncStatusIndicator() {
       return {
         icon: <AlertTriangle size={14} />,
         label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — resolve in Settings`,
-        color: '#f59e0b',
+        className: styles.statusWarning,
       };
     }
 
@@ -47,31 +48,31 @@ export function SyncStatusIndicator() {
         return {
           icon: <RefreshCw size={14} className={styles.spinning} />,
           label: 'Syncing...',
-          color: '#3b82f6',
+          className: styles.statusSyncing,
         };
       case 'idle':
         return {
           icon: <CheckCircle size={14} />,
           label: lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync',
-          color: '#10b981',
+          className: styles.statusSuccess,
         };
       case 'error':
         return {
           icon: <AlertCircle size={14} />,
           label: 'Sync failed',
-          color: '#ef4444',
+          className: styles.statusError,
         };
       case 'offline':
         return {
           icon: <CloudOff size={14} />,
           label: 'Offline',
-          color: '#6b7280',
+          className: styles.statusMuted,
         };
       default:
         return {
           icon: <Cloud size={14} />,
           label: 'Unknown',
-          color: '#6b7280',
+          className: styles.statusMuted,
         };
     }
   };
@@ -90,14 +91,13 @@ export function SyncStatusIndicator() {
     return `${days}d ago`;
   };
 
-  const { icon, label, color } = getStatusInfo();
+  const { icon, label, className } = getStatusInfo();
 
   return (
     <div
-      className={styles.container}
+      className={`${styles.container} ${className}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
-      style={{ color }}
     >
       <div className={styles.icon}>{icon}</div>
       {showTooltip && <div className={styles.tooltip}>{label}</div>}

@@ -11,7 +11,7 @@ export default function AuthVerifyContent() {
 
   useEffect(() => {
     if (token) {
-      window.location.href = `readied://auth/verify?token=${token}`;
+      window.location.href = `readied://auth/verify?token=${encodeURIComponent(token)}`;
 
       const timer = setTimeout(() => {
         setShowFallback(true);
@@ -85,7 +85,7 @@ export default function AuthVerifyContent() {
             </p>
 
             <a
-              href={`readied://auth/verify?token=${token}`}
+              href={`readied://auth/verify?token=${encodeURIComponent(token)}`}
               className="inline-block px-8 py-3 mb-8 bg-accent text-white font-semibold rounded-lg transition-colors hover:bg-accent-hover"
             >
               Open in Readied

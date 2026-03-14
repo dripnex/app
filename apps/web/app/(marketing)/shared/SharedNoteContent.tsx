@@ -68,7 +68,7 @@ export default function SharedNoteContent() {
   if (state === 'loading') {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
-        <div className="w-8 h-8 border-[3px] border-white/[0.06] border-t-accent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-[3px] border-white/6 border-t-accent rounded-full animate-spin" />
         <p className="text-[#a1a1aa]">Loading note...</p>
       </div>
     );
@@ -90,14 +90,14 @@ export default function SharedNoteContent() {
       <h1 className="text-3xl font-bold text-[#f4f4f5] leading-tight tracking-tight mb-2">
         {note?.title || 'Untitled'}
       </h1>
-      <div className="text-sm text-[#71717a] mb-8 pb-6 border-b border-white/[0.06]">
+      <div className="text-sm text-[#71717a] mb-8 pb-6 border-b border-white/6">
         Shared on {note?.createdAt ? formatDate(note.createdAt) : ''}
       </div>
       <div
         className="prose prose-invert max-w-none"
         dangerouslySetInnerHTML={{ __html: note?.content || '' }}
       />
-      <footer className="mt-12 pt-6 border-t border-white/[0.06] text-center text-sm text-[#71717a]">
+      <footer className="mt-12 pt-6 border-t border-white/6 text-center text-sm text-[#71717a]">
         Shared with{' '}
         <a href="https://readied.app" className="text-accent hover:underline">
           Readied

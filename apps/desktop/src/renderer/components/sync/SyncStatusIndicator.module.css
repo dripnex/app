@@ -32,14 +32,6 @@
   animation: spin 1s linear infinite;
 }
 
-.icon.error {
-  color: var(--color-error, #dc2626);
-}
-
-.icon.warning {
-  color: var(--color-warning, #f59e0b);
-}
-
 .badge {
   position: absolute;
   top: 2px;
@@ -54,6 +46,45 @@
   color: white;
   background: var(--color-primary, #3b82f6);
   border-radius: 7px;
+}
+
+.tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--color-text-primary, #333);
+  background: var(--color-bg-primary, white);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Status color classes using design tokens */
+.statusSyncing {
+  color: var(--color-primary, #3b82f6);
+}
+
+.statusSuccess {
+  color: var(--color-success, #10b981);
+}
+
+.statusError {
+  color: var(--color-error, #ef4444);
+}
+
+.statusWarning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.statusMuted {
+  color: var(--color-text-tertiary, #6b7280);
 }
 
 @keyframes spin {

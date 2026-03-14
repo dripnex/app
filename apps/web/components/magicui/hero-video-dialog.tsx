@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, XIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -75,7 +75,23 @@ export function HeroVideoDialog({
   className,
 }: HeroVideoProps) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const selectedAnimation = animationVariants[animationStyle];
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const closeVideo = useCallback(() => {
+    setIsClosing(true);
+    setIsVideoOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isVideoOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeVideo();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isVideoOpen, closeVideo]);
 
   return (
     <div className={cn('relative', className)}>
@@ -90,6 +106,7 @@ export function HeroVideoDialog({
           alt={thumbnailAlt}
           width={1920}
           height={1080}
+          loading="lazy"
           className="w-full rounded-xl border border-white/[0.06] shadow-2xl shadow-accent/5 transition-all duration-200 ease-out group-hover:brightness-[0.8]"
         />
         <div className="absolute inset-0 flex scale-[0.9] items-center justify-center rounded-2xl transition-all duration-200 ease-out group-hover:scale-100">
@@ -106,7 +123,7 @@ export function HeroVideoDialog({
           </div>
         </div>
       </button>
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={() => setIsClosing(false)}>
         {isVideoOpen && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -114,12 +131,7 @@ export function HeroVideoDialog({
             role="dialog"
             aria-modal="true"
             aria-label="Video player"
-            onKeyDown={e => {
-              if (e.key === 'Escape') {
-                setIsVideoOpen(false);
-              }
-            }}
-            onClick={() => setIsVideoOpen(false)}
+            onClick={closeVideo}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
           >
@@ -129,16 +141,18 @@ export function HeroVideoDialog({
               className="relative mx-4 aspect-video w-full max-w-4xl md:mx-0"
             >
               <motion.button
+                ref={closeButtonRef}
                 type="button"
                 aria-label="Close video"
-                onClick={() => setIsVideoOpen(false)}
+                autoFocus
+                onClick={closeVideo}
                 className="absolute -top-16 right-0 rounded-full bg-neutral-900/50 p-2 text-xl text-white ring-1 ring-white/10 backdrop-blur-md"
               >
                 <XIcon className="size-5" />
               </motion.button>
               <div className="relative isolate z-[1] size-full overflow-hidden rounded-2xl border-2 border-white/10">
                 <iframe
-                  src={videoSrc}
+                  src={isClosing ? '' : videoSrc}
                   title="Hero Video player"
                   className="mt-0 size-full rounded-2xl"
                   allowFullScreen

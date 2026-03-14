@@ -13,7 +13,7 @@ The following packages are licensed under the MIT License:
 - `packages/tasks/` - Task parsing
 - `packages/commands/` - Command palette logic
 - `packages/embeds/` - Embed handling
-- `packages/design-system/` - Design tokens and components
+- `packages/plugin-api/` - Plugin API and theme system
 - `packages/product-config/` - Product configuration
 
 See the LICENSE file in each package directory for the full MIT License text.

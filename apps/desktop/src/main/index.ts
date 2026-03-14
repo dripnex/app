@@ -979,11 +979,22 @@ function registerNotebookHandlers(): void {
     };
   });
 
-  // Move notebook
+  // Move notebook (recursively updates children's depth)
   ipcMain.handle('notebooks:move', async (_event, id: string, newParentId: string | null) => {
     const notebook = await repo.get(createNotebookId(id));
     if (!notebook) {
       throw new Error('Notebook not found');
+    }
+
+    // Prevent circular reference: can't move a notebook into its own descendant
+    if (newParentId) {
+      let current = await repo.get(createNotebookId(newParentId));
+      while (current && current.parentId) {
+        if (current.parentId === notebook.id) {
+          throw new Error('CIRCULAR_REFERENCE');
+        }
+        current = await repo.get(current.parentId);
+      }
     }
 
     let newParentDepth = 0;
@@ -1005,6 +1016,19 @@ function registerNotebookHandlers(): void {
     }
 
     await repo.save(result.notebook);
+
+    // Recursively update children's depth to match the new hierarchy
+    const updateChildrenDepth = async (parentId: string, parentDepth: number) => {
+      const children = await repo.getChildren(parentId as ReturnType<typeof createNotebookId>);
+      for (const child of children) {
+        const newChildDepth = parentDepth + 1;
+        if (child.depth !== newChildDepth) {
+          await repo.save({ ...child, depth: newChildDepth });
+          await updateChildrenDepth(child.id, newChildDepth);
+        }
+      }
+    };
+    await updateChildrenDepth(result.notebook.id, result.notebook.depth);
 
     return {
       id: result.notebook.id,

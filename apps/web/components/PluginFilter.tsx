@@ -80,13 +80,13 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
             placeholder="Search plugins..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-white/[0.08] bg-surface px-3 py-2.5 pl-10 text-sm text-[#f4f4f5] placeholder-[#71717a] outline-none transition-colors focus:border-accent"
+            className="w-full rounded-lg border border-white/8 bg-surface px-3 py-2.5 pl-10 text-sm text-[#f4f4f5] placeholder-[#71717a] outline-none transition-colors focus:border-accent"
           />
         </div>
         <select
           value={sort}
           onChange={e => setSort(e.target.value as SortOption)}
-          className="rounded-lg border border-white/[0.08] bg-surface px-3 py-2.5 text-sm text-[#a1a1aa] outline-none transition-colors focus:border-accent cursor-pointer"
+          className="rounded-lg border border-white/8 bg-surface px-3 py-2.5 text-sm text-[#a1a1aa] outline-none transition-colors focus:border-accent cursor-pointer"
         >
           <option value="name">Sort: A-Z</option>
           <option value="popular">Sort: Popular</option>
@@ -117,7 +117,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
               className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 isActive
                   ? 'bg-accent text-white'
-                  : 'border border-white/[0.08] bg-surface text-[#a1a1aa] hover:bg-white/5 hover:text-white'
+                  : 'border border-white/8 bg-surface text-[#a1a1aa] hover:bg-white/5 hover:text-white'
               }`}
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -176,7 +176,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
               </p>
 
               <div className="mb-3 group relative">
-                <pre className="rounded-lg bg-zinc-950 border border-white/[0.06] px-3 py-2 text-xs font-mono text-[#a1a1aa] overflow-x-auto">
+                <pre className="rounded-lg bg-zinc-950 border border-white/6 px-3 py-2 text-xs font-mono text-[#a1a1aa] overflow-x-auto">
                   <code>{installCmd}</code>
                 </pre>
                 <button

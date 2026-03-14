@@ -1,6 +1,6 @@
 'use client';
 
-import { type RefObject, useEffect, useId, useState } from 'react';
+import { type RefObject, useEffect, useId, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
@@ -32,7 +32,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   toRef,
   curvature = 0,
   reverse = false,
-  duration = Math.random() * 3 + 4,
+  duration: durationProp,
   delay = 0,
   pathColor = 'gray',
   pathWidth = 2,
@@ -45,6 +45,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   endYOffset = 0,
 }) => {
   const id = useId();
+  const duration = useMemo(() => durationProp ?? Math.random() * 3 + 4, [durationProp]);
   const [pathD, setPathD] = useState('');
   const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
 
