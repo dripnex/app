@@ -626,21 +626,24 @@ function NotesApp() {
     onCommandPalette: toggleCommandPalette,
   });
 
-  // Register AI commands (toggle panel, ask-notes)
+  // Register AI commands (single toggle opens ask-notes mode by default)
   const toggleAiPanel = useCallback(() => {
     setIsAiPanelOpen(prev => {
-      if (!prev) setAiPanelMode('chat');
+      if (!prev) setAiPanelMode('ask-notes');
       return !prev;
     });
   }, []);
   const closeAiPanel = useCallback(() => {
     setIsAiPanelOpen(false);
-    setAiPanelMode('chat');
-  }, []);
-  const openAskNotes = useCallback(() => {
     setAiPanelMode('ask-notes');
-    setIsAiPanelOpen(true);
   }, []);
+
+  // Listen for the plugin's Sparkles button CustomEvent
+  useEffect(() => {
+    const handler = () => toggleAiPanel();
+    window.addEventListener('readied:ai:toggle-panel', handler);
+    return () => window.removeEventListener('readied:ai:toggle-panel', handler);
+  }, [toggleAiPanel]);
 
   /** Helper: get selection text from editor */
   const getSelectionText = useCallback(() => {
@@ -693,7 +696,7 @@ function NotesApp() {
 
   useRegisterAiCommands({
     onTogglePanel: toggleAiPanel,
-    onAskNotes: openAskNotes,
+    onAskNotes: toggleAiPanel,
     onSummarize: handleSummarize,
     onRewrite: handleRewrite,
     onTweet: handleTweet,

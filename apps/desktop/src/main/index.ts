@@ -15,7 +15,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { exec } from 'child_process';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
+// electron-devtools-installer is imported dynamically below (dev only)
 import {
   runMigrations,
   createDataPaths,
@@ -2425,11 +2425,21 @@ app
 
     log.info('All IPC handlers registered');
 
-    // Install React DevTools in development
+    // Install React DevTools in development (dynamic import keeps it out of prod bundle)
     if (process.env.NODE_ENV === 'development') {
-      installExtension(REACT_DEVELOPER_TOOLS)
-        .then(name => log.info({ extension: name }, 'DevTools extension installed'))
-        .catch(err => log.warn({ error: err.message }, 'Failed to install DevTools extension'));
+      import('electron-devtools-installer')
+        .then(({ default: installExt, REACT_DEVELOPER_TOOLS: RDT }) =>
+          installExt(RDT)
+            .then((name: unknown) =>
+              log.info({ extension: String(name) }, 'DevTools extension installed')
+            )
+            .catch((err: Error) =>
+              log.warn({ error: err.message }, 'Failed to install DevTools extension')
+            )
+        )
+        .catch(() => {
+          /* electron-devtools-installer not available — ignore */
+        });
     }
 
     // Create window and start auto-updater
