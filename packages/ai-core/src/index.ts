@@ -1,2 +1,10 @@
 // packages/ai-core/src/index.ts
-// Re-exports added as modules are created
+export type {
+  LLMEvent,
+  LLMErrorCode,
+  ContentPart,
+  MessageContent,
+  ChatMessage,
+  ToolDefinition,
+  ChatOptions,
+} from './types.js';
