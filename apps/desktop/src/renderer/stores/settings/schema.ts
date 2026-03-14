@@ -14,7 +14,7 @@
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 2;
+export const SETTINGS_VERSION = 3;
 
 // ============================================================================
 // Section Types
@@ -62,10 +62,12 @@ export interface BackupSettings {
 
 /** AI Assistant settings */
 export interface AiSettings {
-  /** Anthropic API key */
+  /** LLM provider id */
+  provider: 'anthropic' | 'openai' | 'ollama';
+  /** API key (provider-specific) */
   apiKey: string;
-  /** Claude model to use */
-  model: 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514';
+  /** Model id */
+  model: string;
   /** Maximum number of notes to include as context */
   maxContextNotes: number;
 }
@@ -114,8 +116,12 @@ export interface SettingsSchemaV2 extends Omit<SettingsSchemaV1, 'version'> {
   ai: AiSettings;
 }
 
+export interface SettingsSchemaV3 extends Omit<SettingsSchemaV2, 'version'> {
+  version: 3;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV2;
+export type SettingsSchema = SettingsSchemaV3;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -143,6 +149,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
 };
 
 export const DEFAULT_AI: AiSettings = {
+  provider: 'anthropic',
   apiKey: '',
   model: 'claude-sonnet-4-20250514',
   maxContextNotes: 5,
@@ -170,7 +177,7 @@ export const DEFAULT_BACKUP: BackupSettings = {
 
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 2,
+  version: 3,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,

@@ -42,3 +42,18 @@ export { AnthropicProvider } from './providers/anthropic.js';
 
 export { AIServiceImpl } from './ai-service.js';
 export type { ChatRequest, ChatHandle, AIService } from './ai-service.js';
+
+export type {
+  AiCommandDefinition,
+  AiCommandPreset,
+  AiTemplatePlaceholder,
+  AiCommandValidationError,
+} from './ai-command-types.js';
+export {
+  AI_TEMPLATE_PLACEHOLDERS,
+  resolveTemplate,
+  validateAiCommandDefinition,
+  validateAiCommandPreset,
+  serializePreset,
+  parsePreset,
+} from './ai-command-types.js';
