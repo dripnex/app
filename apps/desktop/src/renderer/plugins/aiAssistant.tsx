@@ -1,65 +1,30 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
-import type { PluginManifest, ZoneComponentProps, PluginContext } from '@readied/plugin-api';
-import { AiPanel } from '../components/ai/AiPanel';
+import type { PluginManifest } from '@readied/plugin-api';
 import '../styles/ai-panel.css';
 
 /**
- * State shared between the plugin activate() and the React components.
- * We use a simple ref-based bridge since the plugin context is not React-aware.
- * Multiple listeners allow both the panel and button to stay in sync.
+ * Custom event name used to communicate between the plugin toggle button
+ * and App.tsx, avoiding direct imports of the command registry singleton
+ * (which pulls in CodeMirror and causes circular‐dep issues at bundle time).
  */
-interface AiBridge {
-  context: PluginContext | null;
-  visible: boolean;
-  listeners: Set<(v: boolean) => void>;
-  toggle: () => void;
-}
+const AI_TOGGLE_EVENT = 'readied:ai:toggle-panel';
 
-const bridge: AiBridge = {
-  context: null,
-  visible: false,
-  listeners: new Set(),
-  toggle() {
-    bridge.visible = !bridge.visible;
-    bridge.listeners.forEach(fn => fn(bridge.visible));
-  },
-};
-
-/** Hook to subscribe to bridge visibility state */
-function useBridgeVisible(): [boolean, (v: boolean) => void] {
-  const [visible, setVisible] = useState(bridge.visible);
-
-  useEffect(() => {
-    bridge.listeners.add(setVisible);
-    // Sync on mount in case state changed between render and effect
-    setVisible(bridge.visible);
-    return () => {
-      bridge.listeners.delete(setVisible);
-    };
-  }, []);
-
-  const setBridgeVisible = useCallback((v: boolean) => {
-    bridge.visible = v;
-    bridge.listeners.forEach(fn => fn(v));
-  }, []);
-
-  return [visible, setBridgeVisible];
-}
-
+/**
+ * Toggle button for the AI panel rendered in the editor header.
+ * Fires a CustomEvent that App.tsx listens for.
+ */
 function AiToggleButton() {
-  const [visible, setVisible] = useBridgeVisible();
-
   const handleClick = useCallback(() => {
-    setVisible(!visible);
-  }, [visible, setVisible]);
+    window.dispatchEvent(new CustomEvent(AI_TOGGLE_EVENT));
+  }, []);
 
   return (
     <button
       type="button"
-      className={`note-editor-actions-btn${visible ? ' active' : ''}`}
+      className="note-editor-actions-btn"
       onClick={handleClick}
-      title="AI Assistant (Cmd+Shift+A)"
+      title="AI Assistant (⌘K)"
       aria-label="Toggle AI Assistant"
     >
       <Sparkles size={18} />
@@ -67,65 +32,7 @@ function AiToggleButton() {
   );
 }
 
-function AiPanelZone({ meta }: ZoneComponentProps) {
-  const ctx = meta?.context as PluginContext | undefined;
-  const [visible, setVisible] = useBridgeVisible();
-
-  const handleClose = useCallback(() => {
-    setVisible(false);
-  }, [setVisible]);
-
-  const getCurrentNote = useCallback(() => {
-    if (!ctx) return null;
-    return ctx.app.getCurrentNote();
-  }, [ctx]);
-
-  const searchNotes = useCallback(
-    async (query: string) => {
-      if (!ctx) return [];
-      return ctx.app.searchNotes(query);
-    },
-    [ctx]
-  );
-
-  const getNoteById = useCallback(
-    async (id: string) => {
-      if (!ctx) return null;
-      return ctx.app.getNoteById(id);
-    },
-    [ctx]
-  );
-
-  const getConfig = useCallback(
-    <T,>(key: string): T | undefined => {
-      if (!ctx) return undefined;
-      return ctx.config.get<T>(key);
-    },
-    [ctx]
-  );
-
-  const insertAtCursor = useCallback(
-    (text: string) => {
-      if (!ctx) return;
-      ctx.editor.insertAtCursor(text);
-      ctx.editor.focus();
-    },
-    [ctx]
-  );
-
-  if (!visible || !ctx) return null;
-
-  return (
-    <AiPanel
-      onClose={handleClose}
-      getCurrentNote={getCurrentNote}
-      searchNotes={searchNotes}
-      getNoteById={getNoteById}
-      getConfig={getConfig}
-      insertAtCursor={insertAtCursor}
-    />
-  );
-}
+export { AI_TOGGLE_EVENT };
 
 export const aiAssistantPlugin: PluginManifest = {
   id: 'readied-ai-assistant',
@@ -159,58 +66,18 @@ export const aiAssistantPlugin: PluginManifest = {
   },
 
   activate(context) {
-    bridge.context = context;
-
-    // Register the panel component
-    context.layout.addComponent('panel', {
-      id: 'ai-assistant:panel',
-      component: AiPanelZone,
-      order: 50,
-      meta: { context },
-    });
-
-    // Register the toggle button in editor header actions
+    // Register the toggle button in editor header actions.
+    // The button fires a CustomEvent which App.tsx listens for,
+    // so there's a single panel instance and a single source of truth.
     context.layout.addComponent('editor-header-actions', {
       id: 'ai-assistant:toggle-btn',
       component: AiToggleButton,
       order: 10,
     });
 
-    // Toggle command
-    const unregisterToggle = context.registerCommand(
-      {
-        id: 'open-panel',
-        name: 'Toggle AI Assistant',
-        keybinding: { key: 'A', modifiers: ['Mod', 'Shift'] },
-        icon: 'Sparkles',
-      },
-      () => {
-        bridge.toggle();
-        return true;
-      }
-    );
-
-    // Ask about current note command
-    const unregisterAsk = context.registerCommand(
-      {
-        id: 'ask-about-note',
-        name: 'Ask AI About Current Note',
-        icon: 'MessageSquare',
-      },
-      () => {
-        bridge.visible = true;
-        bridge.listeners.forEach(fn => fn(true));
-        return true;
-      }
-    );
-
     return {
       dispose() {
-        bridge.context = null;
-        bridge.visible = false;
-        bridge.listeners.clear();
-        unregisterToggle();
-        unregisterAsk();
+        // Layout components are cleaned up automatically by PluginHost
       },
     };
   },

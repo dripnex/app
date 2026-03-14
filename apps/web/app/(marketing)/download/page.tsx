@@ -69,7 +69,7 @@ export default async function DownloadPage() {
               <p className="text-lg text-text-secondary mb-5">
                 We&apos;re building something good. Leave your email to get notified.
               </p>
-              <span className="inline-flex items-center px-5 py-2 font-mono text-sm font-semibold rounded-full bg-white/[0.05] border border-border text-text-secondary">
+              <span className="inline-flex items-center px-5 py-2 font-mono text-sm font-semibold rounded-full bg-white/5 border border-border text-text-secondary">
                 Coming Soon
               </span>
               <div className="mt-10">
