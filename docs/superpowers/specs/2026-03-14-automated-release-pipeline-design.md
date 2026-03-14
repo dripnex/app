@@ -18,7 +18,7 @@ Replace the manual release process (create release branch, bump version, PR to m
 
 ### Git Branching (Simplified)
 
-```
+```text
 main          <- production releases (semantic-release runs here)
   +-- develop <- integration branch
         +-- feature/* <- feature development
@@ -43,7 +43,7 @@ main          <- production releases (semantic-release runs here)
 
 ### Two-Stage Pipeline
 
-```
+```text
 Stage 1: Release (~30s)                    Stage 2: Build (~15-20min)
 +-----------------------------+            +----------------------------------+
 | workflow_dispatch on main   |            | triggered by tag push v*         |
@@ -223,6 +223,10 @@ name: Release
 on:
   workflow_dispatch:
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write
@@ -310,6 +314,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ matrix.platform }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ matrix.platform }}-
+
       - name: Cache Electron downloads
         uses: actions/cache@v4
         with:
@@ -380,7 +391,7 @@ jobs:
     steps:
       - name: Publish GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: gh release edit "$TAG_NAME" --draft=false --repo "${{ github.repository }}"
 
@@ -388,6 +399,7 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     if: "!contains(github.ref_name, 'beta')"
+    continue-on-error: true
     steps:
       - name: Extract version
         id: version
@@ -406,6 +418,8 @@ jobs:
             https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}
             #readied #markdown #devtools
 ```
+
+**Token usage:** `release.yml` and electron-builder dist steps use `secrets.GH_TOKEN` (a Personal Access Token) because: (1) semantic-release needs to push tags that trigger the build workflow — `GITHUB_TOKEN` cannot trigger other workflows, and (2) electron-builder needs write access to upload artifacts to the GitHub Release. The `publish` and `sync-develop` jobs use `secrets.GITHUB_TOKEN` (default) since they only need standard repo access.
 
 ### scripts/bump-version.js
 
@@ -433,34 +447,26 @@ for (const file of files) {
 
 ## Post-Release: Sync Main Back to Develop
 
-After semantic-release commits the version bump and CHANGELOG to main, develop will diverge. Add a job at the end of build.yml to auto-create a PR:
+After semantic-release commits the version bump and CHANGELOG to main, develop will diverge. Add a job at the end of build.yml to auto-create a PR directly from main to develop (no intermediate branch needed):
 
 ```yaml
 sync-develop:
   needs: publish
   runs-on: ubuntu-latest
   steps:
-    - name: Checkout main
-      uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
-        token: ${{ secrets.GH_TOKEN }}
-
     - name: Create sync PR
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        git checkout -b chore/sync-release-${{ github.ref_name }}
-        git push -u origin chore/sync-release-${{ github.ref_name }}
         gh pr create \
           --base develop \
-          --head chore/sync-release-${{ github.ref_name }} \
-          --title "chore: sync ${{ github.ref_name }} release to develop" \
-          --body "Auto-generated PR to sync version bump and CHANGELOG from main back to develop."
+          --head main \
+          --title "chore: sync release ${{ github.ref_name }} back to develop" \
+          --body "Auto sync of release commit and changelog." \
+          --repo "${{ github.repository }}"
 ```
 
-This PR is auto-mergeable via the existing automerge.yml workflow.
+This PR is auto-mergeable via the existing automerge.yml workflow. No branch creation or checkout needed — GitHub can create a PR directly from main to develop.
 
 ## Edge Cases
 
@@ -488,6 +494,8 @@ electron-builder's `--publish always` detects an existing GitHub Release for the
 5. **`fail-fast: false`** — one platform failure doesn't cancel others
 6. **Pinned macOS runner** — `macos-14` (arm64) for stable notarization tooling
 7. **Electron download cache** — faster builds, less flaky network dependency
+8. **Concurrency protection** — `concurrency: { group: release, cancel-in-progress: false }` prevents accidental duplicate releases from multiple manual clicks
+9. **Non-blocking tweet** — `continue-on-error: true` on the tweet job ensures Twitter API outages never fail the release pipeline
 
 ### Rollback Strategy
 
@@ -546,7 +554,7 @@ Update the Git Flow section to reflect:
 
 ## Complete Release Flow
 
-```
+```text
 1. Developer merges feature PR to develop        (CI validates)
 2. When ready: PR from develop to main            (CI validates again)
 3. Click "Run workflow" on Release action          (one button)
