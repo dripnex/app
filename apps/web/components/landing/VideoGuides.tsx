@@ -63,7 +63,7 @@ function VideoCard({
         }`}
       >
         {/* Thumbnail placeholder */}
-        <div className="relative aspect-video w-full bg-linear-to-br from-accent/5 via-surface to-surface-elevated">
+        <div className="relative aspect-video w-full bg-gradient-to-br from-accent/5 via-surface to-surface-elevated">
           {/* Decorative code lines */}
           <div className="absolute inset-0 flex flex-col justify-center gap-2 px-8 opacity-20">
             <div className="h-2 w-3/4 rounded bg-white/20" />
@@ -76,7 +76,7 @@ function VideoCard({
           {/* Play button */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition-transform duration-200 group-hover:scale-110">
-              <div className="flex size-10 items-center justify-center rounded-full bg-linear-to-b from-accent/40 to-accent shadow-lg">
+              <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-accent/40 to-accent shadow-lg">
                 <Play className="size-4 fill-white text-white" />
               </div>
             </div>
