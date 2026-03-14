@@ -626,7 +626,7 @@ function NotesApp() {
     onCommandPalette: toggleCommandPalette,
   });
 
-  // Register AI commands (single toggle opens ask-notes mode by default)
+  // Register AI commands (toggle panel, ask-notes)
   const toggleAiPanel = useCallback(() => {
     setIsAiPanelOpen(prev => {
       if (!prev) setAiPanelMode('ask-notes');
@@ -636,6 +636,10 @@ function NotesApp() {
   const closeAiPanel = useCallback(() => {
     setIsAiPanelOpen(false);
     setAiPanelMode('ask-notes');
+  }, []);
+  const openAskNotes = useCallback(() => {
+    setAiPanelMode('ask-notes');
+    setIsAiPanelOpen(true);
   }, []);
 
   // Listen for the plugin's Sparkles button CustomEvent
@@ -696,7 +700,7 @@ function NotesApp() {
 
   useRegisterAiCommands({
     onTogglePanel: toggleAiPanel,
-    onAskNotes: toggleAiPanel,
+    onAskNotes: openAskNotes,
     onSummarize: handleSummarize,
     onRewrite: handleRewrite,
     onTweet: handleTweet,
