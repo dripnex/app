@@ -68,9 +68,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.3
-      '@readied/ai-assistant':
+      '@readied/ai-core':
         specifier: workspace:*
-        version: link:../../packages/ai-assistant
+        version: link:../../packages/ai-core
       '@readied/command-registry':
         specifier: workspace:*
         version: link:../../packages/command-registry
@@ -303,6 +303,15 @@ importers:
         version: 5.9.3
 
   packages/ai-assistant:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.4.0)(lightningcss@1.31.1)
+
+  packages/ai-core:
     devDependencies:
       typescript:
         specifier: ^5.7.2

@@ -76,6 +76,8 @@ import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
 import { scanPlugins } from './pluginScanner.js';
 import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
+import { createAIService } from './ai/setup.js';
+import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
 
 // Database and repository (initialized on app ready)
 let db: ReturnType<typeof createDatabase> | null = null;
@@ -2182,100 +2184,6 @@ function registerPluginDiscoveryHandlers(): void {
   });
 }
 
-/** Register IPC handler for AI API proxy (avoids CORS in renderer) */
-function registerAiHandlers(): void {
-  ipcMain.handle(
-    'ai:query',
-    async (
-      _event,
-      options: {
-        apiKey: string;
-        model: string;
-        system: string;
-        messages: Array<{ role: string; content: string }>;
-        maxTokens?: number;
-      }
-    ) => {
-      const { apiKey, model, system, messages, maxTokens = 2048 } = options;
-
-      try {
-        const response = await net.fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model,
-            max_tokens: maxTokens,
-            system,
-            messages,
-          }),
-        });
-
-        if (!response.ok) {
-          const body = await response.text();
-          return { ok: false, error: `API error ${response.status}: ${body}` };
-        }
-
-        const data = (await response.json()) as {
-          content: Array<{ type: string; text?: string }>;
-        };
-
-        const textBlock = data.content.find((b: { type: string }) => b.type === 'text');
-        return { ok: true, content: textBlock?.text ?? '' };
-      } catch (err) {
-        return {
-          ok: false,
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
-    }
-  );
-
-  // Export AI command preset — opens a save dialog and writes the JSON file
-  ipcMain.handle('ai:exportPreset', async (_event, presetJson: string) => {
-    const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Export AI Command Preset',
-      defaultPath: 'ai-commands.json',
-      filters: [{ name: 'JSON Files', extensions: ['json'] }],
-    });
-
-    if (canceled || !filePath) {
-      return { ok: false, error: 'Export cancelled' };
-    }
-
-    try {
-      await writeFile(filePath, presetJson, 'utf-8');
-      return { ok: true, filePath };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  });
-
-  // Import AI command preset — opens a file dialog and reads the JSON file
-  ipcMain.handle('ai:importPreset', async () => {
-    const { canceled, filePaths } = await dialog.showOpenDialog({
-      title: 'Import AI Command Preset',
-      filters: [{ name: 'JSON Files', extensions: ['json'] }],
-      properties: ['openFile'],
-    });
-
-    if (canceled || filePaths.length === 0) {
-      return { ok: false, error: 'Import cancelled' };
-    }
-
-    try {
-      const content = await readFile(filePaths[0]!, 'utf-8');
-      // Return the raw JSON string — validation happens in the renderer
-      return { ok: true, content };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
-  });
-}
-
 /** Initialize auto-updater */
 function initAutoUpdater(): void {
   const updateLog = loggers.updater();
@@ -2418,7 +2326,7 @@ app
     registerGitHandlers(); // Git operations for git-backed notebooks
     registerPluginConfigHandlers();
     registerPluginDiscoveryHandlers();
-    registerAiHandlers();
+    registerAIHandlersNew(createAIService());
 
     // Start plugin hot-reload watcher in dev mode
     if (process.env.NODE_ENV === 'development' && dataPaths) {
