@@ -75,29 +75,7 @@
       "Bash(gh secret:*)",
       "Bash(npx vitest:*)",
       "Bash(do echo:*)",
-      "Bash(do gh:*)",
-      "Bash(git log:*)",
-      "Bash(git show:*)",
-      "Bash(git stash:*)",
-      "Bash(sleep 3 && screencapture -x /tmp/readied-sidebar.png && echo \"Screenshot captured\")",
-      "Bash(screencapture -x -t png /tmp/readied-sidebar.png 2>&1 || screencapture /tmp/readied-sidebar.png 2>&1)",
-      "Bash(find /Volumes/lexar/Github/readied/readide -maxdepth 3 -type f \\\\\\( -name \"*.env*\" -o -name \"*.yml\" -o -name \"vite.config.*\" \\\\\\) 2>/dev/null | grep -v node_modules)",
-      "Bash(find /Volumes/lexar/Github/readied/readide -type f \\\\\\( -name \"Dockerfile\" -o -name \"vercel.json\" -o -name \"fly.toml\" -o -name \"railway.json\" -o -name \".env*\" \\\\\\) 2>/dev/null | head -20)",
-      "Bash(find /Volumes/lexar/Github/readied/readide -maxdepth 2 \\\\\\( -name \"Makefile\" -o -name \"Taskfile*\" -o -name \"*deploy*\" -o -name \"DEPLOYMENT*\" \\\\\\) -type f 2>/dev/null | grep -v node_modules)",
-      "Bash(find /Volumes/lexar/Github/readied/readide -maxdepth 3 \\\\\\( -name \"DEPLOYMENT*\" -o -name \"RELEASE*\" -o -name \"*DEPLOY*\" -o -iname \"deploy.md\" \\\\\\) -type f 2>/dev/null | grep -v node_modules)",
-      "Bash(find /Volumes/lexar/Github/readied/readide/packages/api -maxdepth 2 \\\\\\( -name \"wrangler.toml\" -o -name \".env*\" -o -name \"*.config.*\" \\\\\\) 2>/dev/null | grep -v node_modules)",
-      "Bash(curl -s https://api.stripe.com/v1/prices?active=true\\\\&limit=10 -u \"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:\" 2>&1 | python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(f'{p[\\\\\"id\\\\\"]} — {p.get\\(\\\\\"nickname\\\\\",\\\\\"\\\\\"\\)} — {p[\\\\\"unit_amount\\\\\"]/100} {p[\\\\\"currency\\\\\"]} / {p.get\\(\\\\\"recurring\\\\\",{}\\).get\\(\\\\\"interval\\\\\",\\\\\"one-time\\\\\"\\)}'\\) for p in data.get\\('data',[]\\)]\")",
-      "Bash(which stripe:*)",
-      "Bash(curl -s https://api.stripe.com/v1/prices/price_1SnHd0LMkXOdLxkxz2gUwDPC \\\\\n  -u \"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:\" | python3 -m json.tool)",
-      "Bash(curl -s https://api.stripe.com/v1/products/prod_TknDAdZFqQRgno \\\\\n  -u \"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:\" | python3 -m json.tool)",
-      "Bash(curl -s https://api.stripe.com/v1/prices \\\\\n  -u \"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:\" \\\\\n  -d \"product=prod_TknDAdZFqQRgno\" \\\\\n  -G | python3 -m json.tool)",
-      "Bash(curl -s https://api.stripe.com/v1/prices \\\\\n  -u \"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:\" \\\\\n  -d \"product=prod_TknDAdZFqQRgno\" \\\\\n  -d \"unit_amount=2000\" \\\\\n  -d \"currency=eur\" \\\\\n  -d \"recurring[interval]=year\" \\\\\n  -d \"recurring[interval_count]=1\" \\\\\n  -d \"nickname=Annual\" | python3 -m json.tool)",
-      "Bash(curl -s https://api.stripe.com/v1/products/prod_TknDAdZFqQRgno \\\\\n  -u \"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:\" \\\\\n  -d \"name=Readied Pro\" \\\\\n  -d \"description=Cloud sync, advanced features, and priority support for Readied.\" | python3 -m json.tool)",
-      "Bash(curl -s -X POST https://readied-api-production.readied.workers.dev/auth/magic-link \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"email\":\"tomasmaritano@gmail.com\"}' | python3 -m json.tool)",
-      "Bash(git diff:*)",
-      "Bash(cat package.json | python3 -c \"import sys,json; print\\(json.load\\(sys.stdin\\)['version']\\)\")",
-      "Bash(git branch:*)",
-      "Bash(git rm:*)"
+      "Bash(do gh:*)"
     ]
   }
 }
