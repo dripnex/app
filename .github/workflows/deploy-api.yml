@@ -2,7 +2,7 @@ name: Deploy API
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'packages/api/**'
       - '.github/workflows/deploy-api.yml'
@@ -60,8 +60,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "target=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "target=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=staging" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Deploy to Cloudflare Workers
