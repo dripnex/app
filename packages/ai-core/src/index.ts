@@ -13,6 +13,9 @@ export type { FetchFn, ProviderConfig, ModelInfo, LLMProvider } from './provider
 
 export { ProviderRegistry } from './provider-registry.js';
 
+export { ToolRegistry } from './tool-registry.js';
+export type { ToolRegistration, ToolResult } from './tool-registry.js';
+
 export {
   buildContext,
   estimateTokens,
