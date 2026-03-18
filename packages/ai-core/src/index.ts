@@ -47,7 +47,13 @@ export type { RetryOptions } from './retry.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 
 export { AIServiceImpl } from './ai-service.js';
-export type { ChatRequest, ChatHandle, AIService } from './ai-service.js';
+export type {
+  ChatRequest,
+  ChatHandle,
+  ToolChatRequest,
+  ToolChatHandle,
+  AIService,
+} from './ai-service.js';
 
 export type {
   AiCommandDefinition,
