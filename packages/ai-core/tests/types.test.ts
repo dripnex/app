@@ -1,6 +1,6 @@
 // packages/ai-core/tests/types.test.ts
 import { describe, it, expect } from 'vitest';
-import type { LLMEvent, ChatMessage } from '../src/types';
+import type { LLMEvent, ChatMessage, ContentPart } from '../src/types';
 
 describe('LLMEvent protocol', () => {
   it('discriminates events by type field', () => {
@@ -57,6 +57,52 @@ describe('LLMEvent protocol', () => {
       outputTokens: 300,
     };
     expect(event.inputTokens).toBe(1500);
+  });
+});
+
+describe('tool-use ContentPart variants', () => {
+  it('accepts tool_use content part', () => {
+    const part: ContentPart = {
+      type: 'tool_use',
+      id: 'call_123',
+      name: 'search_notes',
+      input: { query: 'react' },
+    };
+    expect(part.type).toBe('tool_use');
+  });
+
+  it('accepts tool_result content part', () => {
+    const part: ContentPart = {
+      type: 'tool_result',
+      tool_use_id: 'call_123',
+      content: '[]',
+    };
+    expect(part.type).toBe('tool_result');
+  });
+
+  it('accepts tool_result with is_error', () => {
+    const part: ContentPart = {
+      type: 'tool_result',
+      tool_use_id: 'call_123',
+      content: 'Tool failed',
+      is_error: true,
+    };
+    expect(part.type).toBe('tool_result');
+    if (part.type === 'tool_result') {
+      expect(part.is_error).toBe(true);
+    }
+  });
+});
+
+describe('stop LLMEvent', () => {
+  it('accepts stop event with tool_use reason', () => {
+    const event: LLMEvent = { type: 'stop', reason: 'tool_use' };
+    expect(event.type).toBe('stop');
+  });
+
+  it('accepts stop event with end_turn reason', () => {
+    const event: LLMEvent = { type: 'stop', reason: 'end_turn' };
+    expect(event.type).toBe('stop');
   });
 });
 

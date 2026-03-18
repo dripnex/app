@@ -76,11 +76,7 @@
       "Bash(npx vitest:*)",
       "Bash(do echo:*)",
       "Bash(do gh:*)",
-      "Bash(npx tsc:*)",
-      "Bash(git stash:*)",
-      "Bash(git rm:*)",
-      "Bash(turbo typecheck:*)",
-      "Bash(npx turbo:*)"
+      "Bash(git tag:*)"
     ]
   }
 }

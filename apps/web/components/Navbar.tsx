@@ -94,7 +94,7 @@ export default function Navbar() {
     <header className="fixed top-0 inset-x-0 z-50 flex justify-center pt-4 px-4">
       {/* Floating pill navbar */}
       <nav
-        className="flex w-full max-w-4xl items-center justify-between gap-6 rounded-2xl border border-white/8 bg-zinc-950/70 px-5 py-2.5 backdrop-blur-xl shadow-[0_0_30px_-10px_rgba(0,0,0,0.5)]"
+        className="flex w-full max-w-4xl items-center justify-between gap-6 rounded-2xl border border-white/[0.08] bg-zinc-950/70 px-5 py-2.5 backdrop-blur-xl shadow-[0_0_30px_-10px_rgba(0,0,0,0.5)]"
         aria-label="Main navigation"
       >
         {/* Logo */}
@@ -137,7 +137,7 @@ export default function Navbar() {
             </button>
 
             <div className="invisible absolute left-1/2 z-50 w-52 -translate-x-1/2 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-              <div className="overflow-hidden rounded-xl border border-white/8 bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
+              <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/95 backdrop-blur-xl shadow-2xl">
                 <div className="py-1">
                   {docsItems.map(item => {
                     const cls =
@@ -176,7 +176,7 @@ export default function Navbar() {
         {/* Desktop: Download button with Apple icon */}
         <Link
           href="/download"
-          className="hidden items-center gap-2 rounded-lg border border-white/12 bg-white/6 px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:bg-white/10 hover:border-white/18 md:inline-flex"
+          className="hidden items-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.06] px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:bg-white/[0.1] hover:border-white/[0.18] md:inline-flex"
         >
           <Apple className="h-3.5 w-3.5" />
           Download
@@ -220,7 +220,7 @@ export default function Navbar() {
                 <Link
                   href="/download"
                   onClick={closeSheet}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-white/12 bg-white/6 px-4 py-3 text-base font-medium text-white transition-colors hover:bg-white/10"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-base font-medium text-white transition-colors hover:bg-white/[0.1]"
                 >
                   <Apple className="h-4 w-4" />
                   Download for Mac

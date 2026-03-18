@@ -17,6 +17,9 @@ export async function* parseSSEStream(body: ReadableStream<Uint8Array>): AsyncIt
 
       buffer += decoder.decode(value, { stream: true });
 
+      // Normalize CRLF → LF before splitting on double newline
+      buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
       // Process complete events (terminated by double newline)
       const parts = buffer.split('\n\n');
       // Last part might be incomplete
@@ -39,6 +42,31 @@ export async function* parseSSEStream(body: ReadableStream<Uint8Array>): AsyncIt
           }
         }
 
+        if (dataStr) {
+          try {
+            yield { event: eventType, data: JSON.parse(dataStr) };
+          } catch {
+            // Skip malformed JSON
+          }
+        }
+      }
+    }
+
+    // Process any remaining buffer after stream ends
+    if (buffer.trim()) {
+      const trimmed = buffer.trim();
+      if (!trimmed.startsWith(':')) {
+        let eventType = 'message';
+        let dataStr = '';
+        for (const line of trimmed.split('\n')) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            dataStr += line.slice(6);
+          } else if (line.startsWith('data:')) {
+            dataStr += line.slice(5);
+          }
+        }
         if (dataStr) {
           try {
             yield { event: eventType, data: JSON.parse(dataStr) };
