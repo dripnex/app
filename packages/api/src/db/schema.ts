@@ -245,6 +245,10 @@ export const sharedNotes = sqliteTable(
     slug: text('slug').notNull().unique(),
     title: text('title').notNull().default(''),
     content: text('content').notNull().default(''),
+    tags: text('tags').notNull().default('[]'),
+    backlinks: text('backlinks').notNull().default('[]'),
+    wordCount: integer('word_count').notNull().default(0),
+    notebookName: text('notebook_name').notNull().default(''),
     isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(true),
     createdAt: text('created_at')
       .notNull()
@@ -253,7 +257,10 @@ export const sharedNotes = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
   },
-  table => [uniqueIndex('shared_notes_user_note_unique').on(table.userId, table.noteId)]
+  table => [
+    uniqueIndex('shared_notes_user_note_unique').on(table.userId, table.noteId),
+    index('idx_shared_notes_user_public').on(table.userId, table.isPublic),
+  ]
 );
 
 /**

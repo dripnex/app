@@ -631,6 +631,10 @@ export interface ReadiedAPI {
       noteId: string;
       title: string;
       content: string;
+      tags?: string[];
+      backlinks?: Array<{ noteId: string; title: string }>;
+      wordCount?: number;
+      notebookName?: string;
     }) => Promise<{ success: boolean; url?: string; slug?: string; error?: string }>;
     /** Remove a shared note */
     delete: (slug: string) => Promise<{ success: boolean; error?: string }>;

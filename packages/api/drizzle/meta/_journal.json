@@ -36,6 +36,13 @@
       "when": 1740096000000,
       "tag": "0004_plugin_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1773844731437,
+      "tag": "0005_slippery_the_fury",
+      "breakpoints": true
     }
   ]
 }
