@@ -32,6 +32,16 @@ const app = new Hono<{ Bindings: Env }>();
 app.use('*', logger());
 app.use('*', prettyJSON());
 app.use('*', secureHeaders());
+// Public share endpoints: permissive CORS (any origin, no credentials)
+app.use(
+  '/share/public/*',
+  cors({
+    origin: '*',
+    allowMethods: ['GET', 'OPTIONS'],
+    maxAge: 86400,
+  })
+);
+// All other endpoints: restricted CORS with credentials
 app.use(
   '*',
   cors({
