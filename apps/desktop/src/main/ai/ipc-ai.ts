@@ -93,14 +93,13 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   );
 
   // ─── Cancel ─────────────────────────────────────────────
-  ipcMain.handle('ai:cancel', (_event, requestId: string) => {
-    for (const handles of activeHandles.values()) {
-      const handle = handles.get(requestId);
-      if (handle) {
-        handle.abort();
-        handles.delete(requestId);
-        return;
-      }
+  ipcMain.handle('ai:cancel', (event, requestId: string) => {
+    const windowId = event.sender.id;
+    const handles = activeHandles.get(windowId);
+    const handle = handles?.get(requestId);
+    if (handle) {
+      handle.abort();
+      handles!.delete(requestId);
     }
   });
 
@@ -108,11 +107,9 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   ipcMain.handle(
     'ai:validate',
     async (_event, config: { provider: string; apiKey?: string; baseUrl?: string }) => {
-      // Access provider directly from registry via service
-      // For now, simple validation using a no-op chat
       try {
         const handle = service.chat({
-          query: 'test',
+          query: 'Say "ok".',
           history: [],
           relevantNotes: [],
           mode: 'chat',
@@ -121,8 +118,18 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
           maxResponseTokens: 1,
         });
-        // Immediately abort — we just want to verify the connection
-        handle.abort();
+        // Consume stream to actually trigger the provider call
+        for await (const event of handle.events) {
+          if (event.type === 'error') {
+            handle.abort();
+            return { ok: false, error: `${event.code}: ${event.error}` };
+          }
+          // Got any successful event — provider is reachable
+          if (event.type === 'text' || event.type === 'done') {
+            handle.abort();
+            return { ok: true };
+          }
+        }
         return { ok: true };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -164,7 +171,11 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   // ─── Tool confirmation ──────────────────────────────────
   ipcMain.handle(
     'ai:tool-confirm',
-    (_event, requestId: string, callId: string, approved: boolean) => {
+    (event, requestId: string, callId: string, approved: boolean) => {
+      // Verify the sender owns this request
+      const windowId = event.sender.id;
+      if (!activeHandles.get(windowId)?.has(requestId)) return;
+
       const resolve = pendingConfirmations.get(requestId)?.get(callId);
       if (resolve) {
         resolve(approved);
@@ -177,11 +188,15 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   ipcMain.handle(
     'ai:tool-renderer-result',
     (
-      _event,
-      _requestId: string,
+      event,
+      requestId: string,
       callId: string,
       result: { ok: boolean; content: string; error?: string }
     ) => {
+      // Verify the sender owns this request
+      const windowId = event.sender.id;
+      if (!activeHandles.get(windowId)?.has(requestId)) return;
+
       const resolve = pendingRendererResults.get(callId);
       if (resolve) {
         resolve(result);

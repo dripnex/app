@@ -55,18 +55,27 @@ export async function* withRetry(
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
       let hadRetryableError = false;
+      let emittedPayload = false;
 
       for await (const event of fn()) {
         if (event.type === 'error' && event.retryable && opts.retryableCodes.includes(event.code)) {
-          if (attempt < opts.maxRetries) {
+          if (!emittedPayload && attempt < opts.maxRetries) {
             lastError = event;
             hadRetryableError = true;
             break;
           } else {
-            // Final attempt — yield as non-retryable
+            // Already emitted content or final attempt — yield as non-retryable
             yield { ...event, retryable: false };
             return;
           }
+        }
+        if (
+          event.type === 'text' ||
+          event.type === 'tool_call' ||
+          event.type === 'tool_result' ||
+          event.type === 'stop'
+        ) {
+          emittedPayload = true;
         }
         yield event;
         if (event.type === 'done') return;

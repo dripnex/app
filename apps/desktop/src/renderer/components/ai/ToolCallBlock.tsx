@@ -46,7 +46,19 @@ export function ToolCallBlock({
 
   return (
     <div className="ai-tool-call">
-      <div className="ai-tool-call-header" onClick={() => setExpanded(prev => !prev)}>
+      <div
+        className="ai-tool-call-header"
+        role="button"
+        tabIndex={0}
+        onClick={() => setExpanded(prev => !prev)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(prev => !prev);
+          }
+        }}
+        aria-expanded={expanded}
+      >
         <div className="ai-tool-call-left">
           {status === 'executing' ? (
             <Loader2 size={14} className="ai-tool-call-spinning" />

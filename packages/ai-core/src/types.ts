@@ -10,6 +10,7 @@ export type LLMErrorCode =
   | 'rate_limit'
   | 'auth_failed'
   | 'context_overflow'
+  | 'invalid_request'
   | 'model_not_found'
   | 'network'
   | 'provider_error'

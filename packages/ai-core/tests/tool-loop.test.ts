@@ -1,10 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { runToolLoop } from '../src/tool-loop';
-import type { ToolLoopOptions, ToolLoopEvent, ToolCall } from '../src/tool-loop';
+import type { ToolLoopOptions, ToolLoopEvent } from '../src/tool-loop';
 import type { LLMEvent, ChatOptions } from '../src/types';
 import type { LLMProvider, ProviderConfig } from '../src/provider';
-
-type ChatFn = (opts: ChatOptions, config: ProviderConfig) => AsyncIterable<LLMEvent>;
 
 function createMockProvider(chatSequence: LLMEvent[][]): LLMProvider {
   let callIndex = 0;

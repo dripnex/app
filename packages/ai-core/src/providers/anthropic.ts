@@ -40,7 +40,7 @@ function classifyHttpStatus(status: number): {
   if (status === 429 || status === 529) return { code: 'rate_limit', retryable: true };
   if (status === 401) return { code: 'auth_failed', retryable: false };
   if (status === 404) return { code: 'model_not_found', retryable: false };
-  if (status === 400) return { code: 'context_overflow', retryable: false };
+  if (status === 400) return { code: 'invalid_request', retryable: false };
   if (status >= 500) return { code: 'provider_error', retryable: true };
   return { code: 'provider_error', retryable: false };
 }

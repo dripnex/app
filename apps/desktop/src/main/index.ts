@@ -2356,7 +2356,10 @@ app
             { content: `# ${title}\n\n${content}`, notebookId },
             noteRepo
           );
-          return { id: result.ok ? result.data.id : '' };
+          if (!result.ok) {
+            throw new Error('Failed to create note');
+          }
+          return { id: result.data.id };
         },
       });
     }

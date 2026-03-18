@@ -103,34 +103,38 @@ export class AIServiceImpl implements AIService {
     signal: AbortSignal
   ): AsyncIterable<LLMEvent | ToolLoopEvent> {
     const startTime = Date.now();
-    const provider = this.registry.get(request.provider);
-    const maxResponseTokens = request.maxResponseTokens ?? DEFAULT_MAX_RESPONSE_TOKENS;
-
-    const models = await provider.listModels(request.providerConfig);
-    const modelInfo = models.find(m => m.id === request.model);
-    const contextWindow = modelInfo?.contextWindow ?? 200_000;
-
-    const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
-    const context = buildContext(
-      {
-        systemPrompt,
-        currentNote: request.currentNote,
-        history: request.history,
-        relevantNotes: request.relevantNotes,
-      },
-      { maxContextTokens: contextWindow, maxResponseTokens }
-    );
-
-    const messages: ChatMessage[] = [...context.messages, { role: 'user', content: request.query }];
-
-    yield {
-      type: 'start',
-      model: request.model,
-      requestId,
-      provider: provider.id,
-    };
 
     try {
+      const provider = this.registry.get(request.provider);
+      const maxResponseTokens = request.maxResponseTokens ?? DEFAULT_MAX_RESPONSE_TOKENS;
+
+      const models = await provider.listModels(request.providerConfig);
+      const modelInfo = models.find(m => m.id === request.model);
+      const contextWindow = modelInfo?.contextWindow ?? 200_000;
+
+      const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
+      const context = buildContext(
+        {
+          systemPrompt,
+          currentNote: request.currentNote,
+          history: request.history,
+          relevantNotes: request.relevantNotes,
+        },
+        { maxContextTokens: contextWindow, maxResponseTokens }
+      );
+
+      const messages: ChatMessage[] = [
+        ...context.messages,
+        { role: 'user', content: request.query },
+      ];
+
+      yield {
+        type: 'start',
+        model: request.model,
+        requestId,
+        provider: provider.id,
+      };
+
       const toolLoop = runToolLoop({
         provider,
         providerConfig: request.providerConfig,
@@ -176,49 +180,46 @@ export class AIServiceImpl implements AIService {
     signal: AbortSignal
   ): AsyncIterable<LLMEvent> {
     const startTime = Date.now();
-    const provider = this.registry.get(request.provider);
-    const maxResponseTokens = request.maxResponseTokens ?? DEFAULT_MAX_RESPONSE_TOKENS;
-
-    // Get model info for context window size
-    const models = await provider.listModels(request.providerConfig);
-    const modelInfo = models.find(m => m.id === request.model);
-    const contextWindow = modelInfo?.contextWindow ?? 200_000;
-
-    // Build context
-    const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
-    const context = buildContext(
-      {
-        systemPrompt,
-        currentNote: request.currentNote,
-        history: request.history,
-        relevantNotes: request.relevantNotes,
-      },
-      {
-        maxContextTokens: contextWindow,
-        maxResponseTokens,
-      }
-    );
-
-    // Add the current query to messages
-    const messages: ChatMessage[] = [...context.messages, { role: 'user', content: request.query }];
-
-    const chatOptions: ChatOptions = {
-      model: request.model,
-      system: context.system,
-      messages,
-      maxTokens: maxResponseTokens,
-      signal,
-    };
-
-    // Emit start (AIService owns this)
-    yield {
-      type: 'start',
-      model: request.model,
-      requestId,
-      provider: provider.id,
-    };
 
     try {
+      const provider = this.registry.get(request.provider);
+      const maxResponseTokens = request.maxResponseTokens ?? DEFAULT_MAX_RESPONSE_TOKENS;
+
+      const models = await provider.listModels(request.providerConfig);
+      const modelInfo = models.find(m => m.id === request.model);
+      const contextWindow = modelInfo?.contextWindow ?? 200_000;
+
+      const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
+      const context = buildContext(
+        {
+          systemPrompt,
+          currentNote: request.currentNote,
+          history: request.history,
+          relevantNotes: request.relevantNotes,
+        },
+        { maxContextTokens: contextWindow, maxResponseTokens }
+      );
+
+      const messages: ChatMessage[] = [
+        ...context.messages,
+        { role: 'user', content: request.query },
+      ];
+
+      const chatOptions: ChatOptions = {
+        model: request.model,
+        system: context.system,
+        messages,
+        maxTokens: maxResponseTokens,
+        signal,
+      };
+
+      yield {
+        type: 'start',
+        model: request.model,
+        requestId,
+        provider: provider.id,
+      };
+
       const stream = withRetry(() => provider.chat(chatOptions, request.providerConfig), {
         maxRetries: 3,
       });

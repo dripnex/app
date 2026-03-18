@@ -22,8 +22,12 @@ export class ToolRegistry {
       throw new Error(`Tool "${tool.name}" is already registered`);
     }
     this.tools.set(tool.name, tool);
+    // Capture reference so unregister only removes this exact registration
+    const registeredTool = tool;
     return () => {
-      this.tools.delete(tool.name);
+      if (this.tools.get(tool.name) === registeredTool) {
+        this.tools.delete(tool.name);
+      }
     };
   }
 

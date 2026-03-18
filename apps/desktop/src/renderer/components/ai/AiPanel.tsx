@@ -74,6 +74,7 @@ export function AiPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRequestRef = useRef<string | null>(null);
+  const commandActiveRef = useRef(false);
 
   // Tool call tracking
   const [toolCalls, setToolCalls] = useState<
@@ -145,8 +146,9 @@ export function AiPanel({
   // Subscribe to AI streaming events
   useEffect(() => {
     const cleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
-      // Only process events for the active request
+      // Only process events for the active request; skip when a command listener owns the stream
       if (requestId !== activeRequestRef.current) return;
+      if (commandActiveRef.current) return;
 
       const event = rawEvent as LLMEvent;
 
@@ -168,11 +170,18 @@ export function AiPanel({
           });
           break;
 
-        case 'error':
-          setError(formatErrorMessage(event));
-          setLoading(false);
-          activeRequestRef.current = null;
+        case 'error': {
+          const errorEvent = event as LLMEvent & { type: 'error'; retryable?: boolean };
+          if (errorEvent.retryable) {
+            // Transient retry — show message but don't tear down the stream
+            setError(formatErrorMessage(event));
+          } else {
+            setError(formatErrorMessage(event));
+            setLoading(false);
+            activeRequestRef.current = null;
+          }
           break;
+        }
 
         case 'done':
           setLoading(false);
@@ -234,7 +243,8 @@ export function AiPanel({
             };
             const existing = next.get(e.call.id);
             if (existing) {
-              next.set(e.call.id, { ...existing, status: 'complete', result: e.result });
+              const status = e.result.ok ? 'complete' : 'error';
+              next.set(e.call.id, { ...existing, status, result: e.result });
             }
             return next;
           });
@@ -273,6 +283,7 @@ export function AiPanel({
       // Track the output target for when the response arrives
       const commandOutputTarget = initialCommand.outputTarget;
       let accumulatedText = '';
+      commandActiveRef.current = true;
 
       // Set up a one-time listener for this command's events
       const commandCleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
@@ -302,6 +313,7 @@ export function AiPanel({
             setLoading(false);
             activeRequestRef.current = null;
             onCommandExecuted?.();
+            commandActiveRef.current = false;
             commandCleanup();
             break;
 
@@ -339,6 +351,7 @@ export function AiPanel({
             setLoading(false);
             activeRequestRef.current = null;
             onCommandExecuted?.();
+            commandActiveRef.current = false;
             commandCleanup();
             break;
           }
