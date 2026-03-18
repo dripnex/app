@@ -16,6 +16,9 @@ export { ProviderRegistry } from './provider-registry.js';
 export { ToolRegistry } from './tool-registry.js';
 export type { ToolRegistration, ToolResult } from './tool-registry.js';
 
+export { runToolLoop } from './tool-loop.js';
+export type { ToolCall, ToolLoopEvent, ToolLoopOptions } from './tool-loop.js';
+
 export {
   buildContext,
   estimateTokens,
