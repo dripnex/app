@@ -2,8 +2,7 @@
 .ai-panel {
   display: flex;
   flex-direction: column;
-  height: 350px;
-  border-top: 1px solid var(--border);
+  height: 100%;
   background: var(--bg-surface);
   font-size: 13px;
 }
