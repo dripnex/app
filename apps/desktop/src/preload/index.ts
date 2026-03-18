@@ -727,20 +727,47 @@ export interface ReadiedAPI {
     onError: (cb: (err: { message: string }) => void) => () => void;
   };
   ai: {
-    /** Send a query to Claude API (proxied through main process to avoid CORS) */
-    query: (options: {
-      apiKey: string;
+    /** Start a streaming AI chat — returns { requestId } */
+    chat: (request: {
+      query: string;
+      currentNote?: { id: string; title: string; content: string } | null;
+      relevantNotes: Array<{ id: string; title: string; content: string }>;
+      history: Array<{ role: 'user' | 'assistant'; content: string }>;
+      mode: 'chat' | 'ask-notes';
+      provider: string;
       model: string;
-      system: string;
-      messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-      maxTokens?: number;
-    }) => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
+      providerConfig: { apiKey?: string; baseUrl?: string };
+      maxResponseTokens?: number;
+      tools?: boolean;
+    }) => Promise<{ requestId: string }>;
+    /** Listen for streaming AI events */
+    onEvent: (cb: (requestId: string, event: unknown) => void) => () => void;
+    /** Cancel an active AI request */
+    cancel: (requestId: string) => Promise<void>;
+    /** Validate a provider configuration */
+    validate: (config: {
+      provider: string;
+      apiKey?: string;
+      baseUrl?: string;
+    }) => Promise<{ ok: boolean; error?: string }>;
     /** Export an AI command preset to a user-chosen file */
     exportPreset: (
       presetJson: string
     ) => Promise<{ ok: true; filePath: string } | { ok: false; error: string }>;
     /** Import an AI command preset from a user-chosen file */
     importPreset: () => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
+    /** Confirm or reject a tool execution */
+    confirmTool: (requestId: string, callId: string, approved: boolean) => Promise<void>;
+    /** Listen for renderer-executed tool requests from main */
+    onToolExecuteRequest: (
+      cb: (requestId: string, callId: string, toolName: string, args: unknown) => void
+    ) => () => void;
+    /** Send renderer tool execution result back to main */
+    sendToolResult: (
+      requestId: string,
+      callId: string,
+      result: { ok: boolean; content: string; error?: string }
+    ) => Promise<void>;
   };
   pluginConfig: {
     /** Get a single config value for a plugin */
@@ -1024,9 +1051,41 @@ const api: ReadiedAPI = {
     },
   },
   ai: {
-    query: options => ipcRenderer.invoke('ai:query', options),
+    chat: request => ipcRenderer.invoke('ai:chat', request),
+    onEvent: cb => {
+      const handler = (_event: unknown, requestId: string, aiEvent: unknown) =>
+        cb(requestId, aiEvent);
+      ipcRenderer.on('ai:event', handler);
+      return () => {
+        ipcRenderer.removeListener('ai:event', handler);
+      };
+    },
+    cancel: requestId => ipcRenderer.invoke('ai:cancel', requestId),
+    validate: config => ipcRenderer.invoke('ai:validate', config),
     exportPreset: presetJson => ipcRenderer.invoke('ai:exportPreset', presetJson),
     importPreset: () => ipcRenderer.invoke('ai:importPreset'),
+    confirmTool: (requestId: string, callId: string, approved: boolean) =>
+      ipcRenderer.invoke('ai:tool-confirm', requestId, callId, approved),
+    onToolExecuteRequest: (
+      cb: (requestId: string, callId: string, toolName: string, args: unknown) => void
+    ) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        requestId: string,
+        callId: string,
+        toolName: string,
+        args: unknown
+      ) => cb(requestId, callId, toolName, args);
+      ipcRenderer.on('ai:tool-execute-in-renderer', handler);
+      return () => {
+        ipcRenderer.removeListener('ai:tool-execute-in-renderer', handler);
+      };
+    },
+    sendToolResult: (
+      requestId: string,
+      callId: string,
+      result: { ok: boolean; content: string; error?: string }
+    ) => ipcRenderer.invoke('ai:tool-renderer-result', requestId, callId, result),
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),

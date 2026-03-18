@@ -3,5 +3,6 @@
   "buildCommand": "pnpm --filter @readied/web build",
   "outputDirectory": "apps/web/out",
   "installCommand": "pnpm install",
-  "framework": null
+  "framework": null,
+  "cleanUrls": true
 }

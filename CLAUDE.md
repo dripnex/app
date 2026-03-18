@@ -15,13 +15,17 @@
 ```
 apps/
   desktop/           # Electron app (main, preload, renderer)
-  docs-site/         # VitePress documentation
+  web/               # Next.js marketing site + docs
 packages/
+  ai-core/           # Provider-agnostic AI: streaming, LLM providers, context builder
   core/              # Domain logic + markdown parsing
+  command-registry/  # Command palette registry
+  plugin-api/        # Plugin system interfaces
   storage-core/      # Storage interfaces (pure TS)
   storage-sqlite/    # SQLite adapter (peerDep for better-sqlite3)
   licensing/         # License validation
   product-config/    # Product configuration
+  sync-core/         # Sync engine
 ```
 
 ## Commands
@@ -67,6 +71,12 @@ Pattern for workspace packages with native deps:
 }
 ```
 
+## Type Version Alignment
+
+`@types/react` is pinned to `18.3.27` via `pnpm.overrides` in root `package.json`. This prevents type mismatches when packages like `lucide-react` resolve a different `@types/react` version than the app uses.
+
+**If you see `'X' cannot be used as a JSX component` errors:** Check that `pnpm.overrides` in root `package.json` still pins `@types/react` to match the React version used by `apps/desktop`.
+
 ## Testing
 
 - `pnpm test` runs all tests **except** storage-sqlite (safe to run always)
@@ -88,25 +98,45 @@ cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 
 ## Git Flow
 
-We use Git Flow for branch management:
+We use a simplified Git Flow with automated releases:
 
 ```
-main          ← Production releases only
+main          ← Production releases (semantic-release runs here)
   └── develop ← Integration branch
         └── feature/* ← Feature development
         └── fix/*     ← Bug fixes
-        └── release/* ← Release preparation
 ```
 
 ### Branches
 
-| Branch      | Purpose                   | Merges to            |
-| ----------- | ------------------------- | -------------------- |
-| `main`      | Production releases       | -                    |
-| `develop`   | Integration, next release | `main` (via release) |
-| `feature/*` | New features              | `develop`            |
-| `fix/*`     | Bug fixes                 | `develop`            |
-| `release/*` | Release prep              | `main` + `develop`   |
+| Branch      | Purpose                   | Merges to       |
+| ----------- | ------------------------- | --------------- |
+| `main`      | Production releases       | -               |
+| `develop`   | Integration, next release | `main` (via PR) |
+| `feature/*` | New features              | `develop`       |
+| `fix/*`     | Bug fixes                 | `develop`       |
+
+### Release Process (Automated)
+
+1. PR from `develop` to `main` — CI validates
+2. Click **"Run workflow"** on the **Release** action (`workflow_dispatch`)
+3. semantic-release analyzes commits, bumps version, creates tag + draft GitHub Release
+4. Tag push triggers Build workflow — builds mac/win/linux in parallel
+5. All builds succeed → Release is undrafted → electron-updater picks it up
+6. Auto-PR syncs main back to develop
+
+**Manual steps: 2** (merge PR + click Release)
+
+### Rollback
+
+```bash
+# Soft rollback — stop distribution immediately
+gh release edit v0.10.0 --draft
+
+# Hard rollback — delete entirely
+gh release delete v0.10.0 --yes
+git push --delete origin v0.10.0
+```
 
 ### Workflow
 
@@ -116,6 +146,13 @@ main          ← Production releases only
 git checkout develop
 git pull origin develop
 git checkout -b feature/my-feature
+```
+
+**Keep branch in sync (do this daily or before pushing):**
+
+```bash
+git fetch origin develop
+git rebase origin/develop
 ```
 
 **Creating PR:**
@@ -132,6 +169,16 @@ git checkout develop
 git pull origin develop
 git branch -d feature/my-feature
 ```
+
+### Branch Hygiene (Critical)
+
+Long-lived branches cause painful merge conflicts. Follow these rules:
+
+- **Rebase daily:** `git fetch origin develop && git rebase origin/develop` before starting work each day
+- **Small PRs:** Prefer 3 small PRs over 1 large one. Split by layer (types → logic → UI)
+- **Max branch lifetime:** 2-3 days. If work takes longer, split into incremental PRs
+- **Don't touch unrelated files:** Avoid changes to `package.json`, lockfiles, or `apps/web` unless that's the PR's purpose — these are high-conflict files
+- **Rebase before pushing:** Always rebase against latest develop before `git push` to catch conflicts early
 
 ### Commit Messages
 
@@ -230,6 +277,41 @@ case 'tag':
 - [ ] Filtering in `useNavigation.tsx` only
 - [ ] Sidebar uses `useNavigation()` hook
 - [ ] No implicit flags (`!== null`)
+
+## AI Architecture
+
+The AI system lives in `packages/ai-core` with a provider-agnostic, streaming-first design.
+
+```
+Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegistry → Provider → SSE stream
+                   ← batched LLMEvents (text/error/done) ←
+```
+
+**Key packages and files:**
+
+- `packages/ai-core/` — LLMProvider interface, ProviderRegistry, AnthropicProvider, ContextBuilder, AIService
+- `apps/desktop/src/main/ai/ipc-ai.ts` — IPC bridge, 50ms batched event streaming
+- `apps/desktop/src/preload/index.ts` — `window.readied.ai` API (chat, onEvent, cancel)
+- `apps/desktop/src/renderer/components/ai/AiPanel.tsx` — Chat UI with streaming
+
+**Adding a new LLM provider:**
+
+1. Create `packages/ai-core/src/providers/my-provider.ts` implementing `LLMProvider`
+2. Register in `ProviderRegistry` at `apps/desktop/src/main/ai/ipc-ai.ts`
+3. Add option to `apps/desktop/src/renderer/pages/settings/sections/AiSection.tsx`
+
+**Key types:**
+
+- `LLMEvent` — Protocol: `text` (delta), `error` (with code), `done`, `tool_call`, `tool_result`
+- `ChatOptions` — Provider, model, messages, tools, maxTokens
+- `LLMProvider` — `chat(options): AsyncGenerator<LLMEvent>` + `models()` + `validateKey()`
+
+**Rules:**
+
+- **No SDK dependencies in ai-core:** Providers use native `fetch` + SSE parsing
+- **Streaming only:** No request/response pattern — everything streams via `LLMEvent`
+- **Single panel instance:** Both Cmd+K and Sparkles button toggle the same AiPanel in App.tsx via CustomEvent (`readied:ai:toggle-panel`)
+- **Settings store is source of truth:** API key, model, and provider come from Zustand settings store (`selectAi` selector), not plugin config
 
 ## Documentation
 

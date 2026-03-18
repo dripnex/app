@@ -1,8 +1,8 @@
 {
-  "name": "@readied/ai-assistant",
+  "name": "@readied/ai-core",
   "version": "0.1.0",
   "private": true,
-  "description": "AI assistant with RAG for Readied notes",
+  "description": "Provider-agnostic AI core with streaming protocol",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
