@@ -45,13 +45,26 @@ function classifyHttpStatus(status: number): {
   return { code: 'provider_error', retryable: false };
 }
 
-function normalizeContent(
-  content: MessageContent
-): string | Array<{ type: string; text?: string; source?: unknown }> {
+function normalizeContent(content: MessageContent): string | Array<Record<string, unknown>> {
   if (typeof content === 'string') return content;
   return content.map(part => {
-    if (part.type === 'text') return { type: 'text', text: part.text };
-    return { type: 'text', text: '[image]' }; // Placeholder — images handled in future
+    switch (part.type) {
+      case 'text':
+        return { type: 'text', text: part.text };
+      case 'tool_use':
+        return { type: 'tool_use', id: part.id, name: part.name, input: part.input };
+      case 'tool_result':
+        return {
+          type: 'tool_result',
+          tool_use_id: part.tool_use_id,
+          content: part.content,
+          ...(part.is_error ? { is_error: true } : {}),
+        };
+      case 'image':
+        return { type: 'text', text: '[image]' };
+      default:
+        return { type: 'text', text: '' };
+    }
   });
 }
 
@@ -130,6 +143,9 @@ export class AnthropicProvider implements LLMProvider {
     // Track input tokens from message_start for the usage event
     let inputTokens = 0;
 
+    // Tool use accumulation state
+    const toolBlocks = new Map<number, { id: string; name: string; jsonBuf: string }>();
+
     for await (const sseEvent of parseSSEStream(response.body)) {
       const data = sseEvent.data as Record<string, unknown>;
 
@@ -141,18 +157,60 @@ export class AnthropicProvider implements LLMProvider {
           break;
         }
 
+        case 'content_block_start': {
+          const block = data.content_block as Record<string, unknown>;
+          const index = data.index as number;
+          if (block.type === 'tool_use') {
+            toolBlocks.set(index, {
+              id: block.id as string,
+              name: block.name as string,
+              jsonBuf: '',
+            });
+          }
+          break;
+        }
+
         case 'content_block_delta': {
           const delta = data.delta as Record<string, unknown>;
+          const index = data.index as number;
           if (delta.type === 'text_delta') {
             yield { type: 'text', delta: delta.text as string };
+          } else if (delta.type === 'input_json_delta') {
+            const block = toolBlocks.get(index);
+            if (block) {
+              block.jsonBuf += delta.partial_json as string;
+            }
+          }
+          break;
+        }
+
+        case 'content_block_stop': {
+          const index = data.index as number;
+          const block = toolBlocks.get(index);
+          if (block) {
+            let args: Record<string, unknown> = {};
+            try {
+              args = JSON.parse(block.jsonBuf || '{}');
+            } catch {
+              // Malformed JSON — use empty args
+            }
+            yield { type: 'tool_call', id: block.id, name: block.name, args };
+            toolBlocks.delete(index);
           }
           break;
         }
 
         case 'message_delta': {
+          const delta = data.delta as Record<string, unknown>;
           const usage = data.usage as { output_tokens: number } | undefined;
           if (usage) {
             yield { type: 'usage', inputTokens, outputTokens: usage.output_tokens };
+          }
+          if (delta.stop_reason) {
+            yield {
+              type: 'stop',
+              reason: delta.stop_reason as 'end_turn' | 'tool_use' | 'max_tokens',
+            };
           }
           break;
         }
