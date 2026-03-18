@@ -12,7 +12,6 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, desc } from 'drizzle-orm';
-import { cors } from 'hono/cors';
 import { createDb, type Env } from '../db/client.js';
 import { sharedNotes } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
@@ -22,10 +21,6 @@ const share = new Hono<{
   Variables: { user: AuthUser };
 }>();
 
-// ─── CORS for public endpoints ──────────────────────────────────────────────
-
-share.use('/public/*', cors({ origin: '*' }));
-
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
 const createShareSchema = z.object({
@@ -34,7 +29,7 @@ const createShareSchema = z.object({
   content: z.string().default(''),
   tags: z.array(z.string()).default([]),
   backlinks: z.array(z.object({ noteId: z.string(), title: z.string() })).default([]),
-  wordCount: z.number().int().default(0),
+  wordCount: z.number().int().min(0).default(0),
   notebookName: z.string().default(''),
 });
 
