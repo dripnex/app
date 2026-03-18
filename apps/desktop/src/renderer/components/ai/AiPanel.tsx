@@ -103,6 +103,45 @@ export function AiPanel({
     setMode(initialMode);
   }, [initialMode]);
 
+  // Listen for renderer-executed tool requests from main process
+  useEffect(() => {
+    const cleanup = window.readied.ai.onToolExecuteRequest(
+      async (requestId: string, callId: string, toolName: string, args: unknown) => {
+        const toolArgs = args as Record<string, unknown>;
+        try {
+          if (toolName === 'insert_text') {
+            const text = toolArgs.text as string;
+            insertAtCursor(text);
+            await window.readied.ai.sendToolResult(requestId, callId, {
+              ok: true,
+              content: `Inserted ${text.length} characters at cursor`,
+            });
+          } else if (toolName === 'replace_selection' && replaceSelection) {
+            const text = toolArgs.text as string;
+            replaceSelection(text);
+            await window.readied.ai.sendToolResult(requestId, callId, {
+              ok: true,
+              content: `Replaced selection with ${text.length} characters`,
+            });
+          } else {
+            await window.readied.ai.sendToolResult(requestId, callId, {
+              ok: false,
+              content: `Unknown renderer tool: ${toolName}`,
+              error: `Unknown renderer tool: ${toolName}`,
+            });
+          }
+        } catch (err) {
+          await window.readied.ai.sendToolResult(requestId, callId, {
+            ok: false,
+            content: err instanceof Error ? err.message : String(err),
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    );
+    return cleanup;
+  }, [insertAtCursor, replaceSelection]);
+
   // Subscribe to AI streaming events
   useEffect(() => {
     const cleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {

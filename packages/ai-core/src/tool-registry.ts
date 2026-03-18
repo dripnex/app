@@ -10,6 +10,8 @@ export interface ToolResult {
 export interface ToolRegistration extends ToolDefinition {
   execute: (args: Record<string, unknown>) => Promise<ToolResult>;
   requiresConfirmation: boolean;
+  /** If true, tool must execute in the renderer process (needs editor access) */
+  rendererOnly?: boolean;
 }
 
 export class ToolRegistry {

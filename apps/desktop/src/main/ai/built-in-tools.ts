@@ -5,10 +5,10 @@ import type { ToolRegistry } from '@readied/ai-core';
  * Register built-in AI tools for note operations.
  *
  * Read tools (auto-execute): search_notes, read_note, list_notebooks
- * Write tools (require confirmation): create_note
+ * Write tools (require confirmation): create_note, insert_text, replace_selection
  *
- * Note: insert_text and replace_selection are deferred — they need
- * editor access and will be handled in the renderer.
+ * insert_text and replace_selection execute in the renderer (they need editor access).
+ * They delegate via IPC: main → renderer → main.
  */
 export function registerBuiltInTools(
   registry: ToolRegistry,
@@ -95,6 +95,46 @@ export function registerBuiltInTools(
         args.notebookId as string | undefined
       );
       return { ok: true, content: JSON.stringify(result) };
+    },
+  });
+
+  registry.register({
+    name: 'insert_text',
+    description: 'Insert text into the current note at the cursor position or at the end.',
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Text to insert' },
+        position: {
+          type: 'string',
+          description: "Where to insert: 'cursor' (default) or 'end'",
+        },
+      },
+      required: ['text'],
+    },
+    requiresConfirmation: true,
+    rendererOnly: true,
+    execute: async () => {
+      // Execution handled by ipc-ai.ts via executeToolInRenderer
+      return { ok: false, content: 'Not reachable', error: 'Renderer tool called without IPC' };
+    },
+  });
+
+  registry.register({
+    name: 'replace_selection',
+    description: 'Replace the currently selected text in the editor.',
+    parameters: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Replacement text' },
+      },
+      required: ['text'],
+    },
+    requiresConfirmation: true,
+    rendererOnly: true,
+    execute: async () => {
+      // Execution handled by ipc-ai.ts via executeToolInRenderer
+      return { ok: false, content: 'Not reachable', error: 'Renderer tool called without IPC' };
     },
   });
 }

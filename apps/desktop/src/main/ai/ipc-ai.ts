@@ -13,6 +13,13 @@ const activeHandles = new Map<number, Map<string, ChatHandle | ToolChatHandle>>(
 const pendingConfirmations = new Map<string, Map<string, (approved: boolean) => void>>();
 const CONFIRM_TIMEOUT_MS = 60_000;
 
+// Pending renderer tool results: callId -> resolve function
+const pendingRendererResults = new Map<
+  string,
+  (result: { ok: boolean; content: string; error?: string }) => void
+>();
+const RENDERER_TOOL_TIMEOUT_MS = 30_000;
+
 export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistry): void {
   // ─── Streaming chat ─────────────────────────────────────
   ipcMain.handle(
@@ -56,6 +63,11 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           if (!approved) {
             return { ok: false, content: 'Tool execution cancelled by user', error: 'Cancelled' };
           }
+        }
+
+        // Renderer-only tools delegate execution to the renderer process via IPC
+        if (tool.rendererOnly) {
+          return executeToolInRenderer(event.sender, requestId, call.id, call.name, call.args);
         }
 
         return tool.execute(call.args);
@@ -161,6 +173,23 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
     }
   );
 
+  // ─── Renderer tool result ──────────────────────────────
+  ipcMain.handle(
+    'ai:tool-renderer-result',
+    (
+      _event,
+      _requestId: string,
+      callId: string,
+      result: { ok: boolean; content: string; error?: string }
+    ) => {
+      const resolve = pendingRendererResults.get(callId);
+      if (resolve) {
+        resolve(result);
+        pendingRendererResults.delete(callId);
+      }
+    }
+  );
+
   // ─── Cleanup on window destroy ──────────────────────────
   app.on('browser-window-created', (_event, window) => {
     window.webContents.on('destroyed', () => {
@@ -190,6 +219,28 @@ function waitForConfirmation(requestId: string, callId: string): Promise<boolean
         resolve(false);
       }
     }, CONFIRM_TIMEOUT_MS);
+  });
+}
+
+// ─── Execute tool in renderer ────────────────────────────
+
+export function executeToolInRenderer(
+  sender: Electron.WebContents,
+  requestId: string,
+  callId: string,
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<{ ok: boolean; content: string; error?: string }> {
+  return new Promise(resolve => {
+    pendingRendererResults.set(callId, resolve);
+    sender.send('ai:tool-execute-in-renderer', requestId, callId, toolName, args);
+
+    setTimeout(() => {
+      if (pendingRendererResults.has(callId)) {
+        pendingRendererResults.delete(callId);
+        resolve({ ok: false, content: 'Renderer tool timed out', error: 'Timeout' });
+      }
+    }, RENDERER_TOOL_TIMEOUT_MS);
   });
 }
 
