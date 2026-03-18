@@ -734,6 +734,7 @@ export interface ReadiedAPI {
       model: string;
       providerConfig: { apiKey?: string; baseUrl?: string };
       maxResponseTokens?: number;
+      tools?: boolean;
     }) => Promise<{ requestId: string }>;
     /** Listen for streaming AI events */
     onEvent: (cb: (requestId: string, event: unknown) => void) => () => void;
@@ -751,6 +752,8 @@ export interface ReadiedAPI {
     ) => Promise<{ ok: true; filePath: string } | { ok: false; error: string }>;
     /** Import an AI command preset from a user-chosen file */
     importPreset: () => Promise<{ ok: true; content: string } | { ok: false; error: string }>;
+    /** Confirm or reject a tool execution */
+    confirmTool: (requestId: string, callId: string, approved: boolean) => Promise<void>;
   };
   pluginConfig: {
     /** Get a single config value for a plugin */
@@ -1047,6 +1050,8 @@ const api: ReadiedAPI = {
     validate: config => ipcRenderer.invoke('ai:validate', config),
     exportPreset: presetJson => ipcRenderer.invoke('ai:exportPreset', presetJson),
     importPreset: () => ipcRenderer.invoke('ai:importPreset'),
+    confirmTool: (requestId: string, callId: string, approved: boolean) =>
+      ipcRenderer.invoke('ai:tool-confirm', requestId, callId, approved),
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),

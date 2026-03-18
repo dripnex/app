@@ -1,14 +1,19 @@
 // apps/desktop/src/main/ai/ipc-ai.ts
 import { ipcMain, app, dialog } from 'electron';
 import { readFile, writeFile } from 'node:fs/promises';
-import type { AIService, ChatHandle } from '@readied/ai-core';
+import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@readied/ai-core';
+import type { ToolRegistry } from '@readied/ai-core';
 
 const BATCH_INTERVAL_MS = 50;
 
 // Per-window active handle tracking
-const activeHandles = new Map<number, Map<string, ChatHandle>>();
+const activeHandles = new Map<number, Map<string, ChatHandle | ToolChatHandle>>();
 
-export function registerAIHandlers(service: AIService): void {
+// Pending tool confirmations: requestId -> callId -> resolve function
+const pendingConfirmations = new Map<string, Map<string, (approved: boolean) => void>>();
+const CONFIRM_TIMEOUT_MS = 60_000;
+
+export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistry): void {
   // ─── Streaming chat ─────────────────────────────────────
   ipcMain.handle(
     'ai:chat',
@@ -24,11 +29,44 @@ export function registerAIHandlers(service: AIService): void {
         model: string;
         providerConfig: { apiKey?: string; baseUrl?: string };
         maxResponseTokens?: number;
+        tools?: boolean;
       }
     ) => {
       const windowId = event.sender.id;
+      const toolDefs = request.tools ? toolRegistry.getDefinitions() : [];
 
-      const handle = service.chat(request);
+      // Build executeTool callback that closes over requestId (set after handle creation)
+      let requestId = '';
+      const executeTool = async (call: ToolCall) => {
+        const tool = toolRegistry.get(call.name);
+        if (!tool) {
+          return {
+            ok: false,
+            content: `Unknown tool: ${call.name}`,
+            error: `Unknown tool: ${call.name}`,
+          };
+        }
+
+        if (tool.requiresConfirmation) {
+          event.sender.send('ai:event', requestId, {
+            type: 'tool_confirm_needed',
+            callId: call.id,
+          });
+          const approved = await waitForConfirmation(requestId, call.id);
+          if (!approved) {
+            return { ok: false, content: 'Tool execution cancelled by user', error: 'Cancelled' };
+          }
+        }
+
+        return tool.execute(call.args);
+      };
+
+      const handle =
+        toolDefs.length > 0
+          ? service.chatWithTools({ ...request, tools: toolDefs, executeTool })
+          : service.chat(request);
+
+      requestId = handle.requestId;
 
       // Track handle
       if (!activeHandles.has(windowId)) {
@@ -36,7 +74,6 @@ export function registerAIHandlers(service: AIService): void {
       }
       activeHandles.get(windowId)!.set(handle.requestId, handle);
 
-      // Start consuming stream with batching
       consumeStream(event.sender, handle);
 
       return { requestId: handle.requestId };
@@ -112,6 +149,18 @@ export function registerAIHandlers(service: AIService): void {
     }
   });
 
+  // ─── Tool confirmation ──────────────────────────────────
+  ipcMain.handle(
+    'ai:tool-confirm',
+    (_event, requestId: string, callId: string, approved: boolean) => {
+      const resolve = pendingConfirmations.get(requestId)?.get(callId);
+      if (resolve) {
+        resolve(approved);
+        pendingConfirmations.get(requestId)!.delete(callId);
+      }
+    }
+  );
+
   // ─── Cleanup on window destroy ──────────────────────────
   app.on('browser-window-created', (_event, window) => {
     window.webContents.on('destroyed', () => {
@@ -124,9 +173,32 @@ export function registerAIHandlers(service: AIService): void {
   });
 }
 
+// ─── Confirmation helper ─────────────────────────────────
+
+function waitForConfirmation(requestId: string, callId: string): Promise<boolean> {
+  return new Promise<boolean>(resolve => {
+    if (!pendingConfirmations.has(requestId)) {
+      pendingConfirmations.set(requestId, new Map());
+    }
+    pendingConfirmations.get(requestId)!.set(callId, resolve);
+
+    // Timeout auto-rejects
+    setTimeout(() => {
+      const pending = pendingConfirmations.get(requestId)?.get(callId);
+      if (pending) {
+        pendingConfirmations.get(requestId)!.delete(callId);
+        resolve(false);
+      }
+    }, CONFIRM_TIMEOUT_MS);
+  });
+}
+
 // ─── Stream consumer with batching ────────────────────────
 
-async function consumeStream(sender: Electron.WebContents, handle: ChatHandle): Promise<void> {
+async function consumeStream(
+  sender: Electron.WebContents,
+  handle: ChatHandle | ToolChatHandle
+): Promise<void> {
   let textBuffer = '';
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
 

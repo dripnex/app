@@ -76,7 +76,7 @@ import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
 import { scanPlugins } from './pluginScanner.js';
 import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
-import { createAIService } from './ai/setup.js';
+import { createAIService, getToolRegistry } from './ai/setup.js';
 import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
 
 // Database and repository (initialized on app ready)
@@ -2326,7 +2326,7 @@ app
     registerGitHandlers(); // Git operations for git-backed notebooks
     registerPluginConfigHandlers();
     registerPluginDiscoveryHandlers();
-    registerAIHandlersNew(createAIService());
+    registerAIHandlersNew(createAIService(), getToolRegistry());
 
     // Start plugin hot-reload watcher in dev mode
     if (process.env.NODE_ENV === 'development' && dataPaths) {
