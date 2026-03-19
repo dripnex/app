@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { marked } from 'marked';
 
 interface NoteData {
   title?: string;
@@ -83,8 +84,11 @@ export default function SharedNoteContent() {
     );
   }
 
-  // Content comes from Readied's own API (shared notes rendered as markdown).
-  // This matches the original Astro page which uses marked.parse() with innerHTML.
+  const renderedHtml = useMemo(() => {
+    if (!note?.content) return '';
+    return marked.parse(note.content, { async: false, gfm: true, breaks: true }) as string;
+  }, [note?.content]);
+
   return (
     <div className="max-w-[720px] mx-auto py-12 px-4 sm:px-6">
       <h1 className="text-3xl font-bold text-[#f4f4f5] leading-tight tracking-tight mb-2">
@@ -95,7 +99,7 @@ export default function SharedNoteContent() {
       </div>
       <div
         className="prose prose-invert max-w-none"
-        dangerouslySetInnerHTML={{ __html: note?.content || '' }}
+        dangerouslySetInnerHTML={{ __html: renderedHtml }}
       />
       <footer className="mt-12 pt-6 border-t border-white/6 text-center text-sm text-[#71717a]">
         Shared with{' '}

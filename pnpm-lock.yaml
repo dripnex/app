@@ -286,6 +286,9 @@ importers:
       lucide-react:
         specifier: ^0.475.0
         version: 0.475.0(react@19.2.4)
+      marked:
+        specifier: ^17.0.4
+        version: 17.0.4
       next:
         specifier: ^16.1.7
         version: 16.1.7(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -5926,6 +5929,11 @@ packages:
     engines: {node: '>= 18'}
     hasBin: true
 
+  marked@17.0.4:
+    resolution: {integrity: sha512-NOmVMM+KAokHMvjWmC5N/ZOvgmSWuqJB8FoYI019j4ogb/PeRMKoKIjReZ2w3376kkA8dSJIP8uD993Kxc0iRQ==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
   matcher@3.0.0:
     resolution: {integrity: sha512-OkeDaAZ/bQCxeFAozM55PKcKU0yJMPGifLwV4Qgjitu+5MoAfSQN4lsLJeXZ1b8w0x+/Emda6MZgXS1jvsapng==}
     engines: {node: '>=10'}
@@ -11314,22 +11322,6 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@20.19.27)(lightningcss@1.31.1))':
-    dependencies:
-      '@vitest/spy': 2.1.9
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 5.4.21(@types/node@20.19.27)(lightningcss@1.31.1)
-
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@22.19.3)(lightningcss@1.31.1))':
-    dependencies:
-      '@vitest/spy': 2.1.9
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 5.4.21(@types/node@22.19.3)(lightningcss@1.31.1)
-
   '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.4.0)(lightningcss@1.31.1))':
     dependencies:
       '@vitest/spy': 2.1.9
@@ -13831,6 +13823,8 @@ snapshots:
 
   marked@15.0.12: {}
 
+  marked@17.0.4: {}
+
   matcher@3.0.0:
     dependencies:
       escape-string-regexp: 4.0.0
@@ -16222,7 +16216,7 @@ snapshots:
   vitest@2.1.9(@types/node@20.19.27)(lightningcss@1.31.1):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@20.19.27)(lightningcss@1.31.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.4.0)(lightningcss@1.31.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
@@ -16257,7 +16251,7 @@ snapshots:
   vitest@2.1.9(@types/node@22.19.3)(lightningcss@1.31.1):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.3)(lightningcss@1.31.1))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.4.0)(lightningcss@1.31.1))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9

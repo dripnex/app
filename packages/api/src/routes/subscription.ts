@@ -103,9 +103,12 @@ subscription.post('/webhook', async c => {
       break;
     }
 
+    case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const sub = event.data.object as StripeSubscription;
-      await db
+
+      // Try update first
+      const updated = await db
         .update(subscriptions)
         .set({
           status: mapStripeStatus(sub.status),
@@ -114,7 +117,26 @@ subscription.post('/webhook', async c => {
           cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
           updatedAt: new Date().toISOString(),
         })
-        .where(eq(subscriptions.stripeSubscriptionId, sub.id));
+        .where(eq(subscriptions.stripeSubscriptionId, sub.id))
+        .returning({ id: subscriptions.id });
+
+      // If no row was updated, create it (handles case where checkout.session.completed was missed)
+      if (updated.length === 0 && sub.customer) {
+        // Find user by Stripe customer ID
+        const [existing] = await db
+          .select()
+          .from(subscriptions)
+          .where(eq(subscriptions.stripeCustomerId, sub.customer))
+          .limit(1);
+
+        if (!existing) {
+          console.warn('Subscription created/updated but no matching row found', {
+            subscriptionId: sub.id,
+            customerId: sub.customer,
+            event: event.type,
+          });
+        }
+      }
       break;
     }
 
@@ -364,6 +386,7 @@ interface CheckoutSession {
 
 interface StripeSubscription {
   id: string;
+  customer: string;
   status: string;
   current_period_end: number;
   canceled_at: number | null;
