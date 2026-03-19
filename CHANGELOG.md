@@ -1,3 +1,15 @@
+## [0.9.1](https://github.com/tomymaritano/readide/compare/v0.9.0...v0.9.1) (2026-03-16)
+
+### Bug Fixes
+
+- re-merge develop with proper merge commit for semantic-release ([#161](https://github.com/tomymaritano/readide/issues/161)) ([fa5306d](https://github.com/tomymaritano/readide/commit/fa5306d4db7ece94bb4a287a2591f1f29bf7aa25)), closes [#160](https://github.com/tomymaritano/readide/issues/160)
+
+## [0.9.1](https://github.com/tomymaritano/readide/compare/v0.9.0...v0.9.1) (2026-03-16)
+
+### Bug Fixes
+
+- re-merge develop with proper merge commit for semantic-release ([#161](https://github.com/tomymaritano/readide/issues/161)) ([fa5306d](https://github.com/tomymaritano/readide/commit/fa5306d4db7ece94bb4a287a2591f1f29bf7aa25)), closes [#160](https://github.com/tomymaritano/readide/issues/160)
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
