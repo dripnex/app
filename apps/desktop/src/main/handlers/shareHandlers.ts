@@ -20,7 +20,15 @@ export function registerShareHandlers(deps: ShareHandlerDependencies): void {
     'share:create',
     async (
       _event,
-      input: { noteId: string; title: string; content: string }
+      input: {
+        noteId: string;
+        title: string;
+        content: string;
+        tags?: string[];
+        backlinks?: Array<{ noteId: string; title: string }>;
+        wordCount?: number;
+        notebookName?: string;
+      }
     ): Promise<{ success: boolean; url?: string; slug?: string; error?: string }> => {
       try {
         const result = await apiClient.shareNote(input);

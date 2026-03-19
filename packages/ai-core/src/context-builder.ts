@@ -91,7 +91,7 @@ function truncateToTokens(text: string, maxTokens: number): string {
 }
 
 export function buildContext(sources: ContextSources, budget: ContextBudget): ContextBuildResult {
-  const available = budget.maxContextTokens - budget.maxResponseTokens;
+  const available = Math.max(0, budget.maxContextTokens - budget.maxResponseTokens);
   let used = 0;
   let truncated = false;
 

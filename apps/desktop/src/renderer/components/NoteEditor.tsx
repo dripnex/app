@@ -8,6 +8,7 @@ import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
+import { useNotebook } from '../hooks/useNotebooks';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import { ImageLightbox } from './ImageLightbox';
@@ -107,6 +108,7 @@ export function NoteEditor({
   const [revisionHistoryOpen, setRevisionHistoryOpen] = useState(false);
   const { data: backlinks } = useBacklinks(note?.id ?? null);
   const backlinksCount = backlinks?.length ?? 0;
+  const { data: notebook } = useNotebook(note?.notebookId ?? null);
 
   // Lightbox state for embedded images
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
@@ -168,13 +170,17 @@ export function NoteEditor({
       noteId: note.id,
       title: note.title,
       content: note.content,
+      tags: note.tags,
+      wordCount: note.wordCount,
+      notebookName: notebook?.name ?? '',
+      backlinks: (backlinks ?? []).map(bl => ({ noteId: bl.noteId, title: bl.noteTitle })),
     });
     if (result.success) {
       showToast('Link copied to clipboard');
     } else {
       showToast(result.error || 'Failed to share note', 'error');
     }
-  }, [note, showToast]);
+  }, [note, notebook, backlinks, showToast]);
 
   // Handle title change
   const handleTitleChange = useCallback(

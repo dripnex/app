@@ -5,6 +5,7 @@ import { ProviderRegistry } from '../src/provider-registry';
 import type { LLMProvider, ProviderConfig } from '../src/provider';
 import type { LLMEvent, ChatOptions } from '../src/types';
 import type { ChatRequest } from '../src/ai-service';
+import type { ToolLoopEvent } from '../src/tool-loop';
 
 function createMockProvider(events: LLMEvent[]): LLMProvider {
   return {
@@ -44,8 +45,10 @@ function createRequest(overrides: Partial<ChatRequest> = {}): ChatRequest {
   };
 }
 
-async function collectEvents(handle: { events: AsyncIterable<LLMEvent> }): Promise<LLMEvent[]> {
-  const events: LLMEvent[] = [];
+async function collectEvents(handle: {
+  events: AsyncIterable<LLMEvent | ToolLoopEvent>;
+}): Promise<(LLMEvent | ToolLoopEvent)[]> {
+  const events: (LLMEvent | ToolLoopEvent)[] = [];
   for await (const event of handle.events) events.push(event);
   return events;
 }
@@ -166,5 +169,50 @@ describe('AIServiceImpl', () => {
       }),
       expect.anything()
     );
+  });
+});
+
+describe('AIServiceImpl.chatWithTools', () => {
+  it('returns ToolChatHandle with requestId and events', () => {
+    const registry = new ProviderRegistry();
+    registry.register(
+      createMockProvider([
+        { type: 'text', delta: 'hi' },
+        { type: 'stop', reason: 'end_turn' } as LLMEvent,
+      ])
+    );
+    const service = new AIServiceImpl(registry);
+
+    const handle = service.chatWithTools({
+      ...createRequest(),
+      tools: [{ name: 'test', description: 'Test', parameters: {} }],
+      executeTool: async () => ({ ok: true, content: 'ok' }),
+    });
+
+    expect(handle.requestId).toBeTruthy();
+    expect(typeof handle.abort).toBe('function');
+  });
+
+  it('emits start and done wrapping the tool loop', async () => {
+    const registry = new ProviderRegistry();
+    registry.register(
+      createMockProvider([
+        { type: 'text', delta: 'hi' },
+        { type: 'stop', reason: 'end_turn' } as LLMEvent,
+        { type: 'usage', inputTokens: 10, outputTokens: 5 },
+      ])
+    );
+    const service = new AIServiceImpl(registry);
+
+    const events = await collectEvents(
+      service.chatWithTools({
+        ...createRequest(),
+        tools: [{ name: 'test', description: 'Test', parameters: {} }],
+        executeTool: async () => ({ ok: true, content: 'ok' }),
+      })
+    );
+
+    expect(events[0]?.type).toBe('start');
+    expect(events[events.length - 1]?.type).toBe('done');
   });
 });

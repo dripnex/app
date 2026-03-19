@@ -83,7 +83,7 @@ describe('withRetry', () => {
                 yielded = true;
                 return { done: false, value: { type: 'text' as const, delta: 'success' } };
               }
-              return { done: false, value: { type: 'done' as const, durationMs: 50 } };
+              return { done: true, value: { type: 'done' as const, durationMs: 50 } };
             },
           };
         },

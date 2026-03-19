@@ -76,7 +76,8 @@ import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
 import { scanPlugins } from './pluginScanner.js';
 import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
-import { createAIService } from './ai/setup.js';
+import { createAIService, getToolRegistry } from './ai/setup.js';
+import { registerBuiltInTools } from './ai/built-in-tools.js';
 import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
 
 // Database and repository (initialized on app ready)
@@ -2326,7 +2327,42 @@ app
     registerGitHandlers(); // Git operations for git-backed notebooks
     registerPluginConfigHandlers();
     registerPluginDiscoveryHandlers();
-    registerAIHandlersNew(createAIService());
+    registerAIHandlersNew(createAIService(), getToolRegistry());
+
+    // Register built-in AI tools with database access
+    if (noteRepository && notebookRepository) {
+      const noteRepo = noteRepository;
+      const nbRepo = notebookRepository;
+      registerBuiltInTools(getToolRegistry(), {
+        searchNotes: async (query, limit) => {
+          const notes = await noteRepo.search(query, limit);
+          return notes.map(n => ({
+            id: n.id,
+            title: n.title,
+            snippet: n.content.slice(0, 200),
+          }));
+        },
+        readNote: async id => {
+          const note = await noteRepo.get(createNoteId(id));
+          if (!note) return null;
+          return { id: note.id, title: note.title, content: note.content };
+        },
+        listNotebooks: async () => {
+          const notebooks = await nbRepo.getAll();
+          return notebooks.map(nb => ({ id: nb.id, name: nb.name, noteCount: 0 }));
+        },
+        createNote: async (title, content, notebookId) => {
+          const result = await createNoteOperation(
+            { content: `# ${title}\n\n${content}`, notebookId },
+            noteRepo
+          );
+          if (!result.ok) {
+            throw new Error('Failed to create note');
+          }
+          return { id: result.data.id };
+        },
+      });
+    }
 
     // Start plugin hot-reload watcher in dev mode
     if (process.env.NODE_ENV === 'development' && dataPaths) {

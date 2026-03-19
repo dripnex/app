@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BorderBeam } from '@/components/magicui/border-beam';
+import { NumberTicker } from '@/components/magicui/number-ticker';
 import {
   Accordion,
   AccordionItem,
@@ -26,8 +27,9 @@ export default function PricingPage() {
   const { plans, guarantees, trialDays, trialDescription } = config;
   const proPricing = plans.pro.pricing!;
 
-  const monthlyLabel = proPricing.intervals.monthly.label;
-  const annualLabel = proPricing.intervals.annual.label;
+  // Extract numeric values from price labels for NumberTicker
+  const monthlyPrice = proPricing.intervals.monthly.amountCents / 100;
+  const annualPrice = proPricing.intervals.annual.amountCents / 100;
 
   const faqs = [
     { q: 'What if you stop developing Readied?', a: guarantees.freeTierForever.description },
@@ -75,7 +77,7 @@ export default function PricingPage() {
             <ul className="list-none mb-6 space-y-0">
               {plans.free.features.map((f, i) => (
                 <li key={i} className="flex items-center gap-3 py-2 text-sm text-text-secondary">
-                  <span className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-white/5 text-text-muted">
+                  <span className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-white/[0.05] text-text-muted">
                     <Check size={14} />
                   </span>
                   <span>{f}</span>
@@ -107,13 +109,27 @@ export default function PricingPage() {
               </div>
               <div className="text-lg font-semibold text-text-primary mb-2">{plans.pro.name}</div>
               <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">
-                  {monthlyLabel}
-                </span>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">$</span>
+                  <NumberTicker
+                    value={monthlyPrice}
+                    decimalPlaces={2}
+                    className="font-mono text-3xl sm:text-4xl font-bold text-accent"
+                  />
+                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">/mo</span>
+                </div>
                 <span className="text-sm text-text-muted">or</span>
-                <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">
-                  {annualLabel}
-                </span>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">$</span>
+                  <NumberTicker
+                    value={annualPrice}
+                    decimalPlaces={0}
+                    className="font-mono text-3xl sm:text-4xl font-bold text-accent"
+                  />
+                  <span className="font-mono text-3xl sm:text-4xl font-bold text-accent">
+                    /year
+                  </span>
+                </div>
                 <Badge variant="secondary" className="text-accent bg-accent/10">
                   Save {proPricing.annualSavings}
                 </Badge>
@@ -133,7 +149,7 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <div className="flex items-center gap-3 px-4 py-3 mb-6 rounded-lg bg-accent/6 border border-accent/10 text-sm text-text-secondary">
+            <div className="flex items-center gap-3 px-4 py-3 mb-6 rounded-lg bg-accent/[0.06] border border-accent/10 text-sm text-text-secondary">
               <Sparkles size={16} className="text-accent" />
               <span>{trialDescription}</span>
             </div>

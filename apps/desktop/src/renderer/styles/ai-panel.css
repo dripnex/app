@@ -206,3 +206,106 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Tool Call Block */
+.ai-tool-call {
+  margin: 0.5rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  font-size: 0.8125rem;
+}
+
+.ai-tool-call-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-hover);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ai-tool-call-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-tool-call-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ai-tool-call-status {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+.ai-tool-call-spinning {
+  animation: ai-spin 1s linear infinite;
+}
+
+@keyframes ai-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-tool-call-success {
+  color: var(--success, #22c55e);
+}
+
+.ai-tool-call-error {
+  color: var(--error, #ef4444);
+}
+
+.ai-tool-call-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border-strong);
+}
+
+.ai-tool-call-btn {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.ai-tool-call-btn.approve {
+  background: var(--accent, #5eead4);
+  color: var(--bg-primary, #000);
+  border-color: transparent;
+}
+
+.ai-tool-call-details {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border-strong);
+}
+
+.ai-tool-call-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 0.25rem;
+}
+
+.ai-tool-call-details pre {
+  margin: 0;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: var(--text-secondary);
+}
+
+.ai-tool-call-args + .ai-tool-call-result {
+  margin-top: 0.5rem;
+}

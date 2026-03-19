@@ -548,6 +548,10 @@ export class ApiClient {
     noteId: string;
     title: string;
     content: string;
+    tags?: string[];
+    backlinks?: Array<{ noteId: string; title: string }>;
+    wordCount?: number;
+    notebookName?: string;
   }): Promise<{ slug: string; url: string }> {
     return this.request<{ slug: string; url: string }>('/share', {
       method: 'POST',

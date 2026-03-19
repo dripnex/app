@@ -13,6 +13,12 @@ export type { FetchFn, ProviderConfig, ModelInfo, LLMProvider } from './provider
 
 export { ProviderRegistry } from './provider-registry.js';
 
+export { ToolRegistry } from './tool-registry.js';
+export type { ToolRegistration, ToolResult } from './tool-registry.js';
+
+export { runToolLoop } from './tool-loop.js';
+export type { ToolCall, ToolLoopEvent, ToolLoopOptions } from './tool-loop.js';
+
 export {
   buildContext,
   estimateTokens,
@@ -41,7 +47,13 @@ export type { RetryOptions } from './retry.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 
 export { AIServiceImpl } from './ai-service.js';
-export type { ChatRequest, ChatHandle, AIService } from './ai-service.js';
+export type {
+  ChatRequest,
+  ChatHandle,
+  ToolChatRequest,
+  ToolChatHandle,
+  AIService,
+} from './ai-service.js';
 
 export type {
   AiCommandDefinition,

@@ -3,6 +3,7 @@ import { X, Send, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucid
 import type { ChatMessage, NoteContext, AiPanelMode, LLMEvent } from '@readied/ai-core';
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
+import { ToolCallBlock } from './ToolCallBlock';
 
 /** Pre-filled command to auto-execute on mount (used by ai:summarize, ai:rewrite, ai:tweet) */
 export interface AiInitialCommand {
@@ -73,6 +74,20 @@ export function AiPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRequestRef = useRef<string | null>(null);
+  const commandActiveRef = useRef(false);
+
+  // Tool call tracking
+  const [toolCalls, setToolCalls] = useState<
+    Map<
+      string,
+      {
+        name: string;
+        args: Record<string, unknown>;
+        status: 'pending_confirmation' | 'executing' | 'complete' | 'rejected' | 'error';
+        result?: { ok: boolean; content: string; error?: string };
+      }
+    >
+  >(new Map());
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -89,11 +104,51 @@ export function AiPanel({
     setMode(initialMode);
   }, [initialMode]);
 
+  // Listen for renderer-executed tool requests from main process
+  useEffect(() => {
+    const cleanup = window.readied.ai.onToolExecuteRequest(
+      async (requestId: string, callId: string, toolName: string, args: unknown) => {
+        const toolArgs = args as Record<string, unknown>;
+        try {
+          if (toolName === 'insert_text') {
+            const text = toolArgs.text as string;
+            insertAtCursor(text);
+            await window.readied.ai.sendToolResult(requestId, callId, {
+              ok: true,
+              content: `Inserted ${text.length} characters at cursor`,
+            });
+          } else if (toolName === 'replace_selection' && replaceSelection) {
+            const text = toolArgs.text as string;
+            replaceSelection(text);
+            await window.readied.ai.sendToolResult(requestId, callId, {
+              ok: true,
+              content: `Replaced selection with ${text.length} characters`,
+            });
+          } else {
+            await window.readied.ai.sendToolResult(requestId, callId, {
+              ok: false,
+              content: `Unknown renderer tool: ${toolName}`,
+              error: `Unknown renderer tool: ${toolName}`,
+            });
+          }
+        } catch (err) {
+          await window.readied.ai.sendToolResult(requestId, callId, {
+            ok: false,
+            content: err instanceof Error ? err.message : String(err),
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    );
+    return cleanup;
+  }, [insertAtCursor, replaceSelection]);
+
   // Subscribe to AI streaming events
   useEffect(() => {
     const cleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
-      // Only process events for the active request
+      // Only process events for the active request; skip when a command listener owns the stream
       if (requestId !== activeRequestRef.current) return;
+      if (commandActiveRef.current) return;
 
       const event = rawEvent as LLMEvent;
 
@@ -115,15 +170,84 @@ export function AiPanel({
           });
           break;
 
-        case 'error':
-          setError(formatErrorMessage(event));
-          setLoading(false);
-          activeRequestRef.current = null;
+        case 'error': {
+          const errorEvent = event as LLMEvent & { type: 'error'; retryable?: boolean };
+          if (errorEvent.retryable) {
+            // Transient retry — show message but don't tear down the stream
+            setError(formatErrorMessage(event));
+          } else {
+            setError(formatErrorMessage(event));
+            setLoading(false);
+            activeRequestRef.current = null;
+          }
           break;
+        }
 
         case 'done':
           setLoading(false);
           activeRequestRef.current = null;
+          break;
+
+        case 'tool_call':
+          setToolCalls(prev => {
+            const next = new Map(prev);
+            const e = event as LLMEvent & {
+              type: 'tool_call';
+              id: string;
+              name: string;
+              args: unknown;
+            };
+            next.set(e.id, {
+              name: e.name,
+              args: (e.args as Record<string, unknown>) ?? {},
+              status: 'executing',
+            });
+            return next;
+          });
+          break;
+
+        case 'tool_confirm_needed' as string:
+          setToolCalls(prev => {
+            const next = new Map(prev);
+            const e = event as unknown as { callId: string };
+            const existing = next.get(e.callId);
+            if (existing) {
+              next.set(e.callId, { ...existing, status: 'pending_confirmation' });
+            }
+            return next;
+          });
+          break;
+
+        case 'tool_executing' as string:
+          setToolCalls(prev => {
+            const next = new Map(prev);
+            const e = event as unknown as {
+              call: { id: string; name: string; args: Record<string, unknown> };
+            };
+            const existing = next.get(e.call.id);
+            if (existing) {
+              next.set(e.call.id, { ...existing, status: 'executing' });
+            } else {
+              next.set(e.call.id, { name: e.call.name, args: e.call.args, status: 'executing' });
+            }
+            return next;
+          });
+          break;
+
+        case 'tool_complete' as string:
+          setToolCalls(prev => {
+            const next = new Map(prev);
+            const e = event as unknown as {
+              call: { id: string };
+              result: { ok: boolean; content: string; error?: string };
+            };
+            const existing = next.get(e.call.id);
+            if (existing) {
+              const status = e.result.ok ? 'complete' : 'error';
+              next.set(e.call.id, { ...existing, status, result: e.result });
+            }
+            return next;
+          });
           break;
       }
     });
@@ -159,6 +283,7 @@ export function AiPanel({
       // Track the output target for when the response arrives
       const commandOutputTarget = initialCommand.outputTarget;
       let accumulatedText = '';
+      commandActiveRef.current = true;
 
       // Set up a one-time listener for this command's events
       const commandCleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
@@ -188,6 +313,7 @@ export function AiPanel({
             setLoading(false);
             activeRequestRef.current = null;
             onCommandExecuted?.();
+            commandActiveRef.current = false;
             commandCleanup();
             break;
 
@@ -225,6 +351,7 @@ export function AiPanel({
             setLoading(false);
             activeRequestRef.current = null;
             onCommandExecuted?.();
+            commandActiveRef.current = false;
             commandCleanup();
             break;
           }
@@ -345,6 +472,7 @@ export function AiPanel({
         model,
         providerConfig: { apiKey },
         maxResponseTokens: 2048,
+        tools: true,
       });
       activeRequestRef.current = requestId;
     } catch (err) {
@@ -373,6 +501,24 @@ export function AiPanel({
     [handleSubmit]
   );
 
+  const handleToolConfirm = useCallback((callId: string) => {
+    if (activeRequestRef.current) {
+      window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
+    }
+  }, []);
+
+  const handleToolReject = useCallback((callId: string) => {
+    if (activeRequestRef.current) {
+      window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
+      setToolCalls(prev => {
+        const next = new Map(prev);
+        const existing = next.get(callId);
+        if (existing) next.set(callId, { ...existing, status: 'rejected' });
+        return next;
+      });
+    }
+  }, []);
+
   const handleClear = useCallback(() => {
     // Cancel any active request
     if (activeRequestRef.current) {
@@ -382,6 +528,7 @@ export function AiPanel({
     setMessages([]);
     setError(null);
     setContextCount(0);
+    setToolCalls(new Map());
     setLoading(false);
   }, []);
 
@@ -457,6 +604,18 @@ export function AiPanel({
             content={typeof msg.content === 'string' ? msg.content : ''}
           />
         ))}
+        {toolCalls.size > 0 &&
+          Array.from(toolCalls.entries()).map(([callId, tc]) => (
+            <ToolCallBlock
+              key={callId}
+              name={tc.name}
+              args={tc.args}
+              status={tc.status}
+              result={tc.result}
+              onConfirm={() => handleToolConfirm(callId)}
+              onReject={() => handleToolReject(callId)}
+            />
+          ))}
         {loading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="ai-message ai-message--assistant">
             <div className="ai-message-label">AI</div>
