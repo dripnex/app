@@ -9,12 +9,14 @@ import {
   ArrowUpDown,
   Pin,
   PinOff,
+  Globe,
 } from 'lucide-react';
 import { LayoutZone } from '@readied/plugin-api';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { formatRelativeTime } from '../utils/date';
 import { useTagColorsStore } from '../stores/tagColorsStore';
+import { useShareStore, selectIsShared } from '../stores/shareStore';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
@@ -386,6 +388,7 @@ function NoteListItem({
   onContextMenu,
 }: NoteListItemProps) {
   const getColor = useTagColorsStore(state => state.getColor);
+  const isShared = useShareStore(selectIsShared(note.id));
   const [showUnpinEffect, setShowUnpinEffect] = useState(false);
   const prevPinnedRef = useRef(note.isPinned);
 
@@ -417,6 +420,7 @@ function NoteListItem({
       <div className="note-list-item-title">
         {note.isPinned && <Pin size={12} className="pin-icon" aria-label="Pinned" />}
         {showUnpinEffect && <PinOff size={12} className="unpin-icon" aria-hidden="true" />}
+        {isShared && <Globe size={12} className="share-icon" aria-label="Shared" />}
         {note.title || 'Untitled'}
       </div>
       <div className="note-list-item-meta">

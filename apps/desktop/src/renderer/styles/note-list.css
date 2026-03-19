@@ -241,6 +241,13 @@
   opacity: 0.8;
 }
 
+/* Share icon for shared notes */
+.note-list-item-title .share-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.6;
+}
+
 /* Unpin animation effect */
 @keyframes unpin-fade-out {
   0% {
