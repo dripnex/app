@@ -413,30 +413,14 @@ export function AiPanel({
     try {
       // Gather context
       const currentNote = getCurrentNote();
-
-      // Search for relevant notes matching the user's query
-      const searchResults = await searchNotes(query);
       const relevantNotes: NoteContext[] = [];
 
-      for (const result of searchResults.slice(0, maxContextNotes)) {
-        const note = await getNoteById(result.id);
-        if (note) {
-          relevantNotes.push({
-            id: note.id,
-            title: note.title,
-            content: note.content,
-          });
-        }
-      }
+      // In ask-notes mode, search for relevant notes across the vault
+      // In chat mode, only use the current note as context
+      if (mode === 'ask-notes') {
+        const searchResults = await searchNotes(query);
 
-      // In ask-notes mode or when a current note is selected, also search
-      // for notes related to the current note's title (if not already found)
-      if (currentNote && relevantNotes.length < maxContextNotes) {
-        const relatedResults = await searchNotes(currentNote.title);
-        const existingIds = new Set([...relevantNotes.map(n => n.id), currentNote.id]);
-        for (const result of relatedResults) {
-          if (relevantNotes.length >= maxContextNotes) break;
-          if (existingIds.has(result.id)) continue;
+        for (const result of searchResults.slice(0, maxContextNotes)) {
           const note = await getNoteById(result.id);
           if (note) {
             relevantNotes.push({
@@ -444,7 +428,25 @@ export function AiPanel({
               title: note.title,
               content: note.content,
             });
-            existingIds.add(note.id);
+          }
+        }
+
+        // Also search for notes related to the current note's title
+        if (currentNote && relevantNotes.length < maxContextNotes) {
+          const relatedResults = await searchNotes(currentNote.title);
+          const existingIds = new Set([...relevantNotes.map(n => n.id), currentNote.id]);
+          for (const result of relatedResults) {
+            if (relevantNotes.length >= maxContextNotes) break;
+            if (existingIds.has(result.id)) continue;
+            const note = await getNoteById(result.id);
+            if (note) {
+              relevantNotes.push({
+                id: note.id,
+                title: note.title,
+                content: note.content,
+              });
+              existingIds.add(note.id);
+            }
           }
         }
       }
