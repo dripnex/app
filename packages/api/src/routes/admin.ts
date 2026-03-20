@@ -26,20 +26,40 @@ import {
 
 const admin = new Hono<{ Bindings: Env }>();
 
-// Simple admin auth — checks ADMIN_TOKEN header
+// Admin emails that can access the dashboard
+const ADMIN_EMAILS = ['tomymaritano@gmail.com'];
+
+// Admin auth — accepts admin token OR authenticated admin user
 admin.use('*', async (c, next) => {
+  // Method 1: Admin token header
   const token = c.req.header('x-admin-token');
-  const expected = c.env.ADMIN_TOKEN;
-
-  if (!expected) {
-    return c.json({ error: 'Admin access not configured' }, 503);
+  if (token && token === c.env.ADMIN_TOKEN) {
+    await next();
+    return;
   }
 
-  if (token !== expected) {
-    return c.json({ error: 'Unauthorized' }, 401);
+  // Method 2: JWT auth — check if user email is admin
+  const authHeader = c.req.header('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const jwt = authHeader.slice(7);
+      const [, payloadB64] = jwt.split('.');
+      if (payloadB64) {
+        const payload = JSON.parse(atob(payloadB64)) as { email?: string; exp?: number };
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          return c.json({ error: 'Token expired' }, 401);
+        }
+        if (payload.email && ADMIN_EMAILS.includes(payload.email)) {
+          await next();
+          return;
+        }
+      }
+    } catch {
+      // Invalid JWT, fall through
+    }
   }
 
-  await next();
+  return c.json({ error: 'Unauthorized' }, 401);
 });
 
 // ── GET /stats — Aggregated dashboard stats ─────────────────────────────────
