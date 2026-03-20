@@ -58,8 +58,8 @@ jobs:
           path: |
             ${{ env.ELECTRON_CACHE }}
             ${{ env.ELECTRON_BUILDER_CACHE }}
-          key: electron-${{ matrix.platform }}-${{ hashFiles('apps/desktop/package.json') }}
-          restore-keys: electron-${{ matrix.platform }}-
+          key: electron-v2-${{ matrix.platform }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: electron-v2-${{ matrix.platform }}-
 
       - name: Force HTTPS for GitHub git dependencies
         shell: bash
