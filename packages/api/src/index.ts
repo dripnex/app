@@ -25,6 +25,7 @@ import { newsletterRoute } from './routes/newsletter.js';
 import { share } from './routes/share.js';
 import { plugins } from './routes/plugins.js';
 import { deviceRoutes } from './routes/devices.js';
+import { admin } from './routes/admin.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -38,6 +39,16 @@ app.use(
   cors({
     origin: '*',
     allowMethods: ['GET', 'OPTIONS'],
+    maxAge: 86400,
+  })
+);
+// Admin endpoints: allow from dashboard origins
+app.use(
+  '/admin/*',
+  cors({
+    origin: ['https://readied.app', 'http://localhost:3000', 'http://localhost:5173'],
+    allowMethods: ['GET', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'x-admin-token'],
     maxAge: 86400,
   })
 );
@@ -74,6 +85,7 @@ app.route('/newsletter', newsletterRoute);
 app.route('/share', share);
 app.route('/plugins', plugins);
 app.route('/devices', deviceRoutes);
+app.route('/admin', admin);
 
 // 404 handler
 app.notFound(c => {

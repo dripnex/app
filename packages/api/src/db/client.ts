@@ -19,6 +19,7 @@ export type Env = {
   STRIPE_PRICE_MONTHLY?: string;
   STRIPE_PRICE_ANNUAL?: string;
   SITE_URL?: string;
+  ADMIN_TOKEN?: string;
   ENVIRONMENT: string;
 };
 
