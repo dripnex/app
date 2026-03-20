@@ -768,6 +768,16 @@ export interface ReadiedAPI {
       callId: string,
       result: { ok: boolean; content: string; error?: string }
     ) => Promise<void>;
+    /** Save an API key for a provider (encrypted with OS keychain) */
+    saveKey: (provider: string, apiKey: string) => Promise<void>;
+    /** Get an API key for a provider */
+    getKey: (provider: string) => Promise<string | null>;
+    /** Remove an API key for a provider */
+    removeKey: (provider: string) => Promise<void>;
+    /** Check if a provider has a stored key */
+    hasKey: (provider: string) => Promise<boolean>;
+    /** List providers that have stored API keys */
+    listConnectedProviders: () => Promise<string[]>;
   };
   pluginConfig: {
     /** Get a single config value for a plugin */
@@ -1086,6 +1096,12 @@ const api: ReadiedAPI = {
       callId: string,
       result: { ok: boolean; content: string; error?: string }
     ) => ipcRenderer.invoke('ai:tool-renderer-result', requestId, callId, result),
+    saveKey: (provider: string, apiKey: string) =>
+      ipcRenderer.invoke('ai:saveKey', provider, apiKey),
+    getKey: (provider: string) => ipcRenderer.invoke('ai:getKey', provider),
+    removeKey: (provider: string) => ipcRenderer.invoke('ai:removeKey', provider),
+    hasKey: (provider: string) => ipcRenderer.invoke('ai:hasKey', provider),
+    listConnectedProviders: () => ipcRenderer.invoke('ai:listConnectedProviders'),
   },
   pluginConfig: {
     get: (pluginId, key) => ipcRenderer.invoke('pluginConfig:get', pluginId, key),

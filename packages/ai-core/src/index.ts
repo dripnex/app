@@ -45,6 +45,8 @@ export { withRetry, classifyError } from './retry.js';
 export type { RetryOptions } from './retry.js';
 
 export { AnthropicProvider } from './providers/anthropic.js';
+export { OpenAIProvider } from './providers/openai.js';
+export { OllamaProvider } from './providers/ollama.js';
 
 export { AIServiceImpl } from './ai-service.js';
 export type {

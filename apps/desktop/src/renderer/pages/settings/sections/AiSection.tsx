@@ -1,12 +1,21 @@
 /**
  * AI Assistant Settings Section
  *
- * API key configuration, model selection, connection testing,
- * and AI command preset import/export.
+ * Provider connection with "Connect" flow, model selection,
+ * and AI command preset management.
  */
 
-import { useState, useCallback, useSyncExternalStore } from 'react';
-import { Eye, EyeOff, Zap, Loader2, CheckCircle, XCircle, Upload, Download } from 'lucide-react';
+import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Upload,
+  Download,
+  ExternalLink,
+  Unplug,
+  Plug,
+} from 'lucide-react';
 import { useSettingsStore, selectAi } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
@@ -17,9 +26,48 @@ import { validateAiCommandPreset, serializePreset } from '@readied/ai-core';
 import type { AiCommandPreset } from '@readied/ai-core';
 import styles from './Section.module.css';
 
-type TestStatus = 'idle' | 'testing' | 'success' | 'error';
+type ConnectStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
-/** Read the aiCommandStore registrations reactively */
+const PROVIDER_INFO: Record<
+  string,
+  { name: string; keyUrl: string; placeholder: string; description: string }
+> = {
+  anthropic: {
+    name: 'Anthropic',
+    keyUrl: 'https://console.anthropic.com/settings/keys',
+    placeholder: 'sk-ant-api03-...',
+    description: 'Claude models — Sonnet, Opus, Haiku',
+  },
+  openai: {
+    name: 'OpenAI',
+    keyUrl: 'https://platform.openai.com/api-keys',
+    placeholder: 'sk-proj-...',
+    description: 'GPT-4o, o1, GPT-4 Turbo',
+  },
+  ollama: {
+    name: 'Ollama',
+    keyUrl: '',
+    placeholder: 'http://localhost:11434',
+    description: 'Local models — no API key needed',
+  },
+};
+
+const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+  anthropic: [
+    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+    { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+    { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+  ],
+  openai: [
+    { value: 'gpt-4o', label: 'GPT-4o' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'o1', label: 'o1' },
+    { value: 'o1-mini', label: 'o1 Mini' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  ],
+  ollama: [],
+};
+
 function useAiCommands(): AiCommandRegistration[] {
   return useSyncExternalStore(
     cb => aiCommandStore.subscribe(cb),
@@ -31,9 +79,10 @@ export function AiSection() {
   const ai = useSettingsStore(selectAi);
   const updateAi = useSettingsStore(s => s.updateAi);
 
-  const [showKey, setShowKey] = useState(false);
-  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
-  const [testMessage, setTestMessage] = useState('');
+  const [connectStatus, setConnectStatus] = useState<Record<string, ConnectStatus>>({});
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [connectError, setConnectError] = useState('');
+  const [ollamaModels, setOllamaModels] = useState<Array<{ value: string; label: string }>>([]);
   const [presetMessage, setPresetMessage] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -41,57 +90,147 @@ export function AiSection() {
 
   const registeredAiCommands = useAiCommands();
 
-  const providerOptions = [
-    { value: 'anthropic', label: 'Anthropic' },
-    { value: 'openai', label: 'OpenAI' },
-    { value: 'ollama', label: 'Ollama' },
-  ];
+  // Load connected providers on mount
+  useEffect(() => {
+    async function loadConnected() {
+      const providers = await window.readied.ai.listConnectedProviders();
+      const status: Record<string, ConnectStatus> = {};
+      for (const p of providers) {
+        status[p] = 'connected';
+      }
+      // Ollama is "connected" if reachable (no key needed)
+      if (!status.ollama) {
+        try {
+          const result = await window.readied.ai.validate({ provider: 'ollama', apiKey: '' });
+          if (result.ok) status.ollama = 'connected';
+        } catch {
+          // Ollama not running
+        }
+      }
+      setConnectStatus(status);
+    }
+    loadConnected();
+  }, []);
 
-  const modelOptions = [
-    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-    { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
-  ];
+  // Fetch Ollama models when it's connected
+  useEffect(() => {
+    if (ai.provider === 'ollama' && connectStatus.ollama === 'connected') {
+      window.readied.ai
+        .validate({ provider: 'ollama', apiKey: '' })
+        .then(() => {
+          // TODO: fetch models via a dedicated IPC. For now, use common defaults
+          setOllamaModels([
+            { value: 'llama3.1', label: 'Llama 3.1' },
+            { value: 'llama3.2', label: 'Llama 3.2' },
+            { value: 'mistral', label: 'Mistral' },
+            { value: 'codellama', label: 'Code Llama' },
+            { value: 'gemma2', label: 'Gemma 2' },
+          ]);
+        })
+        .catch(() => setOllamaModels([]));
+    }
+  }, [ai.provider, connectStatus.ollama]);
 
-  const handleTestConnection = useCallback(async () => {
-    if (!ai.apiKey) {
-      setTestStatus('error');
-      setTestMessage('Please enter an API key first.');
+  const currentProvider = ai.provider;
+  const providerInfo = (PROVIDER_INFO[currentProvider] ?? PROVIDER_INFO.anthropic) as {
+    name: string;
+    keyUrl: string;
+    placeholder: string;
+    description: string;
+  };
+  const isConnected = connectStatus[currentProvider] === 'connected';
+  const isConnecting = connectStatus[currentProvider] === 'connecting';
+
+  const modelOptions: Array<{ value: string; label: string }> =
+    currentProvider === 'ollama'
+      ? ollamaModels
+      : (MODEL_OPTIONS[currentProvider] ?? MODEL_OPTIONS.anthropic!);
+
+  const handleConnect = useCallback(async () => {
+    if (currentProvider === 'ollama') {
+      // Ollama doesn't need a key, just validate connection
+      setConnectStatus(prev => ({ ...prev, ollama: 'connecting' }));
+      setConnectError('');
+      try {
+        const result = await window.readied.ai.validate({
+          provider: 'ollama',
+          apiKey: '',
+        });
+        if (result.ok) {
+          setConnectStatus(prev => ({ ...prev, ollama: 'connected' }));
+        } else {
+          setConnectStatus(prev => ({ ...prev, ollama: 'error' }));
+          setConnectError(result.error || 'Cannot connect to Ollama');
+        }
+      } catch (err) {
+        setConnectStatus(prev => ({ ...prev, ollama: 'error' }));
+        setConnectError(err instanceof Error ? err.message : 'Connection failed');
+      }
       return;
     }
 
-    setTestStatus('testing');
-    setTestMessage('');
+    if (!apiKeyInput.trim()) {
+      setConnectError('Please paste your API key');
+      return;
+    }
+
+    setConnectStatus(prev => ({ ...prev, [currentProvider]: 'connecting' }));
+    setConnectError('');
 
     try {
       const result = await window.readied.ai.validate({
-        provider: ai.provider,
-        apiKey: ai.apiKey,
+        provider: currentProvider,
+        apiKey: apiKeyInput.trim(),
       });
 
       if (result.ok) {
-        setTestStatus('success');
-        setTestMessage('Connection successful. Your API key is valid.');
+        // Save key securely
+        await window.readied.ai.saveKey(currentProvider, apiKeyInput.trim());
+        // Also update the settings store so existing chat flow works
+        updateAi({ apiKey: apiKeyInput.trim() });
+        setConnectStatus(prev => ({ ...prev, [currentProvider]: 'connected' }));
+        setApiKeyInput('');
       } else {
-        setTestStatus('error');
-        setTestMessage(result.error || 'Unknown error occurred.');
+        setConnectStatus(prev => ({ ...prev, [currentProvider]: 'error' }));
+        setConnectError(result.error || 'Invalid API key');
       }
     } catch (err) {
-      setTestStatus('error');
-      setTestMessage(err instanceof Error ? err.message : String(err));
+      setConnectStatus(prev => ({ ...prev, [currentProvider]: 'error' }));
+      setConnectError(err instanceof Error ? err.message : 'Connection failed');
     }
-  }, [ai.apiKey, ai.provider]);
+  }, [currentProvider, apiKeyInput, updateAi]);
+
+  const handleDisconnect = useCallback(async () => {
+    await window.readied.ai.removeKey(currentProvider);
+    updateAi({ apiKey: '' });
+    setConnectStatus(prev => ({ ...prev, [currentProvider]: 'idle' }));
+    setConnectError('');
+  }, [currentProvider, updateAi]);
+
+  const handleOpenKeyPage = useCallback(() => {
+    if (providerInfo.keyUrl) {
+      window.open(providerInfo.keyUrl, '_blank');
+    }
+  }, [providerInfo.keyUrl]);
+
+  // Load key into settings when switching providers
+  useEffect(() => {
+    async function loadKeyForProvider() {
+      if (currentProvider === 'ollama') return;
+      const key = await window.readied.ai.getKey(currentProvider);
+      if (key) {
+        updateAi({ apiKey: key });
+      }
+    }
+    loadKeyForProvider();
+  }, [currentProvider, updateAi]);
 
   const handleExportPreset = useCallback(async () => {
     setPresetMessage(null);
-
     if (registeredAiCommands.length === 0) {
-      setPresetMessage({
-        type: 'error',
-        text: 'No custom AI commands to export. Plugins must register commands first.',
-      });
+      setPresetMessage({ type: 'error', text: 'No custom AI commands to export.' });
       return;
     }
-
     const preset: AiCommandPreset = {
       name: 'My AI Commands',
       version: '1.0.0',
@@ -107,7 +246,6 @@ export function AiSection() {
         category: cmd.category,
       })),
     };
-
     try {
       const result = await window.readied.ai.exportPreset(serializePreset(preset));
       if (result.ok) {
@@ -115,10 +253,8 @@ export function AiSection() {
           type: 'success',
           text: `Exported ${preset.commands.length} command(s).`,
         });
-      } else {
-        if (result.error !== 'Export cancelled') {
-          setPresetMessage({ type: 'error', text: result.error });
-        }
+      } else if (result.error !== 'Export cancelled') {
+        setPresetMessage({ type: 'error', text: result.error });
       }
     } catch (err) {
       setPresetMessage({ type: 'error', text: err instanceof Error ? err.message : String(err) });
@@ -127,7 +263,6 @@ export function AiSection() {
 
   const handleImportPreset = useCallback(async () => {
     setPresetMessage(null);
-
     try {
       const result = await window.readied.ai.importPreset();
       if (!result.ok) {
@@ -136,7 +271,6 @@ export function AiSection() {
         }
         return;
       }
-
       let parsed: unknown;
       try {
         parsed = JSON.parse(result.content);
@@ -144,16 +278,13 @@ export function AiSection() {
         setPresetMessage({ type: 'error', text: 'Invalid JSON file.' });
         return;
       }
-
       const errors = validateAiCommandPreset(parsed);
       if (errors.length > 0) {
         setPresetMessage({ type: 'error', text: `Invalid preset: ${errors[0]!.message}` });
         return;
       }
-
       const preset = parsed as AiCommandPreset;
       let imported = 0;
-
       for (const cmd of preset.commands) {
         aiCommandStore.getState().register({
           id: `preset:${cmd.id}`,
@@ -168,7 +299,6 @@ export function AiSection() {
         });
         imported++;
       }
-
       setPresetMessage({
         type: 'success',
         text: `Imported ${imported} command(s) from "${preset.name}".`,
@@ -178,166 +308,258 @@ export function AiSection() {
     }
   }, []);
 
+  const providerOptions = [
+    { value: 'anthropic', label: 'Anthropic' },
+    { value: 'openai', label: 'OpenAI' },
+    { value: 'ollama', label: 'Ollama (Local)' },
+  ];
+
   return (
     <div className={styles.section}>
       <h2 className={styles.title}>AI Assistant</h2>
 
-      <SettingGroup title="API Configuration">
+      {/* ── Provider Selection ── */}
+      <SettingGroup title="Provider">
         <SettingRow
-          label="Provider"
-          description="LLM provider to use for AI queries"
+          label="LLM Provider"
+          description={providerInfo.description}
           htmlFor="aiProvider"
         >
           <Select
             id="aiProvider"
             value={ai.provider}
-            onChange={value =>
-              updateAi({
-                provider: value as 'anthropic' | 'openai' | 'ollama',
-              })
-            }
+            onChange={value => {
+              updateAi({ provider: value as 'anthropic' | 'openai' | 'ollama' });
+              setConnectError('');
+              setApiKeyInput('');
+            }}
             options={providerOptions}
           />
         </SettingRow>
+      </SettingGroup>
 
-        <SettingRow
-          label="API Key"
-          description="Your API key for the selected provider"
-          htmlFor="aiApiKey"
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <input
-              type={showKey ? 'text' : 'password'}
-              id="aiApiKey"
-              value={ai.apiKey}
-              onChange={e => updateAi({ apiKey: e.target.value })}
-              placeholder="sk-ant-..."
-              autoComplete="off"
-              spellCheck={false}
-              style={{
-                width: '100%',
-                maxWidth: 320,
-                padding: '0.5rem 0.875rem',
-                background: 'var(--bg-hover)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: '0.5rem',
-                color: 'var(--text-primary)',
-                fontSize: '0.875rem',
-                fontFamily: 'inherit',
-                transition: 'all 0.2s ease',
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey(prev => !prev)}
-              title={showKey ? 'Hide API key' : 'Show API key'}
+      {/* ── Connection ── */}
+      <SettingGroup title="Connection">
+        {isConnected ? (
+          /* Connected state */
+          <div style={{ padding: '1rem 1.25rem' }}>
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: '2rem',
-                height: '2rem',
-                padding: 0,
-                background: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-strong)',
-                borderRadius: '0.375rem',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                flexShrink: 0,
+                justifyContent: 'space-between',
+                padding: '1rem 1.25rem',
+                background: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: '0.75rem',
               }}
             >
-              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <CheckCircle size={20} style={{ color: '#10b981' }} />
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    Connected to {providerInfo.name}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    API key stored securely in your system keychain
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={handleDisconnect}
+                style={{ gap: '0.375rem', fontSize: '0.8125rem' }}
+              >
+                <Unplug size={14} />
+                Disconnect
+              </button>
+            </div>
           </div>
-        </SettingRow>
+        ) : (
+          /* Not connected — show connect flow */
+          <div style={{ padding: '1rem 1.25rem' }}>
+            <div
+              style={{
+                padding: '1.25rem',
+                background: 'var(--bg-hover)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '0.75rem',
+              }}
+            >
+              {currentProvider !== 'ollama' && (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '0.75rem',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        color: 'var(--text-primary)',
+                      }}
+                    >
+                      Connect your {providerInfo.name} account
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleOpenKeyPage}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                        padding: '0.375rem 0.75rem',
+                        background: 'transparent',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.375rem',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ExternalLink size={12} />
+                      Get API Key
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={e => {
+                        setApiKeyInput(e.target.value);
+                        setConnectError('');
+                      }}
+                      placeholder={providerInfo.placeholder}
+                      autoComplete="off"
+                      spellCheck={false}
+                      style={{
+                        flex: 1,
+                        padding: '0.625rem 0.875rem',
+                        background: 'var(--bg-base)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '0.5rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.875rem',
+                        fontFamily: 'monospace',
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleConnect();
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={handleConnect}
+                      disabled={isConnecting || !apiKeyInput.trim()}
+                      style={{ gap: '0.375rem', whiteSpace: 'nowrap' }}
+                    >
+                      {isConnecting ? (
+                        <Loader2 size={14} className={styles.spinning} />
+                      ) : (
+                        <Plug size={14} />
+                      )}
+                      {isConnecting ? 'Connecting...' : 'Connect'}
+                    </button>
+                  </div>
+                </>
+              )}
 
-        <SettingRow
-          label="Model"
-          description="Claude model to use for AI queries"
-          htmlFor="aiModel"
-        >
-          <Select
-            id="aiModel"
-            value={ai.model}
-            onChange={value =>
-              updateAi({
-                model: value,
-              })
-            }
-            options={modelOptions}
-          />
-        </SettingRow>
+              {currentProvider === 'ollama' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    Ollama runs locally — no API key needed. Make sure Ollama is running on your
+                    machine.
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={handleConnect}
+                    disabled={isConnecting}
+                    style={{ alignSelf: 'flex-start', gap: '0.375rem' }}
+                  >
+                    {isConnecting ? (
+                      <Loader2 size={14} className={styles.spinning} />
+                    ) : (
+                      <Plug size={14} />
+                    )}
+                    {isConnecting ? 'Connecting...' : 'Connect to Ollama'}
+                  </button>
+                </div>
+              )}
 
-        <SettingRow
-          label="Max Context Notes"
-          description="Maximum number of notes to include as context in AI queries"
-          htmlFor="aiMaxContextNotes"
-        >
-          <NumberInput
-            id="aiMaxContextNotes"
-            value={ai.maxContextNotes}
-            onChange={value => updateAi({ maxContextNotes: value })}
-            min={1}
-            max={20}
-            step={1}
-          />
-        </SettingRow>
+              {connectError && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8125rem',
+                    color: '#ef4444',
+                  }}
+                >
+                  <XCircle size={14} />
+                  {connectError}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </SettingGroup>
 
-      <SettingGroup title="Connection">
-        <SettingRow
-          label="Test Connection"
-          description="Send a test query to verify your API key and model work correctly"
-        >
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleTestConnection}
-            disabled={testStatus === 'testing' || !ai.apiKey}
+      {/* ── Model & Context ── */}
+      {isConnected && (
+        <SettingGroup title="Model">
+          <SettingRow label="Model" description="AI model to use for queries" htmlFor="aiModel">
+            <Select
+              id="aiModel"
+              value={ai.model}
+              onChange={value => updateAi({ model: value })}
+              options={modelOptions}
+            />
+          </SettingRow>
+
+          <SettingRow
+            label="Max Context Notes"
+            description="Maximum notes to include as context in Ask Notes mode"
+            htmlFor="aiMaxContextNotes"
           >
-            {testStatus === 'testing' ? (
-              <Loader2 size={14} className={styles.spinning} />
-            ) : (
-              <Zap size={14} />
-            )}
-            <span>{testStatus === 'testing' ? 'Testing...' : 'Test Connection'}</span>
-          </button>
-        </SettingRow>
+            <NumberInput
+              id="aiMaxContextNotes"
+              value={ai.maxContextNotes}
+              onChange={value => updateAi({ maxContextNotes: value })}
+              min={1}
+              max={20}
+              step={1}
+            />
+          </SettingRow>
+        </SettingGroup>
+      )}
 
-        {testStatus === 'success' && (
-          <div className={styles.successMessage}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <CheckCircle size={14} />
-              {testMessage}
-            </span>
-          </div>
-        )}
-
-        {testStatus === 'error' && (
-          <div className={styles.errorMessage}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <XCircle size={14} />
-              {testMessage}
-            </span>
-          </div>
-        )}
-      </SettingGroup>
-
+      {/* ── Presets ── */}
       <SettingGroup title="AI Command Presets">
-        <SettingRow
-          label="Import Preset"
-          description="Load AI command definitions from a JSON file"
-        >
+        <SettingRow label="Import Preset" description="Load AI commands from a JSON file">
           <button type="button" className={styles.actionButton} onClick={handleImportPreset}>
             <Upload size={14} />
             <span>Import</span>
           </button>
         </SettingRow>
 
-        <SettingRow
-          label="Export Preset"
-          description="Save all registered AI commands to a shareable JSON file"
-        >
+        <SettingRow label="Export Preset" description="Save AI commands to a shareable file">
           <button
             type="button"
             className={styles.actionButton}
@@ -386,9 +608,9 @@ export function AiSection() {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '0.375rem 0.75rem',
+                    padding: '0.5rem 0.75rem',
                     background: 'var(--bg-hover)',
-                    borderRadius: '0.375rem',
+                    borderRadius: '0.5rem',
                     fontSize: '0.8125rem',
                   }}
                 >
