@@ -2,17 +2,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.125rem 1.25rem;
-  background: var(--bg-hover);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.625rem;
+  padding: 0.875rem 1rem;
   gap: 1.5rem;
-  transition: all 0.2s ease;
+  transition: background 0.1s ease;
 }
 
 .row:hover {
-  background: var(--bg-active);
-  border-color: var(--border-hover);
+  background: var(--bg-active, rgba(255, 255, 255, 0.02));
 }
 
 .info {
@@ -21,18 +17,17 @@
 }
 
 .label {
-  font-size: var(--text-lg);
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
   cursor: default;
 }
 
 .description {
-  font-size: var(--text-base);
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 .control {

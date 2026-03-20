@@ -8,13 +8,14 @@
 
 .content {
   flex: 1;
-  padding: 2.5rem 3rem;
+  padding: 2rem 2.5rem 3rem;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
+/* Thin scrollbar */
 .content::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
 }
 
 .content::-webkit-scrollbar-track {
@@ -22,10 +23,10 @@
 }
 
 .content::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 5px;
+  background: var(--border-subtle);
+  border-radius: 3px;
 }
 
 .content::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
+  background: var(--border);
 }

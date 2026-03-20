@@ -10,6 +10,7 @@ import {
   History,
   Share2,
   ExternalLink,
+  Globe,
   // Formatting icons for overflow
   List,
   ListOrdered,
@@ -21,6 +22,7 @@ import {
   Redo2,
 } from 'lucide-react';
 import type { ToolbarVisibility } from '../FormattingToolbar';
+import type { ShareInfo } from '../../../stores/shareStore';
 import { dispatchCommand } from '../../../hooks/useCommandRegistry';
 import styles from './ActionsPanel.module.css';
 
@@ -35,6 +37,9 @@ interface ActionsPanelProps {
   readonly onDelete?: () => void;
   readonly onRevisionHistory?: () => void;
   readonly onShareOnWeb?: () => void;
+  readonly shareInfo?: ShareInfo | null;
+  readonly onUnshare?: () => void;
+  readonly onCopyShareLink?: () => void;
   /** Hidden formatting groups from toolbar overflow */
   readonly hiddenFormatting?: ToolbarVisibility;
 }
@@ -63,6 +68,9 @@ export const ActionsPanel = memo(function ActionsPanel({
   onDelete,
   onRevisionHistory,
   onShareOnWeb,
+  shareInfo,
+  onUnshare,
+  onCopyShareLink,
   hiddenFormatting,
 }: ActionsPanelProps) {
   // Handle ESC key to close
@@ -128,6 +136,18 @@ export const ActionsPanel = memo(function ActionsPanel({
     onShareOnWeb?.();
     onClose();
   }, [onShareOnWeb, onClose]);
+
+  // Handle unshare
+  const handleUnshare = useCallback(() => {
+    onUnshare?.();
+    onClose();
+  }, [onUnshare, onClose]);
+
+  // Handle copy share link
+  const handleCopyShareLink = useCallback(() => {
+    onCopyShareLink?.();
+    onClose();
+  }, [onCopyShareLink, onClose]);
 
   // Open note in new window
   const handleOpenInNewWindow = useCallback(async () => {
@@ -371,17 +391,45 @@ export const ActionsPanel = memo(function ActionsPanel({
               Revision History
             </button>
 
-            <button
-              type="button"
-              className={styles.item}
-              onClick={handleShareOnWeb}
-              disabled={!onShareOnWeb}
-            >
-              <span className={styles.icon}>
-                <Share2 size={16} />
-              </span>
-              Share on Web
-            </button>
+            {shareInfo ? (
+              <>
+                <button type="button" className={styles.item} onClick={handleCopyShareLink}>
+                  <span className={styles.icon}>
+                    <Link2 size={16} />
+                  </span>
+                  Copy Share Link
+                </button>
+                <button
+                  type="button"
+                  className={styles.item}
+                  onClick={handleShareOnWeb}
+                  disabled={!onShareOnWeb}
+                >
+                  <span className={styles.icon}>
+                    <Share2 size={16} />
+                  </span>
+                  Update Shared Note
+                </button>
+                <button type="button" className={styles.itemDanger} onClick={handleUnshare}>
+                  <span className={styles.icon}>
+                    <Globe size={16} />
+                  </span>
+                  Unshare
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={styles.item}
+                onClick={handleShareOnWeb}
+                disabled={!onShareOnWeb}
+              >
+                <span className={styles.icon}>
+                  <Share2 size={16} />
+                </span>
+                Share on Web
+              </button>
+            )}
           </div>
         </div>
       </aside>

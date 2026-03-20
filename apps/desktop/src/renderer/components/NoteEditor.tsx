@@ -4,6 +4,7 @@ import { LayoutZone } from '@readied/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
+import { useShareStore, selectShareInfo } from '../stores/shareStore';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
@@ -110,6 +111,11 @@ export function NoteEditor({
   const backlinksCount = backlinks?.length ?? 0;
   const { data: notebook } = useNotebook(note?.notebookId ?? null);
 
+  // Share store
+  const shareInfo = useShareStore(selectShareInfo(note?.id ?? ''));
+  const setShared = useShareStore(s => s.setShared);
+  const removeShared = useShareStore(s => s.removeShared);
+
   // Lightbox state for embedded images
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
@@ -175,12 +181,36 @@ export function NoteEditor({
       notebookName: notebook?.name ?? '',
       backlinks: (backlinks ?? []).map(bl => ({ noteId: bl.noteId, title: bl.noteTitle })),
     });
-    if (result.success) {
+    if (result.success && result.slug && result.url) {
+      setShared(note.id, { slug: result.slug, url: result.url, noteId: note.id });
       showToast('Link copied to clipboard');
     } else {
       showToast(result.error || 'Failed to share note', 'error');
     }
-  }, [note, notebook, backlinks, showToast]);
+  }, [note, notebook, backlinks, showToast, setShared]);
+
+  // Handle unshare
+  const handleUnshare = useCallback(async () => {
+    if (!note || !shareInfo) return;
+    const result = await window.readied.share.delete(shareInfo.slug);
+    if (result.success) {
+      removeShared(note.id);
+      showToast('Note unshared');
+    } else {
+      showToast(result.error || 'Failed to unshare note', 'error');
+    }
+  }, [note, shareInfo, removeShared, showToast]);
+
+  // Handle copy share link
+  const handleCopyShareLink = useCallback(async () => {
+    if (!shareInfo) return;
+    try {
+      await navigator.clipboard.writeText(shareInfo.url);
+      showToast('Share link copied to clipboard');
+    } catch {
+      showToast('Failed to copy link', 'error');
+    }
+  }, [shareInfo, showToast]);
 
   // Handle title change
   const handleTitleChange = useCallback(
@@ -319,6 +349,9 @@ export function NoteEditor({
         onDelete={onDelete}
         onRevisionHistory={note.notebookId ? () => setRevisionHistoryOpen(true) : undefined}
         onShareOnWeb={handleShareOnWeb}
+        shareInfo={shareInfo}
+        onUnshare={handleUnshare}
+        onCopyShareLink={handleCopyShareLink}
         hiddenFormatting={toolbarVisibility}
       />
 

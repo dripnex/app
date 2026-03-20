@@ -67,6 +67,7 @@ import {
 } from '@readied/licensing';
 import { initLogger, createChildLogger, loggers, getLogger, type LogLevel } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
+import { AiKeyStorage } from './services/aiKeyStorage.js';
 import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js';
 import { ApiClient } from './services/apiClient.js';
 import { EncryptionService } from './services/encryptionService.js';
@@ -93,6 +94,7 @@ let deviceInfo: DeviceInfo | null = null;
 let apiClient: ApiClient | null = null;
 let encryptionService: EncryptionService | null = null;
 let syncService: SyncService | null = null;
+let aiKeyStorage: AiKeyStorage | null = null;
 
 // Pending deep link token — stored if the deep link arrives before the window is ready
 let pendingAuthToken: string | null = null;
@@ -1830,6 +1832,33 @@ function registerAuthSyncHandlers(): void {
   });
 }
 
+// ── AI Key Storage IPC Handlers ────────────────────────────────────────────
+
+ipcMain.handle('ai:saveKey', async (_event, provider: string, apiKey: string) => {
+  if (!aiKeyStorage) throw new Error('AI key storage not initialized');
+  await aiKeyStorage.saveKey(provider, apiKey);
+});
+
+ipcMain.handle('ai:getKey', async (_event, provider: string) => {
+  if (!aiKeyStorage) return null;
+  return aiKeyStorage.getKey(provider);
+});
+
+ipcMain.handle('ai:removeKey', async (_event, provider: string) => {
+  if (!aiKeyStorage) throw new Error('AI key storage not initialized');
+  await aiKeyStorage.removeKey(provider);
+});
+
+ipcMain.handle('ai:hasKey', async (_event, provider: string) => {
+  if (!aiKeyStorage) return false;
+  return aiKeyStorage.hasKey(provider);
+});
+
+ipcMain.handle('ai:listConnectedProviders', async () => {
+  if (!aiKeyStorage) return [];
+  return aiKeyStorage.listProviders();
+});
+
 /** Register IPC handlers for git operations */
 function registerGitHandlers(): void {
   if (!gitService) {
@@ -2423,6 +2452,7 @@ app
 
       try {
         tokenStorage = new TokenStorage(dataPaths.root);
+        aiKeyStorage = new AiKeyStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
         const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
