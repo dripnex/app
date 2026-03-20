@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "readied": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "/Users/tomasmaritano/Documents/Github/readied/readide/packages/mcp-server/src/index.ts"
+      ]
+    }
+  }
+}
