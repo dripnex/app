@@ -94,6 +94,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: pnpm dist:win --publish always
 
+      - name: Clean electron-builder cache (Linux)
+        if: matrix.platform == 'linux'
+        run: rm -rf ~/.cache/electron-builder/fpm
+
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
         working-directory: apps/desktop
