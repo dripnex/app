@@ -86,7 +86,7 @@
     "rehype-raw": "^7.0.0",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.0"
   },
   "build": {
     "appId": "app.readied.desktop",
