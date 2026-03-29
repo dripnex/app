@@ -1426,6 +1426,7 @@ function registerAuthSyncHandlers(): void {
   const client = apiClient;
   const storage = tokenStorage;
   const sync = syncService;
+  const encryption = encryptionService;
 
   // Broadcast sync status events to all renderer windows
   sync.onStatusChange(event => {
@@ -1681,6 +1682,168 @@ function registerAuthSyncHandlers(): void {
         success: false,
         history: [],
         error: error instanceof Error ? error.message : 'Failed to get sync history',
+      };
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // E2EE Key Management
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Check if encryption is ready (CEK cached locally)
+  ipcMain.handle('encryption:isReady', async () => {
+    return { ready: encryption?.isReady() ?? false };
+  });
+
+  // Check if this is a first-time setup or existing user
+  ipcMain.handle('encryption:getKeyStatus', async () => {
+    try {
+      const serverKeys = await client.getEncryptionKeys();
+      const hasLocalKey = encryption?.isReady() ?? false;
+      const hasLegacyKey = encryption?.hasLegacyKey() ?? false;
+
+      return {
+        success: true,
+        hasServerKeys: serverKeys.exists,
+        hasLocalKey,
+        hasLegacyKey,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get key status',
+      };
+    }
+  });
+
+  // First device: set up encryption keys with passphrase
+  ipcMain.handle('encryption:setupKeys', async (_event, passphrase: string) => {
+    try {
+      if (!encryption) throw new Error('Encryption service not available');
+
+      const result = await encryption.setupKeys(passphrase);
+
+      // Upload to server
+      await client.setEncryptionKeys({
+        salt: result.salt,
+        wrappedCek: result.wrappedCek,
+        wrappedCekRecovery: result.wrappedCekRecovery,
+        kdfParams: result.kdfParams,
+      });
+
+      return {
+        success: true,
+        recoveryKey: result.recoveryKey, // Show once to user!
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to setup encryption keys',
+      };
+    }
+  });
+
+  // New device: unlock with passphrase
+  ipcMain.handle('encryption:unlockWithPassphrase', async (_event, passphrase: string) => {
+    try {
+      if (!encryption) throw new Error('Encryption service not available');
+
+      const serverKeys = await client.getEncryptionKeys();
+      if (
+        !serverKeys.exists ||
+        !serverKeys.salt ||
+        !serverKeys.wrappedCek ||
+        !serverKeys.kdfParams
+      ) {
+        return { success: false, error: 'No encryption keys found on server' };
+      }
+
+      await encryption.unlockWithPassphrase(
+        passphrase,
+        serverKeys.salt,
+        serverKeys.wrappedCek,
+        serverKeys.kdfParams
+      );
+
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to unlock';
+      const isWrongPassphrase = msg.includes('incorrect passphrase') || msg.includes('unwrap');
+      return {
+        success: false,
+        wrongPassphrase: isWrongPassphrase,
+        error: isWrongPassphrase ? 'Incorrect passphrase' : msg,
+      };
+    }
+  });
+
+  // Unlock with recovery key
+  ipcMain.handle('encryption:unlockWithRecoveryKey', async (_event, recoveryKey: string) => {
+    try {
+      if (!encryption) throw new Error('Encryption service not available');
+
+      const serverKeys = await client.getEncryptionKeys();
+      if (!serverKeys.exists || !serverKeys.wrappedCekRecovery) {
+        return { success: false, error: 'No recovery key found on server' };
+      }
+
+      await encryption.unlockWithRecoveryKey(recoveryKey, serverKeys.wrappedCekRecovery);
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to unlock with recovery key',
+      };
+    }
+  });
+
+  // Migrate legacy per-device key to key hierarchy
+  ipcMain.handle('encryption:migrateLegacyKey', async (_event, passphrase: string) => {
+    try {
+      if (!encryption) throw new Error('Encryption service not available');
+
+      const result = await encryption.migrateLegacyKey(passphrase);
+
+      // Upload to server
+      await client.setEncryptionKeys({
+        salt: result.salt,
+        wrappedCek: result.wrappedCek,
+        wrappedCekRecovery: result.wrappedCekRecovery,
+        kdfParams: result.kdfParams,
+      });
+
+      return {
+        success: true,
+        recoveryKey: result.recoveryKey,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to migrate legacy key',
+      };
+    }
+  });
+
+  // Change passphrase (re-wrap CEK)
+  ipcMain.handle('encryption:changePassphrase', async (_event, newPassphrase: string) => {
+    try {
+      if (!encryption) throw new Error('Encryption service not available');
+
+      const result = await encryption.changePassphrase(newPassphrase);
+
+      // Upload new wrapped key to server
+      await client.setEncryptionKeys({
+        salt: result.salt,
+        wrappedCek: result.wrappedCek,
+        kdfParams: result.kdfParams,
+      });
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to change passphrase',
       };
     }
   });
@@ -2588,4 +2751,77 @@ if (process.defaultApp) {
   }
 } else {
   app.setAsDefaultProtocolClient('readied');
+}
+
+// Single instance lock + deep link handler for Windows/Linux
+// On Windows/Linux, the OS launches a new process with the deep link URL as an argument.
+// We use requestSingleInstanceLock to prevent multiple instances and forward the URL.
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Another instance already has the lock — quit this one.
+  // The deep link URL was forwarded to the primary instance via second-instance event.
+  app.quit();
+} else {
+  // Primary instance: check startup args for deep link URL (cold start on Windows/Linux).
+  // When the app is not running and the user clicks a readied:// link,
+  // the OS launches the app with the URL as a CLI argument.
+  const startupDeepLink = process.argv.find(arg => arg.startsWith('readied://'));
+  if (startupDeepLink) {
+    try {
+      const urlObj = new URL(startupDeepLink);
+      if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
+        const token = urlObj.searchParams.get('token');
+        if (token) {
+          pendingAuthToken = token;
+        }
+      }
+    } catch {
+      // Invalid URL in argv — ignore
+    }
+  }
+
+  // Handle deep links forwarded from secondary instances (app already running).
+  app.on('second-instance', (_event, commandLine) => {
+    const log = getLogger();
+    const deepLinkUrl = commandLine.find(arg => arg.startsWith('readied://'));
+
+    if (deepLinkUrl) {
+      log.info({ url: deepLinkUrl }, 'Deep link received via second-instance (Windows/Linux)');
+
+      try {
+        const urlObj = new URL(deepLinkUrl);
+
+        if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
+          const token = urlObj.searchParams.get('token');
+          if (token) {
+            log.info('Auth verification token received via second-instance');
+
+            const mainWin = BrowserWindow.getAllWindows().find(
+              win => !win.isDestroyed() && win.webContents.isLoading() === false
+            );
+            if (mainWin) {
+              mainWin.webContents.send('auth:verify-token', token);
+              mainWin.show();
+              mainWin.focus();
+            } else {
+              pendingAuthToken = token;
+            }
+          }
+        }
+      } catch (error) {
+        log.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Failed to parse deep link from second-instance'
+        );
+      }
+    }
+
+    // Focus the existing window
+    const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+    if (mainWin) {
+      if (mainWin.isMinimized()) mainWin.restore();
+      mainWin.focus();
+    }
+  });
 }

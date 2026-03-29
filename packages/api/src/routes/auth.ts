@@ -12,7 +12,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, isNull } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
-import { users, magicLinks, devices } from '../db/schema.js';
+import { users, magicLinks, devices, subscriptions } from '../db/schema.js';
 import { createTokens, verifyRefreshToken, authMiddleware } from '../middleware/auth.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
 import { createEmailService } from '../services/email.js';
@@ -25,10 +25,11 @@ auth.use('*', authRateLimit);
 // Request magic link
 const magicLinkSchema = z.object({
   email: z.string().email(),
+  client: z.enum(['web', 'desktop']).optional().default('web'),
 });
 
 auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
-  const { email } = c.req.valid('json');
+  const { email, client } = c.req.valid('json');
   const db = createDb(c.env);
 
   // Find or create user
@@ -48,9 +49,12 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
     expiresAt,
   });
 
-  // Send email
+  // Send email — desktop clients get a readied:// deep link URL
   const emailService = createEmailService(c.env.RESEND_API_KEY);
-  const magicLinkUrl = `https://readied.app/auth/verify?token=${token}`;
+  const magicLinkUrl =
+    client === 'desktop'
+      ? `readied://auth/verify?token=${token}`
+      : `https://readied.app/auth/verify?token=${token}`;
   const emailSent = await emailService.sendMagicLink(email, magicLinkUrl);
 
   if (!emailSent) {
@@ -121,6 +125,24 @@ auth.post('/verify', zValidator('json', verifySchema), async c => {
           lastSeenAt: new Date().toISOString(),
         },
       });
+  }
+
+  // Auto-create trial subscription for new users
+  const [existingSub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, user.id))
+    .limit(1);
+
+  if (!existingSub) {
+    const trialDays = 14;
+    const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+    await db.insert(subscriptions).values({
+      userId: user.id,
+      status: 'trialing',
+      plan: 'pro',
+      trialEndsAt,
+    });
   }
 
   // Generate tokens
