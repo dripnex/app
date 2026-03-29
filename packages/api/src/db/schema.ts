@@ -300,6 +300,31 @@ export const pluginCatalog = sqliteTable(
   ]
 );
 
+/**
+ * User encryption keys — E2EE key hierarchy
+ * Stores wrapped Content Encryption Key (CEK) and KDF parameters.
+ * Server never sees the Master Key or plaintext CEK.
+ */
+export const userKeys = sqliteTable('user_keys', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id')
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  salt: text('salt').notNull(), // Base64-encoded PBKDF2 salt
+  wrappedCek: text('wrapped_cek').notNull(), // CEK wrapped with Master Key (base64)
+  wrappedCekRecovery: text('wrapped_cek_recovery'), // CEK wrapped with recovery key (base64, optional)
+  kdfParams: text('kdf_params').notNull(), // JSON: { algorithm, iterations, hash }
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // Type exports for use in routes
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -312,3 +337,4 @@ export type SharedNote = typeof sharedNotes.$inferSelect;
 export type PluginCatalogEntry = typeof pluginCatalog.$inferSelect;
 export type NewPluginCatalogEntry = typeof pluginCatalog.$inferInsert;
 export type NotebookSyncLogEntry = typeof notebookSyncLog.$inferSelect;
+export type UserKeys = typeof userKeys.$inferSelect;

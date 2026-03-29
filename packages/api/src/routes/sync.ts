@@ -14,7 +14,14 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
-import { syncLog, syncCursors, subscriptions, tagSyncLog, notebookSyncLog } from '../db/schema.js';
+import {
+  syncLog,
+  syncCursors,
+  subscriptions,
+  tagSyncLog,
+  notebookSyncLog,
+  userKeys,
+} from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
 import { syncRateLimit } from '../middleware/rateLimit.js';
 
@@ -614,6 +621,70 @@ sync.post('/tags', zValidator('json', tagPushSchema), async c => {
   });
 
   return c.json({ results, cursor: finalCursor });
+});
+
+// ============================================================================
+// E2EE Key Management
+// ============================================================================
+
+const postKeysSchema = z.object({
+  salt: z.string().min(1), // Base64-encoded salt
+  wrappedCek: z.string().min(1), // Base64-encoded wrapped CEK
+  wrappedCekRecovery: z.string().nullable().optional(), // Base64-encoded wrapped CEK (recovery)
+  kdfParams: z.object({
+    algorithm: z.string(),
+    iterations: z.number().int().min(1),
+    hash: z.string(),
+  }),
+});
+
+// Get encryption keys for the current user
+sync.get('/keys', async c => {
+  const { userId } = c.get('user');
+  const db = createDb(c.env);
+
+  const [keys] = await db.select().from(userKeys).where(eq(userKeys.userId, userId)).limit(1);
+
+  if (!keys) {
+    return c.json({ exists: false }, 200);
+  }
+
+  return c.json({
+    exists: true,
+    salt: keys.salt,
+    wrappedCek: keys.wrappedCek,
+    wrappedCekRecovery: keys.wrappedCekRecovery,
+    kdfParams: JSON.parse(keys.kdfParams),
+  });
+});
+
+// Store encryption keys (first device setup or passphrase change)
+sync.post('/keys', zValidator('json', postKeysSchema), async c => {
+  const { salt, wrappedCek, wrappedCekRecovery, kdfParams } = c.req.valid('json');
+  const { userId } = c.get('user');
+  const db = createDb(c.env);
+
+  await db
+    .insert(userKeys)
+    .values({
+      userId,
+      salt,
+      wrappedCek,
+      wrappedCekRecovery: wrappedCekRecovery ?? null,
+      kdfParams: JSON.stringify(kdfParams),
+    })
+    .onConflictDoUpdate({
+      target: [userKeys.userId],
+      set: {
+        salt,
+        wrappedCek,
+        wrappedCekRecovery: wrappedCekRecovery ?? null,
+        kdfParams: JSON.stringify(kdfParams),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+  return c.json({ success: true });
 });
 
 export { sync };
