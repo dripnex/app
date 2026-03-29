@@ -1,3 +1,16 @@
+## [0.10.0](https://github.com/tomymaritano/readide/compare/v0.9.1...v0.10.0) (2026-03-20)
+
+### Features
+
+- AI providers, dashboard, settings refresh, production fixes ([#172](https://github.com/tomymaritano/readide/issues/172)) ([36707e7](https://github.com/tomymaritano/readide/commit/36707e73e2f9c17a8972ee5896355823090edfbd))
+
+### Bug Fixes
+
+- regenerate lockfile with marked dependency ([11b4167](https://github.com/tomymaritano/readide/commit/11b4167d5a385ef97bb404f77dbf227cceba45bf))
+- **web:** add marked dependency for shared note markdown rendering ([f35e055](https://github.com/tomymaritano/readide/commit/f35e055e52c87c6a4271baf2b80bbba1046b7dc8))
+- **web:** release develop to main — cleanUrls auth/verify 404 fix ([#167](https://github.com/tomymaritano/readide/issues/167)) ([bbb12e1](https://github.com/tomymaritano/readide/commit/bbb12e19f6287815270af8e7af2ceee525496f6f))
+- **web:** render shared notes as markdown + webhook fixes ([#170](https://github.com/tomymaritano/readide/issues/170)) ([f026b85](https://github.com/tomymaritano/readide/commit/f026b8544ae41e5115f21873cada588e43d7f5cf))
+
 ## [0.9.1](https://github.com/tomymaritano/readide/compare/v0.9.0...v0.9.1) (2026-03-16)
 
 ### Bug Fixes
