@@ -2762,7 +2762,24 @@ if (!gotTheLock) {
   // Another instance already has the lock — quit this one.
   // The deep link URL was passed to the existing instance via second-instance event.
   app.quit();
-} else {
+  // Check startup args for deep link URL (cold start on Windows/Linux).
+  // When the app is not running and the user clicks a readied:// link,
+  // the OS launches the app with the URL as a CLI argument.
+  const startupDeepLink = process.argv.find(arg => arg.startsWith('readied://'));
+  if (startupDeepLink) {
+    try {
+      const urlObj = new URL(startupDeepLink);
+      if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
+        const token = urlObj.searchParams.get('token');
+        if (token) {
+          pendingAuthToken = token;
+        }
+      }
+    } catch {
+      // Invalid URL in argv — ignore
+    }
+  }
+
   app.on('second-instance', (_event, commandLine) => {
     const log = getLogger();
     // On Windows, the deep link URL is the last argument

@@ -481,6 +481,19 @@ export class SyncService {
       };
     }
 
+    // Guard: encryption must be ready before sync — CEK is required to
+    // encrypt/decrypt note content. If not ready, the user needs to set up
+    // or unlock their sync passphrase first.
+    if (!this.encryptionService.isReady()) {
+      return {
+        success: false,
+        changesApplied: 0,
+        changesPushed: 0,
+        conflicts: [],
+        error: 'Encryption not ready — set up sync passphrase first',
+      };
+    }
+
     this.state.isSyncing = true;
     this.abortController = new AbortController();
     this.emitStatus({ type: 'sync-start' });
