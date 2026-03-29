@@ -1,3 +1,15 @@
+## [0.11.0](https://github.com/tomymaritano/readide/compare/v0.10.0...v0.11.0) (2026-03-29)
+
+### Features
+
+- sync E2EE, deep link auth, auto-trial, docs cleanup ([#179](https://github.com/tomymaritano/readide/issues/179)) ([77928a6](https://github.com/tomymaritano/readide/commit/77928a664fef6df9f4339881b929bccf50c2686b))
+
+### Bug Fixes
+
+- **ci:** bust corrupted electron-builder cache for Linux build ([a83ae07](https://github.com/tomymaritano/readide/commit/a83ae0734452f988cc9219ba89907a78de4d2359))
+- **ci:** clean fpm cache before Linux build to fix 7zip extraction error ([c206148](https://github.com/tomymaritano/readide/commit/c2061487f42f51cbcc745bd23c1734db21577f1c))
+- **mcp:** add sql.js type declarations for CI build ([37ef5e9](https://github.com/tomymaritano/readide/commit/37ef5e9e4f94ad384f63b17cfa707e5651017f49))
+
 ## [0.10.0](https://github.com/tomymaritano/readide/compare/v0.9.1...v0.10.0) (2026-03-20)
 
 ### Features

@@ -1,6 +1,6 @@
 {
   "name": "@readied/desktop",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "description": "Markdown-first, offline-forever note app for developers",
   "author": {
