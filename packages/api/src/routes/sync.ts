@@ -678,7 +678,9 @@ sync.post('/keys', zValidator('json', postKeysSchema), async c => {
       set: {
         salt,
         wrappedCek,
-        wrappedCekRecovery: wrappedCekRecovery ?? null,
+        // Only overwrite recovery key if explicitly provided — passphrase changes
+        // omit this field and must not erase the existing recovery-wrapped CEK
+        ...(wrappedCekRecovery !== undefined ? { wrappedCekRecovery } : {}),
         kdfParams: JSON.stringify(kdfParams),
         updatedAt: new Date().toISOString(),
       },
