@@ -373,7 +373,7 @@ export class ApiClient {
   async requestMagicLink(email: string): Promise<void> {
     await this.request<{ success: boolean; message: string }>('/auth/magic-link', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, client: 'desktop' }),
     });
   }
 
@@ -500,6 +500,39 @@ export class ApiClient {
    */
   async getSyncStatus(): Promise<SyncStatus> {
     return this.request<SyncStatus>('/sync/status');
+  }
+
+  // ==========================================================================
+  // E2EE Key Management
+  // ==========================================================================
+
+  /**
+   * Get encryption keys from server (salt, wrappedCEK, kdfParams).
+   * Returns { exists: false } if no keys have been set up yet.
+   */
+  async getEncryptionKeys(): Promise<{
+    exists: boolean;
+    salt?: string;
+    wrappedCek?: string;
+    wrappedCekRecovery?: string | null;
+    kdfParams?: { algorithm: string; iterations: number; hash: string };
+  }> {
+    return this.request('/sync/keys');
+  }
+
+  /**
+   * Store encryption keys on server (first device setup or passphrase change).
+   */
+  async setEncryptionKeys(data: {
+    salt: string;
+    wrappedCek: string;
+    wrappedCekRecovery?: string | null;
+    kdfParams: { algorithm: string; iterations: number; hash: string };
+  }): Promise<{ success: boolean }> {
+    return this.request('/sync/keys', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // ==========================================================================

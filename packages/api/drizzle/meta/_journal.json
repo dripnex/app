@@ -36,6 +36,27 @@
       "when": 1740096000000,
       "tag": "0004_plugin_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1743264000000,
+      "tag": "0005_sync_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1743264000001,
+      "tag": "0006_shared_notes_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1743264000002,
+      "tag": "0007_user_keys",
+      "breakpoints": true
     }
   ]
 }

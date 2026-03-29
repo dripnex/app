@@ -1,6 +1,8 @@
-# TODO: Monitoring & Observability
+# Monitoring & Observability
 
-## Sentry Setup (Pending)
+> **Status: Not yet implemented.** This document outlines the planned observability setup for the API.
+
+## Sentry Setup (Planned)
 
 ### Why Sentry?
 

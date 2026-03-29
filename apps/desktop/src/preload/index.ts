@@ -644,6 +644,44 @@ export interface ReadiedAPI {
     exportKey: () => Promise<{ success: boolean; key?: string; error?: string }>;
     /** Import encryption key from backup */
     importKey: (keyHex: string) => Promise<{ success: boolean; error?: string }>;
+    /** Check if encryption is ready (CEK cached locally) */
+    isReady: () => Promise<{ ready: boolean }>;
+    /** Get key status — server keys, local cache, legacy key */
+    getKeyStatus: () => Promise<{
+      success: boolean;
+      hasServerKeys?: boolean;
+      hasLocalKey?: boolean;
+      hasLegacyKey?: boolean;
+      error?: string;
+    }>;
+    /** First device: set up encryption keys with passphrase */
+    setupKeys: (passphrase: string) => Promise<{
+      success: boolean;
+      recoveryKey?: string | null;
+      error?: string;
+    }>;
+    /** New device: unlock with passphrase */
+    unlockWithPassphrase: (passphrase: string) => Promise<{
+      success: boolean;
+      wrongPassphrase?: boolean;
+      error?: string;
+    }>;
+    /** Unlock with recovery key */
+    unlockWithRecoveryKey: (recoveryKey: string) => Promise<{
+      success: boolean;
+      error?: string;
+    }>;
+    /** Migrate legacy per-device key to key hierarchy */
+    migrateLegacyKey: (passphrase: string) => Promise<{
+      success: boolean;
+      recoveryKey?: string | null;
+      error?: string;
+    }>;
+    /** Change passphrase (re-wrap CEK) */
+    changePassphrase: (newPassphrase: string) => Promise<{
+      success: boolean;
+      error?: string;
+    }>;
   };
   git: {
     /** Initialize git repository for a notebook */
@@ -992,6 +1030,17 @@ const api: ReadiedAPI = {
   encryption: {
     exportKey: () => ipcRenderer.invoke('encryption:exportKey'),
     importKey: (keyHex: string) => ipcRenderer.invoke('encryption:importKey', keyHex),
+    isReady: () => ipcRenderer.invoke('encryption:isReady'),
+    getKeyStatus: () => ipcRenderer.invoke('encryption:getKeyStatus'),
+    setupKeys: (passphrase: string) => ipcRenderer.invoke('encryption:setupKeys', passphrase),
+    unlockWithPassphrase: (passphrase: string) =>
+      ipcRenderer.invoke('encryption:unlockWithPassphrase', passphrase),
+    unlockWithRecoveryKey: (recoveryKey: string) =>
+      ipcRenderer.invoke('encryption:unlockWithRecoveryKey', recoveryKey),
+    migrateLegacyKey: (passphrase: string) =>
+      ipcRenderer.invoke('encryption:migrateLegacyKey', passphrase),
+    changePassphrase: (newPassphrase: string) =>
+      ipcRenderer.invoke('encryption:changePassphrase', newPassphrase),
   },
   git: {
     init: (notebookId: string) => ipcRenderer.invoke('git:init', notebookId),
