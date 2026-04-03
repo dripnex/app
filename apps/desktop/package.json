@@ -75,7 +75,7 @@
     "@types/react-dom": "^18.2.25",
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^4.2.1",
-    "electron": "^29.1.4",
+    "electron": "^39.8.4",
     "electron-builder": "^26.0.12",
     "electron-devtools-installer": "^4.0.0",
     "electron-vite": "^2.1.0",
