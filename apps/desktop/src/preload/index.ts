@@ -1003,7 +1003,9 @@ const api: ReadiedAPI = {
   },
   settings: {
     broadcast: (settings: Record<string, unknown>) => {
-      ipcRenderer.send('settings:changed', settings);
+      if (settings && typeof settings === 'object') {
+        ipcRenderer.send('settings:changed', settings);
+      }
     },
     onSync: (callback: (settings: Record<string, unknown>) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, settings: Record<string, unknown>) => {

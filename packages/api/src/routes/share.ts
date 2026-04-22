@@ -80,9 +80,9 @@ share.post('/', authMiddleware, zValidator('json', createShareSchema), async c =
     .returning({ slug: sharedNotes.slug });
 
   const baseUrl = c.env.SITE_URL || 'https://readied.app';
-  const url = `${baseUrl}/shared?slug=${result.slug}`;
+  const url = `${baseUrl}/shared?slug=${result!.slug}`;
 
-  return c.json({ slug: result.slug, url });
+  return c.json({ slug: result!.slug, url });
 });
 
 // ─── GET /public/:userId — List public notes (no auth) ──────────────────────

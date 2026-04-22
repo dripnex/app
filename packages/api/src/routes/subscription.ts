@@ -69,14 +69,19 @@ subscription.post('/webhook', async c => {
       const session = event.data.object as CheckoutSession;
       if (session.customer_email) {
         // Find or create user
-        let [user] = await db
+        const [existing] = await db
           .select()
           .from(users)
           .where(eq(users.email, session.customer_email))
           .limit(1);
+        let user = existing;
 
         if (!user) {
-          [user] = await db.insert(users).values({ email: session.customer_email }).returning();
+          const [created] = await db
+            .insert(users)
+            .values({ email: session.customer_email })
+            .returning();
+          user = created!;
         }
 
         // Create or update subscription
@@ -276,10 +281,12 @@ subscription.post('/checkout/public', zValidator('json', publicCheckoutSchema), 
   const db = createDb(c.env);
 
   // Find or create user
-  let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  let user = existingUser;
 
   if (!user) {
-    [user] = await db.insert(users).values({ email }).returning();
+    const [created] = await db.insert(users).values({ email }).returning();
+    user = created!;
   }
 
   const stripeSecretKey = c.env.STRIPE_SECRET_KEY;

@@ -50,9 +50,19 @@ export function useEmbedResolver({
     // Capture noteId for async closure
     const currentNoteId = noteId;
 
-    window.readied.embeds.resolveBatch(localTargets, currentNoteId).then(result => {
-      setResolvedEmbeds(result);
-    });
+    let cancelled = false;
+    window.readied.embeds
+      .resolveBatch(localTargets, currentNoteId)
+      .then(result => {
+        if (!cancelled) setResolvedEmbeds(result);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedEmbeds({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [noteId, content]);
 
   // Callback for getting resolved embed URLs

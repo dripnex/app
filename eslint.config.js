@@ -31,6 +31,12 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['*.config.js', '*.config.ts'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       'import-x': importX,
@@ -56,7 +62,7 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
 
       // Catch forgotten awaits
-      '@typescript-eslint/no-floating-promises': 'off', // Enable when we add tsconfig to eslint
+      '@typescript-eslint/no-floating-promises': 'warn',
 
       // Allow unused vars starting with _
       '@typescript-eslint/no-unused-vars': [

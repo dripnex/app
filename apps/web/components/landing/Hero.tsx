@@ -24,9 +24,7 @@ function LightBeams() {
 }
 
 /* ─── Video preview with play button overlay ─── */
-/* When you have a real video, swap the TODO values below */
-// Video URL will be added when the real demo is recorded
-const DEMO_VIDEO_URL = ''; // TODO: replace with real video
+const DEMO_VIDEO_URL = '';
 
 function VideoPreview() {
   return <EditorMockWithPlay />;
@@ -226,7 +224,7 @@ export default function Hero() {
         {/* Version badge */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-white/[0.03] px-4 py-2 text-xs opacity-0 animate-fade-in-up">
           <AnimatedShinyText>
-            <span className="font-mono text-accent">v0.6</span> Early access
+            <span className="font-mono text-accent">Beta</span> Early access
           </AnimatedShinyText>
         </div>
 
@@ -267,7 +265,7 @@ export default function Hero() {
 
         {/* Version info */}
         <p className="mb-6 font-mono text-xs text-text-muted opacity-0 animate-fade-in-up [animation-delay:350ms]">
-          v0.6.2 &nbsp;|&nbsp; macOS 13+ &nbsp;|&nbsp; Windows &amp; Linux coming soon
+          macOS 13+ &nbsp;|&nbsp; Windows &amp; Linux coming soon
         </p>
 
         {/* Trust line */}
@@ -282,12 +280,6 @@ export default function Hero() {
 
       {/* Video / Editor preview */}
       <div className="relative z-[2] mx-auto w-full max-w-4xl px-6 lg:px-8 pb-20 opacity-0 animate-fade-in-up [animation-delay:500ms]">
-        {/*
-          TODO: Replace with real video once recorded.
-          1. Upload video to YouTube, get embed URL
-          2. Take a screenshot for thumbnailSrc
-          3. Swap videoSrc and thumbnailSrc below
-        */}
         <VideoPreview />
       </div>
     </section>

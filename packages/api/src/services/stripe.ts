@@ -71,9 +71,9 @@ function parseSignatureHeader(header: string): {
 
   for (const part of parts) {
     const [key, value] = part.split('=');
-    if (key === 't') {
+    if (key === 't' && value) {
       timestamp = parseInt(value, 10);
-    } else if (key === 'v1') {
+    } else if (key === 'v1' && value) {
       signatures.push(value);
     }
   }

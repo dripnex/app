@@ -126,9 +126,9 @@ jobs:
     steps:
       - name: Publish GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
-        run: gh release edit "$TAG_NAME" --draft=false --repo "${{ github.repository }}"
+        run: gh release edit "$TAG_NAME" --draft=false --repo "$GITHUB_REPOSITORY"
 
   tweet:
     needs: publish
@@ -159,11 +159,12 @@ jobs:
     steps:
       - name: Create sync PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           gh pr create \
             --base develop \
             --head main \
-            --title "chore: sync release ${{ github.ref_name }} back to develop" \
+            --title "chore: sync release $TAG_NAME back to develop" \
             --body "Auto sync of release commit and changelog." \
-            --repo "${{ github.repository }}"
+            --repo "$GITHUB_REPOSITORY" || echo "PR already exists or cannot be created"

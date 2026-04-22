@@ -12,7 +12,7 @@ initSentry();
 import { join, normalize, basename } from 'path';
 import { readFile, writeFile, unlink, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
 // electron-devtools-installer is imported dynamically below (dev only)
@@ -317,10 +317,10 @@ function createWindow(): void {
 
   // Load renderer
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
+    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
 
@@ -354,9 +354,9 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
   // Load renderer with note ID in query param
   const query = `?noteWindow=${encodeURIComponent(noteId)}`;
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
+    void noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
   } else {
-    noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+    void noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
       query: { noteWindow: noteId },
     });
   }
@@ -405,9 +405,9 @@ function createSettingsWindow(): void {
   // Load settings page via query param (same index.html, different view)
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
     const settingsUrl = `${process.env.ELECTRON_RENDERER_URL}?view=settings`;
-    settingsWindow.loadURL(settingsUrl);
+    void settingsWindow.loadURL(settingsUrl);
   } else {
-    settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+    void settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
       query: { view: 'settings' },
     });
   }
@@ -1306,7 +1306,7 @@ function registerDataHandlers(): void {
 
   // Open data folder in system file manager
   ipcMain.handle('data:openFolder', async () => {
-    shell.openPath(paths.root);
+    void shell.openPath(paths.root);
     return { success: true };
   });
 }
@@ -1872,7 +1872,7 @@ function registerAuthSyncHandlers(): void {
   ipcMain.handle('subscription:openPortal', async (_event, returnUrl: string) => {
     try {
       const { url } = await client.createPortalSession(returnUrl);
-      shell.openExternal(url);
+      void shell.openExternal(url);
       return { success: true };
     } catch (error) {
       return {
@@ -1885,7 +1885,7 @@ function registerAuthSyncHandlers(): void {
   // Open checkout (placeholder - opens pricing page)
   ipcMain.handle('subscription:openCheckout', async () => {
     try {
-      shell.openExternal('https://readied.app/pricing');
+      void shell.openExternal('https://readied.app/pricing');
       return { success: true };
     } catch (error) {
       return {
@@ -2279,20 +2279,23 @@ function registerPluginDiscoveryHandlers(): void {
       await mkdir(tmpDir, { recursive: true });
 
       await new Promise<void>((resolve, reject) => {
-        let cmd: string;
-        if (fileName.endsWith('.zip')) {
-          if (process.platform === 'win32') {
-            cmd = `powershell -command "Expand-Archive -Force '${archivePath}' '${tmpDir}'"`;
-          } else {
-            cmd = `unzip -o "${archivePath}" -d "${tmpDir}"`;
-          }
-        } else {
-          cmd = `tar -xzf "${archivePath}" -C "${tmpDir}"`;
-        }
-        exec(cmd, error => {
+        const cb = (error: Error | null) => {
           if (error) reject(error);
           else resolve();
-        });
+        };
+        if (fileName.endsWith('.zip')) {
+          if (process.platform === 'win32') {
+            execFile(
+              'powershell',
+              ['-command', `Expand-Archive -Force '${archivePath}' '${tmpDir}'`],
+              cb
+            );
+          } else {
+            execFile('unzip', ['-o', archivePath, '-d', tmpDir], cb);
+          }
+        } else {
+          execFile('tar', ['-xzf', archivePath, '-C', tmpDir], cb);
+        }
       });
 
       // Find the manifest.json — could be at root or one level deep
@@ -2441,7 +2444,7 @@ function initAutoUpdater(): void {
 
   // Check for updates after a short delay
   setTimeout(() => {
-    autoUpdater.checkForUpdates();
+    void autoUpdater.checkForUpdates();
   }, 3000);
 }
 
@@ -2650,7 +2653,7 @@ app
       }
     };
 
-    initAuthSync();
+    void initAuthSync();
 
     log.info('All IPC handlers registered');
 

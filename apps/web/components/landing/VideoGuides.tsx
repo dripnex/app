@@ -11,21 +11,21 @@ const videos = [
     id: 'getting-started',
     title: 'Getting started with Readied',
     description: 'Set up your workspace and write your first note in under 2 minutes.',
-    videoSrc: '', // TODO: YouTube embed URL
+    videoSrc: '',
     duration: '2:30',
   },
   {
     id: 'markdown-workflow',
     title: 'Markdown workflow tips',
     description: 'Keyboard shortcuts, split preview, and Cmd+P navigation.',
-    videoSrc: '', // TODO: YouTube embed URL
+    videoSrc: '',
     duration: '4:15',
   },
   {
     id: 'plugins',
     title: 'Extending with plugins',
     description: 'How to install, configure, and build plugins for Readied.',
-    videoSrc: '', // TODO: YouTube embed URL
+    videoSrc: '',
     duration: '5:00',
   },
 ];
