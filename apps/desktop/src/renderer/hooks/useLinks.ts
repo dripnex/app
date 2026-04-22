@@ -62,7 +62,7 @@ export function useSyncLinks() {
     },
     onSuccess: () => {
       // Invalidate all link queries since links may have changed
-      queryClient.invalidateQueries({ queryKey: linkKeys.all });
+      void queryClient.invalidateQueries({ queryKey: linkKeys.all });
     },
   });
 }

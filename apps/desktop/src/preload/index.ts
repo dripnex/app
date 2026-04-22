@@ -928,16 +928,16 @@ const api: ReadiedAPI = {
   },
   log: {
     debug: (message, context) => {
-      ipcRenderer.invoke('log:write', 'debug', message, context);
+      void ipcRenderer.invoke('log:write', 'debug', message, context);
     },
     info: (message, context) => {
-      ipcRenderer.invoke('log:write', 'info', message, context);
+      void ipcRenderer.invoke('log:write', 'info', message, context);
     },
     warn: (message, context) => {
-      ipcRenderer.invoke('log:write', 'warn', message, context);
+      void ipcRenderer.invoke('log:write', 'warn', message, context);
     },
     error: (message, context) => {
-      ipcRenderer.invoke('log:write', 'error', message, context);
+      void ipcRenderer.invoke('log:write', 'error', message, context);
     },
     getLogPath: () => ipcRenderer.invoke('log:getPath'),
   },

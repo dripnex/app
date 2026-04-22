@@ -109,7 +109,7 @@ export function AiSection() {
       }
       setConnectStatus(status);
     }
-    loadConnected();
+    void loadConnected();
   }, []);
 
   // Fetch Ollama models when it's connected
@@ -222,7 +222,7 @@ export function AiSection() {
         updateAi({ apiKey: key });
       }
     }
-    loadKeyForProvider();
+    void loadKeyForProvider();
   }, [currentProvider, updateAi]);
 
   const handleExportPreset = useCallback(async () => {
@@ -454,7 +454,7 @@ export function AiSection() {
                         fontFamily: 'monospace',
                       }}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') handleConnect();
+                        if (e.key === 'Enter') void handleConnect();
                       }}
                     />
                     <button

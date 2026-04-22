@@ -91,7 +91,7 @@ export const NotebookItem = memo(function NotebookItem({
         console.error('Failed to check git status:', error);
       }
     };
-    checkGitStatus();
+    void checkGitStatus();
   }, [node.notebook.id]);
 
   const handleClick = useCallback(

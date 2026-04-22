@@ -591,7 +591,7 @@ export function PluginsSection() {
         // Plugin scanning failed - leave empty
       }
     }
-    loadPlugins();
+    void loadPlugins();
   }, []);
 
   // Toggle plugin enabled/disabled

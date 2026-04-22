@@ -69,7 +69,7 @@ export function AccountSection() {
 
   // Load session on mount
   useEffect(() => {
-    loadSession();
+    void loadSession();
   }, [loadSession]);
 
   const loadSyncHistory = useCallback(async () => {
@@ -85,7 +85,7 @@ export function AccountSection() {
 
   useEffect(() => {
     if (showHistory) {
-      loadSyncHistory();
+      void loadSyncHistory();
     }
   }, [showHistory, loadSyncHistory]);
 
@@ -119,7 +119,7 @@ export function AccountSection() {
     try {
       await syncNow();
       setMessage('Sync completed successfully');
-      if (showHistory) loadSyncHistory();
+      if (showHistory) void loadSyncHistory();
     } catch (error) {
       setMessage(`Sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {

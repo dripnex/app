@@ -134,12 +134,12 @@ function NotesApp() {
 
   // Load tag colors on mount (once)
   useEffect(() => {
-    useTagColorsStore.getState().loadColors();
+    void useTagColorsStore.getState().loadColors();
   }, []);
 
   // Load auth session on mount (once)
   useEffect(() => {
-    useAuthStore.getState().loadSession();
+    void useAuthStore.getState().loadSession();
   }, []);
 
   // Auto-resume sync on network reconnect
@@ -446,7 +446,7 @@ function NotesApp() {
         // Find exact match (case-insensitive)
         const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
         if (match) {
-          handleSelectNote(match.id);
+          void handleSelectNote(match.id);
         }
       }
       // No-op if note doesn't exist (future: could show toast or create note)
@@ -614,7 +614,7 @@ function NotesApp() {
   useRegisterAppCommands({
     onNewNote: handleNewNote,
     onDuplicateNote: useCallback(() => {
-      if (selectedNote) handleDuplicateNote(selectedNote.id);
+      if (selectedNote) void handleDuplicateNote(selectedNote.id);
     }, [selectedNote, handleDuplicateNote]),
     onFocusSearch: useCallback(() => {
       const searchInput = document.querySelector('.search-input') as HTMLInputElement;
@@ -719,7 +719,7 @@ function NotesApp() {
 
   // Load AI plugin config once on mount
   useEffect(() => {
-    window.readied.pluginConfig.getAll('readied-ai-assistant').then(config => {
+    void window.readied.pluginConfig.getAll('readied-ai-assistant').then(config => {
       aiConfigCache.current = config ?? {};
     });
   }, []);
@@ -761,7 +761,7 @@ function NotesApp() {
   const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
 
   useEffect(() => {
-    pluginRuntimeStore.getState().init();
+    void pluginRuntimeStore.getState().init();
   }, []);
 
   const allPlugins = useMemo(() => [...builtInPlugins, ...discoveredPlugins], [discoveredPlugins]);
@@ -871,7 +871,7 @@ function NotesApp() {
                 <GraphView
                   selectedNoteId={selectedNote?.id}
                   onNodeClick={noteId => {
-                    handleSelectNote(noteId);
+                    void handleSelectNote(noteId);
                     setIsGraphOpen(false);
                   }}
                   onClose={() => setIsGraphOpen(false)}

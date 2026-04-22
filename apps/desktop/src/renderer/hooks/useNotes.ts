@@ -99,7 +99,7 @@ export function useNoteMutations() {
   const queryClient = useQueryClient();
 
   const invalidateNotes = () => {
-    queryClient.invalidateQueries({ queryKey: noteKeys.all });
+    void queryClient.invalidateQueries({ queryKey: noteKeys.all });
   };
 
   const createNote = useMutation({
@@ -119,7 +119,7 @@ export function useNoteMutations() {
     },
     onSuccess: data => {
       queryClient.setQueryData(noteKeys.detail(data.id), data);
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
     },
   });
 
@@ -131,7 +131,7 @@ export function useNoteMutations() {
     },
     onSuccess: data => {
       queryClient.setQueryData(noteKeys.detail(data.id), data);
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
     },
   });
 

@@ -206,7 +206,7 @@ export function DevicesSection() {
       revokeMutation.mutate(confirmRevokeId);
       setConfirmRevokeId(null);
       // Current device revoked = logout
-      window.readied.auth.logout();
+      void window.readied.auth.logout();
     }
   }, [confirmRevokeId, revokeMutation]);
 

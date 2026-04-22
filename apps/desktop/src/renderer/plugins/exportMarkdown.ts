@@ -17,7 +17,7 @@ export const exportMarkdownPlugin: PluginManifest = {
       () => {
         const content = context.editor.getContent();
         if (!content) return false;
-        navigator.clipboard.writeText(content);
+        void navigator.clipboard.writeText(content);
         context.log.info('Markdown copied to clipboard');
         return true;
       }
@@ -54,7 +54,7 @@ export const exportMarkdownPlugin: PluginManifest = {
           // Paragraphs (wrap remaining lines)
           .replace(/^(?!<[hliupca])((?!<\/)[^\n]+)$/gm, '<p>$1</p>');
 
-        navigator.clipboard.write([
+        void navigator.clipboard.write([
           new ClipboardItem({
             'text/html': new Blob([html], { type: 'text/html' }),
             'text/plain': new Blob([content], { type: 'text/plain' }),

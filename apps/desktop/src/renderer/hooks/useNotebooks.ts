@@ -57,7 +57,7 @@ export function useNotebookMutations() {
   const queryClient = useQueryClient();
 
   const invalidateNotebooks = () => {
-    queryClient.invalidateQueries({ queryKey: notebookKeys.all });
+    void queryClient.invalidateQueries({ queryKey: notebookKeys.all });
   };
 
   const createNotebook = useMutation({
@@ -73,8 +73,8 @@ export function useNotebookMutations() {
     },
     onSuccess: data => {
       queryClient.setQueryData(notebookKeys.detail(data.id), data);
-      queryClient.invalidateQueries({ queryKey: notebookKeys.tree() });
-      queryClient.invalidateQueries({ queryKey: notebookKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: notebookKeys.tree() });
+      void queryClient.invalidateQueries({ queryKey: notebookKeys.lists() });
     },
   });
 
@@ -92,7 +92,7 @@ export function useNotebookMutations() {
     onSuccess: () => {
       invalidateNotebooks();
       // Also invalidate notes since they may have moved to Inbox
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      void queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
   });
 

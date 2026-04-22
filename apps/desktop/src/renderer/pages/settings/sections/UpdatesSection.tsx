@@ -100,7 +100,7 @@ export function UpdatesSection() {
 
   const handleInstall = useCallback(() => {
     setState({ status: 'installing' });
-    window.readied.updates.installNow();
+    void window.readied.updates.installNow();
   }, []);
 
   const handleRetry = useCallback(() => {

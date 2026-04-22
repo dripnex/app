@@ -61,7 +61,7 @@ export function useManualTags({
       }
     }
 
-    loadManualTags();
+    void loadManualTags();
 
     return () => {
       cancelled = true;
@@ -85,8 +85,8 @@ export function useManualTags({
       try {
         await window.readied.notes.setManualTags(noteId, updatedTags);
         // Invalidate queries so sidebar and note list update
-        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
-        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
 
         // Refetch note to sync selectedNote state with updated tags
         if (onNoteUpdate) {
@@ -118,8 +118,8 @@ export function useManualTags({
       try {
         await window.readied.notes.setManualTags(noteId, updatedTags);
         // Invalidate queries so sidebar and note list update
-        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
-        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
 
         // Refetch note to sync selectedNote state with updated tags
         if (onNoteUpdate) {

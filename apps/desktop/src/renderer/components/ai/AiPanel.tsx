@@ -379,7 +379,7 @@ export function AiPanel({
       }
     };
 
-    execute();
+    void execute();
   }, [initialCommand]); // intentionally depends only on initialCommand
 
   const handleSubmit = useCallback(async () => {
@@ -497,7 +497,7 @@ export function AiPanel({
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSubmit();
+        void handleSubmit();
       }
     },
     [handleSubmit]
@@ -505,13 +505,13 @@ export function AiPanel({
 
   const handleToolConfirm = useCallback((callId: string) => {
     if (activeRequestRef.current) {
-      window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
+      void window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
     }
   }, []);
 
   const handleToolReject = useCallback((callId: string) => {
     if (activeRequestRef.current) {
-      window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
+      void window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
       setToolCalls(prev => {
         const next = new Map(prev);
         const existing = next.get(callId);
@@ -524,7 +524,7 @@ export function AiPanel({
   const handleClear = useCallback(() => {
     // Cancel any active request
     if (activeRequestRef.current) {
-      window.readied.ai.cancel(activeRequestRef.current);
+      void window.readied.ai.cancel(activeRequestRef.current);
       activeRequestRef.current = null;
     }
     setMessages([]);

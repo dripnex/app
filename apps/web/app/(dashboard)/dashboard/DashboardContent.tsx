@@ -121,14 +121,14 @@ export default function DashboardContent() {
     if (t) {
       setToken(t);
       localStorage.setItem('readied-admin-token', t);
-      fetchAll(t);
+      void fetchAll(t);
     }
   }, [fetchAll]);
 
   const handleLogin = () => {
     if (!token.trim()) return;
     localStorage.setItem('readied-admin-token', token.trim());
-    fetchAll(token.trim());
+    void fetchAll(token.trim());
   };
 
   // ── Login screen ────────────────────────────────────────────────────────────

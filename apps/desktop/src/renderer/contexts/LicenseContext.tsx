@@ -50,7 +50,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setIsLoading(true);
-    refresh().finally(() => setIsLoading(false));
+    void refresh().finally(() => setIsLoading(false));
     return stopPolling;
   }, [refresh, stopPolling]);
 

@@ -240,7 +240,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
    */
   initSyncStatusListener: () => {
     // Fetch initial pending count
-    get().refreshPendingCount();
+    void get().refreshPendingCount();
 
     const unsubscribe = window.readied.sync.onStatusChange((raw: unknown) => {
       const event = raw as SyncStatusEvent;
@@ -258,7 +258,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
             lastSyncAt: Date.now(),
           });
           // Refresh pending count after successful sync
-          get().refreshPendingCount();
+          void get().refreshPendingCount();
           break;
 
         case 'sync-error': {
@@ -269,7 +269,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
             consecutiveFailures: event.consecutiveFailures ?? 0,
           });
           // Refresh pending count so user sees queued changes
-          get().refreshPendingCount();
+          void get().refreshPendingCount();
           break;
         }
 

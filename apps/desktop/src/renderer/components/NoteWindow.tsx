@@ -53,7 +53,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
         setLoading(false);
       }
     }
-    loadNote();
+    void loadNote();
   }, [noteId]);
 
   // Update note content
