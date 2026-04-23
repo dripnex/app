@@ -2403,7 +2403,7 @@ function registerPluginDiscoveryHandlers(): void {
   });
 
   // Install plugin from a remote URL (marketplace download)
-  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, _pluginSlug: string) => {
+  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, pluginSlug: string) => {
     // Safety: only allow https URLs
     if (!url.startsWith('https://')) {
       return { success: false, error: 'Only HTTPS URLs are allowed' };
@@ -2500,6 +2500,18 @@ function registerPluginDiscoveryHandlers(): void {
       }
       if (!manifest.id || !manifest.name) {
         return { success: false, error: 'Invalid manifest: missing id or name' };
+      }
+
+      // Cross-plugin overwrite protection: if we requested plugin A but the
+      // archive contains plugin B, block when it would overwrite an existing plugin
+      if (pluginSlug && manifest.id !== pluginSlug) {
+        const wouldOverwrite = join(paths.plugins, manifest.id);
+        if (existsSync(wouldOverwrite)) {
+          return {
+            success: false,
+            error: `Archive contains "${manifest.id}" but "${pluginSlug}" was requested. Refusing to overwrite existing plugin.`,
+          };
+        }
       }
 
       // Validate plugin ID - only allow alphanumeric, hyphens, underscores
