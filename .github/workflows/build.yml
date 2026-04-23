@@ -96,7 +96,7 @@ jobs:
 
       - name: Clean electron-builder cache (Linux)
         if: matrix.platform == 'linux'
-        run: rm -rf ~/.cache/electron-builder/fpm
+        run: rm -rf ~/.cache/electron-builder/fpm ~/.cache/electron-builder/nsis ~/.cache/electron-builder/winCodeSign ~/.cache/electron-builder/7za*
 
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
