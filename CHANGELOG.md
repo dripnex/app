@@ -4,6 +4,18 @@
 
 - comprehensive audit, design system, UX, and product improvements ([#208](https://github.com/tomymaritano/readide/issues/208)) ([ef3018e](https://github.com/tomymaritano/readide/commit/ef3018eed28915e6c645b521d2efa596751ae1a4)), closes [#194](https://github.com/tomymaritano/readide/issues/194) [#198](https://github.com/tomymaritano/readide/issues/198) [#200](https://github.com/tomymaritano/readide/issues/200) [#202](https://github.com/tomymaritano/readide/issues/202)
 - comprehensive project audit, design system, and product improvements ([#194](https://github.com/tomymaritano/readide/issues/194)) ([45f733b](https://github.com/tomymaritano/readide/commit/45f733b1fb61fe16384a023af52c3a6e0301fc8f))
+- v0.12.0 release — audit, design system, UX, product improvements ([#211](https://github.com/tomymaritano/readide/issues/211)) ([0ab384f](https://github.com/tomymaritano/readide/commit/0ab384f21528241ad183d1a11afaa8b13597d247))
+
+### Bug Fixes
+
+- PR [#194](https://github.com/tomymaritano/readide/issues/194) review findings + CI fixes ([#198](https://github.com/tomymaritano/readide/issues/198)) ([b5b4749](https://github.com/tomymaritano/readide/commit/b5b4749cd7dd7b7efc92775f8de8996ac7235bae))
+
+## [0.12.0](https://github.com/tomymaritano/readide/compare/v0.11.0...v0.12.0) (2026-04-23)
+
+### Features
+
+- comprehensive audit, design system, UX, and product improvements ([#208](https://github.com/tomymaritano/readide/issues/208)) ([ef3018e](https://github.com/tomymaritano/readide/commit/ef3018eed28915e6c645b521d2efa596751ae1a4)), closes [#194](https://github.com/tomymaritano/readide/issues/194) [#198](https://github.com/tomymaritano/readide/issues/198) [#200](https://github.com/tomymaritano/readide/issues/200) [#202](https://github.com/tomymaritano/readide/issues/202)
+- comprehensive project audit, design system, and product improvements ([#194](https://github.com/tomymaritano/readide/issues/194)) ([45f733b](https://github.com/tomymaritano/readide/commit/45f733b1fb61fe16384a023af52c3a6e0301fc8f))
 
 ### Bug Fixes
 
