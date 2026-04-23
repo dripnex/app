@@ -46,6 +46,7 @@ export function Modal({
   );
 
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const generatedId = useId();
 
   // Focus the modal container on open
   useEffect(() => {
@@ -56,7 +57,6 @@ export function Modal({
 
   if (!open) return null;
 
-  const generatedId = useId();
   const titleId = title != null ? generatedId : undefined;
 
   return createPortal(
