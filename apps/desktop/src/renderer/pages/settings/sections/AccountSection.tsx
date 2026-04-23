@@ -8,7 +8,6 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   LogIn,
   LogOut,
-  Mail,
   User as UserIcon,
   RefreshCw,
   Sparkles,
@@ -25,6 +24,7 @@ import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
 import { ConflictResolver } from '../../../components/sync/ConflictResolver';
+import { Button } from '../../../ui/primitives';
 import { DevicesSection } from './DevicesSection';
 import styles from './Section.module.css';
 
@@ -227,15 +227,15 @@ export function AccountSection() {
             </SettingRow>
 
             <SettingRow label="Sign out" description="Clear your session from this device">
-              <button
-                type="button"
-                className={styles.dangerButton}
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<LogOut size={14} />}
                 onClick={handleSignOut}
                 disabled={isLoading}
               >
-                <LogOut size={14} />
-                <span>Sign Out</span>
-              </button>
+                Sign Out
+              </Button>
             </SettingRow>
           </>
         ) : (
@@ -243,24 +243,15 @@ export function AccountSection() {
             label="Sign in"
             description="Sign in to enable sync and access your notes from any device"
           >
-            <button
-              type="button"
-              className={styles.primaryButton}
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<LogIn size={14} />}
+              loading={isLoading}
               onClick={handleSignIn}
-              disabled={isLoading}
             >
-              {isLoading ? (
-                <>
-                  <Mail size={14} className={styles.spinning} />
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn size={14} />
-                  <span>Sign In</span>
-                </>
-              )}
-            </button>
+              {isLoading ? 'Loading...' : 'Sign In'}
+            </Button>
           </SettingRow>
         )}
       </SettingGroup>
@@ -269,24 +260,15 @@ export function AccountSection() {
         <>
           <SettingGroup title="Synchronization">
             <SettingRow label="Sync Now" description={`Last synced: ${formatLastSync()}`}>
-              <button
-                type="button"
-                className={styles.primaryButton}
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<RefreshCw size={14} />}
+                loading={isSyncing || syncStatus === 'syncing'}
                 onClick={handleSync}
-                disabled={isSyncing || syncStatus === 'syncing'}
               >
-                {isSyncing || syncStatus === 'syncing' ? (
-                  <>
-                    <RefreshCw size={14} className={styles.spinning} />
-                    <span>Syncing...</span>
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw size={14} />
-                    <span>Sync</span>
-                  </>
-                )}
-              </button>
+                {isSyncing || syncStatus === 'syncing' ? 'Syncing...' : 'Sync'}
+              </Button>
             </SettingRow>
 
             {syncStatus === 'offline' && (
@@ -363,15 +345,15 @@ export function AccountSection() {
                 label="Manage Subscription"
                 description="Update payment method, change plan, or cancel"
               >
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<ExternalLink size={14} />}
+                  loading={isManaging}
                   onClick={handleManageSubscription}
-                  disabled={isManaging}
                 >
-                  <ExternalLink size={14} />
-                  <span>{isManaging ? 'Opening...' : 'Manage Subscription'}</span>
-                </button>
+                  {isManaging ? 'Opening...' : 'Manage Subscription'}
+                </Button>
               </SettingRow>
             )}
 
@@ -381,25 +363,25 @@ export function AccountSection() {
                 description="Get cloud sync, advanced search, and all pro features"
               >
                 <div className={styles.buttonGroup}>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Sparkles size={14} />}
                     onClick={() => handleUpgrade('monthly')}
                     disabled={isUpgrading}
                   >
-                    <Sparkles size={14} />
-                    <span>Monthly - {proPricing.intervals.monthly.label}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
+                    Monthly - {proPricing.intervals.monthly.label}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Sparkles size={14} />}
                     onClick={() => handleUpgrade('annual')}
                     disabled={isUpgrading}
                   >
-                    <Sparkles size={14} />
-                    <span>Annual - {proPricing.intervals.annual.label}</span>
+                    Annual - {proPricing.intervals.annual.label}
                     <small className={styles.badge}>Save {proPricing.annualSavings}</small>
-                  </button>
+                  </Button>
                 </div>
               </SettingRow>
             )}

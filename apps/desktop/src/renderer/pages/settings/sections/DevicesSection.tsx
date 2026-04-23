@@ -6,6 +6,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Monitor, Smartphone, Laptop, Trash2, Check, X, LogOut } from 'lucide-react';
 import { SettingGroup } from '../components/SettingGroup';
+import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 interface Device {
@@ -242,15 +243,15 @@ export function DevicesSection() {
 
           {otherDeviceCount > 0 && (
             <div className={styles.deviceActions}>
-              <button
-                type="button"
-                className={styles.dangerButton}
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<LogOut size={14} />}
                 onClick={handleRevokeOthers}
                 disabled={revokeOthersMutation.isPending}
               >
-                <LogOut size={14} />
-                <span>Sign out other devices ({otherDeviceCount})</span>
-              </button>
+                Sign out other devices ({otherDeviceCount})
+              </Button>
             </div>
           )}
         </>
@@ -261,16 +262,12 @@ export function DevicesSection() {
         <div className={styles.confirmDialog}>
           <p>This will sign you out of this device. Continue?</p>
           <div className={styles.buttonGroup}>
-            <button type="button" className={styles.dangerButton} onClick={handleConfirmRevoke}>
+            <Button variant="danger" size="sm" onClick={handleConfirmRevoke}>
               Sign Out
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() => setConfirmRevokeId(null)}
-            >
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setConfirmRevokeId(null)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -282,20 +279,12 @@ export function DevicesSection() {
             Sign out {otherDeviceCount} other device{otherDeviceCount > 1 ? 's' : ''}?
           </p>
           <div className={styles.buttonGroup}>
-            <button
-              type="button"
-              className={styles.dangerButton}
-              onClick={handleConfirmRevokeOthers}
-            >
+            <Button variant="danger" size="sm" onClick={handleConfirmRevokeOthers}>
               Sign Out Others
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() => setConfirmRevokeOthers(false)}
-            >
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setConfirmRevokeOthers(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

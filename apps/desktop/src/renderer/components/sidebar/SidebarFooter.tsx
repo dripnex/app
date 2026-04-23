@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import { Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
+import { Cloud, CloudOff, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import {
   useSyncStore,
@@ -7,6 +7,7 @@ import {
   selectLastSyncAt,
   selectConsecutiveFailures,
   selectPendingCount,
+  selectError,
 } from '../../stores/syncStore';
 
 interface SidebarFooterProps {
@@ -27,6 +28,131 @@ function formatRelativeTime(timestamp: number): string {
   return `${days}d ago`;
 }
 
+/**
+ * Sync progress indicator shown in the sidebar footer.
+ *
+ * States:
+ * - idle + pending > 0  → "N pending"
+ * - syncing              → "Syncing..." with spinning icon
+ * - just synced          → "Synced" with check icon (fades after 3s)
+ * - error/auth-expired   → "Sync error" in danger color with retry
+ * - offline              → "Offline — N pending"
+ * - idle + pending === 0 → hidden (nothing to show)
+ */
+const SyncProgressIndicator = memo(function SyncProgressIndicator() {
+  const syncStatus = useSyncStore(selectStatus);
+  const lastSyncAt = useSyncStore(selectLastSyncAt);
+  const pendingCount = useSyncStore(selectPendingCount);
+  const consecutiveFailures = useSyncStore(selectConsecutiveFailures);
+  const syncError = useSyncStore(selectError);
+  const syncNow = useSyncStore(state => state.syncNow);
+  const refreshPendingCount = useSyncStore(state => state.refreshPendingCount);
+
+  // Track "just synced" flash state
+  const [showSynced, setShowSynced] = useState(false);
+  const prevStatusRef = useRef(syncStatus);
+
+  // When status transitions from 'syncing' to 'idle', flash "Synced"
+  useEffect(() => {
+    if (prevStatusRef.current === 'syncing' && syncStatus === 'idle') {
+      setShowSynced(true);
+      const timer = setTimeout(() => setShowSynced(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevStatusRef.current = syncStatus;
+  }, [syncStatus]);
+
+  // Poll pending count every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void refreshPendingCount();
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [refreshPendingCount]);
+
+  const handleRetry = useCallback(() => {
+    void syncNow();
+  }, [syncNow]);
+
+  // Syncing
+  if (syncStatus === 'syncing') {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--syncing">
+        <RefreshCw size={11} className="sidebar-footer-sync-spinning" />
+        <span>Syncing...</span>
+      </div>
+    );
+  }
+
+  // Just synced flash
+  if (showSynced) {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--synced">
+        <Check size={11} />
+        <span>Synced</span>
+      </div>
+    );
+  }
+
+  // Error or auth-expired
+  if (syncStatus === 'error' || syncStatus === 'auth-expired') {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--error">
+        <AlertCircle size={11} />
+        <span title={syncError ?? undefined}>
+          {syncStatus === 'auth-expired' ? 'Session expired' : 'Sync error'}
+        </span>
+        {syncStatus === 'error' && (
+          <button type="button" className="sidebar-footer-progress-retry" onClick={handleRetry}>
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Offline
+  if (syncStatus === 'offline') {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--offline">
+        <CloudOff size={11} />
+        <span>{pendingCount > 0 ? `Offline \u2014 ${pendingCount} pending` : 'Offline'}</span>
+      </div>
+    );
+  }
+
+  // Idle with pending changes
+  if (pendingCount > 0) {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--pending">
+        <Cloud size={11} />
+        <span>{pendingCount} pending</span>
+      </div>
+    );
+  }
+
+  // Idle with many consecutive failures (no error state yet)
+  if (consecutiveFailures >= 2) {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--error">
+        <AlertCircle size={11} />
+        <span>Sync unstable</span>
+        <button type="button" className="sidebar-footer-progress-retry" onClick={handleRetry}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Idle, no pending, recently synced — show last sync time briefly
+  if (lastSyncAt && Date.now() - lastSyncAt < 60_000) {
+    return null; // "Synced" flash already handled above
+  }
+
+  // Nothing to show
+  return null;
+});
+
 export const SidebarFooter = memo(function SidebarFooter({
   appVersion,
   onEnableSyncClick,
@@ -34,9 +160,6 @@ export const SidebarFooter = memo(function SidebarFooter({
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const email = useAuthStore(state => state.user?.email ?? null);
   const syncStatus = useSyncStore(selectStatus);
-  const lastSyncAt = useSyncStore(selectLastSyncAt);
-  const consecutiveFailures = useSyncStore(selectConsecutiveFailures);
-  const pendingCount = useSyncStore(selectPendingCount);
 
   const getSyncIcon = () => {
     switch (syncStatus) {
@@ -53,6 +176,7 @@ export const SidebarFooter = memo(function SidebarFooter({
   };
 
   const getSyncTooltip = () => {
+    const lastSyncAt = useSyncStore.getState().lastSyncAt;
     switch (syncStatus) {
       case 'syncing':
         return 'Syncing...';
@@ -66,11 +190,6 @@ export const SidebarFooter = memo(function SidebarFooter({
         return lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync';
     }
   };
-
-  // Show offline queue when offline/error with pending changes, or many consecutive failures
-  const isOfflineOrError = syncStatus === 'offline' || syncStatus === 'error';
-  const showQueueStatus =
-    isAuthenticated && isOfflineOrError && (pendingCount > 0 || consecutiveFailures >= 2);
 
   return (
     <footer className="sidebar-footer">
@@ -92,13 +211,7 @@ export const SidebarFooter = memo(function SidebarFooter({
           <span>Enable Sync</span>
         </button>
       )}
-      {showQueueStatus && (
-        <span className="sidebar-footer-queue">
-          {pendingCount > 0
-            ? `${pendingCount} change${pendingCount === 1 ? '' : 's'} pending`
-            : 'Offline \u2014 changes will sync when back online'}
-        </span>
-      )}
+      {isAuthenticated && <SyncProgressIndicator />}
       <span className="sidebar-footer-version" aria-label={`App version ${appVersion}`}>
         v{appVersion}
       </span>

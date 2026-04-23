@@ -38,6 +38,7 @@ import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { Toaster } from './ui/primitives';
 import type { PluginLoadError } from './stores/pluginRuntimeStore';
+import { Welcome } from './components/Welcome';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -99,6 +100,11 @@ function NotesApp() {
   useAppearanceSettings();
   useThemeOverrides(); // Applies active theme tokens
   useCssVariables();
+
+  // First-run onboarding
+  const [showWelcome, setShowWelcome] = useState(
+    () => !localStorage.getItem('readied-onboarding-done')
+  );
 
   // Restore saved plugin theme on startup
   const appearance = useSettingsStore(selectAppearance);
@@ -843,6 +849,27 @@ function NotesApp() {
       }
     }, [isCommandPaletteOpen, isAiPanelOpen, isGraphOpen, searchQuery, selectedNote, clearSearch]),
   });
+
+  // Welcome screen completion handler
+  const handleWelcomeComplete = useCallback(
+    (createNote: boolean) => {
+      localStorage.setItem('readied-onboarding-done', 'true');
+      setShowWelcome(false);
+      if (createNote) {
+        void handleNewNote();
+      }
+    },
+    [handleNewNote]
+  );
+
+  if (showWelcome) {
+    return (
+      <ToastProvider>
+        <Welcome onComplete={handleWelcomeComplete} />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
 
   return (
     <ToastProvider>

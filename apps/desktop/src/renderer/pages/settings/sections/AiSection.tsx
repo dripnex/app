@@ -6,20 +6,12 @@
  */
 
 import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
-import {
-  Loader2,
-  CheckCircle,
-  XCircle,
-  Upload,
-  Download,
-  ExternalLink,
-  Unplug,
-  Plug,
-} from 'lucide-react';
+import { CheckCircle, XCircle, Upload, Download, ExternalLink, Unplug, Plug } from 'lucide-react';
 import { useSettingsStore, selectAi } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, NumberInput } from '../components/controls';
+import { Button } from '../../../ui/primitives';
 import { aiCommandStore } from '@readied/plugin-api';
 import type { AiCommandRegistration } from '@readied/plugin-api';
 import { validateAiCommandPreset, serializePreset } from '@readied/ai-core';
@@ -371,15 +363,14 @@ export function AiSection() {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className={styles.secondaryButton}
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Unplug size={14} />}
                 onClick={handleDisconnect}
-                style={{ gap: '0.375rem', fontSize: '0.8125rem' }}
               >
-                <Unplug size={14} />
                 Disconnect
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -412,25 +403,14 @@ export function AiSection() {
                     >
                       Connect your {providerInfo.name} account
                     </span>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<ExternalLink size={12} />}
                       onClick={handleOpenKeyPage}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.375rem',
-                        padding: '0.375rem 0.75rem',
-                        background: 'transparent',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.375rem',
-                        color: 'var(--text-secondary)',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
                     >
-                      <ExternalLink size={12} />
                       Get API Key
-                    </button>
+                    </Button>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                     <input
@@ -457,20 +437,16 @@ export function AiSection() {
                         if (e.key === 'Enter') void handleConnect();
                       }}
                     />
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<Plug size={14} />}
+                      loading={isConnecting}
                       onClick={handleConnect}
                       disabled={isConnecting || !apiKeyInput.trim()}
-                      style={{ gap: '0.375rem', whiteSpace: 'nowrap' }}
                     >
-                      {isConnecting ? (
-                        <Loader2 size={14} className={styles.spinning} />
-                      ) : (
-                        <Plug size={14} />
-                      )}
                       {isConnecting ? 'Connecting...' : 'Connect'}
-                    </button>
+                    </Button>
                   </div>
                 </>
               )}
@@ -481,20 +457,15 @@ export function AiSection() {
                     Ollama runs locally — no API key needed. Make sure Ollama is running on your
                     machine.
                   </div>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<Plug size={14} />}
+                    loading={isConnecting}
                     onClick={handleConnect}
-                    disabled={isConnecting}
-                    style={{ alignSelf: 'flex-start', gap: '0.375rem' }}
                   >
-                    {isConnecting ? (
-                      <Loader2 size={14} className={styles.spinning} />
-                    ) : (
-                      <Plug size={14} />
-                    )}
                     {isConnecting ? 'Connecting...' : 'Connect to Ollama'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -553,22 +524,26 @@ export function AiSection() {
       {/* ── Presets ── */}
       <SettingGroup title="AI Command Presets">
         <SettingRow label="Import Preset" description="Load AI commands from a JSON file">
-          <button type="button" className={styles.actionButton} onClick={handleImportPreset}>
-            <Upload size={14} />
-            <span>Import</span>
-          </button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Upload size={14} />}
+            onClick={handleImportPreset}
+          >
+            Import
+          </Button>
         </SettingRow>
 
         <SettingRow label="Export Preset" description="Save AI commands to a shareable file">
-          <button
-            type="button"
-            className={styles.actionButton}
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Download size={14} />}
             onClick={handleExportPreset}
             disabled={registeredAiCommands.length === 0}
           >
-            <Download size={14} />
-            <span>Export</span>
-          </button>
+            Export
+          </Button>
         </SettingRow>
 
         {presetMessage?.type === 'success' && (

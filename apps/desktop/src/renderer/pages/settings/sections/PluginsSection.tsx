@@ -21,7 +21,7 @@ import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { validateConfigValue } from '@readied/plugin-api';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';
-import { toast } from '../../../ui/primitives';
+import { Button, toast } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 // ============================================================================
@@ -517,10 +517,14 @@ function PluginInspector() {
           )}
 
           <div style={{ marginTop: '0.75rem' }}>
-            <button type="button" className={styles.actionButton} onClick={handleForceReload}>
-              <RefreshCw size={14} />
-              <span>Force Reload All</span>
-            </button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw size={14} />}
+              onClick={handleForceReload}
+            >
+              Force Reload All
+            </Button>
           </div>
         </div>
       )}
@@ -795,14 +799,14 @@ export function PluginsSection() {
                 <div className={styles.pluginEmptyState}>
                   <p>No community plugins installed yet.</p>
                   {pluginsPath && (
-                    <button
-                      type="button"
-                      className={styles.actionButton}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<FolderOpen size={14} />}
                       onClick={handleOpenFolder}
                     >
-                      <FolderOpen size={14} />
-                      <span>Open Plugins Folder</span>
-                    </button>
+                      Open Plugins Folder
+                    </Button>
                   )}
                 </div>
               </div>
@@ -834,24 +838,32 @@ export function PluginsSection() {
           {/* Actions bar */}
           <div style={{ marginTop: '1.5rem' }}>
             <div className={styles.pluginActions}>
-              <button type="button" className={styles.actionButton} onClick={handleInstall}>
-                <Download size={14} />
-                <span>Install from File</span>
-              </button>
-              <button
-                type="button"
-                className={styles.actionButton}
-                onClick={handleReload}
-                disabled={isReloading}
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Download size={14} />}
+                onClick={handleInstall}
               >
-                <RefreshCw size={14} className={isReloading ? styles.spinning : ''} />
-                <span>{isReloading ? 'Reloading...' : 'Reload Plugins'}</span>
-              </button>
+                Install from File
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<RefreshCw size={14} />}
+                loading={isReloading}
+                onClick={handleReload}
+              >
+                {isReloading ? 'Reloading...' : 'Reload Plugins'}
+              </Button>
               {pluginsPath && (
-                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
-                  <FolderOpen size={14} />
-                  <span>Open Plugins Folder</span>
-                </button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<FolderOpen size={14} />}
+                  onClick={handleOpenFolder}
+                >
+                  Open Plugins Folder
+                </Button>
               )}
             </div>
           </div>

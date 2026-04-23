@@ -1589,6 +1589,66 @@ input:focus-visible {
   line-height: 1.3;
 }
 
+/* Sync progress indicator */
+.sidebar-footer-progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  line-height: 1;
+  padding: 2px 0;
+  animation: sidebar-footer-progress-fadein 200ms ease-out;
+}
+
+@keyframes sidebar-footer-progress-fadein {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sidebar-footer-progress--syncing {
+  color: var(--accent);
+}
+
+.sidebar-footer-progress--synced {
+  color: var(--success);
+  animation: sidebar-footer-progress-fadein 200ms ease-out,
+             sidebar-footer-progress-fadeout 500ms ease-in 2.5s forwards;
+}
+
+@keyframes sidebar-footer-progress-fadeout {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.sidebar-footer-progress--error {
+  color: var(--danger);
+}
+
+.sidebar-footer-progress--offline {
+  color: var(--text-muted);
+}
+
+.sidebar-footer-progress--pending {
+  color: var(--text-muted);
+}
+
+.sidebar-footer-progress-retry {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sidebar-footer-progress-retry:hover {
+  color: var(--accent-hover, var(--accent));
+  text-decoration: none;
+}
+
 .sidebar-footer-version {
   font-size: var(--text-xs);
   color: var(--text-faint);
