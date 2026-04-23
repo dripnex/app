@@ -224,6 +224,7 @@ function BrowseTab({ installedPluginIds }: { installedPluginIds: Set<string> }) 
           // Validate each item has required fields
           const validated = data.plugins.filter(
             (p): p is MarketplacePlugin =>
+              typeof p.slug === 'string' &&
               typeof p.name === 'string' &&
               typeof p.description === 'string' &&
               Array.isArray(p.tags)

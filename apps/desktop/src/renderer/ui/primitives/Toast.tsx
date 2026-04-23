@@ -58,7 +58,7 @@ export function Toaster() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className={styles.container} aria-live="polite">
+    <div className={styles.container}>
       {toasts.map(item => (
         <ToastNotification key={item.id} item={item} />
       ))}
