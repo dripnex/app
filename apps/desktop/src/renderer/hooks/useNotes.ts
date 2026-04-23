@@ -31,6 +31,7 @@ export const noteKeys = {
   search: (query: string) => [...noteKeys.all, 'search', query] as const,
   tags: () => [...noteKeys.all, 'tags'] as const,
   counts: () => [...noteKeys.all, 'counts'] as const,
+  activityStats: () => [...noteKeys.all, 'activityStats'] as const,
 };
 
 /** Hook for listing notes */
@@ -79,6 +80,15 @@ export function useNoteCounts() {
   return useQuery({
     queryKey: noteKeys.counts(),
     queryFn: () => window.readied.notes.count(),
+  });
+}
+
+/** Hook for getting activity stats (heatmap data) */
+export function useActivityStats() {
+  return useQuery({
+    queryKey: noteKeys.activityStats(),
+    queryFn: () => window.readied.notes.activityStats(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

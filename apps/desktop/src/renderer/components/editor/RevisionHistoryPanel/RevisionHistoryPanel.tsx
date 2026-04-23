@@ -1,13 +1,14 @@
 /**
- * RevisionHistoryPanel - Shows git commit history for the current note's notebook
+ * RevisionHistoryPanel - Timeline-based revision history for the current note's notebook
  *
- * Displays a slide-in panel from the right with commit log.
- * Allows viewing diffs between commits.
+ * Displays a slide-in panel from the right with a vertical timeline of commits,
+ * inspired by Inkdrop v5.10. Each revision appears as a node on a vertical line
+ * with timestamp, message preview, and action buttons.
  */
 
 import { memo, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, History, GitCommitHorizontal, AlertCircle } from 'lucide-react';
+import { X, History, GitCommitHorizontal, AlertCircle, RotateCcw, Copy, Check } from 'lucide-react';
 import styles from './RevisionHistoryPanel.module.css';
 
 interface GitCommit {
@@ -47,6 +48,34 @@ function formatTimestamp(timestamp: number): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+function formatFullDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/** Estimate word count from a commit message (heuristic) */
+function estimateWordDelta(message: string): {
+  label: string;
+  kind: 'positive' | 'negative' | 'neutral';
+} {
+  const lower = message.toLowerCase();
+  if (lower.startsWith('update note:') || lower.startsWith('rename note:')) {
+    return { label: 'edited', kind: 'neutral' };
+  }
+  if (lower.includes('delete') || lower.includes('remove')) {
+    return { label: 'removed', kind: 'negative' };
+  }
+  if (lower.includes('create') || lower.includes('add') || lower.includes('new')) {
+    return { label: 'added', kind: 'positive' };
+  }
+  return { label: 'changed', kind: 'neutral' };
+}
+
 export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
   isOpen,
   onClose,
@@ -58,6 +87,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
   const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
   const [diffs, setDiffs] = useState<GitDiff[]>([]);
   const [diffLoading, setDiffLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Load commits when panel opens
   useEffect(() => {
@@ -118,8 +148,8 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
       if (!notebookId) return;
       setSelectedCommit(oid);
       setDiffLoading(true);
+      setCopied(false);
 
-      // Find index to get parent commit
       const idx = commits.findIndex(c => c.oid === oid);
       const parentCommit = idx < commits.length - 1 ? commits[idx + 1] : undefined;
       const parentOid = parentCommit?.oid;
@@ -148,7 +178,36 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     [notebookId, commits]
   );
 
-  // Render content
+  // Restore a commit
+  const handleRestore = useCallback(
+    async (oid: string) => {
+      if (!notebookId) return;
+      try {
+        const result = await window.readied.git.checkout(notebookId, oid);
+        if (result.success) {
+          onClose();
+        }
+      } catch {
+        // Restore failed silently
+      }
+    },
+    [notebookId, onClose]
+  );
+
+  // Copy commit details to clipboard
+  const handleCopyDetails = useCallback(() => {
+    if (diffs.length === 0) return;
+    const text = diffs.map(d => d.changes).join('\n\n');
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [diffs]);
+
+  // Get selected commit object
+  const selectedCommitObj = selectedCommit ? commits.find(c => c.oid === selectedCommit) : null;
+
+  // Render timeline content
   const renderContent = () => {
     if (loading) {
       return (
@@ -184,74 +243,58 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     }
 
     return (
-      <>
-        <div className={styles.list}>
-          {commits.map(commit => (
-            <button
-              key={commit.oid}
-              type="button"
-              className={`${styles.item} ${selectedCommit === commit.oid ? styles.itemActive : ''}`}
-              onClick={() => handleSelectCommit(commit.oid)}
-            >
-              <span className={styles.commitMessage}>{commit.message}</span>
-              <span className={styles.commitMeta}>
-                <GitCommitHorizontal size={12} />
-                <span className={styles.commitSha}>{commit.oid.slice(0, 7)}</span>
-                <span>{formatTimestamp(commit.author.timestamp)}</span>
-              </span>
-            </button>
-          ))}
-        </div>
+      <div className={styles.timeline}>
+        {commits.map((commit, idx) => {
+          const isActive = selectedCommit === commit.oid;
+          const isLast = idx === commits.length - 1;
+          const delta = estimateWordDelta(commit.message);
 
-        {/* Diff view */}
-        {selectedCommit && (
-          <div className={styles.diffView}>
-            <div className={styles.diffHeader}>
-              <span className={styles.diffTitle}>Details</span>
-              <button
-                type="button"
-                className={styles.diffCloseBtn}
-                onClick={() => {
-                  setSelectedCommit(null);
-                  setDiffs([]);
-                }}
-              >
-                Close
-              </button>
-            </div>
-            {diffLoading ? (
-              <div className={styles.emptyState}>
-                <div className={styles.spinner} />
+          return (
+            <div
+              key={commit.oid}
+              className={`${styles.timelineNode} ${isLast ? styles.timelineNodeLast : ''}`}
+              onClick={() => handleSelectCommit(commit.oid)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  void handleSelectCommit(commit.oid);
+                }
+              }}
+            >
+              {/* Track: dot + connecting line */}
+              <div className={styles.timelineTrack}>
+                <div className={isActive ? styles.timelineDotActive : styles.timelineDot} />
+                {!isLast && <div className={styles.timelineLine} />}
               </div>
-            ) : (
-              diffs.map((diff, i) => (
-                <div key={i} className={styles.diffFile}>
-                  <div className={styles.diffFileName}>{diff.file}</div>
-                  <div className={styles.diffContent}>
-                    {diff.changes.split('\n').map((line, j) => {
-                      if (line.startsWith('+ ')) {
-                        return (
-                          <div key={j} className={styles.diffAdd}>
-                            {line}
-                          </div>
-                        );
-                      }
-                      if (line.startsWith('- ')) {
-                        return (
-                          <div key={j} className={styles.diffRemove}>
-                            {line}
-                          </div>
-                        );
-                      }
-                      return <div key={j}>{line}</div>;
-                    })}
-                  </div>
+
+              {/* Content */}
+              <div className={isActive ? styles.timelineContentActive : styles.timelineContent}>
+                <div className={styles.timelineTimestamp}>
+                  {formatTimestamp(commit.author.timestamp)}
                 </div>
-              ))
-            )}
-          </div>
-        )}
-      </>
+                <div className={styles.timelineMessage}>{commit.message}</div>
+                <div className={styles.timelineMeta}>
+                  <GitCommitHorizontal size={11} />
+                  <span className={styles.commitSha}>{commit.oid.slice(0, 7)}</span>
+                  <span
+                    className={`${styles.wordDelta} ${
+                      delta.kind === 'positive'
+                        ? styles.wordDeltaPositive
+                        : delta.kind === 'negative'
+                          ? styles.wordDeltaNegative
+                          : styles.wordDeltaNeutral
+                    }`}
+                  >
+                    {delta.label}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
@@ -286,6 +329,87 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
         </header>
 
         <div className={styles.content}>{renderContent()}</div>
+
+        {/* Detail pane - shown when a commit is selected */}
+        {selectedCommit && selectedCommitObj && (
+          <div className={styles.detailPane}>
+            <div className={styles.detailHeader}>
+              <span className={styles.detailTitle}>Details</span>
+              <button
+                type="button"
+                className={styles.detailCloseBtn}
+                onClick={() => {
+                  setSelectedCommit(null);
+                  setDiffs([]);
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            {diffLoading ? (
+              <div className={styles.emptyState}>
+                <div className={styles.spinner} />
+              </div>
+            ) : (
+              <>
+                <div className={styles.detailInfo}>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>SHA</span>
+                    <span className={styles.detailValue}>{selectedCommit.slice(0, 8)}</span>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Author</span>
+                    <span>{selectedCommitObj.author.name}</span>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Date</span>
+                    <span>{formatFullDate(selectedCommitObj.author.timestamp)}</span>
+                  </div>
+                </div>
+
+                {/* Diff content */}
+                {diffs.map((diff, i) => (
+                  <div key={i} className={styles.diffContent}>
+                    {diff.changes.split('\n').map((line, j) => {
+                      if (line.startsWith('+ ')) {
+                        return (
+                          <div key={j} className={styles.diffAdd}>
+                            {line}
+                          </div>
+                        );
+                      }
+                      if (line.startsWith('- ')) {
+                        return (
+                          <div key={j} className={styles.diffRemove}>
+                            {line}
+                          </div>
+                        );
+                      }
+                      return <div key={j}>{line}</div>;
+                    })}
+                  </div>
+                ))}
+
+                {/* Actions */}
+                <div className={styles.detailActions}>
+                  <button
+                    type="button"
+                    className={styles.actionBtnPrimary}
+                    onClick={() => handleRestore(selectedCommit)}
+                  >
+                    <RotateCcw size={13} />
+                    Restore this version
+                  </button>
+                  <button type="button" className={styles.actionBtn} onClick={handleCopyDetails}>
+                    {copied ? <Check size={13} /> : <Copy size={13} />}
+                    {copied ? 'Copied' : 'Copy content'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </aside>
     </>,
     document.body

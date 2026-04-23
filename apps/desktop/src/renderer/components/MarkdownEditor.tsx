@@ -499,7 +499,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         });
       };
 
-      // Handle paste: HTML tables → GFM markdown, images → embed
+      // Handle paste: HTML tables → GFM markdown, images → embed, URLs → auto-link
       const handlePaste = async (e: ClipboardEvent) => {
         // 1. Check for HTML with tables – convert to GFM markdown
         const html = e.clipboardData?.getData('text/html');
@@ -519,28 +519,86 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const items = Array.from(e.clipboardData?.items || []);
         const imageItem = items.find(i => i.type.startsWith('image/'));
 
-        if (!imageItem) return; // Let default paste handle text
-        const currentNoteId = noteIdRef.current;
-        if (!currentNoteId) return;
+        if (imageItem) {
+          const currentNoteId = noteIdRef.current;
+          if (!currentNoteId) return;
 
-        e.preventDefault();
-        const blob = imageItem.getAsFile();
-        if (!blob) return;
+          e.preventDefault();
+          const blob = imageItem.getAsFile();
+          if (!blob) return;
 
-        const bytes = await blob.arrayBuffer();
-        const result = await window.readied.embeds.saveAsset(currentNoteId, blob.type, bytes);
-        if (!result.ok) {
-          console.error('Failed to save asset:', result.error);
+          const bytes = await blob.arrayBuffer();
+          const result = await window.readied.embeds.saveAsset(currentNoteId, blob.type, bytes);
+          if (!result.ok) {
+            console.error('Failed to save asset:', result.error);
+            return;
+          }
+
+          const embed = `![[${result.filename}]]`;
+          const pos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: pos, insert: embed },
+            selection: EditorSelection.cursor(pos + embed.length),
+            userEvent: 'input.paste',
+          });
           return;
         }
 
-        const embed = `![[${result.filename}]]`;
-        const pos = view.state.selection.main.head;
-        view.dispatch({
-          changes: { from: pos, insert: embed },
-          selection: EditorSelection.cursor(pos + embed.length),
-          userEvent: 'input.paste',
-        });
+        // 3. Check for URL paste — auto-link with fetched title
+        const plainText = e.clipboardData?.getData('text/plain')?.trim();
+        if (plainText && /^https?:\/\/\S+$/.test(plainText)) {
+          // Check if cursor is already inside a markdown link syntax
+          const pos = view.state.selection.main.head;
+          const lineText = view.state.doc.lineAt(pos).text;
+          const lineOffset = pos - view.state.doc.lineAt(pos).from;
+          const textBefore = lineText.slice(0, lineOffset);
+          // If we're inside [...] or (...) of a link, don't intercept
+          const openBracket = textBefore.lastIndexOf('[');
+          const closeBracket = textBefore.lastIndexOf(']');
+          const openParen = textBefore.lastIndexOf('(');
+          const closeParen = textBefore.lastIndexOf(')');
+          if (
+            openBracket > closeBracket || // inside [...]
+            openParen > closeParen // inside (...)
+          ) {
+            return; // Let default paste handle it
+          }
+
+          e.preventDefault();
+
+          // Insert raw URL immediately
+          const from = view.state.selection.main.from;
+          const to = view.state.selection.main.to;
+          view.dispatch({
+            changes: { from, to, insert: plainText },
+            selection: EditorSelection.cursor(from + plainText.length),
+            userEvent: 'input.paste',
+          });
+
+          // Fetch title in background and replace with markdown link
+          window.readied.editor
+            .fetchUrlTitle(plainText)
+            .then(({ title }) => {
+              if (!title) return;
+              // Find the URL in the document — it may have moved due to edits
+              const currentDoc = view.state.doc.toString();
+              const urlIndex = currentDoc.indexOf(plainText, from > 20 ? from - 20 : 0);
+              if (urlIndex === -1) return;
+              // Verify it's still a bare URL (not already wrapped in markdown link)
+              const charBefore = urlIndex > 0 ? currentDoc[urlIndex - 1] : '';
+              if (charBefore === '(' || charBefore === '<') return;
+              const mdLink = `[${title}](${plainText})`;
+              view.dispatch({
+                changes: { from: urlIndex, to: urlIndex + plainText.length, insert: mdLink },
+                selection: EditorSelection.cursor(urlIndex + mdLink.length),
+                userEvent: 'input.paste',
+              });
+            })
+            .catch(() => {
+              // Fetch failed — URL was already inserted, nothing to do
+            });
+          return;
+        }
       };
 
       // Add event listeners to the editor DOM

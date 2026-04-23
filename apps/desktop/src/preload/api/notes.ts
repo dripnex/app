@@ -6,6 +6,7 @@ import type {
   ListOptions,
   NoteCounts,
   TagWithColor,
+  ActivityStats,
 } from './types';
 
 export interface NotesAPI {
@@ -38,6 +39,7 @@ export interface NotesAPI {
   setManualTags: (noteId: string, tags: string[]) => Promise<{ ok: boolean }>;
   getManualTags: (noteId: string) => Promise<string[]>;
   count: () => Promise<NoteCounts>;
+  activityStats: () => Promise<ActivityStats>;
 }
 
 export function createNotesApi(): NotesAPI {
@@ -66,5 +68,6 @@ export function createNotesApi(): NotesAPI {
     setManualTags: (noteId, tags) => ipcRenderer.invoke('notes:setManualTags', noteId, tags),
     getManualTags: noteId => ipcRenderer.invoke('notes:getManualTags', noteId),
     count: () => ipcRenderer.invoke('notes:count'),
+    activityStats: () => ipcRenderer.invoke('notes:activityStats'),
   };
 }

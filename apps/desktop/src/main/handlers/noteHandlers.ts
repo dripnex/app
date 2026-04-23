@@ -375,6 +375,63 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
     }
   );
 
+  // Activity stats (notes created/updated per week, last 52 weeks)
+  ipcMain.handle('notes:activityStats', async () => {
+    const allNotes = await repo.list({ archived: 'all', limit: 10000 });
+    const now = Date.now();
+    const fiftyTwoWeeksAgo = now - 52 * 7 * 24 * 60 * 60 * 1000;
+
+    // Build a map of week -> { created, updated }
+    const weekMap = new Map<string, { created: number; updated: number }>();
+
+    for (const note of allNotes) {
+      const createdMs = new Date(note.metadata.createdAt).getTime();
+      const updatedMs = new Date(note.metadata.updatedAt).getTime();
+
+      if (createdMs >= fiftyTwoWeeksAgo) {
+        const weekKey = getISOWeek(new Date(note.metadata.createdAt));
+        const entry = weekMap.get(weekKey) ?? { created: 0, updated: 0 };
+        entry.created++;
+        weekMap.set(weekKey, entry);
+      }
+
+      if (updatedMs >= fiftyTwoWeeksAgo && updatedMs !== createdMs) {
+        const weekKey = getISOWeek(new Date(note.metadata.updatedAt));
+        const entry = weekMap.get(weekKey) ?? { created: 0, updated: 0 };
+        entry.updated++;
+        weekMap.set(weekKey, entry);
+      }
+    }
+
+    // Convert to sorted array
+    const weeks = Array.from(weekMap.entries())
+      .map(([week, counts]) => ({ week, ...counts }))
+      .sort((a, b) => a.week.localeCompare(b.week));
+
+    // Calculate current streak (consecutive weeks with activity ending at current week)
+    const currentWeek = getISOWeek(new Date());
+    let streak = 0;
+    let checkDate = new Date();
+    for (let i = 0; i < 52; i++) {
+      const weekKey = getISOWeek(checkDate);
+      const entry = weekMap.get(weekKey);
+      if (entry && (entry.created > 0 || entry.updated > 0)) {
+        streak++;
+      } else if (i > 0) {
+        // Allow current week to have no activity yet
+        break;
+      }
+      checkDate = new Date(checkDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    return {
+      weeks,
+      totalNotes: allNotes.length,
+      currentStreak: streak,
+      currentWeek,
+    };
+  });
+
   // Count notes
   ipcMain.handle('notes:count', async () => {
     // Get all notes to compute counts
@@ -426,4 +483,15 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
 
     return counts;
   });
+}
+
+/** Get ISO week string (YYYY-Www) for a date */
+function getISOWeek(date: Date): string {
+  const d = new Date(date.getTime());
+  d.setHours(0, 0, 0, 0);
+  // Set to nearest Thursday (current date + 4 - current day number, with Sunday=7)
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }

@@ -13,6 +13,10 @@ export interface LogAPI {
   getLogPath: () => Promise<string | null>;
 }
 
+export interface EditorAPI {
+  fetchUrlTitle: (url: string) => Promise<{ title: string | null }>;
+}
+
 export interface LinksAPI {
   sync: (noteId: string, content: string) => Promise<{ ok: boolean }>;
   getBacklinks: (noteId: string) => Promise<BacklinkInfo[]>;
@@ -99,6 +103,12 @@ export function createWindowsApi(): WindowsAPI {
   return {
     openNote: (noteId, noteTitle) => ipcRenderer.invoke('window:openNote', noteId, noteTitle),
     openSettings: () => ipcRenderer.invoke('window:openSettings'),
+  };
+}
+
+export function createEditorApi(): EditorAPI {
+  return {
+    fetchUrlTitle: (url: string) => ipcRenderer.invoke('editor:fetchUrlTitle', url),
   };
 }
 

@@ -19,6 +19,7 @@ import { NotebookList } from './NotebookList';
 import { TagsList } from './TagsList';
 import { StatusFilters } from './StatusFilters';
 import { SidebarFooter } from './SidebarFooter';
+import { ActivityStats } from './ActivityStats';
 import { EnableSyncModal } from '../sync';
 import { useSyncOnboarding } from '../../hooks/useSyncOnboarding';
 import { NotebookCreateModal } from './NotebookCreateModal';
@@ -144,6 +145,10 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
             selectedStatus={statusFilter}
             onSelectStatus={setStatusFilter}
           />
+        </SidebarSection>
+
+        <SidebarSection title="Activity" collapsible defaultCollapsed>
+          <ActivityStats />
         </SidebarSection>
 
         {/* Plugin sidebar sections */}
