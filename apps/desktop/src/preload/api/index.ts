@@ -45,5 +45,14 @@ export {
   createEmbedsApi,
   createWindowsApi,
   createShareApi,
+  createEditorApi,
 } from './app';
-export type { AppVersionAPI, LogAPI, LinksAPI, EmbedsAPI, WindowsAPI, ShareAPI } from './app';
+export type {
+  AppVersionAPI,
+  LogAPI,
+  LinksAPI,
+  EmbedsAPI,
+  WindowsAPI,
+  ShareAPI,
+  EditorAPI,
+} from './app';

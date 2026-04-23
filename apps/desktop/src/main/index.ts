@@ -647,6 +647,43 @@ app
     // App version
     ipcMain.handle('app:version', () => app.getVersion());
 
+    // Editor: fetch URL title for auto-link on paste
+    ipcMain.handle('editor:fetchUrlTitle', async (_event, url: string) => {
+      try {
+        // Validate URL to prevent fetching arbitrary resources
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return { title: null };
+        }
+        const response = await net.fetch(url, {
+          signal: AbortSignal.timeout(3000),
+          headers: { 'User-Agent': 'Readied/' + app.getVersion() },
+        });
+        // Only parse HTML responses
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('text/html')) {
+          return { title: null };
+        }
+        // Read only first 16KB to extract <title>
+        const reader = response.body?.getReader();
+        if (!reader) return { title: null };
+        let html = '';
+        const decoder = new TextDecoder();
+        while (html.length < 16384) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          html += decoder.decode(value, { stream: true });
+          // Early exit once we have </title>
+          if (/<\/title>/i.test(html)) break;
+        }
+        reader.cancel().catch(() => {});
+        const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        return { title: match?.[1]?.trim() || null };
+      } catch {
+        return { title: null };
+      }
+    });
+
     // Theme — sync Electron nativeTheme with renderer
     ipcMain.on('theme:set-source', (_event, source: string) => {
       if (source === 'dark' || source === 'light' || source === 'system') {

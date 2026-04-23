@@ -343,10 +343,11 @@ export function NoteList({
           <EmptyState variant={getEmptyVariant()} />
         ) : (
           <ul className="note-list-items" role="listbox" aria-label="Notes">
-            {notes.map(note => (
+            {notes.map((note, index) => (
               <NoteListItem
                 key={note.id}
                 note={note}
+                index={index}
                 isSelected={note.id === selectedId}
                 onSelect={onSelect}
                 onTagClick={onTagClick}
@@ -392,6 +393,7 @@ export function NoteList({
 
 interface NoteListItemProps {
   note: NoteWithExcerpt;
+  index: number;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onTagClick: (tag: string) => void;
@@ -400,6 +402,7 @@ interface NoteListItemProps {
 
 function NoteListItem({
   note,
+  index,
   isSelected,
   onSelect,
   onTagClick,
@@ -425,6 +428,7 @@ function NoteListItem({
       role="option"
       aria-selected={isSelected}
       className={`note-list-item ${isSelected ? 'selected' : ''}`}
+      style={{ '--item-index': Math.min(index, 10) } as React.CSSProperties}
       onClick={() => onSelect(note.id)}
       onContextMenu={e => onContextMenu(e, note)}
       onKeyDown={e => {

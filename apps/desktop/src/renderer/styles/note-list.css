@@ -196,6 +196,21 @@
 }
 
 /* ============================================================================
+   Note List Item Enter Animation
+   ============================================================================ */
+
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
    Note List Item
    ============================================================================ */
 
@@ -205,6 +220,8 @@
   cursor: pointer;
   position: relative;
   transition: all var(--transition-fast);
+  animation: fade-slide-in 150ms ease both;
+  animation-delay: calc(var(--item-index, 0) * 30ms);
 }
 
 .note-list-item:hover {

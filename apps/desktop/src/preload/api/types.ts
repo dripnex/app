@@ -76,6 +76,20 @@ export interface NoteCounts {
   byStatus: Record<NoteStatus, number>;
 }
 
+/** Activity stats for heatmap */
+export interface ActivityWeek {
+  week: string;
+  created: number;
+  updated: number;
+}
+
+export interface ActivityStats {
+  weeks: ActivityWeek[];
+  totalNotes: number;
+  currentStreak: number;
+  currentWeek: string;
+}
+
 /** Backup info */
 export interface BackupInfo {
   filename: string;
