@@ -13,18 +13,7 @@ import {
 } from '@readied/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
 import type { RegisteredCommand } from '@readied/command-registry';
-import type { AiPanelMode } from '@readied/ai-core';
-import {
-  SUMMARIZE_SYSTEM_PROMPT,
-  SUMMARIZE_USER_TEMPLATE,
-  REWRITE_SYSTEM_PROMPT,
-  REWRITE_USER_TEMPLATE,
-  TWEET_SYSTEM_PROMPT,
-  TWEET_USER_TEMPLATE,
-  resolveTemplate,
-} from '@readied/ai-core';
 import { useStore } from 'zustand';
-import type { NoteSnapshot, NoteStatus } from '../preload/index';
 import { UpdateBanner } from './components/UpdateBanner';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
@@ -33,7 +22,6 @@ import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
 import { AiPanel } from './components/ai/AiPanel';
-import type { AiInitialCommand } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { Toaster } from './ui/primitives';
@@ -48,19 +36,11 @@ import {
   useNavigationActions,
   useSortBy,
   useSortOrder,
-  useStatusFilter,
 } from './hooks/useNavigation';
-import { useSearchNotes, useNoteMutations } from './hooks/useNotes';
-import { useSyncLinks } from './hooks/useLinks';
+import { useSearchNotes } from './hooks/useNotes';
 import { useDebouncedSearch } from './hooks/useDebouncedSearch';
-import { useCommandKeybindings } from './hooks/useCommandKeybindings';
-import { useRegisterAppCommands } from './hooks/useRegisterAppCommands';
-import { useRegisterAiCommands } from './hooks/useRegisterAiCommands';
-import { useRegisterPluginAiCommands } from './hooks/useRegisterPluginAiCommands';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { builtInPlugins } from './plugins';
-import { useEditorBufferStore } from './stores/editorBufferStore';
-import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
@@ -69,6 +49,13 @@ import { useAuthStore } from './stores/authStore';
 import { useSyncStore } from './stores/syncStore';
 import { useSettingsStore, selectAppearance } from './stores/settings';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
+import type { NoteSnapshot } from '../preload/index';
+
+// Extracted hooks
+import { useDeepLinks } from './hooks/useDeepLinks';
+import { useAutoSave } from './hooks/useAutoSave';
+import { useNoteActions } from './hooks/useNoteActions';
+import { useAppCommands } from './hooks/useAppCommands';
 
 /** Shows toast errors for plugins that failed to load */
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
@@ -116,7 +103,6 @@ function NotesApp() {
   useEffect(() => {
     const savedThemeId = appearance?.activeThemeId;
     if (savedThemeId && registeredThemeCount > 0) {
-      // Only restore if the theme is actually registered (plugin loaded)
       const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
       if (exists) {
         themeRegistryStore.getState().setActive(savedThemeId);
@@ -135,11 +121,7 @@ function NotesApp() {
   const selectedTag = useSelectedTag();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
-  const statusFilter = useStatusFilter();
-  const { goToAllNotes, goToTag, setSort } = useNavigationActions();
-
-  // Editor preferences
-  const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
+  const { goToTag, setSort } = useNavigationActions();
 
   // Load tag colors on mount (once)
   useEffect(() => {
@@ -157,32 +139,14 @@ function NotesApp() {
     return cleanup;
   }, []);
 
-  // Listen for sync status events pushed from main process (auto-sync backoff, auth errors)
+  // Listen for sync status events pushed from main process
   useEffect(() => {
     const cleanup = useSyncStore.getState().initSyncStatusListener();
     return cleanup;
   }, []);
 
-  // Handle deep link auth verification (readied://auth/verify?token=xxx)
-  useEffect(() => {
-    const handleAuthVerification = async (...args: unknown[]) => {
-      const token = args[0] as string;
-      if (!token) return;
-
-      try {
-        await useAuthStore.getState().verifyToken(token);
-      } catch (error) {
-        console.error('Deep link auth verification failed:', error);
-      }
-    };
-
-    // Listen for deep link auth verification events
-    const removeListener = window.readied.ipc.on('auth:verify-token', handleAuthVerification);
-
-    return () => {
-      removeListener();
-    };
-  }, []);
+  // Handle deep link auth verification
+  useDeepLinks();
 
   // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
@@ -191,9 +155,6 @@ function NotesApp() {
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
-  const [aiPanelMode, setAiPanelMode] = useState<AiPanelMode>('chat');
-  const [pendingAiCommand, setPendingAiCommand] = useState<AiInitialCommand | null>(null);
 
   // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
   const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
@@ -255,7 +216,6 @@ function NotesApp() {
     () =>
       createDataAPI({
         async getNotes(options) {
-          // Fetch all notes (no limit/offset) so we can filter first, then paginate
           const notes = await window.readied.notes.list(
             options
               ? {
@@ -272,7 +232,6 @@ function NotesApp() {
           if (options?.isPinned !== undefined)
             filtered = filtered.filter(n => n.isPinned === options.isPinned);
 
-          // Client-side sort for wordCount (not supported by bridge)
           if (options?.sortBy === 'wordCount') {
             const dir = options.sortOrder === 'asc' ? 1 : -1;
             filtered = [...filtered].sort((a, b) => dir * (a.wordCount - b.wordCount));
@@ -280,7 +239,6 @@ function NotesApp() {
 
           const total = filtered.length;
 
-          // Apply pagination after filtering
           if (options?.offset || options?.limit) {
             const start = options.offset ?? 0;
             const end = options.limit ? start + options.limit : undefined;
@@ -386,363 +344,67 @@ function NotesApp() {
     []
   );
 
-  const toggleCommandPalette = useCallback(() => setIsCommandPaletteOpen(prev => !prev), []);
-  const closeCommandPalette = useCallback(() => setIsCommandPaletteOpen(false), []);
-
   // Search query
   const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
 
-  // Mutations
-  const {
-    createNote,
-    updateNote,
-    updateNoteTitle,
-    deleteNote,
-    archiveNote,
-    restoreNote,
-    duplicateNote,
-    moveNote,
-    setNoteStatus,
-    pinNote,
-    unpinNote,
-  } = useNoteMutations();
-
-  // Links sync mutation
-  const syncLinks = useSyncLinks();
-
   // Determine which notes to display
-  // Both filteredNotes and searchNotesQuery.data have excerpt
   const displayedNotes = debouncedSearch.trim() ? (searchNotesQuery.data ?? []) : filteredNotes;
-
   const isLoading = debouncedSearch.trim() !== '' && searchNotesQuery.isLoading;
+
+  // Note CRUD actions (extracted hook)
+  const {
+    handleNewNote,
+    handleSelectNote,
+    handleWikilinkClick,
+    handleUpdateNote,
+    handleUpdateTitle,
+    handleDeleteNote,
+    handleArchiveNote,
+    handleDuplicateNote,
+    handlePinNote,
+    handleMoveNote,
+    handleMoveSelectedNote,
+    handleStatusChange,
+  } = useNoteActions({
+    selectedNote,
+    setSelectedNote,
+    selectedNotebookId,
+    clearSearch,
+    appAPI,
+    dataAPI,
+    displayedNotes,
+  });
+
+  // Flush pending saves before window close
+  useAutoSave(handleUpdateNote);
+
+  // Commands, AI panel, keyboard shortcuts (extracted hook)
+  const {
+    isAiPanelOpen,
+    aiPanelMode,
+    pendingAiCommand,
+    closeAiPanel,
+    clearPendingAiCommand,
+    aiReplaceSelection,
+    aiInsertAtCursor,
+    closeCommandPalette,
+  } = useAppCommands({
+    handleNewNote,
+    handleDuplicateNote,
+    selectedNote,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
+    isGraphOpen,
+    setIsGraphOpen,
+    searchQuery,
+    clearSearch,
+    setSelectedNote,
+  });
 
   // Determine selected quick filter for NoteList header
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
 
-  // Create new note (respects current navigation context)
-  const handleNewNote = useCallback(async () => {
-    const newNote = await createNote.mutateAsync({
-      content: '# Untitled\n\n',
-      notebookId: selectedNotebookId ?? undefined,
-    });
-    setSelectedNote(newNote);
-    clearSearch();
-    appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
-    dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
-  }, [createNote, selectedNotebookId, clearSearch, appAPI, dataAPI]);
-
-  // Select note
-  const handleSelectNote = useCallback(
-    async (id: string) => {
-      const result = await window.readied.notes.get(id);
-      if (result.ok) {
-        setSelectedNote(result.data);
-        appAPI._notifyNoteSelected({
-          id: result.data.id,
-          title: result.data.title,
-          content: result.data.content,
-        });
-      }
-    },
-    [appAPI]
-  );
-
-  // Handle wikilink click - best-effort navigation by title
-  const handleWikilinkClick = useCallback(
-    async (title: string) => {
-      const notes = await window.readied.notes.search(title);
-      if (notes.length > 0) {
-        // Find exact match (case-insensitive)
-        const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
-        if (match) {
-          void handleSelectNote(match.id);
-        }
-      }
-      // No-op if note doesn't exist (future: could show toast or create note)
-    },
-    [handleSelectNote]
-  );
-
-  // Update note content
-  const handleUpdateNote = useCallback(
-    async (content: string) => {
-      if (!selectedNote) return;
-      const updated = await updateNote.mutateAsync({ id: selectedNote.id, content });
-      setSelectedNote(updated);
-      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id: selectedNote.id });
-      // Sync links after save (fire-and-forget, don't block UI)
-      syncLinks.mutate({ noteId: selectedNote.id, content });
-
-      // Auto-commit to git if enabled (fire-and-forget, don't block UI)
-      if (updated.notebookId) {
-        try {
-          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
-          if (
-            gitSettings.success &&
-            gitSettings.settings?.enabled &&
-            gitSettings.settings?.autoCommit
-          ) {
-            // Write note file to git repo
-            await window.readied.git.writeNote(updated.notebookId, updated.id, content);
-            // Commit with note title
-            await window.readied.git.commit(updated.notebookId, `Update note: ${updated.title}`, [
-              `${updated.id}.md`,
-            ]);
-          }
-        } catch (error) {
-          console.error('Auto-commit failed:', error);
-          // Don't throw - this shouldn't block the save flow
-        }
-      }
-    },
-    [selectedNote, updateNote, syncLinks, dataAPI]
-  );
-
-  // Keep a ref to handleUpdateNote so beforeunload always has the latest
-  const handleUpdateNoteRef = useRef(handleUpdateNote);
-  handleUpdateNoteRef.current = handleUpdateNote;
-
-  // Flush pending saves before window close
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const bufferState = useEditorBufferStore.getState();
-      if (bufferState.isDirty && bufferState.noteId) {
-        // Fire the save — can't await in beforeunload, but the IPC call
-        // will be queued before the renderer is torn down
-        void handleUpdateNoteRef.current(bufferState.liveContent);
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
-
-  // Update note title
-  const handleUpdateTitle = useCallback(
-    async (title: string) => {
-      if (!selectedNote) return;
-      const updated = await updateNoteTitle.mutateAsync({ id: selectedNote.id, title });
-      setSelectedNote(updated);
-      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id: selectedNote.id });
-
-      // Auto-commit to git if enabled (fire-and-forget, don't block UI)
-      if (updated.notebookId) {
-        try {
-          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
-          if (
-            gitSettings.success &&
-            gitSettings.settings?.enabled &&
-            gitSettings.settings?.autoCommit
-          ) {
-            // Write note file to git repo (title change also affects content)
-            await window.readied.git.writeNote(updated.notebookId, updated.id, updated.content);
-            // Commit with note title
-            await window.readied.git.commit(updated.notebookId, `Rename note: ${updated.title}`, [
-              `${updated.id}.md`,
-            ]);
-          }
-        } catch (error) {
-          console.error('Auto-commit failed:', error);
-          // Don't throw - this shouldn't block the save flow
-        }
-      }
-    },
-    [selectedNote, updateNoteTitle, dataAPI]
-  );
-
-  // Delete note
-  const handleDeleteNote = useCallback(
-    async (id: string) => {
-      await deleteNote.mutateAsync(id);
-      if (selectedNote?.id === id) {
-        setSelectedNote(null);
-      }
-      appAPI._notifyNoteDeleted(id);
-      dataAPI._notifyNotesChanged({ kind: 'note', action: 'deleted', id });
-    },
-    [selectedNote, deleteNote, appAPI, dataAPI]
-  );
-
-  // Archive note (toggle based on current state)
-  const handleArchiveNote = useCallback(
-    async (id: string) => {
-      const result = await window.readied.notes.get(id);
-      if (!result.ok) return;
-
-      if (result.data.isArchived) {
-        await restoreNote.mutateAsync(id);
-      } else {
-        await archiveNote.mutateAsync(id);
-      }
-      if (selectedNote?.id === id) {
-        setSelectedNote(null);
-      }
-    },
-    [selectedNote, archiveNote, restoreNote]
-  );
-
-  // Duplicate note
-  const handleDuplicateNote = useCallback(
-    async (id: string) => {
-      const duplicated = await duplicateNote.mutateAsync(id);
-      setSelectedNote(duplicated);
-      goToAllNotes();
-    },
-    [duplicateNote, goToAllNotes]
-  );
-
-  // Pin/unpin note (toggle)
-  const handlePinNote = useCallback(
-    async (id: string) => {
-      const note = displayedNotes.find(n => n.id === id);
-      if (!note) return;
-      if (note.isPinned) {
-        await unpinNote.mutateAsync(id);
-      } else {
-        await pinNote.mutateAsync(id);
-      }
-    },
-    [displayedNotes, pinNote, unpinNote]
-  );
-
-  // Move note to notebook
-  const handleMoveNote = useCallback(
-    async (noteId: string, notebookId: string) => {
-      await moveNote.mutateAsync({ noteId, notebookId });
-    },
-    [moveNote]
-  );
-
-  // Move current note to notebook (for editor header)
-  const handleMoveSelectedNote = useCallback(
-    async (notebookId: string) => {
-      if (!selectedNote) return;
-      const updated = await moveNote.mutateAsync({ noteId: selectedNote.id, notebookId });
-      setSelectedNote(updated);
-    },
-    [selectedNote, moveNote]
-  );
-
-  // Change note status
-  const handleStatusChange = useCallback(
-    async (status: NoteStatus) => {
-      if (!selectedNote) return;
-      const updated = await setNoteStatus.mutateAsync({ id: selectedNote.id, status });
-      // If there's a status filter active and the note no longer matches, deselect it
-      if (statusFilter && status !== statusFilter) {
-        setSelectedNote(null);
-      } else {
-        setSelectedNote(updated);
-      }
-    },
-    [selectedNote, setNoteStatus, statusFilter]
-  );
-
-  // Register app commands (new note, duplicate, search, etc.)
-  useRegisterAppCommands({
-    onNewNote: handleNewNote,
-    onDuplicateNote: useCallback(() => {
-      if (selectedNote) void handleDuplicateNote(selectedNote.id);
-    }, [selectedNote, handleDuplicateNote]),
-    onFocusSearch: useCallback(() => {
-      const searchInput = document.querySelector('.search-input') as HTMLInputElement;
-      searchInput?.focus();
-    }, []),
-    onCycleViewMode: cycleViewMode,
-    onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), []),
-    onOpenSettings: useCallback(() => window.readied.windows.openSettings(), []),
-    onCommandPalette: toggleCommandPalette,
-  });
-
-  // Register AI commands (toggle panel, ask-notes)
-  const toggleAiPanel = useCallback(() => {
-    setIsAiPanelOpen(prev => {
-      if (!prev) setAiPanelMode('ask-notes');
-      return !prev;
-    });
-  }, []);
-  const closeAiPanel = useCallback(() => {
-    setIsAiPanelOpen(false);
-    setAiPanelMode('ask-notes');
-  }, []);
-  const openAskNotes = useCallback(() => {
-    setAiPanelMode('ask-notes');
-    setIsAiPanelOpen(true);
-  }, []);
-
-  // Listen for the plugin's Sparkles button CustomEvent
-  useEffect(() => {
-    const handler = () => toggleAiPanel();
-    window.addEventListener('readied:ai:toggle-panel', handler);
-    return () => window.removeEventListener('readied:ai:toggle-panel', handler);
-  }, [toggleAiPanel]);
-
-  /** Helper: get selection text from editor */
-  const getSelectionText = useCallback(() => {
-    const view = getEditorView();
-    if (!view) return '';
-    const { from, to } = view.state.selection.main;
-    return view.state.sliceDoc(from, to);
-  }, []);
-
-  /** Helper: replace selection in editor */
-  const aiReplaceSelection = useCallback((text: string) => {
-    const view = getEditorView();
-    if (!view) return;
-    const { from, to } = view.state.selection.main;
-    view.dispatch({
-      changes: { from, to, insert: text },
-      selection: { anchor: from + text.length },
-    });
-    view.focus();
-  }, []);
-
-  /** Build and dispatch an AI command with given prompts and output target */
-  const dispatchAiCommand = useCallback(
-    (systemPrompt: string, userTemplate: string, outputTarget: 'replace' | 'insert' | 'panel') => {
-      const selection = getSelectionText();
-      if (!selection) return; // Nothing selected — no-op
-      const userPrompt = resolveTemplate(userTemplate, { selection });
-      setPendingAiCommand({ systemPrompt, userPrompt, outputTarget });
-      setAiPanelMode('chat');
-      setIsAiPanelOpen(true);
-    },
-    [getSelectionText]
-  );
-
-  const handleSummarize = useCallback(() => {
-    dispatchAiCommand(SUMMARIZE_SYSTEM_PROMPT, SUMMARIZE_USER_TEMPLATE, 'panel');
-  }, [dispatchAiCommand]);
-
-  const handleRewrite = useCallback(() => {
-    dispatchAiCommand(REWRITE_SYSTEM_PROMPT, REWRITE_USER_TEMPLATE, 'replace');
-  }, [dispatchAiCommand]);
-
-  const handleTweet = useCallback(() => {
-    dispatchAiCommand(TWEET_SYSTEM_PROMPT, TWEET_USER_TEMPLATE, 'panel');
-  }, [dispatchAiCommand]);
-
-  const clearPendingAiCommand = useCallback(() => {
-    setPendingAiCommand(null);
-  }, []);
-
-  useRegisterAiCommands({
-    onTogglePanel: toggleAiPanel,
-    onAskNotes: openAskNotes,
-    onSummarize: handleSummarize,
-    onRewrite: handleRewrite,
-    onTweet: handleTweet,
-  });
-
-  // Bridge: plugin-registered AI commands → command palette → AI panel
-  const handlePluginAiCommand = useCallback((command: AiInitialCommand) => {
-    setPendingAiCommand(command);
-    setAiPanelMode('chat');
-    setIsAiPanelOpen(true);
-  }, []);
-  useRegisterPluginAiCommands(handlePluginAiCommand);
-
-  // AI Panel callbacks — wired to existing app state
+  // AI Panel callbacks -- wired to existing app state
   const aiConfigCache = useRef<Record<string, unknown>>({});
 
   // Load AI plugin config once on mount
@@ -773,17 +435,6 @@ function NotesApp() {
     return aiConfigCache.current[key] as T | undefined;
   }, []);
 
-  const aiInsertAtCursor = useCallback((text: string) => {
-    const view = getEditorView();
-    if (!view) return;
-    const { from } = view.state.selection.main;
-    view.dispatch({
-      changes: { from, insert: text },
-      selection: { anchor: from + text.length },
-    });
-    view.focus();
-  }, []);
-
   // Plugin runtime: init once, React observes
   const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
   const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
@@ -803,13 +454,13 @@ function NotesApp() {
     []
   );
 
-  // Bridge: plugin commands → global CommandRegistry
+  // Bridge: plugin commands -> global CommandRegistry
   const registerPluginCommand = useCallback(
     (cmd: Record<string, unknown>) => commandRegistry.register(cmd as unknown as RegisteredCommand),
     []
   );
 
-  // Bridge: CM6 editor updates → plugin EditorAPI events
+  // Bridge: CM6 editor updates -> plugin EditorAPI events
   useEffect(() => {
     const ext = EditorView.updateListener.of(update => {
       if (update.docChanged) {
@@ -831,24 +482,6 @@ function NotesApp() {
       editorPluginStore.getState().unregister('__editor-event-bridge');
     };
   }, [editorAPI]);
-
-  // Global keyboard handler (routes through CommandRegistry)
-  useCommandKeybindings({
-    onEscape: useCallback(() => {
-      // Cascading escape: command palette → AI panel → graph → search → deselect note
-      if (isCommandPaletteOpen) {
-        setIsCommandPaletteOpen(false);
-      } else if (isAiPanelOpen) {
-        setIsAiPanelOpen(false);
-      } else if (isGraphOpen) {
-        setIsGraphOpen(false);
-      } else if (searchQuery) {
-        clearSearch();
-      } else if (selectedNote) {
-        setSelectedNote(null);
-      }
-    }, [isCommandPaletteOpen, isAiPanelOpen, isGraphOpen, searchQuery, selectedNote, clearSearch]),
-  });
 
   // Welcome screen completion handler
   const handleWelcomeComplete = useCallback(
@@ -945,7 +578,7 @@ function NotesApp() {
               )}
             </main>
 
-            {/* AI Assistant Panel — right side */}
+            {/* AI Assistant Panel -- right side */}
             {isAiPanelOpen && (
               <aside className="app__ai-panel">
                 <AiPanel
