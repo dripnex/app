@@ -2344,6 +2344,105 @@ function registerPluginDiscoveryHandlers(): void {
     }
   });
 
+  // Install plugin from a remote URL (marketplace download)
+  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, _pluginSlug: string) => {
+    try {
+      // Safety: only allow https URLs
+      if (!url.startsWith('https://')) {
+        return { success: false, error: 'Only HTTPS URLs are allowed' };
+      }
+
+      // Ensure plugins dir exists
+      await mkdir(paths.plugins, { recursive: true });
+
+      // Download to a temp file inside the plugins dir
+      const tmpDir = join(paths.plugins, `__downloading_${Date.now()}`);
+      await mkdir(tmpDir, { recursive: true });
+
+      const response = await net.fetch(url);
+      if (!response.ok) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: `Download failed: HTTP ${response.status}` };
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      // Determine archive type from URL or content-type
+      const lowerUrl = url.toLowerCase();
+      const isZip = lowerUrl.endsWith('.zip') || lowerUrl.includes('.zip');
+      const archiveExt = isZip ? '.zip' : '.tar.gz';
+      const archivePath = join(tmpDir, `plugin${archiveExt}`);
+      await writeFile(archivePath, buffer);
+
+      // Extract to a staging dir
+      const stageDir = join(tmpDir, 'extracted');
+      await mkdir(stageDir, { recursive: true });
+
+      await new Promise<void>((resolve, reject) => {
+        const cb = (error: Error | null) => {
+          if (error) reject(error);
+          else resolve();
+        };
+        if (isZip) {
+          if (process.platform === 'win32') {
+            execFile(
+              'powershell',
+              ['-command', `Expand-Archive -Force '${archivePath}' '${stageDir}'`],
+              cb
+            );
+          } else {
+            execFile('unzip', ['-o', archivePath, '-d', stageDir], cb);
+          }
+        } else {
+          execFile('tar', ['-xzf', archivePath, '-C', stageDir], cb);
+        }
+      });
+
+      // Find manifest.json — could be at root or one level deep
+      const entries = await readdir(stageDir);
+      let pluginSourceDir = stageDir;
+
+      if (entries.length === 1 && entries[0]) {
+        const candidatePath = join(stageDir, entries[0]);
+        const candidateStat = await stat(candidatePath);
+        if (candidateStat.isDirectory()) {
+          pluginSourceDir = candidatePath;
+        }
+      }
+
+      // Validate: must have manifest.json
+      const manifestPath = join(pluginSourceDir, 'manifest.json');
+      if (!existsSync(manifestPath)) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'No manifest.json found in downloaded archive' };
+      }
+
+      const manifestRaw = await readFile(manifestPath, 'utf-8');
+      const manifest = JSON.parse(manifestRaw);
+      if (!manifest.id || !manifest.name) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'Invalid manifest: missing id or name' };
+      }
+
+      // Move to final destination
+      const destDir = join(paths.plugins, manifest.id);
+      if (existsSync(destDir)) {
+        await rm(destDir, { recursive: true, force: true });
+      }
+
+      await rename(pluginSourceDir, destDir);
+
+      // Clean up temp dir
+      if (existsSync(tmpDir)) {
+        await rm(tmpDir, { recursive: true, force: true });
+      }
+
+      return { success: true, pluginId: manifest.id, pluginName: manifest.name };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
   // Uninstall plugin (remove its directory)
   ipcMain.handle('plugins:uninstall', async (_event, pluginId: string) => {
     // Safety: only allow removing from the plugins directory, prevent path traversal

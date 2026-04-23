@@ -853,6 +853,16 @@ export interface ReadiedAPI {
       pluginName?: string;
       error?: string;
     }>;
+    /** Install plugin from a remote URL (marketplace) */
+    installFromUrl: (
+      url: string,
+      slug: string
+    ) => Promise<{
+      success: boolean;
+      pluginId?: string;
+      pluginName?: string;
+      error?: string;
+    }>;
     /** Uninstall a community plugin by ID */
     uninstall: (pluginId: string) => Promise<{ success: boolean; error?: string }>;
   };
@@ -1180,6 +1190,8 @@ const api: ReadiedAPI = {
     requestReload: () => ipcRenderer.send('plugins:requestReload'),
     readInitScript: () => ipcRenderer.invoke('plugins:readInitScript'),
     install: () => ipcRenderer.invoke('plugins:install'),
+    installFromUrl: (url: string, slug: string) =>
+      ipcRenderer.invoke('plugins:installFromUrl', url, slug),
     uninstall: (pluginId: string) => ipcRenderer.invoke('plugins:uninstall', pluginId),
   },
 };
