@@ -102,7 +102,7 @@ We use a simplified Git Flow with automated releases:
 
 ```
 main          ← Production releases (semantic-release runs here)
-  └── develop ← Integration branch
+  └── develop ← Integration branch (NEVER push directly)
         └── feature/* ← Feature development
         └── fix/*     ← Bug fixes
 ```
@@ -115,6 +115,13 @@ main          ← Production releases (semantic-release runs here)
 | `develop`   | Integration, next release | `main` (via PR) |
 | `feature/*` | New features              | `develop`       |
 | `fix/*`     | Bug fixes                 | `develop`       |
+
+### Branch Protection Rules (Critical)
+
+- **NEVER commit directly to `develop` or `main`** — always create a feature/fix branch first
+- **All work goes through PRs** — even small fixes. This ensures CI runs and reviews happen
+- **PR flow:** `feature/*` → `develop` → `main`
+- **Claude Code must also follow this** — create a branch, commit there, push, then create PR to develop
 
 ### Release Process (Automated)
 
@@ -174,11 +181,14 @@ git branch -d feature/my-feature
 
 Long-lived branches cause painful merge conflicts. Follow these rules:
 
+- **Always branch from develop:** `git checkout develop && git pull && git checkout -b fix/my-fix`
+- **Never push to develop directly:** All changes via PR from feature/fix branches
 - **Rebase daily:** `git fetch origin develop && git rebase origin/develop` before starting work each day
 - **Small PRs:** Prefer 3 small PRs over 1 large one. Split by layer (types → logic → UI)
 - **Max branch lifetime:** 2-3 days. If work takes longer, split into incremental PRs
 - **Don't touch unrelated files:** Avoid changes to `package.json`, lockfiles, or `apps/web` unless that's the PR's purpose — these are high-conflict files
 - **Rebase before pushing:** Always rebase against latest develop before `git push` to catch conflicts early
+- **Clean up after merge:** Delete feature branches locally and remotely after PR is merged
 
 ### Commit Messages
 
