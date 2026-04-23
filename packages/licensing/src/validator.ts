@@ -209,7 +209,10 @@ export async function generateKeyPair(): Promise<{
   publicKey: string;
   privateKey: string;
 }> {
-  const privateKey = ed.utils.randomPrivateKey();
+  const privateKey =
+    'randomSecretKey' in ed.utils
+      ? (ed.utils as unknown as { randomSecretKey: () => Uint8Array }).randomSecretKey()
+      : (ed.utils as unknown as { randomPrivateKey: () => Uint8Array }).randomPrivateKey();
   const publicKey = await ed.getPublicKeyAsync(privateKey);
 
   const toHex = (bytes: Uint8Array): string =>
