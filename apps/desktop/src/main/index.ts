@@ -504,12 +504,33 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 // ============================================================================
-// App Lifecycle
+// Single Instance Lock (MUST be before whenReady to prevent secondary init)
+// ============================================================================
+
+// Register as default protocol client (Windows/Linux)
+if (process.defaultApp) {
+  if (process.argv.length >= 2 && process.argv[1]) {
+    app.setAsDefaultProtocolClient('readied', process.execPath, [process.argv[1]]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('readied');
+}
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  // Secondary instance — quit immediately before any initialization
+  app.quit();
+}
+
+// ============================================================================
+// App Lifecycle (only runs in primary instance)
 // ============================================================================
 
 app
   .whenReady()
   .then(() => {
+    if (!gotTheLock) return; // Extra guard: don't initialize if secondary
     // Initialize data paths first (creates directories)
     dataPaths = initDataPaths();
 
@@ -811,84 +832,62 @@ app.on('open-url', (event, url) => {
   }
 });
 
-// Register as default protocol client (Windows/Linux)
-if (process.defaultApp) {
-  if (process.argv.length >= 2 && process.argv[1]) {
-    app.setAsDefaultProtocolClient('readied', process.execPath, [process.argv[1]]);
+// Primary instance: check startup args for deep link URL (cold start on Windows/Linux)
+const startupDeepLink = process.argv.find(arg => arg.startsWith('readied://'));
+if (startupDeepLink) {
+  try {
+    const urlObj = new URL(startupDeepLink);
+    if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
+      const token = urlObj.searchParams.get('token');
+      if (token) {
+        pendingAuthToken = token;
+      }
+    }
+  } catch {
+    // Invalid URL in argv — ignore
   }
-} else {
-  app.setAsDefaultProtocolClient('readied');
 }
 
-// Single instance lock + deep link handler for Windows/Linux
-// On Windows/Linux, the OS launches a new process with the deep link URL as an argument.
-// We use requestSingleInstanceLock to prevent multiple instances and forward the URL.
-const gotTheLock = app.requestSingleInstanceLock();
+// Handle deep links forwarded from secondary instances (app already running)
+app.on('second-instance', (_event, commandLine) => {
+  const log = getLogger();
+  const deepLinkUrl = commandLine.find(arg => arg.startsWith('readied://'));
 
-if (!gotTheLock) {
-  // Another instance already has the lock — quit this one.
-  // The deep link URL was forwarded to the primary instance via second-instance event.
-  app.quit();
-} else {
-  // Primary instance: check startup args for deep link URL (cold start on Windows/Linux).
-  // When the app is not running and the user clicks a readied:// link,
-  // the OS launches the app with the URL as a CLI argument.
-  const startupDeepLink = process.argv.find(arg => arg.startsWith('readied://'));
-  if (startupDeepLink) {
+  if (deepLinkUrl) {
+    log.info({ url: deepLinkUrl }, 'Deep link received via second-instance (Windows/Linux)');
+
     try {
-      const urlObj = new URL(startupDeepLink);
+      const urlObj = new URL(deepLinkUrl);
+
       if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
         const token = urlObj.searchParams.get('token');
         if (token) {
-          pendingAuthToken = token;
+          log.info('Auth verification token received via second-instance');
+
+          const mainWin = BrowserWindow.getAllWindows().find(
+            win => !win.isDestroyed() && win.webContents.isLoading() === false
+          );
+          if (mainWin) {
+            mainWin.webContents.send('auth:verify-token', token);
+            mainWin.show();
+            mainWin.focus();
+          } else {
+            pendingAuthToken = token;
+          }
         }
       }
-    } catch {
-      // Invalid URL in argv — ignore
+    } catch (error) {
+      log.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Failed to parse deep link from second-instance'
+      );
     }
   }
 
-  // Handle deep links forwarded from secondary instances (app already running).
-  app.on('second-instance', (_event, commandLine) => {
-    const log = getLogger();
-    const deepLinkUrl = commandLine.find(arg => arg.startsWith('readied://'));
-
-    if (deepLinkUrl) {
-      log.info({ url: deepLinkUrl }, 'Deep link received via second-instance (Windows/Linux)');
-
-      try {
-        const urlObj = new URL(deepLinkUrl);
-
-        if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
-          const token = urlObj.searchParams.get('token');
-          if (token) {
-            log.info('Auth verification token received via second-instance');
-
-            const mainWin = BrowserWindow.getAllWindows().find(
-              win => !win.isDestroyed() && win.webContents.isLoading() === false
-            );
-            if (mainWin) {
-              mainWin.webContents.send('auth:verify-token', token);
-              mainWin.show();
-              mainWin.focus();
-            } else {
-              pendingAuthToken = token;
-            }
-          }
-        }
-      } catch (error) {
-        log.error(
-          { error: error instanceof Error ? error.message : String(error) },
-          'Failed to parse deep link from second-instance'
-        );
-      }
-    }
-
-    // Focus the existing window
-    const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
-    if (mainWin) {
-      if (mainWin.isMinimized()) mainWin.restore();
-      mainWin.focus();
-    }
-  });
-}
+  // Focus the existing window
+  const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+  if (mainWin) {
+    if (mainWin.isMinimized()) mainWin.restore();
+    mainWin.focus();
+  }
+});
