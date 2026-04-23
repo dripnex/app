@@ -7,7 +7,7 @@ type BannerState =
   | { kind: 'available'; version: string }
   | { kind: 'downloading'; version: string; percent: number }
   | { kind: 'ready'; version: string }
-  | { kind: 'error'; version: string };
+  | { kind: 'error'; version: string; message?: string };
 
 export function UpdateBanner() {
   const [state, setState] = useState<BannerState>({ kind: 'hidden' });
@@ -45,11 +45,15 @@ export function UpdateBanner() {
     );
 
     cleanups.push(
-      window.readied.updates.onError(() => {
+      window.readied.updates.onError((err: { message: string }) => {
         setState(prev =>
           prev.kind === 'hidden'
             ? prev
-            : { kind: 'error', version: (prev as { version: string }).version }
+            : {
+                kind: 'error',
+                version: (prev as { version: string }).version,
+                message: err?.message,
+              }
         );
         setDismissed(false);
       })
@@ -60,12 +64,27 @@ export function UpdateBanner() {
 
   const handleDownload = useCallback(async () => {
     try {
-      await window.readied.updates.startDownload();
-    } catch {
+      const result = await window.readied.updates.startDownload();
+      if (!result.ok) {
+        setState(prev =>
+          prev.kind === 'hidden'
+            ? prev
+            : {
+                kind: 'error',
+                version: (prev as { version: string }).version,
+                message: 'Download failed',
+              }
+        );
+      }
+    } catch (err) {
       setState(prev =>
         prev.kind === 'hidden'
           ? prev
-          : { kind: 'error', version: (prev as { version: string }).version }
+          : {
+              kind: 'error',
+              version: (prev as { version: string }).version,
+              message: err instanceof Error ? err.message : undefined,
+            }
       );
     }
   }, []);
@@ -93,7 +112,9 @@ export function UpdateBanner() {
       )}
       {state.kind === 'error' && (
         <>
-          <span className={styles.text}>Download failed</span>
+          <span className={styles.text}>
+            Download failed{state.message ? `: ${state.message}` : ''}
+          </span>
           <button className={styles.action} onClick={handleDownload}>
             Retry
           </button>

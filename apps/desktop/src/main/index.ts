@@ -1249,7 +1249,13 @@ function registerDataHandlers(): void {
   ipcMain.handle(
     'data:exportNote',
     async (_event: Electron.IpcMainInvokeEvent, content: string, suggestedName: string) => {
-      const safeName = suggestedName.replace(/[^a-zA-Z0-9\s-]/g, '').substring(0, 80) || 'note';
+      const safeName =
+        suggestedName
+          .normalize('NFC')
+          // eslint-disable-next-line no-control-regex
+          .replace(/[/\\:*?"<>|\x00-\x1f.]/g, '')
+          .substring(0, 80)
+          .trim() || 'note';
       const { filePath, canceled } = await dialog.showSaveDialog({
         title: 'Export Note',
         defaultPath: join(app.getPath('documents'), `${safeName}.md`),
@@ -1262,7 +1268,7 @@ function registerDataHandlers(): void {
       }
 
       try {
-        writeFileSync(filePath, content, 'utf-8');
+        await writeFile(filePath, content, 'utf-8');
         return { success: true, path: filePath };
       } catch (error) {
         return {
@@ -2298,13 +2304,17 @@ function registerPluginDiscoveryHandlers(): void {
     const archivePath = filePaths[0];
     const fileName = basename(archivePath).toLowerCase();
 
+    // Hoist tmpDir so it can be cleaned up in finally
+    let tmpDir: string | null = null;
+
     try {
       // Ensure plugins dir exists
       await mkdir(paths.plugins, { recursive: true });
 
       // Extract to a temp dir first, then move validated plugin folder
-      const tmpDir = join(paths.plugins, `__installing_${Date.now()}`);
-      await mkdir(tmpDir, { recursive: true });
+      tmpDir = join(paths.plugins, `__installing_${Date.now()}`);
+      const extractDir = tmpDir;
+      await mkdir(extractDir, { recursive: true });
 
       await new Promise<void>((resolve, reject) => {
         const cb = (error: Error | null) => {
@@ -2324,25 +2334,25 @@ function registerPluginDiscoveryHandlers(): void {
                 '-Path',
                 archivePath,
                 '-DestinationPath',
-                tmpDir,
+                extractDir,
               ],
               cb
             );
           } else {
-            execFile('unzip', ['-o', archivePath, '-d', tmpDir], cb);
+            execFile('unzip', ['-o', archivePath, '-d', extractDir], cb);
           }
         } else {
-          execFile('tar', ['-xzf', archivePath, '-C', tmpDir], cb);
+          execFile('tar', ['-xzf', archivePath, '-C', extractDir], cb);
         }
       });
 
       // Find the manifest.json — could be at root or one level deep
-      const entries = await readdir(tmpDir);
-      let pluginSourceDir = tmpDir;
+      const entries = await readdir(extractDir);
+      let pluginSourceDir = extractDir;
 
       // If there's a single subdirectory, use that as the plugin root
       if (entries.length === 1 && entries[0]) {
-        const candidatePath = join(tmpDir, entries[0]);
+        const candidatePath = join(extractDir, entries[0]);
         const candidateStat = await stat(candidatePath);
         if (candidateStat.isDirectory()) {
           pluginSourceDir = candidatePath;
@@ -2352,20 +2362,17 @@ function registerPluginDiscoveryHandlers(): void {
       // Validate: must have manifest.json
       const manifestPath = join(pluginSourceDir, 'manifest.json');
       if (!existsSync(manifestPath)) {
-        await rm(tmpDir, { recursive: true, force: true });
         return { success: false, error: 'No manifest.json found in archive' };
       }
 
       const manifestRaw = await readFile(manifestPath, 'utf-8');
       const manifest = JSON.parse(manifestRaw);
       if (!manifest.id || !manifest.name) {
-        await rm(tmpDir, { recursive: true, force: true });
         return { success: false, error: 'Invalid manifest: missing id or name' };
       }
 
       // Validate plugin ID - only allow alphanumeric, hyphens, underscores
       if (!/^[a-zA-Z0-9_-]+$/.test(manifest.id)) {
-        await rm(tmpDir, { recursive: true, force: true });
         return {
           success: false,
           error: 'Invalid plugin ID: must be alphanumeric with hyphens/underscores only',
@@ -2375,7 +2382,6 @@ function registerPluginDiscoveryHandlers(): void {
       // Verify path doesn't escape plugins directory
       const destDir = join(paths.plugins, manifest.id);
       if (!normalize(destDir).startsWith(normalize(paths.plugins))) {
-        await rm(tmpDir, { recursive: true, force: true });
         return { success: false, error: 'Invalid plugin ID: path traversal detected' };
       }
 
@@ -2386,19 +2392,18 @@ function registerPluginDiscoveryHandlers(): void {
 
       await rename(pluginSourceDir, destDir);
 
-      // Clean up temp dir (in case pluginSourceDir was a subdirectory)
-      if (pluginSourceDir !== tmpDir && existsSync(tmpDir)) {
-        await rm(tmpDir, { recursive: true, force: true });
-      }
-
       return { success: true, pluginId: manifest.id, pluginName: manifest.name };
     } catch (error) {
       return { success: false, error: String(error) };
+    } finally {
+      if (tmpDir && existsSync(tmpDir)) {
+        await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      }
     }
   });
 
   // Install plugin from a remote URL (marketplace download)
-  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, _pluginSlug: string) => {
+  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, pluginSlug: string) => {
     // Safety: only allow https URLs
     if (!url.startsWith('https://')) {
       return { success: false, error: 'Only HTTPS URLs are allowed' };
@@ -2429,9 +2434,9 @@ function registerPluginDiscoveryHandlers(): void {
         return { success: false, error: 'Plugin archive exceeds maximum size of 50 MB' };
       }
 
-      // Determine archive type from URL or content-type
-      const lowerUrl = url.toLowerCase();
-      const isZip = lowerUrl.endsWith('.zip') || lowerUrl.includes('.zip');
+      // Determine archive type from URL pathname
+      const urlPathname = new URL(url).pathname.toLowerCase();
+      const isZip = urlPathname.endsWith('.zip');
       const archiveExt = isZip ? '.zip' : '.tar.gz';
       const archivePath = join(tmpDir, `plugin${archiveExt}`);
       await writeFile(archivePath, buffer);
@@ -2490,8 +2495,19 @@ function registerPluginDiscoveryHandlers(): void {
 
       const manifestRaw = await readFile(manifestPath, 'utf-8');
       const manifest = JSON.parse(manifestRaw);
+      if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
+        return { success: false, error: 'Invalid manifest: not a JSON object' };
+      }
       if (!manifest.id || !manifest.name) {
         return { success: false, error: 'Invalid manifest: missing id or name' };
+      }
+
+      // Validate manifest.id matches the expected pluginSlug if provided
+      if (pluginSlug && pluginSlug.length > 0 && manifest.id !== pluginSlug) {
+        return {
+          success: false,
+          error: `Manifest ID "${manifest.id}" does not match expected plugin "${pluginSlug}"`,
+        };
       }
 
       // Validate plugin ID - only allow alphanumeric, hyphens, underscores

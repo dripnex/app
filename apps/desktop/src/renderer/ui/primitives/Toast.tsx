@@ -34,7 +34,11 @@ function ToastNotification({ item }: { item: ToastItem }) {
     .join(' ');
 
   return (
-    <div className={cls} role="alert" aria-live={item.type === 'error' ? 'assertive' : 'polite'}>
+    <div
+      className={cls}
+      role={item.type === 'error' ? 'alert' : 'status'}
+      aria-live={item.type === 'error' ? 'assertive' : 'polite'}
+    >
       <span className={styles.dot} />
       <span className={styles.message}>{item.message}</span>
       <button className={styles.dismiss} onClick={dismiss} aria-label="Dismiss notification">

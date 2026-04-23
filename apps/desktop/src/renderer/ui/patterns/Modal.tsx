@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 
@@ -56,7 +56,8 @@ export function Modal({
 
   if (!open) return null;
 
-  const titleId = title != null ? 'modal-title' : undefined;
+  const generatedId = useId();
+  const titleId = title != null ? generatedId : undefined;
 
   return createPortal(
     <div className={styles.overlay} onClick={handleOverlayClick}>
@@ -70,7 +71,7 @@ export function Modal({
       >
         {title != null && (
           <div className={styles.header}>
-            <h2 id="modal-title" className={styles.title}>
+            <h2 id={titleId} className={styles.title}>
               {title}
             </h2>
             <button

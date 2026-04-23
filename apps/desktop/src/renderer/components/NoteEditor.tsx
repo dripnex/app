@@ -134,6 +134,11 @@ export function NoteEditor({
   }, [note?.id]);
 
   useEffect(() => {
+    // Guard: if note switched, just sync the ref and bail out
+    if (trackedNoteIdRef.current !== note?.id) {
+      prevDirtyRef.current = isDirty;
+      return;
+    }
     if (prevDirtyRef.current && !isDirty) {
       // Transitioned from dirty to clean — save completed
       setShowSaved(true);
@@ -141,7 +146,7 @@ export function NoteEditor({
       savedTimerRef.current = setTimeout(() => setShowSaved(false), 1500);
     }
     prevDirtyRef.current = isDirty;
-  }, [isDirty]);
+  }, [isDirty, note?.id]);
 
   // Cleanup saved timer on unmount
   useEffect(() => {

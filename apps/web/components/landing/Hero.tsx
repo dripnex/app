@@ -35,14 +35,21 @@ function EditorMockWithPlay() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const hasVideo = DEMO_VIDEO_URL.length > 0;
 
+  const Wrapper = hasVideo ? 'button' : 'div';
+  const wrapperProps = hasVideo
+    ? {
+        type: 'button' as const,
+        'aria-label': 'Watch demo video',
+        className: 'group relative w-full cursor-pointer border-0 bg-transparent p-0 text-left',
+        onClick: () => setIsVideoOpen(true),
+      }
+    : {
+        className: 'group relative w-full border-0 bg-transparent p-0 text-left',
+      };
+
   return (
     <>
-      <button
-        type="button"
-        aria-label="Watch demo video"
-        className="group relative w-full cursor-pointer border-0 bg-transparent p-0 text-left"
-        onClick={() => hasVideo && setIsVideoOpen(true)}
-      >
+      <Wrapper {...wrapperProps}>
         <div className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0c0c0e] shadow-2xl shadow-accent/5 transition-all duration-200 group-hover:brightness-[0.85]">
           {/* Title bar */}
           <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
@@ -163,7 +170,7 @@ function EditorMockWithPlay() {
             </div>
           </div>
         )}
-      </button>
+      </Wrapper>
 
       {/* Video modal */}
       <AnimatePresence>

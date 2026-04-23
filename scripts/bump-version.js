@@ -8,7 +8,11 @@ if (!version) {
   process.exit(1);
 }
 
-if (!/^\d+\.\d+\.\d+(-[\w.]+)?(\+[\w.]+)?$/.test(version)) {
+if (
+  !/^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/.test(
+    version
+  )
+) {
   console.error(`Invalid version format: ${version}`);
   process.exit(1);
 }
