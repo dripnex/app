@@ -750,7 +750,7 @@ export interface ReadiedAPI {
     /** Check for updates manually */
     checkNow: () => Promise<{ available: boolean; version?: string }>;
     /** Start downloading the available update */
-    startDownload: () => Promise<{ ok: boolean }>;
+    startDownload: () => Promise<{ ok: boolean; error?: string }>;
     /** Quit and install the downloaded update */
     installNow: () => Promise<void>;
     /** Subscribe to update-available events from background check */

@@ -48,6 +48,14 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   const syncNow = useSyncStore(state => state.syncNow);
   const refreshPendingCount = useSyncStore(state => state.refreshPendingCount);
 
+  // Force re-render every 60s so relative time text stays fresh
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    if (!lastSyncAt) return;
+    const timer = setInterval(() => forceUpdate((n: number) => n + 1), 60_000);
+    return () => clearInterval(timer);
+  }, [lastSyncAt]);
+
   // Track "just synced" flash state
   const [showSynced, setShowSynced] = useState(false);
   const prevStatusRef = useRef(syncStatus);

@@ -45,7 +45,7 @@ export function UpdateBanner() {
     );
 
     cleanups.push(
-      window.readied.updates.onError((err: { message: string }) => {
+      window.readied.updates.onError((err: { message?: string }) => {
         setState(prev =>
           prev.kind === 'hidden'
             ? prev
@@ -72,7 +72,7 @@ export function UpdateBanner() {
             : {
                 kind: 'error',
                 version: (prev as { version: string }).version,
-                message: 'Download failed',
+                message: result.error ?? 'Download failed',
               }
         );
       }

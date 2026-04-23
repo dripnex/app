@@ -1249,13 +1249,15 @@ function registerDataHandlers(): void {
   ipcMain.handle(
     'data:exportNote',
     async (_event: Electron.IpcMainInvokeEvent, content: string, suggestedName: string) => {
-      const safeName =
+      let safeName =
         suggestedName
           .normalize('NFC')
           // eslint-disable-next-line no-control-regex
           .replace(/[/\\:*?"<>|\x00-\x1f.]/g, '')
           .substring(0, 80)
           .trim() || 'note';
+      const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
+      if (WINDOWS_RESERVED.test(safeName)) safeName = `_${safeName}`;
       const { filePath, canceled } = await dialog.showSaveDialog({
         title: 'Export Note',
         defaultPath: join(app.getPath('documents'), `${safeName}.md`),
@@ -1437,8 +1439,9 @@ function registerUpdateHandlers(): void {
       await autoUpdater.downloadUpdate();
       return { ok: true };
     } catch (err) {
-      loggers.updater().error({ error: (err as Error).message }, 'Failed to download update');
-      return { ok: false };
+      const message = (err as Error).message;
+      loggers.updater().error({ error: message }, 'Failed to download update');
+      return { ok: false, error: message };
     }
   });
 
@@ -2535,7 +2538,12 @@ function registerPluginDiscoveryHandlers(): void {
 
       await rename(pluginSourceDir, destDir);
 
-      return { success: true, pluginId: manifest.id, pluginName: manifest.name };
+      return {
+        success: true,
+        pluginId: manifest.id,
+        pluginName: manifest.name,
+        slugMismatch: pluginSlug && manifest.id !== pluginSlug ? pluginSlug : undefined,
+      };
     } catch (error) {
       return { success: false, error: String(error) };
     } finally {
