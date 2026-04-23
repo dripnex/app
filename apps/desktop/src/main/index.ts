@@ -2403,7 +2403,7 @@ function registerPluginDiscoveryHandlers(): void {
   });
 
   // Install plugin from a remote URL (marketplace download)
-  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, pluginSlug: string) => {
+  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, _pluginSlug: string) => {
     // Safety: only allow https URLs
     if (!url.startsWith('https://')) {
       return { success: false, error: 'Only HTTPS URLs are allowed' };
@@ -2500,14 +2500,6 @@ function registerPluginDiscoveryHandlers(): void {
       }
       if (!manifest.id || !manifest.name) {
         return { success: false, error: 'Invalid manifest: missing id or name' };
-      }
-
-      // Validate manifest.id matches the expected pluginSlug if provided
-      if (pluginSlug && pluginSlug.length > 0 && manifest.id !== pluginSlug) {
-        return {
-          success: false,
-          error: `Manifest ID "${manifest.id}" does not match expected plugin "${pluginSlug}"`,
-        };
       }
 
       // Validate plugin ID - only allow alphanumeric, hyphens, underscores
