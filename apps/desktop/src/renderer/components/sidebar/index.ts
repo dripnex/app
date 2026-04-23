@@ -9,3 +9,4 @@ export { NotebookCreateForm } from './NotebookCreateForm';
 export { StatusFilters } from './StatusFilters';
 export { TagsList } from './TagsList';
 export { SidebarFooter } from './SidebarFooter';
+export { ActivityStats } from './ActivityStats';
