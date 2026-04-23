@@ -905,6 +905,147 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* ============================================================================
+   AI Section — Connection States
+   ============================================================================ */
+
+.aiConnectionWrapper {
+  padding: 1rem 1.25rem;
+}
+
+.aiConnectedBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--success-muted);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  border-radius: 0.75rem;
+}
+
+.aiConnectedInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.aiConnectedIcon {
+  color: var(--success);
+}
+
+.aiConnectedTitle {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.aiConnectedSubtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.aiConnectBox {
+  padding: 1.25rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+}
+
+.aiConnectHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.aiConnectLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.aiKeyInputRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.aiKeyInput {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: monospace;
+}
+
+.aiOllamaInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aiOllamaDescription {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.aiErrorBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--danger-muted, rgba(239, 68, 68, 0.08));
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--danger, #ef4444);
+}
+
+.aiCommandListWrapper {
+  padding: 0.75rem 1rem;
+}
+
+.aiCommandListTitle {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.aiCommandList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.aiCommandItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-hover);
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.aiCommandName {
+  color: var(--text-primary);
+}
+
+.aiCommandPlugin {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+.aiMessageIcon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .deviceActions {
   padding: 0.5rem 0.75rem 0;
 }

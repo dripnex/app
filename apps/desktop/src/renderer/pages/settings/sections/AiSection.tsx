@@ -334,31 +334,13 @@ export function AiSection() {
       <SettingGroup title="Connection">
         {isConnected ? (
           /* Connected state */
-          <div style={{ padding: '1rem 1.25rem' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '1rem 1.25rem',
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
-                borderRadius: '0.75rem',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <CheckCircle size={20} style={{ color: '#10b981' }} />
+          <div className={styles.aiConnectionWrapper}>
+            <div className={styles.aiConnectedBox}>
+              <div className={styles.aiConnectedInfo}>
+                <CheckCircle size={20} className={styles.aiConnectedIcon} />
                 <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    Connected to {providerInfo.name}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  <div className={styles.aiConnectedTitle}>Connected to {providerInfo.name}</div>
+                  <div className={styles.aiConnectedSubtitle}>
                     API key stored securely in your system keychain
                   </div>
                 </div>
@@ -375,32 +357,12 @@ export function AiSection() {
           </div>
         ) : (
           /* Not connected — show connect flow */
-          <div style={{ padding: '1rem 1.25rem' }}>
-            <div
-              style={{
-                padding: '1.25rem',
-                background: 'var(--bg-hover)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '0.75rem',
-              }}
-            >
+          <div className={styles.aiConnectionWrapper}>
+            <div className={styles.aiConnectBox}>
               {currentProvider !== 'ollama' && (
                 <>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '0.75rem',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        color: 'var(--text-primary)',
-                      }}
-                    >
+                  <div className={styles.aiConnectHeader}>
+                    <span className={styles.aiConnectLabel}>
                       Connect your {providerInfo.name} account
                     </span>
                     <Button
@@ -412,7 +374,7 @@ export function AiSection() {
                       Get API Key
                     </Button>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <div className={styles.aiKeyInputRow}>
                     <input
                       type="password"
                       value={apiKeyInput}
@@ -423,16 +385,7 @@ export function AiSection() {
                       placeholder={providerInfo.placeholder}
                       autoComplete="off"
                       spellCheck={false}
-                      style={{
-                        flex: 1,
-                        padding: '0.625rem 0.875rem',
-                        background: 'var(--bg-base)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '0.5rem',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.875rem',
-                        fontFamily: 'monospace',
-                      }}
+                      className={styles.aiKeyInput}
                       onKeyDown={e => {
                         if (e.key === 'Enter') void handleConnect();
                       }}
@@ -452,8 +405,8 @@ export function AiSection() {
               )}
 
               {currentProvider === 'ollama' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                <div className={styles.aiOllamaInfo}>
+                  <div className={styles.aiOllamaDescription}>
                     Ollama runs locally — no API key needed. Make sure Ollama is running on your
                     machine.
                   </div>
@@ -470,19 +423,7 @@ export function AiSection() {
               )}
 
               {connectError && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    marginTop: '0.5rem',
-                    padding: '0.5rem 0.75rem',
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.8125rem',
-                    color: '#ef4444',
-                  }}
-                >
+                <div className={styles.aiErrorBox}>
                   <XCircle size={14} />
                   {connectError}
                 </div>
@@ -548,7 +489,7 @@ export function AiSection() {
 
         {presetMessage?.type === 'success' && (
           <div className={styles.successMessage}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className={styles.aiMessageIcon}>
               <CheckCircle size={14} />
               {presetMessage.text}
             </span>
@@ -557,7 +498,7 @@ export function AiSection() {
 
         {presetMessage?.type === 'error' && (
           <div className={styles.errorMessage}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className={styles.aiMessageIcon}>
               <XCircle size={14} />
               {presetMessage.text}
             </span>
@@ -565,34 +506,15 @@ export function AiSection() {
         )}
 
         {registeredAiCommands.length > 0 && (
-          <div style={{ padding: '0.75rem 1rem' }}>
-            <div
-              style={{
-                fontSize: '0.8125rem',
-                color: 'var(--text-secondary)',
-                marginBottom: '0.5rem',
-              }}
-            >
+          <div className={styles.aiCommandListWrapper}>
+            <div className={styles.aiCommandListTitle}>
               Registered AI Commands ({registeredAiCommands.length})
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <div className={styles.aiCommandList}>
               {registeredAiCommands.map(cmd => (
-                <div
-                  key={cmd.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0.5rem 0.75rem',
-                    background: 'var(--bg-hover)',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.8125rem',
-                  }}
-                >
-                  <span style={{ color: 'var(--text-primary)' }}>{cmd.name}</span>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
-                    {cmd.pluginId}
-                  </span>
+                <div key={cmd.id} className={styles.aiCommandItem}>
+                  <span className={styles.aiCommandName}>{cmd.name}</span>
+                  <span className={styles.aiCommandPlugin}>{cmd.pluginId}</span>
                 </div>
               ))}
             </div>
