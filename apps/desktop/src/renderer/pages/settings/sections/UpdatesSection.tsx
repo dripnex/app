@@ -99,9 +99,13 @@ export function UpdatesSection() {
     }
   }, [state]);
 
-  const handleInstall = useCallback(() => {
+  const handleInstall = useCallback(async () => {
     setState({ status: 'installing' });
-    void window.readied.updates.installNow();
+    try {
+      await window.readied.updates.installNow();
+    } catch {
+      setState({ status: 'error', message: 'Failed to install update. Please try again.' });
+    }
   }, []);
 
   const handleRetry = useCallback(() => {

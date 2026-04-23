@@ -5,6 +5,7 @@
  * or skip straight into the app.
  */
 
+import { useCallback, useEffect } from 'react';
 import { Button } from '../ui/primitives';
 import styles from './Welcome.module.css';
 
@@ -15,8 +16,8 @@ interface WelcomeProps {
 
 const features = [
   {
-    title: 'Offline Forever',
-    desc: 'Your notes never leave your machine.',
+    title: 'Local-First',
+    desc: 'Works fully offline. Optional end-to-end encrypted sync.',
   },
   {
     title: 'Pure Markdown',
@@ -29,12 +30,33 @@ const features = [
 ] as const;
 
 export function Welcome({ onComplete }: WelcomeProps) {
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onComplete(false);
+      }
+    },
+    [onComplete]
+  );
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [handleEscape]);
+
   return (
-    <div className={styles.overlay}>
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-heading"
+    >
       <div className={styles.container}>
         <span className={styles.brand}>Readied</span>
 
-        <h1 className={styles.headline}>Your Markdown. Your Machine. Your&nbsp;Rules.</h1>
+        <h1 id="welcome-heading" className={styles.headline}>
+          Your Markdown. Your Machine. Your&nbsp;Rules.
+        </h1>
 
         <div className={styles.cards}>
           {features.map(f => (
@@ -49,9 +71,9 @@ export function Welcome({ onComplete }: WelcomeProps) {
           <Button variant="primary" onClick={() => onComplete(true)}>
             Create Your First Note
           </Button>
-          <button type="button" className={styles.skip} onClick={() => onComplete(false)}>
+          <Button variant="ghost" onClick={() => onComplete(false)}>
             Skip
-          </button>
+          </Button>
         </div>
       </div>
     </div>

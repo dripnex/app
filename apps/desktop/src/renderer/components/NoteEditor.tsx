@@ -123,6 +123,16 @@ export function NoteEditor({
 
   // Show "Saved" briefly after onUpdate fires (isDirty goes false)
   const prevDirtyRef = useRef(false);
+  const trackedNoteIdRef = useRef(note?.id);
+
+  // Reset dirty tracking when switching notes to avoid false "Saved" flash
+  useEffect(() => {
+    if (trackedNoteIdRef.current !== note?.id) {
+      trackedNoteIdRef.current = note?.id;
+      prevDirtyRef.current = false;
+    }
+  }, [note?.id]);
+
   useEffect(() => {
     if (prevDirtyRef.current && !isDirty) {
       // Transitioned from dirty to clean — save completed

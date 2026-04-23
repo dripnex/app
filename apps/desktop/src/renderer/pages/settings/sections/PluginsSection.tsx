@@ -1015,7 +1015,12 @@ export function PluginsSection() {
       {activeTab === 'browse' && (
         <BrowseTab
           installedPluginIds={
-            new Set([...BUILT_IN_PLUGIN_INFOS.map(p => p.id), ...plugins.map(p => p.id)])
+            new Set([
+              ...BUILT_IN_PLUGIN_INFOS.map(p => p.id),
+              ...plugins.map(p => p.id),
+              // Include slugified IDs so marketplace slug-based comparison works
+              ...plugins.map(p => p.name.toLowerCase().replace(/\s+/g, '-')),
+            ])
           }
         />
       )}

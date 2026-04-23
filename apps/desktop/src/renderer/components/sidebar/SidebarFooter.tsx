@@ -56,6 +56,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   useEffect(() => {
     if (prevStatusRef.current === 'syncing' && syncStatus === 'idle') {
       setShowSynced(true);
+      prevStatusRef.current = syncStatus;
       const timer = setTimeout(() => setShowSynced(false), 3000);
       return () => clearTimeout(timer);
     }

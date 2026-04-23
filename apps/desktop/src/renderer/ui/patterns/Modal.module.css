@@ -15,7 +15,7 @@
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  animation: fadeIn var(--transition-normal) ease both;
+  animation: fade-in var(--transition-normal) ease both;
 }
 
 /* ── Content ─────────────────────────────────────────────────────────────── */
@@ -31,7 +31,7 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow);
-  animation: scaleIn var(--transition-normal) ease both;
+  animation: scale-in var(--transition-normal) ease both;
 }
 
 /* ── Sizes ───────────────────────────────────────────────────────────────── */
@@ -101,7 +101,7 @@
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
 
-@keyframes fadeIn {
+@keyframes fade-in {
   from {
     opacity: 0;
   }
@@ -110,7 +110,7 @@
   }
 }
 
-@keyframes scaleIn {
+@keyframes scale-in {
   from {
     opacity: 0;
     transform: scale(0.95);

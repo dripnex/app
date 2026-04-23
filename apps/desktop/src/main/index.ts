@@ -2315,7 +2315,17 @@ function registerPluginDiscoveryHandlers(): void {
           if (process.platform === 'win32') {
             execFile(
               'powershell',
-              ['-command', `Expand-Archive -Force '${archivePath}' '${tmpDir}'`],
+              [
+                '-NoProfile',
+                '-NonInteractive',
+                '-Command',
+                'Expand-Archive',
+                '-Force',
+                '-Path',
+                archivePath,
+                '-DestinationPath',
+                tmpDir,
+              ],
               cb
             );
           } else {
@@ -2353,8 +2363,23 @@ function registerPluginDiscoveryHandlers(): void {
         return { success: false, error: 'Invalid manifest: missing id or name' };
       }
 
-      // Move to final destination
+      // Validate plugin ID - only allow alphanumeric, hyphens, underscores
+      if (!/^[a-zA-Z0-9_-]+$/.test(manifest.id)) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return {
+          success: false,
+          error: 'Invalid plugin ID: must be alphanumeric with hyphens/underscores only',
+        };
+      }
+
+      // Verify path doesn't escape plugins directory
       const destDir = join(paths.plugins, manifest.id);
+      if (!normalize(destDir).startsWith(normalize(paths.plugins))) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'Invalid plugin ID: path traversal detected' };
+      }
+
+      // Move to final destination
       if (existsSync(destDir)) {
         await rm(destDir, { recursive: true, force: true });
       }
@@ -2374,26 +2399,35 @@ function registerPluginDiscoveryHandlers(): void {
 
   // Install plugin from a remote URL (marketplace download)
   ipcMain.handle('plugins:installFromUrl', async (_event, url: string, _pluginSlug: string) => {
+    // Safety: only allow https URLs
+    if (!url.startsWith('https://')) {
+      return { success: false, error: 'Only HTTPS URLs are allowed' };
+    }
+
+    // Ensure plugins dir exists
+    await mkdir(paths.plugins, { recursive: true });
+
+    // Download to a temp file inside the plugins dir
+    const tmpDir = join(paths.plugins, `__downloading_${Date.now()}`);
+    await mkdir(tmpDir, { recursive: true });
+
     try {
-      // Safety: only allow https URLs
-      if (!url.startsWith('https://')) {
-        return { success: false, error: 'Only HTTPS URLs are allowed' };
-      }
-
-      // Ensure plugins dir exists
-      await mkdir(paths.plugins, { recursive: true });
-
-      // Download to a temp file inside the plugins dir
-      const tmpDir = join(paths.plugins, `__downloading_${Date.now()}`);
-      await mkdir(tmpDir, { recursive: true });
-
       const response = await net.fetch(url);
       if (!response.ok) {
-        await rm(tmpDir, { recursive: true, force: true });
         return { success: false, error: `Download failed: HTTP ${response.status}` };
       }
 
+      // Limit download size to 50 MB
+      const MAX_PLUGIN_SIZE = 50 * 1024 * 1024;
+      const contentLength = response.headers.get('content-length');
+      if (contentLength && parseInt(contentLength, 10) > MAX_PLUGIN_SIZE) {
+        return { success: false, error: 'Plugin archive exceeds maximum size of 50 MB' };
+      }
+
       const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.byteLength > MAX_PLUGIN_SIZE) {
+        return { success: false, error: 'Plugin archive exceeds maximum size of 50 MB' };
+      }
 
       // Determine archive type from URL or content-type
       const lowerUrl = url.toLowerCase();
@@ -2415,7 +2449,17 @@ function registerPluginDiscoveryHandlers(): void {
           if (process.platform === 'win32') {
             execFile(
               'powershell',
-              ['-command', `Expand-Archive -Force '${archivePath}' '${stageDir}'`],
+              [
+                '-NoProfile',
+                '-NonInteractive',
+                '-Command',
+                'Expand-Archive',
+                '-Force',
+                '-Path',
+                archivePath,
+                '-DestinationPath',
+                stageDir,
+              ],
               cb
             );
           } else {
@@ -2441,33 +2485,44 @@ function registerPluginDiscoveryHandlers(): void {
       // Validate: must have manifest.json
       const manifestPath = join(pluginSourceDir, 'manifest.json');
       if (!existsSync(manifestPath)) {
-        await rm(tmpDir, { recursive: true, force: true });
         return { success: false, error: 'No manifest.json found in downloaded archive' };
       }
 
       const manifestRaw = await readFile(manifestPath, 'utf-8');
       const manifest = JSON.parse(manifestRaw);
       if (!manifest.id || !manifest.name) {
-        await rm(tmpDir, { recursive: true, force: true });
         return { success: false, error: 'Invalid manifest: missing id or name' };
       }
 
-      // Move to final destination
+      // Validate plugin ID - only allow alphanumeric, hyphens, underscores
+      if (!/^[a-zA-Z0-9_-]+$/.test(manifest.id)) {
+        return {
+          success: false,
+          error: 'Invalid plugin ID: must be alphanumeric with hyphens/underscores only',
+        };
+      }
+
+      // Verify path doesn't escape plugins directory
       const destDir = join(paths.plugins, manifest.id);
+      if (!normalize(destDir).startsWith(normalize(paths.plugins))) {
+        return { success: false, error: 'Invalid plugin ID: path traversal detected' };
+      }
+
+      // Move to final destination
       if (existsSync(destDir)) {
         await rm(destDir, { recursive: true, force: true });
       }
 
       await rename(pluginSourceDir, destDir);
 
-      // Clean up temp dir
-      if (existsSync(tmpDir)) {
-        await rm(tmpDir, { recursive: true, force: true });
-      }
-
       return { success: true, pluginId: manifest.id, pluginName: manifest.name };
     } catch (error) {
       return { success: false, error: String(error) };
+    } finally {
+      // Always clean up temp dir
+      if (existsSync(tmpDir)) {
+        await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      }
     }
   });
 

@@ -153,14 +153,16 @@ function EditorMockWithPlay() {
           <BorderBeam size={200} duration={8} colorFrom="#8b5cf6" colorTo="#6d28d9" />
         </div>
 
-        {/* Play button overlay */}
-        <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out">
-          <div className="flex size-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform duration-200 group-hover:scale-110 sm:size-24">
-            <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-accent/40 to-accent shadow-lg sm:size-16">
-              <Play className="size-6 fill-white text-white sm:size-7" />
+        {/* Play button overlay — only shown when a demo video URL is configured */}
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out">
+            <div className="flex size-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform duration-200 group-hover:scale-110 sm:size-24">
+              <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-accent/40 to-accent shadow-lg sm:size-16">
+                <Play className="size-6 fill-white text-white sm:size-7" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </button>
 
       {/* Video modal */}

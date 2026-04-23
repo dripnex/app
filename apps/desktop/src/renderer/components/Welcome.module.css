@@ -1,6 +1,6 @@
 /* Welcome — First-run onboarding overlay */
 
-@keyframes fadeIn {
+@keyframes fade-in {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: center;
   background: var(--bg-base);
-  animation: fadeIn 400ms ease both;
+  animation: fade-in 400ms ease both;
 }
 
 .container {
@@ -67,7 +67,7 @@
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   text-align: left;
-  animation: fadeIn 400ms ease both;
+  animation: fade-in 400ms ease both;
 }
 
 .card:nth-child(1) { animation-delay: 100ms; }
@@ -95,7 +95,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  animation: fadeIn 400ms ease both;
+  animation: fade-in 400ms ease both;
   animation-delay: 400ms;
 }
 

@@ -6,7 +6,8 @@ type BannerState =
   | { kind: 'hidden' }
   | { kind: 'available'; version: string }
   | { kind: 'downloading'; version: string; percent: number }
-  | { kind: 'ready'; version: string };
+  | { kind: 'ready'; version: string }
+  | { kind: 'error'; version: string };
 
 export function UpdateBanner() {
   const [state, setState] = useState<BannerState>({ kind: 'hidden' });
@@ -43,11 +44,30 @@ export function UpdateBanner() {
       })
     );
 
+    cleanups.push(
+      window.readied.updates.onError(() => {
+        setState(prev =>
+          prev.kind === 'hidden'
+            ? prev
+            : { kind: 'error', version: (prev as { version: string }).version }
+        );
+        setDismissed(false);
+      })
+    );
+
     return () => cleanups.forEach(fn => fn());
   }, []);
 
-  const handleDownload = useCallback(() => {
-    void window.readied.updates.startDownload();
+  const handleDownload = useCallback(async () => {
+    try {
+      await window.readied.updates.startDownload();
+    } catch {
+      setState(prev =>
+        prev.kind === 'hidden'
+          ? prev
+          : { kind: 'error', version: (prev as { version: string }).version }
+      );
+    }
   }, []);
 
   const handleInstall = useCallback(() => {
@@ -70,6 +90,14 @@ export function UpdateBanner() {
         <span className={styles.text}>
           Downloading v{state.version}... {state.percent}%
         </span>
+      )}
+      {state.kind === 'error' && (
+        <>
+          <span className={styles.text}>Download failed</span>
+          <button className={styles.action} onClick={handleDownload}>
+            Retry
+          </button>
+        </>
       )}
       {state.kind === 'ready' && (
         <>

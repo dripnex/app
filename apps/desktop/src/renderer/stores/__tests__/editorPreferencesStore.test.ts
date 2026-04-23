@@ -31,11 +31,9 @@ describe('editorPreferencesStore', () => {
 
   describe('cycleViewMode', () => {
     it('cycles editor → split → preview → editor', () => {
-      const store = useEditorPreferencesStore.getState();
-
       expect(useEditorPreferencesStore.getState().viewMode).toBe('editor');
 
-      store.cycleViewMode();
+      useEditorPreferencesStore.getState().cycleViewMode();
       expect(useEditorPreferencesStore.getState().viewMode).toBe('split');
 
       useEditorPreferencesStore.getState().cycleViewMode();

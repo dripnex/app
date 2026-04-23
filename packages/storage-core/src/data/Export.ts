@@ -82,7 +82,7 @@ function prependFrontmatter(note: NoteSnapshot): string {
     return note.content;
   }
 
-  const escapedTitle = note.title.replace(/"/g, '\\"');
+  const escapedTitle = note.title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   const tagsYaml = note.tags.length > 0 ? `tags: [${note.tags.join(', ')}]` : 'tags: []';
 
   const frontmatter = [

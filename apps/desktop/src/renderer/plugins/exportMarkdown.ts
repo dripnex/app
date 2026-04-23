@@ -4,7 +4,7 @@ import type { PluginManifest } from '@readied/plugin-api';
  * Build YAML frontmatter for a single note export.
  */
 function buildFrontmatter(note: { id?: string; title: string; tags?: string[] }): string {
-  const escapedTitle = note.title.replace(/"/g, '\\"');
+  const escapedTitle = note.title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   const now = new Date().toISOString();
   const tagsYaml =
     note.tags && note.tags.length > 0 ? `tags: [${note.tags.join(', ')}]` : 'tags: []';

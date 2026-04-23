@@ -47,7 +47,18 @@ export function NoteListFilterBar({ sortBy, sortOrder, onSortChange }: NoteListF
 
   // Load tags from the main process
   useEffect(() => {
-    void window.readied.notes.tags().then(setTags);
+    let cancelled = false;
+    void window.readied.notes
+      .tags()
+      .then(result => {
+        if (!cancelled) setTags(result);
+      })
+      .catch(() => {
+        // IPC call failed — leave tags empty
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleStatusClick = useCallback(

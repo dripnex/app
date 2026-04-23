@@ -32,12 +32,12 @@
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
   pointer-events: auto;
-  animation: slideIn var(--transition-normal) ease forwards;
+  animation: slide-in var(--transition-normal) ease forwards;
   min-width: 240px;
 }
 
 .toast.exiting {
-  animation: slideOut var(--transition-fast) ease forwards;
+  animation: slide-out var(--transition-fast) ease forwards;
 }
 
 /* ── Type Accents ──────────────────────────────────────────────────────────── */
@@ -88,7 +88,7 @@
 
 .message {
   flex: 1;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* ── Dismiss Button ────────────────────────────────────────────────────────── */
@@ -118,7 +118,7 @@
 
 /* ── Animations ────────────────────────────────────────────────────────────── */
 
-@keyframes slideIn {
+@keyframes slide-in {
   from {
     opacity: 0;
     transform: translateX(24px);
@@ -129,7 +129,7 @@
   }
 }
 
-@keyframes slideOut {
+@keyframes slide-out {
   from {
     opacity: 1;
     transform: translateX(0);

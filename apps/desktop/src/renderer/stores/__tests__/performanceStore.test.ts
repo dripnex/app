@@ -7,6 +7,9 @@ import {
 } from '../performanceStore';
 
 describe('performanceStore', () => {
+  // Reset to initial state before each test. For the "initial state" test below,
+  // this reset effectively sets the store to its default values, which is what
+  // we assert against — Zustand stores are singletons shared across tests.
   beforeEach(() => {
     usePerformanceStore.setState({
       mode: 'medium',

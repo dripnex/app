@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 
@@ -45,14 +45,34 @@ export function Modal({
     [closeOnOverlay, onClose]
   );
 
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  // Focus the modal container on open
+  useEffect(() => {
+    if (open && contentRef.current) {
+      contentRef.current.focus();
+    }
+  }, [open]);
+
   if (!open) return null;
+
+  const titleId = title != null ? 'modal-title' : undefined;
 
   return createPortal(
     <div className={styles.overlay} onClick={handleOverlayClick}>
-      <div className={`${styles.content} ${styles[size]}`} role="dialog" aria-modal="true">
+      <div
+        ref={contentRef}
+        className={`${styles.content} ${styles[size]}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         {title != null && (
           <div className={styles.header}>
-            <h2 className={styles.title}>{title}</h2>
+            <h2 id="modal-title" className={styles.title}>
+              {title}
+            </h2>
             <button
               className={styles.closeButton}
               onClick={onClose}
