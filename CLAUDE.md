@@ -116,12 +116,23 @@ main          ← Production releases (semantic-release runs here)
 | `feature/*` | New features              | `develop`       |
 | `fix/*`     | Bug fixes                 | `develop`       |
 
-### Branch Protection Rules (Critical)
+### Branch Protection Rules (MANDATORY)
 
 - **NEVER commit directly to `develop` or `main`** — always create a feature/fix branch first
-- **All work goes through PRs** — even small fixes. This ensures CI runs and reviews happen
-- **PR flow:** `feature/*` → `develop` → `main`
-- **Claude Code must also follow this** — create a branch, commit there, push, then create PR to develop
+- **All work goes through PRs** — even small fixes, even single-line changes
+- **PR flow:** `feature/*` or `fix/*` → `develop` (via PR) → `main` (via PR)
+- **Branch naming:** `feature/short-description` for new features, `fix/short-description` for bug fixes
+
+**Claude Code MUST follow this workflow:**
+
+1. `git checkout develop && git pull origin develop`
+2. `git checkout -b fix/description-here` (or `feature/`)
+3. Make changes, commit on the branch
+4. `git push -u origin fix/description-here`
+5. `gh pr create --base develop --head fix/description-here`
+6. After merge: `git checkout develop && git pull && git branch -d fix/description-here`
+
+**NEVER do:** `git commit` on develop, `git push origin develop`, `gh pr create --base main --head develop` (unless releasing)
 
 ### Release Process (Automated)
 
