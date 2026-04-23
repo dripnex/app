@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.1.0"
   },
   "peerDependencies": {
     "@codemirror/state": "^6.0.0",
@@ -37,8 +37,8 @@
     }
   },
   "devDependencies": {
-    "@codemirror/state": "^6.5.0",
-    "@codemirror/view": "^6.35.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.41.1",
     "@types/mdast": "^4.0.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
