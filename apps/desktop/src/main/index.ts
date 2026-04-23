@@ -16,6 +16,19 @@ import { execFile } from 'child_process';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
 // electron-devtools-installer is imported dynamically below (dev only)
+
+/** Safely send IPC message to all windows, ignoring destroyed ones */
+function broadcastToWindows(channel: string, ...args: unknown[]): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
+        win.webContents.send(channel, ...args);
+      }
+    } catch {
+      // Window was destroyed between check and send — ignore
+    }
+  }
+}
 import {
   runMigrations,
   createDataPaths,
@@ -1467,11 +1480,7 @@ function registerAuthSyncHandlers(): void {
 
   // Broadcast sync status events to all renderer windows
   sync.onStatusChange(event => {
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (!win.isDestroyed()) {
-        win.webContents.send('sync:status-changed', event);
-      }
-    });
+    broadcastToWindows('sync:status-changed', event);
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2582,11 +2591,19 @@ function registerPluginDiscoveryHandlers(): void {
   // Request plugin reload: broadcast to all windows except sender
   ipcMain.on('plugins:requestReload', event => {
     const senderWebContents = event.sender;
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (win.webContents !== senderWebContents && !win.isDestroyed()) {
-        win.webContents.send('plugins:reload');
+    for (const win of BrowserWindow.getAllWindows()) {
+      try {
+        if (
+          win.webContents !== senderWebContents &&
+          !win.isDestroyed() &&
+          !win.webContents.isDestroyed()
+        ) {
+          win.webContents.send('plugins:reload');
+        }
+      } catch {
+        // Window destroyed during iteration
       }
-    });
+    }
   });
 }
 
@@ -2609,11 +2626,7 @@ function initAutoUpdater(): void {
 
   autoUpdater.on('update-available', info => {
     updateLog.info({ version: info.version }, 'Update available');
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (!win.isDestroyed()) {
-        win.webContents.send('updates:available', { version: info.version });
-      }
-    });
+    broadcastToWindows('updates:available', { version: info.version });
   });
 
   autoUpdater.on('update-not-available', () => {
@@ -2622,34 +2635,22 @@ function initAutoUpdater(): void {
 
   autoUpdater.on('download-progress', progress => {
     updateLog.debug({ percent: progress.percent.toFixed(1) }, 'Download progress');
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (!win.isDestroyed()) {
-        win.webContents.send('updates:download-progress', {
-          percent: progress.percent,
-          bytesPerSecond: progress.bytesPerSecond,
-          transferred: progress.transferred,
-          total: progress.total,
-        });
-      }
+    broadcastToWindows('updates:download-progress', {
+      percent: progress.percent,
+      bytesPerSecond: progress.bytesPerSecond,
+      transferred: progress.transferred,
+      total: progress.total,
     });
   });
 
   autoUpdater.on('update-downloaded', info => {
     updateLog.info({ version: info.version }, 'Update downloaded');
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (!win.isDestroyed()) {
-        win.webContents.send('updates:download-complete', { version: info.version });
-      }
-    });
+    broadcastToWindows('updates:download-complete', { version: info.version });
   });
 
   autoUpdater.on('error', err => {
     updateLog.error({ error: err.message }, 'Updater error');
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (!win.isDestroyed()) {
-        win.webContents.send('updates:error', { message: err.message });
-      }
-    });
+    broadcastToWindows('updates:error', { message: err.message });
   });
 
   // Check for updates after a short delay
@@ -2793,20 +2794,25 @@ app
 
     // Notify all renderer windows when system theme changes
     nativeTheme.on('updated', () => {
-      const isDark = nativeTheme.shouldUseDarkColors;
-      for (const win of BrowserWindow.getAllWindows()) {
-        win.webContents.send('theme:system-changed', isDark);
-      }
+      broadcastToWindows('theme:system-changed', nativeTheme.shouldUseDarkColors);
     });
 
     // Settings sync: broadcast to all windows except sender
     ipcMain.on('settings:changed', (event, settings) => {
       const senderWebContents = event.sender;
-      BrowserWindow.getAllWindows().forEach(win => {
-        if (win.webContents !== senderWebContents && !win.isDestroyed()) {
-          win.webContents.send('settings:sync', settings);
+      for (const win of BrowserWindow.getAllWindows()) {
+        try {
+          if (
+            win.webContents !== senderWebContents &&
+            !win.isDestroyed() &&
+            !win.webContents.isDestroyed()
+          ) {
+            win.webContents.send('settings:sync', settings);
+          }
+        } catch {
+          // Window destroyed during iteration
         }
-      });
+      }
     });
 
     // Initialize auth and sync services
