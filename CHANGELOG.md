@@ -1,3 +1,9 @@
+## [0.12.1](https://github.com/tomymaritano/readide/compare/v0.12.0...v0.12.1) (2026-04-23)
+
+### Bug Fixes
+
+- v0.12.1 patch — crash fix, architecture refactor, CI improvements ([#217](https://github.com/tomymaritano/readide/issues/217)) ([d9e8cc6](https://github.com/tomymaritano/readide/commit/d9e8cc6e43d72511ff4f19689fc8ec95b5c6879e)), closes [#213](https://github.com/tomymaritano/readide/issues/213) [#216](https://github.com/tomymaritano/readide/issues/216) [#214](https://github.com/tomymaritano/readide/issues/214) [#215](https://github.com/tomymaritano/readide/issues/215) [#215](https://github.com/tomymaritano/readide/issues/215) [#215](https://github.com/tomymaritano/readide/issues/215) [#215](https://github.com/tomymaritano/readide/issues/215) [#212](https://github.com/tomymaritano/readide/issues/212) [#210](https://github.com/tomymaritano/readide/issues/210) [#212](https://github.com/tomymaritano/readide/issues/212) [#216](https://github.com/tomymaritano/readide/issues/216)
+
 ## [0.12.0](https://github.com/tomymaritano/readide/compare/v0.11.0...v0.12.0) (2026-04-23)
 
 ### Features
