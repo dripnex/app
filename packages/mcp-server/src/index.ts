@@ -151,9 +151,9 @@ function createServer(db: Database) {
       const now = new Date().toISOString();
 
       const titleMatch = content.match(/^#+ (.+)$/m);
-      const title = titleMatch
+      const title = titleMatch?.[1]
         ? titleMatch[1].trim()
-        : content.split('\n')[0].slice(0, 100) || 'Untitled';
+        : content.split('\n')[0]?.slice(0, 100) || 'Untitled';
       const wordCount = content.split(/\s+/).filter(Boolean).length;
 
       let notebookId = 'inbox';
@@ -188,9 +188,9 @@ function createServer(db: Database) {
     async ({ id, content }) => {
       const now = new Date().toISOString();
       const titleMatch = content.match(/^#+ (.+)$/m);
-      const title = titleMatch
+      const title = titleMatch?.[1]
         ? titleMatch[1].trim()
-        : content.split('\n')[0].slice(0, 100) || 'Untitled';
+        : content.split('\n')[0]?.slice(0, 100) || 'Untitled';
       const wordCount = content.split(/\s+/).filter(Boolean).length;
 
       const changes = execute(

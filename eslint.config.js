@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/.next/**',
       '**/.source/**',
       '**/next-env.d.ts',
+      'packages/ai-assistant/**',
     ],
   },
 
@@ -26,28 +27,18 @@ export default tseslint.config(
   // TypeScript rules
   ...tseslint.configs.recommended,
 
-  // Project-wide settings
+  // Project-wide settings (non-type-aware — applies to ALL files)
   {
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ['*.config.js', '*.config.ts'],
-        },
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
     plugins: {
       'import-x': importX,
     },
     rules: {
       // === Architecture Protection ===
-
-      // Prevent circular dependencies
       'import-x/no-cycle': 'error',
-
-      // Enforce import order (optional, remove if annoying)
       'import-x/order': [
         'warn',
         {
@@ -57,14 +48,7 @@ export default tseslint.config(
       ],
 
       // === TypeScript Safety ===
-
-      // Allow any when truly needed, but warn
       '@typescript-eslint/no-explicit-any': 'warn',
-
-      // Catch forgotten awaits
-      '@typescript-eslint/no-floating-promises': 'warn',
-
-      // Allow unused vars starting with _
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -73,19 +57,11 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-
-      // Allow require for native modules (Electron pattern)
       '@typescript-eslint/no-require-imports': 'off',
 
       // === Practical Rules ===
-
-      // No console in production code (warn only)
       'no-console': ['warn', { allow: ['warn', 'error'] }],
-
-      // Prefer const
       'prefer-const': 'error',
-
-      // No var
       'no-var': 'error',
 
       // === Disabled Style Rules (Prettier handles these) ===
@@ -96,11 +72,29 @@ export default tseslint.config(
     },
   },
 
+  // Type-aware rules — only for source files inside tsconfig projects
+  {
+    files: [
+      'apps/*/src/**/*.ts',
+      'apps/*/src/**/*.tsx',
+      'packages/*/src/**/*.ts',
+      'packages/*/src/**/*.tsx',
+    ],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'warn',
+    },
+  },
+
   // Package-specific overrides
   {
     files: ['packages/core/**/*.ts'],
     rules: {
-      // Core must be pure - no Node.js specific imports
       'no-restricted-imports': [
         'error',
         {
@@ -118,7 +112,6 @@ export default tseslint.config(
   {
     files: ['packages/storage-core/**/*.ts'],
     rules: {
-      // Storage-core must be pure too
       'no-restricted-imports': [
         'error',
         {
@@ -135,16 +128,16 @@ export default tseslint.config(
 
   // Test files - relax some rules
   {
-    files: ['**/*.test.ts', '**/tests/**/*.ts'],
+    files: ['**/*.test.ts', '**/tests/**/*.ts', '**/__tests__/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'no-console': 'off',
     },
   },
 
-  // Config files - CommonJS allowed
+  // Config files
   {
-    files: ['**/*.config.js', '**/*.config.ts'],
+    files: ['**/*.config.js', '**/*.config.ts', '**/*.config.mjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
     },
