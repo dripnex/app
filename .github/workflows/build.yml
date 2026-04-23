@@ -13,6 +13,7 @@ env:
   NODE_VERSION: '22'
   ELECTRON_CACHE: ~/.cache/electron
   ELECTRON_BUILDER_CACHE: ~/.cache/electron-builder
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -55,11 +56,13 @@ jobs:
       - name: Cache Electron downloads
         uses: actions/cache@v4
         with:
-          path: |
-            ${{ env.ELECTRON_CACHE }}
-            ${{ env.ELECTRON_BUILDER_CACHE }}
-          key: electron-v2-${{ matrix.platform }}-${{ hashFiles('apps/desktop/package.json') }}
-          restore-keys: electron-v2-${{ matrix.platform }}-
+          path: ${{ env.ELECTRON_CACHE }}
+          key: electron-v3-${{ matrix.platform }}-${{ hashFiles('apps/desktop/package.json') }}
+          restore-keys: electron-v3-${{ matrix.platform }}-
+
+      - name: Clean electron-builder cache (Linux)
+        if: matrix.platform == 'linux'
+        run: rm -rf ~/.cache/electron-builder
 
       - name: Force HTTPS for GitHub git dependencies
         shell: bash
@@ -93,10 +96,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: pnpm dist:win --publish always
-
-      - name: Clean electron-builder cache (Linux)
-        if: matrix.platform == 'linux'
-        run: rm -rf ~/.cache/electron-builder/fpm ~/.cache/electron-builder/nsis ~/.cache/electron-builder/winCodeSign ~/.cache/electron-builder/7za*
 
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
