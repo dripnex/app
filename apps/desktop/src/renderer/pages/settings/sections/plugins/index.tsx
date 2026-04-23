@@ -1,0 +1,405 @@
+/**
+ * Plugins Settings Section
+ *
+ * Card-based plugin manager showing built-in and community plugins
+ * with enable/disable toggles, badges, and collapsible config forms.
+ */
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { RefreshCw, FolderOpen, Download, Search } from 'lucide-react';
+import type { PluginConfigSchemaField } from '../../../../../preload/index';
+import { validateConfigValue } from '@readied/plugin-api';
+import { builtInPlugins } from '../../../../plugins';
+import { Button, toast } from '../../../../ui/primitives';
+import styles from '../Section.module.css';
+import type { DiscoveredPluginInfo, BuiltInPluginInfo } from './types';
+import { PluginCard } from './PluginCard';
+import { BrowseTab } from './BrowseTab';
+import { PluginInspector } from './PluginInspector';
+
+// ============================================================================
+// Constants — derived from runtime plugin manifests
+// ============================================================================
+
+const BUILT_IN_PLUGIN_INFOS: BuiltInPluginInfo[] = builtInPlugins.map(p => ({
+  id: p.id,
+  name: p.name,
+  version: p.version,
+  description: p.description ?? '',
+}));
+
+/** Config schemas for built-in plugins that have them */
+const BUILT_IN_CONFIG_SCHEMAS: Record<string, Record<string, PluginConfigSchemaField> | undefined> =
+  Object.fromEntries(
+    builtInPlugins
+      .filter(p => p.configSchema)
+      .map(p => [p.id, p.configSchema as Record<string, PluginConfigSchemaField>])
+  );
+
+// ============================================================================
+// PluginsSection
+// ============================================================================
+
+export function PluginsSection() {
+  const [activeTab, setActiveTab] = useState<'installed' | 'browse'>('installed');
+  const [search, setSearch] = useState('');
+  const [plugins, setPlugins] = useState<DiscoveredPluginInfo[]>([]);
+  const [pluginsPath, setPluginsPath] = useState('');
+  const [isReloading, setIsReloading] = useState(false);
+  const [configValues, setConfigValues] = useState<Record<string, Record<string, unknown>>>({});
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Listen for plugin install events from BrowseTab
+  useEffect(() => {
+    const handler = () => setRefreshKey(k => k + 1);
+    window.addEventListener('readied:plugins:refresh', handler);
+    return () => window.removeEventListener('readied:plugins:refresh', handler);
+  }, []);
+
+  // Load discovered plugins
+  useEffect(() => {
+    async function loadPlugins() {
+      try {
+        const [scanned, stateList, paths] = await Promise.all([
+          window.readied.plugins.scan(),
+          window.readied.plugins.listState(),
+          window.readied.data.paths(),
+        ]);
+        setPluginsPath(paths.root + '/plugins');
+        const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+        const pluginList = scanned.map(sp => ({
+          id: sp.id,
+          name: sp.name,
+          version: sp.version,
+          description: sp.description,
+          enabled: stateMap.get(sp.id) ?? true,
+          configSchema: sp.configSchema,
+        }));
+        setPlugins(pluginList);
+
+        // Load config values for all plugins with schemas (built-in + community)
+        const configs: Record<string, Record<string, unknown>> = {};
+
+        // Built-in plugins with config schemas
+        for (const bp of builtInPlugins) {
+          if (bp.configSchema) {
+            try {
+              const allConfig = await window.readied.pluginConfig.getAll(bp.id);
+              configs[bp.id] = allConfig;
+            } catch {
+              configs[bp.id] = {};
+            }
+          }
+        }
+
+        // Community plugins with config schemas
+        for (const plugin of pluginList) {
+          if (plugin.configSchema && plugin.enabled) {
+            try {
+              const allConfig = await window.readied.pluginConfig.getAll(plugin.id);
+              configs[plugin.id] = allConfig;
+            } catch {
+              configs[plugin.id] = {};
+            }
+          }
+        }
+        setConfigValues(configs);
+      } catch {
+        // Plugin scanning failed - leave empty
+      }
+    }
+    void loadPlugins();
+  }, [refreshKey]);
+
+  // Toggle plugin enabled/disabled
+  const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
+    try {
+      await window.readied.plugins.setEnabled(pluginId, enabled);
+      setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
+      // Trigger reload in main window so preview updates immediately
+      window.readied.plugins.requestReload();
+      toast.success(`Plugin ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      toast.error(
+        'Failed to update plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    }
+  }, []);
+
+  // Update a plugin config value
+  const handleConfigChange = useCallback(
+    async (pluginId: string, key: string, value: unknown) => {
+      // Find the schema field for validation
+      const schema =
+        BUILT_IN_CONFIG_SCHEMAS[pluginId] ?? plugins.find(p => p.id === pluginId)?.configSchema;
+      const field = schema?.[key];
+
+      if (!field) {
+        console.warn(`[plugin:${pluginId}] Unknown config key "${key}", ignoring`);
+        return;
+      }
+
+      const result = validateConfigValue(field, value);
+      if (!result.valid) {
+        console.warn(`[plugin:${pluginId}] Invalid config value for "${key}": ${result.reason}`);
+        return;
+      }
+
+      await window.readied.pluginConfig.set(pluginId, key, value);
+      setConfigValues(prev => ({
+        ...prev,
+        [pluginId]: { ...prev[pluginId], [key]: value },
+      }));
+    },
+    [plugins]
+  );
+
+  // Reload plugins in the main window
+  const handleReload = useCallback(() => {
+    setIsReloading(true);
+    window.readied.plugins.requestReload();
+    setTimeout(() => setIsReloading(false), 800);
+  }, []);
+
+  // Install plugin from archive
+  const handleInstall = useCallback(async () => {
+    try {
+      const result = await window.readied.plugins.install();
+      if (result.success) {
+        // Re-scan to pick up the new plugin
+        const [scanned, stateList] = await Promise.all([
+          window.readied.plugins.scan(),
+          window.readied.plugins.listState(),
+        ]);
+        const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+        setPlugins(
+          scanned.map(sp => ({
+            id: sp.id,
+            name: sp.name,
+            version: sp.version,
+            description: sp.description,
+            enabled: stateMap.get(sp.id) ?? true,
+            configSchema: sp.configSchema,
+          }))
+        );
+        // Trigger reload in main window
+        window.readied.plugins.requestReload();
+        toast.success('Plugin installed successfully');
+      } else {
+        toast.error(result.error || 'Failed to install plugin');
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to install plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    }
+  }, []);
+
+  // Uninstall a community plugin
+  const handleUninstall = useCallback(async (pluginId: string) => {
+    try {
+      const result = await window.readied.plugins.uninstall(pluginId);
+      if (result.success) {
+        setPlugins(prev => prev.filter(p => p.id !== pluginId));
+        // Trigger reload in main window
+        window.readied.plugins.requestReload();
+        toast.success('Plugin uninstalled successfully');
+      } else {
+        toast.error(result.error || 'Failed to uninstall plugin');
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to uninstall plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    }
+  }, []);
+
+  // Open plugins folder
+  const handleOpenFolder = useCallback(async () => {
+    if (pluginsPath) {
+      await window.readied.data.openFolder();
+    }
+  }, [pluginsPath]);
+
+  // Filter plugins by search query
+  const lowerSearch = search.toLowerCase();
+  const filteredBuiltIn = useMemo(
+    () =>
+      lowerSearch
+        ? BUILT_IN_PLUGIN_INFOS.filter(
+            p =>
+              p.name.toLowerCase().includes(lowerSearch) ||
+              p.description.toLowerCase().includes(lowerSearch)
+          )
+        : BUILT_IN_PLUGIN_INFOS,
+    [lowerSearch]
+  );
+  const filteredCommunity = useMemo(
+    () =>
+      lowerSearch
+        ? plugins.filter(
+            p =>
+              p.name.toLowerCase().includes(lowerSearch) ||
+              (p.description ?? '').toLowerCase().includes(lowerSearch)
+          )
+        : plugins,
+    [lowerSearch, plugins]
+  );
+
+  return (
+    <div className={styles.section}>
+      <h2 className={styles.title}>Plugins</h2>
+
+      {/* Tab bar */}
+      <div className={styles.pluginTabs}>
+        <button
+          type="button"
+          className={`${styles.pluginTab} ${activeTab === 'installed' ? styles.pluginTabActive : ''}`}
+          onClick={() => setActiveTab('installed')}
+        >
+          Installed
+        </button>
+        <button
+          type="button"
+          className={`${styles.pluginTab} ${activeTab === 'browse' ? styles.pluginTabActive : ''}`}
+          onClick={() => setActiveTab('browse')}
+        >
+          Browse
+        </button>
+      </div>
+
+      {activeTab === 'installed' && (
+        <>
+          {/* Search */}
+          <div className={styles.pluginSearchWrapper}>
+            <Search size={14} className={styles.pluginSearchIcon} />
+            <input
+              type="text"
+              className={styles.pluginSearchInput}
+              placeholder="Search plugins..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Built-in plugins */}
+          <div style={{ marginTop: '1rem' }}>
+            <div className={styles.pluginSectionLabel}>Built-in</div>
+            <div className={styles.pluginCardList}>
+              {filteredBuiltIn.map(plugin => (
+                <PluginCard
+                  key={plugin.id}
+                  name={plugin.name}
+                  version={plugin.version}
+                  description={plugin.description}
+                  isBuiltIn={true}
+                  enabled={true}
+                  configSchema={BUILT_IN_CONFIG_SCHEMAS[plugin.id]}
+                  configValues={configValues[plugin.id]}
+                  onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
+                />
+              ))}
+              {filteredBuiltIn.length === 0 && search && (
+                <div className={styles.pluginEmptyState}>
+                  <p>No built-in plugins match &ldquo;{search}&rdquo;</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Community / installed plugins */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <div className={styles.pluginSectionLabel}>Community</div>
+            {filteredCommunity.length === 0 && !search ? (
+              <div className={styles.pluginCard}>
+                <div className={styles.pluginEmptyState}>
+                  <p>No community plugins installed yet.</p>
+                  {pluginsPath && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<FolderOpen size={14} />}
+                      onClick={handleOpenFolder}
+                    >
+                      Open Plugins Folder
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : filteredCommunity.length === 0 && search ? (
+              <div className={styles.pluginEmptyState}>
+                <p>No community plugins match &ldquo;{search}&rdquo;</p>
+              </div>
+            ) : (
+              <div className={styles.pluginCardList}>
+                {filteredCommunity.map(plugin => (
+                  <PluginCard
+                    key={plugin.id}
+                    name={plugin.name}
+                    version={plugin.version}
+                    description={plugin.description}
+                    isBuiltIn={false}
+                    enabled={plugin.enabled}
+                    onToggle={enabled => handleToggle(plugin.id, enabled)}
+                    onUninstall={() => handleUninstall(plugin.id)}
+                    configSchema={plugin.configSchema}
+                    configValues={configValues[plugin.id]}
+                    onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions bar */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <div className={styles.pluginActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Download size={14} />}
+                onClick={handleInstall}
+              >
+                Install from File
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<RefreshCw size={14} />}
+                loading={isReloading}
+                onClick={handleReload}
+              >
+                {isReloading ? 'Reloading...' : 'Reload Plugins'}
+              </Button>
+              {pluginsPath && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<FolderOpen size={14} />}
+                  onClick={handleOpenFolder}
+                >
+                  Open Plugins Folder
+                </Button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'browse' && (
+        <BrowseTab
+          installedPluginIds={
+            new Set([
+              ...BUILT_IN_PLUGIN_INFOS.map(p => p.id),
+              ...plugins.map(p => p.id),
+              // Include slugified IDs so marketplace slug-based comparison works
+              ...plugins.map(p => p.name.toLowerCase().replace(/\s+/g, '-')),
+            ])
+          }
+        />
+      )}
+
+      {import.meta.env.DEV && <PluginInspector />}
+    </div>
+  );
+}
