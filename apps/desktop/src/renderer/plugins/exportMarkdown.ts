@@ -1,16 +1,41 @@
 import type { PluginManifest } from '@readied/plugin-api';
 
 /**
+ * Escape a string for safe inclusion as a YAML double-quoted scalar.
+ */
+function escapeYamlScalar(s: string): string {
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
+ * Escape HTML special characters to prevent injection in table cells.
+ */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
  * Build YAML frontmatter for a single note export.
  */
 function buildFrontmatter(note: { id?: string; title: string; tags?: string[] }): string {
-  const escapedTitle = note.title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const escapedTitle = escapeYamlScalar(note.title);
   const now = new Date().toISOString();
   const tagsYaml =
-    note.tags && note.tags.length > 0 ? `tags: [${note.tags.join(', ')}]` : 'tags: []';
+    note.tags && note.tags.length > 0
+      ? `tags: [${note.tags.map(t => `"${escapeYamlScalar(t)}"`).join(', ')}]`
+      : 'tags: []';
 
   const lines = ['---'];
-  if (note.id) lines.push(`id: "${note.id}"`);
+  if (note.id) lines.push(`id: "${escapeYamlScalar(note.id)}"`);
   lines.push(`title: "${escapedTitle}"`);
   lines.push(`exported: ${now}`);
   lines.push(tagsYaml);
@@ -42,7 +67,7 @@ function convertTable(block: string): string {
 
   let html = '<table><thead><tr>';
   for (const cell of headerCells) {
-    html += `<th>${cell}</th>`;
+    html += `<th>${escapeHtml(cell)}</th>`;
   }
   html += '</tr></thead><tbody>';
 
@@ -50,7 +75,7 @@ function convertTable(block: string): string {
     const cells = parseRow(lines[i] ?? '');
     html += '<tr>';
     for (const cell of cells) {
-      html += `<td>${cell}</td>`;
+      html += `<td>${escapeHtml(cell)}</td>`;
     }
     html += '</tr>';
   }
@@ -147,10 +172,10 @@ export const exportMarkdownPlugin: PluginManifest = {
         keybinding: { key: 'C', modifiers: ['Mod', 'Shift'] },
         icon: 'Copy',
       },
-      () => {
+      async () => {
         const content = context.editor.getContent();
         if (!content) return false;
-        void navigator.clipboard.writeText(content);
+        await navigator.clipboard.writeText(content);
         context.log.info('Markdown copied to clipboard');
         return true;
       }
@@ -162,13 +187,13 @@ export const exportMarkdownPlugin: PluginManifest = {
         name: 'Copy as HTML',
         icon: 'Code',
       },
-      () => {
+      async () => {
         const content = context.editor.getContent();
         if (!content) return false;
 
         const html = markdownToHtml(content);
 
-        void navigator.clipboard.write([
+        await navigator.clipboard.write([
           new ClipboardItem({
             'text/html': new Blob([html], { type: 'text/html' }),
             'text/plain': new Blob([content], { type: 'text/plain' }),

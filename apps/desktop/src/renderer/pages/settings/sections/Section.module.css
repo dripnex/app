@@ -646,11 +646,11 @@
 }
 
 /* Spinner animation for loading states */
-.plugin-spinner {
-  animation: plugin-spin 1s linear infinite;
+.pluginSpinner {
+  animation: pluginSpin 1s linear infinite;
 }
 
-@keyframes plugin-spin {
+@keyframes pluginSpin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }

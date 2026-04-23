@@ -53,8 +53,8 @@ export function NoteListFilterBar({ sortBy, sortOrder, onSortChange }: NoteListF
       .then(result => {
         if (!cancelled) setTags(result);
       })
-      .catch(() => {
-        // IPC call failed — leave tags empty
+      .catch((err: unknown) => {
+        console.error('Failed to load tags:', err);
       });
     return () => {
       cancelled = true;
@@ -96,6 +96,7 @@ export function NoteListFilterBar({ sortBy, sortOrder, onSortChange }: NoteListF
             key={opt.label}
             type="button"
             className={`${styles.pill} ${statusFilter === opt.value ? styles.pillActive : ''}`}
+            aria-pressed={statusFilter === opt.value}
             onClick={() => handleStatusClick(opt.value)}
           >
             {opt.label}

@@ -5,7 +5,7 @@
  * or skip straight into the app.
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '../ui/primitives';
 import styles from './Welcome.module.css';
 
@@ -30,6 +30,12 @@ const features = [
 ] as const;
 
 export function Welcome({ onComplete }: WelcomeProps) {
+  const primaryRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    primaryRef.current?.focus();
+  }, []);
+
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -68,7 +74,7 @@ export function Welcome({ onComplete }: WelcomeProps) {
         </div>
 
         <div className={styles.actions}>
-          <Button variant="primary" onClick={() => onComplete(true)}>
+          <Button ref={primaryRef} variant="primary" onClick={() => onComplete(true)}>
             Create Your First Note
           </Button>
           <Button variant="ghost" onClick={() => onComplete(false)}>

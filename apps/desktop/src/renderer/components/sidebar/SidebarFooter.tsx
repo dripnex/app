@@ -145,9 +145,14 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
     );
   }
 
-  // Idle, no pending, recently synced — show last sync time briefly
-  if (lastSyncAt && Date.now() - lastSyncAt < 60_000) {
-    return null; // "Synced" flash already handled above
+  // Idle, no pending, has sync history — show relative time
+  if (lastSyncAt) {
+    return (
+      <div className="sidebar-footer-progress sidebar-footer-progress--idle">
+        <Cloud size={11} />
+        <span>Synced {formatRelativeTime(lastSyncAt)}</span>
+      </div>
+    );
   }
 
   // Nothing to show
@@ -176,8 +181,9 @@ export const SidebarFooter = memo(function SidebarFooter({
     }
   };
 
+  const lastSyncAtFooter = useSyncStore(selectLastSyncAt);
+
   const getSyncTooltip = () => {
-    const lastSyncAt = useSyncStore.getState().lastSyncAt;
     switch (syncStatus) {
       case 'syncing':
         return 'Syncing...';
@@ -188,7 +194,9 @@ export const SidebarFooter = memo(function SidebarFooter({
       case 'offline':
         return 'Offline';
       default:
-        return lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync';
+        return lastSyncAtFooter
+          ? `Synced ${formatRelativeTime(lastSyncAtFooter)}`
+          : 'Ready to sync';
     }
   };
 

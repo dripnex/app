@@ -221,7 +221,14 @@ function BrowseTab({ installedPluginIds }: { installedPluginIds: Set<string> }) 
 
         const data = (await response.json()) as { plugins: MarketplacePlugin[]; total: number };
         if (!cancelled && data.plugins && Array.isArray(data.plugins)) {
-          setMarketplacePlugins(data.plugins);
+          // Validate each item has required fields
+          const validated = data.plugins.filter(
+            (p): p is MarketplacePlugin =>
+              typeof p.name === 'string' &&
+              typeof p.description === 'string' &&
+              Array.isArray(p.tags)
+          );
+          setMarketplacePlugins(validated);
           setIsOffline(false);
         }
       } catch {
@@ -256,9 +263,9 @@ function BrowseTab({ installedPluginIds }: { installedPluginIds: Set<string> }) 
       const q = browseSearch.toLowerCase();
       result = result.filter(
         p =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.tags.some(t => t.includes(q))
+          p.name?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          p.tags?.some(t => t.includes(q))
       );
     }
     return result;
@@ -815,6 +822,8 @@ export function PluginsSection() {
         // Trigger reload in main window
         window.readied.plugins.requestReload();
         toast.success('Plugin installed successfully');
+      } else {
+        toast.error(result.error || 'Failed to install plugin');
       }
     } catch (error) {
       toast.error(
@@ -832,6 +841,8 @@ export function PluginsSection() {
         // Trigger reload in main window
         window.readied.plugins.requestReload();
         toast.success('Plugin uninstalled successfully');
+      } else {
+        toast.error(result.error || 'Failed to uninstall plugin');
       }
     } catch (error) {
       toast.error(
