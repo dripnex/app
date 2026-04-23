@@ -26,8 +26,8 @@
     "@codemirror/commands": "^6.10.1",
     "@codemirror/state": "^6.5.3",
     "@codemirror/view": "^6.39.8",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   },
   "license": "MIT"
 }
