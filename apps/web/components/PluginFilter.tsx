@@ -184,7 +184,7 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
                   className="absolute top-1.5 right-1.5 rounded-md bg-white/5 p-1 text-[#71717a] opacity-0 transition-opacity group-hover:opacity-100 hover:text-white focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   aria-label={`Copy install command for ${plugin.name}`}
                   onClick={() => {
-                    navigator.clipboard.writeText(installCmd);
+                    void navigator.clipboard.writeText(installCmd);
                   }}
                 >
                   <svg

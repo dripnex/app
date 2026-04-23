@@ -485,6 +485,12 @@ export class SyncService {
     // encrypt/decrypt note content. If not ready, the user needs to set up
     // or unlock their sync passphrase first.
     if (!this.encryptionService.isReady()) {
+      this.emitStatus({
+        type: 'sync-error',
+        error: 'Encryption not ready. Set up a passphrase in Settings.',
+        isNetworkError: false,
+        consecutiveFailures: this.state.consecutiveFailures,
+      });
       return {
         success: false,
         changesApplied: 0,

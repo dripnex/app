@@ -21,6 +21,7 @@ import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { validateConfigValue } from '@readied/plugin-api';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';
+import { Button, toast } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 // ============================================================================
@@ -63,124 +64,191 @@ const BUILT_IN_CONFIG_SCHEMAS: Record<string, Record<string, PluginConfigSchemaF
   );
 
 // ============================================================================
-// Marketplace Data (static catalog — fetches from API in future)
+// Marketplace Data
 // ============================================================================
 
+const MARKETPLACE_API_URL = 'https://api.readied.app/plugins';
+
 interface MarketplacePlugin {
-  id: string;
+  slug: string;
   name: string;
   description: string;
   author: string;
   version: string;
   category: string;
   icon: string;
-  builtin: boolean;
+  isBuiltIn: boolean;
   tags: string[];
+  downloads: number;
+  bundleUrl: string | null;
 }
 
-const MARKETPLACE_PLUGINS: MarketplacePlugin[] = [
+/** Static fallback catalog for offline use */
+const FALLBACK_PLUGINS: MarketplacePlugin[] = [
   {
-    id: 'readied-ai-assistant',
+    slug: 'readied-ai-assistant',
     name: 'AI Assistant',
     description: 'AI assistant with RAG over your notes, powered by Claude',
     author: 'Readied',
     version: '0.1.0',
     category: 'productivity',
     icon: 'sparkles',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['ai', 'rag', 'claude'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-word-count',
+    slug: 'readied-word-count',
     name: 'Word Count',
     description: 'Shows word, character, and line count in the editor status bar',
     author: 'Readied',
     version: '1.0.0',
     category: 'editor',
     icon: 'hash',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['statistics', 'writing'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-typewriter-mode',
+    slug: 'readied-typewriter-mode',
     name: 'Typewriter Mode',
     description: 'Keeps the cursor line centered in the editor for a focused writing experience',
     author: 'Readied',
     version: '1.0.0',
     category: 'editor',
     icon: 'align-center',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['writing', 'focus'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-active-line-highlight',
+    slug: 'readied-active-line-highlight',
     name: 'Active Line Highlight',
     description: 'Highlights the line where the cursor is positioned',
     author: 'Readied',
     version: '1.0.0',
     category: 'editor',
     icon: 'highlighter',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['editor', 'highlight'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-tables',
+    slug: 'readied-tables',
     name: 'Tables',
     description: 'Insert markdown tables with a command. Renders via GFM in preview.',
     author: 'Readied',
     version: '1.0.0',
     category: 'editor',
     icon: 'table',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['tables', 'markdown'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-focus-mode',
+    slug: 'readied-focus-mode',
     name: 'Focus Mode',
     description: 'Dims all content except the current paragraph for focused writing',
     author: 'Readied',
     version: '1.0.0',
     category: 'productivity',
     icon: 'eye',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['focus', 'writing', 'zen'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-reading-time',
+    slug: 'readied-reading-time',
     name: 'Reading Time',
     description: 'Shows estimated reading time based on word count (~200 WPM)',
     author: 'Readied',
     version: '1.0.0',
     category: 'productivity',
     icon: 'clock',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['reading', 'statistics'],
+    downloads: 0,
+    bundleUrl: null,
   },
   {
-    id: 'readied-export-markdown',
+    slug: 'readied-export-markdown',
     name: 'Export Markdown',
     description: 'Copy notes as raw Markdown or rendered HTML to clipboard',
     author: 'Readied',
     version: '1.0.0',
     category: 'export',
     icon: 'copy',
-    builtin: true,
+    isBuiltIn: true,
     tags: ['export', 'markdown', 'html'],
+    downloads: 0,
+    bundleUrl: null,
   },
 ];
-
-const MARKETPLACE_CATEGORIES = ['All', ...new Set(MARKETPLACE_PLUGINS.map(p => p.category))];
 
 // ============================================================================
 // BrowseTab
 // ============================================================================
 
-function BrowseTab() {
+function BrowseTab({ installedPluginIds }: { installedPluginIds: Set<string> }) {
   const [browseSearch, setBrowseSearch] = useState('');
   const [browseCategory, setBrowseCategory] = useState('All');
+  const [marketplacePlugins, setMarketplacePlugins] =
+    useState<MarketplacePlugin[]>(FALLBACK_PLUGINS);
+  const [isOffline, setIsOffline] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [installingSlug, setInstallingSlug] = useState<string | null>(null);
+
+  // Fetch plugins from API on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchPlugins() {
+      setIsLoading(true);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(MARKETPLACE_API_URL, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = (await response.json()) as { plugins: MarketplacePlugin[]; total: number };
+        if (!cancelled && data.plugins && Array.isArray(data.plugins)) {
+          setMarketplacePlugins(data.plugins);
+          setIsOffline(false);
+        }
+      } catch {
+        // Offline or API error — fall back to static list
+        if (!cancelled) {
+          setMarketplacePlugins(FALLBACK_PLUGINS);
+          setIsOffline(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+    void fetchPlugins();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categories = useMemo(
+    () => ['All', ...new Set(marketplacePlugins.map(p => p.category))],
+    [marketplacePlugins]
+  );
 
   const filteredMarketplace = useMemo(() => {
-    let result = MARKETPLACE_PLUGINS;
+    let result = marketplacePlugins;
     if (browseCategory !== 'All') {
       result = result.filter(p => p.category === browseCategory);
     }
@@ -194,10 +262,45 @@ function BrowseTab() {
       );
     }
     return result;
-  }, [browseSearch, browseCategory]);
+  }, [browseSearch, browseCategory, marketplacePlugins]);
+
+  const handleInstallFromUrl = useCallback(async (plugin: MarketplacePlugin) => {
+    if (!plugin.bundleUrl) {
+      toast.error('This plugin has no download URL');
+      return;
+    }
+
+    setInstallingSlug(plugin.slug);
+    try {
+      const result = await window.readied.plugins.installFromUrl(plugin.bundleUrl, plugin.slug);
+      if (result.success) {
+        toast.success(`${plugin.name} installed successfully`);
+        // Trigger a reload so the installed tab picks it up
+        window.readied.plugins.requestReload();
+        // Notify parent to re-scan installed plugins
+        window.dispatchEvent(new CustomEvent('readied:plugins:refresh'));
+      } else {
+        toast.error(`Failed to install ${plugin.name}: ${result.error ?? 'Unknown error'}`);
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to install plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    } finally {
+      setInstallingSlug(null);
+    }
+  }, []);
 
   return (
     <>
+      {/* Offline notice */}
+      {isOffline && (
+        <div className={styles.pluginOfflineNotice}>
+          <AlertTriangle size={14} />
+          <span>Offline — showing built-in plugins only</span>
+        </div>
+      )}
+
       {/* Search */}
       <div className={styles.pluginSearchWrapper}>
         <Search size={14} className={styles.pluginSearchIcon} />
@@ -212,7 +315,7 @@ function BrowseTab() {
 
       {/* Category pills */}
       <div className={styles.pluginCategoryPills}>
-        {MARKETPLACE_CATEGORIES.map(cat => (
+        {categories.map(cat => (
           <button
             key={cat}
             type="button"
@@ -224,43 +327,75 @@ function BrowseTab() {
         ))}
       </div>
 
-      {/* Plugin grid */}
-      {filteredMarketplace.length > 0 ? (
+      {/* Loading state */}
+      {isLoading ? (
+        <div className={styles.pluginBrowsePlaceholder}>
+          <RefreshCw size={24} className={styles.pluginSpinner} />
+          <p>Loading marketplace...</p>
+        </div>
+      ) : filteredMarketplace.length > 0 ? (
         <div className={styles.pluginMarketplaceGrid}>
-          {filteredMarketplace.map(plugin => (
-            <div key={plugin.id} className={styles.pluginMarketplaceCard}>
-              <div className={styles.pluginMarketplaceCardHeader}>
-                <span className={styles.pluginMarketplaceIcon}>{plugin.icon}</span>
-                <div className={styles.pluginMarketplaceCardInfo}>
-                  <span className={styles.pluginName}>{plugin.name}</span>
-                  <span className={styles.pluginMarketplaceMeta}>
-                    {plugin.author} &middot; v{plugin.version}
-                  </span>
-                </div>
-              </div>
-              <p className={styles.pluginDescription}>{plugin.description}</p>
-              <div className={styles.pluginMarketplaceCardFooter}>
-                <div className={styles.pluginMarketplaceTags}>
-                  {plugin.tags.slice(0, 3).map(tag => (
-                    <span key={tag} className={styles.pluginMarketplaceTag}>
-                      {tag}
+          {filteredMarketplace.map(plugin => {
+            const isInstalled = installedPluginIds.has(plugin.slug);
+            const isInstalling = installingSlug === plugin.slug;
+
+            return (
+              <div key={plugin.slug} className={styles.pluginMarketplaceCard}>
+                <div className={styles.pluginMarketplaceCardHeader}>
+                  <span className={styles.pluginMarketplaceIcon}>{plugin.icon}</span>
+                  <div className={styles.pluginMarketplaceCardInfo}>
+                    <span className={styles.pluginName}>{plugin.name}</span>
+                    <span className={styles.pluginMarketplaceMeta}>
+                      {plugin.author} &middot; v{plugin.version}
+                      {plugin.downloads > 0 && (
+                        <> &middot; {plugin.downloads.toLocaleString()} downloads</>
+                      )}
                     </span>
-                  ))}
+                  </div>
                 </div>
-                {plugin.builtin ? (
-                  <span className={styles.pluginMarketplaceIncluded}>
-                    <Check size={12} />
-                    Included
-                  </span>
-                ) : (
-                  <button type="button" className={styles.pluginMarketplaceInstallBtn}>
-                    <Download size={12} />
-                    Install
-                  </button>
-                )}
+                <p className={styles.pluginDescription}>{plugin.description}</p>
+                <div className={styles.pluginMarketplaceCardFooter}>
+                  <div className={styles.pluginMarketplaceTags}>
+                    {plugin.tags.slice(0, 3).map(tag => (
+                      <span key={tag} className={styles.pluginMarketplaceTag}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  {plugin.isBuiltIn ? (
+                    <span className={styles.pluginMarketplaceIncluded}>
+                      <Check size={12} />
+                      Included
+                    </span>
+                  ) : isInstalled ? (
+                    <span className={styles.pluginMarketplaceIncluded}>
+                      <Check size={12} />
+                      Installed
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.pluginMarketplaceInstallBtn}
+                      disabled={isInstalling || !plugin.bundleUrl}
+                      onClick={() => handleInstallFromUrl(plugin)}
+                    >
+                      {isInstalling ? (
+                        <>
+                          <RefreshCw size={12} className={styles.pluginSpinner} />
+                          Installing...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={12} />
+                          Install
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className={styles.pluginBrowsePlaceholder}>
@@ -516,10 +651,14 @@ function PluginInspector() {
           )}
 
           <div style={{ marginTop: '0.75rem' }}>
-            <button type="button" className={styles.actionButton} onClick={handleForceReload}>
-              <RefreshCw size={14} />
-              <span>Force Reload All</span>
-            </button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw size={14} />}
+              onClick={handleForceReload}
+            >
+              Force Reload All
+            </Button>
           </div>
         </div>
       )}
@@ -538,6 +677,14 @@ export function PluginsSection() {
   const [pluginsPath, setPluginsPath] = useState('');
   const [isReloading, setIsReloading] = useState(false);
   const [configValues, setConfigValues] = useState<Record<string, Record<string, unknown>>>({});
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Listen for plugin install events from BrowseTab
+  useEffect(() => {
+    const handler = () => setRefreshKey(k => k + 1);
+    window.addEventListener('readied:plugins:refresh', handler);
+    return () => window.removeEventListener('readied:plugins:refresh', handler);
+  }, []);
 
   // Load discovered plugins
   useEffect(() => {
@@ -591,15 +738,22 @@ export function PluginsSection() {
         // Plugin scanning failed - leave empty
       }
     }
-    loadPlugins();
-  }, []);
+    void loadPlugins();
+  }, [refreshKey]);
 
   // Toggle plugin enabled/disabled
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
-    await window.readied.plugins.setEnabled(pluginId, enabled);
-    setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
-    // Trigger reload in main window so preview updates immediately
-    window.readied.plugins.requestReload();
+    try {
+      await window.readied.plugins.setEnabled(pluginId, enabled);
+      setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
+      // Trigger reload in main window so preview updates immediately
+      window.readied.plugins.requestReload();
+      toast.success(`Plugin ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      toast.error(
+        'Failed to update plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    }
   }, []);
 
   // Update a plugin config value
@@ -639,36 +793,50 @@ export function PluginsSection() {
 
   // Install plugin from archive
   const handleInstall = useCallback(async () => {
-    const result = await window.readied.plugins.install();
-    if (result.success) {
-      // Re-scan to pick up the new plugin
-      const [scanned, stateList] = await Promise.all([
-        window.readied.plugins.scan(),
-        window.readied.plugins.listState(),
-      ]);
-      const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
-      setPlugins(
-        scanned.map(sp => ({
-          id: sp.id,
-          name: sp.name,
-          version: sp.version,
-          description: sp.description,
-          enabled: stateMap.get(sp.id) ?? true,
-          configSchema: sp.configSchema,
-        }))
+    try {
+      const result = await window.readied.plugins.install();
+      if (result.success) {
+        // Re-scan to pick up the new plugin
+        const [scanned, stateList] = await Promise.all([
+          window.readied.plugins.scan(),
+          window.readied.plugins.listState(),
+        ]);
+        const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+        setPlugins(
+          scanned.map(sp => ({
+            id: sp.id,
+            name: sp.name,
+            version: sp.version,
+            description: sp.description,
+            enabled: stateMap.get(sp.id) ?? true,
+            configSchema: sp.configSchema,
+          }))
+        );
+        // Trigger reload in main window
+        window.readied.plugins.requestReload();
+        toast.success('Plugin installed successfully');
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to install plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
       );
-      // Trigger reload in main window
-      window.readied.plugins.requestReload();
     }
   }, []);
 
   // Uninstall a community plugin
   const handleUninstall = useCallback(async (pluginId: string) => {
-    const result = await window.readied.plugins.uninstall(pluginId);
-    if (result.success) {
-      setPlugins(prev => prev.filter(p => p.id !== pluginId));
-      // Trigger reload in main window
-      window.readied.plugins.requestReload();
+    try {
+      const result = await window.readied.plugins.uninstall(pluginId);
+      if (result.success) {
+        setPlugins(prev => prev.filter(p => p.id !== pluginId));
+        // Trigger reload in main window
+        window.readied.plugins.requestReload();
+        toast.success('Plugin uninstalled successfully');
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to uninstall plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
     }
   }, []);
 
@@ -773,14 +941,14 @@ export function PluginsSection() {
                 <div className={styles.pluginEmptyState}>
                   <p>No community plugins installed yet.</p>
                   {pluginsPath && (
-                    <button
-                      type="button"
-                      className={styles.actionButton}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<FolderOpen size={14} />}
                       onClick={handleOpenFolder}
                     >
-                      <FolderOpen size={14} />
-                      <span>Open Plugins Folder</span>
-                    </button>
+                      Open Plugins Folder
+                    </Button>
                   )}
                 </div>
               </div>
@@ -812,31 +980,50 @@ export function PluginsSection() {
           {/* Actions bar */}
           <div style={{ marginTop: '1.5rem' }}>
             <div className={styles.pluginActions}>
-              <button type="button" className={styles.actionButton} onClick={handleInstall}>
-                <Download size={14} />
-                <span>Install from File</span>
-              </button>
-              <button
-                type="button"
-                className={styles.actionButton}
-                onClick={handleReload}
-                disabled={isReloading}
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Download size={14} />}
+                onClick={handleInstall}
               >
-                <RefreshCw size={14} className={isReloading ? styles.spinning : ''} />
-                <span>{isReloading ? 'Reloading...' : 'Reload Plugins'}</span>
-              </button>
+                Install from File
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<RefreshCw size={14} />}
+                loading={isReloading}
+                onClick={handleReload}
+              >
+                {isReloading ? 'Reloading...' : 'Reload Plugins'}
+              </Button>
               {pluginsPath && (
-                <button type="button" className={styles.actionButton} onClick={handleOpenFolder}>
-                  <FolderOpen size={14} />
-                  <span>Open Plugins Folder</span>
-                </button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<FolderOpen size={14} />}
+                  onClick={handleOpenFolder}
+                >
+                  Open Plugins Folder
+                </Button>
               )}
             </div>
           </div>
         </>
       )}
 
-      {activeTab === 'browse' && <BrowseTab />}
+      {activeTab === 'browse' && (
+        <BrowseTab
+          installedPluginIds={
+            new Set([
+              ...BUILT_IN_PLUGIN_INFOS.map(p => p.id),
+              ...plugins.map(p => p.id),
+              // Include slugified IDs so marketplace slug-based comparison works
+              ...plugins.map(p => p.name.toLowerCase().replace(/\s+/g, '-')),
+            ])
+          }
+        />
+      )}
 
       {import.meta.env.DEV && <PluginInspector />}
     </div>

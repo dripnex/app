@@ -29,26 +29,27 @@ interface AiPanelProps {
   onCommandExecuted?: () => void;
 }
 
-/** Map LLM error codes to user-friendly messages */
-function formatErrorMessage(event: LLMEvent & { type: 'error' }): string {
-  switch (event.code) {
+/** Map raw LLM error codes to user-friendly messages */
+function humanizeAiError(code: string, rawMessage: string): string {
+  switch (code) {
     case 'auth_failed':
-      return 'Authentication failed. Please check your API key in Settings > AI Assistant.';
+      return 'API key is invalid or expired. Check your key in Settings > AI.';
     case 'rate_limit':
-      return 'Rate limit exceeded. Please wait a moment and try again.';
-    case 'context_overflow':
-      return 'The conversation is too long. Try clearing the chat and starting fresh.';
-    case 'model_not_found':
-      return 'The selected model was not found. Please check your model setting.';
+      return 'Rate limit reached. Please wait a moment and try again.';
+    case 'provider_error':
+      return 'The AI provider returned an error. Try again or switch models.';
     case 'network':
-      return 'Network error. Please check your internet connection.';
+      return "Can't reach the AI service. Check your internet connection.";
+    case 'context_overflow':
+      return 'Your note is too long for this model. Try selecting less text.';
+    case 'model_not_found':
+      return 'The selected model is not available. Check Settings > AI.';
     case 'cancelled':
       return 'Request was cancelled.';
     case 'timeout':
       return 'Request timed out. Please try again.';
-    case 'provider_error':
     default:
-      return event.error || 'An unexpected error occurred.';
+      return rawMessage || 'Something went wrong. Please try again.';
   }
 }
 
@@ -174,9 +175,9 @@ export function AiPanel({
           const errorEvent = event as LLMEvent & { type: 'error'; retryable?: boolean };
           if (errorEvent.retryable) {
             // Transient retry — show message but don't tear down the stream
-            setError(formatErrorMessage(event));
+            setError(humanizeAiError(event.code, event.error));
           } else {
-            setError(formatErrorMessage(event));
+            setError(humanizeAiError(event.code, event.error));
             setLoading(false);
             activeRequestRef.current = null;
           }
@@ -309,7 +310,7 @@ export function AiPanel({
             break;
 
           case 'error':
-            setError(formatErrorMessage(event));
+            setError(humanizeAiError(event.code, event.error));
             setLoading(false);
             activeRequestRef.current = null;
             onCommandExecuted?.();
@@ -379,7 +380,7 @@ export function AiPanel({
       }
     };
 
-    execute();
+    void execute();
   }, [initialCommand]); // intentionally depends only on initialCommand
 
   const handleSubmit = useCallback(async () => {
@@ -497,7 +498,7 @@ export function AiPanel({
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSubmit();
+        void handleSubmit();
       }
     },
     [handleSubmit]
@@ -505,13 +506,13 @@ export function AiPanel({
 
   const handleToolConfirm = useCallback((callId: string) => {
     if (activeRequestRef.current) {
-      window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
+      void window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
     }
   }, []);
 
   const handleToolReject = useCallback((callId: string) => {
     if (activeRequestRef.current) {
-      window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
+      void window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
       setToolCalls(prev => {
         const next = new Map(prev);
         const existing = next.get(callId);
@@ -524,7 +525,7 @@ export function AiPanel({
   const handleClear = useCallback(() => {
     // Cancel any active request
     if (activeRequestRef.current) {
-      window.readied.ai.cancel(activeRequestRef.current);
+      void window.readied.ai.cancel(activeRequestRef.current);
       activeRequestRef.current = null;
     }
     setMessages([]);

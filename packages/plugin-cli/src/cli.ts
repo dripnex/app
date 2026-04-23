@@ -57,12 +57,12 @@ async function main() {
       break;
 
     case 'install':
-      installPlugin(args[1]);
+      installPlugin(args[1] ?? '');
       break;
 
     case 'uninstall':
     case 'remove':
-      await uninstallPlugin(args[1]);
+      await uninstallPlugin(args[1] ?? '');
       break;
 
     case 'link':

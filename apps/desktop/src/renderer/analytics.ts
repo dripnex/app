@@ -82,7 +82,7 @@ export function track(name: string, properties?: Record<string, unknown>): void 
 
   // Try to flush immediately if online
   if (navigator.onLine) {
-    flush();
+    void flush();
   }
 }
 
@@ -162,7 +162,7 @@ window.addEventListener('beforeunload', flush);
 // Periodic flush (every 30 seconds if online)
 setInterval(() => {
   if (navigator.onLine && eventQueue.length > 0) {
-    flush();
+    void flush();
   }
 }, 30000);
 

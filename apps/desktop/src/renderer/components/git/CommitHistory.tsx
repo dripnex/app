@@ -30,7 +30,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCommits();
+    void loadCommits();
   }, [notebookId]);
 
   const loadCommits = async () => {

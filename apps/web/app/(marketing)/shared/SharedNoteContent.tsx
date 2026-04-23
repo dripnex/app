@@ -63,7 +63,7 @@ export default function SharedNoteContent() {
       }
     }
 
-    fetchNote();
+    void fetchNote();
   }, [slug]);
 
   if (state === 'loading') {

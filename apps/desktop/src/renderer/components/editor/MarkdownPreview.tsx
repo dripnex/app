@@ -104,7 +104,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         setInternalResolvedEmbeds({});
         return;
       }
-      window.readied.embeds.resolveBatch(targets, noteId).then(result => {
+      void window.readied.embeds.resolveBatch(targets, noteId).then(result => {
         setInternalResolvedEmbeds(result);
       });
     }, [content, noteId, resolvedEmbedsProp]);

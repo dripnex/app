@@ -86,7 +86,7 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
       }
       activeHandles.get(windowId)!.set(handle.requestId, handle);
 
-      consumeStream(event.sender, handle);
+      void consumeStream(event.sender, handle);
 
       return { requestId: handle.requestId };
     }

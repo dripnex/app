@@ -1,0 +1,48 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.35rem 1rem;
+  background: var(--accent-primary, var(--accent));
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.text {
+  font-weight: 500;
+}
+
+.action {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 600;
+}
+
+.action:hover {
+  opacity: 0.85;
+}
+
+.dismiss {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.25rem;
+  opacity: 0.7;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.dismiss:hover {
+  opacity: 1;
+}

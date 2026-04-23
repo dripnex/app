@@ -69,7 +69,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     setSelectedCommit(null);
     setDiffs([]);
 
-    window.readied.git.log(notebookId, 50).then(result => {
+    void window.readied.git.log(notebookId, 50).then(result => {
       if (cancelled) return;
       setLoading(false);
       if (result.success && result.commits) {

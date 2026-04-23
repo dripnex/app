@@ -57,7 +57,7 @@ function attachIpcListener() {
   if (listenerAttached) return;
   listenerAttached = true;
   window.readied.ipc.on('plugins:reload', () => {
-    pluginRuntimeStore.getState().reload();
+    void pluginRuntimeStore.getState().reload();
   });
 }
 

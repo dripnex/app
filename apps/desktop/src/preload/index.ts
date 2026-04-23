@@ -395,6 +395,11 @@ export interface ReadiedAPI {
     restoreBackup: (backupPath: string) => Promise<BackupResult>;
     /** Export notes to Markdown + JSON */
     export: () => Promise<ExportResult>;
+    /** Export a single note to a .md file via save dialog */
+    exportNote: (
+      content: string,
+      suggestedName: string
+    ) => Promise<{ success: boolean; path?: string; error?: string }>;
     /** Import notes from folder (Obsidian, Markdown, or Readied export) */
     import: () => Promise<ImportResult>;
     /** Get data directory paths */
@@ -853,6 +858,16 @@ export interface ReadiedAPI {
       pluginName?: string;
       error?: string;
     }>;
+    /** Install plugin from a remote URL (marketplace) */
+    installFromUrl: (
+      url: string,
+      slug: string
+    ) => Promise<{
+      success: boolean;
+      pluginId?: string;
+      pluginName?: string;
+      error?: string;
+    }>;
     /** Uninstall a community plugin by ID */
     uninstall: (pluginId: string) => Promise<{ success: boolean; error?: string }>;
   };
@@ -910,6 +925,8 @@ const api: ReadiedAPI = {
     listBackups: () => ipcRenderer.invoke('data:backups:list'),
     restoreBackup: path => ipcRenderer.invoke('data:backup:restore', path),
     export: () => ipcRenderer.invoke('data:export'),
+    exportNote: (content: string, suggestedName: string) =>
+      ipcRenderer.invoke('data:exportNote', content, suggestedName),
     import: () => ipcRenderer.invoke('data:import'),
     paths: () => ipcRenderer.invoke('data:paths'),
     openFolder: () => ipcRenderer.invoke('data:openFolder'),
@@ -928,16 +945,20 @@ const api: ReadiedAPI = {
   },
   log: {
     debug: (message, context) => {
-      ipcRenderer.invoke('log:write', 'debug', message, context);
+      if (typeof message !== 'string') return;
+      void ipcRenderer.invoke('log:write', 'debug', message, context);
     },
     info: (message, context) => {
-      ipcRenderer.invoke('log:write', 'info', message, context);
+      if (typeof message !== 'string') return;
+      void ipcRenderer.invoke('log:write', 'info', message, context);
     },
     warn: (message, context) => {
-      ipcRenderer.invoke('log:write', 'warn', message, context);
+      if (typeof message !== 'string') return;
+      void ipcRenderer.invoke('log:write', 'warn', message, context);
     },
     error: (message, context) => {
-      ipcRenderer.invoke('log:write', 'error', message, context);
+      if (typeof message !== 'string') return;
+      void ipcRenderer.invoke('log:write', 'error', message, context);
     },
     getLogPath: () => ipcRenderer.invoke('log:getPath'),
   },
@@ -1003,7 +1024,9 @@ const api: ReadiedAPI = {
   },
   settings: {
     broadcast: (settings: Record<string, unknown>) => {
-      ipcRenderer.send('settings:changed', settings);
+      if (settings && typeof settings === 'object') {
+        ipcRenderer.send('settings:changed', settings);
+      }
     },
     onSync: (callback: (settings: Record<string, unknown>) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, settings: Record<string, unknown>) => {
@@ -1178,6 +1201,18 @@ const api: ReadiedAPI = {
     requestReload: () => ipcRenderer.send('plugins:requestReload'),
     readInitScript: () => ipcRenderer.invoke('plugins:readInitScript'),
     install: () => ipcRenderer.invoke('plugins:install'),
+    installFromUrl: (url: string, slug: string) => {
+      // Validate URL is HTTPS before sending to main process
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') {
+          return Promise.resolve({ success: false, error: 'Only HTTPS URLs are allowed' });
+        }
+      } catch {
+        return Promise.resolve({ success: false, error: 'Invalid URL' });
+      }
+      return ipcRenderer.invoke('plugins:installFromUrl', url, slug);
+    },
     uninstall: (pluginId: string) => ipcRenderer.invoke('plugins:uninstall', pluginId),
   },
 };

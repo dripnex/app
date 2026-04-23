@@ -24,9 +24,7 @@ function LightBeams() {
 }
 
 /* ─── Video preview with play button overlay ─── */
-/* When you have a real video, swap the TODO values below */
-// Video URL will be added when the real demo is recorded
-const DEMO_VIDEO_URL = ''; // TODO: replace with real video
+const DEMO_VIDEO_URL = '';
 
 function VideoPreview() {
   return <EditorMockWithPlay />;
@@ -155,14 +153,16 @@ function EditorMockWithPlay() {
           <BorderBeam size={200} duration={8} colorFrom="#8b5cf6" colorTo="#6d28d9" />
         </div>
 
-        {/* Play button overlay */}
-        <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out">
-          <div className="flex size-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform duration-200 group-hover:scale-110 sm:size-24">
-            <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-accent/40 to-accent shadow-lg sm:size-16">
-              <Play className="size-6 fill-white text-white sm:size-7" />
+        {/* Play button overlay — only shown when a demo video URL is configured */}
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out">
+            <div className="flex size-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md transition-transform duration-200 group-hover:scale-110 sm:size-24">
+              <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-b from-accent/40 to-accent shadow-lg sm:size-16">
+                <Play className="size-6 fill-white text-white sm:size-7" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </button>
 
       {/* Video modal */}
@@ -226,7 +226,7 @@ export default function Hero() {
         {/* Version badge */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-white/[0.03] px-4 py-2 text-xs opacity-0 animate-fade-in-up">
           <AnimatedShinyText>
-            <span className="font-mono text-accent">v0.6</span> Early access
+            <span className="font-mono text-accent">Beta</span> Early access
           </AnimatedShinyText>
         </div>
 
@@ -267,7 +267,7 @@ export default function Hero() {
 
         {/* Version info */}
         <p className="mb-6 font-mono text-xs text-text-muted opacity-0 animate-fade-in-up [animation-delay:350ms]">
-          v0.6.2 &nbsp;|&nbsp; macOS 13+ &nbsp;|&nbsp; Windows &amp; Linux coming soon
+          macOS 13+ &nbsp;|&nbsp; Windows &amp; Linux coming soon
         </p>
 
         {/* Trust line */}
@@ -282,12 +282,6 @@ export default function Hero() {
 
       {/* Video / Editor preview */}
       <div className="relative z-[2] mx-auto w-full max-w-4xl px-6 lg:px-8 pb-20 opacity-0 animate-fade-in-up [animation-delay:500ms]">
-        {/*
-          TODO: Replace with real video once recorded.
-          1. Upload video to YouTube, get embed URL
-          2. Take a screenshot for thumbnailSrc
-          3. Swap videoSrc and thumbnailSrc below
-        */}
         <VideoPreview />
       </div>
     </section>

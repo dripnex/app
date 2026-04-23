@@ -67,7 +67,7 @@ sync.get('/', zValidator('query', pullSchema), async c => {
     .limit(limit);
 
   // Get max version for cursor update
-  const maxVersion = changes.length > 0 ? changes[changes.length - 1].version : cursor;
+  const maxVersion = changes.length > 0 ? changes[changes.length - 1]!.version : cursor;
 
   // Update cursor for this device
   if (deviceId) {
@@ -337,7 +337,7 @@ sync.get('/notebooks', zValidator('query', pullSchema), async c => {
     .orderBy(notebookSyncLog.version)
     .limit(limit);
 
-  const maxVersion = changes.length > 0 ? changes[changes.length - 1].version : cursor;
+  const maxVersion = changes.length > 0 ? changes[changes.length - 1]!.version : cursor;
 
   return c.json({
     changes: changes.map(entry => ({
@@ -506,7 +506,7 @@ sync.get('/tags', zValidator('query', tagPullSchema), async c => {
     .orderBy(tagSyncLog.version)
     .limit(limit);
 
-  const maxVersion = changes.length > 0 ? changes[changes.length - 1].version : cursor;
+  const maxVersion = changes.length > 0 ? changes[changes.length - 1]!.version : cursor;
 
   return c.json({
     changes: changes.map(entry => ({

@@ -35,7 +35,7 @@ export default function UnsubscribeContent() {
       }
     }
 
-    unsubscribe();
+    void unsubscribe();
   }, [email]);
 
   if (state === 'loading') {

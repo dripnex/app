@@ -33,10 +33,12 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
   const db = createDb(c.env);
 
   // Find or create user
-  let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  let user = existing;
 
   if (!user) {
-    [user] = await db.insert(users).values({ email }).returning();
+    const [created] = await db.insert(users).values({ email }).returning();
+    user = created!;
   }
 
   // Generate magic link token

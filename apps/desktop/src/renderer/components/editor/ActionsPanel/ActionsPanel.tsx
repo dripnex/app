@@ -204,7 +204,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:insert-unordered-list');
+                      void dispatchCommand('editor:insert-unordered-list');
                       onClose();
                     }}
                   >
@@ -217,7 +217,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:insert-ordered-list');
+                      void dispatchCommand('editor:insert-ordered-list');
                       onClose();
                     }}
                   >
@@ -230,7 +230,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:insert-checkbox');
+                      void dispatchCommand('editor:insert-checkbox');
                       onClose();
                     }}
                   >
@@ -249,7 +249,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:insert-quote');
+                      void dispatchCommand('editor:insert-quote');
                       onClose();
                     }}
                   >
@@ -262,7 +262,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:insert-code-block');
+                      void dispatchCommand('editor:insert-code-block');
                       onClose();
                     }}
                   >
@@ -275,7 +275,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:insert-horizontal-rule');
+                      void dispatchCommand('editor:insert-horizontal-rule');
                       onClose();
                     }}
                   >
@@ -294,7 +294,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:undo');
+                      void dispatchCommand('editor:undo');
                       onClose();
                     }}
                   >
@@ -307,7 +307,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     type="button"
                     className={styles.item}
                     onClick={() => {
-                      dispatchCommand('editor:redo');
+                      void dispatchCommand('editor:redo');
                       onClose();
                     }}
                   >

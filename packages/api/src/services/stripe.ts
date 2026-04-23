@@ -71,9 +71,10 @@ function parseSignatureHeader(header: string): {
 
   for (const part of parts) {
     const [key, value] = part.split('=');
-    if (key === 't') {
-      timestamp = parseInt(value, 10);
-    } else if (key === 'v1') {
+    if (key === 't' && value) {
+      const parsed = parseInt(value, 10);
+      if (!isNaN(parsed)) timestamp = parsed;
+    } else if (key === 'v1' && value) {
       signatures.push(value);
     }
   }

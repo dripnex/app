@@ -39,7 +39,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
   useEffect(() => {
     const result = window.readied.app.version();
     // Handle both sync (old preload) and async (new preload) return
-    Promise.resolve(result).then(setAppVersion);
+    void Promise.resolve(result).then(setAppVersion);
   }, []);
 
   // Modal state - lives HERE, not in NotebookList

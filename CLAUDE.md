@@ -73,9 +73,9 @@ Pattern for workspace packages with native deps:
 
 ## Type Version Alignment
 
-`@types/react` is pinned to `18.3.27` via `pnpm.overrides` in root `package.json`. This prevents type mismatches when packages like `lucide-react` resolve a different `@types/react` version than the app uses.
+Each app manages its own `@types/react` version: `apps/desktop` uses React 18 types and `apps/web` uses React 19 types. Global overrides were removed to prevent cross-app type conflicts.
 
-**If you see `'X' cannot be used as a JSX component` errors:** Check that `pnpm.overrides` in root `package.json` still pins `@types/react` to match the React version used by `apps/desktop`.
+**If you see `'X' cannot be used as a JSX component` errors:** Check that each app's `package.json` pins `@types/react` to match its React version.
 
 ## Testing
 

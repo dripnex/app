@@ -5,11 +5,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Download, RotateCcw } from 'lucide-react';
+import { Download, RotateCcw } from 'lucide-react';
 import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Toggle } from '../components/controls';
+import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 type UpdateState =
@@ -98,9 +99,13 @@ export function UpdatesSection() {
     }
   }, [state]);
 
-  const handleInstall = useCallback(() => {
+  const handleInstall = useCallback(async () => {
     setState({ status: 'installing' });
-    window.readied.updates.installNow();
+    try {
+      await window.readied.updates.installNow();
+    } catch {
+      setState({ status: 'error', message: 'Failed to install update. Please try again.' });
+    }
   }, []);
 
   const handleRetry = useCallback(() => {
@@ -123,52 +128,65 @@ export function UpdatesSection() {
       case 'idle':
       case 'up-to-date':
         return (
-          <button type="button" className={styles.actionButton} onClick={handleCheckForUpdates}>
-            <Download size={14} />
-            <span>Check Now</span>
-          </button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Download size={14} />}
+            onClick={handleCheckForUpdates}
+          >
+            Check Now
+          </Button>
         );
       case 'checking':
         return (
-          <button type="button" className={styles.actionButton} disabled>
-            <RefreshCw size={14} className={styles.spinning} />
-            <span>Checking...</span>
-          </button>
+          <Button variant="secondary" size="sm" loading disabled>
+            Checking...
+          </Button>
         );
       case 'available':
         return (
-          <button type="button" className={styles.primaryButton} onClick={handleStartDownload}>
-            <Download size={14} />
-            <span>Download v{state.version}</span>
-          </button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Download size={14} />}
+            onClick={handleStartDownload}
+          >
+            Download v{state.version}
+          </Button>
         );
       case 'downloading':
         return (
-          <button type="button" className={styles.actionButton} disabled>
-            <RefreshCw size={14} className={styles.spinning} />
-            <span>Downloading...</span>
-          </button>
+          <Button variant="secondary" size="sm" loading disabled>
+            Downloading...
+          </Button>
         );
       case 'ready':
         return (
-          <button type="button" className={styles.primaryButton} onClick={handleInstall}>
-            <RotateCcw size={14} />
-            <span>Restart to Update</span>
-          </button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<RotateCcw size={14} />}
+            onClick={handleInstall}
+          >
+            Restart to Update
+          </Button>
         );
       case 'installing':
         return (
-          <button type="button" className={styles.actionButton} disabled>
-            <RefreshCw size={14} className={styles.spinning} />
-            <span>Restarting...</span>
-          </button>
+          <Button variant="secondary" size="sm" loading disabled>
+            Restarting...
+          </Button>
         );
       case 'error':
         return (
-          <button type="button" className={styles.actionButton} onClick={handleRetry}>
-            <RotateCcw size={14} />
-            <span>Try Again</span>
-          </button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RotateCcw size={14} />}
+            onClick={handleRetry}
+          >
+            Try Again
+          </Button>
         );
     }
   };

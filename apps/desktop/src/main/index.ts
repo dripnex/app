@@ -12,7 +12,7 @@ initSentry();
 import { join, normalize, basename } from 'path';
 import { readFile, writeFile, unlink, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
 // electron-devtools-installer is imported dynamically below (dev only)
@@ -317,10 +317,10 @@ function createWindow(): void {
 
   // Load renderer
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
+    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
 
@@ -354,9 +354,9 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
   // Load renderer with note ID in query param
   const query = `?noteWindow=${encodeURIComponent(noteId)}`;
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
+    void noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
   } else {
-    noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+    void noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
       query: { noteWindow: noteId },
     });
   }
@@ -405,9 +405,9 @@ function createSettingsWindow(): void {
   // Load settings page via query param (same index.html, different view)
   if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
     const settingsUrl = `${process.env.ELECTRON_RENDERER_URL}?view=settings`;
-    settingsWindow.loadURL(settingsUrl);
+    void settingsWindow.loadURL(settingsUrl);
   } else {
-    settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+    void settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
       query: { view: 'settings' },
     });
   }
@@ -1245,6 +1245,34 @@ function registerDataHandlers(): void {
     return result;
   });
 
+  // Export single note to file
+  ipcMain.handle(
+    'data:exportNote',
+    async (_event: Electron.IpcMainInvokeEvent, content: string, suggestedName: string) => {
+      const safeName = suggestedName.replace(/[^a-zA-Z0-9\s-]/g, '').substring(0, 80) || 'note';
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Export Note',
+        defaultPath: join(app.getPath('documents'), `${safeName}.md`),
+        buttonLabel: 'Export',
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Export cancelled' };
+      }
+
+      try {
+        writeFileSync(filePath, content, 'utf-8');
+        return { success: true, path: filePath };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to write file',
+        };
+      }
+    }
+  );
+
   // Import notes
   ipcMain.handle('data:import', async () => {
     // Show folder selection dialog
@@ -1306,7 +1334,7 @@ function registerDataHandlers(): void {
 
   // Open data folder in system file manager
   ipcMain.handle('data:openFolder', async () => {
-    shell.openPath(paths.root);
+    void shell.openPath(paths.root);
     return { success: true };
   });
 }
@@ -1872,7 +1900,7 @@ function registerAuthSyncHandlers(): void {
   ipcMain.handle('subscription:openPortal', async (_event, returnUrl: string) => {
     try {
       const { url } = await client.createPortalSession(returnUrl);
-      shell.openExternal(url);
+      void shell.openExternal(url);
       return { success: true };
     } catch (error) {
       return {
@@ -1885,7 +1913,7 @@ function registerAuthSyncHandlers(): void {
   // Open checkout (placeholder - opens pricing page)
   ipcMain.handle('subscription:openCheckout', async () => {
     try {
-      shell.openExternal('https://readied.app/pricing');
+      void shell.openExternal('https://readied.app/pricing');
       return { success: true };
     } catch (error) {
       return {
@@ -2279,20 +2307,33 @@ function registerPluginDiscoveryHandlers(): void {
       await mkdir(tmpDir, { recursive: true });
 
       await new Promise<void>((resolve, reject) => {
-        let cmd: string;
-        if (fileName.endsWith('.zip')) {
-          if (process.platform === 'win32') {
-            cmd = `powershell -command "Expand-Archive -Force '${archivePath}' '${tmpDir}'"`;
-          } else {
-            cmd = `unzip -o "${archivePath}" -d "${tmpDir}"`;
-          }
-        } else {
-          cmd = `tar -xzf "${archivePath}" -C "${tmpDir}"`;
-        }
-        exec(cmd, error => {
+        const cb = (error: Error | null) => {
           if (error) reject(error);
           else resolve();
-        });
+        };
+        if (fileName.endsWith('.zip')) {
+          if (process.platform === 'win32') {
+            execFile(
+              'powershell',
+              [
+                '-NoProfile',
+                '-NonInteractive',
+                '-Command',
+                'Expand-Archive',
+                '-Force',
+                '-Path',
+                archivePath,
+                '-DestinationPath',
+                tmpDir,
+              ],
+              cb
+            );
+          } else {
+            execFile('unzip', ['-o', archivePath, '-d', tmpDir], cb);
+          }
+        } else {
+          execFile('tar', ['-xzf', archivePath, '-C', tmpDir], cb);
+        }
       });
 
       // Find the manifest.json — could be at root or one level deep
@@ -2322,8 +2363,23 @@ function registerPluginDiscoveryHandlers(): void {
         return { success: false, error: 'Invalid manifest: missing id or name' };
       }
 
-      // Move to final destination
+      // Validate plugin ID - only allow alphanumeric, hyphens, underscores
+      if (!/^[a-zA-Z0-9_-]+$/.test(manifest.id)) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return {
+          success: false,
+          error: 'Invalid plugin ID: must be alphanumeric with hyphens/underscores only',
+        };
+      }
+
+      // Verify path doesn't escape plugins directory
       const destDir = join(paths.plugins, manifest.id);
+      if (!normalize(destDir).startsWith(normalize(paths.plugins))) {
+        await rm(tmpDir, { recursive: true, force: true });
+        return { success: false, error: 'Invalid plugin ID: path traversal detected' };
+      }
+
+      // Move to final destination
       if (existsSync(destDir)) {
         await rm(destDir, { recursive: true, force: true });
       }
@@ -2338,6 +2394,135 @@ function registerPluginDiscoveryHandlers(): void {
       return { success: true, pluginId: manifest.id, pluginName: manifest.name };
     } catch (error) {
       return { success: false, error: String(error) };
+    }
+  });
+
+  // Install plugin from a remote URL (marketplace download)
+  ipcMain.handle('plugins:installFromUrl', async (_event, url: string, _pluginSlug: string) => {
+    // Safety: only allow https URLs
+    if (!url.startsWith('https://')) {
+      return { success: false, error: 'Only HTTPS URLs are allowed' };
+    }
+
+    // Ensure plugins dir exists
+    await mkdir(paths.plugins, { recursive: true });
+
+    // Download to a temp file inside the plugins dir
+    const tmpDir = join(paths.plugins, `__downloading_${Date.now()}`);
+    await mkdir(tmpDir, { recursive: true });
+
+    try {
+      const response = await net.fetch(url);
+      if (!response.ok) {
+        return { success: false, error: `Download failed: HTTP ${response.status}` };
+      }
+
+      // Limit download size to 50 MB
+      const MAX_PLUGIN_SIZE = 50 * 1024 * 1024;
+      const contentLength = response.headers.get('content-length');
+      if (contentLength && parseInt(contentLength, 10) > MAX_PLUGIN_SIZE) {
+        return { success: false, error: 'Plugin archive exceeds maximum size of 50 MB' };
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.byteLength > MAX_PLUGIN_SIZE) {
+        return { success: false, error: 'Plugin archive exceeds maximum size of 50 MB' };
+      }
+
+      // Determine archive type from URL or content-type
+      const lowerUrl = url.toLowerCase();
+      const isZip = lowerUrl.endsWith('.zip') || lowerUrl.includes('.zip');
+      const archiveExt = isZip ? '.zip' : '.tar.gz';
+      const archivePath = join(tmpDir, `plugin${archiveExt}`);
+      await writeFile(archivePath, buffer);
+
+      // Extract to a staging dir
+      const stageDir = join(tmpDir, 'extracted');
+      await mkdir(stageDir, { recursive: true });
+
+      await new Promise<void>((resolve, reject) => {
+        const cb = (error: Error | null) => {
+          if (error) reject(error);
+          else resolve();
+        };
+        if (isZip) {
+          if (process.platform === 'win32') {
+            execFile(
+              'powershell',
+              [
+                '-NoProfile',
+                '-NonInteractive',
+                '-Command',
+                'Expand-Archive',
+                '-Force',
+                '-Path',
+                archivePath,
+                '-DestinationPath',
+                stageDir,
+              ],
+              cb
+            );
+          } else {
+            execFile('unzip', ['-o', archivePath, '-d', stageDir], cb);
+          }
+        } else {
+          execFile('tar', ['-xzf', archivePath, '-C', stageDir], cb);
+        }
+      });
+
+      // Find manifest.json — could be at root or one level deep
+      const entries = await readdir(stageDir);
+      let pluginSourceDir = stageDir;
+
+      if (entries.length === 1 && entries[0]) {
+        const candidatePath = join(stageDir, entries[0]);
+        const candidateStat = await stat(candidatePath);
+        if (candidateStat.isDirectory()) {
+          pluginSourceDir = candidatePath;
+        }
+      }
+
+      // Validate: must have manifest.json
+      const manifestPath = join(pluginSourceDir, 'manifest.json');
+      if (!existsSync(manifestPath)) {
+        return { success: false, error: 'No manifest.json found in downloaded archive' };
+      }
+
+      const manifestRaw = await readFile(manifestPath, 'utf-8');
+      const manifest = JSON.parse(manifestRaw);
+      if (!manifest.id || !manifest.name) {
+        return { success: false, error: 'Invalid manifest: missing id or name' };
+      }
+
+      // Validate plugin ID - only allow alphanumeric, hyphens, underscores
+      if (!/^[a-zA-Z0-9_-]+$/.test(manifest.id)) {
+        return {
+          success: false,
+          error: 'Invalid plugin ID: must be alphanumeric with hyphens/underscores only',
+        };
+      }
+
+      // Verify path doesn't escape plugins directory
+      const destDir = join(paths.plugins, manifest.id);
+      if (!normalize(destDir).startsWith(normalize(paths.plugins))) {
+        return { success: false, error: 'Invalid plugin ID: path traversal detected' };
+      }
+
+      // Move to final destination
+      if (existsSync(destDir)) {
+        await rm(destDir, { recursive: true, force: true });
+      }
+
+      await rename(pluginSourceDir, destDir);
+
+      return { success: true, pluginId: manifest.id, pluginName: manifest.name };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    } finally {
+      // Always clean up temp dir
+      if (existsSync(tmpDir)) {
+        await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+      }
     }
   });
 
@@ -2441,7 +2626,7 @@ function initAutoUpdater(): void {
 
   // Check for updates after a short delay
   setTimeout(() => {
-    autoUpdater.checkForUpdates();
+    void autoUpdater.checkForUpdates();
   }, 3000);
 }
 
@@ -2650,7 +2835,7 @@ app
       }
     };
 
-    initAuthSync();
+    void initAuthSync();
 
     log.info('All IPC handlers registered');
 

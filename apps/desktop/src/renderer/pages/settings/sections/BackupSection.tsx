@@ -5,10 +5,11 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Download, Upload, Archive, FolderOpen, RefreshCw } from 'lucide-react';
+import { Download, Upload, Archive, FolderOpen } from 'lucide-react';
 import { useSettingsStore, selectBackup } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 export function BackupSection() {
@@ -93,19 +94,15 @@ export function BackupSection() {
 
       <SettingGroup title="Export">
         <SettingRow label="Export All Notes" description="Export all your notes as Markdown files">
-          <button
-            type="button"
-            className={styles.actionButton}
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Download size={14} />}
+            loading={isExporting}
             onClick={handleExport}
-            disabled={isExporting}
           >
-            {isExporting ? (
-              <RefreshCw size={14} className={styles.spinning} />
-            ) : (
-              <Download size={14} />
-            )}
-            <span>{isExporting ? 'Exporting...' : 'Export'}</span>
-          </button>
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
         </SettingRow>
       </SettingGroup>
 
@@ -114,44 +111,40 @@ export function BackupSection() {
           label="Import Notes"
           description="Import from Obsidian, Markdown folder, or Readied export"
         >
-          <button
-            type="button"
-            className={styles.actionButton}
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Upload size={14} />}
+            loading={isImporting}
             onClick={handleImport}
-            disabled={isImporting}
           >
-            {isImporting ? (
-              <RefreshCw size={14} className={styles.spinning} />
-            ) : (
-              <Upload size={14} />
-            )}
-            <span>{isImporting ? 'Importing...' : 'Import'}</span>
-          </button>
+            {isImporting ? 'Importing...' : 'Import'}
+          </Button>
         </SettingRow>
       </SettingGroup>
 
       <SettingGroup title="Backup">
         <SettingRow label="Create Backup" description={`Last backup: ${formatLastBackup()}`}>
-          <button
-            type="button"
-            className={styles.actionButton}
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Archive size={14} />}
+            loading={isBackingUp}
             onClick={handleBackup}
-            disabled={isBackingUp}
           >
-            {isBackingUp ? (
-              <RefreshCw size={14} className={styles.spinning} />
-            ) : (
-              <Archive size={14} />
-            )}
-            <span>{isBackingUp ? 'Backing up...' : 'Backup Now'}</span>
-          </button>
+            {isBackingUp ? 'Backing up...' : 'Backup Now'}
+          </Button>
         </SettingRow>
 
         <SettingRow label="Open Data Folder" description="View backups and database files">
-          <button type="button" className={styles.actionButton} onClick={handleOpenDataFolder}>
-            <FolderOpen size={14} />
-            <span>Open Folder</span>
-          </button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<FolderOpen size={14} />}
+            onClick={handleOpenDataFolder}
+          >
+            Open Folder
+          </Button>
         </SettingRow>
       </SettingGroup>
 

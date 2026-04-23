@@ -8,12 +8,22 @@ if (!version) {
   process.exit(1);
 }
 
+if (!/^\d+\.\d+\.\d+(-[\w.]+)?(\+[\w.]+)?$/.test(version)) {
+  console.error(`Invalid version format: ${version}`);
+  process.exit(1);
+}
+
 const files = ['package.json', 'apps/desktop/package.json'];
 
 for (const file of files) {
   const path = resolve(file);
-  const pkg = JSON.parse(readFileSync(path, 'utf8'));
-  pkg.version = version;
-  writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
-  console.log(`Updated ${file} -> ${version}`);
+  try {
+    const pkg = JSON.parse(readFileSync(path, 'utf8'));
+    pkg.version = version;
+    writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+    console.log(`Updated ${file} -> ${version}`);
+  } catch (err) {
+    console.error(`Failed to update ${file}: ${err.message}`);
+    process.exit(1);
+  }
 }

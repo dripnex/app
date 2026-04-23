@@ -11,6 +11,7 @@ import { useNotebooks } from '../../../hooks/useNotebooks';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, Toggle } from '../components/controls';
+import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 export function GeneralSection() {
@@ -74,10 +75,14 @@ export function GeneralSection() {
           label="Open Data Folder"
           description="Open the folder containing your notes database"
         >
-          <button type="button" className={styles.actionButton} onClick={handleOpenDataFolder}>
-            <FolderOpen size={14} />
-            <span>Open Folder</span>
-          </button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<FolderOpen size={14} />}
+            onClick={handleOpenDataFolder}
+          >
+            Open Folder
+          </Button>
         </SettingRow>
       </SettingGroup>
     </div>

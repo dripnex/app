@@ -61,6 +61,7 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
       tags: pluginCatalog.tags,
       icon: pluginCatalog.icon,
       downloads: pluginCatalog.downloads,
+      bundleUrl: pluginCatalog.bundleUrl,
       isBuiltIn: pluginCatalog.isBuiltIn,
       createdAt: pluginCatalog.createdAt,
       updatedAt: pluginCatalog.updatedAt,

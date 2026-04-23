@@ -322,9 +322,14 @@
 }
 
 /* Tables (GFM) */
+.markdown-preview .table-wrapper {
+  overflow-x: auto;
+  margin: 1em 0;
+  border-radius: var(--radius-md);
+}
+
 .markdown-preview table {
   width: 100%;
-  margin: 1em 0;
   border-collapse: collapse;
   font-size: 0.9em;
 }
@@ -333,7 +338,6 @@
 .markdown-preview td {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  text-align: left;
 }
 
 .markdown-preview th {
@@ -344,6 +348,14 @@
 
 .markdown-preview tr:nth-child(even) {
   background: var(--bg-surface);
+}
+
+.markdown-preview tbody tr {
+  transition: background 0.15s ease;
+}
+
+.markdown-preview tbody tr:hover {
+  background: var(--bg-hover);
 }
 
 /* Horizontal rule */
@@ -544,6 +556,19 @@
   padding: 0;
   border: none;
   background: transparent;
+}
+
+/* Save indicator in toolbar row */
+.save-indicator {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: opacity 0.3s ease;
+  user-select: none;
+}
+
+.save-indicator--fade {
+  opacity: 0.7;
 }
 
 /* ============================================================================

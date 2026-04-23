@@ -65,12 +65,7 @@
     "*.{ts,tsx,js,json,md}": "prettier --write"
   },
   "packageManager": "pnpm@9.15.1",
-  "pnpm": {
-    "overrides": {
-      "@types/react": "18.3.27",
-      "@types/react-dom": "18.3.7"
-    }
-  },
+  "pnpm": {},
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"

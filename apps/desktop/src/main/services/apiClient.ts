@@ -517,7 +517,13 @@ export class ApiClient {
     wrappedCekRecovery?: string | null;
     kdfParams?: { algorithm: string; iterations: number; hash: string };
   }> {
-    return this.request('/sync/keys');
+    return this.request<{
+      exists: boolean;
+      salt?: string;
+      wrappedCek?: string;
+      wrappedCekRecovery?: string | null;
+      kdfParams?: { algorithm: string; iterations: number; hash: string };
+    }>('/sync/keys');
   }
 
   /**
@@ -529,7 +535,7 @@ export class ApiClient {
     wrappedCekRecovery?: string | null;
     kdfParams: { algorithm: string; iterations: number; hash: string };
   }): Promise<{ success: boolean }> {
-    return this.request('/sync/keys', {
+    return this.request<{ success: boolean }>('/sync/keys', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -616,24 +622,34 @@ export class ApiClient {
       createdAt: string;
     }>;
   }> {
-    return this.request('/devices');
+    return this.request<{
+      devices: Array<{
+        id: string;
+        deviceId: string;
+        name: string | null;
+        platform: string | null;
+        isCurrent: boolean;
+        lastSeenAt: string;
+        createdAt: string;
+      }>;
+    }>('/devices');
   }
 
   async renameDevice(deviceId: string, name: string): Promise<{ success: boolean }> {
-    return this.request(`/devices/${deviceId}`, {
+    return this.request<{ success: boolean }>(`/devices/${deviceId}`, {
       method: 'PATCH',
       body: JSON.stringify({ name }),
     });
   }
 
   async revokeDevice(deviceId: string): Promise<{ success: boolean }> {
-    return this.request(`/devices/${deviceId}`, {
+    return this.request<{ success: boolean }>(`/devices/${deviceId}`, {
       method: 'DELETE',
     });
   }
 
   async revokeOtherDevices(): Promise<{ success: boolean; revokedCount: number }> {
-    return this.request('/devices/revoke-others', {
+    return this.request<{ success: boolean; revokedCount: number }>('/devices/revoke-others', {
       method: 'POST',
     });
   }

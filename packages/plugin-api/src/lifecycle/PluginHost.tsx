@@ -93,7 +93,7 @@ export function PluginHost({
       }
     };
 
-    activateAll();
+    void activateAll();
 
     return () => {
       cancelled = true;

@@ -24,7 +24,7 @@
 
 .dialog {
   background: var(--bg-primary);
-  border-radius: 1rem;
+  border-radius: var(--radius-xl);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 90%;
   max-width: 450px;
@@ -45,14 +45,14 @@
 
 .closeButton {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: var(--space-4);
+  right: var(--space-4);
   background: transparent;
   border: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
   transition: all 0.2s;
 }
 
@@ -73,7 +73,7 @@
 .icon,
 .successIcon,
 .errorIcon {
-  margin: 0 auto 1rem;
+  margin: 0 auto var(--space-4);
   display: block;
 }
 
@@ -96,7 +96,7 @@
   border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin: 0 auto 1rem;
+  margin: 0 auto var(--space-4);
 }
 
 @keyframes spin {
@@ -109,7 +109,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 var(--space-2) 0;
 }
 
 .description {
@@ -127,15 +127,15 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: var(--space-3) var(--space-4);
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   color: var(--text-primary);
   font-size: 1rem;
   transition: all 0.2s;
@@ -149,9 +149,9 @@
 
 .primaryButton,
 .secondaryButton {
-  padding: 0.75rem 1.5rem;
+  padding: var(--space-3) var(--space-6);
   border: none;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
@@ -185,7 +185,7 @@
   color: var(--danger, #ef4444);
   font-size: 0.875rem;
   text-align: center;
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-3);
 }
 
 .actions {

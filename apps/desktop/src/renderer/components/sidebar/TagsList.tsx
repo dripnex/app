@@ -92,7 +92,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
       }
       await window.readied.notes.deleteTag(tag);
       // Invalidate tags query for sidebar
-      queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+      void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
       // Remove from colors cache (tag no longer exists)
       useTagColorsStore.getState().removeTag(tag);
     },
@@ -108,12 +108,12 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
           onSelectTag(newTag);
         }
         // Invalidate queries to refresh sidebar and notes
-        queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
-        queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
         // Update colors cache (move color from old to new)
         const oldColor = useTagColorsStore.getState().getColor(oldTag);
         if (oldColor) {
-          useTagColorsStore.getState().setColor(newTag, oldColor);
+          void useTagColorsStore.getState().setColor(newTag, oldColor);
         }
         useTagColorsStore.getState().removeTag(oldTag);
       }
@@ -193,7 +193,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
                 className="tags-list-item-delete"
                 onClick={e => {
                   e.stopPropagation();
-                  handleDeleteTag(tag);
+                  void handleDeleteTag(tag);
                 }}
                 aria-label={`Delete tag ${tag}`}
               >

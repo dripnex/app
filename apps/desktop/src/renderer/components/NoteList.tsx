@@ -14,12 +14,14 @@ import {
 import { LayoutZone } from '@readied/plugin-api';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
+import { useNavigationStore } from '../stores/navigationStore';
 import { formatRelativeTime } from '../utils/date';
 import { useTagColorsStore } from '../stores/tagColorsStore';
 import { useShareStore, selectIsShared } from '../stores/shareStore';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
+import { NoteListFilterBar, FilterToggleButton } from './NoteListFilterBar';
 
 interface NoteListProps {
   notes: NoteWithExcerpt[];
@@ -136,11 +138,17 @@ export function NoteList({
 }: NoteListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showFilterBar, setShowFilterBar] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [notebookPicker, setNotebookPicker] = useState<NotebookPickerState | null>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const { data: notebooks = [] } = useNotebookList();
   const { data: notebook } = useNotebook(selectedNotebookId);
+
+  // Count active filters for the badge
+  const statusFilter = useNavigationStore(s => s.statusFilter);
+  const tagFilter = useNavigationStore(s => s.tagFilter);
+  const activeFilterCount = (statusFilter ? 1 : 0) + (tagFilter ? 1 : 0);
 
   // Handler to open notebook picker from context menu
   const handleOpenNotebookPicker = useCallback(
@@ -283,7 +291,7 @@ export function NoteList({
         </button>
       </div>
 
-      {/* Search bar with icon */}
+      {/* Search bar with icon + filter toggle */}
       <div className="note-list-search">
         <div className="search-input-wrapper">
           <Search size={14} className="search-icon" aria-hidden="true" />
@@ -309,6 +317,11 @@ export function NoteList({
               <X size={14} />
             </button>
           )}
+          <FilterToggleButton
+            isOpen={showFilterBar}
+            activeCount={activeFilterCount}
+            onClick={() => setShowFilterBar(prev => !prev)}
+          />
         </div>
         {searchQuery && (
           <span id="search-status" className="visually-hidden">
@@ -316,6 +329,11 @@ export function NoteList({
           </span>
         )}
       </div>
+
+      {/* Collapsible filter bar */}
+      {showFilterBar && (
+        <NoteListFilterBar sortBy={sortBy} sortOrder={sortOrder} onSortChange={onSortChange} />
+      )}
 
       {/* Note list content */}
       <div className="note-list-content" aria-busy={isLoading}>
