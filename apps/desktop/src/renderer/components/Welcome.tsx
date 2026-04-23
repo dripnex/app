@@ -27,6 +27,10 @@ const features = [
     title: 'Extensible',
     desc: 'Plugins, themes, and AI built in.',
   },
+  {
+    title: 'Import Your Notes',
+    desc: 'Import from Obsidian, Markdown folders, or other apps.',
+  },
 ] as const;
 
 export function Welcome({ onComplete }: WelcomeProps) {
@@ -78,9 +82,13 @@ export function Welcome({ onComplete }: WelcomeProps) {
             Create Your First Note
           </Button>
           <Button variant="ghost" onClick={() => onComplete(false)}>
-            Skip
+            I'll explore on my own
           </Button>
         </div>
+
+        <p className={styles.hint}>
+          Pro tip: Press <kbd className={styles.kbd}>Cmd+K</kbd> to open the command palette
+        </p>
       </div>
     </div>
   );

@@ -4,8 +4,8 @@
  * Multi-step dialog for passwordless authentication via email magic link.
  */
 
-import { useState, useCallback, useEffect, FormEvent } from 'react';
-import { Mail, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef, FormEvent } from 'react';
+import { Mail, CheckCircle, AlertCircle, X, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import styles from './MagicLinkFlow.module.css';
 
@@ -22,6 +22,9 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Watch for auth success (deep link verified in background)
   useEffect(() => {
@@ -64,7 +67,54 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
   const handleRetry = useCallback(() => {
     setStep('email');
     setError(null);
+    setResendCooldown(0);
+    if (cooldownRef.current) {
+      clearInterval(cooldownRef.current);
+      cooldownRef.current = null;
+    }
   }, []);
+
+  const startCooldown = useCallback(() => {
+    setResendCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          cooldownRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Start cooldown when entering "sent" step
+  useEffect(() => {
+    if (step === 'sent') {
+      startCooldown();
+    }
+    return () => {
+      if (cooldownRef.current) {
+        clearInterval(cooldownRef.current);
+        cooldownRef.current = null;
+      }
+    };
+  }, [step, startCooldown]);
+
+  const handleResend = useCallback(async () => {
+    if (resendCooldown > 0 || isResending) return;
+    setIsResending(true);
+    setError(null);
+    try {
+      await requestMagicLink(email);
+      startCooldown();
+    } catch {
+      setError('Failed to resend magic link. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
+  }, [email, requestMagicLink, resendCooldown, isResending, startCooldown]);
 
   return (
     <div className={styles.overlay} onClick={handleCancel}>
@@ -122,6 +172,21 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
               {error && <p className={styles.errorText}>{error}</p>}
 
               <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0 || isResending}
+                >
+                  <span className={styles.resendContent}>
+                    <RefreshCw size={16} className={isResending ? styles.spinnerInline : ''} />
+                    {isResending
+                      ? 'Resending...'
+                      : resendCooldown > 0
+                        ? `Resend in ${resendCooldown}s`
+                        : 'Resend magic link'}
+                  </span>
+                </button>
                 <button type="button" className={styles.secondaryButton} onClick={handleRetry}>
                   Use different email
                 </button>
