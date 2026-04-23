@@ -73,6 +73,33 @@ function safeFilename(title: string, id: string): string {
 }
 
 /**
+ * Build YAML frontmatter string for a note.
+ * Skips if content already starts with `---` to avoid double frontmatter.
+ */
+function prependFrontmatter(note: NoteSnapshot): string {
+  // Don't add frontmatter if content already has it
+  if (note.content.trimStart().startsWith('---')) {
+    return note.content;
+  }
+
+  const escapedTitle = note.title.replace(/"/g, '\\"');
+  const tagsYaml = note.tags.length > 0 ? `tags: [${note.tags.join(', ')}]` : 'tags: []';
+
+  const frontmatter = [
+    '---',
+    `id: "${note.id}"`,
+    `title: "${escapedTitle}"`,
+    `created: ${note.createdAt}`,
+    `updated: ${note.updatedAt}`,
+    tagsYaml,
+    '---',
+    '',
+  ].join('\n');
+
+  return frontmatter + note.content;
+}
+
+/**
  * Export notes to Markdown + JSON format.
  */
 export function exportNotes(notes: NoteSnapshot[], options: ExportOptions): ExportResult {
@@ -103,9 +130,10 @@ export function exportNotes(notes: NoteSnapshot[], options: ExportOptions): Expo
       }
       usedFilenames.add(filename);
 
-      // Write markdown file
+      // Write markdown file with YAML frontmatter
       const notePath = join(notesDir, filename);
-      writeFileSync(notePath, note.content, 'utf-8');
+      const contentWithFrontmatter = prependFrontmatter(note);
+      writeFileSync(notePath, contentWithFrontmatter, 'utf-8');
 
       // Track metadata
       notesMetadata.push({

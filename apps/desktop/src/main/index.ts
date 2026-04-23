@@ -1245,6 +1245,34 @@ function registerDataHandlers(): void {
     return result;
   });
 
+  // Export single note to file
+  ipcMain.handle(
+    'data:exportNote',
+    async (_event: Electron.IpcMainInvokeEvent, content: string, suggestedName: string) => {
+      const safeName = suggestedName.replace(/[^a-zA-Z0-9\s-]/g, '').substring(0, 80) || 'note';
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Export Note',
+        defaultPath: join(app.getPath('documents'), `${safeName}.md`),
+        buttonLabel: 'Export',
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Export cancelled' };
+      }
+
+      try {
+        writeFileSync(filePath, content, 'utf-8');
+        return { success: true, path: filePath };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to write file',
+        };
+      }
+    }
+  );
+
   // Import notes
   ipcMain.handle('data:import', async () => {
     // Show folder selection dialog

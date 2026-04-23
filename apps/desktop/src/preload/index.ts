@@ -395,6 +395,11 @@ export interface ReadiedAPI {
     restoreBackup: (backupPath: string) => Promise<BackupResult>;
     /** Export notes to Markdown + JSON */
     export: () => Promise<ExportResult>;
+    /** Export a single note to a .md file via save dialog */
+    exportNote: (
+      content: string,
+      suggestedName: string
+    ) => Promise<{ success: boolean; path?: string; error?: string }>;
     /** Import notes from folder (Obsidian, Markdown, or Readied export) */
     import: () => Promise<ImportResult>;
     /** Get data directory paths */
@@ -920,6 +925,8 @@ const api: ReadiedAPI = {
     listBackups: () => ipcRenderer.invoke('data:backups:list'),
     restoreBackup: path => ipcRenderer.invoke('data:backup:restore', path),
     export: () => ipcRenderer.invoke('data:export'),
+    exportNote: (content: string, suggestedName: string) =>
+      ipcRenderer.invoke('data:exportNote', content, suggestedName),
     import: () => ipcRenderer.invoke('data:import'),
     paths: () => ipcRenderer.invoke('data:paths'),
     openFolder: () => ipcRenderer.invoke('data:openFolder'),

@@ -8,6 +8,7 @@
 @import './toolbar.css';
 @import './preview.css';
 @import './lightbox.css';
+@import './tables.css';
 
 * {
   margin: 0;
