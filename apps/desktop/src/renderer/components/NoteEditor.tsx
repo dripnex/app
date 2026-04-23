@@ -146,7 +146,7 @@ export function NoteEditor({
       savedTimerRef.current = setTimeout(() => setShowSaved(false), 1500);
     }
     prevDirtyRef.current = isDirty;
-  }, [isDirty]);
+  }, [isDirty, note?.id]);
 
   // Cleanup saved timer on unmount
   useEffect(() => {
