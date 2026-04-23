@@ -97,6 +97,22 @@
   --text-xl: 16px;
   --text-2xl: 18px;
 
+  /* ── Typography Weights ──────────────────────────────────────────────── */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ── Line Heights ────────────────────────────────────────────────────── */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ── Letter Spacing ──────────────────────────────────────────────────── */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
   /* ── Layout ───────────────────────────────────────────────────────────────── */
   --sidebar-width: 200px;
   --list-width: 280px;

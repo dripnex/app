@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
+import { Toaster } from '../../ui/primitives';
 import styles from './SettingsApp.module.css';
 import { SettingsSidebar } from './components/SettingsSidebar';
 import { GeneralSection } from './sections/GeneralSection';
@@ -56,6 +57,7 @@ export function SettingsApp() {
     <div className={styles.container}>
       <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
       <main className={styles.content}>{renderSection()}</main>
+      <Toaster />
     </div>
   );
 }

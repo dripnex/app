@@ -8,7 +8,10 @@ import {
   Info,
   Download,
   Puzzle,
+  RotateCcw,
 } from 'lucide-react';
+import { toast } from '../../../ui/primitives';
+import { useSettingsStore } from '../../../stores/settings';
 import type { SettingsSection } from '../SettingsApp';
 import styles from './SettingsSidebar.module.css';
 
@@ -31,6 +34,15 @@ const sections: { id: SettingsSection; label: string; Icon: any }[] = [
 ];
 
 export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
+  const handleResetAll = () => {
+    const confirmed = window.confirm(
+      'Reset all settings to their default values? This cannot be undone.'
+    );
+    if (!confirmed) return;
+    useSettingsStore.getState().resetAll();
+    toast.info('Settings reset to defaults');
+  };
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.header}>
@@ -51,6 +63,13 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
           );
         })}
       </nav>
+      <div className={styles.footer}>
+        <div className={styles.separator} />
+        <button className={styles.resetButton} onClick={handleResetAll}>
+          <RotateCcw size={14} className={styles.icon} />
+          <span>Reset to Defaults</span>
+        </button>
+      </div>
     </aside>
   );
 }

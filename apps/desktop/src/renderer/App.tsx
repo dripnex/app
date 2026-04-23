@@ -25,6 +25,7 @@ import {
 } from '@readied/ai-core';
 import { useStore } from 'zustand';
 import type { NoteSnapshot, NoteStatus } from '../preload/index';
+import { UpdateBanner } from './components/UpdateBanner';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteWindow } from './components/NoteWindow';
@@ -35,6 +36,7 @@ import { AiPanel } from './components/ai/AiPanel';
 import type { AiInitialCommand } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider, useToast } from './components/Toast';
+import { Toaster } from './ui/primitives';
 import type { PluginLoadError } from './stores/pluginRuntimeStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
@@ -56,6 +58,7 @@ import { useRegisterAiCommands } from './hooks/useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './hooks/useRegisterPluginAiCommands';
 import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
 import { builtInPlugins } from './plugins';
+import { useEditorBufferStore } from './stores/editorBufferStore';
 import { useEditorPreferencesStore } from './stores/editorPreferencesStore';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
@@ -489,6 +492,25 @@ function NotesApp() {
     [selectedNote, updateNote, syncLinks, dataAPI]
   );
 
+  // Keep a ref to handleUpdateNote so beforeunload always has the latest
+  const handleUpdateNoteRef = useRef(handleUpdateNote);
+  handleUpdateNoteRef.current = handleUpdateNote;
+
+  // Flush pending saves before window close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const bufferState = useEditorBufferStore.getState();
+      if (bufferState.isDirty && bufferState.noteId) {
+        // Fire the save — can't await in beforeunload, but the IPC call
+        // will be queued before the renderer is torn down
+        void handleUpdateNoteRef.current(bufferState.liveContent);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Update note title
   const handleUpdateTitle = useCallback(
     async (title: string) => {
@@ -826,6 +848,7 @@ function NotesApp() {
     <ToastProvider>
       <LicenseProvider>
         <div className="app">
+          <UpdateBanner />
           <div className="app__layout">
             <aside className="app__sidebar" style={{ width: sidebarWidth }}>
               <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
@@ -928,6 +951,7 @@ function NotesApp() {
           <CommandPalette isOpen={isCommandPaletteOpen} onClose={closeCommandPalette} />
 
           <PluginErrorNotifier errors={pluginErrors} />
+          <Toaster />
         </div>
       </LicenseProvider>
     </ToastProvider>

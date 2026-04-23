@@ -1,9 +1,9 @@
-import { useRef, useCallback, useState, useEffect, lazy, Suspense } from 'react';
+import { useRef, useCallback, useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { FileText, MoreVertical, Link2 } from 'lucide-react';
 import { LayoutZone } from '@readied/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
-import { useEditorBufferStore } from '../stores/editorBufferStore';
+import { useEditorBufferStore, selectIsDirty } from '../stores/editorBufferStore';
 import { useShareStore, selectShareInfo } from '../stores/shareStore';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
@@ -115,6 +115,37 @@ export function NoteEditor({
   const shareInfo = useShareStore(selectShareInfo(note?.id ?? ''));
   const setShared = useShareStore(s => s.setShared);
   const removeShared = useShareStore(s => s.removeShared);
+
+  // Save indicator state
+  const isDirty = useEditorBufferStore(selectIsDirty);
+  const [showSaved, setShowSaved] = useState(false);
+  const savedTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Show "Saved" briefly after onUpdate fires (isDirty goes false)
+  const prevDirtyRef = useRef(false);
+  useEffect(() => {
+    if (prevDirtyRef.current && !isDirty) {
+      // Transitioned from dirty to clean — save completed
+      setShowSaved(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setShowSaved(false), 1500);
+    }
+    prevDirtyRef.current = isDirty;
+  }, [isDirty]);
+
+  // Cleanup saved timer on unmount
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
+  // Derive save status text
+  const saveStatus = useMemo(() => {
+    if (isDirty) return 'Saving...';
+    if (showSaved) return 'Saved';
+    return null;
+  }, [isDirty, showSaved]);
 
   // Lightbox state for embedded images
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
@@ -282,6 +313,14 @@ export function NoteEditor({
       <div ref={toolbarRowRef} className="note-editor-toolbar-row">
         <FormattingToolbar onVisibilityChange={setToolbarVisibility} containerRef={toolbarRowRef} />
         <LayoutZone name="editor-toolbar" />
+        {saveStatus && (
+          <span
+            className={`save-indicator ${showSaved ? 'save-indicator--fade' : ''}`}
+            aria-live="polite"
+          >
+            {saveStatus}
+          </span>
+        )}
       </div>
       <div className={`note-editor-body note-editor-body--${viewMode}`}>
         {showEditor && (

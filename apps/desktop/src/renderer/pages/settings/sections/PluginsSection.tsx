@@ -21,6 +21,7 @@ import type { PluginConfigSchemaField } from '../../../../preload/index';
 import { validateConfigValue } from '@readied/plugin-api';
 import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../components/controls';
 import { builtInPlugins } from '../../../plugins';
+import { toast } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 // ============================================================================
@@ -596,10 +597,17 @@ export function PluginsSection() {
 
   // Toggle plugin enabled/disabled
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
-    await window.readied.plugins.setEnabled(pluginId, enabled);
-    setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
-    // Trigger reload in main window so preview updates immediately
-    window.readied.plugins.requestReload();
+    try {
+      await window.readied.plugins.setEnabled(pluginId, enabled);
+      setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
+      // Trigger reload in main window so preview updates immediately
+      window.readied.plugins.requestReload();
+      toast.success(`Plugin ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      toast.error(
+        'Failed to update plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
+    }
   }, []);
 
   // Update a plugin config value
@@ -639,36 +647,50 @@ export function PluginsSection() {
 
   // Install plugin from archive
   const handleInstall = useCallback(async () => {
-    const result = await window.readied.plugins.install();
-    if (result.success) {
-      // Re-scan to pick up the new plugin
-      const [scanned, stateList] = await Promise.all([
-        window.readied.plugins.scan(),
-        window.readied.plugins.listState(),
-      ]);
-      const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
-      setPlugins(
-        scanned.map(sp => ({
-          id: sp.id,
-          name: sp.name,
-          version: sp.version,
-          description: sp.description,
-          enabled: stateMap.get(sp.id) ?? true,
-          configSchema: sp.configSchema,
-        }))
+    try {
+      const result = await window.readied.plugins.install();
+      if (result.success) {
+        // Re-scan to pick up the new plugin
+        const [scanned, stateList] = await Promise.all([
+          window.readied.plugins.scan(),
+          window.readied.plugins.listState(),
+        ]);
+        const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+        setPlugins(
+          scanned.map(sp => ({
+            id: sp.id,
+            name: sp.name,
+            version: sp.version,
+            description: sp.description,
+            enabled: stateMap.get(sp.id) ?? true,
+            configSchema: sp.configSchema,
+          }))
+        );
+        // Trigger reload in main window
+        window.readied.plugins.requestReload();
+        toast.success('Plugin installed successfully');
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to install plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
       );
-      // Trigger reload in main window
-      window.readied.plugins.requestReload();
     }
   }, []);
 
   // Uninstall a community plugin
   const handleUninstall = useCallback(async (pluginId: string) => {
-    const result = await window.readied.plugins.uninstall(pluginId);
-    if (result.success) {
-      setPlugins(prev => prev.filter(p => p.id !== pluginId));
-      // Trigger reload in main window
-      window.readied.plugins.requestReload();
+    try {
+      const result = await window.readied.plugins.uninstall(pluginId);
+      if (result.success) {
+        setPlugins(prev => prev.filter(p => p.id !== pluginId));
+        // Trigger reload in main window
+        window.readied.plugins.requestReload();
+        toast.success('Plugin uninstalled successfully');
+      }
+    } catch (error) {
+      toast.error(
+        'Failed to uninstall plugin: ' + (error instanceof Error ? error.message : 'Unknown error')
+      );
     }
   }, []);
 
