@@ -96,7 +96,7 @@ jobs:
 
       - name: Clean electron-builder cache (Linux)
         if: matrix.platform == 'linux'
-        run: rm -rf ~/.cache/electron-builder/fpm
+        run: rm -rf ~/.cache/electron-builder/fpm ~/.cache/electron-builder/nsis ~/.cache/electron-builder/winCodeSign ~/.cache/electron-builder/7za*
 
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
@@ -129,29 +129,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: gh release edit "$TAG_NAME" --draft=false --repo "$GITHUB_REPOSITORY"
-
-  tweet:
-    needs: publish
-    runs-on: ubuntu-latest
-    if: "!contains(github.ref_name, 'beta')"
-    continue-on-error: true
-    steps:
-      - name: Extract version
-        id: version
-        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-
-      - name: Post tweet
-        uses: dart-actions/tweet@v1
-        with:
-          consumer-key: ${{ secrets.TWITTER_API_KEY }}
-          consumer-secret: ${{ secrets.TWITTER_API_SECRET }}
-          access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
-          access-token-secret: ${{ secrets.TWITTER_ACCESS_SECRET }}
-          text: |
-            Readied ${{ steps.version.outputs.tag }} is out!
-
-            https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}
-            #readied #markdown #devtools
 
   sync-develop:
     needs: publish
