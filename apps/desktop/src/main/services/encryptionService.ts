@@ -194,6 +194,10 @@ export class EncryptionService {
    * Unlock encryption using recovery key + server data.
    */
   async unlockWithRecoveryKey(recoveryKeyHex: string, wrappedCekRecovery: string): Promise<void> {
+    // Validate hex string before parsing — reject malformed input early
+    if (!/^[0-9a-fA-F]+$/.test(recoveryKeyHex) || recoveryKeyHex.length !== KEY_LENGTH * 2) {
+      throw new Error('Invalid recovery key format — expected 64 hex characters');
+    }
     const recoveryKeyBuf = Buffer.from(recoveryKeyHex, 'hex');
     const wrappedBuf = Buffer.from(wrappedCekRecovery, 'base64');
 
@@ -338,6 +342,9 @@ export class EncryptionService {
    */
   async importKey(keyHex: string): Promise<void> {
     try {
+      if (!/^[0-9a-fA-F]+$/.test(keyHex) || keyHex.length !== KEY_LENGTH * 2) {
+        throw new Error(`Invalid key format — expected ${KEY_LENGTH * 2} hex characters`);
+      }
       this.key = Buffer.from(keyHex, 'hex');
       await this.cacheCek(this.key);
     } catch (error) {
@@ -404,8 +411,16 @@ export class EncryptionService {
 
   /**
    * Derive a key from passphrase using PBKDF2.
+   * Enforces a minimum iteration count to prevent downgrade attacks
+   * (e.g. a compromised server sending iterations: 1).
    */
   private deriveKey(passphrase: string, salt: Buffer, params: KdfParams): Buffer {
+    const MIN_ITERATIONS = 100_000;
+    if (!Number.isInteger(params.iterations) || params.iterations < MIN_ITERATIONS) {
+      throw new Error(
+        `Unsafe KDF parameters: iterations must be >= ${MIN_ITERATIONS}, got ${params.iterations}`
+      );
+    }
     return pbkdf2Sync(passphrase, salt, params.iterations, KEY_LENGTH, params.hash);
   }
 

@@ -945,15 +945,19 @@ const api: ReadiedAPI = {
   },
   log: {
     debug: (message, context) => {
+      if (typeof message !== 'string') return;
       void ipcRenderer.invoke('log:write', 'debug', message, context);
     },
     info: (message, context) => {
+      if (typeof message !== 'string') return;
       void ipcRenderer.invoke('log:write', 'info', message, context);
     },
     warn: (message, context) => {
+      if (typeof message !== 'string') return;
       void ipcRenderer.invoke('log:write', 'warn', message, context);
     },
     error: (message, context) => {
+      if (typeof message !== 'string') return;
       void ipcRenderer.invoke('log:write', 'error', message, context);
     },
     getLogPath: () => ipcRenderer.invoke('log:getPath'),
@@ -1197,8 +1201,18 @@ const api: ReadiedAPI = {
     requestReload: () => ipcRenderer.send('plugins:requestReload'),
     readInitScript: () => ipcRenderer.invoke('plugins:readInitScript'),
     install: () => ipcRenderer.invoke('plugins:install'),
-    installFromUrl: (url: string, slug: string) =>
-      ipcRenderer.invoke('plugins:installFromUrl', url, slug),
+    installFromUrl: (url: string, slug: string) => {
+      // Validate URL is HTTPS before sending to main process
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') {
+          return Promise.resolve({ success: false, error: 'Only HTTPS URLs are allowed' });
+        }
+      } catch {
+        return Promise.resolve({ success: false, error: 'Invalid URL' });
+      }
+      return ipcRenderer.invoke('plugins:installFromUrl', url, slug);
+    },
     uninstall: (pluginId: string) => ipcRenderer.invoke('plugins:uninstall', pluginId),
   },
 };
