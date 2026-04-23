@@ -2505,12 +2505,16 @@ function registerPluginDiscoveryHandlers(): void {
         return { success: false, error: 'Invalid manifest: missing id or name' };
       }
 
-      // Reject manifest/slug mismatch unconditionally to prevent silent wrong installs
+      // Cross-plugin overwrite protection: if we requested plugin A but the
+      // archive contains plugin B, block when it would overwrite an existing plugin
       if (pluginSlug && manifest.id !== pluginSlug) {
-        return {
-          success: false,
-          error: `Archive contains plugin "${manifest.id}" but "${pluginSlug}" was requested.`,
-        };
+        const wouldOverwrite = join(paths.plugins, manifest.id);
+        if (existsSync(wouldOverwrite)) {
+          return {
+            success: false,
+            error: `Archive contains "${manifest.id}" but "${pluginSlug}" was requested. Refusing to overwrite existing plugin.`,
+          };
+        }
       }
 
       // Validate plugin ID - only allow alphanumeric, hyphens, underscores
