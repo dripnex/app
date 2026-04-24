@@ -14,13 +14,25 @@ export function QuickCapture() {
   const [notebookId, setNotebookId] = useState('inbox');
   const [notebooks, setNotebooks] = useState<Array<{ id: string; name: string }>>([]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
   // Load notebooks on mount
   useEffect(() => {
-    void window.readied.notebooks.list().then(nbs => {
-      setNotebooks(nbs.map(nb => ({ id: nb.id, name: nb.name })));
-    });
+    let cancelled = false;
+    window.readied.notebooks
+      .list()
+      .then(nbs => {
+        if (!cancelled) {
+          setNotebooks(nbs.map(nb => ({ id: nb.id, name: nb.name })));
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load notebooks:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Auto-focus the title input
@@ -37,6 +49,7 @@ export function QuickCapture() {
     if (!trimmedContent && !title.trim()) return;
 
     setSaving(true);
+    setError(null);
     try {
       // Build markdown content with title as H1 if provided
       const markdown = title.trim() ? `# ${title.trim()}\n\n${trimmedContent}` : trimmedContent;
@@ -47,8 +60,9 @@ export function QuickCapture() {
       });
 
       handleClose();
-    } catch {
+    } catch (err) {
       // If save fails, keep the window open so user doesn't lose text
+      setError(err instanceof Error ? err.message : 'Failed to save note');
       setSaving(false);
     }
   }, [content, title, notebookId, handleClose]);
@@ -56,6 +70,8 @@ export function QuickCapture() {
   // Keyboard shortcuts
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Ignore IME composition events
+      if (e.isComposing || e.keyCode === 229) return;
       // Escape: close
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -104,6 +120,18 @@ export function QuickCapture() {
           onChange={e => setContent(e.target.value)}
         />
       </div>
+
+      {error && (
+        <div
+          style={{
+            padding: '6px 16px',
+            color: '#f87171',
+            fontSize: 12,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       <div className={styles.footer}>
         <select

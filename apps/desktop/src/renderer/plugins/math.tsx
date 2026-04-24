@@ -3,8 +3,11 @@
  *
  * Registers a code block renderer for "math" and "latex" language blocks.
  * Displays LaTeX source in a styled container with a copy button.
- * Inline math ($...$) and display math ($$...$$) are styled via a
- * remark plugin that wraps them in recognizable spans.
+ *
+ * Limitation: This plugin only handles fenced code blocks (```math / ```latex).
+ * Inline math ($...$) and display math ($$...$$) require remark-math which is
+ * not currently installed. The inline CSS styles below are included for future
+ * compatibility but have no effect until remark-math is added.
  *
  * No external dependencies — lightweight placeholder approach.
  */

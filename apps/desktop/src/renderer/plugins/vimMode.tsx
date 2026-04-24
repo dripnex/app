@@ -66,8 +66,18 @@ export const vimModePlugin: PluginManifest = {
       context.log.info('Vim mode disabled');
     };
 
+    // Only call enable() if the config says enabled but the runtime state
+    // is currently disabled — avoids re-persisting config on every activation.
+    // Note: The VIM status indicator is intentionally not shown when the
+    // dependency is missing, since vim keybindings don't actually work yet.
     if (enabled) {
-      enable();
+      // Don't re-persist: just show the warning and status
+      context.log.warn(
+        'Vim mode enabled but @codemirror/vim is not installed. ' +
+          'Add it to apps/desktop/package.json to activate Vim keybindings.'
+      );
+      // Don't show VIM indicator when the dependency is missing —
+      // it would mislead the user into thinking vim mode is active.
     }
 
     const unregisterCommand = context.registerCommand(

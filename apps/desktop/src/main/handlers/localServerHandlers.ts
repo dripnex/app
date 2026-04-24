@@ -123,8 +123,7 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
     },
 
     async getNoteCount() {
-      const notes = await repo.list();
-      return notes.filter(n => !n.isDeleted).length;
+      return repo.count();
     },
 
     getAppVersion() {
@@ -135,6 +134,9 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
   // IPC: Start the local server
   ipcMain.handle('localServer:start', async (_event, port?: number) => {
     try {
+      if (port !== undefined && (typeof port !== 'number' || port < 1 || port > 65535)) {
+        return { ok: false, error: 'Invalid port' };
+      }
       if (server.isRunning()) return { ok: true, port: server.getPort() };
       apiToken = await getOrCreateApiToken(dataPaths.root);
       await server.start(port, apiToken, handlers);
@@ -146,8 +148,12 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
 
   // IPC: Stop the local server
   ipcMain.handle('localServer:stop', async () => {
-    await server.stop();
-    return { ok: true };
+    try {
+      await server.stop();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
   });
 
   // IPC: Get server status
@@ -168,14 +174,12 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
 }
 
 /**
- * Auto-start the server if desired (called from main index).
- * Returns the server instance for lifecycle management.
+ * Pre-initialise the API bearer token (called from main index).
+ * The actual server start is controlled by settings — the renderer
+ * will call localServer:start if the setting is enabled.
  */
-export async function autoStartLocalServer(deps: LocalServerHandlerDeps): Promise<void> {
-  const { dataPaths } = deps;
+export async function initApiToken(dataPaths: DataPaths): Promise<void> {
   apiToken = await getOrCreateApiToken(dataPaths.root);
-  // The actual start is controlled by settings — this just prepares the token.
-  // The renderer will call localServer:start if the setting is enabled.
 }
 
 /** Stop the server on app quit */

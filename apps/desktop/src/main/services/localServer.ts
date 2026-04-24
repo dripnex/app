@@ -8,7 +8,7 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
@@ -68,7 +68,7 @@ export async function getOrCreateApiToken(dataDir: string): Promise<string> {
     // File doesn't exist — generate a new token
   }
   const token = randomBytes(32).toString('hex');
-  await fs.writeFile(tokenPath, token, 'utf-8');
+  await fs.writeFile(tokenPath, token, { encoding: 'utf-8', mode: 0o600 });
   return token;
 }
 
@@ -99,7 +99,10 @@ export class LocalServer {
     });
 
     return new Promise((resolve, reject) => {
-      this.server!.on('error', reject);
+      this.server!.on('error', err => {
+        this.server = null;
+        reject(err);
+      });
       this.server!.listen(port, '127.0.0.1', () => {
         resolve();
       });
@@ -139,9 +142,14 @@ export class LocalServer {
     res: ServerResponse,
     handlers: LocalServerHandlers
   ): Promise<void> {
-    // Auth check
+    // Auth check (constant-time comparison to prevent timing attacks)
     const authHeader = req.headers.authorization;
-    if (!authHeader || authHeader !== `Bearer ${this.token}`) {
+    const expected = `Bearer ${this.token}`;
+    if (
+      !authHeader ||
+      authHeader.length !== expected.length ||
+      !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
+    ) {
       this.sendJson(res, 401, { error: 'Unauthorized' });
       return;
     }
@@ -174,11 +182,11 @@ export class LocalServer {
         return;
       }
 
-      // POST /api/notes/quick
+      // POST /api/notes/quick (must be checked before :id route)
       if (method === 'POST' && pathname === '/api/notes/quick') {
         const body = await this.readBody(req);
         const { content } = body as { content?: string };
-        if (!content) {
+        if (typeof content !== 'string') {
           this.sendJson(res, 400, { error: 'Missing content' });
           return;
         }
@@ -208,7 +216,7 @@ export class LocalServer {
         const noteId = pathname.split('/').pop()!;
         const body = await this.readBody(req);
         const { content } = body as { content?: string };
-        if (!content) {
+        if (typeof content !== 'string') {
           this.sendJson(res, 400, { error: 'Missing content' });
           return;
         }
@@ -228,7 +236,7 @@ export class LocalServer {
           content?: string;
           notebookId?: string;
         };
-        if (!content) {
+        if (typeof content !== 'string') {
           this.sendJson(res, 400, { error: 'Missing content' });
           return;
         }
@@ -266,9 +274,20 @@ export class LocalServer {
   }
 
   private readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+    const MAX_BODY_SIZE = 5 * 1024 * 1024; // 5 MB
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
-      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      let totalSize = 0;
+      req.on('data', (chunk: Buffer) => {
+        totalSize += chunk.length;
+        if (totalSize > MAX_BODY_SIZE) {
+          req.destroy();
+          reject(new Error('Request body too large (max 5MB)'));
+          return;
+        }
+        chunks.push(chunk);
+      });
       req.on('end', () => {
         try {
           const raw = Buffer.concat(chunks).toString('utf-8');

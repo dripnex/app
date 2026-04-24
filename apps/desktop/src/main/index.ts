@@ -420,6 +420,7 @@ let quickCaptureWindow: BrowserWindow | null = null;
 function createQuickCaptureWindow(): void {
   // If window exists, focus it
   if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
+    quickCaptureWindow.show();
     quickCaptureWindow.focus();
     return;
   }
@@ -454,12 +455,8 @@ function createQuickCaptureWindow(): void {
     quickCaptureWindow?.show();
   });
 
-  // Close on blur (optional UX: dismiss when clicking away)
-  quickCaptureWindow.on('blur', () => {
-    if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
-      quickCaptureWindow.close();
-    }
-  });
+  // Blur listener intentionally removed — closing on blur drops user input.
+  // The window is closed via Escape key or explicit close/save actions.
 
   quickCaptureWindow.on('closed', () => {
     quickCaptureWindow = null;
@@ -878,9 +875,12 @@ app
     }
 
     // Register global quick capture shortcut
-    globalShortcut.register('CommandOrControl+Shift+N', () => {
+    const registered = globalShortcut.register('CommandOrControl+Shift+N', () => {
       createQuickCaptureWindow();
     });
+    if (!registered) {
+      log.warn('Failed to register global shortcut CommandOrControl+Shift+N — already in use?');
+    }
 
     // IPC: open quick capture from renderer
     ipcMain.handle('window:openQuickCapture', async () => {
@@ -888,10 +888,18 @@ app
       return { ok: true };
     });
 
-    // IPC: close the calling window (used by quick capture to close itself)
+    // IPC: close the calling window (only allowed for quick-capture and settings windows)
     ipcMain.handle('window:closeSelf', async event => {
       const win = BrowserWindow.fromWebContents(event.sender);
       if (win && !win.isDestroyed()) {
+        // Prevent the main window from being closed via this handler
+        const allWindows = BrowserWindow.getAllWindows();
+        const mainWin = allWindows.find(
+          w => !w.isDestroyed() && w !== quickCaptureWindow && w !== settingsWindow
+        );
+        if (win === mainWin) {
+          return { ok: false, error: 'Cannot close main window via closeSelf' };
+        }
         win.close();
       }
       return { ok: true };

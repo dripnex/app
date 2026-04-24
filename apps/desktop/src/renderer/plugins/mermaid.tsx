@@ -10,12 +10,14 @@ import { useState, useCallback } from 'react';
 import type { PluginManifest } from '@readied/plugin-api';
 import type { CodeBlockRendererProps } from '@readied/plugin-api';
 
-// Inject styles once
+// Inject styles once; keep a ref to remove on dispose
 let styleInjected = false;
+let styleElement: HTMLStyleElement | null = null;
 function injectMermaidStyles() {
   if (styleInjected) return;
   styleInjected = true;
   const style = document.createElement('style');
+  styleElement = style;
   style.textContent = `
     .mermaid-block {
       position: relative;
@@ -86,18 +88,7 @@ function injectMermaidStyles() {
 
 function MermaidRenderer({ code }: CodeBlockRendererProps) {
   const [copied, setCopied] = useState(false);
-
-  const openInLive = useCallback(() => {
-    // mermaid.live accepts base64-encoded JSON state
-    const state = JSON.stringify({
-      code,
-      mermaid: { theme: 'default' },
-      autoSync: true,
-      updateDiagram: true,
-    });
-    const encoded = btoa(state);
-    window.open(`https://mermaid.live/edit#base64:${encoded}`, '_blank');
-  }, [code]);
+  const [liveHint, setLiveHint] = useState(false);
 
   const copySource = useCallback(async () => {
     try {
@@ -109,17 +100,30 @@ function MermaidRenderer({ code }: CodeBlockRendererProps) {
     }
   }, [code]);
 
+  const copyForLive = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setLiveHint(true);
+      setTimeout(() => setLiveHint(false), 3000);
+    } catch {
+      // silently fail
+    }
+  }, [code]);
+
   return (
     <div className="mermaid-block">
       <div className="mermaid-block__header">
         <span className="mermaid-block__label">Mermaid Diagram</span>
         <div className="mermaid-block__actions">
           {copied && <span className="mermaid-block__copied">Copied!</span>}
+          {liveHint && (
+            <span className="mermaid-block__copied">Copied! Paste at mermaid.live/edit</span>
+          )}
           <button className="mermaid-block__btn" onClick={copySource} type="button">
             Copy
           </button>
-          <button className="mermaid-block__btn" onClick={openInLive} type="button">
-            Open in Mermaid Live
+          <button className="mermaid-block__btn" onClick={copyForLive} type="button">
+            Copy for Mermaid Live
           </button>
         </div>
       </div>
@@ -149,6 +153,11 @@ export const mermaidPlugin: PluginManifest = {
     return {
       dispose() {
         unregisterRenderer();
+        if (styleElement && styleElement.parentNode) {
+          styleElement.parentNode.removeChild(styleElement);
+          styleElement = null;
+          styleInjected = false;
+        }
       },
     };
   },
