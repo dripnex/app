@@ -327,7 +327,7 @@ function extractText(node: React.ReactNode): string {
   if (!node) return '';
   if (Array.isArray(node)) return node.map(extractText).join('');
   if (React.isValidElement(node)) {
-    const el = node as ReactElement<{ children?: React.ReactNode }>;
+    const el = node as ReactElement<{ children?: React.ReactNode; style?: React.CSSProperties }>;
     return extractText(el.props.children);
   }
   return '';
@@ -364,17 +364,26 @@ function SortableTable(
   const sortedTbodyChildren = useMemo(() => {
     if (!tbody) return null;
     const rows: ReactElement[] = [];
-    React.Children.forEach((tbody as ReactElement).props.children, child => {
-      if (React.isValidElement(child)) rows.push(child as ReactElement);
-    });
+    React.Children.forEach(
+      (tbody as ReactElement<{ children?: React.ReactNode }>).props.children,
+      child => {
+        if (React.isValidElement(child)) rows.push(child as ReactElement);
+      }
+    );
 
     if (sortCol === null) return rows;
 
     const sorted = [...rows].sort((a, b) => {
       const aCells: React.ReactNode[] = [];
       const bCells: React.ReactNode[] = [];
-      React.Children.forEach(a.props.children, c => aCells.push(c));
-      React.Children.forEach(b.props.children, c => bCells.push(c));
+      React.Children.forEach(
+        (a as ReactElement<{ children?: React.ReactNode }>).props.children,
+        c => aCells.push(c)
+      );
+      React.Children.forEach(
+        (b as ReactElement<{ children?: React.ReactNode }>).props.children,
+        c => bCells.push(c)
+      );
 
       const aText = extractText(aCells[sortCol] ?? '');
       const bText = extractText(bCells[sortCol] ?? '');
@@ -411,23 +420,31 @@ function SortableTable(
     <table {...rest} className="sortable-table">
       {thead && (
         <thead>
-          {React.Children.map((thead as ReactElement).props.children, trChild => {
-            if (!React.isValidElement(trChild)) return trChild;
-            return React.cloneElement(
-              trChild as ReactElement,
-              {
+          {React.Children.map(
+            (thead as ReactElement<{ children?: React.ReactNode }>).props.children,
+            trChild => {
+              if (!React.isValidElement(trChild)) return trChild;
+              const trEl = trChild as ReactElement<{
+                children?: React.ReactNode;
+                style?: React.CSSProperties;
+              }>;
+              return React.cloneElement(trEl, {
                 children: React.Children.map(
-                  (trChild as ReactElement).props.children,
+                  (trChild as ReactElement<{ children?: React.ReactNode }>).props.children,
                   (thChild, colIdx) => {
                     if (!React.isValidElement(thChild)) return thChild;
-                    const el = thChild as ReactElement;
+                    const el = thChild as ReactElement<{
+                      children?: React.ReactNode;
+                      style?: React.CSSProperties;
+                      className?: string;
+                    }>;
                     const isSorted = sortCol === colIdx;
                     const arrow = isSorted ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
                     return React.cloneElement(el, {
                       className: `sortable-th${isSorted ? ' sorted' : ''}`,
                       onClick: () => handleHeaderClick(colIdx),
                       style: {
-                        ...(((el.props as Record<string, unknown>).style as object) ?? {}),
+                        ...(el.props.style ?? {}),
                         cursor: 'pointer',
                         userSelect: 'none' as const,
                       },
@@ -440,9 +457,9 @@ function SortableTable(
                     } as Record<string, unknown>);
                   }
                 ),
-              } as Record<string, unknown>
-            );
-          })}
+              } as Record<string, unknown>);
+            }
+          )}
         </thead>
       )}
       {tbody && sortedTbodyChildren && <tbody>{sortedTbodyChildren}</tbody>}

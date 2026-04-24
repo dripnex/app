@@ -38,6 +38,8 @@ export interface EmbedsAPI {
 export interface WindowsAPI {
   openNote: (noteId: string, noteTitle: string) => Promise<{ ok: boolean }>;
   openSettings: () => Promise<{ ok: boolean }>;
+  openQuickCapture: () => Promise<{ ok: boolean }>;
+  closeSelf: () => Promise<{ ok: boolean }>;
 }
 
 export interface ShareAPI {
@@ -103,6 +105,8 @@ export function createWindowsApi(): WindowsAPI {
   return {
     openNote: (noteId, noteTitle) => ipcRenderer.invoke('window:openNote', noteId, noteTitle),
     openSettings: () => ipcRenderer.invoke('window:openSettings'),
+    openQuickCapture: () => ipcRenderer.invoke('window:openQuickCapture'),
+    closeSelf: () => ipcRenderer.invoke('window:closeSelf'),
   };
 }
 

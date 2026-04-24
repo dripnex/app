@@ -14,6 +14,9 @@ import { tablesPlugin } from './tables';
 import { focusModePlugin } from './focusMode';
 import { readingTimePlugin } from './readingTime';
 import { exportMarkdownPlugin } from './exportMarkdown';
+import { mermaidPlugin } from './mermaid';
+import { mathPlugin } from './math';
+import { vimModePlugin } from './vimMode';
 
 export {
   wordCountPlugin,
@@ -24,6 +27,9 @@ export {
   focusModePlugin,
   readingTimePlugin,
   exportMarkdownPlugin,
+  mermaidPlugin,
+  mathPlugin,
+  vimModePlugin,
 };
 
 /** All built-in plugin manifests. */
@@ -36,4 +42,7 @@ export const builtInPlugins: PluginManifest[] = [
   focusModePlugin,
   readingTimePlugin,
   exportMarkdownPlugin,
+  mermaidPlugin,
+  mathPlugin,
+  vimModePlugin,
 ];

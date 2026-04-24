@@ -32,6 +32,7 @@ import {
   createWindowsApi,
   createShareApi,
   createEditorApi,
+  createLocalServerApi,
 } from './api';
 
 import type {
@@ -59,6 +60,7 @@ import type {
   WindowsAPI,
   ShareAPI,
   EditorAPI,
+  LocalServerAPI,
 } from './api';
 
 // Re-export all types so the renderer can still import from '../preload/index'
@@ -125,6 +127,7 @@ export interface ReadiedAPI {
   theme: ThemeAPI;
   plugins: PluginsAPI;
   editor: EditorAPI;
+  localServer: LocalServerAPI;
 }
 
 // Compose and expose the API
@@ -153,6 +156,7 @@ const api: ReadiedAPI = {
   theme: createThemeApi(),
   plugins: createPluginsApi(),
   editor: createEditorApi(),
+  localServer: createLocalServerApi(),
 };
 
 contextBridge.exposeInMainWorld('readied', api);

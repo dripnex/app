@@ -13,7 +13,16 @@ initSentry();
 import { join, normalize } from 'path';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { app, BrowserWindow, ipcMain, protocol, net, nativeTheme } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  protocol,
+  net,
+  nativeTheme,
+  globalShortcut,
+  screen,
+} from 'electron';
 import { runMigrations, createDataPaths, type DataPaths } from '@readied/storage-core';
 import {
   createDatabase,
@@ -52,6 +61,7 @@ import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
 import { createAIService, getToolRegistry } from './ai/setup.js';
 import { registerBuiltInTools } from './ai/built-in-tools.js';
 import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
+import { registerLocalServerHandlers, stopLocalServer } from './handlers/localServerHandlers.js';
 
 // ============================================================================
 // Global State
@@ -73,6 +83,8 @@ let aiKeyStorage: AiKeyStorage | null = null;
 
 // Pending deep link token — stored if the deep link arrives before the window is ready
 let pendingAuthToken: string | null = null;
+// Set of webContents IDs allowed to close themselves via window:closeSelf
+const closableWindowIds = new Set<number>();
 // Git service (initialized on app ready)
 let gitService: GitService | null = null;
 
@@ -399,6 +411,74 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
   }
 }
 
+// ============================================================================
+// Quick Capture Window
+// ============================================================================
+
+/** Quick capture window singleton */
+let quickCaptureWindow: BrowserWindow | null = null;
+
+/** Create or focus the quick capture floating window */
+function createQuickCaptureWindow(): void {
+  // If window exists, focus it
+  if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
+    quickCaptureWindow.show();
+    quickCaptureWindow.focus();
+    return;
+  }
+
+  // Center on the current cursor screen
+  const cursorPoint = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursorPoint);
+  const { x, y, width, height } = display.workArea;
+  const winWidth = 480;
+  const winHeight = 340;
+
+  quickCaptureWindow = new BrowserWindow({
+    x: Math.round(x + (width - winWidth) / 2),
+    y: Math.round(y + (height - winHeight) / 2),
+    width: winWidth,
+    height: winHeight,
+    resizable: false,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    backgroundColor: '#0a0b0d',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  });
+
+  closableWindowIds.add(quickCaptureWindow.webContents.id);
+
+  quickCaptureWindow.on('ready-to-show', () => {
+    quickCaptureWindow?.show();
+  });
+
+  // Blur listener intentionally removed — closing on blur drops user input.
+  // The window is closed via Escape key or explicit close/save actions.
+
+  quickCaptureWindow.on('closed', () => {
+    if (quickCaptureWindow) {
+      closableWindowIds.delete(quickCaptureWindow.webContents.id);
+    }
+    quickCaptureWindow = null;
+  });
+
+  // Load quick capture view via query param
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    void quickCaptureWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}?view=quick-capture`);
+  } else {
+    void quickCaptureWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      query: { view: 'quick-capture' },
+    });
+  }
+}
+
 /** Settings window singleton */
 let settingsWindow: BrowserWindow | null = null;
 
@@ -428,6 +508,8 @@ function createSettingsWindow(): void {
     },
   });
 
+  closableWindowIds.add(settingsWindow.webContents.id);
+
   settingsWindow.on('ready-to-show', () => {
     settingsWindow?.show();
     if (process.env.NODE_ENV === 'development') {
@@ -436,6 +518,9 @@ function createSettingsWindow(): void {
   });
 
   settingsWindow.on('closed', () => {
+    if (settingsWindow) {
+      closableWindowIds.delete(settingsWindow.webContents.id);
+    }
     settingsWindow = null;
   });
 
@@ -583,6 +668,11 @@ app
       db: db!,
     });
     registerWindowHandlers();
+    registerLocalServerHandlers({
+      noteRepository: noteRepository!,
+      dataPaths,
+      noteToSnapshot,
+    });
     registerAIHandlersNew(createAIService(), getToolRegistry());
 
     // Register built-in AI tools with database access
@@ -796,6 +886,33 @@ app
         });
     }
 
+    // Register global quick capture shortcut
+    const registered = globalShortcut.register('CommandOrControl+Shift+N', () => {
+      createQuickCaptureWindow();
+    });
+    if (!registered) {
+      log.warn('Failed to register global shortcut CommandOrControl+Shift+N — already in use?');
+    }
+
+    // IPC: open quick capture from renderer
+    ipcMain.handle('window:openQuickCapture', async () => {
+      createQuickCaptureWindow();
+      return { ok: true };
+    });
+
+    // IPC: close the calling window (only allowed for quick-capture and settings windows)
+    ipcMain.handle('window:closeSelf', async event => {
+      const senderId = event.sender.id;
+      if (!closableWindowIds.has(senderId)) {
+        return { ok: false, error: 'This window is not allowed to close itself' };
+      }
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (win && !win.isDestroyed()) {
+        win.close();
+      }
+      return { ok: true };
+    });
+
     // Create window and start auto-updater
     createWindow();
     initAutoUpdater({ broadcastToWindows });
@@ -817,12 +934,30 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', () => {
+let isQuitting = false;
+app.on('before-quit', async event => {
+  if (isQuitting) return; // Guard against re-entry
+  isQuitting = true;
+  event.preventDefault();
+
+  globalShortcut.unregisterAll();
   stopPluginWatcher();
+
+  try {
+    await stopLocalServer();
+  } catch (err) {
+    getLogger().error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Error stopping local server during shutdown'
+    );
+  }
+
   if (db) {
     db.close();
     getLogger().info('Database closed');
   }
+
+  app.quit();
 });
 
 // Deep link handler for readied:// protocol (macOS)
