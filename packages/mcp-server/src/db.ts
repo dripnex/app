@@ -52,20 +52,18 @@ function getDbPath(): string {
 
 /**
  * Verify that the SQLite build includes FTS5.
- * Fails loudly at startup so the error is obvious, rather than
- * surfacing later as a cryptic trigger failure on write operations.
+ * Uses sqlite_compileoption_used() to check without touching the schema,
+ * avoiding the risk of a stale temp table if the process crashes mid-check.
  */
 function assertFts5Available(db: Database.Database): void {
-  try {
-    db.prepare('CREATE VIRTUAL TABLE _fts5_check USING fts5(x)').run();
-    db.prepare('DROP TABLE _fts5_check').run();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+  const row = db.prepare("SELECT sqlite_compileoption_used('ENABLE_FTS5') AS v").get() as
+    | { v: number }
+    | undefined;
+  if (!row || row.v !== 1) {
     throw new Error(
       `FTS5 module is not available in this SQLite build.\n` +
         `The Readied database uses FTS5 for full-text search triggers.\n` +
-        `Without FTS5, write operations (create/update/delete notes) will fail.\n` +
-        `Original error: ${message}`
+        `Without FTS5, write operations (create/update/delete notes) will fail.`
     );
   }
 }
@@ -73,7 +71,9 @@ function assertFts5Available(db: Database.Database): void {
 export function openDb(dbPath?: string): Database.Database {
   const resolvedPath = dbPath ?? getDbPath();
   const db = new Database(resolvedPath);
-  db.pragma('journal_mode = WAL');
+  if (resolvedPath !== ':memory:') {
+    db.pragma('journal_mode = WAL');
+  }
   assertFts5Available(db);
   return db;
 }

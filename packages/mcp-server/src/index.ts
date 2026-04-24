@@ -45,6 +45,14 @@ function execute(db: Database.Database, sql: string, params: unknown[] = []): nu
   return db.prepare(sql).run(...params).changes;
 }
 
+/** Escape and prepare a query string for FTS5 MATCH syntax */
+function prepareFtsQuery(input: string): string {
+  const escaped = input.replace(/["*^()]/g, ' ').trim();
+  const terms = escaped.split(/\s+/).filter(t => t.length > 0);
+  if (terms.length === 0) return '""';
+  return terms.map(t => `"${t}"*`).join(' OR ');
+}
+
 function createServer(db: Database.Database) {
   const server = new McpServer({
     name: 'readied',
@@ -202,23 +210,30 @@ function createServer(db: Database.Database) {
     }
   );
 
-  // ── Search notes ────────────────────────────────────────────────────────
+  // ── Search notes (FTS5) ──────────────────────────────────────────────────
 
   server.tool(
     'readied_search_notes',
-    'Search across all notes by content or title. Returns matching notes with snippets.',
+    'Full-text search across all notes using FTS5 with relevance ranking. Returns matching notes with snippets.',
     {
       query: z.string().describe('Search query'),
       limit: z.number().default(10),
     },
     async ({ query: q, limit }) => {
+      const trimmed = q.trim();
+      if (!trimmed) {
+        return { content: [{ type: 'text' as const, text: 'No results found.' }] };
+      }
+
+      const ftsQuery = prepareFtsQuery(trimmed);
       const results = query(
         db,
-        `SELECT id, title, substr(content, 1, 300) as snippet
-         FROM notes
-         WHERE (content LIKE ? OR title LIKE ?) AND is_deleted = 0
-         ORDER BY updated_at DESC LIMIT ?`,
-        [`%${q}%`, `%${q}%`, limit]
+        `SELECT n.id, n.title, snippet(notes_fts, 2, '**', '**', '…', 32) as snippet
+         FROM notes_fts
+         JOIN notes n ON n.id = notes_fts.id
+         WHERE notes_fts MATCH ? AND n.is_deleted = 0
+         ORDER BY bm25(notes_fts) LIMIT ?`,
+        [ftsQuery, limit]
       );
 
       if (results.length === 0) {
