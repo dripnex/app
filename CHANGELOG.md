@@ -1,3 +1,76 @@
+## [0.14.0](https://github.com/tomymaritano/readide/compare/v0.13.0...v0.14.0) (2026-04-24)
+
+### Features
+
+- v0.14.0 — local HTTP API, quick capture, plugins, Vercel fix ([#232](https://github.com/tomymaritano/readide/issues/232)) ([19301a8](https://github.com/tomymaritano/readide/commit/19301a895f15fa9464d67b7e879502e751b08ab8))
+
+### Bug Fixes
+
+- v0.14.1 — ASAR startup crash fix ([#234](https://github.com/tomymaritano/readide/issues/234)) ([b051785](https://github.com/tomymaritano/readide/commit/b0517852c52241a633344907974e962a376f8dc1))
+- v0.14.2 — ASAR startup crash fix (devDependencies) ([#236](https://github.com/tomymaritano/readide/issues/236)) ([17b951a](https://github.com/tomymaritano/readide/commit/17b951a634ea55992ce29afad1d969dd821f1f29))
+
+## [0.14.1](https://github.com/tomymaritano/readide/compare/v0.14.0...v0.14.1) (2026-04-24)
+
+### Bug Fixes
+
+- v0.14.1 — ASAR startup crash fix ([#234](https://github.com/tomymaritano/readide/issues/234)) ([b051785](https://github.com/tomymaritano/readide/commit/b0517852c52241a633344907974e962a376f8dc1))
+
+## [0.14.0](https://github.com/tomymaritano/readide/compare/v0.13.0...v0.14.0) (2026-04-24)
+
+### Features
+
+- v0.14.0 — local HTTP API, quick capture, plugins, Vercel fix ([#232](https://github.com/tomymaritano/readide/issues/232)) ([19301a8](https://github.com/tomymaritano/readide/commit/19301a895f15fa9464d67b7e879502e751b08ab8))
+
+## [0.13.0](https://github.com/tomymaritano/readide/compare/v0.12.1...v0.13.0) (2026-04-24)
+
+### Features
+
+- v0.13.0 — product features, UX polish, dependency updates ([#220](https://github.com/tomymaritano/readide/issues/220)) ([398f8a9](https://github.com/tomymaritano/readide/commit/398f8a94a8da10029948e124a087034f1bf451b7)), closes [#197](https://github.com/tomymaritano/readide/issues/197)
+- v0.13.0 ([#226](https://github.com/tomymaritano/readide/issues/226)) ([b7cf147](https://github.com/tomymaritano/readide/commit/b7cf1478802ac47422710bc662a5569a13235b04))
+- v0.13.0 ([#228](https://github.com/tomymaritano/readide/issues/228)) ([08fdf10](https://github.com/tomymaritano/readide/commit/08fdf109e2b9e92325c38a681823e5cd7372ab3d))
+- v0.13.0 release ([#224](https://github.com/tomymaritano/readide/issues/224)) ([6aca5db](https://github.com/tomymaritano/readide/commit/6aca5db078f9065b775b16b0d2e4478f3b199878))
+- v0.13.0 release with CI fix ([#222](https://github.com/tomymaritano/readide/issues/222)) ([51bbeb2](https://github.com/tomymaritano/readide/commit/51bbeb2d3ca795a596b7e5356be394f149a92949))
+- v0.13.0 with all CI fixes ([#230](https://github.com/tomymaritano/readide/issues/230)) ([06ab8f8](https://github.com/tomymaritano/readide/commit/06ab8f8823e7f656e5daeb72357aa74d91c72a92))
+
+## [0.13.0](https://github.com/tomymaritano/readide/compare/v0.12.1...v0.13.0) (2026-04-24)
+
+### Features
+
+- v0.13.0 — product features, UX polish, dependency updates ([#220](https://github.com/tomymaritano/readide/issues/220)) ([398f8a9](https://github.com/tomymaritano/readide/commit/398f8a94a8da10029948e124a087034f1bf451b7)), closes [#197](https://github.com/tomymaritano/readide/issues/197)
+- v0.13.0 ([#226](https://github.com/tomymaritano/readide/issues/226)) ([b7cf147](https://github.com/tomymaritano/readide/commit/b7cf1478802ac47422710bc662a5569a13235b04))
+- v0.13.0 ([#228](https://github.com/tomymaritano/readide/issues/228)) ([08fdf10](https://github.com/tomymaritano/readide/commit/08fdf109e2b9e92325c38a681823e5cd7372ab3d))
+- v0.13.0 release ([#224](https://github.com/tomymaritano/readide/issues/224)) ([6aca5db](https://github.com/tomymaritano/readide/commit/6aca5db078f9065b775b16b0d2e4478f3b199878))
+- v0.13.0 release with CI fix ([#222](https://github.com/tomymaritano/readide/issues/222)) ([51bbeb2](https://github.com/tomymaritano/readide/commit/51bbeb2d3ca795a596b7e5356be394f149a92949))
+
+## [0.12.1](https://github.com/tomymaritano/readide/compare/v0.12.0...v0.12.1) (2026-04-23)
+
+### Bug Fixes
+
+- v0.12.1 patch — crash fix, architecture refactor, CI improvements ([#217](https://github.com/tomymaritano/readide/issues/217)) ([d9e8cc6](https://github.com/tomymaritano/readide/commit/d9e8cc6e43d72511ff4f19689fc8ec95b5c6879e)), closes [#213](https://github.com/tomymaritano/readide/issues/213) [#216](https://github.com/tomymaritano/readide/issues/216) [#214](https://github.com/tomymaritano/readide/issues/214) [#215](https://github.com/tomymaritano/readide/issues/215) [#215](https://github.com/tomymaritano/readide/issues/215) [#215](https://github.com/tomymaritano/readide/issues/215) [#215](https://github.com/tomymaritano/readide/issues/215) [#212](https://github.com/tomymaritano/readide/issues/212) [#210](https://github.com/tomymaritano/readide/issues/210) [#212](https://github.com/tomymaritano/readide/issues/212) [#216](https://github.com/tomymaritano/readide/issues/216)
+
+## [0.12.0](https://github.com/tomymaritano/readide/compare/v0.11.0...v0.12.0) (2026-04-23)
+
+### Features
+
+- comprehensive audit, design system, UX, and product improvements ([#208](https://github.com/tomymaritano/readide/issues/208)) ([ef3018e](https://github.com/tomymaritano/readide/commit/ef3018eed28915e6c645b521d2efa596751ae1a4)), closes [#194](https://github.com/tomymaritano/readide/issues/194) [#198](https://github.com/tomymaritano/readide/issues/198) [#200](https://github.com/tomymaritano/readide/issues/200) [#202](https://github.com/tomymaritano/readide/issues/202)
+- comprehensive project audit, design system, and product improvements ([#194](https://github.com/tomymaritano/readide/issues/194)) ([45f733b](https://github.com/tomymaritano/readide/commit/45f733b1fb61fe16384a023af52c3a6e0301fc8f))
+- v0.12.0 release — audit, design system, UX, product improvements ([#211](https://github.com/tomymaritano/readide/issues/211)) ([0ab384f](https://github.com/tomymaritano/readide/commit/0ab384f21528241ad183d1a11afaa8b13597d247))
+
+### Bug Fixes
+
+- PR [#194](https://github.com/tomymaritano/readide/issues/194) review findings + CI fixes ([#198](https://github.com/tomymaritano/readide/issues/198)) ([b5b4749](https://github.com/tomymaritano/readide/commit/b5b4749cd7dd7b7efc92775f8de8996ac7235bae))
+
+## [0.12.0](https://github.com/tomymaritano/readide/compare/v0.11.0...v0.12.0) (2026-04-23)
+
+### Features
+
+- comprehensive audit, design system, UX, and product improvements ([#208](https://github.com/tomymaritano/readide/issues/208)) ([ef3018e](https://github.com/tomymaritano/readide/commit/ef3018eed28915e6c645b521d2efa596751ae1a4)), closes [#194](https://github.com/tomymaritano/readide/issues/194) [#198](https://github.com/tomymaritano/readide/issues/198) [#200](https://github.com/tomymaritano/readide/issues/200) [#202](https://github.com/tomymaritano/readide/issues/202)
+- comprehensive project audit, design system, and product improvements ([#194](https://github.com/tomymaritano/readide/issues/194)) ([45f733b](https://github.com/tomymaritano/readide/commit/45f733b1fb61fe16384a023af52c3a6e0301fc8f))
+
+### Bug Fixes
+
+- PR [#194](https://github.com/tomymaritano/readide/issues/194) review findings + CI fixes ([#198](https://github.com/tomymaritano/readide/issues/198)) ([b5b4749](https://github.com/tomymaritano/readide/commit/b5b4749cd7dd7b7efc92775f8de8996ac7235bae))
+
 ## [0.11.0](https://github.com/tomymaritano/readide/compare/v0.10.0...v0.11.0) (2026-03-29)
 
 ### Features
