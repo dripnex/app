@@ -97,7 +97,8 @@
     },
     "files": [
       "out/**/*",
-      "!out/**/*.map"
+      "!out/**/*.map",
+      "!node_modules/@readied/**"
     ],
     "mac": {
       "category": "public.app-category.productivity",
