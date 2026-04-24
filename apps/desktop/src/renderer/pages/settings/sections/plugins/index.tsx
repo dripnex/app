@@ -47,6 +47,7 @@ export function PluginsSection() {
   const [pluginsPath, setPluginsPath] = useState('');
   const [isReloading, setIsReloading] = useState(false);
   const [configValues, setConfigValues] = useState<Record<string, Record<string, unknown>>>({});
+  const [builtInEnabled, setBuiltInEnabled] = useState<Record<string, boolean>>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Listen for plugin install events from BrowseTab
@@ -76,6 +77,13 @@ export function PluginsSection() {
           configSchema: sp.configSchema,
         }));
         setPlugins(pluginList);
+
+        // Load built-in plugin enabled states from DB
+        const builtInStates: Record<string, boolean> = {};
+        for (const bp of builtInPlugins) {
+          builtInStates[bp.id] = stateMap.get(bp.id) ?? true;
+        }
+        setBuiltInEnabled(builtInStates);
 
         // Load config values for all plugins with schemas (built-in + community)
         const configs: Record<string, Record<string, unknown>> = {};
@@ -111,11 +119,14 @@ export function PluginsSection() {
     void loadPlugins();
   }, [refreshKey]);
 
-  // Toggle plugin enabled/disabled
+  // Toggle plugin enabled/disabled (works for both built-in and community)
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
     try {
       await window.readied.plugins.setEnabled(pluginId, enabled);
+      // Update community plugins state
       setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
+      // Update built-in plugins state
+      setBuiltInEnabled(prev => ({ ...prev, [pluginId]: enabled }));
       // Trigger reload in main window so preview updates immediately
       window.readied.plugins.requestReload();
       toast.success(`Plugin ${enabled ? 'enabled' : 'disabled'}`);
@@ -293,7 +304,8 @@ export function PluginsSection() {
                   version={plugin.version}
                   description={plugin.description}
                   isBuiltIn={true}
-                  enabled={true}
+                  enabled={builtInEnabled[plugin.id] ?? true}
+                  onToggle={enabled => handleToggle(plugin.id, enabled)}
                   configSchema={BUILT_IN_CONFIG_SCHEMAS[plugin.id]}
                   configValues={configValues[plugin.id]}
                   onConfigChange={(key, value) => handleConfigChange(plugin.id, key, value)}

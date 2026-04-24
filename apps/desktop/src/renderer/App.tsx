@@ -438,12 +438,40 @@ function NotesApp() {
   // Plugin runtime: init once, React observes
   const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
   const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
+  const [builtInEnabledMap, setBuiltInEnabledMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     void pluginRuntimeStore.getState().init();
+    // Load built-in plugin enabled states
+    void (async () => {
+      const stateList = await window.readied.plugins.listState();
+      const map: Record<string, boolean> = {};
+      for (const s of stateList) {
+        map[s.pluginId] = s.enabled;
+      }
+      setBuiltInEnabledMap(map);
+    })();
   }, []);
 
-  const allPlugins = useMemo(() => [...builtInPlugins, ...discoveredPlugins], [discoveredPlugins]);
+  // Re-check built-in enabled state when plugins reload
+  useEffect(() => {
+    const handler = () => {
+      void (async () => {
+        const stateList = await window.readied.plugins.listState();
+        const map: Record<string, boolean> = {};
+        for (const s of stateList) {
+          map[s.pluginId] = s.enabled;
+        }
+        setBuiltInEnabledMap(map);
+      })();
+    };
+    return window.readied.ipc.on('plugins:reload', handler);
+  }, []);
+
+  const allPlugins = useMemo(() => {
+    const enabledBuiltIn = builtInPlugins.filter(p => builtInEnabledMap[p.id] !== false);
+    return [...enabledBuiltIn, ...discoveredPlugins];
+  }, [discoveredPlugins, builtInEnabledMap]);
 
   const configBridge = useMemo(
     () => ({

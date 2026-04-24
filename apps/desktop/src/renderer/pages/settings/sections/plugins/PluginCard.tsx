@@ -59,7 +59,6 @@ export function PluginCard({
             id={`plugin-${name.toLowerCase().replace(/\s+/g, '-')}`}
             checked={enabled}
             onChange={checked => onToggle?.(checked)}
-            disabled={isBuiltIn}
           />
           {!isBuiltIn && onUninstall && (
             <button
