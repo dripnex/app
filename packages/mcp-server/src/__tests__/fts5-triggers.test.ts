@@ -152,6 +152,9 @@ describe('FTS5 runtime check', () => {
   it('openDb succeeds with an in-memory database (FTS5 available)', () => {
     const db = openDb(':memory:');
     expect(db).toBeTruthy();
+    // Verify FTS5 actually works on the returned connection
+    db.prepare('CREATE VIRTUAL TABLE _test_fts USING fts5(x)').run();
+    db.prepare('DROP TABLE _test_fts').run();
     db.close();
   });
 });
