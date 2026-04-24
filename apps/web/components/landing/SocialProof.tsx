@@ -1,11 +1,12 @@
-import { WifiOff, HardDrive, Github, Puzzle, Monitor } from 'lucide-react';
+import { WifiOff, HardDrive, Puzzle, Monitor } from 'lucide-react';
+import { GithubIcon } from '@/components/icons/BrandIcons';
 
 import { Marquee } from '@/components/magicui/marquee';
 
 const badges = [
   { icon: WifiOff, label: 'Offline First' },
   { icon: HardDrive, label: 'Local Storage' },
-  { icon: Github, label: 'Open Source' },
+  { icon: GithubIcon, label: 'Open Source' },
   { icon: Puzzle, label: 'Plugin System' },
   { icon: Monitor, label: 'Cross-platform' },
 ];

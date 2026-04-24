@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Apple } from 'lucide-react';
+import { AppleIcon } from '@/components/icons/BrandIcons';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 const docsItems: { label: string; href: string; external?: boolean }[] = [
@@ -178,7 +178,7 @@ export default function Navbar() {
           href="/download"
           className="hidden items-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.06] px-4 py-1.5 text-[13px] font-medium text-white transition-all hover:bg-white/[0.1] hover:border-white/[0.18] md:inline-flex"
         >
-          <Apple className="h-3.5 w-3.5" />
+          <AppleIcon className="h-3.5 w-3.5" />
           Download
         </Link>
 
@@ -222,7 +222,7 @@ export default function Navbar() {
                   onClick={closeSheet}
                   className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.12] bg-white/[0.06] px-4 py-3 text-base font-medium text-white transition-colors hover:bg-white/[0.1]"
                 >
-                  <Apple className="h-4 w-4" />
+                  <AppleIcon className="h-4 w-4" />
                   Download for Mac
                 </Link>
                 <Link
