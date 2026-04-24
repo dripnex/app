@@ -575,22 +575,26 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             userEvent: 'input.paste',
           });
 
-          // Fetch title in background and replace with markdown link
+          // Fetch title in background and replace with markdown link.
+          // Track the exact range where we inserted the URL so later
+          // edits don't cause us to rewrite the wrong occurrence.
+          const insertedFrom = from;
+          const insertedTo = from + plainText.length;
           window.readied.editor
             .fetchUrlTitle(plainText)
             .then(({ title }) => {
               if (!title) return;
-              // Find the URL in the document — it may have moved due to edits
+              // Verify the URL still sits at the expected position
               const currentDoc = view.state.doc.toString();
-              const urlIndex = currentDoc.indexOf(plainText, from > 20 ? from - 20 : 0);
-              if (urlIndex === -1) return;
+              const textAtRange = currentDoc.slice(insertedFrom, insertedTo);
+              if (textAtRange !== plainText) return;
               // Verify it's still a bare URL (not already wrapped in markdown link)
-              const charBefore = urlIndex > 0 ? currentDoc[urlIndex - 1] : '';
+              const charBefore = insertedFrom > 0 ? currentDoc[insertedFrom - 1] : '';
               if (charBefore === '(' || charBefore === '<') return;
               const mdLink = `[${title}](${plainText})`;
               view.dispatch({
-                changes: { from: urlIndex, to: urlIndex + plainText.length, insert: mdLink },
-                selection: EditorSelection.cursor(urlIndex + mdLink.length),
+                changes: { from: insertedFrom, to: insertedTo, insert: mdLink },
+                selection: EditorSelection.cursor(insertedFrom + mdLink.length),
                 userEvent: 'input.paste',
               });
             })

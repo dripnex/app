@@ -18,6 +18,10 @@ export function createLocalServerApi(): LocalServerAPI {
     start: (port?: number) => ipcRenderer.invoke('localServer:start', port),
     stop: () => ipcRenderer.invoke('localServer:stop'),
     status: () => ipcRenderer.invoke('localServer:status'),
-    getToken: () => ipcRenderer.invoke('localServer:getToken'),
+    getToken: async () => {
+      const result = await ipcRenderer.invoke('localServer:getToken');
+      if (!result.ok) throw new Error(result.error ?? 'Failed to get token');
+      return result.value as string;
+    },
   };
 }
