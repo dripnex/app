@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Github, Twitter, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
+import { GithubIcon, TwitterIcon } from '@/components/icons/BrandIcons';
 
 export default function CreatorStory() {
   return (
@@ -42,7 +43,7 @@ export default function CreatorStory() {
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition-colors hover:bg-white/5 hover:text-text-primary"
             aria-label="GitHub"
           >
-            <Github className="h-4.5 w-4.5" />
+            <GithubIcon className="h-4.5 w-4.5" />
           </Link>
           <Link
             href="https://x.com/tomymaritano"
@@ -51,7 +52,7 @@ export default function CreatorStory() {
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface text-text-muted transition-colors hover:bg-white/5 hover:text-text-primary"
             aria-label="X (Twitter)"
           >
-            <Twitter className="h-4.5 w-4.5" />
+            <TwitterIcon className="h-4.5 w-4.5" />
           </Link>
           <Link
             href="https://medium.com/@tomymaritano"

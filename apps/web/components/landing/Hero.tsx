@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Apple, Github, Play, XIcon } from 'lucide-react';
+import { Play, XIcon } from 'lucide-react';
+import { AppleIcon, GithubIcon } from '@/components/icons/BrandIcons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getProductConfig } from '@readied/product-config';
 import { AnimatedShinyText } from '@/components/magicui/animated-shiny-text';
@@ -258,7 +259,7 @@ export default function Hero() {
             href="/download"
             className="inline-flex items-center gap-2.5 rounded-xl border border-white/[0.12] bg-white/[0.06] px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-white/[0.1] hover:border-white/[0.2]"
           >
-            <Apple className="h-4 w-4" />
+            <AppleIcon className="h-4 w-4" />
             Download for Mac
           </Link>
           <Link
@@ -267,7 +268,7 @@ export default function Hero() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 py-3 text-sm font-medium text-text-secondary backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:text-white"
           >
-            <Github className="h-4 w-4" />
+            <GithubIcon className="h-4 w-4" />
             View on GitHub
           </Link>
         </div>
