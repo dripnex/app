@@ -83,6 +83,8 @@ let aiKeyStorage: AiKeyStorage | null = null;
 
 // Pending deep link token — stored if the deep link arrives before the window is ready
 let pendingAuthToken: string | null = null;
+// Set of webContents IDs allowed to close themselves via window:closeSelf
+const closableWindowIds = new Set<number>();
 // Git service (initialized on app ready)
 let gitService: GitService | null = null;
 
@@ -451,6 +453,8 @@ function createQuickCaptureWindow(): void {
     },
   });
 
+  closableWindowIds.add(quickCaptureWindow.webContents.id);
+
   quickCaptureWindow.on('ready-to-show', () => {
     quickCaptureWindow?.show();
   });
@@ -459,6 +463,9 @@ function createQuickCaptureWindow(): void {
   // The window is closed via Escape key or explicit close/save actions.
 
   quickCaptureWindow.on('closed', () => {
+    if (quickCaptureWindow) {
+      closableWindowIds.delete(quickCaptureWindow.webContents.id);
+    }
     quickCaptureWindow = null;
   });
 
@@ -501,6 +508,8 @@ function createSettingsWindow(): void {
     },
   });
 
+  closableWindowIds.add(settingsWindow.webContents.id);
+
   settingsWindow.on('ready-to-show', () => {
     settingsWindow?.show();
     if (process.env.NODE_ENV === 'development') {
@@ -509,6 +518,9 @@ function createSettingsWindow(): void {
   });
 
   settingsWindow.on('closed', () => {
+    if (settingsWindow) {
+      closableWindowIds.delete(settingsWindow.webContents.id);
+    }
     settingsWindow = null;
   });
 
@@ -890,16 +902,12 @@ app
 
     // IPC: close the calling window (only allowed for quick-capture and settings windows)
     ipcMain.handle('window:closeSelf', async event => {
+      const senderId = event.sender.id;
+      if (!closableWindowIds.has(senderId)) {
+        return { ok: false, error: 'This window is not allowed to close itself' };
+      }
       const win = BrowserWindow.fromWebContents(event.sender);
       if (win && !win.isDestroyed()) {
-        // Prevent the main window from being closed via this handler
-        const allWindows = BrowserWindow.getAllWindows();
-        const mainWin = allWindows.find(
-          w => !w.isDestroyed() && w !== quickCaptureWindow && w !== settingsWindow
-        );
-        if (win === mainWin) {
-          return { ok: false, error: 'Cannot close main window via closeSelf' };
-        }
         win.close();
       }
       return { ok: true };
@@ -926,14 +934,30 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', () => {
+let isQuitting = false;
+app.on('before-quit', async event => {
+  if (isQuitting) return; // Guard against re-entry
+  isQuitting = true;
+  event.preventDefault();
+
   globalShortcut.unregisterAll();
   stopPluginWatcher();
-  void stopLocalServer();
+
+  try {
+    await stopLocalServer();
+  } catch (err) {
+    getLogger().error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Error stopping local server during shutdown'
+    );
+  }
+
   if (db) {
     db.close();
     getLogger().info('Database closed');
   }
+
+  app.quit();
 });
 
 // Deep link handler for readied:// protocol (macOS)

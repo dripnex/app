@@ -166,10 +166,14 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
 
   // IPC: Get the bearer token (for displaying in settings)
   ipcMain.handle('localServer:getToken', async () => {
-    if (!apiToken) {
-      apiToken = await getOrCreateApiToken(dataPaths.root);
+    try {
+      if (!apiToken) {
+        apiToken = await getOrCreateApiToken(dataPaths.root);
+      }
+      return { ok: true, value: apiToken };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
-    return apiToken;
   });
 }
 

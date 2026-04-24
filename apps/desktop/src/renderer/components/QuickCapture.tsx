@@ -54,10 +54,20 @@ export function QuickCapture() {
       // Build markdown content with title as H1 if provided
       const markdown = title.trim() ? `# ${title.trim()}\n\n${trimmedContent}` : trimmedContent;
 
-      await window.readied.notes.create({
+      const result = await window.readied.notes.create({
         content: markdown,
         notebookId: notebookId || undefined,
       });
+
+      if (result && typeof result === 'object' && 'ok' in result && !result.ok) {
+        const errMsg =
+          'error' in result && typeof result.error === 'string'
+            ? result.error
+            : 'Failed to save note';
+        setError(errMsg);
+        setSaving(false);
+        return;
+      }
 
       handleClose();
     } catch (err) {

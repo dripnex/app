@@ -12,16 +12,18 @@
  * No external dependencies — lightweight placeholder approach.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { PluginManifest } from '@readied/plugin-api';
 import type { CodeBlockRendererProps } from '@readied/plugin-api';
 
-// Inject styles once
+// Inject styles once; keep a ref to remove on dispose
 let styleInjected = false;
+let styleElement: HTMLStyleElement | null = null;
 function injectMathStyles() {
   if (styleInjected) return;
   styleInjected = true;
   const style = document.createElement('style');
+  styleElement = style;
   style.textContent = `
     .math-block {
       position: relative;
@@ -88,29 +90,26 @@ function injectMathStyles() {
       70% { opacity: 1; }
       100% { opacity: 0; }
     }
-
-    /* Inline math styling in preview */
-    .markdown-preview code.language-math-inline {
-      background: var(--bg-surface, var(--bg-base));
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 1px 4px;
-      font-style: italic;
-      font-family: var(--font-mono, monospace);
-      font-size: 0.9em;
-    }
   `;
   document.head.appendChild(style);
 }
 
 function MathRenderer({ code }: CodeBlockRendererProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const copySource = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       // silently fail
     }
@@ -156,6 +155,11 @@ export const mathPlugin: PluginManifest = {
       dispose() {
         unregisterMath();
         unregisterLatex();
+        if (styleElement && styleElement.parentNode) {
+          styleElement.parentNode.removeChild(styleElement);
+          styleElement = null;
+          styleInjected = false;
+        }
       },
     };
   },

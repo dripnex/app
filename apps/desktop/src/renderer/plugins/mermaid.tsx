@@ -3,10 +3,10 @@
  *
  * Registers a code block renderer for "mermaid" language blocks.
  * Displays the mermaid source in a styled container with a
- * "Open in Mermaid Live" button (avoids bundling the 2MB+ mermaid lib).
+ * "Copy for Mermaid Live" button (avoids bundling the 2MB+ mermaid lib).
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { PluginManifest } from '@readied/plugin-api';
 import type { CodeBlockRendererProps } from '@readied/plugin-api';
 
@@ -89,12 +89,22 @@ function injectMermaidStyles() {
 function MermaidRenderer({ code }: CodeBlockRendererProps) {
   const [copied, setCopied] = useState(false);
   const [liveHint, setLiveHint] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      if (liveTimeoutRef.current) clearTimeout(liveTimeoutRef.current);
+    };
+  }, []);
 
   const copySource = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 1500);
     } catch {
       // silently fail
     }
@@ -104,7 +114,8 @@ function MermaidRenderer({ code }: CodeBlockRendererProps) {
     try {
       await navigator.clipboard.writeText(code);
       setLiveHint(true);
-      setTimeout(() => setLiveHint(false), 3000);
+      if (liveTimeoutRef.current) clearTimeout(liveTimeoutRef.current);
+      liveTimeoutRef.current = setTimeout(() => setLiveHint(false), 3000);
     } catch {
       // silently fail
     }
@@ -137,7 +148,7 @@ export const mermaidPlugin: PluginManifest = {
   name: 'Mermaid Diagrams',
   version: '1.0.0',
   description:
-    'Renders mermaid code blocks with a styled preview container and one-click link to Mermaid Live editor',
+    'Renders mermaid code blocks with a styled preview container and copy for Mermaid Live editor',
 
   activate(context) {
     injectMermaidStyles();

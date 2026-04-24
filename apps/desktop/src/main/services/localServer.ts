@@ -292,8 +292,8 @@ export class LocalServer {
         try {
           const raw = Buffer.concat(chunks).toString('utf-8');
           resolve(raw ? (JSON.parse(raw) as Record<string, unknown>) : {});
-        } catch {
-          reject(new Error('Invalid JSON body'));
+        } catch (err) {
+          reject(new Error('Invalid JSON body', { cause: err }));
         }
       });
       req.on('error', reject);
