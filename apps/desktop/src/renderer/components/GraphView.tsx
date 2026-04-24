@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useRef, useMemo } from 'react';
-import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
+import ForceGraph2D from 'react-force-graph-2d';
 import { X } from 'lucide-react';
 import { useGraphData } from '../hooks/useLinks';
 import './GraphView.css';
@@ -31,14 +31,10 @@ interface GraphNode {
   vy?: number;
 }
 
-interface GraphLink {
-  source: string | GraphNode;
-  target: string | GraphNode;
-}
-
 export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewProps) {
   const { data, isLoading, error } = useGraphData();
-  const graphRef = useRef<ForceGraphMethods<GraphNode, GraphLink>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const graphRef = useRef<any>(null);
 
   // Transform data for react-force-graph
   const graphData = useMemo(() => {
