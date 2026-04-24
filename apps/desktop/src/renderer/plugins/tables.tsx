@@ -327,7 +327,7 @@ function extractText(node: React.ReactNode): string {
   if (!node) return '';
   if (Array.isArray(node)) return node.map(extractText).join('');
   if (React.isValidElement(node)) {
-    const el = node as ReactElement;
+    const el = node as ReactElement<{ children?: React.ReactNode }>;
     return extractText(el.props.children);
   }
   return '';
