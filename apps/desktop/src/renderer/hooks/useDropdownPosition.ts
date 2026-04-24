@@ -9,8 +9,8 @@ interface DropdownPosition {
 }
 
 interface UseDropdownPositionOptions {
-  triggerRef: RefObject<HTMLElement>;
-  menuRef: RefObject<HTMLElement>;
+  triggerRef: RefObject<HTMLElement | null>;
+  menuRef: RefObject<HTMLElement | null>;
   isOpen: boolean;
   /** Padding from viewport edge in pixels */
   viewportPadding?: number;
