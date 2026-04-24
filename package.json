@@ -1,6 +1,6 @@
 {
   "name": "readied",
-  "version": "0.11.0",
+  "version": "0.14.1",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "description": "Markdown-first, offline-forever desktop note app",
