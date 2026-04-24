@@ -1,18 +1,19 @@
 /**
  * Database connection for the MCP server.
  *
- * Opens the Readied SQLite database using sql.js (WASM-based).
- * This avoids native module conflicts with Electron's better-sqlite3.
+ * Opens the Readied SQLite database using better-sqlite3 (native).
+ * The MCP server runs as a standalone Node.js process, so native
+ * modules work without Electron conflicts. This gives full feature
+ * parity with the desktop app, including FTS5 support and WAL
+ * concurrency for safe concurrent access to the same DB file.
  */
 
-import initSqlJs, { type Database } from 'sql.js';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import Database from 'better-sqlite3';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-export type { Database } from 'sql.js';
-
-let dbPath: string;
+export type { Database as BetterSqlite3Database } from 'better-sqlite3';
 
 function getDbPath(): string {
   if (process.env.READIED_DB_PATH) {
@@ -49,17 +50,30 @@ function getDbPath(): string {
   );
 }
 
-export async function openDb(): Promise<Database> {
-  dbPath = getDbPath();
-  const SQL = await initSqlJs();
-  const buffer = readFileSync(dbPath);
-  return new SQL.Database(buffer);
+/**
+ * Verify that the SQLite build includes FTS5.
+ * Uses sqlite_compileoption_used() to check without touching the schema,
+ * avoiding the risk of a stale temp table if the process crashes mid-check.
+ */
+function assertFts5Available(db: Database.Database): void {
+  const row = db.prepare("SELECT sqlite_compileoption_used('ENABLE_FTS5') AS v").get() as
+    | { v: number }
+    | undefined;
+  if (!row || row.v !== 1) {
+    throw new Error(
+      `FTS5 module is not available in this SQLite build.\n` +
+        `The Readied database uses FTS5 for full-text search triggers.\n` +
+        `Without FTS5, write operations (create/update/delete notes) will fail.`
+    );
+  }
 }
 
-/**
- * Save the database back to disk after writes.
- */
-export function saveDb(db: Database): void {
-  const data = db.export();
-  writeFileSync(dbPath, Buffer.from(data));
+export function openDb(dbPath?: string): Database.Database {
+  const resolvedPath = dbPath ?? getDbPath();
+  const db = new Database(resolvedPath);
+  if (resolvedPath !== ':memory:') {
+    db.pragma('journal_mode = WAL');
+  }
+  assertFts5Available(db);
+  return db;
 }

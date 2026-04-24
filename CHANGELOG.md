@@ -2,12 +2,12 @@
 
 ### Features
 
-* v0.14.0 — local HTTP API, quick capture, plugins, Vercel fix ([#232](https://github.com/tomymaritano/readide/issues/232)) ([19301a8](https://github.com/tomymaritano/readide/commit/19301a895f15fa9464d67b7e879502e751b08ab8))
+- v0.14.0 — local HTTP API, quick capture, plugins, Vercel fix ([#232](https://github.com/tomymaritano/readide/issues/232)) ([19301a8](https://github.com/tomymaritano/readide/commit/19301a895f15fa9464d67b7e879502e751b08ab8))
 
 ### Bug Fixes
 
-* v0.14.1 — ASAR startup crash fix ([#234](https://github.com/tomymaritano/readide/issues/234)) ([b051785](https://github.com/tomymaritano/readide/commit/b0517852c52241a633344907974e962a376f8dc1))
-* v0.14.2 — ASAR startup crash fix (devDependencies) ([#236](https://github.com/tomymaritano/readide/issues/236)) ([17b951a](https://github.com/tomymaritano/readide/commit/17b951a634ea55992ce29afad1d969dd821f1f29))
+- v0.14.1 — ASAR startup crash fix ([#234](https://github.com/tomymaritano/readide/issues/234)) ([b051785](https://github.com/tomymaritano/readide/commit/b0517852c52241a633344907974e962a376f8dc1))
+- v0.14.2 — ASAR startup crash fix (devDependencies) ([#236](https://github.com/tomymaritano/readide/issues/236)) ([17b951a](https://github.com/tomymaritano/readide/commit/17b951a634ea55992ce29afad1d969dd821f1f29))
 
 ## [0.14.1](https://github.com/tomymaritano/readide/compare/v0.14.0...v0.14.1) (2026-04-24)
 
