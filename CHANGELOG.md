@@ -7,6 +7,17 @@
 * v0.13.0 ([#228](https://github.com/tomymaritano/readide/issues/228)) ([08fdf10](https://github.com/tomymaritano/readide/commit/08fdf109e2b9e92325c38a681823e5cd7372ab3d))
 * v0.13.0 release ([#224](https://github.com/tomymaritano/readide/issues/224)) ([6aca5db](https://github.com/tomymaritano/readide/commit/6aca5db078f9065b775b16b0d2e4478f3b199878))
 * v0.13.0 release with CI fix ([#222](https://github.com/tomymaritano/readide/issues/222)) ([51bbeb2](https://github.com/tomymaritano/readide/commit/51bbeb2d3ca795a596b7e5356be394f149a92949))
+* v0.13.0 with all CI fixes ([#230](https://github.com/tomymaritano/readide/issues/230)) ([06ab8f8](https://github.com/tomymaritano/readide/commit/06ab8f8823e7f656e5daeb72357aa74d91c72a92))
+
+## [0.13.0](https://github.com/tomymaritano/readide/compare/v0.12.1...v0.13.0) (2026-04-24)
+
+### Features
+
+* v0.13.0 — product features, UX polish, dependency updates ([#220](https://github.com/tomymaritano/readide/issues/220)) ([398f8a9](https://github.com/tomymaritano/readide/commit/398f8a94a8da10029948e124a087034f1bf451b7)), closes [#197](https://github.com/tomymaritano/readide/issues/197)
+* v0.13.0 ([#226](https://github.com/tomymaritano/readide/issues/226)) ([b7cf147](https://github.com/tomymaritano/readide/commit/b7cf1478802ac47422710bc662a5569a13235b04))
+* v0.13.0 ([#228](https://github.com/tomymaritano/readide/issues/228)) ([08fdf10](https://github.com/tomymaritano/readide/commit/08fdf109e2b9e92325c38a681823e5cd7372ab3d))
+* v0.13.0 release ([#224](https://github.com/tomymaritano/readide/issues/224)) ([6aca5db](https://github.com/tomymaritano/readide/commit/6aca5db078f9065b775b16b0d2e4478f3b199878))
+* v0.13.0 release with CI fix ([#222](https://github.com/tomymaritano/readide/issues/222)) ([51bbeb2](https://github.com/tomymaritano/readide/commit/51bbeb2d3ca795a596b7e5356be394f149a92949))
 
 ## [0.12.1](https://github.com/tomymaritano/readide/compare/v0.12.0...v0.12.1) (2026-04-23)
 
