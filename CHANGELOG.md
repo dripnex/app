@@ -1,3 +1,9 @@
+## [0.14.1](https://github.com/tomymaritano/readide/compare/v0.14.0...v0.14.1) (2026-04-24)
+
+### Bug Fixes
+
+* v0.14.1 — ASAR startup crash fix ([#234](https://github.com/tomymaritano/readide/issues/234)) ([b051785](https://github.com/tomymaritano/readide/commit/b0517852c52241a633344907974e962a376f8dc1))
+
 ## [0.14.0](https://github.com/tomymaritano/readide/compare/v0.13.0...v0.14.0) (2026-04-24)
 
 ### Features
