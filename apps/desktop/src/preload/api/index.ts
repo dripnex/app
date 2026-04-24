@@ -56,3 +56,6 @@ export type {
   ShareAPI,
   EditorAPI,
 } from './app';
+
+export { createLocalServerApi } from './localServer';
+export type { LocalServerAPI } from './localServer';

@@ -17,6 +17,9 @@ const App = lazy(() => import('./App').then(m => ({ default: m.App })));
 const SettingsApp = lazy(() =>
   import('./pages/settings/SettingsApp').then(m => ({ default: m.SettingsApp }))
 );
+const QuickCapture = lazy(() =>
+  import('./components/QuickCapture').then(m => ({ default: m.QuickCapture }))
+);
 
 // Settings view needs LicenseProvider (used by AccountSection)
 const SettingsView = () => (
@@ -57,7 +60,8 @@ const LoadingFallback = () => (
 );
 
 // Render the appropriate view
-const RootComponent = view === 'settings' ? SettingsView : App;
+const RootComponent =
+  view === 'settings' ? SettingsView : view === 'quick-capture' ? QuickCapture : App;
 
 createRoot(container).render(
   <React.StrictMode>
