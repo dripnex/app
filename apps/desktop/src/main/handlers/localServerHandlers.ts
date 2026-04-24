@@ -1,0 +1,184 @@
+/**
+ * Local HTTP API Server IPC Handlers
+ *
+ * Manages the local API server lifecycle and exposes status/token info
+ * to the renderer (settings UI).
+ */
+
+import { ipcMain, app } from 'electron';
+import { createNoteId, createNoteOperation, updateNoteOperation } from '@readied/core';
+import {
+  LocalServer,
+  getOrCreateApiToken,
+  type LocalServerHandlers,
+} from '../services/localServer.js';
+import type { SQLiteNoteRepository, DataPaths } from './types.js';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface LocalServerHandlerDeps {
+  noteRepository: SQLiteNoteRepository;
+  dataPaths: DataPaths;
+  noteToSnapshot: (note: {
+    id: string;
+    notebookId: string;
+    content: string;
+    title: string;
+    isPinned: boolean;
+    isDeleted: boolean;
+    status: import('@readied/core').NoteStatus;
+    metadata: {
+      createdAt: string;
+      updatedAt: string;
+      tags: readonly string[];
+      wordCount: number;
+      archivedAt: string | null;
+    };
+  }) => {
+    id: string;
+    notebookId: string;
+    content: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    tags: string[];
+    wordCount: number;
+    archivedAt: string | null;
+    isArchived: boolean;
+    isPinned: boolean;
+    isDeleted: boolean;
+    status: import('@readied/core').NoteStatus;
+  };
+}
+
+// ============================================================================
+// Module State
+// ============================================================================
+
+const server = new LocalServer();
+let apiToken: string | null = null;
+
+// ============================================================================
+// Registration
+// ============================================================================
+
+export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void {
+  const { noteRepository: repo, dataPaths, noteToSnapshot } = deps;
+
+  // Build handler callbacks that bridge HTTP requests to the note repository
+  const handlers: LocalServerHandlers = {
+    async listNotes() {
+      const notes = await repo.list();
+      return notes
+        .filter(n => !n.isDeleted)
+        .map(n => ({
+          id: n.id,
+          title: n.title,
+          excerpt: n.content.slice(0, 200).replace(/\n/g, ' '),
+          updatedAt: n.metadata.updatedAt,
+        }));
+    },
+
+    async getNote(id) {
+      const note = await repo.get(createNoteId(id));
+      if (!note) return null;
+      const snap = noteToSnapshot(note);
+      return {
+        id: snap.id,
+        title: snap.title,
+        content: snap.content,
+        notebookId: snap.notebookId,
+        createdAt: snap.createdAt,
+        updatedAt: snap.updatedAt,
+        tags: snap.tags,
+        wordCount: snap.wordCount,
+        isPinned: snap.isPinned,
+      };
+    },
+
+    async createNote(input) {
+      const result = await createNoteOperation(input, repo);
+      if (result.ok) {
+        return { ok: true, data: { id: result.data.id } };
+      }
+      return { ok: false, error: result.error };
+    },
+
+    async updateNote(id, content) {
+      const noteId = createNoteId(id);
+      const result = await updateNoteOperation({ id: noteId, content }, repo);
+      return { ok: result.ok, error: result.ok ? undefined : result.error };
+    },
+
+    async searchNotes(query) {
+      const notes = await repo.search(query, 50);
+      return notes.map(n => ({
+        id: n.id,
+        title: n.title,
+        excerpt: n.content.slice(0, 200).replace(/\n/g, ' '),
+        updatedAt: n.metadata.updatedAt,
+      }));
+    },
+
+    async getNoteCount() {
+      const notes = await repo.list();
+      return notes.filter(n => !n.isDeleted).length;
+    },
+
+    getAppVersion() {
+      return app.getVersion();
+    },
+  };
+
+  // IPC: Start the local server
+  ipcMain.handle('localServer:start', async (_event, port?: number) => {
+    try {
+      if (server.isRunning()) return { ok: true, port: server.getPort() };
+      apiToken = await getOrCreateApiToken(dataPaths.root);
+      await server.start(port, apiToken, handlers);
+      return { ok: true, port: server.getPort() };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  });
+
+  // IPC: Stop the local server
+  ipcMain.handle('localServer:stop', async () => {
+    await server.stop();
+    return { ok: true };
+  });
+
+  // IPC: Get server status
+  ipcMain.handle('localServer:status', () => {
+    return {
+      running: server.isRunning(),
+      port: server.getPort(),
+    };
+  });
+
+  // IPC: Get the bearer token (for displaying in settings)
+  ipcMain.handle('localServer:getToken', async () => {
+    if (!apiToken) {
+      apiToken = await getOrCreateApiToken(dataPaths.root);
+    }
+    return apiToken;
+  });
+}
+
+/**
+ * Auto-start the server if desired (called from main index).
+ * Returns the server instance for lifecycle management.
+ */
+export async function autoStartLocalServer(deps: LocalServerHandlerDeps): Promise<void> {
+  const { dataPaths } = deps;
+  apiToken = await getOrCreateApiToken(dataPaths.root);
+  // The actual start is controlled by settings — this just prepares the token.
+  // The renderer will call localServer:start if the setting is enabled.
+}
+
+/** Stop the server on app quit */
+export async function stopLocalServer(): Promise<void> {
+  await server.stop();
+}

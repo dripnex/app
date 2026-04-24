@@ -4,7 +4,18 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: [
+          '@readied/core',
+          '@readied/storage-core',
+          '@readied/storage-sqlite',
+          '@readied/sync-core',
+          '@readied/licensing',
+          '@readied/ai-core',
+        ],
+      }),
+    ],
     build: {
       outDir: 'out/main',
       rollupOptions: {
@@ -18,7 +29,11 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: ['@readied/core', '@readied/storage-core', '@readied/licensing'],
+      }),
+    ],
     build: {
       outDir: 'out/preload',
       rollupOptions: {

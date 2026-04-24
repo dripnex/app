@@ -13,7 +13,16 @@ initSentry();
 import { join, normalize } from 'path';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { app, BrowserWindow, ipcMain, protocol, net, nativeTheme } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  protocol,
+  net,
+  nativeTheme,
+  globalShortcut,
+  screen,
+} from 'electron';
 import { runMigrations, createDataPaths, type DataPaths } from '@readied/storage-core';
 import {
   createDatabase,
@@ -52,6 +61,7 @@ import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
 import { createAIService, getToolRegistry } from './ai/setup.js';
 import { registerBuiltInTools } from './ai/built-in-tools.js';
 import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
+import { registerLocalServerHandlers, stopLocalServer } from './handlers/localServerHandlers.js';
 
 // ============================================================================
 // Global State
@@ -399,6 +409,72 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
   }
 }
 
+// ============================================================================
+// Quick Capture Window
+// ============================================================================
+
+/** Quick capture window singleton */
+let quickCaptureWindow: BrowserWindow | null = null;
+
+/** Create or focus the quick capture floating window */
+function createQuickCaptureWindow(): void {
+  // If window exists, focus it
+  if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
+    quickCaptureWindow.focus();
+    return;
+  }
+
+  // Center on the current cursor screen
+  const cursorPoint = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursorPoint);
+  const { x, y, width, height } = display.workArea;
+  const winWidth = 480;
+  const winHeight = 340;
+
+  quickCaptureWindow = new BrowserWindow({
+    x: Math.round(x + (width - winWidth) / 2),
+    y: Math.round(y + (height - winHeight) / 2),
+    width: winWidth,
+    height: winHeight,
+    resizable: false,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    backgroundColor: '#0a0b0d',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+  });
+
+  quickCaptureWindow.on('ready-to-show', () => {
+    quickCaptureWindow?.show();
+  });
+
+  // Close on blur (optional UX: dismiss when clicking away)
+  quickCaptureWindow.on('blur', () => {
+    if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
+      quickCaptureWindow.close();
+    }
+  });
+
+  quickCaptureWindow.on('closed', () => {
+    quickCaptureWindow = null;
+  });
+
+  // Load quick capture view via query param
+  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
+    void quickCaptureWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}?view=quick-capture`);
+  } else {
+    void quickCaptureWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      query: { view: 'quick-capture' },
+    });
+  }
+}
+
 /** Settings window singleton */
 let settingsWindow: BrowserWindow | null = null;
 
@@ -583,6 +659,11 @@ app
       db: db!,
     });
     registerWindowHandlers();
+    registerLocalServerHandlers({
+      noteRepository: noteRepository!,
+      dataPaths,
+      noteToSnapshot,
+    });
     registerAIHandlersNew(createAIService(), getToolRegistry());
 
     // Register built-in AI tools with database access
@@ -796,6 +877,26 @@ app
         });
     }
 
+    // Register global quick capture shortcut
+    globalShortcut.register('CommandOrControl+Shift+N', () => {
+      createQuickCaptureWindow();
+    });
+
+    // IPC: open quick capture from renderer
+    ipcMain.handle('window:openQuickCapture', async () => {
+      createQuickCaptureWindow();
+      return { ok: true };
+    });
+
+    // IPC: close the calling window (used by quick capture to close itself)
+    ipcMain.handle('window:closeSelf', async event => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (win && !win.isDestroyed()) {
+        win.close();
+      }
+      return { ok: true };
+    });
+
     // Create window and start auto-updater
     createWindow();
     initAutoUpdater({ broadcastToWindows });
@@ -818,7 +919,9 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  globalShortcut.unregisterAll();
   stopPluginWatcher();
+  void stopLocalServer();
   if (db) {
     db.close();
     getLogger().info('Database closed');

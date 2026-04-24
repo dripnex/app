@@ -81,7 +81,11 @@
       "Bash(ls /Users/tomasmaritano/Documents/Github/readied/readide/apps/desktop/src/renderer/components/NoteListFilterBar*)",
       "Bash(ls /Users/tomasmaritano/Documents/Github/readied/readide/apps/desktop/src/renderer/components/*.module.css)",
       "Bash(npm view:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(npx vercel:*)",
+      "Bash(gh workflow:*)",
+      "Bash(ls:*)"
     ]
   }
 }
