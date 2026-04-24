@@ -4,14 +4,14 @@
  * Readied MCP Server
  *
  * Exposes Readied notes to Claude Code via the Model Context Protocol.
- * Reads directly from the local SQLite database using sql.js (WASM).
+ * Reads directly from the local SQLite database using better-sqlite3.
  *
  * Tools:
  *   - readied_list_notes: List notes with optional filters
  *   - readied_read_note: Read a specific note by ID or title
  *   - readied_create_note: Create a new note
  *   - readied_update_note: Update an existing note
- *   - readied_search_notes: Search across notes
+ *   - readied_search_notes: Search across notes (FTS5)
  *   - readied_list_notebooks: List all notebooks
  *   - readied_trash_note: Move a note to trash
  */
@@ -19,37 +19,33 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { openDb, saveDb, type Database } from './db.js';
+import type Database from 'better-sqlite3';
+import { openDb } from './db.js';
 
 /** Helper: run a SELECT and return rows as objects */
-function query(db: Database, sql: string, params: unknown[] = []): Record<string, unknown>[] {
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const rows: Record<string, unknown>[] = [];
-  while (stmt.step()) {
-    rows.push(stmt.getAsObject());
-  }
-  stmt.free();
-  return rows;
+function query(
+  db: Database.Database,
+  sql: string,
+  params: unknown[] = []
+): Record<string, unknown>[] {
+  return db.prepare(sql).all(...params) as Record<string, unknown>[];
 }
 
 /** Helper: run a single SELECT and return first row */
 function queryOne(
-  db: Database,
+  db: Database.Database,
   sql: string,
   params: unknown[] = []
 ): Record<string, unknown> | null {
-  const rows = query(db, sql, params);
-  return rows[0] ?? null;
+  return (db.prepare(sql).get(...params) as Record<string, unknown>) ?? null;
 }
 
-/** Helper: run INSERT/UPDATE/DELETE */
-function execute(db: Database, sql: string, params: unknown[] = []): number {
-  db.run(sql, params);
-  return db.getRowsModified();
+/** Helper: run INSERT/UPDATE/DELETE and return rows changed */
+function execute(db: Database.Database, sql: string, params: unknown[] = []): number {
+  return db.prepare(sql).run(...params).changes;
 }
 
-function createServer(db: Database) {
+function createServer(db: Database.Database) {
   const server = new McpServer({
     name: 'readied',
     version: '0.1.0',
@@ -168,7 +164,6 @@ function createServer(db: Database) {
          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 1, 1, 0)`,
         [id, content, title, now, now, wordCount, notebookId]
       );
-      saveDb(db);
 
       return {
         content: [{ type: 'text' as const, text: `Note created: "${title}" (ID: ${id})` }],
@@ -203,7 +198,6 @@ function createServer(db: Database) {
         return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
       }
 
-      saveDb(db);
       return { content: [{ type: 'text' as const, text: `Note updated: "${title}"` }] };
     }
   );
@@ -218,7 +212,6 @@ function createServer(db: Database) {
       limit: z.number().default(10),
     },
     async ({ query: q, limit }) => {
-      // Use LIKE search (FTS may not work with sql.js)
       const results = query(
         db,
         `SELECT id, title, substr(content, 1, 300) as snippet
@@ -281,7 +274,6 @@ function createServer(db: Database) {
         return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
       }
 
-      saveDb(db);
       return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };
     }
   );
@@ -292,7 +284,7 @@ function createServer(db: Database) {
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
-  const db = await openDb();
+  const db = openDb();
   const server = createServer(db);
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -302,3 +294,5 @@ main().catch(err => {
   console.error('MCP server error:', err);
   process.exit(1);
 });
+
+export { createServer };
