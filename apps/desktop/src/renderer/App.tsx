@@ -438,7 +438,7 @@ function NotesApp() {
   // Plugin runtime: init once, React observes
   const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
   const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
-  const [builtInEnabledMap, setBuiltInEnabledMap] = useState<Record<string, boolean>>({});
+  const [builtInEnabledMap, setBuiltInEnabledMap] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => {
     void pluginRuntimeStore.getState().init();
@@ -469,7 +469,11 @@ function NotesApp() {
   }, []);
 
   const allPlugins = useMemo(() => {
-    const enabledBuiltIn = builtInPlugins.filter(p => builtInEnabledMap[p.id] !== false);
+    // Don't mount built-in plugins until the enabled state is loaded
+    // to avoid activating disabled plugins on the initial render
+    const enabledBuiltIn = builtInEnabledMap
+      ? builtInPlugins.filter(p => builtInEnabledMap[p.id] !== false)
+      : [];
     return [...enabledBuiltIn, ...discoveredPlugins];
   }, [discoveredPlugins, builtInEnabledMap]);
 

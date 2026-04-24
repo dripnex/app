@@ -36,9 +36,10 @@ export function createSettingsApi(): SettingsAPI {
 export function createIpcApi(): IpcAPI {
   return {
     on: (channel: string, listener: (...args: unknown[]) => void) => {
-      ipcRenderer.on(channel, (_event, ...args) => listener(...args));
+      const handler = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => listener(...args);
+      ipcRenderer.on(channel, handler);
       return () => {
-        ipcRenderer.removeAllListeners(channel);
+        ipcRenderer.removeListener(channel, handler);
       };
     },
   };
