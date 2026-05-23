@@ -71,7 +71,7 @@
     "@readied/wikilinks": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/mdast": "^4.0.4",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^6.0.1",
@@ -86,7 +86,7 @@
     "rehype-raw": "^7.0.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.11",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.7"
   },
   "build": {
     "appId": "app.readied.desktop",
