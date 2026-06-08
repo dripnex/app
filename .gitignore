@@ -33,6 +33,9 @@ npm-debug.log*
 # Cache
 .eslintcache
 
+# Vitest coverage reports
+coverage/
+
 # Screenshots (root level only)
 /CleanShot*.png
 
