@@ -1,19 +1,19 @@
 /**
  * Database connection for the MCP server.
  *
- * Opens the Readied SQLite database using better-sqlite3 (native).
- * The MCP server runs as a standalone Node.js process, so native
- * modules work without Electron conflicts. This gives full feature
- * parity with the desktop app, including FTS5 support and WAL
- * concurrency for safe concurrent access to the same DB file.
+ * Uses node:sqlite (built into Node 22+) — no native compilation, no ABI
+ * conflicts with Electron's bundled Node. The MCP server runs as a standalone
+ * Node.js process invoked by the host (Claude Code), sharing the same DB file
+ * as the desktop app via WAL mode for safe concurrent access. FTS5 ships
+ * enabled in node:sqlite's bundled SQLite build.
  */
 
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-export type { Database as BetterSqlite3Database } from 'better-sqlite3';
+export type Database = DatabaseSync;
 
 function getDbPath(): string {
   if (process.env.READIED_DB_PATH) {
@@ -50,12 +50,7 @@ function getDbPath(): string {
   );
 }
 
-/**
- * Verify that the SQLite build includes FTS5.
- * Uses sqlite_compileoption_used() to check without touching the schema,
- * avoiding the risk of a stale temp table if the process crashes mid-check.
- */
-function assertFts5Available(db: Database.Database): void {
+function assertFts5Available(db: DatabaseSync): void {
   const row = db.prepare("SELECT sqlite_compileoption_used('ENABLE_FTS5') AS v").get() as
     | { v: number }
     | undefined;
@@ -68,11 +63,11 @@ function assertFts5Available(db: Database.Database): void {
   }
 }
 
-export function openDb(dbPath?: string): Database.Database {
+export function openDb(dbPath?: string): DatabaseSync {
   const resolvedPath = dbPath ?? getDbPath();
-  const db = new Database(resolvedPath);
+  const db = new DatabaseSync(resolvedPath);
   if (resolvedPath !== ':memory:') {
-    db.pragma('journal_mode = WAL');
+    db.exec('PRAGMA journal_mode = WAL');
   }
   assertFts5Available(db);
   return db;

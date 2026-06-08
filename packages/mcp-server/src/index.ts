@@ -4,7 +4,7 @@
  * Readied MCP Server
  *
  * Exposes Readied notes to Claude Code via the Model Context Protocol.
- * Reads directly from the local SQLite database using better-sqlite3.
+ * Reads directly from the local SQLite database using node:sqlite (Node 22.5+).
  *
  * Tools:
  *   - readied_list_notes: List notes with optional filters
@@ -19,30 +19,23 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import type Database from 'better-sqlite3';
+import type { Database } from './db.js';
 import { openDb } from './db.js';
 
-/** Helper: run a SELECT and return rows as objects */
-function query(
-  db: Database.Database,
-  sql: string,
-  params: unknown[] = []
-): Record<string, unknown>[] {
-  return db.prepare(sql).all(...params) as Record<string, unknown>[];
+function query(db: Database, sql: string, params: unknown[] = []): Record<string, unknown>[] {
+  return db.prepare(sql).all(...(params as never[])) as Record<string, unknown>[];
 }
 
-/** Helper: run a single SELECT and return first row */
 function queryOne(
-  db: Database.Database,
+  db: Database,
   sql: string,
   params: unknown[] = []
 ): Record<string, unknown> | null {
-  return (db.prepare(sql).get(...params) as Record<string, unknown>) ?? null;
+  return (db.prepare(sql).get(...(params as never[])) as Record<string, unknown>) ?? null;
 }
 
-/** Helper: run INSERT/UPDATE/DELETE and return rows changed */
-function execute(db: Database.Database, sql: string, params: unknown[] = []): number {
-  return db.prepare(sql).run(...params).changes;
+function execute(db: Database, sql: string, params: unknown[] = []): number {
+  return Number(db.prepare(sql).run(...(params as never[])).changes);
 }
 
 /** Escape and prepare a query string for FTS5 MATCH syntax */
@@ -53,7 +46,7 @@ function prepareFtsQuery(input: string): string {
   return terms.map(t => `"${t}"*`).join(' OR ');
 }
 
-function createServer(db: Database.Database) {
+function createServer(db: Database) {
   const server = new McpServer({
     name: 'readied',
     version: '0.1.0',
