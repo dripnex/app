@@ -136,6 +136,9 @@ jobs:
       - name: Build packages first
         run: pnpm build
 
+      - name: Typecheck all packages
+        run: pnpm -r typecheck
+
       - name: Typecheck desktop
         working-directory: apps/desktop
         run: pnpm typecheck
