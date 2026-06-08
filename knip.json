@@ -20,7 +20,9 @@
         "src/preload/index.ts",
         "src/renderer/main.tsx",
         "electron-vite.config.ts",
-        "vitest.config.ts"
+        "vitest.config.ts",
+        "playwright.config.ts",
+        "e2e/**/*.{ts,spec.ts}"
       ]
     },
     "apps/web": {
