@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "../../out/renderer",
+    "rootDir": "..",
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "noEmit": true,
@@ -11,5 +12,5 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "../preload/index.ts"]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "../preload/index.ts", "../preload/api/**/*.ts"]
 }
