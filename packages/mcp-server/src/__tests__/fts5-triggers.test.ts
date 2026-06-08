@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { openDb } from '../db.js';
 
 /**
@@ -70,10 +70,10 @@ const SCHEMA = `
 `;
 
 describe('FTS5 trigger execution', () => {
-  let db: Database.Database;
+  let db: DatabaseSync;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new DatabaseSync(':memory:');
     db.exec(SCHEMA);
   });
 
