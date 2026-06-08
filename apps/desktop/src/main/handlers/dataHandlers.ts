@@ -6,6 +6,7 @@
 
 import { join } from 'path';
 import { writeFile } from 'fs/promises';
+import { copyFileSync, existsSync, unlinkSync } from 'fs';
 import { ipcMain, dialog, shell, app } from 'electron';
 import {
   createBackup,
@@ -48,18 +49,76 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
 
   // Restore from backup
   ipcMain.handle('data:backup:restore', async (_event, backupPath: string) => {
-    // Close current database connection
     const currentDb = getDb();
     if (currentDb) {
       currentDb.close();
     }
 
+    // Copies backup over the live db file and writes a `.pre-restore` safety
+    // copy of the previous live db (used by the rollback path below).
     const result = restoreBackup(backupPath, paths.database);
+    if (!result.success) {
+      // restoreBackup never touched the live db, just reopen it.
+      setDb(createDatabase(paths.database));
+      return result;
+    }
 
-    // Reconnect to database
-    const newDb = createDatabase(paths.database);
-    runMigrations(newDb, allMigrations);
+    const safetyPath = paths.database + '.pre-restore';
+    const rollback = (reason: string): typeof result => {
+      if (existsSync(safetyPath)) {
+        copyFileSync(safetyPath, paths.database);
+      }
+      setDb(createDatabase(paths.database));
+      return { success: false, error: reason };
+    };
+
+    let newDb: ReturnType<typeof createDatabase>;
+    try {
+      newDb = createDatabase(paths.database);
+    } catch (err) {
+      return rollback(
+        `Could not open restored database: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
+    // PRAGMA integrity_check returns a single row `{ integrity_check: 'ok' }`
+    // on a healthy database, or one or more rows describing the corruption.
+    // We refuse to swap to a corrupt restore and roll back to the safety copy.
+    try {
+      const row = newDb.prepare<{ integrity_check: string }>('PRAGMA integrity_check').get();
+      if (row?.integrity_check !== 'ok') {
+        newDb.close();
+        return rollback(
+          `Backup failed integrity check (${row?.integrity_check ?? 'unknown error'}). Previous database has been restored.`
+        );
+      }
+    } catch (err) {
+      newDb.close();
+      return rollback(
+        `Backup integrity check threw: ${err instanceof Error ? err.message : String(err)}. Previous database has been restored.`
+      );
+    }
+
+    // Backup is intact — apply migrations to bring older schemas current.
+    try {
+      runMigrations(newDb, allMigrations);
+    } catch (err) {
+      newDb.close();
+      return rollback(
+        `Migrations failed on restored database: ${err instanceof Error ? err.message : String(err)}. Previous database has been restored.`
+      );
+    }
+
     setDb(newDb);
+
+    // Restore succeeded — discard the safety copy.
+    if (existsSync(safetyPath)) {
+      try {
+        unlinkSync(safetyPath);
+      } catch {
+        // best-effort cleanup; not fatal
+      }
+    }
 
     return result;
   });
