@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useEffect, useRef, FormEvent } from 'react';
 import { Mail, CheckCircle, AlertCircle, X, RefreshCw } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore, selectIsAuthenticated, selectError } from '../../stores/authStore';
 import styles from './MagicLinkFlow.module.css';
 
 export interface MagicLinkFlowProps {
@@ -17,7 +17,9 @@ export interface MagicLinkFlowProps {
 type Step = 'email' | 'sent' | 'verifying' | 'success' | 'error';
 
 export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
-  const { requestMagicLink, isAuthenticated, error: authError } = useAuthStore();
+  const requestMagicLink = useAuthStore(state => state.requestMagicLink);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const authError = useAuthStore(selectError);
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
