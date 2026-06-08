@@ -18,14 +18,17 @@
     "typecheck:main": "tsc --noEmit -p src/main/tsconfig.json",
     "typecheck:preload": "tsc --noEmit -p src/preload/tsconfig.json",
     "typecheck:renderer": "tsc --noEmit -p src/renderer/tsconfig.json",
-    "typecheck": "pnpm run typecheck:main && pnpm run typecheck:preload && pnpm run typecheck:renderer",
+    "typecheck:e2e": "tsc --noEmit -p e2e/tsconfig.json",
+    "typecheck": "pnpm run typecheck:main && pnpm run typecheck:preload && pnpm run typecheck:renderer && pnpm run typecheck:e2e",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.2",
@@ -75,6 +78,7 @@
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@types/turndown": "^5.0.6",
+    "@playwright/test": "^1.49.1",
     "@vitejs/plugin-react": "^6.0.1",
     "electron": "^42.0.1",
     "electron-builder": "^26.8.1",
