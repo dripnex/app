@@ -2,10 +2,23 @@
  * AI Key Storage Service
  *
  * Securely stores AI provider API keys using Electron's safeStorage API.
- * Keys are encrypted with OS-level security (Keychain on macOS, DPAPI on Windows, libsecret on Linux).
+ * Keys are encrypted with OS-level security (Keychain on macOS, DPAPI on
+ * Windows, libsecret on Linux). All provider keys live in a single
+ * encrypted file as a JSON map:
  *
- * All provider keys are stored in a single encrypted file as a JSON map:
- * { "anthropic": "sk-ant-...", "openai": "sk-..." }
+ *   { "anthropic": "sk-ant-...", "openai": "sk-..." }
+ *
+ * Error handling philosophy:
+ * - ENOENT on read → no keys yet, return empty map. Safe.
+ * - "Encryption not available" on read OR write → throw a typed error;
+ *   the caller decides whether to surface it. We do NOT delete the
+ *   stored file in this case — safeStorage may simply be unavailable
+ *   temporarily (locked keychain on macOS after sleep, libsecret not
+ *   running, etc.). Deleting would cause silent data loss.
+ * - Decryption / JSON parse failure → throw `AiKeyDecryptionError`.
+ *   The previous implementation auto-cleared the file on any decrypt
+ *   error, which is a footgun: if the user's keychain is temporarily
+ *   inaccessible, their keys would vanish.
  *
  * @module AiKeyStorage
  */
@@ -14,123 +27,123 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import { safeStorage } from 'electron';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/** Map of provider name to API key */
 type KeyMap = Record<string, string>;
 
-// ============================================================================
-// AiKeyStorage Class
-// ============================================================================
+export class AiKeyEncryptionUnavailableError extends Error {
+  constructor() {
+    super(
+      'Encryption is not available on this system. ' +
+        'On Linux, ensure libsecret (gnome-keyring / kwallet) is running.'
+    );
+    this.name = 'AiKeyEncryptionUnavailableError';
+  }
+}
+
+export class AiKeyDecryptionError extends Error {
+  readonly cause: unknown;
+  constructor(cause: unknown) {
+    super(
+      'Failed to decrypt AI keys. The OS keychain may be locked or the ' +
+        'encrypted file may be corrupt. The stored file was left in place.'
+    );
+    this.name = 'AiKeyDecryptionError';
+    this.cause = cause;
+  }
+}
 
 export class AiKeyStorage {
   private readonly filePath: string;
 
   /**
-   * Creates a new AiKeyStorage instance
-   * @param dataDir - User data directory path (e.g., app.getPath('userData'))
+   * @param dataDir - User data directory path (e.g. `app.getPath('userData')`)
    */
   constructor(dataDir: string) {
     this.filePath = join(dataDir, 'ai-keys.encrypted');
   }
 
-  /**
-   * Saves an API key for a provider
-   * @param provider - Provider identifier (e.g., 'anthropic', 'openai')
-   * @param apiKey - The API key to store
-   */
   async saveKey(provider: string, apiKey: string): Promise<void> {
     const keys = await this.readKeys();
     keys[provider] = apiKey;
     await this.writeKeys(keys);
   }
 
-  /**
-   * Retrieves an API key for a provider
-   * @param provider - Provider identifier
-   * @returns API key string or null if not found
-   */
   async getKey(provider: string): Promise<string | null> {
     const keys = await this.readKeys();
     return keys[provider] ?? null;
   }
 
-  /**
-   * Removes an API key for a provider
-   * @param provider - Provider identifier
-   */
   async removeKey(provider: string): Promise<void> {
     const keys = await this.readKeys();
     delete keys[provider];
 
-    // If no keys remain, remove the file entirely
+    // If no keys remain, remove the file entirely.
     if (Object.keys(keys).length === 0) {
-      await this.clearAll();
+      await this.unlinkFile();
       return;
     }
 
     await this.writeKeys(keys);
   }
 
-  /**
-   * Checks if a key exists for a provider
-   * @param provider - Provider identifier
-   * @returns true if a key is stored for this provider
-   */
   async hasKey(provider: string): Promise<boolean> {
     const keys = await this.readKeys();
     return provider in keys;
   }
 
-  /**
-   * Lists all providers that have stored keys
-   * @returns Array of provider identifiers
-   */
   async listProviders(): Promise<string[]> {
     const keys = await this.readKeys();
     return Object.keys(keys);
   }
 
-  // ==========================================================================
-  // Private helpers
-  // ==========================================================================
-
   /**
-   * Reads and decrypts the key map from disk
-   * @returns Parsed key map, or empty object if file doesn't exist
+   * Read and decrypt the key map.
+   *
+   * Returns `{}` if no file exists yet. Throws on every other failure mode
+   * so the caller can decide how to surface the problem instead of silently
+   * losing state.
    */
   private async readKeys(): Promise<KeyMap> {
+    let encrypted: Buffer;
     try {
-      const encrypted = await fs.readFile(this.filePath);
-      const plaintext = safeStorage.decryptString(encrypted);
-      const keys = JSON.parse(plaintext) as KeyMap;
-
-      // Validate structure: must be a plain object with string values
-      if (typeof keys !== 'object' || keys === null || Array.isArray(keys)) {
-        throw new Error('Invalid key map structure');
-      }
-
-      return keys;
+      encrypted = await fs.readFile(this.filePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // File doesn't exist - no keys saved yet
         return {};
       }
-      // Decryption or parsing failed - clear corrupted file
-      await this.clearAll();
-      return {};
+      throw error;
     }
+
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new AiKeyEncryptionUnavailableError();
+    }
+
+    let plaintext: string;
+    try {
+      plaintext = safeStorage.decryptString(encrypted);
+    } catch (cause) {
+      throw new AiKeyDecryptionError(cause);
+    }
+
+    let keys: unknown;
+    try {
+      keys = JSON.parse(plaintext);
+    } catch (cause) {
+      throw new AiKeyDecryptionError(cause);
+    }
+
+    if (typeof keys !== 'object' || keys === null || Array.isArray(keys)) {
+      throw new AiKeyDecryptionError(new Error('Decrypted payload is not a JSON object'));
+    }
+
+    // We trust the shape because we wrote it. The handler boundary
+    // (defineIpcHandler in aiKeyHandlers.ts) already validates keys
+    // before they're written, so the saved map only contains strings.
+    return keys as KeyMap;
   }
 
-  /**
-   * Encrypts and writes the key map to disk
-   * @param keys - The key map to persist
-   */
   private async writeKeys(keys: KeyMap): Promise<void> {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error('Encryption is not available on this system');
+      throw new AiKeyEncryptionUnavailableError();
     }
 
     const plaintext = JSON.stringify(keys);
@@ -138,17 +151,13 @@ export class AiKeyStorage {
     await fs.writeFile(this.filePath, encrypted);
   }
 
-  /**
-   * Removes the encrypted file from disk
-   */
-  private async clearAll(): Promise<void> {
+  private async unlinkFile(): Promise<void> {
     try {
       await fs.unlink(this.filePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error;
       }
-      // File doesn't exist - already clear
     }
   }
 }
