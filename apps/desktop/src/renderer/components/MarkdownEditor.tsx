@@ -360,6 +360,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       } = editorSettings;
 
       return [
+        // Global plugin error sink — catches exceptions thrown by view plugins
+        // (instead of crashing the EditorView). Logs to console + Sentry if wired.
+        EditorView.exceptionSink.of(err => {
+          // eslint-disable-next-line no-console
+          console.error('[CodeMirror] plugin error:', err);
+          const sentry = (
+            globalThis as unknown as {
+              Sentry?: { captureException: (e: unknown, ctx?: unknown) => void };
+            }
+          ).Sentry;
+          sentry?.captureException(err, { tags: { source: 'codemirror' } });
+        }),
+
         // Configurable: Line numbers
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
 
