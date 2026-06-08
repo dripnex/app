@@ -92,6 +92,38 @@ export interface VerificationResult {
   readonly subscription?: SubscriptionInfo;
 }
 
+/**
+ * The exact payload that the server signs.
+ *
+ * Keep this stable — any change here invalidates every existing signature.
+ * When the schema needs to evolve, bump `payloadVersion` and let the client
+ * accept both versions during the transition.
+ */
+export interface SignedSubscriptionPayload {
+  readonly payloadVersion: 1;
+  /** The verified subscription state at the moment the server signed it. */
+  readonly subscription: SubscriptionInfo;
+  /** When the server produced this signature (ISO 8601). */
+  readonly issuedAt: string;
+  /**
+   * Optional max-age, in seconds. Lets the server tell the client how long
+   * to trust this signed copy before requiring a fresh fetch.
+   * If absent, the client applies its default policy.
+   */
+  readonly ttlSeconds?: number;
+}
+
+/**
+ * Envelope sent over the wire (and persisted on disk) — payload plus its
+ * Ed25519 signature. The signature is computed over a deterministic JSON
+ * encoding of `payload` so client and server produce identical bytes.
+ */
+export interface SignedSubscriptionEnvelope {
+  readonly payload: SignedSubscriptionPayload;
+  /** base64(Ed25519(canonicalJson(payload), serverPrivateKey)) */
+  readonly signature: string;
+}
+
 // ============================================
 // LEGACY TYPES (kept for migration, will remove)
 // ============================================
