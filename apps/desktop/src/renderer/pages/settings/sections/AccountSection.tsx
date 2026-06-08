@@ -17,8 +17,18 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { getProductConfig } from '@readied/product-config';
-import { useAuthStore } from '../../../stores/authStore';
-import { useSyncStore } from '../../../stores/syncStore';
+import {
+  useAuthStore,
+  selectUser,
+  selectIsAuthenticated,
+  selectIsLoading,
+} from '../../../stores/authStore';
+import {
+  useSyncStore,
+  selectStatus,
+  selectLastSyncAt,
+  selectConflicts,
+} from '../../../stores/syncStore';
 import { useLicense } from '../../../contexts/LicenseContext';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
@@ -39,8 +49,15 @@ function formatBytes(bytes: number): string {
 }
 
 export function AccountSection() {
-  const { user, isAuthenticated, isLoading, logout, loadSession } = useAuthStore();
-  const { syncNow, status: syncStatus, lastSyncAt, conflicts } = useSyncStore();
+  const user = useAuthStore(selectUser);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const isLoading = useAuthStore(selectIsLoading);
+  const logout = useAuthStore(state => state.logout);
+  const loadSession = useAuthStore(state => state.loadSession);
+  const syncNow = useSyncStore(state => state.syncNow);
+  const syncStatus = useSyncStore(selectStatus);
+  const lastSyncAt = useSyncStore(selectLastSyncAt);
+  const conflicts = useSyncStore(selectConflicts);
   const { state: licenseState, openSubscribe } = useLicense();
   const [showMagicLinkFlow, setShowMagicLinkFlow] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
