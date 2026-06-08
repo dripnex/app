@@ -5,13 +5,15 @@
  * to the renderer (settings UI).
  */
 
-import { ipcMain, app } from 'electron';
+import { app } from 'electron';
+import { z } from 'zod';
 import { createNoteId, createNoteOperation, updateNoteOperation } from '@readied/core';
 import {
   LocalServer,
   getOrCreateApiToken,
   type LocalServerHandlers,
 } from '../services/localServer.js';
+import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, DataPaths } from './types.js';
 
 // ============================================================================
@@ -131,49 +133,56 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
     },
   };
 
-  // IPC: Start the local server
-  ipcMain.handle('localServer:start', async (_event, port?: number) => {
-    try {
-      if (port !== undefined && (typeof port !== 'number' || port < 1 || port > 65535)) {
-        return { ok: false, error: 'Invalid port' };
+  defineIpcHandler({
+    channel: 'localServer:start',
+    args: z.tuple([z.number().int().min(1).max(65535).optional()]),
+    handler: async port => {
+      try {
+        if (server.isRunning()) return { ok: true, port: server.getPort() };
+        apiToken = await getOrCreateApiToken(dataPaths.root);
+        await server.start(port, apiToken, handlers);
+        return { ok: true, port: server.getPort() };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
-      if (server.isRunning()) return { ok: true, port: server.getPort() };
-      apiToken = await getOrCreateApiToken(dataPaths.root);
-      await server.start(port, apiToken, handlers);
-      return { ok: true, port: server.getPort() };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
+    },
   });
 
-  // IPC: Stop the local server
-  ipcMain.handle('localServer:stop', async () => {
-    try {
-      await server.stop();
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
+  defineIpcHandler({
+    channel: 'localServer:stop',
+    args: z.tuple([]),
+    handler: async () => {
+      try {
+        await server.stop();
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
   });
 
-  // IPC: Get server status
-  ipcMain.handle('localServer:status', () => {
-    return {
+  defineIpcHandler({
+    channel: 'localServer:status',
+    args: z.tuple([]),
+    handler: () => ({
       running: server.isRunning(),
       port: server.getPort(),
-    };
+    }),
   });
 
-  // IPC: Get the bearer token (for displaying in settings)
-  ipcMain.handle('localServer:getToken', async () => {
-    try {
-      if (!apiToken) {
-        apiToken = await getOrCreateApiToken(dataPaths.root);
+  defineIpcHandler({
+    channel: 'localServer:getToken',
+    args: z.tuple([]),
+    handler: async () => {
+      try {
+        if (!apiToken) {
+          apiToken = await getOrCreateApiToken(dataPaths.root);
+        }
+        return { ok: true, value: apiToken };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
-      return { ok: true, value: apiToken };
-    } catch (err) {
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
+    },
   });
 }
 
