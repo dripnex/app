@@ -6,6 +6,8 @@
 
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
+import { z } from 'zod';
+import { defineIpcHandler } from '../ipc/registry.js';
 import { loggers } from '../logger';
 import type { BroadcastFn } from './types.js';
 
@@ -14,11 +16,10 @@ export interface UpdateHandlerDeps {
 }
 
 export function registerUpdateHandlers(_deps: UpdateHandlerDeps): void {
-  // Manual check for updates
-  ipcMain.handle(
-    'updates:checkNow',
-    async (): Promise<{ available: boolean; version?: string }> => {
-      // In development or without proper updater config, return mock response
+  defineIpcHandler({
+    channel: 'updates:checkNow',
+    args: z.tuple([]),
+    handler: async (): Promise<{ available: boolean; version?: string }> => {
       if (process.env.NODE_ENV === 'development') {
         return { available: false };
       }
@@ -29,17 +30,14 @@ export function registerUpdateHandlers(_deps: UpdateHandlerDeps): void {
           cleanup();
           resolve({ available: true, version: info.version });
         };
-
         const onNotAvailable = () => {
           cleanup();
           resolve({ available: false });
         };
-
         const onError = () => {
           cleanup();
           resolve({ available: false });
         };
-
         const cleanup = () => {
           autoUpdater.removeListener('update-available', onAvailable);
           autoUpdater.removeListener('update-not-available', onNotAvailable);
@@ -55,23 +53,30 @@ export function registerUpdateHandlers(_deps: UpdateHandlerDeps): void {
           resolve({ available: false });
         });
       });
-    }
-  );
-
-  ipcMain.handle('updates:startDownload', async () => {
-    if (process.env.NODE_ENV === 'development') return { ok: false };
-    try {
-      await autoUpdater.downloadUpdate();
-      return { ok: true };
-    } catch (err) {
-      const message = (err as Error).message;
-      loggers.updater().error({ error: message }, 'Failed to download update');
-      return { ok: false, error: message };
-    }
+    },
   });
 
+  defineIpcHandler({
+    channel: 'updates:startDownload',
+    args: z.tuple([]),
+    handler: async () => {
+      if (process.env.NODE_ENV === 'development') return { ok: false };
+      try {
+        await autoUpdater.downloadUpdate();
+        return { ok: true };
+      } catch (err) {
+        const message = (err as Error).message;
+        loggers.updater().error({ error: message }, 'Failed to download update');
+        return { ok: false, error: message };
+      }
+    },
+  });
+
+  // installNow doesn't return a value AND triggers a quit — keeping the
+  // raw ipcMain.handle is simpler here since registry.ts always wraps in
+  // Promise<unknown> and we don't want async semantics interfering with
+  // the synchronous window-destruction path.
   ipcMain.handle('updates:installNow', () => {
-    // Force-close all windows so macOS doesn't block the quit
     BrowserWindow.getAllWindows().forEach(win => {
       if (!win.isDestroyed()) win.destroy();
     });
@@ -83,7 +88,6 @@ export function registerUpdateHandlers(_deps: UpdateHandlerDeps): void {
 export function initAutoUpdater(deps: UpdateHandlerDeps): void {
   const updateLog = loggers.updater();
 
-  // Only check for updates in production
   if (process.env.NODE_ENV === 'development') {
     updateLog.debug('Skipping auto-updater in development');
     return;
@@ -125,7 +129,6 @@ export function initAutoUpdater(deps: UpdateHandlerDeps): void {
     deps.broadcastToWindows('updates:error', { message: err.message });
   });
 
-  // Check for updates after a short delay
   setTimeout(() => {
     void autoUpdater.checkForUpdates();
   }, 3000);

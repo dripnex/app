@@ -1,11 +1,14 @@
 /**
  * Log IPC Handlers
  *
- * Handles renderer-side logging via IPC.
+ * Handles renderer-side logging via IPC. Validated at the boundary:
+ * level must be one of the enum values; message capped at 16 KiB;
+ * context object size is left to JSON serialization limits.
  */
 
-import { ipcMain } from 'electron';
-import { createChildLogger, type LogLevel } from '../logger';
+import { z } from 'zod';
+import { defineIpcHandler } from '../ipc/registry.js';
+import { createChildLogger } from '../logger';
 import type { DataPaths } from './types.js';
 
 export interface LogHandlerDeps {
@@ -13,20 +16,18 @@ export interface LogHandlerDeps {
   getDataPaths: () => DataPaths | null;
 }
 
+const LogLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
+const LogMessageSchema = z.string().max(16384);
+const LogContextSchema = z.record(z.string(), z.unknown()).optional();
+
 export function registerLogHandlers(deps: LogHandlerDeps): void {
   const rendererLogger = createChildLogger({ component: 'renderer' });
 
-  // Log from renderer
-  ipcMain.handle(
-    'log:write',
-    async (
-      _event,
-      level: LogLevel,
-      message: string,
-      context?: Record<string, unknown>
-    ): Promise<{ success: boolean }> => {
+  defineIpcHandler({
+    channel: 'log:write',
+    args: z.tuple([LogLevelSchema, LogMessageSchema, LogContextSchema]),
+    handler: (level, message, context): { success: boolean } => {
       const childLogger = context ? rendererLogger.child(context) : rendererLogger;
-
       switch (level) {
         case 'debug':
           childLogger.debug(message);
@@ -41,13 +42,13 @@ export function registerLogHandlers(deps: LogHandlerDeps): void {
           childLogger.error(message);
           break;
       }
-
       return { success: true };
-    }
-  );
+    },
+  });
 
-  // Get log file path (for debugging/support)
-  ipcMain.handle('log:getPath', async (): Promise<string | null> => {
-    return deps.getDataPaths()?.logs ?? null;
+  defineIpcHandler({
+    channel: 'log:getPath',
+    args: z.tuple([]),
+    handler: (): string | null => deps.getDataPaths()?.logs ?? null,
   });
 }
