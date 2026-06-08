@@ -1,0 +1,33 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["eslint.config.js"],
+      "ignoreDependencies": [
+        "@semantic-release/changelog",
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/exec",
+        "@semantic-release/git",
+        "@semantic-release/github",
+        "@semantic-release/release-notes-generator",
+        "conventional-changelog-conventionalcommits",
+        "semantic-release"
+      ]
+    },
+    "apps/desktop": {
+      "entry": [
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/renderer/main.tsx",
+        "electron-vite.config.ts",
+        "vitest.config.ts"
+      ]
+    },
+    "apps/web": {
+      "entry": ["src/**/*.{ts,tsx,astro}", "astro.config.{ts,js,mjs}"]
+    },
+    "packages/*": {
+      "entry": ["src/index.ts"]
+    }
+  }
+}
