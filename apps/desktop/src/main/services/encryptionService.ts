@@ -112,7 +112,8 @@ export class EncryptionService {
       return false; // No key available — passphrase setup required
     } catch (error) {
       throw new Error(
-        `Failed to initialize encryption: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to initialize encryption: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       );
     }
   }
@@ -259,7 +260,8 @@ export class EncryptionService {
       );
     } catch (error) {
       throw new Error(
-        `Failed to encrypt content: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to encrypt content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       );
     }
   }
@@ -290,7 +292,8 @@ export class EncryptionService {
       return decrypted.toString('utf-8');
     } catch (error) {
       throw new Error(
-        `Failed to decrypt content: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to decrypt content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       );
     }
   }
@@ -349,7 +352,8 @@ export class EncryptionService {
       await this.cacheCek(this.key);
     } catch (error) {
       throw new Error(
-        `Failed to import key: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to import key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       );
     }
   }

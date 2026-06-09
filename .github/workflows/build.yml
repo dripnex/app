@@ -13,7 +13,6 @@ env:
   NODE_VERSION: '22'
   ELECTRON_CACHE: ~/.cache/electron
   ELECTRON_BUILDER_CACHE: ~/.cache/electron-builder
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -23,7 +22,10 @@ jobs:
         include:
           - os: macos-14
             platform: mac
-          - os: windows-latest
+          # Pin Windows runner explicitly. `windows-latest` migrates to
+          # `windows-2025-vs2026` on 2026-06-15; pinning ahead avoids a
+          # surprise toolchain swap mid-release. Revisit on each new GA.
+          - os: windows-2025-vs2026
             platform: win
           - os: ubuntu-latest
             platform: linux
@@ -32,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
           fetch-depth: 0
@@ -41,20 +43,20 @@ jobs:
         uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Cache pnpm store
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pnpm-store
           key: pnpm-${{ matrix.platform }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ matrix.platform }}-
 
       - name: Cache Electron downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.ELECTRON_CACHE }}
           key: electron-v3-${{ matrix.platform }}-${{ hashFiles('apps/desktop/package.json') }}
@@ -105,7 +107,7 @@ jobs:
         run: pnpm dist:linux --publish always
 
       - name: Upload artifacts (backup)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.platform }}-build
           path: |
@@ -116,7 +118,11 @@ jobs:
             apps/desktop/release/*.deb
             apps/desktop/release/latest*.yml
             apps/desktop/release/*.blockmap
-          if-no-files-found: ignore
+          # `error` (was `ignore`) — if the build silently produced zero
+          # artefacts (signing failure, electron-builder swallowed an
+          # error, wrong working-directory, etc.) we want the job to fail
+          # loud here, not let the release un-draft with no installers.
+          if-no-files-found: error
           retention-days: 30
 
   publish:

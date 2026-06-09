@@ -32,12 +32,18 @@ export default {
       },
     ],
     '@semantic-release/changelog',
-    // Note: the previous @semantic-release/exec step ran a custom
-    // scripts/bump-version.js to sync per-package versions. That script was
-    // deleted in the knip cleanup (#279) and the desktop release only needs
-    // the root + apps/desktop package.json versions bumped — which the
-    // @semantic-release/git plugin below does via the `assets` list. So we
-    // drop the exec step entirely.
+    // The @semantic-release/git plugin below only COMMITS files; it does
+    // not mutate them. Without this exec step, package.json and
+    // apps/desktop/package.json stay at the previous version even after
+    // tag/release (the v0.15.0 bug). bump-version.mjs is a pure-ESM,
+    // zero-dependency script that only touches the `version` field of
+    // exactly the two files in scope.
+    [
+      '@semantic-release/exec',
+      {
+        prepareCmd: 'node scripts/bump-version.mjs ${nextRelease.version}',
+      },
+    ],
     [
       '@semantic-release/git',
       {

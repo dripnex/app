@@ -1,0 +1,11 @@
+CHANGELOG.md
+dist/
+out/
+release/
+.next/
+.source/
+.astro/
+.wrangler/
+coverage/
+node_modules/
+pnpm-lock.yaml
