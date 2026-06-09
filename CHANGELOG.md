@@ -1,3 +1,9 @@
+## [0.15.1](https://github.com/tomymaritano/readide/compare/v0.15.0...v0.15.1) (2026-06-09)
+
+### Bug Fixes
+
+* **release:** cut v0.15.1 after Phase 0 DevOps stabilization ([#297](https://github.com/tomymaritano/readide/issues/297)) ([cd269c8](https://github.com/tomymaritano/readide/commit/cd269c83a1750ac727e15efb1e674a9c72a837c7)), closes [#290](https://github.com/tomymaritano/readide/issues/290) [#291](https://github.com/tomymaritano/readide/issues/291) [#292](https://github.com/tomymaritano/readide/issues/292) [#293](https://github.com/tomymaritano/readide/issues/293) [#294](https://github.com/tomymaritano/readide/issues/294) [#295](https://github.com/tomymaritano/readide/issues/295) [#296](https://github.com/tomymaritano/readide/issues/296)
+
 ## [0.15.0](https://github.com/tomymaritano/readide/compare/v0.14.0...v0.15.0) (2026-06-09)
 
 ### Features
