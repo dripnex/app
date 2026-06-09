@@ -35,8 +35,14 @@ jobs:
       - name: Force HTTPS for GitHub git dependencies
         run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
+      # semantic-release only needs root-level devDeps (semantic-release itself,
+      # commit-analyzer, github plugin, etc). It does NOT need any workspace's
+      # native deps. Skipping postinstall scripts avoids apps/desktop's
+      # electron-builder install-app-deps step that rebuilds better-sqlite3 —
+      # that rebuild fails on the Linux + Node 22 runner against current
+      # Electron headers (V8 API mismatch in better-sqlite3 12.10.0).
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Run semantic-release
         env:
