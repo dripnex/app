@@ -75,7 +75,7 @@
     "@types/turndown": "^5.0.6",
     "@playwright/test": "^1.49.1",
     "@vitejs/plugin-react": "^6.0.2",
-    "electron": "^42.3.3",
+    "electron": "^41.7.1",
     "electron-builder": "^26.15.2",
     "electron-devtools-installer": "^4.0.0",
     "electron-vite": "^5.0.0",
