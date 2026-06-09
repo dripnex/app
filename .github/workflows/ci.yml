@@ -33,8 +33,15 @@ jobs:
       - name: Force HTTPS for GitHub git dependencies
         run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
+      # CI only runs lint/test/typecheck/build — none of those exercise
+      # better-sqlite3 at runtime. Skipping postinstall avoids apps/desktop's
+      # electron-builder install-app-deps step, which rebuilds better-sqlite3
+      # against the bundled Electron headers — that rebuild can break the
+      # whole setup job when better-sqlite3 lags an Electron major (see the
+      # v0.15.0 incident where Electron 42's V8 API broke better-sqlite3
+      # 12.10.0). Same pattern used in release.yml and deploy-api.yml.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Cache node_modules
         uses: actions/cache/save@v4
