@@ -71,11 +71,9 @@ jobs:
       - name: Prettier
         run: pnpm format:check
 
-      - name: Commitlint (PR title)
-        if: github.event_name == 'pull_request'
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: echo "$PR_TITLE" | pnpm commitlint
+      # PR title commitlint moved to .github/workflows/pr-title.yml so it
+      # exposes a stable, standalone status-check name for branch protection
+      # (squash-merge makes the PR title the release-trigger commit message).
 
   # ── Tier 1: Tests + Coverage ───────────────────────
   test:
