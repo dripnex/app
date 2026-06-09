@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+=======
+## [0.15.2](https://github.com/tomymaritano/readide/compare/v0.15.1...v0.15.2) (2026-06-09)
+
+### Bug Fixes
+
+* **release:** cut v0.15.2 with linux executableName fix ([#301](https://github.com/tomymaritano/readide/issues/301)) ([33769fc](https://github.com/tomymaritano/readide/commit/33769fc8be341b4787d06260bb1b0e45486fac8c)), closes [#298](https://github.com/tomymaritano/readide/issues/298) [#299](https://github.com/tomymaritano/readide/issues/299) [#300](https://github.com/tomymaritano/readide/issues/300) [#299](https://github.com/tomymaritano/readide/issues/299) [#298](https://github.com/tomymaritano/readide/issues/298)
+
+>>>>>>> origin/main
 ## [0.15.1](https://github.com/tomymaritano/readide/compare/v0.15.0...v0.15.1) (2026-06-09)
 
 ### Bug Fixes
