@@ -35,15 +35,20 @@ import { loggers } from '../logger';
 /**
  * Ed25519 public key used to verify SignedSubscriptionEnvelope payloads.
  *
- * REPLACE BEFORE SHIPPING signed subscriptions. The all-zeros placeholder
- * means verification WILL fail for any real signed envelope — that's the
- * desired failure mode while the server isn't yet emitting envelopes
- * (we fall through to "no envelope" and use the lenient path).
+ * Public-by-design: the client needs it to verify. The matching PRIVATE
+ * key MUST live ONLY on the licensing server (env var, never the repo).
  *
- * The matching private key lives only on the licensing server. Never
- * commit it.
+ * Rotation procedure when this key needs to change:
+ *   1. Generate a new keypair on a trusted machine
+ *      (see packages/licensing/README.md > "Rolling the signing key")
+ *   2. Ship a desktop release with the new public key embedded HERE
+ *   3. Wait for the install base to update
+ *   4. Switch the server to sign with the new private key
+ *   Clients on the old release will stop verifying envelopes signed
+ *   with the new key, falling back to the "no-envelope" lenient log —
+ *   no hard lockout, but they'll re-fetch on every cache miss.
  */
-const SUBSCRIPTION_PUBLIC_KEY = '0000000000000000000000000000000000000000000000000000000000000000';
+const SUBSCRIPTION_PUBLIC_KEY = 'd049019b2ff05ccfd3802e0619d5897e21431a6f946af724c13ed7ecca7ec01f';
 
 export class FileLicenseStorage implements LicenseStorage {
   private readonly licensePath: string;
