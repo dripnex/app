@@ -33,6 +33,14 @@ npm-debug.log*
 # Cache
 .eslintcache
 
+# Vitest coverage reports
+coverage/
+
+# Playwright artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Screenshots (root level only)
 /CleanShot*.png
 

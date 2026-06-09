@@ -4,25 +4,23 @@
  * Implements the ExtendedNoteRepository interface from @readied/storage-core
  */
 
-import type {
-  ExtendedNoteRepository,
-  ListNotesOptions,
-  ArchivedFilter,
-} from '@readied/storage-core';
-import {
-  type Note,
-  type NoteId,
-  type NoteStatus,
-  type Tag,
-  type Timestamp,
-  createNote,
-  createNoteId,
-  createNotebookId,
-  createTag,
-  DEFAULT_NOTE_STATUS,
-} from '@readied/core';
+import type { ExtendedNoteRepository, ListNotesOptions } from '@readied/storage-core';
+import { type Note, type NoteId, type Tag, createNoteId, createTag } from '@readied/core';
 import { extractWikilinks } from '@readied/wikilinks';
 import type { DatabaseConnection } from '../database.js';
+import {
+  rowToNote,
+  prepareFtsQuery,
+  archivedConditionSql,
+  type NoteRow,
+  type TagRow,
+  type TagWithColorRow,
+  type BacklinkInfo,
+} from './noteMapping.js';
+
+// Re-export public types so external imports (e.g. desktop's handlers/types.ts)
+// keep working unchanged.
+export type { BacklinkInfo };
 
 /** Sync history entry returned by getSyncHistory */
 export interface SyncHistoryEntry {
@@ -42,37 +40,6 @@ export interface SyncHistoryEntry {
   errorMessage: string | null;
 }
 
-/** Row type from SQLite */
-interface NoteRow {
-  id: string;
-  notebook_id: string;
-  content: string;
-  title: string;
-  created_at: string;
-  updated_at: string;
-  word_count: number;
-  archived_at: string | null;
-  is_pinned: number; // SQLite stores booleans as 0/1
-  is_deleted: number;
-  status: string;
-}
-
-interface TagRow {
-  name: string;
-}
-
-interface TagWithColorRow {
-  name: string;
-  color: string | null;
-}
-
-/** Backlink information for UI display */
-export interface BacklinkInfo {
-  noteId: string;
-  noteTitle: string;
-  targetRef: string;
-}
-
 /** SQLite implementation of ExtendedNoteRepository */
 export class SQLiteNoteRepository implements ExtendedNoteRepository {
   constructor(private readonly db: DatabaseConnection) {}
@@ -90,7 +57,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     if (!row) return null;
 
     const tags = this.getTagsForNote(id);
-    return this.rowToNote(row, tags);
+    return rowToNote(row, tags);
   }
 
   /** Save a note (insert or update) */
@@ -156,7 +123,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       title: 'title',
     }[sortBy];
 
-    const archivedCondition = this.getArchivedCondition(archived, 'n');
+    const archivedCondition = archivedConditionSql(archived, 'n');
     let sql: string;
     let params: (string | number)[];
 
@@ -189,7 +156,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
-      return this.rowToNote(row, tags);
+      return rowToNote(row, tags);
     });
   }
 
@@ -207,7 +174,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const archivedCondition = includeArchived ? '' : 'AND n.archived_at IS NULL';
 
     // Prepare FTS5 query: escape special chars, add prefix matching
-    const ftsQuery = this.prepareFtsQuery(trimmedQuery);
+    const ftsQuery = prepareFtsQuery(trimmedQuery);
 
     const stmt = this.db.prepare<NoteRow>(`
       SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
@@ -223,26 +190,11 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
-      return this.rowToNote(row, tags);
+      return rowToNote(row, tags);
     });
   }
 
-  /** Prepare query string for FTS5 MATCH syntax */
-  private prepareFtsQuery(query: string): string {
-    // Escape FTS5 special characters: " * ^ - OR AND NOT ( )
-    const escaped = query.replace(/["*^()]/g, ' ').trim();
-
-    // Split into terms and add prefix matching for partial word search
-    const terms = escaped.split(/\s+/).filter(t => t.length > 0);
-
-    if (terms.length === 0) {
-      return '""'; // Empty search
-    }
-
-    // Use OR between terms with prefix matching
-    // Each term becomes "term"* for prefix matching
-    return terms.map(t => `"${t}"*`).join(' OR ');
-  }
+  // prepareFtsQuery moved to noteMapping.ts
 
   /** Get total count of notes */
   async count(includeArchived: boolean = false): Promise<number> {
@@ -283,17 +235,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
   // Private helpers
 
-  private getArchivedCondition(filter: ArchivedFilter, tableAlias: string = ''): string {
-    const prefix = tableAlias ? `${tableAlias}.` : '';
-    switch (filter) {
-      case 'active':
-        return `AND ${prefix}archived_at IS NULL`;
-      case 'archived':
-        return `AND ${prefix}archived_at IS NOT NULL`;
-      case 'all':
-        return '';
-    }
-  }
+  // getArchivedCondition moved to noteMapping.archivedConditionSql
 
   private getTagsForNote(noteId: NoteId): Tag[] {
     const stmt = this.db.prepare<TagRow>(`
@@ -478,38 +420,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     }
   }
 
-  private rowToNote(row: NoteRow, tags: Tag[]): Note {
-    // Reconstruct note from stored data with structural title
-    const note = createNote({
-      id: createNoteId(row.id),
-      notebookId: createNotebookId(row.notebook_id),
-      title: row.title, // Structural title from DB
-      content: row.content,
-      createdAt: row.created_at as Timestamp,
-      isPinned: row.is_pinned === 1,
-      isDeleted: row.is_deleted === 1,
-      status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
-    });
-
-    // Return note with stored metadata
-    return {
-      ...note,
-      notebookId: createNotebookId(row.notebook_id),
-      title: row.title, // Ensure structural title is set
-      isPinned: row.is_pinned === 1,
-      isDeleted: row.is_deleted === 1,
-      status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
-      metadata: {
-        ...note.metadata,
-        title: row.title,
-        createdAt: row.created_at as Timestamp,
-        updatedAt: row.updated_at as Timestamp,
-        tags,
-        wordCount: row.word_count,
-        archivedAt: row.archived_at as Timestamp | null,
-      },
-    };
-  }
+  // rowToNote moved to noteMapping.ts
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Links (Wikilinks / Backlinks)
@@ -737,7 +648,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
       return {
-        note: this.rowToNote(row, tags),
+        note: rowToNote(row, tags),
         localVersion: row.local_version,
         lastSyncedAt: row.last_synced_at,
       };

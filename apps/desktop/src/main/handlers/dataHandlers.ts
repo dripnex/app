@@ -6,7 +6,9 @@
 
 import { join } from 'path';
 import { writeFile } from 'fs/promises';
+import { copyFileSync, existsSync, unlinkSync } from 'fs';
 import { ipcMain, dialog, shell, app } from 'electron';
+import { z } from 'zod';
 import {
   createBackup,
   listBackups,
@@ -19,6 +21,7 @@ import {
 import { createDatabase, allMigrations } from '@readied/storage-sqlite';
 import { runMigrations } from '@readied/storage-core';
 import { createNoteOperation } from '@readied/core';
+import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, Database } from './types.js';
 
 export interface DataHandlerDeps {
@@ -33,81 +36,148 @@ export interface DataHandlerDeps {
 export function registerDataHandlers(deps: DataHandlerDeps): void {
   const { dataPaths: paths, noteRepository: repo, getDb, setDb } = deps;
 
-  // Create backup
-  ipcMain.handle('data:backup', async () => {
-    return createBackup({
-      backupDir: paths.backups,
-      databasePath: paths.database,
-    });
+  defineIpcHandler({
+    channel: 'data:backup',
+    args: z.tuple([]),
+    handler: () =>
+      createBackup({
+        backupDir: paths.backups,
+        databasePath: paths.database,
+      }),
   });
 
-  // List backups
-  ipcMain.handle('data:backups:list', async () => {
-    return listBackups(paths.backups);
+  defineIpcHandler({
+    channel: 'data:backups:list',
+    args: z.tuple([]),
+    handler: () => listBackups(paths.backups),
   });
 
-  // Restore from backup
+  // Restore uses ipcMain.handle raw because the integrity-check rollback
+  // path is non-trivial state management — see PR #271 for the rationale.
+  // Validation: backupPath must be a non-empty string. We don't constrain
+  // it further (it comes from a native dialog), but the rollback logic
+  // is what guarantees safety, not the schema.
   ipcMain.handle('data:backup:restore', async (_event, backupPath: string) => {
-    // Close current database connection
     const currentDb = getDb();
     if (currentDb) {
       currentDb.close();
     }
 
+    // Copies backup over the live db file and writes a `.pre-restore` safety
+    // copy of the previous live db (used by the rollback path below).
     const result = restoreBackup(backupPath, paths.database);
+    if (!result.success) {
+      // restoreBackup never touched the live db, just reopen it.
+      setDb(createDatabase(paths.database));
+      return result;
+    }
 
-    // Reconnect to database
-    const newDb = createDatabase(paths.database);
-    runMigrations(newDb, allMigrations);
+    const safetyPath = paths.database + '.pre-restore';
+    const rollback = (reason: string): typeof result => {
+      if (existsSync(safetyPath)) {
+        copyFileSync(safetyPath, paths.database);
+      }
+      setDb(createDatabase(paths.database));
+      return { success: false, error: reason };
+    };
+
+    let newDb: ReturnType<typeof createDatabase>;
+    try {
+      newDb = createDatabase(paths.database);
+    } catch (err) {
+      return rollback(
+        `Could not open restored database: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
+    // PRAGMA integrity_check returns a single row `{ integrity_check: 'ok' }`
+    // on a healthy database, or one or more rows describing the corruption.
+    // We refuse to swap to a corrupt restore and roll back to the safety copy.
+    try {
+      const row = newDb.prepare<{ integrity_check: string }>('PRAGMA integrity_check').get();
+      if (row?.integrity_check !== 'ok') {
+        newDb.close();
+        return rollback(
+          `Backup failed integrity check (${row?.integrity_check ?? 'unknown error'}). Previous database has been restored.`
+        );
+      }
+    } catch (err) {
+      newDb.close();
+      return rollback(
+        `Backup integrity check threw: ${err instanceof Error ? err.message : String(err)}. Previous database has been restored.`
+      );
+    }
+
+    // Backup is intact — apply migrations to bring older schemas current.
+    try {
+      runMigrations(newDb, allMigrations);
+    } catch (err) {
+      newDb.close();
+      return rollback(
+        `Migrations failed on restored database: ${err instanceof Error ? err.message : String(err)}. Previous database has been restored.`
+      );
+    }
+
     setDb(newDb);
 
-    return result;
-  });
-
-  // Export notes
-  ipcMain.handle('data:export', async () => {
-    // Show save dialog
-    const { filePath, canceled } = await dialog.showSaveDialog({
-      title: 'Export Notes',
-      defaultPath: join(app.getPath('documents'), 'readied-export'),
-      buttonLabel: 'Export',
-    });
-
-    if (canceled || !filePath) {
-      return { success: false, error: 'Export cancelled' };
-    }
-
-    // Get all notes
-    const notes = await repo.list({ archived: 'all' });
-    const snapshots = notes.map(note => ({
-      id: note.id,
-      content: note.content,
-      title: note.title, // Use structural title
-      createdAt: note.metadata.createdAt,
-      updatedAt: note.metadata.updatedAt,
-      tags: [...note.metadata.tags],
-      wordCount: note.metadata.wordCount,
-      archivedAt: note.metadata.archivedAt,
-    }));
-
-    const result = exportNotes(snapshots, {
-      outputDir: filePath,
-      appVersion: app.getVersion(),
-      includeArchived: true,
-    });
-
-    if (result.success) {
-      // Open the export folder
-      shell.showItemInFolder(filePath);
+    // Restore succeeded — discard the safety copy.
+    if (existsSync(safetyPath)) {
+      try {
+        unlinkSync(safetyPath);
+      } catch {
+        // best-effort cleanup; not fatal
+      }
     }
 
     return result;
   });
 
-  // Export single note to file
-  ipcMain.handle(
-    'data:exportNote',
-    async (_event: Electron.IpcMainInvokeEvent, content: string, suggestedName: string) => {
+  defineIpcHandler({
+    channel: 'data:export',
+    args: z.tuple([]),
+    handler: async () => {
+      // Show save dialog
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Export Notes',
+        defaultPath: join(app.getPath('documents'), 'readied-export'),
+        buttonLabel: 'Export',
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Export cancelled' };
+      }
+
+      // Get all notes
+      const notes = await repo.list({ archived: 'all' });
+      const snapshots = notes.map(note => ({
+        id: note.id,
+        content: note.content,
+        title: note.title, // Use structural title
+        createdAt: note.metadata.createdAt,
+        updatedAt: note.metadata.updatedAt,
+        tags: [...note.metadata.tags],
+        wordCount: note.metadata.wordCount,
+        archivedAt: note.metadata.archivedAt,
+      }));
+
+      const result = exportNotes(snapshots, {
+        outputDir: filePath,
+        appVersion: app.getVersion(),
+        includeArchived: true,
+      });
+
+      if (result.success) {
+        shell.showItemInFolder(filePath);
+      }
+
+      return result;
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'data:exportNote',
+    args: z.tuple([z.string().max(1024 * 1024), z.string().max(512)]),
+    handler: async (content, suggestedName) => {
       let safeName =
         suggestedName
           .normalize('NFC')
@@ -137,71 +207,78 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
           error: error instanceof Error ? error.message : 'Failed to write file',
         };
       }
-    }
-  );
-
-  // Import notes
-  ipcMain.handle('data:import', async () => {
-    // Show folder selection dialog
-    const { filePaths, canceled } = await dialog.showOpenDialog({
-      title: 'Import Notes',
-      properties: ['openDirectory'],
-      buttonLabel: 'Import',
-    });
-
-    const sourceDir = filePaths[0];
-    if (canceled || !sourceDir) {
-      return { success: false, error: 'Import cancelled' };
-    }
-
-    const importType = detectImportType(sourceDir);
-
-    const result = importNotes({
-      sourceDir,
-      type: importType,
-      recursive: true,
-    });
-
-    if (!result.success || !result.notes) {
-      return result;
-    }
-
-    // Import each note
-    let imported = 0;
-    for (const imported_note of result.notes) {
-      try {
-        await createNoteOperation(
-          {
-            content: imported_note.content,
-          },
-          repo
-        );
-        imported++;
-      } catch {
-        // Skip notes that fail to import
-      }
-    }
-
-    return {
-      success: true,
-      noteCount: imported,
-      skipped: result.skipped,
-    };
+    },
   });
 
-  // Get data paths info
-  ipcMain.handle('data:paths', async () => {
-    return {
+  defineIpcHandler({
+    channel: 'data:import',
+    args: z.tuple([]),
+    handler: async () => {
+      // Show folder selection dialog
+      const { filePaths, canceled } = await dialog.showOpenDialog({
+        title: 'Import Notes',
+        properties: ['openDirectory'],
+        buttonLabel: 'Import',
+      });
+
+      const sourceDir = filePaths[0];
+      if (canceled || !sourceDir) {
+        return { success: false, error: 'Import cancelled' };
+      }
+
+      const importType = detectImportType(sourceDir);
+
+      const result = importNotes({
+        sourceDir,
+        type: importType,
+        recursive: true,
+      });
+
+      if (!result.success || !result.notes) {
+        return result;
+      }
+
+      // Import each note
+      let imported = 0;
+      for (const imported_note of result.notes) {
+        try {
+          await createNoteOperation(
+            {
+              content: imported_note.content,
+            },
+            repo
+          );
+          imported++;
+        } catch {
+          // Skip notes that fail to import
+        }
+      }
+
+      return {
+        success: true,
+        noteCount: imported,
+        skipped: result.skipped,
+      };
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'data:paths',
+    args: z.tuple([]),
+    handler: () => ({
       root: paths.root,
       database: paths.database,
       backups: paths.backups,
       logs: paths.logs,
-    };
+    }),
   });
 
-  // Open data folder in system file manager
-  ipcMain.handle('data:openFolder', async () => {
-    void shell.openPath(paths.root);
-    return { success: true };
+  defineIpcHandler({
+    channel: 'data:openFolder',
+    args: z.tuple([]),
+    handler: () => {
+      void shell.openPath(paths.root);
+      return { success: true };
+    },
   });
 }

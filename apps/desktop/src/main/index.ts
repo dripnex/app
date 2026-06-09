@@ -11,8 +11,7 @@ import { initSentry } from './sentry';
 initSentry();
 
 import { join, normalize } from 'path';
-import { readFile, writeFile, unlink } from 'fs/promises';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import {
   app,
   BrowserWindow,
@@ -31,16 +30,11 @@ import {
   SQLiteNotebookRepository,
 } from '@readied/storage-sqlite';
 import { createNoteId, createNoteOperation, type NoteStatus } from '@readied/core';
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-import type {
-  LicenseStorage,
-  StoredTrialData,
-  StoredLicenseData,
-  StoredSubscriptionData,
-} from '@readied/licensing';
 import { initLogger, getLogger, loggers } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
 import { AiKeyStorage } from './services/aiKeyStorage.js';
+import { FileLicenseStorage } from './services/fileLicenseStorage.js';
+import { loadWindowState, saveWindowState } from './services/windowState.js';
 import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js';
 import { ApiClient } from './services/apiClient.js';
 import { EncryptionService } from './services/encryptionService.js';
@@ -139,119 +133,10 @@ export function noteToSnapshot(note: {
   };
 }
 
-// ============================================================================
-// File-based License Storage
-// ============================================================================
-
-class FileLicenseStorage implements LicenseStorage {
-  private licensePath: string;
-  private trialPath: string;
-  private subscriptionPath: string;
-
-  constructor(dataDir: string) {
-    this.licensePath = join(dataDir, 'license.json');
-    this.trialPath = join(dataDir, 'trial.json');
-    this.subscriptionPath = join(dataDir, 'subscription.json');
-  }
-
-  async readLicenseData(): Promise<StoredLicenseData | null> {
-    try {
-      if (!existsSync(this.licensePath)) {
-        return null;
-      }
-      const content = await readFile(this.licensePath, 'utf-8');
-      return JSON.parse(content) as StoredLicenseData;
-    } catch {
-      return null;
-    }
-  }
-
-  async writeLicenseData(data: StoredLicenseData): Promise<void> {
-    await writeFile(this.licensePath, JSON.stringify(data, null, 2), 'utf-8');
-  }
-
-  async removeLicenseData(): Promise<void> {
-    if (existsSync(this.licensePath)) {
-      await unlink(this.licensePath);
-    }
-  }
-
-  async readTrialData(): Promise<StoredTrialData | null> {
-    try {
-      if (!existsSync(this.trialPath)) {
-        return null;
-      }
-      const content = await readFile(this.trialPath, 'utf-8');
-      return JSON.parse(content) as StoredTrialData;
-    } catch {
-      return null;
-    }
-  }
-
-  async writeTrialData(data: StoredTrialData): Promise<void> {
-    await writeFile(this.trialPath, JSON.stringify(data, null, 2), 'utf-8');
-  }
-
-  async readSubscriptionData(): Promise<StoredSubscriptionData | null> {
-    try {
-      if (!existsSync(this.subscriptionPath)) {
-        return null;
-      }
-      const content = await readFile(this.subscriptionPath, 'utf-8');
-      return JSON.parse(content) as StoredSubscriptionData;
-    } catch {
-      return null;
-    }
-  }
-
-  async writeSubscriptionData(data: StoredSubscriptionData): Promise<void> {
-    await writeFile(this.subscriptionPath, JSON.stringify(data, null, 2), 'utf-8');
-  }
-
-  async removeSubscriptionData(): Promise<void> {
-    if (existsSync(this.subscriptionPath)) {
-      await unlink(this.subscriptionPath);
-    }
-  }
-}
-
-// ============================================================================
-// Window State Persistence
-// ============================================================================
-
-interface WindowState {
-  x?: number;
-  y?: number;
-  width: number;
-  height: number;
-  isMaximized?: boolean;
-}
-
-const DEFAULT_WINDOW_STATE: WindowState = {
-  width: 1200,
-  height: 800,
-};
-
-function getWindowStatePath(): string {
-  return join(app.getPath('userData'), 'window-state.json');
-}
-
-function loadWindowState(): WindowState {
-  try {
-    const data = readFileSync(getWindowStatePath(), 'utf-8');
-    return { ...DEFAULT_WINDOW_STATE, ...JSON.parse(data) };
-  } catch {
-    return DEFAULT_WINDOW_STATE;
-  }
-}
-
-function saveWindowState(state: WindowState): void {
-  try {
-    writeFileSync(getWindowStatePath(), JSON.stringify(state, null, 2));
-  } catch (err) {
-    console.error('Failed to save window state:', err);
-  }
-}
+// File-based license storage and window state persistence live in
+// dedicated modules under ./services/. See:
+//   - services/fileLicenseStorage.ts
+//   - services/windowState.ts
 
 // ============================================================================
 // Initialization

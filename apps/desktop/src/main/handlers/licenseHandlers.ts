@@ -5,7 +5,8 @@
  * Fetches subscription status from API with local caching.
  */
 
-import { ipcMain, shell } from 'electron';
+import { shell } from 'electron';
+import { z } from 'zod';
 import type {
   LicenseStorage,
   AppLicenseState,
@@ -18,6 +19,7 @@ import {
   canStartTrial,
   isCachedSubscriptionValid,
 } from '@readied/licensing';
+import { defineIpcHandler } from '../ipc/registry.js';
 import { loggers } from '../logger';
 import type { ApiClient, SubscriptionStatus } from '../services/apiClient';
 
@@ -116,62 +118,62 @@ async function getSubscriptionData(
 export function registerLicenseHandlers(deps: LicenseHandlerDependencies): void {
   const { licenseStorage, apiClient } = deps;
 
-  /**
-   * Get current license state
-   * Trial data is local, subscription data comes from server (with local cache)
-   */
-  ipcMain.handle('license:getState', async (): Promise<AppLicenseState> => {
-    let trialData = await licenseStorage.readTrialData();
-    const subscriptionData = await getSubscriptionData(licenseStorage, apiClient);
+  defineIpcHandler({
+    channel: 'license:getState',
+    args: z.tuple([]),
+    handler: async (): Promise<AppLicenseState> => {
+      let trialData = await licenseStorage.readTrialData();
+      const subscriptionData = await getSubscriptionData(licenseStorage, apiClient);
 
-    // Auto-start trial if user hasn't started one yet
-    if (canStartTrial(trialData, subscriptionData)) {
-      trialData = startTrial();
-      await licenseStorage.writeTrialData(trialData);
-      getLicenseLogger().info('Trial started automatically');
-    }
+      if (canStartTrial(trialData, subscriptionData)) {
+        trialData = startTrial();
+        await licenseStorage.writeTrialData(trialData);
+        getLicenseLogger().info('Trial started automatically');
+      }
 
-    return computeLicenseState(trialData, subscriptionData);
+      return computeLicenseState(trialData, subscriptionData);
+    },
   });
 
-  /**
-   * Force-refresh subscription status from API (ignores cache)
-   */
-  ipcMain.handle('license:refreshSubscription', async (): Promise<AppLicenseState> => {
-    const trialData = await licenseStorage.readTrialData();
-    const subscriptionData = await getSubscriptionData(licenseStorage, apiClient, true);
-    return computeLicenseState(trialData, subscriptionData);
+  defineIpcHandler({
+    channel: 'license:refreshSubscription',
+    args: z.tuple([]),
+    handler: async (): Promise<AppLicenseState> => {
+      const trialData = await licenseStorage.readTrialData();
+      const subscriptionData = await getSubscriptionData(licenseStorage, apiClient, true);
+      return computeLicenseState(trialData, subscriptionData);
+    },
   });
 
-  /**
-   * Start trial manually (if not auto-started)
-   */
-  ipcMain.handle('license:startTrial', async (): Promise<{ success: boolean; error?: string }> => {
-    const trialData = await licenseStorage.readTrialData();
-    const subscriptionData = await licenseStorage.readSubscriptionData();
+  defineIpcHandler({
+    channel: 'license:startTrial',
+    args: z.tuple([]),
+    handler: async (): Promise<{ success: boolean; error?: string }> => {
+      const trialData = await licenseStorage.readTrialData();
+      const subscriptionData = await licenseStorage.readSubscriptionData();
 
-    if (!canStartTrial(trialData, subscriptionData)) {
-      return { success: false, error: 'Trial already started or subscription active' };
-    }
+      if (!canStartTrial(trialData, subscriptionData)) {
+        return { success: false, error: 'Trial already started or subscription active' };
+      }
 
-    const newTrialData = startTrial();
-    await licenseStorage.writeTrialData(newTrialData);
-    getLicenseLogger().info('Trial started manually');
-    return { success: true };
+      const newTrialData = startTrial();
+      await licenseStorage.writeTrialData(newTrialData);
+      getLicenseLogger().info('Trial started manually');
+      return { success: true };
+    },
   });
 
-  /**
-   * Open subscription checkout page
-   * Creates a Stripe checkout session via API and opens it in the browser
-   */
-  ipcMain.handle(
-    'license:openSubscribe',
-    async (
-      _event,
-      options?: { plan?: 'monthly' | 'annual' }
-    ): Promise<{ success: boolean; error?: string }> => {
+  defineIpcHandler({
+    channel: 'license:openSubscribe',
+    args: z.tuple([
+      z
+        .object({
+          plan: z.enum(['monthly', 'annual']).optional(),
+        })
+        .optional(),
+    ]),
+    handler: async (options): Promise<{ success: boolean; error?: string }> => {
       try {
-        // Get current user to verify authentication
         const user = await apiClient.getCurrentUser();
 
         if (!user || !user.email) {
@@ -184,7 +186,6 @@ export function registerLicenseHandlers(deps: LicenseHandlerDependencies): void 
           'Creating checkout session via API'
         );
 
-        // Create checkout session via API (server handles Stripe SDK)
         const { url } = await apiClient.createCheckoutSession({
           plan: options?.plan || 'monthly',
           successUrl: 'https://readied.app/subscription/success',
@@ -195,7 +196,6 @@ export function registerLicenseHandlers(deps: LicenseHandlerDependencies): void 
           return { success: false, error: 'No checkout URL returned' };
         }
 
-        // Open checkout URL in browser
         await shell.openExternal(url);
 
         getLicenseLogger().info({ email: user.email }, 'Checkout session opened in browser');
@@ -207,6 +207,6 @@ export function registerLicenseHandlers(deps: LicenseHandlerDependencies): void 
           error: error instanceof Error ? error.message : 'Failed to create checkout session',
         };
       }
-    }
-  );
+    },
+  });
 }

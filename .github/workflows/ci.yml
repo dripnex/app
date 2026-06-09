@@ -143,6 +143,50 @@ jobs:
         working-directory: apps/desktop
         run: pnpm typecheck
 
+  # ── Tier 2: E2E (Playwright + Electron, xvfb on Linux) ─────────────────
+  # Starts as continue-on-error: true while we stabilize the suite.
+  # Flip to required once it's reliably green on develop.
+  e2e:
+    needs: setup
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright system deps
+        working-directory: apps/desktop
+        run: npx playwright install-deps chromium
+
+      - name: Build desktop bundle
+        run: pnpm --filter @readied/desktop build
+
+      - name: Run Playwright E2E (xvfb)
+        working-directory: apps/desktop
+        run: xvfb-run --auto-servernum pnpm e2e
+        env:
+          CI: 'true'
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/desktop/playwright-report/
+          retention-days: 7
+
   # ── Tier 3: Security audit ─────────────────────────
   security:
     needs: setup

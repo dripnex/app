@@ -9,6 +9,8 @@ export type {
   StoredTrialData,
   StoredSubscriptionData,
   VerificationResult,
+  SignedSubscriptionPayload,
+  SignedSubscriptionEnvelope,
   // Legacy types (deprecated)
   LicenseFile,
   ActiveLicense,
@@ -26,6 +28,9 @@ export {
   isCachedSubscriptionValid,
   createStoredSubscription,
   verifySubscription,
+  canonicalJson,
+  signSubscriptionPayload,
+  verifySubscriptionSignature,
 } from './validator.js';
 
 // Trial
