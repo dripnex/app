@@ -1,3 +1,9 @@
+## [0.15.0](https://github.com/tomymaritano/readide/compare/v0.14.0...v0.15.0) (2026-06-09)
+
+### Features
+
+* **release:** cut v0.15.0 audit release ([#289](https://github.com/tomymaritano/readide/issues/289)) ([9b36ed3](https://github.com/tomymaritano/readide/commit/9b36ed3e8514099a9a15f86c3b3c945b70d61af0)), closes [#245](https://github.com/tomymaritano/readide/issues/245) [266-#284](https://github.com/tomymaritano/266-/issues/284) [#245](https://github.com/tomymaritano/readide/issues/245) [#279](https://github.com/tomymaritano/readide/issues/279) [#287](https://github.com/tomymaritano/readide/issues/287) [#288](https://github.com/tomymaritano/readide/issues/288) [#279](https://github.com/tomymaritano/readide/issues/279)
+
 ## [0.14.0](https://github.com/tomymaritano/readide/compare/v0.13.0...v0.14.0) (2026-04-24)
 
 ### Features
