@@ -9,15 +9,18 @@ on:
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -25,15 +28,20 @@ jobs:
       - name: Force HTTPS for GitHub git dependencies
         run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
-      - run: pnpm install
+      # Marketing site only needs @readied/web + product-config's transitive
+      # deps. Plain `pnpm install` would also run apps/desktop's postinstall
+      # (electron-builder install-app-deps -> better-sqlite3 native rebuild),
+      # which fails on the Linux + Node 22 runner. See #287 for the
+      # deploy-api workflow and #288 for release.yml — same fix shape.
+      - run: pnpm install --filter '@readied/web...' --ignore-scripts
 
       - name: Build web app
-        run: |
-          cd apps/web
-          pnpm exec fumadocs-mdx
-          pnpm exec next build
+        working-directory: apps/web
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm exec fumadocs-mdx
+          pnpm exec next build
 
       - name: Deploy to Cloudflare Pages
         env:
