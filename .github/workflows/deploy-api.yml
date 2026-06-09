@@ -31,7 +31,12 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - run: pnpm install
+      # Install only the API workspace and its transitive deps. The full
+      # `pnpm install` would also run apps/desktop's postinstall (electron-builder
+      # install-app-deps -> better-sqlite3 native rebuild), which fails on the
+      # Linux + Node 22 runner against current Electron headers. The API worker
+      # has no need for any of that.
+      - run: pnpm install --filter '@readied/api...' --ignore-scripts
 
       - name: Typecheck
         run: pnpm --filter @readied/api typecheck
@@ -53,7 +58,7 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - run: pnpm install
+      - run: pnpm install --filter '@readied/api...' --ignore-scripts
 
       - name: Determine environment
         id: env
