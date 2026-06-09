@@ -44,6 +44,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      # Dry-run gate: figure out whether a release WOULD be cut from the
+      # current commit log before we actually try. The trap we're closing:
+      # if the most recent merge to main used a non-conventional title
+      # (squash merge eats the PR title), semantic-release silently exits
+      # with "no release" and the workflow ends green. The user then
+      # wonders why no tag appeared. Fail loud here instead.
+      - name: Pre-flight (dry-run) check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -o pipefail
+          npx semantic-release --dry-run 2>&1 | tee /tmp/sr-dry.log
+          if grep -qE "There are no relevant changes" /tmp/sr-dry.log; then
+            echo "::error::semantic-release dry-run: no release will be cut."
+            echo "::error::Most recent main commit's conventional type is not in releaseRules."
+            echo "::error::Check release.config.js > releaseRules and the commit message that landed on main."
+            exit 1
+          fi
+          if ! grep -qE "next release version is" /tmp/sr-dry.log; then
+            echo "::error::semantic-release dry-run did not announce a next release version."
+            echo "::error::Aborting before --ci to avoid a silent no-op."
+            exit 1
+          fi
+
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -53,3 +77,30 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: npx semantic-release
+
+      # Post-flight assertion: after semantic-release runs,
+      # package.json + apps/desktop/package.json should both match the
+      # version the dry-run announced. If scripts/bump-version.mjs (via
+      # @semantic-release/exec) didn't run or didn't touch one of the
+      # files, we catch it here BEFORE the tag-triggered build downloads
+      # stale package.json — closes the v0.15.0-style "tag at old
+      # version" trap.
+      - name: Verify version bump applied
+        run: |
+          expected=$(grep -oE "next release version is [0-9]+\.[0-9]+\.[0-9]+" /tmp/sr-dry.log \
+                     | tail -n 1 | awk '{print $NF}')
+          if [ -z "$expected" ]; then
+            echo "::warning::Could not extract expected version from dry-run log; skipping bump check."
+            exit 0
+          fi
+          root_v=$(jq -r .version package.json)
+          desk_v=$(jq -r .version apps/desktop/package.json)
+          if [ "$root_v" != "$expected" ] || [ "$desk_v" != "$expected" ]; then
+            echo "::error::Version mismatch after semantic-release."
+            echo "::error::Expected: $expected"
+            echo "::error::package.json: $root_v"
+            echo "::error::apps/desktop/package.json: $desk_v"
+            echo "::error::scripts/bump-version.mjs did not run or did not update both files."
+            exit 1
+          fi
+          echo "Version bump verified: both package.json files at $expected"
