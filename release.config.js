@@ -32,12 +32,12 @@ export default {
       },
     ],
     '@semantic-release/changelog',
-    [
-      '@semantic-release/exec',
-      {
-        prepareCmd: 'node scripts/bump-version.js ${nextRelease.version}',
-      },
-    ],
+    // Note: the previous @semantic-release/exec step ran a custom
+    // scripts/bump-version.js to sync per-package versions. That script was
+    // deleted in the knip cleanup (#279) and the desktop release only needs
+    // the root + apps/desktop package.json versions bumped — which the
+    // @semantic-release/git plugin below does via the `assets` list. So we
+    // drop the exec step entirely.
     [
       '@semantic-release/git',
       {
