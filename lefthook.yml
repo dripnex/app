@@ -1,0 +1,20 @@
+# Lefthook config — replaces husky.
+# Install: `pnpm install` triggers postinstall → `lefthook install`.
+# Skip a single run with LEFTHOOK=0 git commit ...
+
+pre-commit:
+  parallel: true
+  commands:
+    lint-staged:
+      run: pnpm lint-staged
+      stage_fixed: true
+
+pre-push:
+  commands:
+    typecheck:
+      run: pnpm -r typecheck
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm commitlint --edit {1}

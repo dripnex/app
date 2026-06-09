@@ -4,113 +4,133 @@
  * Handles git operations for git-backed notebooks.
  */
 
-import { ipcMain } from 'electron';
+import { z } from 'zod';
+import { defineIpcHandler } from '../ipc/registry.js';
 import type { GitService } from './types.js';
 
 export interface GitHandlerDeps {
   gitService: GitService;
 }
 
+const IdSchema = z.string().min(1).max(128);
+// SHAs are hex; allow short-SHAs (≥7) up to full 40-char.
+const ShaSchema = z
+  .string()
+  .min(7)
+  .max(40)
+  .regex(/^[a-f0-9]+$/i);
+// Commit messages can be long but not absurd.
+const CommitMessageSchema = z.string().min(1).max(8192);
+// Note file content cap matches the share payload cap.
+const NoteContentSchema = z.string().max(1024 * 1024);
+
 export function registerGitHandlers(deps: GitHandlerDeps): void {
   const { gitService: git } = deps;
 
-  // Initialize git repository for a notebook
-  ipcMain.handle('git:init', async (_event, notebookId: string) => {
-    try {
-      const repoPath = await git.initRepository(notebookId);
-      return {
-        success: true,
-        repoPath,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to initialize git repository',
-      };
-    }
+  defineIpcHandler({
+    channel: 'git:init',
+    args: z.tuple([IdSchema]),
+    handler: async notebookId => {
+      try {
+        const repoPath = await git.initRepository(notebookId);
+        return { success: true, repoPath };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to initialize git repository',
+        };
+      }
+    },
   });
 
-  // Check if notebook has git repository
-  ipcMain.handle('git:isRepo', async (_event, notebookId: string) => {
-    try {
-      const isRepo = await git.isGitRepository(notebookId);
-      return { success: true, isRepo };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to check git repository',
-      };
-    }
+  defineIpcHandler({
+    channel: 'git:isRepo',
+    args: z.tuple([IdSchema]),
+    handler: async notebookId => {
+      try {
+        const isRepo = await git.isGitRepository(notebookId);
+        return { success: true, isRepo };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to check git repository',
+        };
+      }
+    },
   });
 
-  // Commit changes
-  ipcMain.handle(
-    'git:commit',
-    async (_event, notebookId: string, message: string, files?: string[]) => {
+  defineIpcHandler({
+    channel: 'git:commit',
+    args: z.tuple([
+      IdSchema,
+      CommitMessageSchema,
+      z.array(z.string().max(1024)).max(10000).optional(),
+    ]),
+    handler: async (notebookId, message, files) => {
       try {
         const sha = await git.commit(notebookId, message, files);
-        return {
-          success: true,
-          sha,
-        };
+        return { success: true, sha };
       } catch (error) {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Failed to commit changes',
         };
       }
-    }
-  );
-
-  // Get commit history
-  ipcMain.handle('git:log', async (_event, notebookId: string, limit?: number) => {
-    try {
-      const commits = await git.log(notebookId, limit);
-      return {
-        success: true,
-        commits,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to get commit history',
-      };
-    }
+    },
   });
 
-  // Get repository status
-  ipcMain.handle('git:status', async (_event, notebookId: string) => {
-    try {
-      const status = await git.status(notebookId);
-      return {
-        success: true,
-        status,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to get repository status',
-      };
-    }
+  defineIpcHandler({
+    channel: 'git:log',
+    args: z.tuple([IdSchema, z.number().int().positive().max(10000).optional()]),
+    handler: async (notebookId, limit) => {
+      try {
+        const commits = await git.log(notebookId, limit);
+        return { success: true, commits };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to get commit history',
+        };
+      }
+    },
   });
 
-  // Checkout (revert to) a specific commit
-  ipcMain.handle('git:checkout', async (_event, notebookId: string, commitSha: string) => {
-    try {
-      await git.checkout(notebookId, commitSha);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to checkout commit',
-      };
-    }
+  defineIpcHandler({
+    channel: 'git:status',
+    args: z.tuple([IdSchema]),
+    handler: async notebookId => {
+      try {
+        const status = await git.status(notebookId);
+        return { success: true, status };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to get repository status',
+        };
+      }
+    },
   });
 
-  // Write note file to git repository
-  ipcMain.handle(
-    'git:writeNote',
-    async (_event, notebookId: string, noteId: string, content: string) => {
+  defineIpcHandler({
+    channel: 'git:checkout',
+    args: z.tuple([IdSchema, ShaSchema]),
+    handler: async (notebookId, commitSha) => {
+      try {
+        await git.checkout(notebookId, commitSha);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to checkout commit',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'git:writeNote',
+    args: z.tuple([IdSchema, IdSchema, NoteContentSchema]),
+    handler: async (notebookId, noteId, content) => {
       try {
         await git.writeNoteFile(notebookId, noteId, content);
         return { success: true };
@@ -120,35 +140,38 @@ export function registerGitHandlers(deps: GitHandlerDeps): void {
           error: error instanceof Error ? error.message : 'Failed to write note file',
         };
       }
-    }
-  );
-
-  // Read note file from git repository
-  ipcMain.handle('git:readNote', async (_event, notebookId: string, noteId: string) => {
-    try {
-      const content = await git.readNoteFile(notebookId, noteId);
-      return {
-        success: true,
-        content,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to read note file',
-      };
-    }
+    },
   });
 
-  // Delete note file from git repository
-  ipcMain.handle('git:deleteNote', async (_event, notebookId: string, noteId: string) => {
-    try {
-      await git.deleteNoteFile(notebookId, noteId);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to delete note file',
-      };
-    }
+  defineIpcHandler({
+    channel: 'git:readNote',
+    args: z.tuple([IdSchema, IdSchema]),
+    handler: async (notebookId, noteId) => {
+      try {
+        const content = await git.readNoteFile(notebookId, noteId);
+        return { success: true, content };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to read note file',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'git:deleteNote',
+    args: z.tuple([IdSchema, IdSchema]),
+    handler: async (notebookId, noteId) => {
+      try {
+        await git.deleteNoteFile(notebookId, noteId);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to delete note file',
+        };
+      }
+    },
   });
 }

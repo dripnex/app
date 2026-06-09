@@ -4,7 +4,7 @@
  * Readied MCP Server
  *
  * Exposes Readied notes to Claude Code via the Model Context Protocol.
- * Reads directly from the local SQLite database using better-sqlite3.
+ * Reads directly from the local SQLite database using node:sqlite (Node 22.5+).
  *
  * Tools:
  *   - readied_list_notes: List notes with optional filters
@@ -19,30 +19,23 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import type Database from 'better-sqlite3';
+import type { Database } from './db.js';
 import { openDb } from './db.js';
 
-/** Helper: run a SELECT and return rows as objects */
-function query(
-  db: Database.Database,
-  sql: string,
-  params: unknown[] = []
-): Record<string, unknown>[] {
-  return db.prepare(sql).all(...params) as Record<string, unknown>[];
+function query(db: Database, sql: string, params: unknown[] = []): Record<string, unknown>[] {
+  return db.prepare(sql).all(...(params as never[])) as Record<string, unknown>[];
 }
 
-/** Helper: run a single SELECT and return first row */
 function queryOne(
-  db: Database.Database,
+  db: Database,
   sql: string,
   params: unknown[] = []
 ): Record<string, unknown> | null {
-  return (db.prepare(sql).get(...params) as Record<string, unknown>) ?? null;
+  return (db.prepare(sql).get(...(params as never[])) as Record<string, unknown>) ?? null;
 }
 
-/** Helper: run INSERT/UPDATE/DELETE and return rows changed */
-function execute(db: Database.Database, sql: string, params: unknown[] = []): number {
-  return db.prepare(sql).run(...params).changes;
+function execute(db: Database, sql: string, params: unknown[] = []): number {
+  return Number(db.prepare(sql).run(...(params as never[])).changes);
 }
 
 /** Escape and prepare a query string for FTS5 MATCH syntax */
@@ -53,7 +46,7 @@ function prepareFtsQuery(input: string): string {
   return terms.map(t => `"${t}"*`).join(' OR ');
 }
 
-function createServer(db: Database.Database) {
+function createServer(db: Database) {
   const server = new McpServer({
     name: 'readied',
     version: '0.1.0',
@@ -61,14 +54,16 @@ function createServer(db: Database.Database) {
 
   // ── List notes ──────────────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     'readied_list_notes',
-    'List notes in Readied. Returns titles, IDs, and metadata.',
     {
-      notebook: z.string().optional().describe('Filter by notebook name'),
-      limit: z.number().default(20).describe('Max notes to return'),
-      includeTrash: z.boolean().default(false).describe('Include trashed notes'),
-      status: z.enum(['active', 'on_hold', 'completed', 'dropped']).optional(),
+      description: 'List notes in Readied. Returns titles, IDs, and metadata.',
+      inputSchema: {
+        notebook: z.string().optional().describe('Filter by notebook name'),
+        limit: z.number().default(20).describe('Max notes to return'),
+        includeTrash: z.boolean().default(false).describe('Include trashed notes'),
+        status: z.enum(['active', 'on_hold', 'completed', 'dropped']).optional(),
+      },
     },
     async ({ notebook, limit, includeTrash, status }) => {
       let sql = `
@@ -111,12 +106,14 @@ function createServer(db: Database.Database) {
 
   // ── Read note ───────────────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     'readied_read_note',
-    'Read the full content of a note by ID or title search.',
     {
-      id: z.string().optional().describe('Note ID (exact match)'),
-      title: z.string().optional().describe('Title to search for (partial match)'),
+      description: 'Read the full content of a note by ID or title search.',
+      inputSchema: {
+        id: z.string().optional().describe('Note ID (exact match)'),
+        title: z.string().optional().describe('Title to search for (FTS5)'),
+      },
     },
     async ({ id, title }) => {
       let note: Record<string, unknown> | null = null;
@@ -124,11 +121,29 @@ function createServer(db: Database.Database) {
       if (id) {
         note = queryOne(db, 'SELECT id, title, content, notebook_id FROM notes WHERE id = ?', [id]);
       } else if (title) {
+        // Use FTS5 to find the best-matching live note by title.
+        // Falls back to a parameterized LIKE if FTS produced no hit, so this
+        // tool still works on freshly-restored DBs where the FTS index is empty.
+        const ftsQuery = prepareFtsQuery(title);
         note = queryOne(
           db,
-          'SELECT id, title, content, notebook_id FROM notes WHERE title LIKE ? AND is_deleted = 0 ORDER BY updated_at DESC LIMIT 1',
-          [`%${title}%`]
+          `SELECT n.id, n.title, n.content, n.notebook_id
+             FROM notes_fts
+             JOIN notes n ON n.id = notes_fts.id
+             WHERE notes_fts MATCH ? AND n.is_deleted = 0
+             ORDER BY bm25(notes_fts) LIMIT 1`,
+          [ftsQuery]
         );
+        if (!note) {
+          note = queryOne(
+            db,
+            `SELECT id, title, content, notebook_id
+               FROM notes
+              WHERE title LIKE '%' || ? || '%' AND is_deleted = 0
+              ORDER BY updated_at DESC LIMIT 1`,
+            [title]
+          );
+        }
       }
 
       if (!note) {
@@ -143,12 +158,14 @@ function createServer(db: Database.Database) {
 
   // ── Create note ─────────────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     'readied_create_note',
-    'Create a new note in Readied. Content should be markdown.',
     {
-      content: z.string().describe('Markdown content for the note'),
-      notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
+      description: 'Create a new note in Readied. Content should be markdown.',
+      inputSchema: {
+        content: z.string().describe('Markdown content for the note'),
+        notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
+      },
     },
     async ({ content, notebook }) => {
       const id = crypto.randomUUID();
@@ -181,12 +198,14 @@ function createServer(db: Database.Database) {
 
   // ── Update note ─────────────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     'readied_update_note',
-    'Update an existing note. Replaces the full content.',
     {
-      id: z.string().describe('Note ID'),
-      content: z.string().describe('New markdown content'),
+      description: 'Update an existing note. Replaces the full content.',
+      inputSchema: {
+        id: z.string().describe('Note ID'),
+        content: z.string().describe('New markdown content'),
+      },
     },
     async ({ id, content }) => {
       const now = new Date().toISOString();
@@ -212,12 +231,15 @@ function createServer(db: Database.Database) {
 
   // ── Search notes (FTS5) ──────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     'readied_search_notes',
-    'Full-text search across all notes using FTS5 with relevance ranking. Returns matching notes with snippets.',
     {
-      query: z.string().describe('Search query'),
-      limit: z.number().default(10),
+      description:
+        'Full-text search across all notes using FTS5 with relevance ranking. Returns matching notes with snippets.',
+      inputSchema: {
+        query: z.string().describe('Search query'),
+        limit: z.number().default(10),
+      },
     },
     async ({ query: q, limit }) => {
       const trimmed = q.trim();
@@ -253,30 +275,39 @@ function createServer(db: Database.Database) {
 
   // ── List notebooks ──────────────────────────────────────────────────────
 
-  server.tool('readied_list_notebooks', 'List all notebooks in Readied.', {}, async () => {
-    const notebooks = query(
-      db,
-      `SELECT nb.id, nb.name, nb.parent_id, COUNT(n.id) as note_count
+  server.registerTool(
+    'readied_list_notebooks',
+    {
+      description: 'List all notebooks in Readied.',
+      inputSchema: {},
+    },
+    async () => {
+      const notebooks = query(
+        db,
+        `SELECT nb.id, nb.name, nb.parent_id, COUNT(n.id) as note_count
          FROM notebooks nb
          LEFT JOIN notes n ON n.notebook_id = nb.id AND n.is_deleted = 0
          GROUP BY nb.id
          ORDER BY nb.name`
-    );
+      );
 
-    const text = notebooks
-      .map(nb => `- **${nb.name}** (${nb.note_count} notes) — ID: ${nb.id}`)
-      .join('\n');
+      const text = notebooks
+        .map(nb => `- **${nb.name}** (${nb.note_count} notes) — ID: ${nb.id}`)
+        .join('\n');
 
-    return { content: [{ type: 'text' as const, text: text || 'No notebooks found.' }] };
-  });
+      return { content: [{ type: 'text' as const, text: text || 'No notebooks found.' }] };
+    }
+  );
 
   // ── Trash note ──────────────────────────────────────────────────────────
 
-  server.tool(
+  server.registerTool(
     'readied_trash_note',
-    'Move a note to trash (soft delete).',
     {
-      id: z.string().describe('Note ID'),
+      description: 'Move a note to trash (soft delete).',
+      inputSchema: {
+        id: z.string().describe('Note ID'),
+      },
     },
     async ({ id }) => {
       const changes = execute(

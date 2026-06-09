@@ -4,7 +4,7 @@
  * Handles notebook CRUD, git settings per notebook, and reordering.
  */
 
-import { ipcMain } from 'electron';
+import { z } from 'zod';
 import {
   createNotebookId,
   createNotebook,
@@ -12,267 +12,271 @@ import {
   moveNotebook,
   INBOX_NOTEBOOK_ID,
 } from '@readied/core';
+import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNotebookRepository } from './types.js';
 
 export interface NotebookHandlerDeps {
   notebookRepository: SQLiteNotebookRepository;
 }
 
+const IdSchema = z.string().min(1).max(128);
+const NameSchema = z.string().min(1).max(256);
+
 export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
   const { notebookRepository: repo } = deps;
 
-  // List all notebooks
-  ipcMain.handle('notebooks:list', async () => {
-    const notebooks = await repo.getAll();
-    return notebooks.map(nb => ({
-      id: nb.id,
-      name: nb.name,
-      parentId: nb.parentId,
-      depth: nb.depth,
-      order: nb.order,
-      createdAt: nb.createdAt,
-      updatedAt: nb.updatedAt,
-    }));
+  const serialize = (nb: {
+    id: string;
+    name: string;
+    parentId: string | null;
+    depth: number;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+  }) => ({
+    id: nb.id,
+    name: nb.name,
+    parentId: nb.parentId,
+    depth: nb.depth,
+    order: nb.order,
+    createdAt: nb.createdAt,
+    updatedAt: nb.updatedAt,
   });
 
-  // Get notebook tree
-  ipcMain.handle('notebooks:tree', async () => {
-    return repo.getTree();
+  defineIpcHandler({
+    channel: 'notebooks:list',
+    args: z.tuple([]),
+    handler: async () => {
+      const notebooks = await repo.getAll();
+      return notebooks.map(serialize);
+    },
   });
 
-  // Get single notebook
-  ipcMain.handle('notebooks:get', async (_event, id: string) => {
-    const notebook = await repo.get(createNotebookId(id));
-    if (!notebook) return null;
-    return {
-      id: notebook.id,
-      name: notebook.name,
-      parentId: notebook.parentId,
-      depth: notebook.depth,
-      order: notebook.order,
-      createdAt: notebook.createdAt,
-      updatedAt: notebook.updatedAt,
-    };
+  defineIpcHandler({
+    channel: 'notebooks:tree',
+    args: z.tuple([]),
+    handler: () => repo.getTree(),
   });
 
-  // Get notebook with metadata
-  ipcMain.handle('notebooks:getWithMetadata', async (_event, id: string) => {
-    const notebook = await repo.getWithMetadata(createNotebookId(id));
-    if (!notebook) return null;
-    return {
-      id: notebook.id,
-      name: notebook.name,
-      parentId: notebook.parentId,
-      depth: notebook.depth,
-      order: notebook.order,
-      createdAt: notebook.createdAt,
-      updatedAt: notebook.updatedAt,
-      noteCount: notebook.noteCount,
-      childCount: notebook.childCount,
-    };
+  defineIpcHandler({
+    channel: 'notebooks:get',
+    args: z.tuple([IdSchema]),
+    handler: async id => {
+      const notebook = await repo.get(createNotebookId(id));
+      return notebook ? serialize(notebook) : null;
+    },
   });
 
-  // Create notebook
-  ipcMain.handle('notebooks:create', async (_event, input: { name: string; parentId?: string }) => {
-    let parentDepth = 0;
-    if (input.parentId) {
-      const parent = await repo.get(createNotebookId(input.parentId));
-      if (parent) {
-        parentDepth = parent.depth;
+  defineIpcHandler({
+    channel: 'notebooks:getWithMetadata',
+    args: z.tuple([IdSchema]),
+    handler: async id => {
+      const notebook = await repo.getWithMetadata(createNotebookId(id));
+      if (!notebook) return null;
+      return {
+        ...serialize(notebook),
+        noteCount: notebook.noteCount,
+        childCount: notebook.childCount,
+      };
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'notebooks:create',
+    args: z.tuple([
+      z.object({
+        name: NameSchema,
+        parentId: IdSchema.optional(),
+      }),
+    ]),
+    handler: async input => {
+      let parentDepth = 0;
+      if (input.parentId) {
+        const parent = await repo.get(createNotebookId(input.parentId));
+        if (parent) parentDepth = parent.depth;
       }
-    }
 
-    const nextOrder = await repo.getNextOrder(
-      input.parentId ? createNotebookId(input.parentId) : null
-    );
+      const nextOrder = await repo.getNextOrder(
+        input.parentId ? createNotebookId(input.parentId) : null
+      );
 
-    const notebook = createNotebook({
-      name: input.name,
-      parentId: input.parentId ? createNotebookId(input.parentId) : null,
-      parentDepth,
-      order: nextOrder,
-    });
+      const notebook = createNotebook({
+        name: input.name,
+        parentId: input.parentId ? createNotebookId(input.parentId) : null,
+        parentDepth,
+        order: nextOrder,
+      });
 
-    await repo.save(notebook);
-
-    return {
-      id: notebook.id,
-      name: notebook.name,
-      parentId: notebook.parentId,
-      depth: notebook.depth,
-      order: notebook.order,
-      createdAt: notebook.createdAt,
-      updatedAt: notebook.updatedAt,
-    };
+      await repo.save(notebook);
+      return serialize(notebook);
+    },
   });
 
-  // Rename notebook
-  ipcMain.handle('notebooks:rename', async (_event, id: string, name: string) => {
-    const notebook = await repo.get(createNotebookId(id));
-    if (!notebook) {
-      throw new Error('Notebook not found');
-    }
-
-    const updated = renameNotebook(notebook, name);
-    await repo.save(updated);
-
-    return {
-      id: updated.id,
-      name: updated.name,
-      parentId: updated.parentId,
-      depth: updated.depth,
-      order: updated.order,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
+  defineIpcHandler({
+    channel: 'notebooks:rename',
+    args: z.tuple([IdSchema, NameSchema]),
+    handler: async (id, name) => {
+      const notebook = await repo.get(createNotebookId(id));
+      if (!notebook) {
+        throw new Error('Notebook not found');
+      }
+      const updated = renameNotebook(notebook, name);
+      await repo.save(updated);
+      return serialize(updated);
+    },
   });
 
-  // Move notebook (recursively updates children's depth)
-  ipcMain.handle('notebooks:move', async (_event, id: string, newParentId: string | null) => {
-    const notebook = await repo.get(createNotebookId(id));
-    if (!notebook) {
-      throw new Error('Notebook not found');
-    }
-
-    // Prevent circular reference: can't move a notebook into its own descendant
-    if (newParentId) {
-      let current = await repo.get(createNotebookId(newParentId));
-      while (current && current.parentId) {
-        if (current.parentId === notebook.id) {
-          throw new Error('CIRCULAR_REFERENCE');
-        }
-        current = await repo.get(current.parentId);
+  defineIpcHandler({
+    channel: 'notebooks:move',
+    args: z.tuple([IdSchema, IdSchema.nullable()]),
+    handler: async (id, newParentId) => {
+      const notebook = await repo.get(createNotebookId(id));
+      if (!notebook) {
+        throw new Error('Notebook not found');
       }
-    }
 
-    let newParentDepth = 0;
-    if (newParentId) {
-      const parent = await repo.get(createNotebookId(newParentId));
-      if (parent) {
-        newParentDepth = parent.depth;
-      }
-    }
-
-    const result = moveNotebook(
-      notebook,
-      newParentId ? createNotebookId(newParentId) : null,
-      newParentDepth
-    );
-
-    if (!result.success) {
-      throw new Error(result.reason);
-    }
-
-    await repo.save(result.notebook);
-
-    // Recursively update children's depth to match the new hierarchy
-    const updateChildrenDepth = async (parentId: string, parentDepth: number) => {
-      const children = await repo.getChildren(parentId as ReturnType<typeof createNotebookId>);
-      for (const child of children) {
-        const newChildDepth = parentDepth + 1;
-        if (child.depth !== newChildDepth) {
-          await repo.save({ ...child, depth: newChildDepth });
-          await updateChildrenDepth(child.id, newChildDepth);
+      // Prevent circular reference: can't move a notebook into its own descendant
+      if (newParentId) {
+        let current = await repo.get(createNotebookId(newParentId));
+        while (current && current.parentId) {
+          if (current.parentId === notebook.id) {
+            throw new Error('CIRCULAR_REFERENCE');
+          }
+          current = await repo.get(current.parentId);
         }
       }
-    };
-    await updateChildrenDepth(result.notebook.id, result.notebook.depth);
 
-    return {
-      id: result.notebook.id,
-      name: result.notebook.name,
-      parentId: result.notebook.parentId,
-      depth: result.notebook.depth,
-      order: result.notebook.order,
-      createdAt: result.notebook.createdAt,
-      updatedAt: result.notebook.updatedAt,
-    };
+      let newParentDepth = 0;
+      if (newParentId) {
+        const parent = await repo.get(createNotebookId(newParentId));
+        if (parent) newParentDepth = parent.depth;
+      }
+
+      const result = moveNotebook(
+        notebook,
+        newParentId ? createNotebookId(newParentId) : null,
+        newParentDepth
+      );
+
+      if (!result.success) {
+        throw new Error(result.reason);
+      }
+
+      await repo.save(result.notebook);
+
+      const updateChildrenDepth = async (parentId: string, parentDepth: number) => {
+        const children = await repo.getChildren(parentId as ReturnType<typeof createNotebookId>);
+        for (const child of children) {
+          const newChildDepth = parentDepth + 1;
+          if (child.depth !== newChildDepth) {
+            await repo.save({ ...child, depth: newChildDepth });
+            await updateChildrenDepth(child.id, newChildDepth);
+          }
+        }
+      };
+      await updateChildrenDepth(result.notebook.id, result.notebook.depth);
+
+      return serialize(result.notebook);
+    },
   });
 
-  // Delete notebook
-  ipcMain.handle('notebooks:delete', async (_event, id: string) => {
-    const notebookId = createNotebookId(id);
-
-    if (notebookId === INBOX_NOTEBOOK_ID) {
-      throw new Error('Cannot delete Inbox notebook');
-    }
-
-    await repo.delete(notebookId);
-    return { success: true };
+  defineIpcHandler({
+    channel: 'notebooks:delete',
+    args: z.tuple([IdSchema]),
+    handler: async id => {
+      const notebookId = createNotebookId(id);
+      if (notebookId === INBOX_NOTEBOOK_ID) {
+        throw new Error('Cannot delete Inbox notebook');
+      }
+      await repo.delete(notebookId);
+      return { success: true };
+    },
   });
 
-  // Reorder notebooks within a parent
-  ipcMain.handle(
-    'notebooks:reorder',
-    async (_event, parentId: string | null, orderedIds: string[]) => {
+  defineIpcHandler({
+    channel: 'notebooks:reorder',
+    args: z.tuple([IdSchema.nullable(), z.array(IdSchema).max(10000)]),
+    handler: async (parentId, orderedIds) => {
       await repo.reorder(
         parentId ? createNotebookId(parentId) : null,
         orderedIds.map(id => createNotebookId(id))
       );
       return { success: true };
-    }
-  );
+    },
+  });
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Git Settings per Notebook
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // Enable git for a notebook
-  ipcMain.handle('notebooks:enableGit', async (_event, notebookId: string) => {
-    try {
-      repo.enableGit(createNotebookId(notebookId));
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to enable git',
-      };
-    }
+  defineIpcHandler({
+    channel: 'notebooks:enableGit',
+    args: z.tuple([IdSchema]),
+    handler: notebookId => {
+      try {
+        repo.enableGit(createNotebookId(notebookId));
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to enable git',
+        };
+      }
+    },
   });
 
-  // Disable git for a notebook
-  ipcMain.handle('notebooks:disableGit', async (_event, notebookId: string) => {
-    try {
-      repo.disableGit(createNotebookId(notebookId));
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to disable git',
-      };
-    }
+  defineIpcHandler({
+    channel: 'notebooks:disableGit',
+    args: z.tuple([IdSchema]),
+    handler: notebookId => {
+      try {
+        repo.disableGit(createNotebookId(notebookId));
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to disable git',
+        };
+      }
+    },
   });
 
-  // Check if git is enabled for a notebook
-  ipcMain.handle('notebooks:isGitEnabled', async (_event, notebookId: string) => {
-    try {
-      const enabled = repo.isGitEnabled(createNotebookId(notebookId));
-      return { success: true, enabled };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to check git status',
-      };
-    }
+  defineIpcHandler({
+    channel: 'notebooks:isGitEnabled',
+    args: z.tuple([IdSchema]),
+    handler: notebookId => {
+      try {
+        const enabled = repo.isGitEnabled(createNotebookId(notebookId));
+        return { success: true, enabled };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to check git status',
+        };
+      }
+    },
   });
 
-  // Get git settings for a notebook
-  ipcMain.handle('notebooks:getGitSettings', async (_event, notebookId: string) => {
-    try {
-      const settings = repo.getGitSettings(createNotebookId(notebookId));
-      return { success: true, settings };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to get git settings',
-      };
-    }
+  defineIpcHandler({
+    channel: 'notebooks:getGitSettings',
+    args: z.tuple([IdSchema]),
+    handler: notebookId => {
+      try {
+        const settings = repo.getGitSettings(createNotebookId(notebookId));
+        return { success: true, settings };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to get git settings',
+        };
+      }
+    },
   });
 
-  // Toggle auto-commit for a notebook
-  ipcMain.handle(
-    'notebooks:setGitAutoCommit',
-    async (_event, notebookId: string, enabled: boolean) => {
+  defineIpcHandler({
+    channel: 'notebooks:setGitAutoCommit',
+    args: z.tuple([IdSchema, z.boolean()]),
+    handler: (notebookId, enabled) => {
       try {
         repo.setGitAutoCommit(createNotebookId(notebookId), enabled);
         return { success: true };
@@ -282,30 +286,22 @@ export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
           error: error instanceof Error ? error.message : 'Failed to set auto-commit',
         };
       }
-    }
-  );
+    },
+  });
 
-  // Get all git-enabled notebooks
-  ipcMain.handle('notebooks:getGitEnabled', async () => {
-    try {
-      const notebooks = repo.getGitEnabledNotebooks();
-      return {
-        success: true,
-        notebooks: notebooks.map(nb => ({
-          id: nb.id,
-          name: nb.name,
-          parentId: nb.parentId,
-          depth: nb.depth,
-          order: nb.order,
-          createdAt: nb.createdAt,
-          updatedAt: nb.updatedAt,
-        })),
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to get git-enabled notebooks',
-      };
-    }
+  defineIpcHandler({
+    channel: 'notebooks:getGitEnabled',
+    args: z.tuple([]),
+    handler: () => {
+      try {
+        const notebooks = repo.getGitEnabledNotebooks();
+        return { success: true, notebooks: notebooks.map(serialize) };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to get git-enabled notebooks',
+        };
+      }
+    },
   });
 }

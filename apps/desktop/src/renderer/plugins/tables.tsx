@@ -1,13 +1,6 @@
 import { useState, useCallback, useMemo, type ReactElement } from 'react';
-import {
-  ViewPlugin,
-  WidgetType,
-  Decoration,
-  type ViewUpdate,
-  type DecorationSet,
-  type EditorView,
-} from '@codemirror/view';
-import { RangeSetBuilder } from '@codemirror/state';
+import { WidgetType, Decoration, EditorView, type DecorationSet } from '@codemirror/view';
+import { RangeSetBuilder, StateField, type EditorState } from '@codemirror/state';
 import type { PluginManifest, ZoneComponentProps } from '@readied/plugin-api';
 import React from 'react';
 
@@ -266,27 +259,22 @@ class TableWidget extends WidgetType {
   }
 }
 
-function buildTableDecorations(view: EditorView): DecorationSet {
+// Build table decorations from EditorState (StateField-compatible).
+// We MUST use StateField, not ViewPlugin: tables span multiple lines, and
+// CodeMirror forbids Decoration.replace() ranges that include line breaks
+// when provided by a ViewPlugin. See dev.to/marijn — "Decorations that
+// replace line breaks may not be specified via plugins".
+function buildTableDecorations(state: EditorState): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
-  const doc = view.state.doc;
+  const doc = state.doc;
   const docText = doc.toString();
   const ranges = findTableRanges(docText);
-  const sel = view.state.selection.main;
+  const sel = state.selection.main;
 
   for (const range of ranges) {
     // Skip if cursor is inside this table range (show raw markdown for editing)
     if (sel.from >= range.from && sel.from <= range.to) continue;
     if (sel.to >= range.from && sel.to <= range.to) continue;
-
-    // Only process tables in visible ranges
-    let visible = false;
-    for (const vr of view.visibleRanges) {
-      if (range.from <= vr.to && range.to >= vr.from) {
-        visible = true;
-        break;
-      }
-    }
-    if (!visible) continue;
 
     const parsed = parseGfmTable(range.text, range.from);
     if (!parsed) continue;
@@ -298,24 +286,18 @@ function buildTableDecorations(view: EditorView): DecorationSet {
   return builder.finish();
 }
 
-const tableViewPlugin = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
-
-    constructor(view: EditorView) {
-      this.decorations = buildTableDecorations(view);
-    }
-
-    update(update: ViewUpdate) {
-      if (update.docChanged || update.selectionSet || update.viewportChanged) {
-        this.decorations = buildTableDecorations(update.view);
-      }
-    }
+const tableDecorationsField = StateField.define<DecorationSet>({
+  create(state) {
+    return buildTableDecorations(state);
   },
-  {
-    decorations: v => v.decorations,
-  }
-);
+  update(decorations, tr) {
+    if (tr.docChanged || tr.selection) {
+      return buildTableDecorations(tr.state);
+    }
+    return decorations.map(tr.changes);
+  },
+  provide: f => EditorView.decorations.from(f),
+});
 
 // ============================================================
 // Feature 3: Sortable Preview Table (React component)
@@ -493,7 +475,7 @@ export const tablesPlugin: PluginManifest = {
     // --- Feature 2: WYSIWYG toggle ---
     const enableWysiwyg = () => {
       if (unregisterWysiwyg) return;
-      unregisterWysiwyg = context.registerExtensions('table-wysiwyg', [tableViewPlugin]);
+      unregisterWysiwyg = context.registerExtensions('table-wysiwyg', [tableDecorationsField]);
       context.log.info('Table WYSIWYG enabled');
     };
 

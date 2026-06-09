@@ -11,9 +11,9 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Cloud, Mail, CheckCircle, X, RefreshCw, Sparkles } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
-import { useLicense } from '../../contexts/LicenseContext';
 import { getProductConfig } from '@readied/product-config';
+import { useAuthStore, selectIsAuthenticated, selectError } from '../../stores/authStore';
+import { useLicense } from '../../contexts/LicenseContext';
 import styles from './LoginModal.module.css';
 
 interface EnableSyncModalProps {
@@ -46,7 +46,9 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const [isResending, setIsResending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { requestMagicLink, isAuthenticated, error: authError } = useAuthStore();
+  const requestMagicLink = useAuthStore(state => state.requestMagicLink);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const authError = useAuthStore(selectError);
   const { state: licenseState, openSubscribe } = useLicense();
   const config = useMemo(() => getProductConfig(), []);
   const proPricing = config.plans.pro.pricing!;

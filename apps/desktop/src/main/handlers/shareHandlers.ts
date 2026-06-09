@@ -5,30 +5,44 @@
  * Auto-copies the share URL to clipboard.
  */
 
-import { ipcMain, clipboard } from 'electron';
+import { clipboard } from 'electron';
+import { z } from 'zod';
+import { defineIpcHandler } from '../ipc/registry.js';
 import type { ApiClient } from '../services/apiClient.js';
 
 export interface ShareHandlerDependencies {
   apiClient: ApiClient;
 }
 
+// Note content can be quite long; cap at 1 MiB which is well above any
+// realistic note and well below "this looks like an attack payload".
+const SharePayloadSchema = z.object({
+  noteId: z.string().min(1).max(128),
+  title: z.string().max(512),
+  content: z.string().max(1024 * 1024),
+  tags: z.array(z.string().max(64)).max(64).optional(),
+  backlinks: z
+    .array(z.object({ noteId: z.string().min(1).max(128), title: z.string().max(512) }))
+    .max(256)
+    .optional(),
+  wordCount: z.number().int().nonnegative().optional(),
+  notebookName: z.string().max(256).optional(),
+});
+
+const SlugSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-zA-Z0-9_-]+$/);
+
 export function registerShareHandlers(deps: ShareHandlerDependencies): void {
   const { apiClient } = deps;
 
-  // Create or update a shared note
-  ipcMain.handle(
-    'share:create',
-    async (
-      _event,
-      input: {
-        noteId: string;
-        title: string;
-        content: string;
-        tags?: string[];
-        backlinks?: Array<{ noteId: string; title: string }>;
-        wordCount?: number;
-        notebookName?: string;
-      }
+  defineIpcHandler({
+    channel: 'share:create',
+    args: z.tuple([SharePayloadSchema]),
+    handler: async (
+      input
     ): Promise<{ success: boolean; url?: string; slug?: string; error?: string }> => {
       try {
         const result = await apiClient.shareNote(input);
@@ -40,13 +54,13 @@ export function registerShareHandlers(deps: ShareHandlerDependencies): void {
           error: error instanceof Error ? error.message : 'Failed to share note',
         };
       }
-    }
-  );
+    },
+  });
 
-  // Delete a shared note
-  ipcMain.handle(
-    'share:delete',
-    async (_event, slug: string): Promise<{ success: boolean; error?: string }> => {
+  defineIpcHandler({
+    channel: 'share:delete',
+    args: z.tuple([SlugSchema]),
+    handler: async (slug): Promise<{ success: boolean; error?: string }> => {
       try {
         await apiClient.unshareNote(slug);
         return { success: true };
@@ -56,6 +70,6 @@ export function registerShareHandlers(deps: ShareHandlerDependencies): void {
           error: error instanceof Error ? error.message : 'Failed to unshare note',
         };
       }
-    }
-  );
+    },
+  });
 }

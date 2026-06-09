@@ -6,6 +6,8 @@ import type {
   VerificationResult,
   SubscriptionInfo,
   StoredSubscriptionData,
+  SignedSubscriptionPayload,
+  SignedSubscriptionEnvelope,
 } from './types.js';
 
 /**
@@ -13,6 +15,20 @@ import type {
  * Replace with actual key in production
  */
 const DEFAULT_PUBLIC_KEY = '808de62a74a99bc70bf16f9df1ce3a7d6417e8d8479a6193df2bc28e6d510517';
+
+/**
+ * Default public key for subscription-envelope verification.
+ *
+ * REPLACE BEFORE SHIPPING. This is a placeholder that does NOT correspond
+ * to any production server key — calls to verifySubscriptionSignature
+ * without an explicit publicKey will fail until this constant is updated
+ * with the actual server public key.
+ *
+ * The matching private key MUST live only on the licensing server. Never
+ * commit it.
+ */
+const DEFAULT_SUBSCRIPTION_PUBLIC_KEY =
+  '0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
  * Extracts the payload portion of a license for signature verification
@@ -356,4 +372,142 @@ export function createStoredSubscription(
     lastVerified: now.toISOString(),
     cacheExpiresAt: cacheExpires.toISOString(),
   };
+}
+
+// ============================================================================
+// Signed Subscription Envelope (Ed25519)
+// ============================================================================
+
+/**
+ * Deterministic JSON encoder used as the signed message.
+ *
+ * Ed25519 signs bytes, not concepts — so the client and server MUST
+ * serialize the payload identically. JSON.stringify is non-deterministic
+ * across runtimes when objects have different insertion orders, so we
+ * sort keys alphabetically at every depth before stringifying.
+ *
+ * Arrays keep their order. Numbers, strings, booleans, null are emitted
+ * verbatim. Functions / undefined are stripped (as in JSON.stringify).
+ */
+export function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return '[' + value.map(canonicalJson).join(',') + ']';
+  }
+  const obj = value as Record<string, unknown>;
+  const sortedKeys = Object.keys(obj).sort();
+  const parts = sortedKeys
+    .filter(k => obj[k] !== undefined)
+    .map(k => JSON.stringify(k) + ':' + canonicalJson(obj[k]));
+  return '{' + parts.join(',') + '}';
+}
+
+/**
+ * Sign a subscription payload with the server's Ed25519 private key.
+ *
+ * Intended for SERVER use only. The client never holds the private key.
+ *
+ * @param payload - The payload to sign. Should include a fresh `issuedAt`.
+ * @param privateKeyHex - 32-byte Ed25519 private key, hex-encoded.
+ * @returns The signed envelope ready to send over the wire / persist.
+ */
+export async function signSubscriptionPayload(
+  payload: SignedSubscriptionPayload,
+  privateKeyHex: string
+): Promise<SignedSubscriptionEnvelope> {
+  const privateKey = hexToBytes(privateKeyHex);
+  const message = stringToBytes(canonicalJson(payload));
+  const signature = await ed.signAsync(message, privateKey);
+  return {
+    payload,
+    signature: bytesToBase64(signature),
+  };
+}
+
+/**
+ * Verify a subscription envelope received from the server (or read from a
+ * local cache file).
+ *
+ * Checks performed:
+ *   1. Envelope shape (payload + signature present).
+ *   2. Payload shape (payloadVersion, issuedAt, subscription).
+ *   3. Ed25519 signature against the public key.
+ *   4. Optional age check — if `maxAgeSeconds` is given, reject payloads
+ *      whose `issuedAt` is older than that.
+ *   5. Subscription's own activity window (delegates to verifySubscription).
+ *
+ * @param envelope - The signed envelope to verify.
+ * @param config - Optional public key + age policy + injectable clock for tests.
+ */
+export async function verifySubscriptionSignature(
+  envelope: unknown,
+  config?: PublicKeyConfig & {
+    /** Max age of the signature, in seconds. Defaults to the envelope's
+     *  own `ttlSeconds`, then to 7 days. */
+    maxAgeSeconds?: number;
+    /** Injectable clock for tests. Defaults to Date.now(). */
+    nowMs?: number;
+  }
+): Promise<VerificationResult> {
+  if (typeof envelope !== 'object' || envelope === null) {
+    return { valid: false, error: 'Invalid envelope: not an object' };
+  }
+  const env = envelope as Record<string, unknown>;
+  if (typeof env.signature !== 'string' || env.signature.length === 0) {
+    return { valid: false, error: 'Invalid envelope: missing signature' };
+  }
+  if (typeof env.payload !== 'object' || env.payload === null) {
+    return { valid: false, error: 'Invalid envelope: missing payload' };
+  }
+
+  const payload = env.payload as Record<string, unknown>;
+  if (payload.payloadVersion !== 1) {
+    return { valid: false, error: 'Unsupported payload version' };
+  }
+  if (typeof payload.issuedAt !== 'string') {
+    return { valid: false, error: 'Invalid envelope: missing issuedAt' };
+  }
+
+  // Verify Ed25519 signature.
+  try {
+    const publicKeyHex = config?.publicKey ?? DEFAULT_SUBSCRIPTION_PUBLIC_KEY;
+    const publicKey = hexToBytes(publicKeyHex);
+    const signature = base64ToBytes(env.signature as string);
+    const message = stringToBytes(canonicalJson(env.payload));
+    const ok = await ed.verifyAsync(signature, message, publicKey);
+    if (!ok) {
+      return { valid: false, error: 'Signature verification failed' };
+    }
+  } catch {
+    return { valid: false, error: 'Signature verification threw' };
+  }
+
+  // Replay window. The default below applies only when neither the
+  // envelope nor the caller provide one.
+  const DEFAULT_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+  const maxAgeSeconds =
+    config?.maxAgeSeconds ??
+    (typeof payload.ttlSeconds === 'number'
+      ? (payload.ttlSeconds as number)
+      : DEFAULT_MAX_AGE_SECONDS);
+  const issuedAtMs = new Date(payload.issuedAt as string).getTime();
+  const nowMs = config?.nowMs ?? Date.now();
+  if (Number.isNaN(issuedAtMs)) {
+    return { valid: false, error: 'Invalid issuedAt' };
+  }
+  if (nowMs - issuedAtMs > maxAgeSeconds * 1000) {
+    return { valid: false, error: 'Signed payload is older than max age' };
+  }
+  if (issuedAtMs - nowMs > 60 * 1000) {
+    // Allow 60s clock skew but reject obviously-future timestamps.
+    return { valid: false, error: 'Signed payload is from the future' };
+  }
+
+  // Delegate subscription field/shape/expiry validation.
+  const inner = verifySubscription((env.payload as { subscription: unknown }).subscription);
+  if (!inner.valid) return inner;
+
+  return { valid: true, subscription: inner.subscription };
 }
