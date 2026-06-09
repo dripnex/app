@@ -75,12 +75,20 @@ export interface StoredTrialData {
 }
 
 /**
- * Stored subscription data (cached locally)
+ * Stored subscription data (cached locally).
+ *
+ * `signedEnvelope` is the server-signed source of truth when present.
+ * `subscription` is the unsigned view derived from it (or, during the
+ * migration period before the server emits signed envelopes, the raw
+ * API response). Clients that have an envelope MUST verify it before
+ * trusting the cached subscription — see verifySubscriptionSignature.
  */
 export interface StoredSubscriptionData {
   readonly subscription: SubscriptionInfo;
   readonly lastVerified: string; // ISO 8601
   readonly cacheExpiresAt: string; // ISO 8601
+  /** Signed envelope from the server. Optional during migration. */
+  readonly signedEnvelope?: SignedSubscriptionEnvelope;
 }
 
 /**
