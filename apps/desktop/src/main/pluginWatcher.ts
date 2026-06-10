@@ -27,11 +27,15 @@ export function startPluginWatcher(pluginsDir: string): void {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const broadcastReload = () => {
-    BrowserWindow.getAllWindows().forEach(win => {
-      if (!win.isDestroyed()) {
-        win.webContents.send('plugins:reload');
+    for (const win of BrowserWindow.getAllWindows()) {
+      try {
+        if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
+          win.webContents.send('plugins:reload');
+        }
+      } catch {
+        // Window destroyed between check and send — ignore
       }
-    });
+    }
   };
 
   try {
