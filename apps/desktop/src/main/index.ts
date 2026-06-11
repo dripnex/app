@@ -220,6 +220,7 @@ function createWindow(): void {
   mainWindow.on('move', debouncedSave);
 
   mainWindow.on('maximize', () => {
+    if (mainWindow.isDestroyed()) return;
     saveWindowState({
       ...mainWindow.getBounds(),
       isMaximized: true,
@@ -227,26 +228,30 @@ function createWindow(): void {
   });
 
   mainWindow.on('unmaximize', () => {
-    const bounds = mainWindow.getBounds();
+    if (mainWindow.isDestroyed()) return;
     saveWindowState({
-      ...bounds,
+      ...mainWindow.getBounds(),
       isMaximized: false,
     });
   });
 
   mainWindow.on('ready-to-show', () => {
+    if (mainWindow.isDestroyed()) return;
     mainWindow.show();
   });
 
-  // Deliver any pending deep link auth token once the renderer is ready
+  // Deliver any pending deep link auth token once the renderer is ready.
+  // Guard against window destruction — did-finish-load can fire late during
+  // app shutdown or auto-update restart, and the captured `mainWindow` ref
+  // would throw 'Object has been destroyed' on .send/.show/.focus.
   mainWindow.webContents.on('did-finish-load', () => {
-    if (pendingAuthToken) {
-      getLogger().info('Delivering queued auth token to renderer');
-      mainWindow.webContents.send('auth:verify-token', pendingAuthToken);
-      mainWindow.show();
-      mainWindow.focus();
-      pendingAuthToken = null;
-    }
+    if (!pendingAuthToken) return;
+    if (mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return;
+    getLogger().info('Delivering queued auth token to renderer');
+    mainWindow.webContents.send('auth:verify-token', pendingAuthToken);
+    mainWindow.show();
+    mainWindow.focus();
+    pendingAuthToken = null;
   });
 
   // Load renderer
@@ -279,6 +284,7 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
   });
 
   noteWindow.on('ready-to-show', () => {
+    if (noteWindow.isDestroyed()) return;
     noteWindow.show();
     if (process.env.NODE_ENV === 'development') {
       noteWindow.webContents.openDevTools();
@@ -837,12 +843,28 @@ app.on('before-quit', async event => {
     );
   }
 
-  if (db) {
-    db.close();
-    getLogger().info('Database closed');
-  }
-
+  // Don't close the DB here — windows are still alive and may issue IPC
+  // requests (e.g. notebooks:tree on reload) until they fully unmount.
+  // The DB is closed in `will-quit`, after window-all-closed has fired.
   app.quit();
+});
+
+// Close the database after all windows are gone but before the process exits.
+// This avoids the "database connection is not open" race where the renderer
+// fires an IPC request between db.close() and window destruction.
+app.on('will-quit', () => {
+  if (db) {
+    try {
+      db.close();
+      getLogger().info('Database closed');
+    } catch (err) {
+      getLogger().error(
+        { error: err instanceof Error ? err.message : String(err) },
+        'Error closing database during shutdown'
+      );
+    }
+    db = null;
+  }
 });
 
 // Deep link handler for readied:// protocol (macOS)
