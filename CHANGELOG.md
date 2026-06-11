@@ -1,3 +1,9 @@
+## [0.15.3](https://github.com/tomymaritano/readide/compare/v0.15.2...v0.15.3) (2026-06-11)
+
+### Bug Fixes
+
+* **release:** cut v0.15.3 with window/db lifecycle crash fixes ([#304](https://github.com/tomymaritano/readide/issues/304)) ([c755a67](https://github.com/tomymaritano/readide/commit/c755a6778f467945060ff407359d482f20605eab)), closes [#303](https://github.com/tomymaritano/readide/issues/303)
+
 ## [0.15.2](https://github.com/tomymaritano/readide/compare/v0.15.1...v0.15.2) (2026-06-09)
 
 ### Bug Fixes
