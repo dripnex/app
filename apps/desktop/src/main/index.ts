@@ -10,7 +10,8 @@
 import { initSentry } from './sentry';
 initSentry();
 
-import { join, normalize } from 'path';
+import { join, normalize, relative, isAbsolute } from 'path';
+import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
 import {
   app,
@@ -497,11 +498,45 @@ function createSettingsWindow(): void {
 // Navigation hardening
 // ============================================================================
 
-/** Only the app's own renderer origin (dev server) or packaged file:// loads. */
+/**
+ * Only the app's own renderer origin (dev server) or packaged file:// loads
+ * under the app's output directory. Uses parsed-origin / path-prefix checks
+ * rather than string startsWith, which would let `http://localhost:5174.evil.com`
+ * or `file:///etc/passwd` pass.
+ */
 function isInternalNavigation(url: string): boolean {
-  if (url.startsWith('file://')) return true;
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+
   const devUrl = process.env.ELECTRON_RENDERER_URL;
-  if (devUrl && url.startsWith(devUrl)) return true;
+  if (devUrl) {
+    try {
+      if (u.origin === new URL(devUrl).origin) return true;
+    } catch {
+      // malformed dev URL — ignore
+    }
+  }
+
+  if (u.protocol === 'file:') {
+    // Packaged renderer is loaded from the app's `out/` dir via loadFile. Only
+    // allow file:// navigations that resolve INSIDE it. Compare real filesystem
+    // paths via path.relative (handles `..`, separators, and percent-encoding)
+    // rather than a URL string prefix, which normalization could sidestep.
+    let target: string;
+    try {
+      target = fileURLToPath(u);
+    } catch {
+      return false;
+    }
+    const appDir = join(__dirname, '..');
+    const rel = relative(appDir, target);
+    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+  }
+
   return false;
 }
 

@@ -62,7 +62,7 @@ const activeHandles = new Map<number, Map<string, ChatHandle | ToolChatHandle>>(
 const pendingConfirmations = new Map<string, Map<string, (approved: boolean) => void>>();
 const CONFIRM_TIMEOUT_MS = 60_000;
 
-// Pending renderer tool results: callId -> resolve function
+// Pending renderer tool results: `${requestId}:${callId}` -> resolve function
 const pendingRendererResults = new Map<
   string,
   (result: { ok: boolean; content: string; error?: string }) => void
@@ -272,10 +272,11 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
       const windowId = event.sender.id;
       if (!activeHandles.get(windowId)?.has(requestId)) return;
 
-      const resolve = pendingRendererResults.get(callId);
+      const key = `${requestId}:${callId}`;
+      const resolve = pendingRendererResults.get(key);
       if (resolve) {
         resolve(result);
-        pendingRendererResults.delete(callId);
+        pendingRendererResults.delete(key);
       }
     }
   );
@@ -321,13 +322,16 @@ export function executeToolInRenderer(
   toolName: string,
   args: Record<string, unknown>
 ): Promise<{ ok: boolean; content: string; error?: string }> {
+  // Key by (requestId, callId): callId is only unique within a request, so two
+  // concurrent requests could otherwise collide and resolve each other's promise.
+  const key = `${requestId}:${callId}`;
   return new Promise(resolve => {
-    pendingRendererResults.set(callId, resolve);
+    pendingRendererResults.set(key, resolve);
     sender.send('ai:tool-execute-in-renderer', requestId, callId, toolName, args);
 
     setTimeout(() => {
-      if (pendingRendererResults.has(callId)) {
-        pendingRendererResults.delete(callId);
+      if (pendingRendererResults.has(key)) {
+        pendingRendererResults.delete(key);
         resolve({ ok: false, content: 'Renderer tool timed out', error: 'Timeout' });
       }
     }, RENDERER_TOOL_TIMEOUT_MS);

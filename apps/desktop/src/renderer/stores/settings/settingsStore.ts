@@ -236,6 +236,31 @@ export const selectIndentWithTabs = (state: SettingsStore) => state.settings.edi
 export const selectSpellCheck = (state: SettingsStore) => state.settings.editor.spellCheck;
 
 // ============================================================================
+// One-time migration: scrub a previously-persisted API key
+// ============================================================================
+
+// Builds before the `partialize` fix wrote `ai.apiKey` to localStorage in
+// cleartext. `partialize` stops FUTURE writes, but an already-stored key would
+// linger until the next persist. Proactively strip it from the stored blob on
+// startup. The in-memory value (rehydrated from this same blob) is then
+// re-sourced from safeStorage by AiPanel/AiSection.
+if (typeof window !== 'undefined') {
+  try {
+    const STORAGE_KEY = 'readied-settings';
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.state?.settings?.ai?.apiKey) {
+        parsed.state.settings.ai.apiKey = '';
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      }
+    }
+  } catch {
+    // Malformed/absent storage — nothing to scrub.
+  }
+}
+
+// ============================================================================
 // Cross-Window Sync via IPC
 // ============================================================================
 
@@ -253,6 +278,17 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
     // Cast through unknown to satisfy TS
     const s = data as unknown as Partial<SettingsSchema>;
 
+    // The API key is intentionally stripped from the broadcast (see below), so
+    // incoming sync always carries apiKey=''. Preserve THIS window's in-memory
+    // key instead of clobbering it — each window hydrates its own key from
+    // safeStorage and must not lose it when another window changes a setting.
+    // BUT if the sync also switches the provider, the in-memory key belongs to
+    // the OLD provider — drop it and let AiPanel rehydrate the new provider's
+    // key from safeStorage, so we never carry provider A's key into provider B.
+    const currentAi = useSettingsStore.getState().settings.ai;
+    const incomingProvider = s.ai?.provider ?? currentAi.provider;
+    const preservedApiKey = incomingProvider === currentAi.provider ? currentAi.apiKey : '';
+
     // Merge with defaults to ensure no section is undefined
     const merged: SettingsSchema = {
       ...DEFAULT_SETTINGS,
@@ -260,7 +296,7 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
       general: { ...DEFAULT_GENERAL, ...s.general },
       updates: { ...DEFAULT_UPDATES, ...s.updates },
       appearance: { ...DEFAULT_APPEARANCE, ...s.appearance },
-      ai: { ...DEFAULT_AI, ...s.ai },
+      ai: { ...DEFAULT_AI, ...s.ai, apiKey: preservedApiKey },
       editor: { ...DEFAULT_EDITOR, ...s.editor },
       backup: { ...DEFAULT_BACKUP, ...s.backup },
     };

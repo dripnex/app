@@ -104,15 +104,19 @@ export function AiPanel({
   // store. The key is intentionally NOT persisted to localStorage (see
   // settingsStore partialize), so after an app restart it must be loaded from
   // the encrypted keychain before the chat flow can use it.
+  //
+  // Keyed on provider only: whenever the provider changes we must load THAT
+  // provider's key (and clear a stale key from the previous provider), so we
+  // don't send provider A's key to provider B. Depending on apiKey too would
+  // both loop and skip reloads when a stale key is present.
   useEffect(() => {
     if (aiSettings.provider === 'ollama') return;
-    if (aiSettings.apiKey) return;
     let cancelled = false;
     void (async () => {
       try {
         const key = await window.readied.ai.getKey(aiSettings.provider);
-        if (!cancelled && key) {
-          useSettingsStore.getState().updateAi({ apiKey: key });
+        if (!cancelled) {
+          useSettingsStore.getState().updateAi({ apiKey: key ?? '' });
         }
       } catch {
         // safeStorage unavailable (e.g. locked keychain) — leave key empty;
@@ -122,7 +126,7 @@ export function AiPanel({
     return () => {
       cancelled = true;
     };
-  }, [aiSettings.provider, aiSettings.apiKey]);
+  }, [aiSettings.provider]);
 
   // Sync mode when initialMode prop changes (e.g. ai:ask-notes command while panel open)
   useEffect(() => {
