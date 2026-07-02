@@ -21,6 +21,7 @@ import {
   nativeTheme,
   globalShortcut,
   screen,
+  shell,
 } from 'electron';
 import { runMigrations, createDataPaths, type DataPaths } from '@readied/storage-core';
 import {
@@ -425,6 +426,39 @@ function createSettingsWindow(): void {
     });
   }
 }
+
+// ============================================================================
+// Navigation hardening
+// ============================================================================
+
+/** Only the app's own renderer origin (dev server) or packaged file:// loads. */
+function isInternalNavigation(url: string): boolean {
+  if (url.startsWith('file://')) return true;
+  const devUrl = process.env.ELECTRON_RENDERER_URL;
+  if (devUrl && url.startsWith(devUrl)) return true;
+  return false;
+}
+
+/** Protocols we are willing to hand off to the OS via shell.openExternal. */
+function isSafeExternalUrl(url: string): boolean {
+  return url.startsWith('https://') || url.startsWith('http://') || url.startsWith('mailto:');
+}
+
+// SECURITY: rendered note/AI content can contain arbitrary links (rehypeRaw is
+// enabled). Deny all in-app navigation and window.open by default; route only
+// vetted external URLs to the system browser. Applied to every web contents.
+app.on('web-contents-created', (_event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (isSafeExternalUrl(url)) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  contents.on('will-navigate', (event, url) => {
+    if (isInternalNavigation(url)) return;
+    event.preventDefault();
+    if (isSafeExternalUrl(url)) void shell.openExternal(url);
+  });
+});
 
 // ============================================================================
 // Window Management IPC (small enough to keep inline)

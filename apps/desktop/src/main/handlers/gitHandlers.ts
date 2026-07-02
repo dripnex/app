@@ -12,7 +12,14 @@ export interface GitHandlerDeps {
   gitService: GitService;
 }
 
-const IdSchema = z.string().min(1).max(128);
+// Notebook/note IDs are UUIDs (crypto.randomUUID) or safe slugs like 'inbox'.
+// Restrict the charset: these values flow into path.join() inside GitService,
+// so an unconstrained string (e.g. "../../..") would enable path traversal.
+const IdSchema = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-zA-Z0-9_-]+$/, 'ID must be alphanumeric (letters, digits, _ or -)');
 // SHAs are hex; allow short-SHAs (≥7) up to full 40-char.
 const ShaSchema = z
   .string()
