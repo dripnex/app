@@ -10,6 +10,8 @@
  * 3. Bump SETTINGS_VERSION and add migration logic in settingsStore.ts
  */
 
+import { DEFAULT_MODEL } from '@dripnex/ai-core';
+
 // ============================================================================
 // Version
 // ============================================================================
@@ -151,7 +153,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
 export const DEFAULT_AI: AiSettings = {
   provider: 'anthropic',
   apiKey: '',
-  model: 'claude-sonnet-4-20250514',
+  model: DEFAULT_MODEL,
   maxContextNotes: 5,
 };
 

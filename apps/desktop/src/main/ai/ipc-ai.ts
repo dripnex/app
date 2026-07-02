@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { ipcMain, app, dialog } from 'electron';
 import { z } from 'zod';
 import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@dripnex/ai-core';
+import { DEFAULT_MODEL } from '@dripnex/ai-core';
 import type { ToolRegistry } from '@dripnex/ai-core';
 
 const BATCH_INTERVAL_MS = 50;
@@ -175,7 +176,7 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           relevantNotes: [],
           mode: 'chat',
           provider: config.provider ?? 'anthropic',
-          model: 'claude-sonnet-4-20250514',
+          model: DEFAULT_MODEL,
           providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
           maxResponseTokens: 1,
         });

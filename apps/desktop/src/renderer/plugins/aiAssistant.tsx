@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { DEFAULT_MODEL } from '@dripnex/ai-core';
 import '../styles/ai-panel.css';
 
 /**
@@ -48,11 +49,11 @@ export const aiAssistantPlugin: PluginManifest = {
     },
     model: {
       type: 'enum',
-      default: 'claude-sonnet-4-20250514',
+      default: DEFAULT_MODEL,
       description: 'Claude model to use (configure in Settings > AI Assistant instead)',
       options: [
-        { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-        { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+        { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
+        { value: 'claude-opus-4-8', label: 'Claude Opus 4.8' },
       ],
     },
     maxContextNotes: {
