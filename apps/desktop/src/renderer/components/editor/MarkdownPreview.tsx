@@ -10,6 +10,7 @@ import {
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
 import '../../styles/code-highlight.css';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
@@ -86,6 +87,39 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       codeBlockStore.subscribe,
       () => codeBlockStore.getState().registrations
     );
+
+    // SECURITY: rehypeRaw parses raw HTML embedded in note markdown, so the
+    // output must be sanitized before rendering (defends against XSS via
+    // <script>, event handlers, javascript: URLs, etc.). The schema extends the
+    // GitHub-flavored default to preserve app features: the custom <embed-image>
+    // element, task-list checkboxes, className/data-* (wikilinks, syntax
+    // highlight), asset:// image URLs, and plugin-registered preview elements.
+    // Runs BEFORE rehypeHighlight so highlight's generated spans/classes are
+    // trusted output rather than sanitized input.
+    const sanitizeSchema = useMemo(() => {
+      const base = defaultSchema;
+      const attrs = base.attributes ?? {};
+      const star = (attrs['*'] ?? []) as unknown[];
+      return {
+        ...base,
+        tagNames: [
+          ...(base.tagNames ?? []),
+          'embed-image',
+          ...pluginComponentRegs.map(r => r.tagName),
+        ],
+        attributes: {
+          ...attrs,
+          '*': [...star, 'className', 'data*'],
+          'embed-image': ['src', 'alt', 'className', 'loading'],
+          input: ['type', 'checked', 'disabled'],
+        },
+        protocols: {
+          ...base.protocols,
+          // Local embeds are resolved to asset:// URLs before rendering.
+          src: [...(base.protocols?.src ?? []), 'asset'],
+        },
+      } as typeof defaultSchema;
+    }, [pluginComponentRegs]);
 
     // Use live buffer content if available for this note, otherwise fall back to prop
     const liveContent = useEditorBufferStore(selectContentForNote(noteId));
@@ -263,6 +297,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
           rehypePlugins={
             [
               rehypeRaw,
+              [rehypeSanitize, sanitizeSchema],
               rehypeHighlight,
               ...pluginRehypeRegs.map(r => r.plugin),
               // eslint-disable-next-line @typescript-eslint/no-explicit-any

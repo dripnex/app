@@ -100,6 +100,30 @@ export function AiPanel({
     inputRef.current?.focus();
   }, []);
 
+  // Rehydrate the API key from safeStorage (OS keychain) into the in-memory
+  // store. The key is intentionally NOT persisted to localStorage (see
+  // settingsStore partialize), so after an app restart it must be loaded from
+  // the encrypted keychain before the chat flow can use it.
+  useEffect(() => {
+    if (aiSettings.provider === 'ollama') return;
+    if (aiSettings.apiKey) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const key = await window.readied.ai.getKey(aiSettings.provider);
+        if (!cancelled && key) {
+          useSettingsStore.getState().updateAi({ apiKey: key });
+        }
+      } catch {
+        // safeStorage unavailable (e.g. locked keychain) — leave key empty;
+        // the submit handler surfaces a "set your API key" message.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [aiSettings.provider, aiSettings.apiKey]);
+
   // Sync mode when initialMode prop changes (e.g. ai:ask-notes command while panel open)
   useEffect(() => {
     setMode(initialMode);
