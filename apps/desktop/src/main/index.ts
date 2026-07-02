@@ -170,6 +170,72 @@ function initDatabase(): void {
 }
 
 // ============================================================================
+// Network guards
+// ============================================================================
+
+/** Is this IPv4 (as 4 octet numbers) loopback/private/link-local/unspecified? */
+function isBlockedIPv4(o: number[]): boolean {
+  if (o.length !== 4 || o.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true; // malformed → block
+  const a = o[0]!;
+  const b = o[1]!;
+  if (a === 127) return true; // loopback 127.0.0.0/8
+  if (a === 10) return true; // private 10/8
+  if (a === 0) return true; // "this host" 0.0.0.0/8
+  if (a === 192 && b === 168) return true; // private 192.168/16
+  if (a === 169 && b === 254) return true; // link-local incl. metadata 169.254.169.254
+  if (a === 172 && b >= 16 && b <= 31) return true; // private 172.16/12
+  return false;
+}
+
+/**
+ * SSRF guard: block hostnames that point at loopback, private, or link-local
+ * ranges (incl. the cloud metadata endpoint 169.254.169.254). Used to keep
+ * `editor:fetchUrlTitle` from being pointed at internal services.
+ *
+ * IP-aware: range checks apply ONLY when the host is an actual IP literal, so
+ * ordinary domains that merely start with "fc"/"fd" (fc2.com, fdroid.org) are
+ * not over-blocked. Handles IPv4-mapped IPv6 (e.g. `[::ffff:127.0.0.1]`, which
+ * the WHATWG URL parser normalizes to `::ffff:7f00:1`) so those can't bypass it.
+ *
+ * Note: literal host only; does not defend against DNS rebinding or a public
+ * host redirecting to an internal one — a follow-up could resolve + pin the IP
+ * and validate each redirect hop.
+ */
+function isBlockedFetchHost(hostname: string): boolean {
+  const h = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '') // strip IPv6 brackets
+    .replace(/\.$/, ''); // strip a trailing root dot (localhost. / 127.0.0.1. must not bypass)
+  if (h === '' || h === 'localhost' || h.endsWith('.localhost')) return true;
+
+  // IPv4 literal (dotted quad)
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+  if (v4) return isBlockedIPv4([+v4[1]!, +v4[2]!, +v4[3]!, +v4[4]!]);
+
+  // IPv6 literal (only branch that inspects hex prefixes)
+  if (h.includes(':')) {
+    if (h === '::1' || h === '::') return true; // loopback / unspecified
+    // IPv4-mapped, dotted form: ::ffff:127.0.0.1
+    const mapDotted = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+    if (mapDotted)
+      return isBlockedIPv4([+mapDotted[1]!, +mapDotted[2]!, +mapDotted[3]!, +mapDotted[4]!]);
+    // IPv4-mapped, hex form (URL parser output): ::ffff:7f00:1
+    const mapHex = /::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(h);
+    if (mapHex) {
+      const hi = parseInt(mapHex[1]!, 16);
+      const lo = parseInt(mapHex[2]!, 16);
+      return isBlockedIPv4([hi >> 8, hi & 0xff, lo >> 8, lo & 0xff]);
+    }
+    if (/^fe[89ab]/.test(h)) return true; // link-local fe80::/10 (fe80–febf)
+    if (/^f[cd]/.test(h)) return true; // unique-local fc00::/7
+    return false;
+  }
+
+  // Ordinary domain — not blocked here (SSRF for domains would need DNS resolution).
+  return false;
+}
+
+// ============================================================================
 // Window Creation
 // ============================================================================
 
@@ -666,8 +732,15 @@ app
     ipcMain.handle('editor:fetchUrlTitle', async (_event, url: string) => {
       try {
         // Validate URL to prevent fetching arbitrary resources
+        if (typeof url !== 'string' || url.length > 2048) {
+          return { title: null };
+        }
         const parsed = new URL(url);
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return { title: null };
+        }
+        // SSRF guard: refuse internal/loopback/link-local targets.
+        if (isBlockedFetchHost(parsed.hostname)) {
           return { title: null };
         }
         const response = await net.fetch(url, {

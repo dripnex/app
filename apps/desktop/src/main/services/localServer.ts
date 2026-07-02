@@ -142,14 +142,16 @@ export class LocalServer {
     res: ServerResponse,
     handlers: LocalServerHandlers
   ): Promise<void> {
-    // Auth check (constant-time comparison to prevent timing attacks)
-    const authHeader = req.headers.authorization;
-    const expected = `Bearer ${this.token}`;
-    if (
-      !authHeader ||
-      authHeader.length !== expected.length ||
-      !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
-    ) {
+    // Auth check (constant-time comparison to prevent timing attacks).
+    // Compare BYTE lengths, not JS string lengths: a multibyte Authorization
+    // header can share the same UTF-16 length as `expected` while producing a
+    // different-length Buffer, which makes timingSafeEqual throw a RangeError
+    // (unhandled here → hung socket). Buffer.length is the byte length, so the
+    // guard below guarantees timingSafeEqual only sees equal-length buffers.
+    const authHeader = req.headers.authorization ?? '';
+    const authBuf = Buffer.from(authHeader);
+    const expectedBuf = Buffer.from(`Bearer ${this.token}`);
+    if (authBuf.length !== expectedBuf.length || !timingSafeEqual(authBuf, expectedBuf)) {
       this.sendJson(res, 401, { error: 'Unauthorized' });
       return;
     }
