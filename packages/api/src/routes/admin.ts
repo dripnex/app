@@ -12,6 +12,7 @@
 
 import { Hono } from 'hono';
 import { sql, desc, eq } from 'drizzle-orm';
+import * as jose from 'jose';
 import { createDb, type Env } from '../db/client.js';
 import {
   users,
@@ -38,24 +39,26 @@ admin.use('*', async (c, next) => {
     return;
   }
 
-  // Method 2: JWT auth — check if user email is admin
+  // Method 2: JWT auth — check if the *verified* user email is admin.
+  // SECURITY: the signature MUST be verified with jwtVerify. Decoding the
+  // payload with atob() and trusting the `email` claim lets anyone forge an
+  // admin token. jwtVerify also enforces exp, so no manual expiry check.
   const authHeader = c.req.header('Authorization');
   if (authHeader?.startsWith('Bearer ')) {
     try {
-      const jwt = authHeader.slice(7);
-      const [, payloadB64] = jwt.split('.');
-      if (payloadB64) {
-        const payload = JSON.parse(atob(payloadB64)) as { email?: string; exp?: number };
-        if (payload.exp && payload.exp * 1000 < Date.now()) {
-          return c.json({ error: 'Token expired' }, 401);
-        }
-        if (payload.email && ADMIN_EMAILS.includes(payload.email)) {
+      const token = authHeader.slice(7);
+      const secret = new TextEncoder().encode(c.env.JWT_SECRET);
+      const { payload } = await jose.jwtVerify(token, secret, { algorithms: ['HS256'] });
+      // Refresh tokens must never grant access.
+      if (payload.type !== 'refresh') {
+        const email = typeof payload.email === 'string' ? payload.email : undefined;
+        if (email && ADMIN_EMAILS.includes(email)) {
           await next();
           return;
         }
       }
     } catch {
-      // Invalid JWT, fall through
+      // Invalid / expired / unsigned token — fall through to 401.
     }
   }
 

@@ -169,6 +169,33 @@ function initDatabase(): void {
 }
 
 // ============================================================================
+// Network guards
+// ============================================================================
+
+/**
+ * SSRF guard: block hostnames that resolve to loopback, private, or link-local
+ * ranges (incl. the cloud metadata endpoint 169.254.169.254). Used to keep
+ * `editor:fetchUrlTitle` from being pointed at internal services.
+ *
+ * Note: this checks the literal host only; it does not defend against DNS
+ * rebinding or a public host redirecting to an internal one — a follow-up
+ * could resolve + pin the IP and validate each redirect hop.
+ */
+function isBlockedFetchHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, ''); // strip IPv6 brackets
+  if (h === '' || h === 'localhost' || h.endsWith('.localhost') || h === '0.0.0.0' || h === '::1') {
+    return true;
+  }
+  if (/^127\./.test(h)) return true; // loopback
+  if (/^10\./.test(h)) return true; // private
+  if (/^192\.168\./.test(h)) return true; // private
+  if (/^169\.254\./.test(h)) return true; // link-local incl. cloud metadata
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true; // private
+  if (/^f[cd]/.test(h) || h.startsWith('fe80')) return true; // IPv6 ULA / link-local
+  return false;
+}
+
+// ============================================================================
 // Window Creation
 // ============================================================================
 
@@ -632,8 +659,15 @@ app
     ipcMain.handle('editor:fetchUrlTitle', async (_event, url: string) => {
       try {
         // Validate URL to prevent fetching arbitrary resources
+        if (typeof url !== 'string' || url.length > 2048) {
+          return { title: null };
+        }
         const parsed = new URL(url);
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return { title: null };
+        }
+        // SSRF guard: refuse internal/loopback/link-local targets.
+        if (isBlockedFetchHost(parsed.hostname)) {
           return { title: null };
         }
         const response = await net.fetch(url, {

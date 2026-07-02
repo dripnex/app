@@ -58,24 +58,34 @@ export class TokenStorage {
    * @returns Tokens object or null if not found
    */
   async getTokens(): Promise<Tokens | null> {
+    let encrypted: Buffer;
     try {
-      const encrypted = await fs.readFile(this.filePath);
-      const plaintext = safeStorage.decryptString(encrypted);
-      const tokens = JSON.parse(plaintext) as Tokens;
-
-      // Validate structure
-      if (!tokens.accessToken || !tokens.refreshToken) {
-        throw new Error('Invalid token structure');
-      }
-
-      return tokens;
+      encrypted = await fs.readFile(this.filePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         // File doesn't exist - no tokens saved yet
         return null;
       }
-      // Decryption or parsing failed - clear corrupted file
-      await this.clearTokens();
+      // Unexpected read error — treat as "no usable tokens right now" without
+      // destroying the file.
+      return null;
+    }
+
+    try {
+      const plaintext = safeStorage.decryptString(encrypted);
+      const tokens = JSON.parse(plaintext) as Tokens;
+      if (!tokens.accessToken || !tokens.refreshToken) {
+        return null;
+      }
+      return tokens;
+    } catch {
+      // DATA SAFETY: decryption/parse failed. This is frequently transient —
+      // the OS keychain can be temporarily locked (e.g. right after wake on
+      // macOS, or libsecret not yet running on Linux). The previous behavior
+      // deleted the encrypted file here, which permanently logged the user out
+      // on a momentary keychain hiccup. Instead, leave the file intact and
+      // report "no tokens" for now; a later call with an unlocked keychain
+      // recovers them. Explicit logout still clears via clearTokens().
       return null;
     }
   }
