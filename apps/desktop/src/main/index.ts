@@ -11,6 +11,7 @@ import { initSentry } from './sentry';
 initSentry();
 
 import { join, normalize } from 'path';
+import { pathToFileURL } from 'url';
 import { existsSync } from 'fs';
 import {
   app,
@@ -431,11 +432,36 @@ function createSettingsWindow(): void {
 // Navigation hardening
 // ============================================================================
 
-/** Only the app's own renderer origin (dev server) or packaged file:// loads. */
+/**
+ * Only the app's own renderer origin (dev server) or packaged file:// loads
+ * under the app's output directory. Uses parsed-origin / path-prefix checks
+ * rather than string startsWith, which would let `http://localhost:5174.evil.com`
+ * or `file:///etc/passwd` pass.
+ */
 function isInternalNavigation(url: string): boolean {
-  if (url.startsWith('file://')) return true;
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+
   const devUrl = process.env.ELECTRON_RENDERER_URL;
-  if (devUrl && url.startsWith(devUrl)) return true;
+  if (devUrl) {
+    try {
+      if (u.origin === new URL(devUrl).origin) return true;
+    } catch {
+      // malformed dev URL — ignore
+    }
+  }
+
+  if (u.protocol === 'file:') {
+    // Packaged renderer is loaded from the app's `out/` dir via loadFile. Only
+    // allow file:// navigations that stay within it.
+    const appDirUrl = pathToFileURL(join(__dirname, '..') + '/').href;
+    return u.href.startsWith(appDirUrl);
+  }
+
   return false;
 }
 
