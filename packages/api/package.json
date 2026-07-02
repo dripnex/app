@@ -27,6 +27,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@dripnex/sync-core": "workspace:*",
     "@hono/zod-validator": "^0.8.0",
     "@libsql/client": "^0.17.3",
     "drizzle-orm": "^0.45.2",
