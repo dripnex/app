@@ -282,7 +282,12 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
     // incoming sync always carries apiKey=''. Preserve THIS window's in-memory
     // key instead of clobbering it — each window hydrates its own key from
     // safeStorage and must not lose it when another window changes a setting.
-    const localApiKey = useSettingsStore.getState().settings.ai.apiKey;
+    // BUT if the sync also switches the provider, the in-memory key belongs to
+    // the OLD provider — drop it and let AiPanel rehydrate the new provider's
+    // key from safeStorage, so we never carry provider A's key into provider B.
+    const currentAi = useSettingsStore.getState().settings.ai;
+    const incomingProvider = s.ai?.provider ?? currentAi.provider;
+    const preservedApiKey = incomingProvider === currentAi.provider ? currentAi.apiKey : '';
 
     // Merge with defaults to ensure no section is undefined
     const merged: SettingsSchema = {
@@ -291,7 +296,7 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
       general: { ...DEFAULT_GENERAL, ...s.general },
       updates: { ...DEFAULT_UPDATES, ...s.updates },
       appearance: { ...DEFAULT_APPEARANCE, ...s.appearance },
-      ai: { ...DEFAULT_AI, ...s.ai, apiKey: localApiKey },
+      ai: { ...DEFAULT_AI, ...s.ai, apiKey: preservedApiKey },
       editor: { ...DEFAULT_EDITOR, ...s.editor },
       backup: { ...DEFAULT_BACKUP, ...s.backup },
     };

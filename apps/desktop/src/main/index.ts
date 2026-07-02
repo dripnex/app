@@ -10,8 +10,8 @@
 import { initSentry } from './sentry';
 initSentry();
 
-import { join, normalize } from 'path';
-import { pathToFileURL } from 'url';
+import { join, normalize, relative, isAbsolute } from 'path';
+import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
 import {
   app,
@@ -523,9 +523,18 @@ function isInternalNavigation(url: string): boolean {
 
   if (u.protocol === 'file:') {
     // Packaged renderer is loaded from the app's `out/` dir via loadFile. Only
-    // allow file:// navigations that stay within it.
-    const appDirUrl = pathToFileURL(join(__dirname, '..') + '/').href;
-    return u.href.startsWith(appDirUrl);
+    // allow file:// navigations that resolve INSIDE it. Compare real filesystem
+    // paths via path.relative (handles `..`, separators, and percent-encoding)
+    // rather than a URL string prefix, which normalization could sidestep.
+    let target: string;
+    try {
+      target = fileURLToPath(u);
+    } catch {
+      return false;
+    }
+    const appDir = join(__dirname, '..');
+    const rel = relative(appDir, target);
+    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
   }
 
   return false;
