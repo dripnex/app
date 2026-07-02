@@ -11,6 +11,10 @@ export type {
 
 export type { FetchFn, ProviderConfig, ModelInfo, LLMProvider } from './provider.js';
 
+/** App-wide default model (Anthropic Sonnet). Single source of truth — do not
+ * hardcode this string elsewhere; import it. */
+export const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+
 export { ProviderRegistry } from './provider-registry.js';
 
 export { ToolRegistry } from './tool-registry.js';

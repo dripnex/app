@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucide-react';
 import type { ChatMessage, NoteContext, AiPanelMode, LLMEvent } from '@dripnex/ai-core';
+import { DEFAULT_MODEL } from '@dripnex/ai-core';
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 import { ToolCallBlock } from './ToolCallBlock';
@@ -300,7 +301,7 @@ export function AiPanel({
 
       const model = hasSettingsKey
         ? aiSettings_.model
-        : getConfig<string>('model') || 'claude-sonnet-4-20250514';
+        : getConfig<string>('model') || DEFAULT_MODEL;
       const provider = aiSettings_.provider;
 
       // Show user message in chat
@@ -423,9 +424,7 @@ export function AiPanel({
       return;
     }
 
-    const model = hasSettingsKey
-      ? aiSettings.model
-      : getConfig<string>('model') || 'claude-sonnet-4-20250514';
+    const model = hasSettingsKey ? aiSettings.model : getConfig<string>('model') || DEFAULT_MODEL;
     const provider = aiSettings.provider;
     const maxContextNotes = hasSettingsKey
       ? aiSettings.maxContextNotes
