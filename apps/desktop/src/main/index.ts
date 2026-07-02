@@ -202,7 +202,10 @@ function isBlockedIPv4(o: number[]): boolean {
  * and validate each redirect hop.
  */
 function isBlockedFetchHost(hostname: string): boolean {
-  const h = hostname.toLowerCase().replace(/^\[|\]$/g, ''); // strip IPv6 brackets
+  const h = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '') // strip IPv6 brackets
+    .replace(/\.$/, ''); // strip a trailing root dot (localhost. / 127.0.0.1. must not bypass)
   if (h === '' || h === 'localhost' || h.endsWith('.localhost')) return true;
 
   // IPv4 literal (dotted quad)
@@ -223,7 +226,7 @@ function isBlockedFetchHost(hostname: string): boolean {
       const lo = parseInt(mapHex[2]!, 16);
       return isBlockedIPv4([hi >> 8, hi & 0xff, lo >> 8, lo & 0xff]);
     }
-    if (h.startsWith('fe80')) return true; // link-local fe80::/10
+    if (/^fe[89ab]/.test(h)) return true; // link-local fe80::/10 (fe80–febf)
     if (/^f[cd]/.test(h)) return true; // unique-local fc00::/7
     return false;
   }
