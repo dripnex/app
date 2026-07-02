@@ -1,5 +1,7 @@
 # Readied
 
+<img width="3752" height="2312" alt="CleanShot 2026-07-02 at 00 09 16@2x" src="https://github.com/user-attachments/assets/81003d34-f24f-499c-9cc4-318bf0e5a2d5" />
+
 Markdown-first, offline-forever desktop note app.
 
 [![License: MIT](https://img.shields.io/badge/Core-MIT-green.svg)](./LICENSE)
