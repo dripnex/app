@@ -73,11 +73,17 @@ export class TokenStorage {
 
     try {
       const plaintext = safeStorage.decryptString(encrypted);
-      const tokens = JSON.parse(plaintext) as Tokens;
-      if (!tokens.accessToken || !tokens.refreshToken) {
+      const parsed = JSON.parse(plaintext) as unknown;
+      // Validate shape AND field types before trusting the payload.
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        typeof (parsed as Tokens).accessToken !== 'string' ||
+        typeof (parsed as Tokens).refreshToken !== 'string'
+      ) {
         return null;
       }
-      return tokens;
+      return parsed as Tokens;
     } catch {
       // DATA SAFETY: decryption/parse failed. This is frequently transient —
       // the OS keychain can be temporarily locked (e.g. right after wake on

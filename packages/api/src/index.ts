@@ -48,7 +48,9 @@ app.use(
   cors({
     origin: ['https://readied.app', 'http://localhost:3000', 'http://localhost:5173'],
     allowMethods: ['GET', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'x-admin-token'],
+    // Authorization is required: admin auth now accepts a verified JWT bearer
+    // token (see routes/admin.ts), in addition to the x-admin-token header.
+    allowHeaders: ['Content-Type', 'x-admin-token', 'Authorization'],
     maxAge: 86400,
   })
 );
