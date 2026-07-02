@@ -340,6 +340,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@dripnex/sync-core':
+        specifier: workspace:*
+        version: link:../sync-core
       '@hono/zod-validator':
         specifier: ^0.8.0
         version: 0.8.0(hono@4.12.23)(zod@4.4.3)
