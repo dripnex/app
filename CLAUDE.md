@@ -1,4 +1,4 @@
-# Readied
+# Dripnex
 
 > Markdown-first, offline-forever desktop note app.
 
@@ -94,7 +94,7 @@ cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 1. `pnpm dev` — Run desktop in development mode
 2. `pnpm test` — Test before committing
 3. `pnpm typecheck` — Validate TypeScript
-4. `pnpm build && pnpm --filter @readied/desktop dist:mac` — Build for production
+4. `pnpm build && pnpm --filter @dripnex/desktop dist:mac` — Build for production
 
 ## Git Flow
 
@@ -312,7 +312,7 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 
 - `packages/ai-core/` — LLMProvider interface, ProviderRegistry, AnthropicProvider, ContextBuilder, AIService
 - `apps/desktop/src/main/ai/ipc-ai.ts` — IPC bridge, 50ms batched event streaming
-- `apps/desktop/src/preload/index.ts` — `window.readied.ai` API (chat, onEvent, cancel)
+- `apps/desktop/src/preload/index.ts` — `window.dripnex.ai` API (chat, onEvent, cancel)
 - `apps/desktop/src/renderer/components/ai/AiPanel.tsx` — Chat UI with streaming
 
 **Adding a new LLM provider:**
@@ -331,7 +331,7 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 
 - **No SDK dependencies in ai-core:** Providers use native `fetch` + SSE parsing
 - **Streaming only:** No request/response pattern — everything streams via `LLMEvent`
-- **Single panel instance:** Both Cmd+K and Sparkles button toggle the same AiPanel in App.tsx via CustomEvent (`readied:ai:toggle-panel`)
+- **Single panel instance:** Both Cmd+K and Sparkles button toggle the same AiPanel in App.tsx via CustomEvent (`dripnex:ai:toggle-panel`)
 - **Settings store is source of truth:** API key, model, and provider come from Zustand settings store (`selectAi` selector), not plugin config
 
 ## Documentation
@@ -339,5 +339,5 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 - **Architecture decisions:** `plan.md`
 - **Package docs:** `packages/*/README.md`
 - **Technical docs:** `apps/docs-site/`
-- **Live docs:** https://tomymaritano.github.io/readide/
-- **GitHub:** https://github.com/tomymaritano/readide
+- **Live docs:** https://dripnex.github.io/readide/
+- **GitHub:** https://github.com/dripnex/readide

@@ -2,7 +2,7 @@
  * Import System
  *
  * Import notes from:
- * - Readied export (Markdown + JSON)
+ * - Dripnex export (Markdown + JSON)
  * - Obsidian vault
  * - Plain Markdown folder
  */
@@ -39,7 +39,7 @@ export interface ImportOptions {
   /** Source directory path */
   sourceDir: string;
   /** Import type (auto-detect if not specified) */
-  type?: 'readied' | 'obsidian' | 'markdown';
+  type?: 'dripnex' | 'obsidian' | 'markdown';
   /** Include files in subdirectories */
   recursive?: boolean;
 }
@@ -47,10 +47,10 @@ export interface ImportOptions {
 /**
  * Detect import source type.
  */
-export function detectImportType(dir: string): 'readied' | 'obsidian' | 'markdown' {
-  // Check for Readied export
+export function detectImportType(dir: string): 'dripnex' | 'obsidian' | 'markdown' {
+  // Check for Dripnex export
   if (validateExportDir(dir)) {
-    return 'readied';
+    return 'dripnex';
   }
 
   // Check for Obsidian vault (.obsidian folder)
@@ -75,8 +75,8 @@ export function importNotes(options: ImportOptions): ImportResult {
   const type = options.type ?? detectImportType(sourceDir);
 
   switch (type) {
-    case 'readied':
-      return importFromReadiedExport(sourceDir);
+    case 'dripnex':
+      return importFromDripnexExport(sourceDir);
     case 'obsidian':
       return importFromObsidian(sourceDir, recursive);
     case 'markdown':
@@ -87,9 +87,9 @@ export function importNotes(options: ImportOptions): ImportResult {
 }
 
 /**
- * Import from Readied export format.
+ * Import from Dripnex export format.
  */
-function importFromReadiedExport(dir: string): ImportResult {
+function importFromDripnexExport(dir: string): ImportResult {
   try {
     const metadata = readExportMetadata(dir);
     if (!metadata) {

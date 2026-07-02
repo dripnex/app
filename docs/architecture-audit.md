@@ -1,4 +1,4 @@
-# Architecture Audit — Readied Markdown Note App
+# Architecture Audit — Dripnex Markdown Note App
 
 > Last verified: 2026-01-06
 
@@ -45,10 +45,10 @@ React Query cache invalidation
 
 **Packages satélite:**
 
-- `@readied/wikilinks`: Parseo y plugins
-- `@readied/embeds`: Parseo de `![[file]]`
-- `@readied/tasks`: Conteo de tasks
-- `@readied/commands`: Formateo markdown
+- `@dripnex/wikilinks`: Parseo y plugins
+- `@dripnex/embeds`: Parseo de `![[file]]`
+- `@dripnex/tasks`: Conteo de tasks
+- `@dripnex/commands`: Formateo markdown
 
 **Storage:**
 

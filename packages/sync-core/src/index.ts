@@ -1,7 +1,7 @@
 /**
- * @readied/sync-core
+ * @dripnex/sync-core
  *
- * Core sync logic for Readied. Pure TypeScript, no platform dependencies.
+ * Core sync logic for Dripnex. Pure TypeScript, no platform dependencies.
  *
  * This package provides:
  * - Type definitions for sync entities and operations

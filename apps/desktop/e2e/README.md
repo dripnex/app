@@ -6,9 +6,9 @@ End-to-end tests for the desktop app, driven through Playwright's `_electron` AP
 
 ```bash
 # From repo root
-pnpm --filter @readied/desktop build       # produces out/main/index.js
-pnpm --filter @readied/desktop e2e         # headless
-pnpm --filter @readied/desktop e2e:headed  # opens the window
+pnpm --filter @dripnex/desktop build       # produces out/main/index.js
+pnpm --filter @dripnex/desktop e2e         # headless
+pnpm --filter @dripnex/desktop e2e:headed  # opens the window
 ```
 
 First run also downloads Playwright's browser binaries:
@@ -25,21 +25,21 @@ npx playwright install --with-deps
 
 - The SQLite DB starts empty every time.
 - Settings, license cache, AI keys, etc. don't leak between tests.
-- The host's real Readied data is never touched.
+- The host's real Dripnex data is never touched.
 
-Set `READIED_E2E_KEEP_USERDATA=1` to keep the temp dir on failure for post-mortem inspection.
+Set `DRIPNEX_E2E_KEEP_USERDATA=1` to keep the temp dir on failure for post-mortem inspection.
 
 ## What we test
 
 | Spec            | What it covers                                                                                                                                                                                                                                |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `smoke.spec.ts` | App launches, main window renders, IPC bridge present, no uncaught console errors during initial mount. This is the regression catch for #266 (editor mount crashes producing blank windows).                                                 |
-| `notes.spec.ts` | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. We deliberately drive the **preload bridge** (`window.readied.notes.*`) rather than the editor UI; selectors churn but the contract is stable. |
+| `notes.spec.ts` | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. We deliberately drive the **preload bridge** (`window.dripnex.notes.*`) rather than the editor UI; selectors churn but the contract is stable. |
 
 ## What we deliberately don't test (yet)
 
 - **Editor UI interactions** (typing, formatting, hotkeys). The CodeMirror surface is too prone to flake without per-spec selectors. Worth doing once the editor is split (see PR-G in the audit).
-- **AI panel streaming.** Needs a mock provider and is more useful as a vitest test against `@readied/ai-core`.
+- **AI panel streaming.** Needs a mock provider and is more useful as a vitest test against `@dripnex/ai-core`.
 - **Sync flows.** Need a fake server.
 
 These will be follow-ups once the basics are stable in CI.

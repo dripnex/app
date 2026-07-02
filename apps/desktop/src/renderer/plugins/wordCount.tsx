@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { PluginManifest, EditorAPI, ZoneComponentProps } from '@readied/plugin-api';
+import type { PluginManifest, EditorAPI, ZoneComponentProps } from '@dripnex/plugin-api';
 
 interface WordCountState {
   words: number;
@@ -42,7 +42,7 @@ function WordCountStatus({ meta }: ZoneComponentProps) {
 }
 
 export const wordCountPlugin: PluginManifest = {
-  id: 'readied-word-count',
+  id: 'dripnex-word-count',
   name: 'Word Count',
   version: '1.0.0',
   description: 'Shows word, character, and line count in the editor status bar',

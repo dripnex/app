@@ -1,4 +1,4 @@
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 /**
  * Focus Mode — built-in plugin
@@ -7,7 +7,7 @@ import type { PluginManifest } from '@readied/plugin-api';
  * to the editor container. Toggle via command palette or keybinding.
  */
 
-const FOCUS_CLASS = 'readied-focus-mode';
+const FOCUS_CLASS = 'dripnex-focus-mode';
 
 // Inject global styles for focus mode (once)
 let styleInjected = false;
@@ -28,7 +28,7 @@ function injectFocusModeStyles() {
 }
 
 export const focusModePlugin: PluginManifest = {
-  id: 'readied-focus-mode',
+  id: 'dripnex-focus-mode',
   name: 'Focus Mode',
   version: '1.0.0',
   description: 'Dims all content except the current paragraph for focused writing',

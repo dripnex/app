@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Download, Check, Cpu, ExternalLink } from 'lucide-react';
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
 import { fetchLatestRelease, formatBytes } from '@/lib/github';
 import type { PlatformAsset } from '@/lib/github';
 import NewsletterForm from '@/components/NewsletterForm';
@@ -11,8 +11,8 @@ import { Button } from '@/components/ui/button';
 const config = getProductConfig();
 
 export const metadata: Metadata = {
-  title: 'Download — Readied',
-  description: `Download Readied for macOS, Windows, or Linux. Try free for ${config.trialDays} days.`,
+  title: 'Download — Dripnex',
+  description: `Download Dripnex for macOS, Windows, or Linux. Try free for ${config.trialDays} days.`,
 };
 
 function primaryLabel(asset: PlatformAsset): string {
@@ -47,7 +47,7 @@ export default async function DownloadPage() {
         <header className="text-center mb-16">
           <span className="section-label">Download</span>
           <h1 className="section-heading sm:text-4xl lg:text-5xl mb-3">
-            Get <span className="text-accent">Readied</span>
+            Get <span className="text-accent">Dripnex</span>
           </h1>
           {isReleased ? (
             <>
@@ -128,9 +128,9 @@ export default async function DownloadPage() {
               </div>
               <div className="rounded-lg bg-inset border border-border p-4 font-mono text-xs text-text-secondary overflow-x-auto">
                 <p className="text-text-muted mb-2"># Install from DMG</p>
-                <p>hdiutil attach Readied-*.dmg</p>
-                <p>cp -R /Volumes/Readied/Readied.app /Applications/</p>
-                <p>hdiutil detach /Volumes/Readied</p>
+                <p>hdiutil attach Dripnex-*.dmg</p>
+                <p>cp -R /Volumes/Dripnex/Dripnex.app /Applications/</p>
+                <p>hdiutil detach /Volumes/Dripnex</p>
               </div>
             </CardContent>
           </Card>
@@ -181,7 +181,7 @@ export default async function DownloadPage() {
               </div>
               <div className="rounded-lg bg-inset border border-border p-4 font-mono text-xs text-text-secondary overflow-x-auto">
                 <p className="text-text-muted mb-2"># Run the installer</p>
-                <p>Readied-Setup-*.exe /S</p>
+                <p>Dripnex-Setup-*.exe /S</p>
               </div>
             </CardContent>
           </Card>
@@ -232,7 +232,7 @@ export default async function DownloadPage() {
               </div>
               <div className="rounded-lg bg-inset border border-border p-4 font-mono text-xs text-text-secondary overflow-x-auto">
                 <p className="text-text-muted mb-2"># Make executable and run</p>
-                <p>chmod +x Readied.AppImage && ./Readied.AppImage</p>
+                <p>chmod +x Dripnex.AppImage && ./Dripnex.AppImage</p>
               </div>
             </CardContent>
           </Card>
@@ -266,7 +266,7 @@ export default async function DownloadPage() {
           <p className="text-base text-text-secondary leading-relaxed">
             Each release includes SHA256 checksums. Source available on{' '}
             <a
-              href="https://github.com/tomymaritano/readide"
+              href="https://github.com/dripnex/readide"
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent underline underline-offset-2 inline-flex items-center gap-1 transition-colors hover:text-accent-hover hover:no-underline"

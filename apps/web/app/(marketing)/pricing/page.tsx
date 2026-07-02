@@ -9,7 +9,7 @@ import {
   Check,
   ArrowRight,
 } from 'lucide-react';
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ export default function PricingPage() {
   const annualPrice = proPricing.intervals.annual.amountCents / 100;
 
   const faqs = [
-    { q: 'What if you stop developing Readied?', a: guarantees.freeTierForever.description },
+    { q: 'What if you stop developing Dripnex?', a: guarantees.freeTierForever.description },
     { q: 'Can I cancel my Pro subscription?', a: guarantees.cancelAnytime.description },
     { q: 'Can I export my data?', a: guarantees.noLockIn.description },
     { q: 'What about refunds?', a: guarantees.refund.description },

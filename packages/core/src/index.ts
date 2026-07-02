@@ -1,5 +1,5 @@
 /**
- * @readied/core - Domain logic for Readied
+ * @dripnex/core - Domain logic for Dripnex
  *
  * This package contains the pure domain logic with no external dependencies
  * on Electron, React, or any UI framework.

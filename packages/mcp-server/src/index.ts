@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Readied MCP Server
+ * Dripnex MCP Server
  *
- * Exposes Readied notes to Claude Code via the Model Context Protocol.
+ * Exposes Dripnex notes to Claude Code via the Model Context Protocol.
  * Reads directly from the local SQLite database using node:sqlite (Node 22.5+).
  *
  * Tools:
- *   - readied_list_notes: List notes with optional filters
- *   - readied_read_note: Read a specific note by ID or title
- *   - readied_create_note: Create a new note
- *   - readied_update_note: Update an existing note
- *   - readied_search_notes: Search across notes (FTS5)
- *   - readied_list_notebooks: List all notebooks
- *   - readied_trash_note: Move a note to trash
+ *   - dripnex_list_notes: List notes with optional filters
+ *   - dripnex_read_note: Read a specific note by ID or title
+ *   - dripnex_create_note: Create a new note
+ *   - dripnex_update_note: Update an existing note
+ *   - dripnex_search_notes: Search across notes (FTS5)
+ *   - dripnex_list_notebooks: List all notebooks
+ *   - dripnex_trash_note: Move a note to trash
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -48,16 +48,16 @@ function prepareFtsQuery(input: string): string {
 
 function createServer(db: Database) {
   const server = new McpServer({
-    name: 'readied',
+    name: 'dripnex',
     version: '0.1.0',
   });
 
   // ── List notes ──────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_list_notes',
+    'dripnex_list_notes',
     {
-      description: 'List notes in Readied. Returns titles, IDs, and metadata.',
+      description: 'List notes in Dripnex. Returns titles, IDs, and metadata.',
       inputSchema: {
         notebook: z.string().optional().describe('Filter by notebook name'),
         limit: z.number().default(20).describe('Max notes to return'),
@@ -107,7 +107,7 @@ function createServer(db: Database) {
   // ── Read note ───────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_read_note',
+    'dripnex_read_note',
     {
       description: 'Read the full content of a note by ID or title search.',
       inputSchema: {
@@ -159,9 +159,9 @@ function createServer(db: Database) {
   // ── Create note ─────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_create_note',
+    'dripnex_create_note',
     {
-      description: 'Create a new note in Readied. Content should be markdown.',
+      description: 'Create a new note in Dripnex. Content should be markdown.',
       inputSchema: {
         content: z.string().describe('Markdown content for the note'),
         notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
@@ -199,7 +199,7 @@ function createServer(db: Database) {
   // ── Update note ─────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_update_note',
+    'dripnex_update_note',
     {
       description: 'Update an existing note. Replaces the full content.',
       inputSchema: {
@@ -232,7 +232,7 @@ function createServer(db: Database) {
   // ── Search notes (FTS5) ──────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_search_notes',
+    'dripnex_search_notes',
     {
       description:
         'Full-text search across all notes using FTS5 with relevance ranking. Returns matching notes with snippets.',
@@ -276,9 +276,9 @@ function createServer(db: Database) {
   // ── List notebooks ──────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_list_notebooks',
+    'dripnex_list_notebooks',
     {
-      description: 'List all notebooks in Readied.',
+      description: 'List all notebooks in Dripnex.',
       inputSchema: {},
     },
     async () => {
@@ -302,7 +302,7 @@ function createServer(db: Database) {
   // ── Trash note ──────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_trash_note',
+    'dripnex_trash_note',
     {
       description: 'Move a note to trash (soft delete).',
       inputSchema: {

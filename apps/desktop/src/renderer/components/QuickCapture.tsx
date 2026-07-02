@@ -20,7 +20,7 @@ export function QuickCapture() {
   // Load notebooks on mount
   useEffect(() => {
     let cancelled = false;
-    window.readied.notebooks
+    window.dripnex.notebooks
       .list()
       .then(nbs => {
         if (!cancelled) {
@@ -41,7 +41,7 @@ export function QuickCapture() {
   }, []);
 
   const handleClose = useCallback(() => {
-    void window.readied.windows.closeSelf();
+    void window.dripnex.windows.closeSelf();
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -54,7 +54,7 @@ export function QuickCapture() {
       // Build markdown content with title as H1 if provided
       const markdown = title.trim() ? `# ${title.trim()}\n\n${trimmedContent}` : trimmedContent;
 
-      const result = await window.readied.notes.create({
+      const result = await window.dripnex.notes.create({
         content: markdown,
         notebookId: notebookId || undefined,
       });

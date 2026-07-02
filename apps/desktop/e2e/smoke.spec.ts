@@ -5,7 +5,7 @@ test.describe('app launch (smoke)', () => {
   test('launches and shows the main window', async () => {
     const { app, window, cleanup } = await launchApp();
     try {
-      // Title is "Readied" in production. Allow any non-empty title in case
+      // Title is "Dripnex" in production. Allow any non-empty title in case
       // dev/test envs use a different one.
       const title = await window.title();
       expect(title.length).toBeGreaterThan(0);
@@ -20,7 +20,7 @@ test.describe('app launch (smoke)', () => {
 
       // Sanity: the app exposed its IPC bridge.
       const hasBridge = await window.evaluate(
-        () => typeof (window as unknown as { readied?: unknown }).readied !== 'undefined'
+        () => typeof (window as unknown as { dripnex?: unknown }).dripnex !== 'undefined'
       );
       expect(hasBridge).toBe(true);
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-const API_BASE = 'https://api.readied.app';
+const API_BASE = 'https://api.dripnex.app';
 
 export default function UnsubscribeContent() {
   const searchParams = useSearchParams();
@@ -65,8 +65,8 @@ export default function UnsubscribeContent() {
         <h1 className="text-2xl font-semibold text-[#f4f4f5]">Something went wrong</h1>
         <p className="text-[#a1a1aa]">
           We couldn&apos;t process your request. Please try again or contact{' '}
-          <a href="mailto:support@readied.app" className="text-accent hover:underline">
-            support@readied.app
+          <a href="mailto:support@dripnex.app" className="text-accent hover:underline">
+            support@dripnex.app
           </a>
         </p>
       </div>

@@ -1,7 +1,7 @@
 /**
- * @readied/storage-sqlite
+ * @dripnex/storage-sqlite
  *
- * SQLite storage adapter for Readied.
+ * SQLite storage adapter for Dripnex.
  * This package contains the native better-sqlite3 implementation.
  */
 

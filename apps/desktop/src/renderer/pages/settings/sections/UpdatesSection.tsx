@@ -45,10 +45,10 @@ export function UpdatesSection() {
   // Subscribe to main-process update events
   useEffect(() => {
     const unsubs = [
-      window.readied.updates.onAvailable(info => {
+      window.dripnex.updates.onAvailable(info => {
         setState({ status: 'available', version: info.version });
       }),
-      window.readied.updates.onDownloadProgress(p => {
+      window.dripnex.updates.onDownloadProgress(p => {
         setState(prev => ({
           status: 'downloading',
           version: prev.status === 'downloading' || prev.status === 'available' ? prev.version : '',
@@ -58,10 +58,10 @@ export function UpdatesSection() {
           total: p.total,
         }));
       }),
-      window.readied.updates.onDownloadComplete(info => {
+      window.dripnex.updates.onDownloadComplete(info => {
         setState({ status: 'ready', version: info.version });
       }),
-      window.readied.updates.onError(err => {
+      window.dripnex.updates.onError(err => {
         setState({ status: 'error', message: err.message });
       }),
     ];
@@ -71,7 +71,7 @@ export function UpdatesSection() {
   const handleCheckForUpdates = useCallback(async () => {
     setState({ status: 'checking' });
     try {
-      const result = await window.readied.updates.checkNow();
+      const result = await window.dripnex.updates.checkNow();
       if (result.available) {
         setState({ status: 'available', version: result.version ?? '' });
       } else {
@@ -93,7 +93,7 @@ export function UpdatesSection() {
       transferred: 0,
       total: 0,
     });
-    const result = await window.readied.updates.startDownload();
+    const result = await window.dripnex.updates.startDownload();
     if (!result.ok) {
       setState({ status: 'error', message: 'Failed to start download' });
     }
@@ -102,7 +102,7 @@ export function UpdatesSection() {
   const handleInstall = useCallback(async () => {
     setState({ status: 'installing' });
     try {
-      await window.readied.updates.installNow();
+      await window.dripnex.updates.installNow();
     } catch {
       setState({ status: 'error', message: 'Failed to install update. Please try again.' });
     }

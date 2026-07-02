@@ -3,16 +3,16 @@
  */
 
 export const URLS = {
-  website: 'https://readied.app',
-  pricing: 'https://readied.app/pricing',
-  download: 'https://readied.app/download',
-  faq: 'https://readied.app/faq',
-  changelog: 'https://readied.app/changelog',
-  github: 'https://github.com/tomymaritano/readide',
-  discussions: 'https://github.com/tomymaritano/readide/discussions',
-  issues: 'https://github.com/tomymaritano/readide/issues',
-  twitter: 'https://twitter.com/readiedapp',
-  support: 'hello@readied.app',
+  website: 'https://dripnex.app',
+  pricing: 'https://dripnex.app/pricing',
+  download: 'https://dripnex.app/download',
+  faq: 'https://dripnex.app/faq',
+  changelog: 'https://dripnex.app/changelog',
+  github: 'https://github.com/dripnex/readide',
+  discussions: 'https://github.com/dripnex/readide/discussions',
+  issues: 'https://github.com/dripnex/readide/issues',
+  twitter: 'https://twitter.com/dripnexapp',
+  support: 'hello@dripnex.app',
 } as const;
 
 export type UrlsConfig = typeof URLS;

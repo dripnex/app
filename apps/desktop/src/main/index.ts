@@ -24,14 +24,14 @@ import {
   screen,
   shell,
 } from 'electron';
-import { runMigrations, createDataPaths, type DataPaths } from '@readied/storage-core';
+import { runMigrations, createDataPaths, type DataPaths } from '@dripnex/storage-core';
 import {
   createDatabase,
   allMigrations,
   SQLiteNoteRepository,
   SQLiteNotebookRepository,
-} from '@readied/storage-sqlite';
-import { createNoteId, createNoteOperation, type NoteStatus } from '@readied/core';
+} from '@dripnex/storage-sqlite';
+import { createNoteId, createNoteOperation, type NoteStatus } from '@dripnex/core';
 import { initLogger, getLogger, loggers } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
 import { AiKeyStorage } from './services/aiKeyStorage.js';
@@ -606,7 +606,7 @@ protocol.registerSchemesAsPrivileged([
     },
   },
   {
-    scheme: 'readied',
+    scheme: 'dripnex',
     privileges: {
       secure: true,
       standard: true,
@@ -621,10 +621,10 @@ protocol.registerSchemesAsPrivileged([
 // Register as default protocol client (Windows/Linux)
 if (process.defaultApp) {
   if (process.argv.length >= 2 && process.argv[1]) {
-    app.setAsDefaultProtocolClient('readied', process.execPath, [process.argv[1]]);
+    app.setAsDefaultProtocolClient('dripnex', process.execPath, [process.argv[1]]);
   }
 } else {
-  app.setAsDefaultProtocolClient('readied');
+  app.setAsDefaultProtocolClient('dripnex');
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -780,7 +780,7 @@ app
         }
         const response = await net.fetch(url, {
           signal: AbortSignal.timeout(3000),
-          headers: { 'User-Agent': 'Readied/' + app.getVersion() },
+          headers: { 'User-Agent': 'Dripnex/' + app.getVersion() },
         });
         // Only parse HTML responses
         const contentType = response.headers.get('content-type') || '';
@@ -859,7 +859,7 @@ app
         aiKeyStorage = new AiKeyStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
-        const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
+        const apiBaseUrl = process.env.DRIPNEX_API_URL || 'https://api.dripnex.app';
         apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
 
         encryptionService = new EncryptionService(dataPaths.root);
@@ -1009,7 +1009,7 @@ app.on('will-quit', () => {
   }
 });
 
-// Deep link handler for readied:// protocol (macOS)
+// Deep link handler for dripnex:// protocol (macOS)
 app.on('open-url', (event, url) => {
   event.preventDefault();
   const log = getLogger();
@@ -1018,7 +1018,7 @@ app.on('open-url', (event, url) => {
   try {
     const urlObj = new URL(url);
 
-    // Handle auth verification: readied://auth/verify?token=xxx
+    // Handle auth verification: dripnex://auth/verify?token=xxx
     if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
       const token = urlObj.searchParams.get('token');
       if (token) {
@@ -1054,7 +1054,7 @@ app.on('open-url', (event, url) => {
 });
 
 // Primary instance: check startup args for deep link URL (cold start on Windows/Linux)
-const startupDeepLink = process.argv.find(arg => arg.startsWith('readied://'));
+const startupDeepLink = process.argv.find(arg => arg.startsWith('dripnex://'));
 if (startupDeepLink) {
   try {
     const urlObj = new URL(startupDeepLink);
@@ -1072,7 +1072,7 @@ if (startupDeepLink) {
 // Handle deep links forwarded from secondary instances (app already running)
 app.on('second-instance', (_event, commandLine) => {
   const log = getLogger();
-  const deepLinkUrl = commandLine.find(arg => arg.startsWith('readied://'));
+  const deepLinkUrl = commandLine.find(arg => arg.startsWith('dripnex://'));
 
   if (deepLinkUrl) {
     log.info({ url: deepLinkUrl }, 'Deep link received via second-instance (Windows/Linux)');

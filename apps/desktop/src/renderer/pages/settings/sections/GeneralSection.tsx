@@ -34,7 +34,7 @@ export function GeneralSection() {
   }
 
   const handleOpenDataFolder = useCallback(async () => {
-    await window.readied.data.openFolder();
+    await window.dripnex.data.openFolder();
   }, []);
 
   return (

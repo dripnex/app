@@ -1,11 +1,11 @@
 ---
 title: Plugin Examples
-description: Real-world patterns from Readied's built-in plugins — status bar, commands, focus mode, themes, and more
+description: Real-world patterns from Dripnex's built-in plugins — status bar, commands, focus mode, themes, and more
 ---
 
 # Plugin Examples
 
-Real-world patterns from Readied's built-in plugins.
+Real-world patterns from Dripnex's built-in plugins.
 
 ## Status Bar Plugin
 
@@ -13,7 +13,7 @@ Shows information in the editor status bar. Updates when the document changes.
 
 ```typescript
 import { useState, useEffect } from 'react';
-import type { PluginManifest, ZoneComponentProps, EditorAPI } from '@readied/plugin-api';
+import type { PluginManifest, ZoneComponentProps, EditorAPI } from '@dripnex/plugin-api';
 
 function ReadingTime({ meta }: ZoneComponentProps) {
   const editor = meta?.editor as EditorAPI | undefined;
@@ -60,7 +60,7 @@ export const readingTimePlugin: PluginManifest = {
 Registers commands without any UI components.
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 export const exportPlugin: PluginManifest = {
   id: 'export-markdown',
@@ -94,7 +94,7 @@ export const exportPlugin: PluginManifest = {
 Adds a CSS class to the editor to dim non-active lines.
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 const FOCUS_CLASS = 'my-focus-mode';
 
@@ -172,7 +172,7 @@ export const focusModePlugin: PluginManifest = {
 Demonstrates using the config schema for user-configurable settings.
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 export const plugin: PluginManifest = {
   id: 'my-configurable-plugin',
@@ -226,7 +226,7 @@ Adds a button to the editor header that toggles a side panel.
 ```typescript
 import { useState, useCallback, useEffect } from 'react';
 import { BookOpen } from 'lucide-react';
-import type { PluginManifest, ZoneComponentProps, PluginContext } from '@readied/plugin-api';
+import type { PluginManifest, ZoneComponentProps, PluginContext } from '@dripnex/plugin-api';
 
 // Bridge between plugin context and React components
 const bridge = {
@@ -320,7 +320,7 @@ export const plugin: PluginManifest = {
 Creates a custom theme that responds to dark/light mode changes using `getTheme()` and `onThemeChanged()`.
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 const DARK_VARS: Record<string, string> = {
   '--bg-base': '#1a1b26',
@@ -371,7 +371,7 @@ export const myThemePlugin: PluginManifest = {
 Registers a remark plugin that transforms the markdown AST in the preview pipeline. This example automatically converts plain-text URLs into clickable links.
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 import type { Root, Text, Link } from 'mdast';
 import { visit } from 'unist-util-visit';
 

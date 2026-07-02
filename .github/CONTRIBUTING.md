@@ -1,4 +1,4 @@
-# Contributing to Readied
+# Contributing to Dripnex
 
 Thanks for your interest in contributing!
 
@@ -20,8 +20,8 @@ pnpm format       # Prettier formatting
 
 ## Finding Issues
 
-- Look for issues labeled [`good first issue`](https://github.com/tomymaritano/readide/labels/good%20first%20issue) for beginner-friendly tasks
-- Issues labeled [`help wanted`](https://github.com/tomymaritano/readide/labels/help%20wanted) are open for community contributions
+- Look for issues labeled [`good first issue`](https://github.com/dripnex/readide/labels/good%20first%20issue) for beginner-friendly tasks
+- Issues labeled [`help wanted`](https://github.com/dripnex/readide/labels/help%20wanted) are open for community contributions
 
 ## Pull Requests
 
@@ -41,5 +41,5 @@ packages/          # Shared packages (core, storage, plugins, etc.)
 
 ## Need Help?
 
-- Open a [Discussion](https://github.com/tomymaritano/readide/discussions)
-- Check the [Documentation](https://tomymaritano.github.io/readide/)
+- Open a [Discussion](https://github.com/dripnex/readide/discussions)
+- Check the [Documentation](https://dripnex.github.io/readide/)

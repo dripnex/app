@@ -1,4 +1,4 @@
-# READIED — Technical Architecture v1.0
+# DRIPNEX — Technical Architecture v1.0
 
 > Intelligent, offline-first desktop note app.
 > Solid core. Extensible. Monetizable. Maintainable 3-5 years.
@@ -9,14 +9,14 @@
 
 **Goal:** Build a note-taking app that competes with Obsidian/Inkdrop through superior architecture, not feature bloat.
 
-**What Readied IS:**
+**What Dripnex IS:**
 
 - Offline-first desktop app (Electron)
 - Markdown-based with smart features (backlinks, tags, graph)
 - Single-user, local-first (sync optional later)
 - Premium product with clear monetization
 
-**What Readied is NOT:**
+**What Dripnex is NOT:**
 
 - A Notion clone (no blocks-first architecture)
 - A collaboration tool (not yet)
@@ -24,7 +24,7 @@
 
 ### 1.1 Product Identity
 
-**Thesis:** Readied is a Markdown-first app that happens to be smart — not a smart system that happens to use Markdown.
+**Thesis:** Dripnex is a Markdown-first app that happens to be smart — not a smart system that happens to use Markdown.
 
 **This means:**
 
@@ -139,7 +139,7 @@
 > **Principle:** Start with 5 packages, not 9. Split when there's actual pain.
 
 ```
-readied/
+dripnex/
 ├── apps/
 │   ├── desktop/              # Electron app
 │   │   ├── src/main/         # Main process (SQLite, IPC handlers)
@@ -699,15 +699,15 @@ interface DomainMigration {
 
 | Platform | Location                                 |
 | -------- | ---------------------------------------- |
-| macOS    | `~/Library/Application Support/Readied/` |
-| Windows  | `%APPDATA%/Readied/`                     |
-| Linux    | `~/.config/Readied/`                     |
+| macOS    | `~/Library/Application Support/Dripnex/` |
+| Windows  | `%APPDATA%/Dripnex/`                     |
+| Linux    | `~/.config/Dripnex/`                     |
 
 **Structure:**
 
 ```
-Readied/
-├── readied.db          # SQLite database
+Dripnex/
+├── dripnex.db          # SQLite database
 ├── backups/            # Automatic backups
 ├── logs/               # Application logs
 └── config.json         # User preferences
@@ -732,7 +732,7 @@ export/
 - Markdown files are valid, standalone
 - Can be opened in any editor
 - metadata.json preserves structure
-- Re-importable to Readied
+- Re-importable to Dripnex
 
 ### 14.3 Import Support (v0.1)
 
@@ -961,7 +961,7 @@ Non-goals reviewed at major versions:
 ### 18.2 How It Works
 
 ```
-User downloads Readied (free)
+User downloads Dripnex (free)
          ↓
 Free tier: unlimited notes, full editor, local backup
          ↓
@@ -1365,7 +1365,7 @@ Marketing site develops **in parallel** with core:
 **Structure:**
 
 ```
-readied/
+dripnex/
 ├── apps/
 │   └── .gitkeep
 ├── packages/
@@ -1394,7 +1394,7 @@ readied/
 - Operations: createNote, updateNote, deleteNote
 - Tests passing with Vitest
 
-**Done when:** `pnpm --filter @readied/core test` passes.
+**Done when:** `pnpm --filter @dripnex/core test` passes.
 
 ---
 
@@ -1477,14 +1477,14 @@ readied/
 
 ## Repository
 
-**Product name:** Readied
-**NPM scope:** `@readied/*`
-**GitHub:** https://github.com/tomymaritano/readide.git (consider renaming to `readied`)
+**Product name:** Dripnex
+**NPM scope:** `@dripnex/*`
+**GitHub:** https://github.com/dripnex/readide.git (consider renaming to `dripnex`)
 
 **Clone:**
 
 ```bash
-git clone https://github.com/tomymaritano/readide.git readied
-cd readied
+git clone https://github.com/dripnex/readide.git dripnex
+cd dripnex
 pnpm install
 ```

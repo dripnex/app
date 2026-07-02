@@ -1,7 +1,7 @@
 /**
- * @readied/commands
+ * @dripnex/commands
  *
- * Markdown editing commands for Readied.
+ * Markdown editing commands for Dripnex.
  * Pure functions - no Electron, React, or UI dependencies.
  */
 

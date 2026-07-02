@@ -5,22 +5,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCw, Download, Search, Check, AlertTriangle } from 'lucide-react';
 import { toast } from '../../../../ui/primitives';
-import type { MarketplacePlugin } from './types';
 import styles from '../Section.module.css';
+import type { MarketplacePlugin } from './types';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const MARKETPLACE_API_URL = 'https://api.readied.app/plugins';
+const MARKETPLACE_API_URL = 'https://api.dripnex.app/plugins';
 
 /** Static fallback catalog for offline use */
 const FALLBACK_PLUGINS: MarketplacePlugin[] = [
   {
-    slug: 'readied-ai-assistant',
+    slug: 'dripnex-ai-assistant',
     name: 'AI Assistant',
     description: 'AI assistant with RAG over your notes, powered by Claude',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '0.1.0',
     category: 'productivity',
     icon: 'sparkles',
@@ -30,10 +30,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-word-count',
+    slug: 'dripnex-word-count',
     name: 'Word Count',
     description: 'Shows word, character, and line count in the editor status bar',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'editor',
     icon: 'hash',
@@ -43,10 +43,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-typewriter-mode',
+    slug: 'dripnex-typewriter-mode',
     name: 'Typewriter Mode',
     description: 'Keeps the cursor line centered in the editor for a focused writing experience',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'editor',
     icon: 'align-center',
@@ -56,10 +56,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-active-line-highlight',
+    slug: 'dripnex-active-line-highlight',
     name: 'Active Line Highlight',
     description: 'Highlights the line where the cursor is positioned',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'editor',
     icon: 'highlighter',
@@ -69,10 +69,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-tables',
+    slug: 'dripnex-tables',
     name: 'Tables',
     description: 'Insert markdown tables with a command. Renders via GFM in preview.',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'editor',
     icon: 'table',
@@ -82,10 +82,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-focus-mode',
+    slug: 'dripnex-focus-mode',
     name: 'Focus Mode',
     description: 'Dims all content except the current paragraph for focused writing',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'productivity',
     icon: 'eye',
@@ -95,10 +95,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-reading-time',
+    slug: 'dripnex-reading-time',
     name: 'Reading Time',
     description: 'Shows estimated reading time based on word count (~200 WPM)',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'productivity',
     icon: 'clock',
@@ -108,10 +108,10 @@ const FALLBACK_PLUGINS: MarketplacePlugin[] = [
     bundleUrl: null,
   },
   {
-    slug: 'readied-export-markdown',
+    slug: 'dripnex-export-markdown',
     name: 'Export Markdown',
     description: 'Copy notes as raw Markdown or rendered HTML to clipboard',
-    author: 'Readied',
+    author: 'Dripnex',
     version: '1.0.0',
     category: 'export',
     icon: 'copy',
@@ -215,13 +215,13 @@ export function BrowseTab({ installedPluginIds }: BrowseTabProps) {
 
     setInstallingSlug(plugin.slug);
     try {
-      const result = await window.readied.plugins.installFromUrl(plugin.bundleUrl, plugin.slug);
+      const result = await window.dripnex.plugins.installFromUrl(plugin.bundleUrl, plugin.slug);
       if (result.success) {
         toast.success(`${plugin.name} installed successfully`);
         // Trigger a reload so the installed tab picks it up
-        window.readied.plugins.requestReload();
+        window.dripnex.plugins.requestReload();
         // Notify parent to re-scan installed plugins
-        window.dispatchEvent(new CustomEvent('readied:plugins:refresh'));
+        window.dispatchEvent(new CustomEvent('dripnex:plugins:refresh'));
       } else {
         toast.error(`Failed to install ${plugin.name}: ${result.error ?? 'Unknown error'}`);
       }

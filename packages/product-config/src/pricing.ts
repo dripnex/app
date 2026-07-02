@@ -1,5 +1,5 @@
 /**
- * Readied pricing configuration
+ * Dripnex pricing configuration
  * Freemium + Pro Subscription model
  */
 

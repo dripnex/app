@@ -83,7 +83,7 @@ export const NotebookItem = memo(function NotebookItem({
   useEffect(() => {
     const checkGitStatus = async () => {
       try {
-        const result = await window.readied.notebooks.isGitEnabled(node.notebook.id);
+        const result = await window.dripnex.notebooks.isGitEnabled(node.notebook.id);
         if (result.success && result.enabled !== undefined) {
           setIsGitEnabled(result.enabled);
         }
@@ -164,12 +164,12 @@ export const NotebookItem = memo(function NotebookItem({
       setIsGitLoading(true);
       try {
         if (isGitEnabled) {
-          await window.readied.notebooks.disableGit(node.notebook.id);
+          await window.dripnex.notebooks.disableGit(node.notebook.id);
           setIsGitEnabled(false);
         } else {
-          const result = await window.readied.git.init(node.notebook.id);
+          const result = await window.dripnex.git.init(node.notebook.id);
           if (result.success) {
-            await window.readied.notebooks.enableGit(node.notebook.id);
+            await window.dripnex.notebooks.enableGit(node.notebook.id);
             setIsGitEnabled(true);
           }
         }

@@ -9,7 +9,7 @@ Storage is split into multiple packages for isolation of native dependencies and
 
 ## Packages
 
-### @readied/storage-core
+### @dripnex/storage-core
 
 Interfaces and utilities with **no native dependencies**:
 
@@ -19,7 +19,7 @@ Interfaces and utilities with **no native dependencies**:
 - Backup system
 - Export/Import utilities
 
-### @readied/storage-sqlite
+### @dripnex/storage-sqlite
 
 SQLite implementation using `better-sqlite3`:
 
@@ -30,7 +30,7 @@ SQLite implementation using `better-sqlite3`:
 - Migration definitions
 - **Only package with native deps**
 
-### @readied/sync-core
+### @dripnex/sync-core
 
 Supabase-based sync engine:
 
@@ -103,7 +103,7 @@ The migration system has grown to include tables for notebooks, tags, and sync s
 
 ## Sync Storage
 
-The `@readied/sync-core` package adds a sync layer on top of local storage:
+The `@dripnex/sync-core` package adds a sync layer on top of local storage:
 
 1. **Local-first** - All writes go to SQLite first
 2. **Sync state tracking** - Each record tracks its sync status (synced, dirty, conflict)

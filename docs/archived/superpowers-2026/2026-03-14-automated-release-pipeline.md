@@ -491,10 +491,10 @@ jobs:
           access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           access-token-secret: ${{ secrets.TWITTER_ACCESS_SECRET }}
           text: |
-            Readied ${{ steps.version.outputs.tag }} is out!
+            Dripnex ${{ steps.version.outputs.tag }} is out!
 
             https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}
-            #readied #markdown #devtools
+            #dripnex #markdown #devtools
 
   sync-develop:
     needs: publish

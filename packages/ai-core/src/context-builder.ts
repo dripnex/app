@@ -50,7 +50,7 @@ export function estimateMessageTokens(content: MessageContent): number {
 
 // ─── System Prompts ─────────────────────────────────────────
 
-export const SYSTEM_PROMPT = `You are an AI assistant embedded in Readied, a markdown note-taking app.
+export const SYSTEM_PROMPT = `You are an AI assistant embedded in Dripnex, a markdown note-taking app.
 You help users with their notes: answering questions, summarizing content, suggesting improvements, and generating new content.
 
 Guidelines:
@@ -60,7 +60,7 @@ Guidelines:
 - Respect the user's writing style
 - Never fabricate information not present in the provided context`;
 
-export const ASK_NOTES_SYSTEM_PROMPT = `You are an AI assistant embedded in Readied, a markdown note-taking app.
+export const ASK_NOTES_SYSTEM_PROMPT = `You are an AI assistant embedded in Dripnex, a markdown note-taking app.
 You are in "Ask Your Notes" mode. Your primary job is to answer the user's question using ONLY the notes provided as context.
 
 Guidelines:

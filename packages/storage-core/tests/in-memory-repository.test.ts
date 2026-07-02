@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createNote, createNoteId } from '@readied/core';
+import { createNote, createNoteId } from '@dripnex/core';
 import { InMemoryNoteRepository } from '../src/repositories/InMemoryNoteRepository.js';
 
 describe('InMemoryNoteRepository', () => {

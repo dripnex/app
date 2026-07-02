@@ -6,7 +6,7 @@ const withMDX = createMDX();
 const config = {
   output: 'export',
   reactStrictMode: true,
-  transpilePackages: ['@readied/product-config'],
+  transpilePackages: ['@dripnex/product-config'],
   typescript: {
     // fumadocs-ui types reference a different @types/react copy — safe to skip
     ignoreBuildErrors: true,

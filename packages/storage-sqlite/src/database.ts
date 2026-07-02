@@ -2,11 +2,11 @@
  * SQLite Database Adapter
  *
  * Wraps better-sqlite3 for type-safe database operations.
- * Implements DatabaseAdapter from @readied/storage-core.
+ * Implements DatabaseAdapter from @dripnex/storage-core.
  */
 
 import type { Database as DatabaseType, Statement } from 'better-sqlite3';
-import type { DatabaseAdapter, PreparedStatement, StatementResult } from '@readied/storage-core';
+import type { DatabaseAdapter, PreparedStatement, StatementResult } from '@dripnex/storage-core';
 
 // Dynamic require for native module - this syntax prevents bundlers from
 // statically analyzing and bundling the native module. At runtime, this

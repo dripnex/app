@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @readied/web build",
+  "buildCommand": "pnpm --filter @dripnex/web build",
   "outputDirectory": "apps/web/out",
   "installCommand": "git config --global 'url.https://github.com/.insteadOf' 'git@github.com:' && pnpm install",
   "framework": null,

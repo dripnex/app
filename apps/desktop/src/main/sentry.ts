@@ -20,7 +20,7 @@ export function initSentry(): void {
 
   Sentry.init({
     dsn: SENTRY_DSN,
-    release: `readied@${app.getVersion()}`,
+    release: `dripnex@${app.getVersion()}`,
     environment: app.isPackaged ? 'production' : 'development',
 
     // Only send errors in production

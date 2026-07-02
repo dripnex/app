@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, type MotionStyle, type Transition, useReducedMotion } from 'framer-motion';
-
 import { cn } from '@/lib/utils';
 
 interface BorderBeamProps {

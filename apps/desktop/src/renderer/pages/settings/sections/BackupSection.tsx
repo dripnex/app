@@ -24,7 +24,7 @@ export function BackupSection() {
     setIsExporting(true);
     setMessage(null);
     try {
-      const result = await window.readied.data.export();
+      const result = await window.dripnex.data.export();
       if (result.success) {
         setMessage(`Exported ${result.noteCount} notes to ${result.path}`);
       } else {
@@ -41,7 +41,7 @@ export function BackupSection() {
     setIsImporting(true);
     setMessage(null);
     try {
-      const result = await window.readied.data.import();
+      const result = await window.dripnex.data.import();
       if (result.success) {
         setMessage(`Imported ${result.noteCount} notes`);
       } else {
@@ -58,7 +58,7 @@ export function BackupSection() {
     setIsBackingUp(true);
     setMessage(null);
     try {
-      const result = await window.readied.data.backup();
+      const result = await window.dripnex.data.backup();
       if (result.success) {
         setMessage(`Backup created: ${result.path}`);
         updateBackup({ lastBackupAt: Date.now() });
@@ -73,7 +73,7 @@ export function BackupSection() {
   }, [updateBackup]);
 
   const handleOpenDataFolder = useCallback(async () => {
-    await window.readied.data.openFolder();
+    await window.dripnex.data.openFolder();
   }, []);
 
   const formatLastBackup = () => {
@@ -109,7 +109,7 @@ export function BackupSection() {
       <SettingGroup title="Import">
         <SettingRow
           label="Import Notes"
-          description="Import from Obsidian, Markdown folder, or Readied export"
+          description="Import from Obsidian, Markdown folder, or Dripnex export"
         >
           <Button
             variant="secondary"

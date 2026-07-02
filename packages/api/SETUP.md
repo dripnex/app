@@ -1,4 +1,4 @@
-# Readied API - Local Setup
+# Dripnex API - Local Setup
 
 ## Prerequisites
 
@@ -16,14 +16,14 @@
 turso auth login
 
 # Create database (if not exists)
-turso db create readied-tomymaritano --location aws-us-east-1
+turso db create dripnex-dripnex --location aws-us-east-1
 
 # Get database URL
-turso db show readied-tomymaritano
+turso db show dripnex-dripnex
 # Copy the URL (libsql://...)
 
 # Create auth token
-turso db tokens create readied-tomymaritano --expiration none
+turso db tokens create dripnex-dripnex --expiration none
 # Copy the token (eyJhbGci...)
 ```
 
@@ -114,12 +114,12 @@ pnpm deploy
 ### "Database not found"
 
 - Verify `TURSO_DATABASE_URL` is correct
-- Run `turso db show readied-tomymaritano` to check
+- Run `turso db show dripnex-dripnex` to check
 
 ### "Auth token invalid"
 
 - Token may be expired or revoked
-- Create new token: `turso db tokens create readied-tomymaritano`
+- Create new token: `turso db tokens create dripnex-dripnex`
 
 ### "Migrations failed"
 

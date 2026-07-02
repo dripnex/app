@@ -2,7 +2,7 @@
  * Add isPinned, isDeleted, and status fields to notes
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addNoteFields: Migration = {
   version: 20250102000004,

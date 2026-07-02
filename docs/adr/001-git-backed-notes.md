@@ -3,20 +3,20 @@
 **Status:** Proposed
 **Date:** 2026-01-09
 **Deciders:** Tomas Maritano, Claude Sonnet 4.5
-**Context:** Product differentiation strategy for Readied vs Inkdrop/Obsidian
+**Context:** Product differentiation strategy for Dripnex vs Inkdrop/Obsidian
 
 ---
 
 ## Context
 
-Readied is entering a crowded market of note-taking apps for developers:
+Dripnex is entering a crowded market of note-taking apps for developers:
 
 - **Inkdrop:** Solid sync, no git integration, $4.99/mo
 - **Obsidian:** Local-first, no reliable sync, plugins ecosystem
 - **Notion:** Cloud-first, not developer-focused
 - **VS Code with extensions:** Too generic, not purpose-built
 
-**Problem:** Why would a developer choose Readied over these alternatives?
+**Problem:** Why would a developer choose Dripnex over these alternatives?
 
 Without clear differentiation, we become "yet another Inkdrop clone" but more expensive ($9/mo vs $4.99/mo).
 
@@ -283,8 +283,8 @@ Implement git-like features (commits, history) but custom format.
 **Data model:**
 
 - Notebooks have `git_enabled: boolean`
-- Notebook filesystem location: `~/Readied/Notebooks/<notebook-name>/`
-- Git repo at: `~/Readied/Notebooks/<notebook-name>/.git`
+- Notebook filesystem location: `~/Dripnex/Notebooks/<notebook-name>/`
+- Git repo at: `~/Dripnex/Notebooks/<notebook-name>/.git`
 
 **Sync integration:**
 

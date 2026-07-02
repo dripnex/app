@@ -1,7 +1,7 @@
 /**
  * API Client Service
  *
- * Centralized HTTP client for communicating with the Readied backend API.
+ * Centralized HTTP client for communicating with the Dripnex backend API.
  * Handles authentication, token refresh, retry logic, and error handling.
  *
  * @module ApiClient

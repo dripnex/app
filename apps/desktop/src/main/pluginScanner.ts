@@ -7,7 +7,7 @@
 
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
-import type { PluginConfigSchemaField } from '@readied/plugin-api';
+import type { PluginConfigSchemaField } from '@dripnex/plugin-api';
 
 export type { PluginConfigSchemaField };
 

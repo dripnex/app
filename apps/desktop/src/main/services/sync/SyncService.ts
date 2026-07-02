@@ -8,14 +8,14 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
+import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@dripnex/storage-sqlite';
 import {
   createNoteId,
   createNotebookId,
   createNotebook,
   createTimestamp,
   type NoteStatus,
-} from '@readied/core';
+} from '@dripnex/core';
 import type {
   ApiClient,
   SyncChange,

@@ -1,9 +1,9 @@
 [
   {
-    "id": "readied-ai-assistant",
+    "id": "dripnex-ai-assistant",
     "name": "AI Assistant",
     "description": "AI assistant with RAG over your notes, powered by Claude. Ask questions, get summaries, and find connections across your notes.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "0.1.0",
     "category": "productivity",
     "icon": "sparkles",
@@ -12,10 +12,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-word-count",
+    "id": "dripnex-word-count",
     "name": "Word Count",
     "description": "Shows word, character, and line count in the editor status bar. Essential for writers tracking their progress.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "editor",
     "icon": "hash",
@@ -24,10 +24,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-typewriter-mode",
+    "id": "dripnex-typewriter-mode",
     "name": "Typewriter Mode",
     "description": "Keeps the cursor line centered in the editor for a focused, distraction-free writing experience.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "editor",
     "icon": "align-center",
@@ -36,10 +36,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-active-line-highlight",
+    "id": "dripnex-active-line-highlight",
     "name": "Active Line Highlight",
     "description": "Highlights the line where the cursor is positioned. Makes it easy to track your place in long documents.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "editor",
     "icon": "highlighter",
@@ -48,10 +48,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-tables",
+    "id": "dripnex-tables",
     "name": "Tables",
     "description": "Insert markdown tables with a command. Tables render beautifully in preview via GitHub Flavored Markdown.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "editor",
     "icon": "table",
@@ -60,10 +60,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-focus-mode",
+    "id": "dripnex-focus-mode",
     "name": "Focus Mode",
     "description": "Dims all content except the current paragraph. Helps you concentrate on what you're writing right now.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "productivity",
     "icon": "eye",
@@ -72,10 +72,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-reading-time",
+    "id": "dripnex-reading-time",
     "name": "Reading Time",
     "description": "Shows estimated reading time in the editor header. Based on average reading speed of 200 words per minute.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "productivity",
     "icon": "clock",
@@ -84,10 +84,10 @@
     "downloads": 0
   },
   {
-    "id": "readied-export-markdown",
+    "id": "dripnex-export-markdown",
     "name": "Export Markdown",
     "description": "Copy your notes as raw Markdown or rendered HTML. Useful for pasting into emails, blogs, and other tools.",
-    "author": "Readied",
+    "author": "Dripnex",
     "version": "1.0.0",
     "category": "export",
     "icon": "copy",

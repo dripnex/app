@@ -1,4 +1,4 @@
-# Plan de Remediación y Ruta al Knowledge Base — Readied
+# Plan de Remediación y Ruta al Knowledge Base — Dripnex
 
 ## Resumen ejecutivo
 
@@ -283,7 +283,7 @@ Items no bloqueantes; agrupar en PRs pequeños por capa. Los marcados (KB) tocan
 - `apiClient.ts:213` **(KB)** — añadir timeout/AbortSignal (`AbortSignal.timeout(ms)`); el patrón ya existe en `index.ts:640`. El futuro client de embeddings cloud debe compartir esta base.
 - `index.ts:699` **(KB)** — registrar handlers IPC incondicionalmente (síncrono, antes del load); cada handler obtiene su servicio de forma lazy o devuelve "not ready". Los handlers `kb:*` deben registrarse igual.
 - `apiClient.ts:10` **(KB)** — migrar a `net.fetch` inyectado (como hace `ai-core`), quitar `cross-fetch`; evitar un tercer estilo de red para el KB.
-- `index.ts:720` **(KB)** — extraer `handleDeepLink(url)` único para las 3 rutas; centralizar base URLs (incluida la del backend `https://api.readied.app` y las de checkout/pricing) en un módulo de config. El KB añade su base URL ahí, no otro literal.
+- `index.ts:720` **(KB)** — extraer `handleDeepLink(url)` único para las 3 rutas; centralizar base URLs (incluida la del backend `https://api.dripnex.app` y las de checkout/pricing) en un módulo de config. El KB añade su base URL ahí, no otro literal.
 - `authSyncHandlers.ts:137` — devolver `{success: refreshed.type==='success', reason, error}`.
 - `pluginHandlers.ts:419` — usar la misma clase de caracteres que install (`/[^a-zA-Z0-9_-]/`).
 - `useAutoSave.ts:20` — flush síncrono / handshake `before-quit` para no perder ediciones al salir.
@@ -310,7 +310,7 @@ Items no bloqueantes; agrupar en PRs pequeños por capa. Los marcados (KB) tocan
 **Backend (`packages/api` / sync-core)**
 
 - `sync-core/engine.ts:85` (High) **(KB)** — resolver el código muerto: borrar `sync-core` (+ entry en `electron-vite.config.ts`) **o** migrar `SyncService` a consumirlo. Elegir una única fuente de verdad de client/transport antes de añadir un segundo API.
-- `sync.ts:264` — importar `validateNotebookTree` de `@readied/sync-core` y borrar la copia inline.
+- `sync.ts:264` — importar `validateNotebookTree` de `@dripnex/sync-core` y borrar la copia inline.
 - `sync-core/engine.ts:207` — drenar `queue.getPendingChanges()` en `pushChanges` o eliminar la ruta de cola.
 - `rateLimit.ts:22` **(KB)** — respaldar con KV/Durable Objects; confiar solo en `CF-Connecting-IP`. Un endpoint de KB read-heavy es blanco de abuso; planear rate limit desde el inicio.
 - `subscription.ts:67` — persistir event ids de Stripe (idempotencia) y hacer upsert de la suscripción.
@@ -339,7 +339,7 @@ Items no bloqueantes; agrupar en PRs pequeños por capa. Los marcados (KB) tocan
 
 3. **Almacenamiento vectorial: brute-force JS vs `sqlite-vec`.** Recomendado empezar con coseno brute-force en JS/SQL (suficiente para corpus personales de miles de chunks) y añadir `sqlite-vec` **solo si** la performance lo exige. `sqlite-vec` es dependencia **nativa** → **solo en `apps/desktop`** (CLAUDE.md), nunca en un workspace package; los packages quedan TS puro con peerDeps.
 
-4. **Runtime del MCP server (Node 20 vs 24) y contención de escritores.** `mcp-server` usa `node:sqlite`/WAL sobre el mismo `readied.db` que la app abre con `better-sqlite3` (`index.ts:161`). Dos escritores sobre el mismo archivo + el KB como tercer lector/escritor requieren decidir la disciplina de single-writer y notificación de cambios antes de indexar. Verificar también compatibilidad de la versión de Node del MCP con `node:sqlite`.
+4. **Runtime del MCP server (Node 20 vs 24) y contención de escritores.** `mcp-server` usa `node:sqlite`/WAL sobre el mismo `dripnex.db` que la app abre con `better-sqlite3` (`index.ts:161`). Dos escritores sobre el mismo archivo + el KB como tercer lector/escritor requieren decidir la disciplina de single-writer y notificación de cambios antes de indexar. Verificar también compatibilidad de la versión de Node del MCP con `node:sqlite`.
 
 5. **Migración de settings.** Añadir sub-config de embeddings exige bump de `SETTINGS_VERSION` con migración (`schema.ts:64`). Coordinar con cualquier otro cambio de settings en vuelo para no colisionar versiones.
 

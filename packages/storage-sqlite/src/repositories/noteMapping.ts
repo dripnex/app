@@ -15,8 +15,8 @@ import {
   createNoteId,
   createNotebookId,
   DEFAULT_NOTE_STATUS,
-} from '@readied/core';
-import type { ArchivedFilter } from '@readied/storage-core';
+} from '@dripnex/core';
+import type { ArchivedFilter } from '@dripnex/storage-core';
 
 /** Row shape returned by `SELECT * FROM notes` */
 export interface NoteRow {

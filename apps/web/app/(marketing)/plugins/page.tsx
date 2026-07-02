@@ -3,8 +3,8 @@ import PluginFilter from '@/components/PluginFilter';
 import pluginsData from '@/data/plugins.json';
 
 export const metadata: Metadata = {
-  title: 'Plugins — Readied',
-  description: 'Extend Readied with plugins for AI assistance, productivity, and more.',
+  title: 'Plugins — Dripnex',
+  description: 'Extend Dripnex with plugins for AI assistance, productivity, and more.',
 };
 
 export default function PluginsPage() {
@@ -14,7 +14,7 @@ export default function PluginsPage() {
         <header className="text-center mb-10">
           <span className="section-label">Plugins</span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
-            Extend <span className="text-accent">Readied</span>
+            Extend <span className="text-accent">Dripnex</span>
           </h1>
           <p className="text-lg text-text-secondary max-w-[50ch] mx-auto leading-relaxed">
             Add powerful features to your editor with built-in and community plugins.

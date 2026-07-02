@@ -1,10 +1,10 @@
 /**
  * SQLite Notebook Repository
  *
- * Implements the NotebookRepository interface from @readied/core
+ * Implements the NotebookRepository interface from @dripnex/core
  */
 
-import type { NotebookRepository } from '@readied/core';
+import type { NotebookRepository } from '@dripnex/core';
 import {
   type Notebook,
   type NotebookWithMetadata,
@@ -15,7 +15,7 @@ import {
   createNotebook,
   buildNotebookTree,
   INBOX_NOTEBOOK_ID,
-} from '@readied/core';
+} from '@dripnex/core';
 import type { DatabaseConnection } from '../database.js';
 
 /** Row type from SQLite */

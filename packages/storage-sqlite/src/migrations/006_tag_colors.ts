@@ -4,7 +4,7 @@
  * Adds 'color' column to tags table for customizable tag colors.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addTagColors: Migration = {
   version: 20250102000002,

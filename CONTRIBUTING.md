@@ -1,10 +1,10 @@
-# Contributing to Readied
+# Contributing to Dripnex
 
-Thank you for your interest in contributing to Readied!
+Thank you for your interest in contributing to Dripnex!
 
 ## What Can I Contribute To?
 
-Readied uses an **Open Core** model:
+Dripnex uses an **Open Core** model:
 
 ### Open Source (MIT) - Contributions Welcome!
 
@@ -85,7 +85,7 @@ pnpm build            # Build all packages
 
 ## Questions?
 
-- Open a [GitHub Discussion](https://github.com/tomymaritano/readide/discussions)
+- Open a [GitHub Discussion](https://github.com/dripnex/readide/discussions)
 - Check existing issues before creating new ones
 
 ## License

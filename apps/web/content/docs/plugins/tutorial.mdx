@@ -19,7 +19,7 @@ A Pomodoro timer that:
 ## Step 1: Scaffold the Project
 
 ```bash
-npx readied-plugin init "Pomodoro Timer"
+npx dripnex-plugin init "Pomodoro Timer"
 cd pomodoro-timer
 npm install
 ```
@@ -29,7 +29,7 @@ npm install
 Edit `src/index.ts`:
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 export const plugin: PluginManifest = {
   id: 'pomodoro-timer',
@@ -92,7 +92,7 @@ function notify() {
 
 ```typescript
 import { useState, useEffect } from 'react';
-import type { ZoneComponentProps } from '@readied/plugin-api';
+import type { ZoneComponentProps } from '@dripnex/plugin-api';
 
 function PomodoroStatus(_props: ZoneComponentProps) {
   const [, forceUpdate] = useState(0);
@@ -228,7 +228,7 @@ Here's the full plugin in one file:
 
 ```typescript
 import { useState, useEffect } from 'react';
-import type { PluginManifest, ZoneComponentProps } from '@readied/plugin-api';
+import type { PluginManifest, ZoneComponentProps } from '@dripnex/plugin-api';
 
 // --- Shared state ---
 interface TimerState {

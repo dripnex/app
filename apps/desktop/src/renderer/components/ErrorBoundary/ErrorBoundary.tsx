@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log to file via main process
-    window.readied.log.error('React error boundary caught error', {
+    window.dripnex.log.error('React error boundary caught error', {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -41,9 +41,9 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleViewLogs = async (): Promise<void> => {
-    const logPath = await window.readied.log.getLogPath();
+    const logPath = await window.dripnex.log.getLogPath();
     if (logPath) {
-      await window.readied.data.openFolder();
+      await window.dripnex.data.openFolder();
     }
   };
 

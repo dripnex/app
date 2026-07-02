@@ -11,7 +11,7 @@ Electron's Inter-Process Communication (IPC) connects the renderer to the main p
 
 ```
 Renderer (React)
-    ↓ window.readied.notes.create()
+    ↓ window.dripnex.notes.create()
 Preload (Bridge)
     ↓ ipcRenderer.invoke('notes:create')
 Main (Handlers)
@@ -21,7 +21,7 @@ Core + Storage
 
 ## Preload API
 
-The preload script exposes a typed API via `window.readied`. The API is organized into namespaces by domain:
+The preload script exposes a typed API via `window.dripnex`. The API is organized into namespaces by domain:
 
 ### `notes` - Note Operations
 
@@ -83,7 +83,7 @@ Supabase-based sync operations:
 ## Example
 
 ```typescript
-interface ReadiedAPI {
+interface DripnexAPI {
   notes: {
     create: (input: CreateInput) => Promise<Result<NoteSnapshot>>;
     get: (id: string) => Promise<Result<NoteSnapshot>>;
@@ -131,8 +131,8 @@ interface ReadiedAPI {
   };
 }
 
-// Exposed as window.readied
-contextBridge.exposeInMainWorld('readied', api);
+// Exposed as window.dripnex
+contextBridge.exposeInMainWorld('dripnex', api);
 ```
 
 ## Main Process Handlers
@@ -167,7 +167,7 @@ ipcMain.handle('sync:push', async () => {
 
 ```typescript
 // In React component
-const result = await window.readied.notes.create({
+const result = await window.dripnex.notes.create({
   content: '# Hello World',
 });
 
@@ -176,8 +176,8 @@ if (result.ok) {
 }
 
 // Sync
-await window.readied.sync.push();
+await window.dripnex.sync.push();
 
 // Appearance
-await window.readied.appearance.theme('dark');
+await window.dripnex.appearance.theme('dark');
 ```

@@ -11,7 +11,7 @@ export default function AuthVerifyContent() {
 
   useEffect(() => {
     if (token) {
-      window.location.href = `readied://auth/verify?token=${encodeURIComponent(token)}`;
+      window.location.href = `dripnex://auth/verify?token=${encodeURIComponent(token)}`;
 
       const timer = setTimeout(() => {
         setShowFallback(true);
@@ -42,13 +42,13 @@ export default function AuthVerifyContent() {
           <h1 className="text-2xl font-bold text-[#f4f4f5] mb-3">Invalid Link</h1>
           <p className="text-[#a1a1aa] mb-6">
             This verification link is incomplete or has expired. Please request a new magic link
-            from the Readied app.
+            from the Dripnex app.
           </p>
           <Link
             href="/download"
             className="inline-block px-6 py-2.5 bg-accent text-white font-medium rounded-lg transition-colors hover:bg-accent-hover"
           >
-            Download Readied
+            Download Dripnex
           </Link>
         </div>
       </div>
@@ -61,7 +61,7 @@ export default function AuthVerifyContent() {
         {!showFallback ? (
           <>
             <div className="inline-block w-10 h-10 mb-6 border-[3px] border-white/[0.06] border-t-accent rounded-full animate-spin" />
-            <h1 className="text-2xl font-semibold text-[#f4f4f5] mb-3">Opening Readied...</h1>
+            <h1 className="text-2xl font-semibold text-[#f4f4f5] mb-3">Opening Dripnex...</h1>
             <p className="text-[#a1a1aa]">The app should open automatically. Hang tight.</p>
           </>
         ) : (
@@ -85,10 +85,10 @@ export default function AuthVerifyContent() {
             </p>
 
             <a
-              href={`readied://auth/verify?token=${encodeURIComponent(token)}`}
+              href={`dripnex://auth/verify?token=${encodeURIComponent(token)}`}
               className="inline-block px-8 py-3 mb-8 bg-accent text-white font-semibold rounded-lg transition-colors hover:bg-accent-hover"
             >
-              Open in Readied
+              Open in Dripnex
             </a>
 
             <div className="p-6 rounded-xl bg-surface border border-white/[0.06]">
@@ -96,11 +96,11 @@ export default function AuthVerifyContent() {
                 Opened this on the wrong device?
               </h2>
               <p className="text-sm text-[#a1a1aa] mb-4">
-                Open this same link on the device where Readied is installed. The magic link is
+                Open this same link on the device where Dripnex is installed. The magic link is
                 valid for 15 minutes.
               </p>
               <p className="text-sm text-[#a1a1aa]">
-                Don&apos;t have Readied yet?{' '}
+                Don&apos;t have Dripnex yet?{' '}
                 <Link href="/download" className="text-accent underline">
                   Download now
                 </Link>

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { appCommands } from '@readied/command-registry/definitions';
+import { appCommands } from '@dripnex/command-registry/definitions';
 import { registry } from './useCommandRegistry';
 
 interface AppCommandHandlers {

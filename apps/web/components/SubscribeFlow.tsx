@@ -64,7 +64,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
     setErrorMessage('');
 
     try {
-      const response = await fetch('https://api.readied.app/auth/magic-link', {
+      const response = await fetch('https://api.dripnex.app/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
@@ -92,7 +92,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
     setErrorMessage('');
 
     try {
-      const response = await fetch('https://api.readied.app/auth/magic-link', {
+      const response = await fetch('https://api.dripnex.app/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),
@@ -123,7 +123,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
     setErrorMessage('');
 
     try {
-      const response = await fetch('https://api.readied.app/subscription/checkout/public', {
+      const response = await fetch('https://api.dripnex.app/subscription/checkout/public', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -553,7 +553,7 @@ export default function SubscribeFlow({ trialDays, plans, guarantees }: Subscrib
                 <span>Processing...</span>
               </>
             ) : selectedPlan === 'free' ? (
-              'Download Readied'
+              'Download Dripnex'
             ) : (
               `Start ${trialDays}-day free trial`
             )}

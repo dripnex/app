@@ -5,8 +5,8 @@ import {
   formatKeybinding as _formatKeybinding,
   type RegisteredCommand,
   type KeyBinding,
-} from '@readied/command-registry';
-import { editorCommands } from '@readied/command-registry/definitions';
+} from '@dripnex/command-registry';
+import { editorCommands } from '@dripnex/command-registry/definitions';
 import {
   toggleBold,
   toggleItalic,
@@ -22,7 +22,7 @@ import {
   insertHorizontalRule,
   undoChange,
   redoChange,
-} from '@readied/commands';
+} from '@dripnex/commands';
 
 // --- Singleton registry ---
 export const registry = new CommandRegistry();

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 
 /**
- * Handles deep link auth verification events (readied://auth/verify?token=xxx).
+ * Handles deep link auth verification events (dripnex://auth/verify?token=xxx).
  * Listens for IPC 'auth:verify-token' events and verifies the token via authStore.
  */
 export function useDeepLinks() {
@@ -19,7 +19,7 @@ export function useDeepLinks() {
     };
 
     // Listen for deep link auth verification events
-    const removeListener = window.readied.ipc.on('auth:verify-token', handleAuthVerification);
+    const removeListener = window.dripnex.ipc.on('auth:verify-token', handleAuthVerification);
 
     return () => {
       removeListener();

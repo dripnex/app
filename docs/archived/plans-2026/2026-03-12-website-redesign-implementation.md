@@ -295,8 +295,8 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Readied — Offline-first Markdown editor for developers',
-    template: '%s | Readied',
+    default: 'Dripnex — Offline-first Markdown editor for developers',
+    template: '%s | Dripnex',
   },
   description:
     'A beautiful Markdown editor that works offline, stores files locally, and never locks you in.',
@@ -347,7 +347,7 @@ Replace current Navbar + NavDropdown + MobileNav (using @headlessui) with shadcn
 Create new `apps/web/components/Navbar.tsx`:
 
 - Fixed header with `backdrop-blur-xl` glassmorphism
-- Logo left: `font-mono text-lg font-bold` "readied" + violet dot
+- Logo left: `font-mono text-lg font-bold` "dripnex" + violet dot
 - Center: nav links (Features, Pricing, Docs dropdown, Changelog)
 - Right: ghost "Download" + accent "Try Pro Free" buttons using `<Button>` component
 - Mobile: hamburger triggers shadcn `<Sheet>` side drawer (replaces @headlessui Dialog)
@@ -568,8 +568,8 @@ Create new `apps/web/components/landing/WhyLocal.tsx`:
 - Right side:
   - `<Card>` with comparison table
   - Rows: Data Location, Internet Required, Export, Sync, Vendor Lock-in
-  - Columns: Readied vs Cloud Apps
-  - Readied column highlights with accent color checks
+  - Columns: Dripnex vs Cloud Apps
+  - Dripnex column highlights with accent color checks
 
 **Step 2: Verify build**
 

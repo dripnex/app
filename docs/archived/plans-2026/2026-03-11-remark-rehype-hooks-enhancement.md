@@ -209,7 +209,7 @@ git commit -m "feat(desktop): add CSS for plugin error block boundaries in previ
 
 ```typescript
 togglePlugin: async (pluginId: string, enabled: boolean) => {
-  await window.readied.plugins.setEnabled(pluginId, enabled);
+  await window.dripnex.plugins.setEnabled(pluginId, enabled);
   // Selective reload: deactivate or activate just this plugin
   if (!enabled) {
     pluginRegistry.deactivate(pluginId);

@@ -5,11 +5,11 @@ description: Optional cloud sync via Supabase — backup and sync notes across d
 
 # Cloud Sync
 
-Readied works 100% offline by default. Cloud sync is an **optional** feature for backing up your notes and syncing them across multiple devices. You never need to create an account or connect to the internet to use Readied.
+Dripnex works 100% offline by default. Cloud sync is an **optional** feature for backing up your notes and syncing them across multiple devices. You never need to create an account or connect to the internet to use Dripnex.
 
 ## Authentication
 
-Readied uses **magic link** email authentication powered by Supabase. There are no passwords to remember.
+Dripnex uses **magic link** email authentication powered by Supabase. There are no passwords to remember.
 
 1. Open **Settings > Account**
 2. Enter your email address
@@ -25,7 +25,7 @@ Once authenticated, sync begins automatically.
 - When you go offline, changes are **queued locally** and pushed when your connection returns
 - **Conflict resolution** uses a last-write-wins strategy with local priority — your local edits always take precedence if the same note was modified on two devices simultaneously
 
-Because Readied is offline-first, you will never lose work due to a network issue. The local SQLite database is always the primary source of truth.
+Because Dripnex is offline-first, you will never lose work due to a network issue. The local SQLite database is always the primary source of truth.
 
 ## Sync Status
 
@@ -43,7 +43,7 @@ The **sync status indicator** in the sidebar footer shows the current state at a
 - Your data is stored in Supabase (PostgreSQL) when sync is enabled
 - All data transfer uses **HTTPS**
 - You can **delete your cloud data** at any time from **Settings > Account**
-- Sync is entirely optional — you can use Readied without ever signing in
+- Sync is entirely optional — you can use Dripnex without ever signing in
 - If you sign out, your local notes remain untouched on your machine
 
 ## Troubleshooting
@@ -56,7 +56,7 @@ Open **Settings > Account** and use **Force Sync** to trigger a full re-sync.
 
 1. Check your internet connection
 2. Try signing out and signing back in to refresh your authentication token
-3. If the issue persists, check the Readied logs for details
+3. If the issue persists, check the Dripnex logs for details
 
 ### Notes not appearing on another device
 

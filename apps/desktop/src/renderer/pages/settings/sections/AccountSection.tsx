@@ -16,7 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
 import {
   useAuthStore,
   selectUser,
@@ -91,7 +91,7 @@ export function AccountSection() {
 
   const loadSyncHistory = useCallback(async () => {
     try {
-      const result = await window.readied.sync.history(10);
+      const result = await window.dripnex.sync.history(10);
       if (result.success) {
         setSyncHistory(result.history);
       }
@@ -179,7 +179,7 @@ export function AccountSection() {
     setIsManaging(true);
     setMessage(null);
     try {
-      const result = await window.readied.subscription.openPortal('https://readied.app');
+      const result = await window.dripnex.subscription.openPortal('https://dripnex.app');
       if (!result.success) {
         setMessage(`Failed to open billing portal: ${result.error || 'Unknown error'}`);
       }

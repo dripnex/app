@@ -129,7 +129,7 @@ export interface DataPaths {
   logs: string;
 }
 
-/** License state (mirrored from @readied/licensing AppLicenseState) */
+/** License state (mirrored from @dripnex/licensing AppLicenseState) */
 export type LicenseStatus =
   | 'free'
   | 'trial'

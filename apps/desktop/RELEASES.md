@@ -6,7 +6,7 @@ The app uses `electron-updater` to automatically check for and install updates f
 
 ### Configuration
 
-- **Repository**: `tomymaritano/readide`
+- **Repository**: `dripnex/readide`
 - **Update Channel**: GitHub Releases
 - **Auto-download**: No (asks user first)
 - **Auto-install**: Yes (on app quit)
@@ -49,18 +49,18 @@ pnpm dist:linux  # Creates AppImage and DEB for Linux
 
 ### 4. Create GitHub Release
 
-1. Go to: https://github.com/tomymaritano/readide/releases/new
+1. Go to: https://github.com/dripnex/readide/releases/new
 2. **Tag**: `v0.1.7` (same as git tag)
-3. **Title**: `Readied v0.1.7`
+3. **Title**: `Dripnex v0.1.7`
 4. **Description**: Changelog/release notes
 5. **Attach files** from `apps/desktop/release/`:
-   - `Readied-0.1.7-arm64.dmg`
-   - `Readied-0.1.7-x64.dmg`
-   - `Readied-0.1.7-arm64-mac.zip`
-   - `Readied-0.1.7-x64-mac.zip`
-   - `Readied Setup 0.1.7.exe`
-   - `Readied-0.1.7-x64.AppImage`
-   - `readied_0.1.7_amd64.deb`
+   - `Dripnex-0.1.7-arm64.dmg`
+   - `Dripnex-0.1.7-x64.dmg`
+   - `Dripnex-0.1.7-arm64-mac.zip`
+   - `Dripnex-0.1.7-x64-mac.zip`
+   - `Dripnex Setup 0.1.7.exe`
+   - `Dripnex-0.1.7-x64.AppImage`
+   - `dripnex_0.1.7_amd64.deb`
 6. **Publish release**
 
 ### 5. Verify Auto-Update
@@ -99,20 +99,20 @@ Tag beta releases as: `v0.1.7-beta.1`
 
 ```bash
 # Use local API
-READIED_API_URL=http://localhost:8787 pnpm dev
+DRIPNEX_API_URL=http://localhost:8787 pnpm dev
 ```
 
 ### Staging
 
 ```bash
 # Use staging API
-READIED_API_URL=https://readied-api-staging.readied.workers.dev pnpm dev
+DRIPNEX_API_URL=https://dripnex-api-staging.dripnex.workers.dev pnpm dev
 ```
 
 ### Production (default)
 
 ```bash
-# Uses https://api.readied.app (hardcoded in build)
+# Uses https://api.dripnex.app (hardcoded in build)
 pnpm dist:mac
 ```
 
@@ -219,6 +219,6 @@ pnpm dist:win
 - Check signing certificates are valid
 - Verify notarization succeeded (macOS)
 - Check app logs in:
-  - macOS: `~/Library/Logs/Readied/`
-  - Windows: `%USERPROFILE%\AppData\Roaming\Readied\logs\`
-  - Linux: `~/.config/Readied/logs/`
+  - macOS: `~/Library/Logs/Dripnex/`
+  - Windows: `%USERPROFILE%\AppData\Roaming\Dripnex\logs\`
+  - Linux: `~/.config/Dripnex/logs/`

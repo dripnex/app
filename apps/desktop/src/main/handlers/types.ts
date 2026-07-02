@@ -2,8 +2,8 @@
  * Shared dependency types for IPC handler modules.
  */
 
-import type { DataPaths } from '@readied/storage-core';
-import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
+import type { DataPaths } from '@dripnex/storage-core';
+import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@dripnex/storage-sqlite';
 import type { ApiClient } from '../services/apiClient.js';
 import type { EncryptionService } from '../services/encryptionService.js';
 import type { SyncService } from '../services/syncService.js';
@@ -12,7 +12,7 @@ import type { TokenStorage } from '../services/tokenStorage.js';
 import type { AiKeyStorage } from '../services/aiKeyStorage.js';
 
 /** Database instance type (better-sqlite3) */
-export type Database = ReturnType<typeof import('@readied/storage-sqlite').createDatabase>;
+export type Database = ReturnType<typeof import('@dripnex/storage-sqlite').createDatabase>;
 
 /** Broadcast helper signature */
 export type BroadcastFn = (channel: string, ...args: unknown[]) => void;
@@ -25,7 +25,7 @@ export type NoteToSnapshotFn = (note: {
   title: string;
   isPinned: boolean;
   isDeleted: boolean;
-  status: import('@readied/core').NoteStatus;
+  status: import('@dripnex/core').NoteStatus;
   metadata: {
     createdAt: string;
     updatedAt: string;
@@ -46,7 +46,7 @@ export type NoteToSnapshotFn = (note: {
   isArchived: boolean;
   isPinned: boolean;
   isDeleted: boolean;
-  status: import('@readied/core').NoteStatus;
+  status: import('@dripnex/core').NoteStatus;
 };
 
 export type {

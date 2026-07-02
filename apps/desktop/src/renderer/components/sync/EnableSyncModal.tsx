@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Cloud, Mail, CheckCircle, X, RefreshCw, Sparkles } from 'lucide-react';
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
 import { useAuthStore, selectIsAuthenticated, selectError } from '../../stores/authStore';
 import { useLicense } from '../../contexts/LicenseContext';
 import styles from './LoginModal.module.css';
@@ -216,7 +216,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
                 <li>Access notes on all your devices</li>
                 <li>End-to-end encrypted — only you can read them</li>
                 <li>Works offline, syncs when connected</li>
-                <li>No account required to use Readied locally</li>
+                <li>No account required to use Dripnex locally</li>
               </ul>
               <button type="button" className={styles.button} onClick={handleEnableSync}>
                 Get Started
@@ -390,11 +390,11 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
         <div className={styles.footer}>
           <p>
             By signing in, you agree to our{' '}
-            <a href="https://readied.app/terms" target="_blank" rel="noopener">
+            <a href="https://dripnex.app/terms" target="_blank" rel="noopener">
               Terms
             </a>{' '}
             and{' '}
-            <a href="https://readied.app/privacy" target="_blank" rel="noopener">
+            <a href="https://dripnex.app/privacy" target="_blank" rel="noopener">
               Privacy Policy
             </a>
             .

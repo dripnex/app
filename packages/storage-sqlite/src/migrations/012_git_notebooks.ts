@@ -5,7 +5,7 @@
  * Each git-enabled notebook becomes a git repository with full history.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const gitNotebooks: Migration = {
   version: 20260109000009,

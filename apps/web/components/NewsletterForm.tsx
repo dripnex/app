@@ -22,7 +22,7 @@ export default function NewsletterForm({ compact = false }: NewsletterFormProps)
     setErrorMessage('');
 
     try {
-      const response = await fetch('https://api.readied.app/newsletter/subscribe', {
+      const response = await fetch('https://api.dripnex.app/newsletter/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() }),

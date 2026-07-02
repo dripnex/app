@@ -1,5 +1,5 @@
 /**
- * File-backed implementation of @readied/licensing's LicenseStorage.
+ * File-backed implementation of @dripnex/licensing's LicenseStorage.
  *
  * Persists three small JSON files under the user's data directory:
  *
@@ -9,7 +9,7 @@
  *
  * Subscription verification (Ed25519):
  * - If the persisted cache contains `signedEnvelope`, the read path
- *   verifies it via @readied/licensing's verifySubscriptionSignature
+ *   verifies it via @dripnex/licensing's verifySubscriptionSignature
  *   before returning. An invalid envelope causes the cache to be
  *   refused (read returns null) so the next call falls through to a
  *   fresh fetch from the API.
@@ -29,7 +29,7 @@ import {
   type StoredLicenseData,
   type StoredTrialData,
   type StoredSubscriptionData,
-} from '@readied/licensing';
+} from '@dripnex/licensing';
 import { loggers } from '../logger';
 
 /**

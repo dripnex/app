@@ -1,6 +1,6 @@
-# Readied Design System - Tokens
+# Dripnex Design System - Tokens
 
-This document describes the design token system used throughout Readied. All design tokens are defined in `tokens.css` and should be used via CSS custom properties.
+This document describes the design token system used throughout Dripnex. All design tokens are defined in `tokens.css` and should be used via CSS custom properties.
 
 ## Philosophy
 

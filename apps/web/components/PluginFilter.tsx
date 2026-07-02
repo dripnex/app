@@ -141,8 +141,8 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
       >
         {filteredPlugins.map(plugin => {
           const installCmd = plugin.builtin
-            ? `readied plugin enable ${plugin.id}`
-            : `readied plugin install ${plugin.id}`;
+            ? `dripnex plugin enable ${plugin.id}`
+            : `dripnex plugin install ${plugin.id}`;
 
           return (
             <div

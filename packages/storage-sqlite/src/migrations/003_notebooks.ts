@@ -2,7 +2,7 @@
  * Add notebooks table and notebook_id to notes
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addNotebooks: Migration = {
   version: 20241231000003,

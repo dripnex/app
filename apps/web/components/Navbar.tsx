@@ -12,7 +12,7 @@ const docsItems: { label: string; href: string; external?: boolean }[] = [
   { label: 'Plugins', href: '/plugins' },
   {
     label: 'Report a Bug',
-    href: 'https://github.com/tomymaritano/readide/issues/new?template=bug_report.md',
+    href: 'https://github.com/dripnex/readide/issues/new?template=bug_report.md',
     external: true,
   },
 ];
@@ -36,12 +36,12 @@ const mobileSections = [
       { label: 'Plugins', href: '/plugins' },
       {
         label: 'Report a Bug',
-        href: 'https://github.com/tomymaritano/readide/issues/new?template=bug_report.md',
+        href: 'https://github.com/dripnex/readide/issues/new?template=bug_report.md',
         external: true,
       },
       {
         label: 'Blog',
-        href: 'https://medium.com/@tomymaritano',
+        href: 'https://medium.com/@dripnex',
         external: true,
       },
     ],
@@ -51,12 +51,12 @@ const mobileSections = [
     links: [
       {
         label: 'GitHub',
-        href: 'https://github.com/tomymaritano/readide',
+        href: 'https://github.com/dripnex/readide',
         external: true,
       },
       {
         label: 'X (Twitter)',
-        href: 'https://x.com/tomymaritano',
+        href: 'https://x.com/dripnex',
         external: true,
       },
     ],
@@ -100,7 +100,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center">
           <span className="font-mono text-base font-bold text-text-primary tracking-tight">
-            readied<span className="text-accent">.</span>
+            dripnex<span className="text-accent">.</span>
           </span>
         </Link>
 
@@ -211,7 +211,7 @@ export default function Navbar() {
             <SheetContent className="overflow-y-auto">
               <SheetHeader>
                 <SheetTitle className="font-mono text-lg font-bold tracking-tight">
-                  readied<span className="text-accent">.</span>
+                  dripnex<span className="text-accent">.</span>
                 </SheetTitle>
               </SheetHeader>
 

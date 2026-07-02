@@ -1,5 +1,5 @@
 {
-  "name": "@readied/ai-core",
+  "name": "@dripnex/ai-core",
   "version": "0.1.0",
   "private": true,
   "description": "Provider-agnostic AI core with streaming protocol",

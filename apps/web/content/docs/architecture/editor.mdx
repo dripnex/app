@@ -5,7 +5,7 @@ description: CodeMirror 6 integration — extensions, plugins, theming, and deco
 
 # Editor
 
-Readied uses CodeMirror 6 for markdown editing.
+Dripnex uses CodeMirror 6 for markdown editing.
 
 ## Why CodeMirror 6?
 
@@ -52,7 +52,7 @@ const view = new EditorView({
 ```typescript
 // Debounced save
 const saveNote = useDebouncedCallback((content: string) => {
-  window.readied.notes.update({ id: noteId, content });
+  window.dripnex.notes.update({ id: noteId, content });
 }, 500);
 ```
 
@@ -103,7 +103,7 @@ The built-in active line highlight plugin uses line decorations to visually dist
 
 ## Wikilink Support
 
-The `@readied/wikilinks` package integrates with the editor to provide:
+The `@dripnex/wikilinks` package integrates with the editor to provide:
 
 - **Autocomplete** - Typing `[[` triggers a completion popup with matching note titles
 - **Navigation** - Clicking or activating a `[[wikilink]]` navigates to the linked note
@@ -113,7 +113,7 @@ Wikilinks are parsed in real-time as the user types, and the link targets are re
 
 ## Embed Resolution
 
-The `@readied/embeds` package resolves URLs in the editor preview:
+The `@dripnex/embeds` package resolves URLs in the editor preview:
 
 - Recognized URLs (YouTube, images, etc.) are rendered as rich embeds
 - Embed resolution happens during preview rendering, not in the editor itself

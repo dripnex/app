@@ -16,8 +16,8 @@
 | `POST /auth/verify`      | 400 (valid) | Zod validates UUID token format            |
 | `GET /auth/me` + bad JWT | **401**     | **Fixed**: all jose error types return 401 |
 
-- **API URL**: `https://api.readied.app`
-- **Email**: Resend (`noreply@readied.app`)
+- **API URL**: `https://api.dripnex.app`
+- **Email**: Resend (`noreply@dripnex.app`)
 - **Database**: Turso (libsql)
 - **Hosting**: Cloudflare Workers
 - **API Docs**: `docs/plans/api-reference.md`

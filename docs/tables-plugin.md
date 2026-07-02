@@ -2,7 +2,7 @@
 
 ## Overview
 
-Built-in plugin (`readied-tables`) that adds full GFM table support: insert wizard, WYSIWYG editing, sortable preview, and CSV export.
+Built-in plugin (`dripnex-tables`) that adds full GFM table support: insert wizard, WYSIWYG editing, sortable preview, and CSV export.
 
 **File:** `apps/desktop/src/renderer/plugins/tables.tsx`
 

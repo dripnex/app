@@ -7,12 +7,12 @@ export default defineConfig({
     plugins: [
       externalizeDepsPlugin({
         exclude: [
-          '@readied/core',
-          '@readied/storage-core',
-          '@readied/storage-sqlite',
-          '@readied/sync-core',
-          '@readied/licensing',
-          '@readied/ai-core',
+          '@dripnex/core',
+          '@dripnex/storage-core',
+          '@dripnex/storage-sqlite',
+          '@dripnex/sync-core',
+          '@dripnex/licensing',
+          '@dripnex/ai-core',
         ],
       }),
     ],
@@ -31,7 +31,7 @@ export default defineConfig({
   preload: {
     plugins: [
       externalizeDepsPlugin({
-        exclude: ['@readied/core', '@readied/storage-core', '@readied/licensing'],
+        exclude: ['@dripnex/core', '@dripnex/storage-core', '@dripnex/licensing'],
       }),
     ],
     build: {

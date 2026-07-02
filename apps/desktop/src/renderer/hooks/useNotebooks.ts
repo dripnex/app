@@ -16,7 +16,7 @@ export const notebookKeys = {
 export function useNotebooks() {
   return useQuery({
     queryKey: notebookKeys.list(),
-    queryFn: () => window.readied.notebooks.list(),
+    queryFn: () => window.dripnex.notebooks.list(),
   });
 }
 
@@ -24,7 +24,7 @@ export function useNotebooks() {
 export function useNotebookTree() {
   return useQuery({
     queryKey: notebookKeys.tree(),
-    queryFn: () => window.readied.notebooks.tree(),
+    queryFn: () => window.dripnex.notebooks.tree(),
   });
 }
 
@@ -34,7 +34,7 @@ export function useNotebook(id: string | null) {
     queryKey: notebookKeys.detail(id ?? ''),
     queryFn: async () => {
       if (!id) return null;
-      return window.readied.notebooks.get(id);
+      return window.dripnex.notebooks.get(id);
     },
     enabled: !!id,
   });
@@ -46,7 +46,7 @@ export function useNotebookWithMetadata(id: string | null) {
     queryKey: notebookKeys.metadata(id ?? ''),
     queryFn: async () => {
       if (!id) return null;
-      return window.readied.notebooks.getWithMetadata(id);
+      return window.dripnex.notebooks.getWithMetadata(id);
     },
     enabled: !!id,
   });
@@ -62,14 +62,14 @@ export function useNotebookMutations() {
 
   const createNotebook = useMutation({
     mutationFn: async (input: { name: string; parentId?: string }) => {
-      return window.readied.notebooks.create(input);
+      return window.dripnex.notebooks.create(input);
     },
     onSuccess: () => invalidateNotebooks(),
   });
 
   const renameNotebook = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      return window.readied.notebooks.rename(id, name);
+      return window.dripnex.notebooks.rename(id, name);
     },
     onSuccess: data => {
       queryClient.setQueryData(notebookKeys.detail(data.id), data);
@@ -80,14 +80,14 @@ export function useNotebookMutations() {
 
   const moveNotebook = useMutation({
     mutationFn: async ({ id, newParentId }: { id: string; newParentId: string | null }) => {
-      return window.readied.notebooks.move(id, newParentId);
+      return window.dripnex.notebooks.move(id, newParentId);
     },
     onSuccess: () => invalidateNotebooks(),
   });
 
   const deleteNotebook = useMutation({
     mutationFn: async (id: string) => {
-      return window.readied.notebooks.delete(id);
+      return window.dripnex.notebooks.delete(id);
     },
     onSuccess: () => {
       invalidateNotebooks();
@@ -104,7 +104,7 @@ export function useNotebookMutations() {
       parentId: string | null;
       orderedIds: string[];
     }) => {
-      return window.readied.notebooks.reorder(parentId, orderedIds);
+      return window.dripnex.notebooks.reorder(parentId, orderedIds);
     },
     onSuccess: () => invalidateNotebooks(),
   });

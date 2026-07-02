@@ -1,6 +1,5 @@
 import { WifiOff, HardDrive, Puzzle, Monitor } from 'lucide-react';
 import { GithubIcon } from '@/components/icons/BrandIcons';
-
 import { Marquee } from '@/components/magicui/marquee';
 
 const badges = [

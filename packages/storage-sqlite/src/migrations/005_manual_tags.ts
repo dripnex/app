@@ -5,7 +5,7 @@
  * content-extracted tags (#tag) and manually-added tags.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addManualTags: Migration = {
   version: 20250102000001,

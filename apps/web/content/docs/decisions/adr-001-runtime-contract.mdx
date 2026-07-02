@@ -11,7 +11,7 @@ Accepted
 
 ## Context
 
-Readied is an Electron desktop app with complex domain logic (note management, markdown parsing, metadata extraction). We need to decide how to structure the codebase to ensure:
+Dripnex is an Electron desktop app with complex domain logic (note management, markdown parsing, metadata extraction). We need to decide how to structure the codebase to ensure:
 
 1. **Testability** - Domain logic should be testable without spinning up Electron
 2. **Portability** - Core logic could potentially run in other contexts (CLI, web worker)
@@ -22,7 +22,7 @@ Readied is an Electron desktop app with complex domain logic (note management, m
 
 We adopt a **strict separation of concerns** with these boundaries:
 
-### Core Package (`@readied/core`)
+### Core Package (`@dripnex/core`)
 
 - Contains all domain logic
 - **Zero dependencies** on Electron, React, or Node.js-specific APIs
@@ -44,8 +44,8 @@ export interface NoteRepository {
 
 ### Storage Packages
 
-- `@readied/storage-core` - Interfaces and utilities (no native deps)
-- `@readied/storage-sqlite` - SQLite implementation (native deps isolated)
+- `@dripnex/storage-core` - Interfaces and utilities (no native deps)
+- `@dripnex/storage-sqlite` - SQLite implementation (native deps isolated)
 
 ### Desktop App
 

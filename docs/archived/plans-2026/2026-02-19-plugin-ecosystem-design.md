@@ -8,7 +8,7 @@
 
 ## Context
 
-Readied v0.7.0 shipped with a solid plugin API (7 extension points, config system, hot reload) but lacks discoverability, marketplace, and developer tooling. Key gaps:
+Dripnex v0.7.0 shipped with a solid plugin API (7 extension points, config system, hot reload) but lacks discoverability, marketplace, and developer tooling. Key gaps:
 
 - AI Assistant plugin is invisible in Settings (hardcoded list misses it)
 - Web sharing button exists but backend is unimplemented
@@ -26,11 +26,11 @@ Readied v0.7.0 shipped with a solid plugin API (7 extension points, config syste
 
 ### 1.1 AI Plugin in Settings
 
-**Problem:** `PluginsSection.tsx` has a hardcoded `BUILT_IN_PLUGINS` array that doesn't include `readied-ai-assistant`.
+**Problem:** `PluginsSection.tsx` has a hardcoded `BUILT_IN_PLUGINS` array that doesn't include `dripnex-ai-assistant`.
 
 **Solution:** Refactor PluginsSection to query the PluginRegistry for active built-in plugins instead of hardcoding. This makes the system future-proof — any new built-in plugin automatically appears. The `configSchema` in `aiAssistant.tsx` already defines `apiKey`, `model`, and `maxContextNotes` — the auto-generated config UI will render once the plugin is visible.
 
-**Immediate fix (before refactor):** Add `readied-ai-assistant` to the hardcoded list.
+**Immediate fix (before refactor):** Add `dripnex-ai-assistant` to the hardcoded list.
 
 ### 1.2 Web Sharing (Public Links)
 
@@ -38,12 +38,12 @@ Readied v0.7.0 shipped with a solid plugin API (7 extension points, config syste
 
 ```
 Desktop: Share button → IPC share:create → Main process
-  → POST api.readied.app/share { title, content }
+  → POST api.dripnex.app/share { title, content }
   → Returns { slug, url }
   → Copy URL to clipboard + toast
 
-Web: readied.app/shared?slug=xxx
-  → GET api.readied.app/share/{slug}
+Web: dripnex.app/shared?slug=xxx
+  → GET api.dripnex.app/share/{slug}
   → Render markdown (page already exists in shared.astro)
 ```
 
@@ -137,15 +137,15 @@ CREATE TABLE plugin_versions (
 | GET    | `/plugins/:slug/download` | Download bundle                          |
 | POST   | `/plugins`                | Publish (auth required)                  |
 
-### 2.2 Web Marketplace (readied.app/plugins)
+### 2.2 Web Marketplace (dripnex.app/plugins)
 
 New page on the Astro marketing site:
 
-- Hero: "Extend Readied" + search bar
+- Hero: "Extend Dripnex" + search bar
 - Category filters: Themes, Editor, Productivity, Export, AI
 - Card grid: icon, name, author, description, downloads, stars
 - Detail page: README, screenshots, install button, version history
-- Deep link: `readied://install-plugin/{slug}`
+- Deep link: `dripnex://install-plugin/{slug}`
 
 ### 2.3 In-App Plugin Browser
 
@@ -168,7 +168,7 @@ New tabs in Settings > Plugins:
 **Install flow:**
 
 1. Click Install → download `.tar.gz` from registry
-2. Extract to `~/.readied/plugins/<plugin-id>/`
+2. Extract to `~/.dripnex/plugins/<plugin-id>/`
 3. Validate manifest
 4. Hot-reload plugin system
 5. Toast: "Installed! Configure now?"
@@ -208,19 +208,19 @@ Built by us to populate the marketplace:
 
 ### 3.2 Plugin CLI Improvements
 
-Expand `readied-plugin` CLI:
+Expand `dripnex-plugin` CLI:
 
 ```bash
-readied-plugin init "My Plugin"    # Scaffold (exists)
-readied-plugin dev                 # Watch + symlink to ~/.readied/plugins/
-readied-plugin build               # Bundle to .tar.gz
-readied-plugin publish             # Upload to registry (API key auth)
-readied-plugin validate            # Check manifest, bundle size, API compat
+dripnex-plugin init "My Plugin"    # Scaffold (exists)
+dripnex-plugin dev                 # Watch + symlink to ~/.dripnex/plugins/
+dripnex-plugin build               # Bundle to .tar.gz
+dripnex-plugin publish             # Upload to registry (API key auth)
+dripnex-plugin validate            # Check manifest, bundle size, API compat
 ```
 
 ### 3.3 Example Plugins Repository
 
-`readied-example-plugins` repo with one example per extension point:
+`dripnex-example-plugins` repo with one example per extension point:
 
 - `hello-world` — Command + toast
 - `custom-preview` — Rehype plugin + component
@@ -259,7 +259,7 @@ Shown to user at install time. Built-in plugins auto-granted all permissions.
 
 1. User clicks "Connect with Claude" in AI plugin settings
 2. Opens Anthropic OAuth consent page in system browser
-3. User authorizes Readied
+3. User authorizes Dripnex
 4. Callback returns access token
 5. Token stored via `safeStorage.encryptString()`
 6. AI assistant uses token — no manual API key needed
@@ -273,7 +273,7 @@ Shown to user at install time. Built-in plugins auto-granted all permissions.
 
 ### 4.2 Plugin Ratings & Reviews
 
-- Readied account required to rate
+- Dripnex account required to rate
 - 1-5 star rating + optional text review
 - Displayed on marketplace detail page and in-app browser
 - Sort options: Popular, Recent, Highest Rated, Most Downloaded
@@ -314,7 +314,7 @@ Goal: 10+ plugins in registry by end of quarter:
 - Schema-driven config with auto-UI
 - No direct Electron API access from plugins
 
-### Registry: Centralized (readied.app)
+### Registry: Centralized (dripnex.app)
 
 - Full control over quality and security
 - One-click install from desktop app
@@ -330,7 +330,7 @@ Goal: 10+ plugins in registry by end of quarter:
 
 ### Storage: Filesystem + SQLite
 
-- Plugin files in `~/.readied/plugins/`
+- Plugin files in `~/.dripnex/plugins/`
 - Config in SQLite `plugin_config` table
 - Registry state in SQLite `plugin_registry` table
 
@@ -343,7 +343,7 @@ Goal: 10+ plugins in registry by end of quarter:
 - [ ] Tables plugin functional (P1)
 - [ ] Settings UI matches Inkdrop quality (P1)
 - [ ] Plugin registry API deployed (P2)
-- [ ] readied.app/plugins live (P2)
+- [ ] dripnex.app/plugins live (P2)
 - [ ] In-app browse and install works (P2)
 - [ ] 5 seed plugins published (P2)
 - [ ] Plugin dev docs on docs site (P3)

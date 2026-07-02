@@ -1,16 +1,16 @@
 /**
  * ExtendedNoteRepository Interface
  *
- * Extends the minimal NoteRepository from @readied/core with
+ * Extends the minimal NoteRepository from @dripnex/core with
  * query capabilities (list, search, count, tags).
  */
 
-import type { Note, Tag, NoteRepository } from '@readied/core';
+import type { Note, Tag, NoteRepository } from '@dripnex/core';
 import type { ListNotesOptions } from '../types/ListNotesOptions.js';
 
 /**
  * Extended repository interface with query capabilities.
- * Extends the minimal NoteRepository from @readied/core.
+ * Extends the minimal NoteRepository from @dripnex/core.
  */
 export interface ExtendedNoteRepository extends NoteRepository {
   /** List notes with filtering and pagination */

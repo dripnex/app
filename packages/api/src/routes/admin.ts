@@ -28,7 +28,7 @@ import {
 const admin = new Hono<{ Bindings: Env }>();
 
 // Admin emails that can access the dashboard
-const ADMIN_EMAILS = ['tomymaritano@gmail.com'];
+const ADMIN_EMAILS = ['dripnex@gmail.com'];
 
 // Admin auth — accepts admin token OR authenticated admin user
 admin.use('*', async (c, next) => {

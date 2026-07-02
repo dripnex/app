@@ -7,7 +7,7 @@
 
 import { app } from 'electron';
 import { z } from 'zod';
-import { createNoteId, createNoteOperation, updateNoteOperation } from '@readied/core';
+import { createNoteId, createNoteOperation, updateNoteOperation } from '@dripnex/core';
 import {
   LocalServer,
   getOrCreateApiToken,
@@ -30,7 +30,7 @@ export interface LocalServerHandlerDeps {
     title: string;
     isPinned: boolean;
     isDeleted: boolean;
-    status: import('@readied/core').NoteStatus;
+    status: import('@dripnex/core').NoteStatus;
     metadata: {
       createdAt: string;
       updatedAt: string;
@@ -51,7 +51,7 @@ export interface LocalServerHandlerDeps {
     isArchived: boolean;
     isPinned: boolean;
     isDeleted: boolean;
-    status: import('@readied/core').NoteStatus;
+    status: import('@dripnex/core').NoteStatus;
   };
 }
 

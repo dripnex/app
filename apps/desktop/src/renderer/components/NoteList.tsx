@@ -11,7 +11,7 @@ import {
   PinOff,
   Globe,
 } from 'lucide-react';
-import { LayoutZone } from '@readied/plugin-api';
+import { LayoutZone } from '@dripnex/plugin-api';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import { useNavigationStore } from '../stores/navigationStore';

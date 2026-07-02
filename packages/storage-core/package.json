@@ -1,8 +1,8 @@
 {
-  "name": "@readied/storage-core",
+  "name": "@dripnex/storage-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Storage interfaces and utilities for Readied",
+  "description": "Storage interfaces and utilities for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@readied/core": "workspace:*"
+    "@dripnex/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",

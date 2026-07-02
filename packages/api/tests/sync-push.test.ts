@@ -2,8 +2,8 @@
  * Tests for POST /sync — note sync push endpoint
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import app from '../src/index.js';
 import {
   createTestEnv,

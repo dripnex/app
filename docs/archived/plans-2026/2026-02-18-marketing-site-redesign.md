@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Use `frontend-design:frontend-design` skill for each page/component redesign task.
 
-**Goal:** Complete redesign of the Readied marketing site with a "Code-First Showcase" approach — Raycast-inspired, playful technical, targeting developers.
+**Goal:** Complete redesign of the Dripnex marketing site with a "Code-First Showcase" approach — Raycast-inspired, playful technical, targeting developers.
 
-**Architecture:** Astro static site with React islands for interactivity. Tailwind CSS for styling. All pricing/plan data sourced from `@readied/product-config`. New design system with violet-indigo gradient accent, glassmorphism surfaces, and scroll-triggered animations.
+**Architecture:** Astro static site with React islands for interactivity. Tailwind CSS for styling. All pricing/plan data sourced from `@dripnex/product-config`. New design system with violet-indigo gradient accent, glassmorphism surfaces, and scroll-triggered animations.
 
 **Tech Stack:** Astro 5, React 18, Tailwind CSS 3, astro-icon (Lucide + SimpleIcons), @headlessui/react
 
@@ -150,7 +150,7 @@ git commit -m "feat(marketing-site): update design system — new color palette,
 - New: glassmorphism (`bg-zinc-950/80 backdrop-blur-xl`), dual CTAs
 - Nav links change: Features, Pricing, Docs dropdown (Philosophy, FAQ, Plugins), Changelog
 - Dual CTA: "Download" (ghost) + "Try Pro Free →" (filled accent gradient)
-- Logo: text "readied" in monospace with accent dot, replacing SVG logo
+- Logo: text "dripnex" in monospace with accent dot, replacing SVG logo
 - Mobile: full-screen overlay menu
 
 **Step 1: Update Base.astro**
@@ -162,7 +162,7 @@ Update `<meta name="theme-color">` to `#09090b`. Keep everything else the same.
 Key changes:
 
 - Header class: `glass` utility (backdrop-blur, semi-transparent)
-- Replace logo SVG with text logo: `<span class="font-mono text-lg font-bold text-zinc-50">readied<span class="text-accent">.</span></span>`
+- Replace logo SVG with text logo: `<span class="font-mono text-lg font-bold text-zinc-50">dripnex<span class="text-accent">.</span></span>`
 - Nav links: Features (anchor to #features on homepage), Pricing, Docs dropdown, Changelog
 - Dual CTAs: Download (outline/ghost button) + Try Pro Free (filled accent button with arrow)
 - Update MobileNav props to match new nav structure
@@ -204,7 +204,7 @@ git commit -m "feat(marketing-site): redesign navbar — glassmorphism, dual CTA
 
 Key changes:
 
-- Replace logo img with text logo: `readied.` in monospace
+- Replace logo img with text logo: `dripnex.` in monospace
 - Update tagline: "The note app that stays out of your way."
 - Add "Features" link to Product column
 - Bottom bar: copyright + newsletter input inline
@@ -264,7 +264,7 @@ Uses Headless UI Tab component for accessibility.
 
 **Step 3: Create ComparisonTable.tsx**
 
-Static comparison: "Cloud note apps" vs "Readied"
+Static comparison: "Cloud note apps" vs "Dripnex"
 4 rows with animated checkmarks/crosses:
 
 - Server dependency → Works offline
@@ -421,7 +421,7 @@ Key changes:
 - Primary: large download button for detected OS
 - Secondary: collapsible section "Other platforms" with the remaining OS options
 - Add installation instructions as code blocks:
-  - macOS: `brew install --cask readied` (if applicable) or DMG instructions
+  - macOS: `brew install --cask dripnex` (if applicable) or DMG instructions
   - Windows: installer steps
   - Linux: AppImage chmod instructions
 - "Free forever" badge prominent
@@ -488,9 +488,9 @@ Key changes:
 
 - Each section takes more vertical space (not cards, but full sections with large text)
 - Large pull quotes with gradient-text for highlights
-- Code examples showing what Readied does vs doesn't do:
+- Code examples showing what Dripnex does vs doesn't do:
   ```
-  // What happens when you delete Readied:
+  // What happens when you delete Dripnex:
   ~/notes/
     project.md     ← still here
     ideas.md       ← still here
@@ -649,4 +649,4 @@ git commit -m "feat(marketing-site): complete Code-First Showcase redesign"
 - Tasks 4-5 (interactive components + homepage) depend on Tasks 1-3
 - Tasks 6-12 (other pages) can be done in parallel after Tasks 1-5
 - Task 13 (verification) must be last
-- All data should continue to come from `@readied/product-config` — never hardcode pricing or plan features
+- All data should continue to come from `@dripnex/product-config` — never hardcode pricing or plan features

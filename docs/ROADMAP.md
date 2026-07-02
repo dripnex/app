@@ -1,6 +1,6 @@
-# Readied Roadmap
+# Dripnex Roadmap
 
-> Plan de implementación para cerrar gaps con Inkdrop y llevar Readied a producción completa.
+> Plan de implementación para cerrar gaps con Inkdrop y llevar Dripnex a producción completa.
 
 ---
 
@@ -139,7 +139,7 @@ activate(context) {
 | Definir theme manifest (`theme.json` con type: ui/syntax/preview)   | `packages/plugin-api/src/types.ts` |
 | Loader: inyectar CSS variables desde theme plugins                  | `packages/plugin-api/src/` (nuevo) |
 | 3 theme types: UI (app chrome), Syntax (editor), Preview (markdown) | CSS variables                      |
-| Scanner: detectar themes en `~/.config/readied/themes/`             | `pluginScanner.ts`                 |
+| Scanner: detectar themes en `~/.config/dripnex/themes/`             | `pluginScanner.ts`                 |
 | Settings UI: selector de tema por tipo                              | Settings sections                  |
 
 ### 2.4 Plugin Config Auto-Generated UI
@@ -177,7 +177,7 @@ activate(context) {
 
 > Objetivo: distribución y descubrimiento de plugins.
 
-### 3.1 Plugin CLI (`rpm` o `readied-plugin`)
+### 3.1 Plugin CLI (`rpm` o `dripnex-plugin`)
 
 | Task                   | Descripción                                |
 | ---------------------- | ------------------------------------------ |
@@ -222,7 +222,7 @@ activate(context) {
 
 | Task                                                      | Files               |
 | --------------------------------------------------------- | ------------------- |
-| Cargar `~/.config/readied/init.js` al startup             | `main/index.ts`     |
+| Cargar `~/.config/dripnex/init.js` al startup             | `main/index.ts`     |
 | Darle acceso al mismo PluginContext                       | `PluginRegistry.ts` |
 | Docs: explicar init.js como alternativa a plugin completo | Docs                |
 
@@ -274,7 +274,7 @@ activate(context) {
 | ---------------------------------------------- | ------------------- |
 | Browser extension (Chrome + Firefox)           | `apps/web-clipper/` |
 | Clip page as markdown (readability + turndown) | Content script      |
-| Save to Readied via local HTTP API o sync API  | IPC o REST          |
+| Save to Dripnex via local HTTP API o sync API  | IPC o REST          |
 | Select notebook/tags before saving             | Popup UI            |
 
 ### 5.2 Advanced Features
@@ -331,9 +331,9 @@ activate(context) {
 
 ---
 
-## Comparación Final: Readied vs Inkdrop
+## Comparación Final: Dripnex vs Inkdrop
 
-| Feature         | Inkdrop                  | Readied (hoy)            | Readied (post-roadmap)       |
+| Feature         | Inkdrop                  | Dripnex (hoy)            | Dripnex (post-roadmap)       |
 | --------------- | ------------------------ | ------------------------ | ---------------------------- |
 | Editor          | CM5 (migrando a CM6)     | CM6                      | CM6                          |
 | Local DB        | PouchDB                  | SQLite                   | SQLite                       |

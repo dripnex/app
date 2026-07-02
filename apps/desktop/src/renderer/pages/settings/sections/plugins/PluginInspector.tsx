@@ -29,7 +29,7 @@ export function PluginInspector() {
   );
 
   const handleForceReload = useCallback(() => {
-    window.readied.plugins.requestReload();
+    window.dripnex.plugins.requestReload();
   }, []);
 
   return (

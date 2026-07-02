@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { FileText, MoreVertical, Link2 } from 'lucide-react';
-import { LayoutZone } from '@readied/plugin-api';
+import { LayoutZone } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { useEditorBufferStore, selectIsDirty } from '../stores/editorBufferStore';
@@ -218,7 +218,7 @@ export function NoteEditor({
   // Handle share on web
   const handleShareOnWeb = useCallback(async () => {
     if (!note) return;
-    const result = await window.readied.share.create({
+    const result = await window.dripnex.share.create({
       noteId: note.id,
       title: note.title,
       content: note.content,
@@ -238,7 +238,7 @@ export function NoteEditor({
   // Handle unshare
   const handleUnshare = useCallback(async () => {
     if (!note || !shareInfo) return;
-    const result = await window.readied.share.delete(shareInfo.slug);
+    const result = await window.dripnex.share.delete(shareInfo.slug);
     if (result.success) {
       removeShared(note.id);
       showToast('Note unshared');

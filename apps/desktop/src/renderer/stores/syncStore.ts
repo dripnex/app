@@ -88,14 +88,14 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
     set({ status: 'syncing', error: null });
     try {
       // Perform full sync cycle
-      const syncResult = await window.readied.sync.syncNow();
+      const syncResult = await window.dripnex.sync.syncNow();
 
       if (!syncResult.success) {
         throw new Error(syncResult.error || 'Sync failed');
       }
 
       // Get updated status from server
-      const statusResult = await window.readied.sync.status();
+      const statusResult = await window.dripnex.sync.status();
 
       // Update state with results
       set({
@@ -138,7 +138,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
    */
   resolveConflict: async (noteId: string, resolution: 'local' | 'remote') => {
     try {
-      await window.readied.sync.resolveConflict(noteId, resolution);
+      await window.dripnex.sync.resolveConflict(noteId, resolution);
 
       // Remove resolved conflict
       set(state => ({
@@ -187,7 +187,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
    */
   refreshPendingCount: async () => {
     try {
-      const result = await window.readied.sync.pendingCount();
+      const result = await window.dripnex.sync.pendingCount();
       if (result.success) {
         set({ pendingCount: result.count });
       }
@@ -242,7 +242,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
     // Fetch initial pending count
     void get().refreshPendingCount();
 
-    const unsubscribe = window.readied.sync.onStatusChange((raw: unknown) => {
+    const unsubscribe = window.dripnex.sync.onStatusChange((raw: unknown) => {
       const event = raw as SyncStatusEvent;
 
       switch (event.type) {

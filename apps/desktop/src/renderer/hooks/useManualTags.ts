@@ -49,7 +49,7 @@ export function useManualTags({
 
     async function loadManualTags() {
       try {
-        const tags = await window.readied.notes.getManualTags(currentNoteId);
+        const tags = await window.dripnex.notes.getManualTags(currentNoteId);
         if (!cancelled) {
           setManualTags(tags);
         }
@@ -83,14 +83,14 @@ export function useManualTags({
       setManualTags(updatedTags);
 
       try {
-        await window.readied.notes.setManualTags(noteId, updatedTags);
+        await window.dripnex.notes.setManualTags(noteId, updatedTags);
         // Invalidate queries so sidebar and note list update
         void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
         void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
 
         // Refetch note to sync selectedNote state with updated tags
         if (onNoteUpdate) {
-          const result = await window.readied.notes.get(noteId);
+          const result = await window.dripnex.notes.get(noteId);
           if (result.ok) {
             onNoteUpdate(result.data);
           }
@@ -116,14 +116,14 @@ export function useManualTags({
       setManualTags(updatedTags);
 
       try {
-        await window.readied.notes.setManualTags(noteId, updatedTags);
+        await window.dripnex.notes.setManualTags(noteId, updatedTags);
         // Invalidate queries so sidebar and note list update
         void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
         void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
 
         // Refetch note to sync selectedNote state with updated tags
         if (onNoteUpdate) {
-          const result = await window.readied.notes.get(noteId);
+          const result = await window.dripnex.notes.get(noteId);
           if (result.ok) {
             onNoteUpdate(result.data);
           }

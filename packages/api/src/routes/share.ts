@@ -79,7 +79,7 @@ share.post('/', authMiddleware, zValidator('json', createShareSchema), async c =
     })
     .returning({ slug: sharedNotes.slug });
 
-  const baseUrl = c.env.SITE_URL || 'https://readied.app';
+  const baseUrl = c.env.SITE_URL || 'https://dripnex.app';
   const url = `${baseUrl}/shared?slug=${result!.slug}`;
 
   return c.json({ slug: result!.slug, url });

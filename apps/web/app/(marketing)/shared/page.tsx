@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import SharedNoteContent from './SharedNoteContent';
 
 export const metadata: Metadata = {
-  title: 'Shared Note — Readied',
-  description: 'A note shared via Readied.',
+  title: 'Shared Note — Dripnex',
+  description: 'A note shared via Dripnex.',
 };
 
 export default function SharedNotePage() {

@@ -35,7 +35,7 @@ export const useTagColorsStore = create<TagColorsStore>((set, get) => ({
 
     set({ isLoading: true });
     try {
-      const tags = await window.readied.notes.tagsWithColors();
+      const tags = await window.dripnex.notes.tagsWithColors();
       const colorMap = Object.fromEntries(tags.filter(t => t.color).map(t => [t.name, t.color!]));
       set({ colors: colorMap, isLoaded: true });
     } finally {
@@ -45,7 +45,7 @@ export const useTagColorsStore = create<TagColorsStore>((set, get) => ({
 
   setColor: async (tagName, color) => {
     // 1. Persist to DB first
-    await window.readied.notes.setTagColor(tagName, color);
+    await window.dripnex.notes.setTagColor(tagName, color);
 
     // 2. Update cache
     set(state => ({

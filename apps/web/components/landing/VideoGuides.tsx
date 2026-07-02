@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 const videos = [
   {
     id: 'getting-started',
-    title: 'Getting started with Readied',
+    title: 'Getting started with Dripnex',
     description: 'Set up your workspace and write your first note in under 2 minutes.',
     videoSrc: '',
     duration: '2:30',
@@ -24,7 +24,7 @@ const videos = [
   {
     id: 'plugins',
     title: 'Extending with plugins',
-    description: 'How to install, configure, and build plugins for Readied.',
+    description: 'How to install, configure, and build plugins for Dripnex.',
     videoSrc: '',
     duration: '5:00',
   },
@@ -163,7 +163,7 @@ export default function VideoGuides() {
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <span className="section-label">Learn</span>
-          <h2 className="section-heading">See Readied in action</h2>
+          <h2 className="section-heading">See Dripnex in action</h2>
           <p className="mx-auto max-w-lg text-text-secondary">
             Short guides to help you get the most out of your writing workflow.
           </p>

@@ -1,8 +1,8 @@
 {
-  "name": "@readied/storage-sqlite",
+  "name": "@dripnex/storage-sqlite",
   "version": "0.1.0",
   "private": true,
-  "description": "SQLite storage adapter for Readied",
+  "description": "SQLite storage adapter for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,9 +18,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@readied/core": "workspace:*",
-    "@readied/storage-core": "workspace:*",
-    "@readied/wikilinks": "workspace:*"
+    "@dripnex/core": "workspace:*",
+    "@dripnex/storage-core": "workspace:*",
+    "@dripnex/wikilinks": "workspace:*"
   },
   "peerDependencies": {
     "better-sqlite3": "^12.10.0"

@@ -163,23 +163,23 @@ export function DevicesSection() {
 
   const { data: deviceList = [], isLoading } = useQuery({
     queryKey: ['devices'],
-    queryFn: () => window.readied.devices.list(),
+    queryFn: () => window.dripnex.devices.list(),
     staleTime: 30_000,
   });
 
   const renameMutation = useMutation({
     mutationFn: ({ deviceId, name }: { deviceId: string; name: string }) =>
-      window.readied.devices.rename(deviceId, name),
+      window.dripnex.devices.rename(deviceId, name),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }),
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (deviceId: string) => window.readied.devices.revoke(deviceId),
+    mutationFn: (deviceId: string) => window.dripnex.devices.revoke(deviceId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }),
   });
 
   const revokeOthersMutation = useMutation({
-    mutationFn: () => window.readied.devices.revokeOthers(),
+    mutationFn: () => window.dripnex.devices.revokeOthers(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }),
   });
 
@@ -207,7 +207,7 @@ export function DevicesSection() {
       revokeMutation.mutate(confirmRevokeId);
       setConfirmRevokeId(null);
       // Current device revoked = logout
-      void window.readied.auth.logout();
+      void window.dripnex.auth.logout();
     }
   }, [confirmRevokeId, revokeMutation]);
 

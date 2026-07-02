@@ -1,5 +1,5 @@
 {
-  "name": "@readied/licensing",
+  "name": "@dripnex/licensing",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@noble/ed25519": "^3.1.0",
-    "@readied/product-config": "workspace:*"
+    "@dripnex/product-config": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",

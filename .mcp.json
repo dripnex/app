@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "readied": {
+    "dripnex": {
       "command": "npx",
       "args": [
         "tsx",
-        "/Users/tomasmaritano/Documents/Github/readied/readide/packages/mcp-server/src/index.ts"
+        "/Users/tomasmaritano/Documents/Github/dripnex/readide/packages/mcp-server/src/index.ts"
       ]
     }
   }

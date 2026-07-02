@@ -99,7 +99,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     setSelectedCommit(null);
     setDiffs([]);
 
-    void window.readied.git.log(notebookId, 50).then(result => {
+    void window.dripnex.git.log(notebookId, 50).then(result => {
       if (cancelled) return;
       setLoading(false);
       if (result.success && result.commits) {
@@ -183,7 +183,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     async (oid: string) => {
       if (!notebookId) return;
       try {
-        const result = await window.readied.git.checkout(notebookId, oid);
+        const result = await window.dripnex.git.checkout(notebookId, oid);
         if (result.success) {
           onClose();
         }

@@ -1,12 +1,12 @@
-# Readied — Brand Contract
+# Dripnex — Brand Contract
 
 > Internal document. Not for publication. Consult before every decision.
 
 ---
 
-## Anti-values (what Readied is NOT)
+## Anti-values (what Dripnex is NOT)
 
-Readied is not:
+Dripnex is not:
 
 - Aspirational
 - Energetic
@@ -23,7 +23,7 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 
 ## Personality (tension pairs)
 
-| Axis                  | Readied chooses |
+| Axis                  | Dripnex chooses |
 | --------------------- | --------------- |
 | Quietude vs Energy    | Quietude        |
 | Caution vs Ambition   | Caution         |
@@ -73,7 +73,7 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 - Nothing display
 - Nothing experimental
 
-**Test:** If the font "speaks", it's wrong. Readied whispers.
+**Test:** If the font "speaks", it's wrong. Dripnex whispers.
 
 ---
 
