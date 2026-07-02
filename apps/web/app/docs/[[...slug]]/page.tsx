@@ -1,4 +1,3 @@
-import { source } from '@/lib/source';
 import { notFound } from 'next/navigation';
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
@@ -9,6 +8,7 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Folder, Files } from 'fumadocs-ui/components/files';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { source } from '@/lib/source';
 
 const mdxComponents = {
   ...defaultMdxComponents,

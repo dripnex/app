@@ -4,7 +4,7 @@
  * Creates the notes table with all required columns
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const initialSchema: Migration = {
   version: 20241231000001,

@@ -91,7 +91,7 @@ El AST es **efímero** - se parsea para features, nunca se persiste como autorid
 
 ## 3. Core es Puro
 
-El paquete `@readied/core` no debe tener dependencias de:
+El paquete `@dripnex/core` no debe tener dependencias de:
 
 - Electron
 - React

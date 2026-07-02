@@ -16,8 +16,8 @@ import { homedir } from 'os';
 export type Database = DatabaseSync;
 
 function getDbPath(): string {
-  if (process.env.READIED_DB_PATH) {
-    return process.env.READIED_DB_PATH;
+  if (process.env.DRIPNEX_DB_PATH) {
+    return process.env.DRIPNEX_DB_PATH;
   }
 
   const home = homedir();
@@ -26,17 +26,17 @@ function getDbPath(): string {
   const candidates =
     platform === 'darwin'
       ? [
-          join(home, 'Library/Application Support/@readied/desktop/readied.db'),
-          join(home, 'Library/Application Support/readied/readied.db'),
+          join(home, 'Library/Application Support/@dripnex/desktop/dripnex.db'),
+          join(home, 'Library/Application Support/dripnex/dripnex.db'),
         ]
       : platform === 'win32'
         ? [
-            join(home, 'AppData/Roaming/@readied/desktop/readied.db'),
-            join(home, 'AppData/Roaming/readied/readied.db'),
+            join(home, 'AppData/Roaming/@dripnex/desktop/dripnex.db'),
+            join(home, 'AppData/Roaming/dripnex/dripnex.db'),
           ]
         : [
-            join(home, '.config/@readied/desktop/readied.db'),
-            join(home, '.config/readied/readied.db'),
+            join(home, '.config/@dripnex/desktop/dripnex.db'),
+            join(home, '.config/dripnex/dripnex.db'),
           ];
 
   for (const candidate of candidates) {
@@ -46,7 +46,7 @@ function getDbPath(): string {
   }
 
   throw new Error(
-    `Readied database not found. Searched:\n${candidates.join('\n')}\n\nSet READIED_DB_PATH environment variable to override.`
+    `Dripnex database not found. Searched:\n${candidates.join('\n')}\n\nSet DRIPNEX_DB_PATH environment variable to override.`
   );
 }
 
@@ -57,7 +57,7 @@ function assertFts5Available(db: DatabaseSync): void {
   if (!row || row.v !== 1) {
     throw new Error(
       `FTS5 module is not available in this SQLite build.\n` +
-        `The Readied database uses FTS5 for full-text search triggers.\n` +
+        `The Dripnex database uses FTS5 for full-text search triggers.\n` +
         `Without FTS5, write operations (create/update/delete notes) will fail.`
     );
   }

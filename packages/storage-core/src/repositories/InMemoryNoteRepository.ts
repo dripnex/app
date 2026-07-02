@@ -5,7 +5,7 @@
  * No persistence - data is lost when the repository is garbage collected.
  */
 
-import type { Note, NoteId, Tag } from '@readied/core';
+import type { Note, NoteId, Tag } from '@dripnex/core';
 import type { ExtendedNoteRepository } from '../interfaces/ExtendedNoteRepository.js';
 import type { ListNotesOptions } from '../types/ListNotesOptions.js';
 import type { ArchivedFilter } from '../types/ArchivedFilter.js';

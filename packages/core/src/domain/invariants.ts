@@ -1,7 +1,7 @@
 /**
  * Domain Invariants - Business rules that must always hold
  *
- * These are the non-negotiable rules of the Readied domain
+ * These are the non-negotiable rules of the Dripnex domain
  */
 
 import type { Note } from './note.js';

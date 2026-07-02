@@ -14,15 +14,15 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
 import '../../styles/code-highlight.css';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
-import { remarkWikilink } from '@readied/wikilinks';
-import { extractEmbedTargets } from '@readied/embeds';
-import { countMarkdownTasks } from '@readied/tasks';
+import { remarkWikilink } from '@dripnex/wikilinks';
+import { extractEmbedTargets } from '@dripnex/embeds';
+import { countMarkdownTasks } from '@dripnex/tasks';
 import {
   remarkPluginStore,
   rehypePluginStore,
   previewComponentStore,
   codeBlockStore,
-} from '@readied/plugin-api';
+} from '@dripnex/plugin-api';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
 
@@ -138,7 +138,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         setInternalResolvedEmbeds({});
         return;
       }
-      void window.readied.embeds.resolveBatch(targets, noteId).then(result => {
+      void window.dripnex.embeds.resolveBatch(targets, noteId).then(result => {
         setInternalResolvedEmbeds(result);
       });
     }, [content, noteId, resolvedEmbedsProp]);

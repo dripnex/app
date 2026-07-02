@@ -54,14 +54,14 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
   // Send email — ALWAYS link to the https web verify page, which is clickable
   // in email clients and then hands off to the desktop app via the custom-
   // scheme deep link (see apps/web .../auth/verify: it redirects to
-  // readied://auth/verify and shows an "Open" fallback button).
+  // dripnex://auth/verify and shows an "Open" fallback button).
   //
-  // A custom-scheme URL (readied://…) placed directly in an email is NOT
+  // A custom-scheme URL (dripnex://…) placed directly in an email is NOT
   // clickable in most mail clients (Gmail, Apple Mail, Outlook strip or ignore
   // non-http(s) hrefs), which left desktop users unable to click the link.
   // The `client` param is forwarded so the web page can tailor its messaging.
   const emailService = createEmailService(c.env.RESEND_API_KEY);
-  const magicLinkUrl = `https://readied.app/auth/verify?token=${token}&client=${encodeURIComponent(
+  const magicLinkUrl = `https://dripnex.app/auth/verify?token=${token}&client=${encodeURIComponent(
     client
   )}`;
   const emailSent = await emailService.sendMagicLink(email, magicLinkUrl);

@@ -1,8 +1,8 @@
 {
-  "name": "@readied/command-registry",
+  "name": "@dripnex/command-registry",
   "version": "0.1.0",
   "private": true,
-  "description": "Command registry and keybinding system for Readied",
+  "description": "Command registry and keybinding system for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

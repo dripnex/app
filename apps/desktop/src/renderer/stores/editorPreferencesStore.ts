@@ -46,7 +46,7 @@ export const useEditorPreferencesStore = create<EditorPreferencesStore>()(
       },
     }),
     {
-      name: 'readied-editor-preferences',
+      name: 'dripnex-editor-preferences',
     }
   )
 );

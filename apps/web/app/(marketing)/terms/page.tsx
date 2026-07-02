@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { FileText, Check, ArrowLeft } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Readied',
-  description: 'Terms of Service for Readied software.',
+  title: 'Terms of Service — Dripnex',
+  description: 'Terms of Service for Dripnex software.',
 };
 
 const lastUpdated = 'January 2026';
@@ -13,16 +13,16 @@ const sections = [
   {
     title: 'Acceptance of Terms',
     content: [
-      'By downloading, installing, or using Readied, you agree to be bound by these Terms of Service.',
+      'By downloading, installing, or using Dripnex, you agree to be bound by these Terms of Service.',
       'If you do not agree to these terms, do not use the software.',
     ],
   },
   {
     title: 'License Grant',
     content: [
-      'Readied offers a Free tier and a Pro subscription. Free tier grants perpetual access to core features. Pro subscription grants access to advanced features while active.',
+      'Dripnex offers a Free tier and a Pro subscription. Free tier grants perpetual access to core features. Pro subscription grants access to advanced features while active.',
       'This license is for personal or commercial use by the licensee only.',
-      'You may install Readied on multiple devices that you own. Pro subscriptions are tied to your account, not individual devices.',
+      'You may install Dripnex on multiple devices that you own. Pro subscriptions are tied to your account, not individual devices.',
     ],
   },
   {
@@ -52,22 +52,22 @@ const sections = [
   {
     title: 'Intellectual Property',
     content: [
-      'Readied and its original content, features, and functionality are owned by Readied and are protected by international copyright, trademark, and other intellectual property laws.',
+      'Dripnex and its original content, features, and functionality are owned by Dripnex and are protected by international copyright, trademark, and other intellectual property laws.',
       'Your content (notes, files, etc.) remains entirely yours. We claim no ownership or rights to anything you create.',
     ],
   },
   {
     title: 'Disclaimer of Warranties',
     content: [
-      'Readied is provided "as is" and "as available" without warranties of any kind, either express or implied.',
+      'Dripnex is provided "as is" and "as available" without warranties of any kind, either express or implied.',
       'We do not warrant that the software will be uninterrupted, error-free, or completely secure.',
-      'You are responsible for backing up your data. While Readied stores files locally in standard formats, we recommend regular backups of important content.',
+      'You are responsible for backing up your data. While Dripnex stores files locally in standard formats, we recommend regular backups of important content.',
     ],
   },
   {
     title: 'Limitation of Liability',
     content: [
-      'In no event shall Readied, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, profits, or goodwill.',
+      'In no event shall Dripnex, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of data, profits, or goodwill.',
       'Our total liability shall not exceed the amount you paid for the software.',
     ],
   },
@@ -103,13 +103,13 @@ const sections = [
     content: [
       'We reserve the right to modify these terms at any time.',
       'Significant changes will be announced through our changelog and blog.',
-      'Continued use of Readied after changes constitutes acceptance of the new terms.',
+      'Continued use of Dripnex after changes constitutes acceptance of the new terms.',
     ],
   },
   {
     title: 'Contact',
     content: ['For questions about these terms:'],
-    list: ['Email: legal@readied.app', 'GitHub: github.com/tomymaritano/readide'],
+    list: ['Email: legal@dripnex.app', 'GitHub: github.com/dripnex/readide'],
   },
 ];
 

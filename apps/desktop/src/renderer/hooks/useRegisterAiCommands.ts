@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { aiCommands } from '@readied/command-registry/definitions';
+import { aiCommands } from '@dripnex/command-registry/definitions';
 import { registry } from './useCommandRegistry';
 
 interface AiCommandHandlers {

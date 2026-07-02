@@ -1,6 +1,6 @@
 ---
 title: API Reference
-description: Complete reference for the Readied plugin API — PluginContext, EditorAPI, LayoutManager, and more
+description: Complete reference for the Dripnex plugin API — PluginContext, EditorAPI, LayoutManager, and more
 ---
 
 # API Reference
@@ -222,10 +222,10 @@ export const plugin: PluginManifest = {
 
 ## Config Validation
 
-The `@readied/plugin-api` package exports a `validateConfigValue()` function for validating config values against their schema. This is useful when building custom settings UI or validating values programmatically.
+The `@dripnex/plugin-api` package exports a `validateConfigValue()` function for validating config values against their schema. This is useful when building custom settings UI or validating values programmatically.
 
 ```typescript
-import { validateConfigValue } from '@readied/plugin-api';
+import { validateConfigValue } from '@dripnex/plugin-api';
 
 const result = validateConfigValue(field, value);
 // result: { valid: boolean, error?: string }

@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Readied',
-  description: 'How Readied protects your privacy. Your notes stay on your device.',
+  title: 'Privacy Policy — Dripnex',
+  description: 'How Dripnex protects your privacy. Your notes stay on your device.',
 };
 
 const lastUpdated = 'January 2026';
@@ -13,13 +13,13 @@ const sections = [
   {
     title: 'Overview',
     content: [
-      'Readied is designed with privacy as a core principle. Your notes are stored locally on your device, not on our servers.',
+      'Dripnex is designed with privacy as a core principle. Your notes are stored locally on your device, not on our servers.',
       'We believe your data belongs to you. This privacy policy explains what minimal information we collect and why.',
     ],
   },
   {
     title: 'Data We Do Not Collect',
-    content: ['Readied does not collect, store, or transmit:'],
+    content: ['Dripnex does not collect, store, or transmit:'],
     list: [
       'Your notes or any content you create',
       'Your files or file names',
@@ -32,7 +32,7 @@ const sections = [
   {
     title: 'Data We Collect',
     content: [
-      'When you purchase Readied, our payment processor (Stripe) collects standard transaction information:',
+      'When you purchase Dripnex, our payment processor (Stripe) collects standard transaction information:',
     ],
     list: [
       'Email address (for license delivery)',
@@ -45,7 +45,7 @@ const sections = [
   {
     title: 'Subscription Verification',
     content: [
-      'When you sign in to Readied Pro, the app verifies your subscription status.',
+      'When you sign in to Dripnex Pro, the app verifies your subscription status.',
       'This check transmits only your account identifier. No personal data or note content is sent.',
       'Free tier users require no account. The app works entirely offline.',
     ],
@@ -53,7 +53,7 @@ const sections = [
   {
     title: 'Updates',
     content: [
-      'Readied may periodically check for software updates.',
+      'Dripnex may periodically check for software updates.',
       'These update checks do not transmit any personal data or content from your device.',
       'You can disable automatic update checks in settings.',
     ],
@@ -61,7 +61,7 @@ const sections = [
   {
     title: 'Third-Party Services',
     content: [
-      'Readied does not integrate with third-party analytics, advertising, or tracking services.',
+      'Dripnex does not integrate with third-party analytics, advertising, or tracking services.',
       'The only external services involved are:',
     ],
     list: ['Payment processing (Stripe)', 'License validation server', 'Update server (optional)'],
@@ -79,13 +79,13 @@ const sections = [
     content: [
       'We may update this privacy policy occasionally.',
       'Significant changes will be announced through our changelog and blog.',
-      'Continued use of Readied after changes constitutes acceptance of the updated policy.',
+      'Continued use of Dripnex after changes constitutes acceptance of the updated policy.',
     ],
   },
   {
     title: 'Contact',
     content: ['For privacy-related questions or concerns:'],
-    list: ['Email: privacy@readied.app', 'GitHub: github.com/tomymaritano/readide'],
+    list: ['Email: privacy@dripnex.app', 'GitHub: github.com/dripnex/readide'],
   },
 ];
 

@@ -10,9 +10,9 @@ import { getPluginsDir, readManifest } from '../utils';
  */
 export async function uninstallPlugin(pluginId: string): Promise<void> {
   if (!pluginId) {
-    console.error('Usage: readied-plugin uninstall <plugin-id>');
+    console.error('Usage: dripnex-plugin uninstall <plugin-id>');
     console.error('');
-    console.error('Run "readied-plugin list" to see installed plugins.');
+    console.error('Run "dripnex-plugin list" to see installed plugins.');
     process.exit(1);
   }
 
@@ -33,7 +33,7 @@ export async function uninstallPlugin(pluginId: string): Promise<void> {
   if (!existsSync(pluginDir)) {
     console.error(`Error: Plugin "${pluginId}" is not installed.`);
     console.error('');
-    console.error('Run "readied-plugin list" to see installed plugins.');
+    console.error('Run "dripnex-plugin list" to see installed plugins.');
     process.exit(1);
   }
 

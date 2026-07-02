@@ -10,7 +10,7 @@ interface NoteData {
   createdAt: string;
 }
 
-const API_BASE = 'https://api.readied.app';
+const API_BASE = 'https://api.dripnex.app';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -103,8 +103,8 @@ export default function SharedNoteContent() {
       />
       <footer className="mt-12 pt-6 border-t border-white/6 text-center text-sm text-[#71717a]">
         Shared with{' '}
-        <a href="https://readied.app" className="text-accent hover:underline">
-          Readied
+        <a href="https://dripnex.app" className="text-accent hover:underline">
+          Dripnex
         </a>
       </footer>
     </div>

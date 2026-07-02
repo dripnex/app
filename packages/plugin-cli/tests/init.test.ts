@@ -5,7 +5,7 @@ import { tmpdir } from 'os';
 import { describe, it, expect, afterEach } from 'vitest';
 import { initPlugin } from '../src/commands/init';
 
-const TEST_DIR = join(tmpdir(), `readied-plugin-test-${Date.now()}`);
+const TEST_DIR = join(tmpdir(), `dripnex-plugin-test-${Date.now()}`);
 
 function testDir(name: string): string {
   return join(TEST_DIR, name);
@@ -42,7 +42,7 @@ describe('initPlugin', () => {
     const dir = await initPlugin({ name: 'Test Plugin', dir: testDir('test-plugin') });
     const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf-8'));
 
-    expect(pkg.name).toBe('readied-plugin-test-plugin');
+    expect(pkg.name).toBe('dripnex-plugin-test-plugin');
     expect(pkg.scripts.build).toBe('tsc');
   });
 

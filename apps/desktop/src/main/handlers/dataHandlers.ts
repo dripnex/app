@@ -17,10 +17,10 @@ import {
   importNotes,
   detectImportType,
   type DataPaths,
-} from '@readied/storage-core';
-import { createDatabase, allMigrations } from '@readied/storage-sqlite';
-import { runMigrations } from '@readied/storage-core';
-import { createNoteOperation } from '@readied/core';
+} from '@dripnex/storage-core';
+import { createDatabase, allMigrations } from '@dripnex/storage-sqlite';
+import { runMigrations } from '@dripnex/storage-core';
+import { createNoteOperation } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, Database } from './types.js';
 
@@ -139,7 +139,7 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
       // Show save dialog
       const { filePath, canceled } = await dialog.showSaveDialog({
         title: 'Export Notes',
-        defaultPath: join(app.getPath('documents'), 'readied-export'),
+        defaultPath: join(app.getPath('documents'), 'dripnex-export'),
         buttonLabel: 'Export',
       });
 

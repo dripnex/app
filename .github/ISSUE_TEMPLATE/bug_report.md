@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in Readied
+about: Report a bug in Dripnex
 title: '[Bug] '
 labels: bug, triage
 assignees: ''
@@ -27,7 +27,7 @@ What actually happened.
 ## Environment
 
 - OS: [e.g., Windows 11, macOS 14]
-- Readied version: [e.g., 0.2.0]
+- Dripnex version: [e.g., 0.2.0]
 
 ## Screenshots
 

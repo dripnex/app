@@ -4,7 +4,7 @@ import { Undo2, Download, Zap, Cloud, LinkIcon, Search, GitBranch } from 'lucide
 
 export const metadata: Metadata = {
   title: 'Checkout Canceled',
-  description: 'Your checkout was canceled. You can still use Readied for free.',
+  description: 'Your checkout was canceled. You can still use Dripnex for free.',
 };
 
 export default function SubscriptionCancelPage() {
@@ -20,14 +20,14 @@ export default function SubscriptionCancelPage() {
           Checkout Canceled
         </h1>
         <p className="text-lg sm:text-xl text-[#a1a1aa] mb-12">
-          No worries! You can still use Readied for free
+          No worries! You can still use Dripnex for free
         </p>
 
         {/* Option cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 my-12">
           {/* Free option */}
           <div className="p-6 sm:p-8 rounded-xl bg-surface text-left">
-            <h3 className="text-xl sm:text-2xl font-bold text-[#f4f4f5] mb-4">Try Readied Free</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-[#f4f4f5] mb-4">Try Dripnex Free</h3>
             <p className="text-[#a1a1aa] mb-6">
               Get started with unlimited local notes, full markdown editor, and 100% offline
               functionality.
@@ -107,7 +107,7 @@ export default function SubscriptionCancelPage() {
 
         <p className="mt-16 text-[#a1a1aa]">
           Questions?{' '}
-          <a href="mailto:support@readied.app" className="text-accent hover:underline">
+          <a href="mailto:support@dripnex.app" className="text-accent hover:underline">
             Contact support
           </a>{' '}
           or check out our{' '}

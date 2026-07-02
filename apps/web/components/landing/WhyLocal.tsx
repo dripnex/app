@@ -20,14 +20,14 @@ import { cn } from '@/lib/utils';
 
 /* ─── Comparison table ─── */
 
-type Row = { label: string; readied: boolean | string; cloud: boolean | string };
+type Row = { label: string; dripnex: boolean | string; cloud: boolean | string };
 
 const rows: Row[] = [
-  { label: 'Data Location', readied: 'Your machine', cloud: 'Their servers' },
-  { label: 'Works Offline', readied: true, cloud: false },
-  { label: 'Export Anytime', readied: true, cloud: 'Maybe' },
-  { label: 'Open Source', readied: true, cloud: false },
-  { label: 'Vendor Lock-in', readied: false, cloud: true },
+  { label: 'Data Location', dripnex: 'Your machine', cloud: 'Their servers' },
+  { label: 'Works Offline', dripnex: true, cloud: false },
+  { label: 'Export Anytime', dripnex: true, cloud: 'Maybe' },
+  { label: 'Open Source', dripnex: true, cloud: false },
+  { label: 'Vendor Lock-in', dripnex: false, cloud: true },
 ];
 
 function CellValue({ value, positive }: { value: boolean | string; positive: boolean }) {
@@ -95,7 +95,7 @@ const Circle = forwardRef<HTMLDivElement, { className?: string; children?: React
 );
 Circle.displayName = 'Circle';
 
-/* ─── Data flow: You → Readied → local .md files ─── */
+/* ─── Data flow: You → Dripnex → local .md files ─── */
 
 function DataFlowDiagram() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +119,7 @@ function DataFlowDiagram() {
           </Circle>
         </div>
 
-        {/* Center: Readied */}
+        {/* Center: Dripnex */}
         <div className="flex flex-col justify-center">
           <Circle ref={centerRef} className="size-16 border-accent/30 bg-accent/10">
             <span className="font-mono text-sm font-bold text-accent">R</span>
@@ -143,7 +143,7 @@ function DataFlowDiagram() {
         </div>
       </div>
 
-      {/* You → Readied */}
+      {/* You → Dripnex */}
       <AnimatedBeam
         containerRef={containerRef}
         fromRef={userRef}
@@ -153,7 +153,7 @@ function DataFlowDiagram() {
         duration={3}
       />
 
-      {/* Readied → files */}
+      {/* Dripnex → files */}
       <AnimatedBeam
         containerRef={containerRef}
         fromRef={centerRef}
@@ -207,7 +207,7 @@ export default function WhyLocal() {
             {' — '}not someone else&apos;s server.
           </h2>
           <p className="mx-auto max-w-xl text-text-secondary">
-            Cloud note apps hold your data hostage. Readied takes a different approach: everything
+            Cloud note apps hold your data hostage. Dripnex takes a different approach: everything
             is local, everything is Markdown, everything is yours.
           </p>
         </div>
@@ -221,7 +221,7 @@ export default function WhyLocal() {
                 Your data never leaves
               </h3>
               <p className="text-xs text-text-muted">
-                You write → Readied saves → plain .md files on your disk. No cloud.
+                You write → Dripnex saves → plain .md files on your disk. No cloud.
               </p>
             </div>
             <DataFlowDiagram />
@@ -274,12 +274,12 @@ export default function WhyLocal() {
           <BentoCard className="relative md:col-span-2 p-0">
             <table
               className="w-full text-sm"
-              aria-label="Comparison of Readied local-first approach versus cloud-based alternatives"
+              aria-label="Comparison of Dripnex local-first approach versus cloud-based alternatives"
             >
               <thead>
                 <tr className="border-b border-border">
                   <th className="p-4 text-left text-text-muted font-medium">Feature</th>
-                  <th className="p-4 text-center text-accent font-semibold">Readied</th>
+                  <th className="p-4 text-center text-accent font-semibold">Dripnex</th>
                   <th className="p-4 text-center text-text-muted font-medium">Cloud Apps</th>
                 </tr>
               </thead>
@@ -288,7 +288,7 @@ export default function WhyLocal() {
                   <tr key={row.label} className="border-b border-border last:border-0">
                     <td className="p-4 text-text-secondary">{row.label}</td>
                     <td className="p-4 text-center">
-                      <CellValue value={row.readied} positive />
+                      <CellValue value={row.dripnex} positive />
                     </td>
                     <td className="p-4 text-center">
                       <CellValue value={row.cloud} positive={false} />

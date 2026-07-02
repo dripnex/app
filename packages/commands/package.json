@@ -1,8 +1,8 @@
 {
-  "name": "@readied/commands",
+  "name": "@dripnex/commands",
   "version": "0.1.0",
   "private": true,
-  "description": "Markdown editing commands for Readied",
+  "description": "Markdown editing commands for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

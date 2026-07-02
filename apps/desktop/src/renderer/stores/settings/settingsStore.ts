@@ -192,7 +192,7 @@ export const useSettingsStore = create<SettingsStore>()(
       resetAll: () => set({ settings: DEFAULT_SETTINGS }),
     }),
     {
-      name: 'readied-settings',
+      name: 'dripnex-settings',
       version: SETTINGS_VERSION,
       migrate: migrateSettings,
       // SECURITY: never persist the AI API key to localStorage. The key is
@@ -246,7 +246,7 @@ export const selectSpellCheck = (state: SettingsStore) => state.settings.editor.
 // re-sourced from safeStorage by AiPanel/AiSection.
 if (typeof window !== 'undefined') {
   try {
-    const STORAGE_KEY = 'readied-settings';
+    const STORAGE_KEY = 'dripnex-settings';
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -268,9 +268,9 @@ if (typeof window !== 'undefined') {
 let isRemoteUpdate = false;
 
 // Setup sync listeners (only in browser environment with preload API available)
-if (typeof window !== 'undefined' && window.readied?.settings) {
+if (typeof window !== 'undefined' && window.dripnex?.settings) {
   // Listen for settings sync from other windows
-  window.readied.settings.onSync((incoming: unknown) => {
+  window.dripnex.settings.onSync((incoming: unknown) => {
     // Only accept full settings objects (must have version + all sections)
     const data = incoming as Record<string, unknown> | null;
     if (!data || typeof data !== 'object' || !data.version || !data.editor) return;
@@ -317,7 +317,7 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
         ...state.settings,
         ai: { ...state.settings.ai, apiKey: '' },
       };
-      window.readied.settings.broadcast(safeSettings as unknown as Record<string, unknown>);
+      window.dripnex.settings.broadcast(safeSettings as unknown as Record<string, unknown>);
     }
     prevSettings = state.settings;
   });

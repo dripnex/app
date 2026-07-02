@@ -7,8 +7,8 @@ import {
   OllamaProvider,
   AIServiceImpl,
   ToolRegistry,
-} from '@readied/ai-core';
-import type { AIService, FetchFn } from '@readied/ai-core';
+} from '@dripnex/ai-core';
+import type { AIService, FetchFn } from '@dripnex/ai-core';
 
 let service: AIService | null = null;
 let toolRegistryInstance: ToolRegistry | null = null;

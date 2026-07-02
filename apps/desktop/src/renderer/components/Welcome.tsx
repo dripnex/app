@@ -62,7 +62,7 @@ export function Welcome({ onComplete }: WelcomeProps) {
       aria-labelledby="welcome-heading"
     >
       <div className={styles.container}>
-        <span className={styles.brand}>Readied</span>
+        <span className={styles.brand}>Dripnex</span>
 
         <h1 id="welcome-heading" className={styles.headline}>
           Your Markdown. Your Machine. Your&nbsp;Rules.

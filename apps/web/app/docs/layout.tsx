@@ -12,9 +12,9 @@ export default function Layout({ children }: { children: ReactNode }) {
         banner: (
           <div className="rounded-lg border border-[var(--color-border-accent)] bg-[var(--color-accent-glow)] px-3 py-2">
             <p className="text-xs font-medium text-fd-foreground">
-              Readied is in active development.{' '}
+              Dripnex is in active development.{' '}
               <a
-                href="https://github.com/tomymaritano/readide"
+                href="https://github.com/dripnex/readide"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--color-accent)] underline underline-offset-2 hover:text-[var(--color-accent-hover)]"

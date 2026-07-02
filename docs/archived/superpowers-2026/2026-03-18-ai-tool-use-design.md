@@ -310,7 +310,7 @@ Registered in main process at startup (`apps/desktop/src/main/ai/built-in-tools.
 ```
 User types message
   ↓
-AiPanel → window.readied.ai.chat({ ..., tools: true })
+AiPanel → window.dripnex.ai.chat({ ..., tools: true })
   ↓
 IPC 'ai:chat' → service.chatWithTools(request)
   ↓

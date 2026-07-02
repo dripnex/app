@@ -45,7 +45,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch('https://api.github.com/repos/tomymaritano/readide/releases', {
+    const res = await fetch('https://api.github.com/repos/dripnex/readide/releases', {
       headers,
       next: { revalidate: 300 },
     });
@@ -140,10 +140,10 @@ export async function fetchAllReleases(): Promise<ChangelogRelease[]> {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const res = await fetch(
-      'https://api.github.com/repos/tomymaritano/readide/releases?per_page=50',
-      { headers, next: { revalidate: 300 } }
-    );
+    const res = await fetch('https://api.github.com/repos/dripnex/readide/releases?per_page=50', {
+      headers,
+      next: { revalidate: 300 },
+    });
 
     if (!res.ok) return [];
 

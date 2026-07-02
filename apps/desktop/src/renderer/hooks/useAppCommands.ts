@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AiPanelMode } from '@readied/ai-core';
+import type { AiPanelMode } from '@dripnex/ai-core';
 import {
   SUMMARIZE_SYSTEM_PROMPT,
   SUMMARIZE_USER_TEMPLATE,
@@ -8,15 +8,15 @@ import {
   TWEET_SYSTEM_PROMPT,
   TWEET_USER_TEMPLATE,
   resolveTemplate,
-} from '@readied/ai-core';
+} from '@dripnex/ai-core';
 import type { AiInitialCommand } from '../components/ai/AiPanel';
+import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
+import type { NoteSnapshot } from '../../preload/index';
 import { useRegisterAiCommands } from './useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './useRegisterPluginAiCommands';
 import { useCommandKeybindings } from './useCommandKeybindings';
 import { useRegisterAppCommands } from './useRegisterAppCommands';
-import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { getEditorView } from './useCommandRegistry';
-import type { NoteSnapshot } from '../../preload/index';
 
 interface UseAppCommandsOptions {
   handleNewNote: () => Promise<void>;
@@ -71,7 +71,7 @@ export function useAppCommands({
     }, []),
     onCycleViewMode: cycleViewMode,
     onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), [setIsGraphOpen]),
-    onOpenSettings: useCallback(() => window.readied.windows.openSettings(), []),
+    onOpenSettings: useCallback(() => window.dripnex.windows.openSettings(), []),
     onCommandPalette: toggleCommandPalette,
   });
 
@@ -94,8 +94,8 @@ export function useAppCommands({
   // Listen for the plugin's Sparkles button CustomEvent
   useEffect(() => {
     const handler = () => toggleAiPanel();
-    window.addEventListener('readied:ai:toggle-panel', handler);
-    return () => window.removeEventListener('readied:ai:toggle-panel', handler);
+    window.addEventListener('dripnex:ai:toggle-panel', handler);
+    return () => window.removeEventListener('dripnex:ai:toggle-panel', handler);
   }, [toggleAiPanel]);
 
   /** Helper: get selection text from editor */

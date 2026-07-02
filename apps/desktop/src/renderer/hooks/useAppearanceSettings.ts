@@ -76,13 +76,13 @@ export function useAppearanceSettings(): void {
 
   // Sync nativeTheme source in main process
   useEffect(() => {
-    window.readied.theme.setSource(theme);
+    window.dripnex.theme.setSource(theme);
   }, [theme]);
 
   // Listen for system theme changes via IPC
   useEffect(() => {
     if (theme !== 'system') return;
-    const unsub = window.readied.theme.onSystemChanged(isDark => {
+    const unsub = window.dripnex.theme.onSystemChanged(isDark => {
       // Persist the IPC value so subsequent re-applies use it
       nativeIsDark = isDark;
       const { accentColor: ac, zoomLevel: zl } = currentRef.current;

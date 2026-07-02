@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 import '../styles/ai-panel.css';
 
 /**
@@ -8,7 +8,7 @@ import '../styles/ai-panel.css';
  * and App.tsx, avoiding direct imports of the command registry singleton
  * (which pulls in CodeMirror and causes circular‐dep issues at bundle time).
  */
-const AI_TOGGLE_EVENT = 'readied:ai:toggle-panel';
+const AI_TOGGLE_EVENT = 'dripnex:ai:toggle-panel';
 
 /**
  * Toggle button for the AI panel rendered in the editor header.
@@ -35,7 +35,7 @@ function AiToggleButton() {
 export { AI_TOGGLE_EVENT };
 
 export const aiAssistantPlugin: PluginManifest = {
-  id: 'readied-ai-assistant',
+  id: 'dripnex-ai-assistant',
   name: 'AI Assistant',
   version: '0.1.0',
   description: 'AI assistant with RAG over your notes, powered by Claude',

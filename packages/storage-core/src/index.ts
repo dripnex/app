@@ -1,7 +1,7 @@
 /**
- * @readied/storage-core
+ * @dripnex/storage-core
  *
- * Storage interfaces and utilities for Readied.
+ * Storage interfaces and utilities for Dripnex.
  * This package contains no native dependencies and can be used in any environment.
  */
 

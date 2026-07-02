@@ -48,7 +48,7 @@ export function NoteListFilterBar({ sortBy, sortOrder, onSortChange }: NoteListF
   // Load tags from the main process
   useEffect(() => {
     let cancelled = false;
-    void window.readied.notes
+    void window.dripnex.notes
       .tags()
       .then(result => {
         if (!cancelled) setTags(result);

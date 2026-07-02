@@ -98,7 +98,7 @@ export const ActionsPanel = memo(function ActionsPanel({
 
   // Copy note link to clipboard
   const handleCopyLink = useCallback(async () => {
-    const noteLink = `readied://note/${noteId}`;
+    const noteLink = `dripnex://note/${noteId}`;
     try {
       await navigator.clipboard.writeText(noteLink);
       onClose();
@@ -151,7 +151,7 @@ export const ActionsPanel = memo(function ActionsPanel({
 
   // Open note in new window
   const handleOpenInNewWindow = useCallback(async () => {
-    await window.readied.windows.openNote(noteId, noteTitle || 'Note');
+    await window.dripnex.windows.openNote(noteId, noteTitle || 'Note');
     onClose();
   }, [noteId, noteTitle, onClose]);
 

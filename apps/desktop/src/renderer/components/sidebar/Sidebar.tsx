@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { LayoutZone } from '@readied/plugin-api';
+import { LayoutZone } from '@dripnex/plugin-api';
 import {
   useIsNotebookContext,
   useSelectedNotebookId,
@@ -11,6 +11,8 @@ import {
   useTagFilter,
 } from '../../hooks/useNavigation';
 import { useNotebookMutations } from '../../hooks/useNotebooks';
+import { EnableSyncModal } from '../sync';
+import { useSyncOnboarding } from '../../hooks/useSyncOnboarding';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarBreadcrumb } from './SidebarBreadcrumb';
 import { SidebarQuickFilters } from './SidebarQuickFilters';
@@ -20,8 +22,6 @@ import { TagsList } from './TagsList';
 import { StatusFilters } from './StatusFilters';
 import { SidebarFooter } from './SidebarFooter';
 import { ActivityStats } from './ActivityStats';
-import { EnableSyncModal } from '../sync';
-import { useSyncOnboarding } from '../../hooks/useSyncOnboarding';
 import { NotebookCreateModal } from './NotebookCreateModal';
 
 interface SidebarProps {
@@ -38,7 +38,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
   // App version (loaded async from main process)
   const [appVersion, setAppVersion] = useState('');
   useEffect(() => {
-    const result = window.readied.app.version();
+    const result = window.dripnex.app.version();
     // Handle both sync (old preload) and async (new preload) return
     void Promise.resolve(result).then(setAppVersion);
   }, []);
@@ -103,7 +103,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
   return (
     <aside className="sidebar" aria-label="Main sidebar">
-      <SidebarHeader onSettingsClick={() => window.readied.windows.openSettings()} />
+      <SidebarHeader onSettingsClick={() => window.dripnex.windows.openSettings()} />
       <SidebarBreadcrumb
         selectedNotebookId={selectedNotebookId}
         tagFilter={tagFilter}

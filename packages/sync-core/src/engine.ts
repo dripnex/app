@@ -194,7 +194,7 @@ export class SyncEngine {
     let deviceId = await this.config.storage.getDeviceId();
     if (!deviceId) {
       deviceId = await this.config.client.registerDevice({
-        name: 'Readied Desktop',
+        name: 'Dripnex Desktop',
         platform: this.config.platform ?? 'unknown',
         version: this.config.appVersion ?? '0.1.0',
       });

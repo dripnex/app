@@ -37,7 +37,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
     setIsLoading(true);
     setError(null);
     try {
-      const result = await window.readied.git.log(notebookId, 50);
+      const result = await window.dripnex.git.log(notebookId, 50);
       if (result.success && result.commits) {
         setCommits(result.commits);
       } else {
@@ -61,7 +61,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
       }
 
       try {
-        const result = await window.readied.git.checkout(notebookId, commitSha);
+        const result = await window.dripnex.git.checkout(notebookId, commitSha);
         if (result.success) {
           alert('Successfully reverted to commit!');
           onClose();

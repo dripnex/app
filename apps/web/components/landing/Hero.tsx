@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Play, XIcon } from 'lucide-react';
-import { AppleIcon, GithubIcon } from '@/components/icons/BrandIcons';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
+import { AppleIcon, GithubIcon } from '@/components/icons/BrandIcons';
 import { AnimatedShinyText } from '@/components/magicui/animated-shiny-text';
 import { BorderBeam } from '@/components/magicui/border-beam';
 
@@ -60,7 +60,7 @@ function EditorMockWithPlay() {
               <span className="h-3 w-3 rounded-full bg-white/[0.06]" />
             </div>
             <span className="ml-2 font-mono text-[11px] text-text-muted">project-roadmap.md</span>
-            <span className="ml-auto font-mono text-[10px] text-text-muted/50">readied</span>
+            <span className="ml-auto font-mono text-[10px] text-text-muted/50">dripnex</span>
           </div>
 
           {/* Editor body — two panes */}
@@ -208,7 +208,7 @@ function EditorMockWithPlay() {
               <div className="relative size-full overflow-hidden rounded-2xl border-2 border-white/10">
                 <iframe
                   src={DEMO_VIDEO_URL}
-                  title="Readied demo video"
+                  title="Dripnex demo video"
                   className="size-full rounded-2xl"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -263,7 +263,7 @@ export default function Hero() {
             Download for Mac
           </Link>
           <Link
-            href="https://github.com/tomymaritano/readide"
+            href="https://github.com/dripnex/readide"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-6 py-3 text-sm font-medium text-text-secondary backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:text-white"

@@ -1,5 +1,5 @@
 /**
- * Core domain types for Readied
+ * Core domain types for Dripnex
  * These are the fundamental building blocks of the note system
  */
 

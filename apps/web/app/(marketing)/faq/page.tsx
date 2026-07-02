@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { MessageCircle } from 'lucide-react';
-import { getProductConfig, URLS } from '@readied/product-config';
+import { getProductConfig, URLS } from '@dripnex/product-config';
 import FaqAccordion from '@/components/FaqAccordion';
 
 export const metadata: Metadata = {
-  title: 'FAQ — Readied',
-  description: 'Frequently asked questions about Readied.',
+  title: 'FAQ — Dripnex',
+  description: 'Frequently asked questions about Dripnex.',
 };
 
 export default function FaqPage() {
@@ -18,9 +18,9 @@ export default function FaqPage() {
       category: 'General',
       questions: [
         {
-          question: 'What is Readied?',
+          question: 'What is Dripnex?',
           answer:
-            'Readied is a Markdown editor designed for developers who want to own their notes. It works offline, stores files locally, and uses standard Markdown format.',
+            'Dripnex is a Markdown editor designed for developers who want to own their notes. It works offline, stores files locally, and uses standard Markdown format.',
         },
         {
           question: 'Is my data stored in the cloud?',
@@ -28,11 +28,11 @@ export default function FaqPage() {
             'No. All files stay on your local disk. We have no servers, no accounts, and no way to access your data.',
         },
         {
-          question: 'Does Readied work offline?',
-          answer: 'Yes, 100%. Readied works entirely offline. No internet connection required.',
+          question: 'Does Dripnex work offline?',
+          answer: 'Yes, 100%. Dripnex works entirely offline. No internet connection required.',
         },
         {
-          question: 'What file format does Readied use?',
+          question: 'What file format does Dripnex use?',
           answer:
             'Standard Markdown (.md files). You can open your notes with any text editor, now or 20 years from now.',
         },
@@ -47,7 +47,7 @@ export default function FaqPage() {
             'Not built-in. We intentionally avoid cloud features. You can use Dropbox, iCloud, Google Drive, or git to sync your folder.',
         },
         {
-          question: 'Does Readied support backlinks?',
+          question: 'Does Dripnex support backlinks?',
           answer: 'Yes. Backlinks are computed from your files on-the-fly. No database dependency.',
         },
         {
@@ -56,7 +56,7 @@ export default function FaqPage() {
             'No. Plugins that modify your files create lock-in. We keep the app simple and your Markdown standard.',
         },
         {
-          question: 'Does Readied have AI features?',
+          question: 'Does Dripnex have AI features?',
           answer: 'No. AI features require servers and trust. We keep everything local.',
         },
       ],
@@ -65,7 +65,7 @@ export default function FaqPage() {
       category: 'Pricing',
       questions: [
         {
-          question: 'How much does Readied cost?',
+          question: 'How much does Dripnex cost?',
           answer: `Free tier is free forever. Pro is ${proPricing.intervals.monthly.label} or ${proPricing.intervals.annual.label} (${proPricing.annualSavings} off).`,
         },
         { question: 'Is there a free tier?', answer: guarantees.freeTierForever.description },
@@ -90,7 +90,7 @@ export default function FaqPage() {
             'Your data is already Markdown files on your disk. Nothing to export. Open them with any editor.',
         },
         {
-          question: 'What if Readied stops being developed?',
+          question: 'What if Dripnex stops being developed?',
           answer: guarantees.freeTierForever.description,
         },
         {
@@ -110,7 +110,7 @@ export default function FaqPage() {
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4">
             Frequently asked <span className="text-accent">questions</span>
           </h1>
-          <p className="text-lg text-text-secondary">Everything you need to know about Readied.</p>
+          <p className="text-lg text-text-secondary">Everything you need to know about Dripnex.</p>
         </header>
 
         <FaqAccordion categories={faqs} />
@@ -138,7 +138,7 @@ export default function FaqPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-border text-text-secondary font-medium text-sm transition-colors hover:bg-white/5 hover:text-white"
             >
-              @readiedapp
+              @dripnexapp
             </a>
           </div>
         </div>

@@ -1,5 +1,5 @@
 /**
- * CodeMirror theme + syntax highlighting for Readied's MarkdownEditor.
+ * CodeMirror theme + syntax highlighting for Dripnex's MarkdownEditor.
  *
  * Pure values extracted from MarkdownEditor.tsx so theme tweaks don't
  * force a rebuild of the entire editor file. Colors come from CSS

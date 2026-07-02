@@ -4,7 +4,7 @@
 
 **Goal:** Add a dedicated `context.data` namespace to the plugin API with rich query capabilities (filters, sorting, pagination, graph, events, error handling).
 
-**Architecture:** A `DataAPI` interface with typed query options, backed by a `DataAPIBridge` that maps to existing `window.readied.*` IPC calls. The `createDataAPI()` factory handles option merging, error wrapping, and event dispatch. `AppAPI` stays unchanged for backward compat.
+**Architecture:** A `DataAPI` interface with typed query options, backed by a `DataAPIBridge` that maps to existing `window.dripnex.*` IPC calls. The `createDataAPI()` factory handles option merging, error wrapping, and event dispatch. `AppAPI` stays unchanged for backward compat.
 
 **Tech Stack:** TypeScript, Zustand patterns, Electron IPC, vitest
 
@@ -918,7 +918,7 @@ git commit -m "feat(plugin-api): export DataAPI types and factory from barrel"
 - Modify: `apps/desktop/src/renderer/App.tsx:139-190` (add dataAPI useMemo)
 - Modify: `apps/desktop/src/renderer/App.tsx:576-582` (pass dataAPI to PluginHost)
 
-**Context:** This is the host-side bridge — same pattern as the existing `appAPI` useMemo block. We create a `DataAPIBridge` that maps to `window.readied.*` IPC calls, then pass `createDataAPI(bridge)` to `PluginHost`.
+**Context:** This is the host-side bridge — same pattern as the existing `appAPI` useMemo block. We create a `DataAPIBridge` that maps to `window.dripnex.*` IPC calls, then pass `createDataAPI(bridge)` to `PluginHost`.
 
 **Step 1: Add imports**
 
@@ -930,8 +930,8 @@ import {
   createDataAPI, // NEW
   editorPluginStore,
   useCssVariables,
-} from '@readied/plugin-api';
-import type { DataAPIWithEvents } from '@readied/plugin-api';
+} from '@dripnex/plugin-api';
+import type { DataAPIWithEvents } from '@dripnex/plugin-api';
 ```
 
 **Step 2: Add dataAPI useMemo (after the appAPI block)**
@@ -941,7 +941,7 @@ const dataAPI = useMemo<DataAPIWithEvents>(
   () =>
     createDataAPI({
       async getNotes(options) {
-        const notes = await window.readied.notes.list(
+        const notes = await window.dripnex.notes.list(
           options
             ? {
                 limit: options.limit,
@@ -975,27 +975,27 @@ const dataAPI = useMemo<DataAPIWithEvents>(
         };
       },
       async getNote(id) {
-        const result = await window.readied.notes.get(id);
+        const result = await window.dripnex.notes.get(id);
         if (!result.ok) return null;
         return { id: result.data.id, title: result.data.title, content: result.data.content };
       },
       async searchNotes(query, options) {
-        const notes = await window.readied.notes.search(query, options?.limit ?? 20);
+        const notes = await window.dripnex.notes.search(query, options?.limit ?? 20);
         return {
           results: notes.map(n => ({ id: n.id, title: n.title })),
           total: notes.length,
         };
       },
       async countNotes() {
-        const counts = await window.readied.notes.count();
+        const counts = await window.dripnex.notes.count();
         return counts.total;
       },
       async getNotebooks() {
-        const notebooks = await window.readied.notebooks.list();
+        const notebooks = await window.dripnex.notebooks.list();
         return notebooks.map(nb => ({ id: nb.id, name: nb.name, parentId: nb.parentId }));
       },
       async getNotebookTree() {
-        const tree = await window.readied.notebooks.tree();
+        const tree = await window.dripnex.notebooks.tree();
         const mapNode = (node: any): any => ({
           id: node.notebook.id,
           name: node.notebook.name,
@@ -1007,7 +1007,7 @@ const dataAPI = useMemo<DataAPIWithEvents>(
         return tree.map(mapNode);
       },
       async getNotebook(id) {
-        const nb = await window.readied.notebooks.getWithMetadata(id);
+        const nb = await window.dripnex.notebooks.getWithMetadata(id);
         if (!nb) return null;
         return {
           id: nb.id,
@@ -1018,17 +1018,17 @@ const dataAPI = useMemo<DataAPIWithEvents>(
         };
       },
       async getTags() {
-        return window.readied.notes.tags();
+        return window.dripnex.notes.tags();
       },
       async getTagsWithColors() {
-        return window.readied.notes.tagsWithColors();
+        return window.dripnex.notes.tagsWithColors();
       },
       async getBacklinks(noteId) {
-        const links = await window.readied.links.getBacklinks(noteId);
+        const links = await window.dripnex.links.getBacklinks(noteId);
         return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
       },
       async getOutgoingLinks(noteId) {
-        const links = await window.readied.links.getOutgoing(noteId);
+        const links = await window.dripnex.links.getOutgoing(noteId);
         return links.map(l => ({
           targetId: l.targetNoteId,
           targetTitle: l.targetTitle ?? l.targetRef,
@@ -1036,7 +1036,7 @@ const dataAPI = useMemo<DataAPIWithEvents>(
         }));
       },
       async getGraphData() {
-        return window.readied.links.getGraph();
+        return window.dripnex.links.getGraph();
       },
     }),
   []

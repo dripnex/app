@@ -1,5 +1,5 @@
 /**
- * Database Schema for Readied API
+ * Database Schema for Dripnex API
  *
  * Uses Drizzle ORM with Turso (libSQL/SQLite).
  * Tables:

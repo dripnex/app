@@ -100,7 +100,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['electron', 'better-sqlite3', '@readied/storage-sqlite'],
+              group: ['electron', 'better-sqlite3', '@dripnex/storage-sqlite'],
               message: 'Core package must remain pure. No Electron or native dependencies.',
             },
           ],

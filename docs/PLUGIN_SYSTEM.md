@@ -1,6 +1,6 @@
 # Plugin System — Roadmap
 
-> Plan de implementacion incremental del sistema de plugins de Readied.
+> Plan de implementacion incremental del sistema de plugins de Dripnex.
 > Cada fase se construye sobre la anterior. No saltar fases.
 
 ---
@@ -13,19 +13,19 @@ Base minima para que un plugin built-in funcione end-to-end.
 
 | Componente                               | Package                     | Estado |
 | ---------------------------------------- | --------------------------- | ------ |
-| `CommandRegistry`                        | `@readied/command-registry` | Done   |
-| `CommandDefinition` types                | `@readied/command-registry` | Done   |
+| `CommandRegistry`                        | `@dripnex/command-registry` | Done   |
+| `CommandDefinition` types                | `@dripnex/command-registry` | Done   |
 | Editor commands (14)                     | `definitions/editor.ts`     | Done   |
 | App commands (7)                         | `definitions/app.ts`        | Done   |
 | `useCommandKeybindings` hook             | desktop renderer            | Done   |
 | `useCommandRegistry` hook                | desktop renderer            | Done   |
-| `PluginManifest` + `PluginContext` types | `@readied/plugin-api`       | Done   |
-| `PluginRegistry` lifecycle               | `@readied/plugin-api`       | Done   |
-| `PluginHost` React component             | `@readied/plugin-api`       | Done   |
-| `EditorAPI` (safe subset)                | `@readied/plugin-api`       | Done   |
-| `AppAPI` (read-only)                     | `@readied/plugin-api`       | Done   |
-| `LayoutManager` + zones (6)              | `@readied/plugin-api`       | Done   |
-| `editorPluginStore` (CM6 extensions)     | `@readied/plugin-api`       | Done   |
+| `PluginManifest` + `PluginContext` types | `@dripnex/plugin-api`       | Done   |
+| `PluginRegistry` lifecycle               | `@dripnex/plugin-api`       | Done   |
+| `PluginHost` React component             | `@dripnex/plugin-api`       | Done   |
+| `EditorAPI` (safe subset)                | `@dripnex/plugin-api`       | Done   |
+| `AppAPI` (read-only)                     | `@dripnex/plugin-api`       | Done   |
+| `LayoutManager` + zones (6)              | `@dripnex/plugin-api`       | Done   |
+| `editorPluginStore` (CM6 extensions)     | `@dripnex/plugin-api`       | Done   |
 | Word Count plugin (example)              | `plugins/wordCount.tsx`     | Done   |
 | Command Palette (`Cmd+P`)                | `CommandPalette.tsx`        | Done   |
 
@@ -147,7 +147,7 @@ config: {
   },
   set(key: string, value: unknown) {
     cache[key] = value;
-    void window.readied.pluginConfig.set(pluginId, key, value);
+    void window.dripnex.pluginConfig.set(pluginId, key, value);
   },
 }
 ```
@@ -222,13 +222,13 @@ Implementacion: `createAppAPI()` factory en `packages/plugin-api/src/app/createA
 
 | Componente                                                 | Package               | Estado |
 | ---------------------------------------------------------- | --------------------- | ------ |
-| `NoteInfo` slim type                                       | `@readied/plugin-api` | Done   |
-| `createAppAPI()` factory                                   | `@readied/plugin-api` | Done   |
-| `AppAPIWithEvents` + `AppAPIBridge`                        | `@readied/plugin-api` | Done   |
-| Extended `AppAPI` (getNoteById, getNoteTags, getBacklinks) | `@readied/plugin-api` | Done   |
-| App events (onNoteSelected, onNoteCreated, onNoteDeleted)  | `@readied/plugin-api` | Done   |
-| Bridge wiring in App.tsx                                   | `@readied/desktop`    | Done   |
-| Editor event bridge (doc/selection changed)                | `@readied/desktop`    | Done   |
+| `NoteInfo` slim type                                       | `@dripnex/plugin-api` | Done   |
+| `createAppAPI()` factory                                   | `@dripnex/plugin-api` | Done   |
+| `AppAPIWithEvents` + `AppAPIBridge`                        | `@dripnex/plugin-api` | Done   |
+| Extended `AppAPI` (getNoteById, getNoteTags, getBacklinks) | `@dripnex/plugin-api` | Done   |
+| App events (onNoteSelected, onNoteCreated, onNoteDeleted)  | `@dripnex/plugin-api` | Done   |
+| Bridge wiring in App.tsx                                   | `@dripnex/desktop`    | Done   |
+| Editor event bridge (doc/selection changed)                | `@dripnex/desktop`    | Done   |
 
 ### 3.3 Editor Decorations API (DONE)
 
@@ -262,18 +262,18 @@ Total: 9 layout zones disponibles.
 
 | Componente                                                  | Package                         | Estado |
 | ----------------------------------------------------------- | ------------------------------- | ------ |
-| `plugins` path en `DataPaths`                               | `@readied/storage-core`         | Done   |
-| `plugin_registry` migration                                 | `@readied/storage-sqlite`       | Done   |
-| `pluginScanner.ts` (filesystem scan)                        | `@readied/desktop` main         | Done   |
-| Plugin IPC handlers (scan, enable, disable, listState)      | `@readied/desktop` main         | Done   |
-| Preload `plugins` API bridge                                | `@readied/desktop` preload      | Done   |
-| `loadPluginFromSource()` (CJS eval via `new Function`)      | `@readied/plugin-api`           | Done   |
-| `pluginRuntimeStore` (Zustand vanilla, race-safe)           | `@readied/desktop` renderer     | Done   |
-| Discovered plugins wired into `PluginHost`                  | `@readied/desktop` renderer     | Done   |
-| Plugins section in SettingsApp (list + toggle + reload)     | `@readied/desktop` renderer     | Done   |
-| Cross-window plugin reload (`plugins:requestReload` IPC)    | `@readied/desktop` main/preload | Done   |
-| Plugin config UI from `configSchema` in manifest.json       | `@readied/desktop` renderer     | Done   |
-| `CommandRegistry` snapshot caching (fix infinite re-render) | `@readied/command-registry`     | Done   |
+| `plugins` path en `DataPaths`                               | `@dripnex/storage-core`         | Done   |
+| `plugin_registry` migration                                 | `@dripnex/storage-sqlite`       | Done   |
+| `pluginScanner.ts` (filesystem scan)                        | `@dripnex/desktop` main         | Done   |
+| Plugin IPC handlers (scan, enable, disable, listState)      | `@dripnex/desktop` main         | Done   |
+| Preload `plugins` API bridge                                | `@dripnex/desktop` preload      | Done   |
+| `loadPluginFromSource()` (CJS eval via `new Function`)      | `@dripnex/plugin-api`           | Done   |
+| `pluginRuntimeStore` (Zustand vanilla, race-safe)           | `@dripnex/desktop` renderer     | Done   |
+| Discovered plugins wired into `PluginHost`                  | `@dripnex/desktop` renderer     | Done   |
+| Plugins section in SettingsApp (list + toggle + reload)     | `@dripnex/desktop` renderer     | Done   |
+| Cross-window plugin reload (`plugins:requestReload` IPC)    | `@dripnex/desktop` main/preload | Done   |
+| Plugin config UI from `configSchema` in manifest.json       | `@dripnex/desktop` renderer     | Done   |
+| `CommandRegistry` snapshot caching (fix infinite re-render) | `@dripnex/command-registry`     | Done   |
 
 ### Architecture
 
@@ -292,7 +292,7 @@ plugins/
 ### Plugin format
 
 ```
-~/Library/Application Support/@readied/desktop/plugins/
+~/Library/Application Support/@dripnex/desktop/plugins/
   my-plugin/
     manifest.json    # { id, name, version, main }
     index.js         # Pre-bundled CJS module
@@ -327,17 +327,17 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 | Componente                                                                     | Package                     | Estado |
 | ------------------------------------------------------------------------------ | --------------------------- | ------ |
-| Active Line Highlight plugin (proves decorations + app events + editor events) | `@readied/desktop` renderer | Done   |
-| Event auto-cleanup in `PluginRegistry.deactivate()`                            | `@readied/plugin-api`       | Done   |
-| Tracked event wrappers (editor + app APIs)                                     | `@readied/plugin-api`       | Done   |
-| Test suite: validation (23 tests)                                              | `@readied/plugin-api`       | Done   |
-| Test suite: registry lifecycle + auto-cleanup (25 tests)                       | `@readied/plugin-api`       | Done   |
-| Test suite: loadPluginFromSource (7 tests)                                     | `@readied/plugin-api`       | Done   |
-| Test suite: createAppAPI (9 tests)                                             | `@readied/plugin-api`       | Done   |
-| Test suite: createEditorAPI (12 tests)                                         | `@readied/plugin-api`       | Done   |
-| Test suite: layoutStore (9 tests)                                              | `@readied/plugin-api`       | Done   |
-| Test suite: editorPluginStore (6 tests)                                        | `@readied/plugin-api`       | Done   |
-| Dead code cleanup (SettingsModal.tsx + CSS)                                    | `@readied/desktop` renderer | Done   |
+| Active Line Highlight plugin (proves decorations + app events + editor events) | `@dripnex/desktop` renderer | Done   |
+| Event auto-cleanup in `PluginRegistry.deactivate()`                            | `@dripnex/plugin-api`       | Done   |
+| Tracked event wrappers (editor + app APIs)                                     | `@dripnex/plugin-api`       | Done   |
+| Test suite: validation (23 tests)                                              | `@dripnex/plugin-api`       | Done   |
+| Test suite: registry lifecycle + auto-cleanup (25 tests)                       | `@dripnex/plugin-api`       | Done   |
+| Test suite: loadPluginFromSource (7 tests)                                     | `@dripnex/plugin-api`       | Done   |
+| Test suite: createAppAPI (9 tests)                                             | `@dripnex/plugin-api`       | Done   |
+| Test suite: createEditorAPI (12 tests)                                         | `@dripnex/plugin-api`       | Done   |
+| Test suite: layoutStore (9 tests)                                              | `@dripnex/plugin-api`       | Done   |
+| Test suite: editorPluginStore (6 tests)                                        | `@dripnex/plugin-api`       | Done   |
+| Dead code cleanup (SettingsModal.tsx + CSS)                                    | `@dripnex/desktop` renderer | Done   |
 
 ### Built-in plugins
 

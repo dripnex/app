@@ -1,7 +1,7 @@
 /**
- * Readied API
+ * Dripnex API
  *
- * Backend API for Readied cloud sync.
+ * Backend API for Dripnex cloud sync.
  * Built with Hono for edge runtime compatibility.
  *
  * Deployable to:
@@ -46,7 +46,7 @@ app.use(
 app.use(
   '/admin/*',
   cors({
-    origin: ['https://readied.app', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: ['https://dripnex.app', 'http://localhost:3000', 'http://localhost:5173'],
     allowMethods: ['GET', 'OPTIONS'],
     // Authorization is required: admin auth now accepts a verified JWT bearer
     // token (see routes/admin.ts), in addition to the x-admin-token header.
@@ -58,7 +58,7 @@ app.use(
 app.use(
   '*',
   cors({
-    origin: ['https://readied.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: ['https://dripnex.app', 'http://localhost:5173', 'http://localhost:3000'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -69,7 +69,7 @@ app.use(
 // Health check
 app.get('/', c => {
   return c.json({
-    name: 'Readied API',
+    name: 'Dripnex API',
     version: '0.1.0',
     status: 'healthy',
   });

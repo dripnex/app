@@ -10,7 +10,7 @@ Full rebuild of the marketing site with shadcn/ui as component system and Magic 
 - **Color:** Neutral Cool + Violet accent
 - **Theme:** Dark mode only
 - **Motion:** Moderate — fade-ins, shimmer, border beams, subtle backgrounds
-- **Logo:** Text-based "readied." in JetBrains Mono, violet dot
+- **Logo:** Text-based "dripnex." in JetBrains Mono, violet dot
 - **Approach:** Full rebuild of all marketing components
 
 ## Color Palette

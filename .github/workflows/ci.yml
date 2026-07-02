@@ -176,7 +176,7 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Build desktop bundle
-        run: pnpm --filter @readied/desktop build
+        run: pnpm --filter @dripnex/desktop build
 
       - name: Run Playwright E2E (xvfb)
         working-directory: apps/desktop

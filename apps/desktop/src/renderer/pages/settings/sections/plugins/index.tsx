@@ -7,8 +7,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCw, FolderOpen, Download, Search } from 'lucide-react';
+import { validateConfigValue } from '@dripnex/plugin-api';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
-import { validateConfigValue } from '@readied/plugin-api';
 import { builtInPlugins } from '../../../../plugins';
 import { Button, toast } from '../../../../ui/primitives';
 import styles from '../Section.module.css';
@@ -53,8 +53,8 @@ export function PluginsSection() {
   // Listen for plugin install events from BrowseTab
   useEffect(() => {
     const handler = () => setRefreshKey(k => k + 1);
-    window.addEventListener('readied:plugins:refresh', handler);
-    return () => window.removeEventListener('readied:plugins:refresh', handler);
+    window.addEventListener('dripnex:plugins:refresh', handler);
+    return () => window.removeEventListener('dripnex:plugins:refresh', handler);
   }, []);
 
   // Load discovered plugins
@@ -62,9 +62,9 @@ export function PluginsSection() {
     async function loadPlugins() {
       try {
         const [scanned, stateList, paths] = await Promise.all([
-          window.readied.plugins.scan(),
-          window.readied.plugins.listState(),
-          window.readied.data.paths(),
+          window.dripnex.plugins.scan(),
+          window.dripnex.plugins.listState(),
+          window.dripnex.data.paths(),
         ]);
         setPluginsPath(paths.root + '/plugins');
         const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
@@ -92,7 +92,7 @@ export function PluginsSection() {
         for (const bp of builtInPlugins) {
           if (bp.configSchema) {
             try {
-              const allConfig = await window.readied.pluginConfig.getAll(bp.id);
+              const allConfig = await window.dripnex.pluginConfig.getAll(bp.id);
               configs[bp.id] = allConfig;
             } catch {
               configs[bp.id] = {};
@@ -104,7 +104,7 @@ export function PluginsSection() {
         for (const plugin of pluginList) {
           if (plugin.configSchema && plugin.enabled) {
             try {
-              const allConfig = await window.readied.pluginConfig.getAll(plugin.id);
+              const allConfig = await window.dripnex.pluginConfig.getAll(plugin.id);
               configs[plugin.id] = allConfig;
             } catch {
               configs[plugin.id] = {};
@@ -122,13 +122,13 @@ export function PluginsSection() {
   // Toggle plugin enabled/disabled (works for both built-in and community)
   const handleToggle = useCallback(async (pluginId: string, enabled: boolean) => {
     try {
-      await window.readied.plugins.setEnabled(pluginId, enabled);
+      await window.dripnex.plugins.setEnabled(pluginId, enabled);
       // Update community plugins state
       setPlugins(prev => prev.map(p => (p.id === pluginId ? { ...p, enabled } : p)));
       // Update built-in plugins state
       setBuiltInEnabled(prev => ({ ...prev, [pluginId]: enabled }));
       // Trigger reload in main window so preview updates immediately
-      window.readied.plugins.requestReload();
+      window.dripnex.plugins.requestReload();
       toast.success(`Plugin ${enabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
       toast.error(
@@ -156,7 +156,7 @@ export function PluginsSection() {
         return;
       }
 
-      await window.readied.pluginConfig.set(pluginId, key, value);
+      await window.dripnex.pluginConfig.set(pluginId, key, value);
       setConfigValues(prev => ({
         ...prev,
         [pluginId]: { ...prev[pluginId], [key]: value },
@@ -168,19 +168,19 @@ export function PluginsSection() {
   // Reload plugins in the main window
   const handleReload = useCallback(() => {
     setIsReloading(true);
-    window.readied.plugins.requestReload();
+    window.dripnex.plugins.requestReload();
     setTimeout(() => setIsReloading(false), 800);
   }, []);
 
   // Install plugin from archive
   const handleInstall = useCallback(async () => {
     try {
-      const result = await window.readied.plugins.install();
+      const result = await window.dripnex.plugins.install();
       if (result.success) {
         // Re-scan to pick up the new plugin
         const [scanned, stateList] = await Promise.all([
-          window.readied.plugins.scan(),
-          window.readied.plugins.listState(),
+          window.dripnex.plugins.scan(),
+          window.dripnex.plugins.listState(),
         ]);
         const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
         setPlugins(
@@ -194,7 +194,7 @@ export function PluginsSection() {
           }))
         );
         // Trigger reload in main window
-        window.readied.plugins.requestReload();
+        window.dripnex.plugins.requestReload();
         toast.success('Plugin installed successfully');
       } else {
         toast.error(result.error || 'Failed to install plugin');
@@ -209,11 +209,11 @@ export function PluginsSection() {
   // Uninstall a community plugin
   const handleUninstall = useCallback(async (pluginId: string) => {
     try {
-      const result = await window.readied.plugins.uninstall(pluginId);
+      const result = await window.dripnex.plugins.uninstall(pluginId);
       if (result.success) {
         setPlugins(prev => prev.filter(p => p.id !== pluginId));
         // Trigger reload in main window
-        window.readied.plugins.requestReload();
+        window.dripnex.plugins.requestReload();
         toast.success('Plugin uninstalled successfully');
       } else {
         toast.error(result.error || 'Failed to uninstall plugin');
@@ -228,7 +228,7 @@ export function PluginsSection() {
   // Open plugins folder
   const handleOpenFolder = useCallback(async () => {
     if (pluginsPath) {
-      await window.readied.data.openFolder();
+      await window.dripnex.data.openFolder();
     }
   }, [pluginsPath]);
 

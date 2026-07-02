@@ -10,7 +10,7 @@
  * to install the dependency.
  */
 
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 // TODO: Uncomment when @codemirror/vim is installed
 // function VimStatusIndicator() {
@@ -18,7 +18,7 @@ import type { PluginManifest } from '@readied/plugin-api';
 // }
 
 export const vimModePlugin: PluginManifest = {
-  id: 'readied-vim-mode',
+  id: 'dripnex-vim-mode',
   name: 'Vim Mode',
   version: '1.0.0',
   description:

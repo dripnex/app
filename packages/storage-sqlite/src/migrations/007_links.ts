@@ -9,7 +9,7 @@
  * - ON DELETE CASCADE cleans up when source/target notes are deleted
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addLinks: Migration = {
   version: 20250103000001,

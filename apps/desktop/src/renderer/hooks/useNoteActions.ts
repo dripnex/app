@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
+import type { AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
-import type { AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
 import { useNoteMutations } from './useNotes';
 import { useSyncLinks } from './useLinks';
 import { useNavigationActions, useStatusFilter } from './useNavigation';
@@ -57,7 +57,7 @@ export function useNoteActions({
   // Select note
   const handleSelectNote = useCallback(
     async (id: string) => {
-      const result = await window.readied.notes.get(id);
+      const result = await window.dripnex.notes.get(id);
       if (result.ok) {
         setSelectedNote(result.data);
         appAPI._notifyNoteSelected({
@@ -73,7 +73,7 @@ export function useNoteActions({
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
     async (title: string) => {
-      const notes = await window.readied.notes.search(title);
+      const notes = await window.dripnex.notes.search(title);
       if (notes.length > 0) {
         const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
         if (match) {
@@ -97,14 +97,14 @@ export function useNoteActions({
       // Auto-commit to git if enabled (fire-and-forget, don't block UI)
       if (updated.notebookId) {
         try {
-          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
+          const gitSettings = await window.dripnex.notebooks.getGitSettings(updated.notebookId);
           if (
             gitSettings.success &&
             gitSettings.settings?.enabled &&
             gitSettings.settings?.autoCommit
           ) {
-            await window.readied.git.writeNote(updated.notebookId, updated.id, content);
-            await window.readied.git.commit(updated.notebookId, `Update note: ${updated.title}`, [
+            await window.dripnex.git.writeNote(updated.notebookId, updated.id, content);
+            await window.dripnex.git.commit(updated.notebookId, `Update note: ${updated.title}`, [
               `${updated.id}.md`,
             ]);
           }
@@ -126,14 +126,14 @@ export function useNoteActions({
 
       if (updated.notebookId) {
         try {
-          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
+          const gitSettings = await window.dripnex.notebooks.getGitSettings(updated.notebookId);
           if (
             gitSettings.success &&
             gitSettings.settings?.enabled &&
             gitSettings.settings?.autoCommit
           ) {
-            await window.readied.git.writeNote(updated.notebookId, updated.id, updated.content);
-            await window.readied.git.commit(updated.notebookId, `Rename note: ${updated.title}`, [
+            await window.dripnex.git.writeNote(updated.notebookId, updated.id, updated.content);
+            await window.dripnex.git.commit(updated.notebookId, `Rename note: ${updated.title}`, [
               `${updated.id}.md`,
             ]);
           }
@@ -161,7 +161,7 @@ export function useNoteActions({
   // Archive note (toggle based on current state)
   const handleArchiveNote = useCallback(
     async (id: string) => {
-      const result = await window.readied.notes.get(id);
+      const result = await window.dripnex.notes.get(id);
       if (!result.ok) return;
 
       if (result.data.isArchived) {

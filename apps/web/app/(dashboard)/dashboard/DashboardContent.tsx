@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-const API_BASE = 'https://api.readied.app';
+const API_BASE = 'https://api.dripnex.app';
 
 interface Stats {
   users: { total: number; newLast7Days: number };
@@ -116,18 +116,18 @@ export default function DashboardContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
-    const saved = localStorage.getItem('readied-admin-token');
+    const saved = localStorage.getItem('dripnex-admin-token');
     const t = urlToken || saved || '';
     if (t) {
       setToken(t);
-      localStorage.setItem('readied-admin-token', t);
+      localStorage.setItem('dripnex-admin-token', t);
       void fetchAll(t);
     }
   }, [fetchAll]);
 
   const handleLogin = () => {
     if (!token.trim()) return;
-    localStorage.setItem('readied-admin-token', token.trim());
+    localStorage.setItem('dripnex-admin-token', token.trim());
     void fetchAll(token.trim());
   };
 
@@ -198,7 +198,7 @@ export default function DashboardContent() {
       <aside className="w-56 bg-[#0f0f11] border-r border-white/[0.06] flex flex-col shrink-0">
         <div className="px-5 py-5 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
-            <span className="text-base font-bold text-[#f4f4f5]">readied</span>
+            <span className="text-base font-bold text-[#f4f4f5]">dripnex</span>
             <span className="text-[10px] font-medium text-[#52525b] bg-[#18181b] px-1.5 py-0.5 rounded">
               admin
             </span>
@@ -231,7 +231,7 @@ export default function DashboardContent() {
           </div>
           <button
             onClick={() => {
-              localStorage.removeItem('readied-admin-token');
+              localStorage.removeItem('dripnex-admin-token');
               setIsAuthed(false);
               setToken('');
             }}

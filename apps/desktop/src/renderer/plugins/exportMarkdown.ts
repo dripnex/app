@@ -1,4 +1,4 @@
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 /**
  * Escape a string for safe inclusion as a YAML double-quoted scalar.
@@ -159,7 +159,7 @@ function markdownToHtml(content: string): string {
 }
 
 export const exportMarkdownPlugin: PluginManifest = {
-  id: 'readied-export-markdown',
+  id: 'dripnex-export-markdown',
   name: 'Export Markdown',
   version: '1.1.0',
   description: 'Copy notes as Markdown or HTML, or export to file',
@@ -228,7 +228,7 @@ export const exportMarkdownPlugin: PluginManifest = {
         }
 
         // Use IPC to show save dialog and write file
-        void window.readied.data
+        void window.dripnex.data
           .exportNote(exportContent, title)
           .then(result => {
             if (result.success) {

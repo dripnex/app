@@ -1,4 +1,4 @@
-# Why Readied chooses to stay small
+# Why Dripnex chooses to stay small
 
 ---
 
@@ -29,7 +29,7 @@ The only way to escape it is to stop optimizing for growth.
 
 ## Our constraint
 
-Readied is constrained by design.
+Dripnex is constrained by design.
 
 - No servers to maintain
 - No ecosystem to defend
@@ -67,7 +67,7 @@ We're okay with that.
 
 ## The trade
 
-Readied is not ambitious software.
+Dripnex is not ambitious software.
 It's careful software.
 
 We optimize for decades, not quarters.

@@ -130,10 +130,10 @@ After a macOS release, verify notarization:
 
 ```bash
 # Check the DMG
-spctl -a -vvv -t install Readied-0.1.0.dmg
+spctl -a -vvv -t install Dripnex-0.1.0.dmg
 
 # Check the app inside
-spctl -a -vvv /Applications/Readied.app
+spctl -a -vvv /Applications/Dripnex.app
 ```
 
 You should see "source=Notarized Developer ID".

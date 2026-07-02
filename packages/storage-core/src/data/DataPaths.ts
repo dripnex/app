@@ -34,7 +34,7 @@ export interface DataPaths {
 export function createDataPaths(rootPath: string): DataPaths {
   const paths: DataPaths = {
     root: rootPath,
-    database: join(rootPath, 'readied.db'),
+    database: join(rootPath, 'dripnex.db'),
     backups: join(rootPath, 'backups'),
     logs: join(rootPath, 'logs'),
     config: join(rootPath, 'config.json'),

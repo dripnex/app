@@ -1,8 +1,8 @@
 {
-  "name": "@readied/sync-core",
+  "name": "@dripnex/sync-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Core sync logic for Readied - pure TypeScript, no platform deps",
+  "description": "Core sync logic for Dripnex - pure TypeScript, no platform deps",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

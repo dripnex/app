@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { PluginManifest } from '@readied/plugin-api';
-import type { EditorAPI, ZoneComponentProps } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
+import type { EditorAPI, ZoneComponentProps } from '@dripnex/plugin-api';
 
 const WORDS_PER_MINUTE = 200;
 
@@ -27,7 +27,7 @@ function ReadingTimeStatus({ meta }: ZoneComponentProps) {
 }
 
 export const readingTimePlugin: PluginManifest = {
-  id: 'readied-reading-time',
+  id: 'dripnex-reading-time',
   name: 'Reading Time',
   version: '1.0.0',
   description:

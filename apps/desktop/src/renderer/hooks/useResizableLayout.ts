@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-const STORAGE_KEY = 'readied:layout';
+const STORAGE_KEY = 'dripnex:layout';
 
 interface LayoutState {
   sidebarWidth: number;

@@ -81,7 +81,7 @@ Themes are validated on registration. Invalid tokens are stripped. Theme appears
 **Renderer:**
 
 - Replace `prefers-color-scheme` media query listener with IPC listener
-- `window.readied.theme.onSystemChanged(isDark => ...)` for system theme changes
+- `window.dripnex.theme.onSystemChanged(isDark => ...)` for system theme changes
 
 **Preload API:**
 

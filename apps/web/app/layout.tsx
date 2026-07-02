@@ -10,8 +10,8 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Readied — Offline-first Markdown editor for developers',
-    template: '%s | Readied',
+    default: 'Dripnex — Offline-first Markdown editor for developers',
+    template: '%s | Dripnex',
   },
   description:
     'A beautiful Markdown editor that works offline, stores files locally, and never locks you in.',

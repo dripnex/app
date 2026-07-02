@@ -6,7 +6,6 @@
  */
 
 import { contextBridge } from 'electron';
-
 import {
   createNotesApi,
   createNotebooksApi,
@@ -34,7 +33,6 @@ import {
   createEditorApi,
   createLocalServerApi,
 } from './api';
-
 import type {
   NotesAPI,
   NotebooksAPI,
@@ -102,7 +100,7 @@ export type {
 } from './api/types';
 
 /** The API exposed to the renderer */
-export interface ReadiedAPI {
+export interface DripnexAPI {
   notes: NotesAPI;
   notebooks: NotebooksAPI;
   data: DataAPI;
@@ -131,7 +129,7 @@ export interface ReadiedAPI {
 }
 
 // Compose and expose the API
-const api: ReadiedAPI = {
+const api: DripnexAPI = {
   notes: createNotesApi(),
   notebooks: createNotebooksApi(),
   data: createDataApi(),
@@ -159,11 +157,11 @@ const api: ReadiedAPI = {
   localServer: createLocalServerApi(),
 };
 
-contextBridge.exposeInMainWorld('readied', api);
+contextBridge.exposeInMainWorld('dripnex', api);
 
 // Type augmentation for window
 declare global {
   interface Window {
-    readied: ReadiedAPI;
+    dripnex: DripnexAPI;
   }
 }

@@ -40,7 +40,7 @@ export interface PluginConfigSchemaField {
 
 **Step 2: Verify build**
 
-Run: `pnpm --filter @readied/desktop typecheck`
+Run: `pnpm --filter @dripnex/desktop typecheck`
 
 **Step 3: Commit**
 
@@ -176,7 +176,7 @@ import type { PluginConfigSchemaField } from '../src/types';
 
 **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @readied/plugin-api test`
+Run: `pnpm --filter @dripnex/plugin-api test`
 Expected: FAIL — `validateConfigValue` is not exported yet.
 
 **Step 3: Implement the validation function**
@@ -273,7 +273,7 @@ If this export doesn't exist yet, add it.
 
 **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @readied/plugin-api test`
+Run: `pnpm --filter @dripnex/plugin-api test`
 Expected: All tests pass (existing + 15 new).
 
 **Step 6: Commit**
@@ -295,10 +295,10 @@ git commit -m "feat(plugin-api): add validateConfigValue for config schema enfor
 
 **Step 1: Add import**
 
-In `PluginsSection.tsx`, update the import from preload to also import the validation function. Since PluginsSection imports types from `preload/index`, and we need the validation function from `@readied/plugin-api`:
+In `PluginsSection.tsx`, update the import from preload to also import the validation function. Since PluginsSection imports types from `preload/index`, and we need the validation function from `@dripnex/plugin-api`:
 
 ```typescript
-import { validateConfigValue } from '@readied/plugin-api';
+import { validateConfigValue } from '@dripnex/plugin-api';
 ```
 
 Add this alongside the existing imports at the top of the file.
@@ -323,7 +323,7 @@ const handleConfigChange = useCallback(
       }
     }
 
-    await window.readied.pluginConfig.set(pluginId, key, value);
+    await window.dripnex.pluginConfig.set(pluginId, key, value);
     setConfigValues(prev => ({
       ...prev,
       [pluginId]: { ...prev[pluginId], [key]: value },
@@ -337,7 +337,7 @@ Note: `plugins` is now in the dependency array since we access it for community 
 
 **Step 3: Verify build**
 
-Run: `pnpm --filter @readied/desktop typecheck`
+Run: `pnpm --filter @dripnex/desktop typecheck`
 
 **Step 4: Commit**
 
@@ -431,7 +431,7 @@ set({ plugins: result.plugins, errors: result.errors, timings: result.timings, s
 
 **Step 2: Verify build**
 
-Run: `pnpm --filter @readied/desktop typecheck`
+Run: `pnpm --filter @dripnex/desktop typecheck`
 
 **Step 3: Commit**
 
@@ -500,7 +500,7 @@ function PluginInspector() {
   );
 
   const handleForceReload = useCallback(() => {
-    window.readied.plugins.requestReload();
+    window.dripnex.plugins.requestReload();
   }, []);
 
   return (
@@ -709,7 +709,7 @@ In `Section.module.css`, add at the end:
 
 **Step 4: Verify build**
 
-Run: `pnpm --filter @readied/desktop typecheck`
+Run: `pnpm --filter @dripnex/desktop typecheck`
 
 **Step 5: Commit**
 

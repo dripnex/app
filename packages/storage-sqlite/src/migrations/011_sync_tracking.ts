@@ -5,7 +5,7 @@
  * Local changes are marked with needs_sync=1 and synced when connection available.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const syncTracking: Migration = {
   version: 20260109000008,

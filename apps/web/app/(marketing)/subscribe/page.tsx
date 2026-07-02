@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
 import SubscribeFlow from '@/components/SubscribeFlow';
 
 export const metadata: Metadata = {
-  title: 'Get Readied Pro',
+  title: 'Get Dripnex Pro',
   description:
-    'Start your free trial of Readied Pro with cloud sync, backlinks, and advanced features.',
+    'Start your free trial of Dripnex Pro with cloud sync, backlinks, and advanced features.',
 };
 
 export default function SubscribePage() {

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, type ReactElement } from 'react';
 import { WidgetType, Decoration, EditorView, type DecorationSet } from '@codemirror/view';
 import { RangeSetBuilder, StateField, type EditorState } from '@codemirror/state';
-import type { PluginManifest, ZoneComponentProps } from '@readied/plugin-api';
+import type { PluginManifest, ZoneComponentProps } from '@dripnex/plugin-api';
 import React from 'react';
 
 // ============================================================
@@ -461,7 +461,7 @@ function SortableTable(
 // ============================================================
 
 export const tablesPlugin: PluginManifest = {
-  id: 'readied-tables',
+  id: 'dripnex-tables',
   name: 'Tables',
   version: '1.0.0',
   description:

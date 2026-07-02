@@ -457,7 +457,7 @@ registry.register(anthropic);
 
 **Implementation decision:** Fetch-based (no SDK dependency). Anthropic's SSE is standard `text/event-stream`. This keeps the package pure TS with zero external dependencies, gives full control over retry/timeout/abort, and avoids the ~200KB SDK bundle.
 
-**Static model list with live fallback:** `listModels` returns a hardcoded list (works offline). If a live API call succeeds, it supplements the list. The static list is updated with each Readied release.
+**Static model list with live fallback:** `listModels` returns a hardcoded list (works offline). If a live API call succeeds, it supplements the list. The static list is updated with each Dripnex release.
 
 ---
 
@@ -601,7 +601,7 @@ function estimateMessageTokens(content: MessageContent): number {
 | `packages/ai-assistant/src/rag.ts`               | `packages/ai-core/src/context-builder.ts`                   |
 | `packages/ai-assistant/src/prompts.ts`           | Moves into `context-builder.ts` (system prompts)            |
 | `apps/desktop/src/main/index.ts` AI IPC handlers | `apps/desktop/src/main/ai/ipc-ai.ts` + `setup.ts`           |
-| `window.readied.ai.query()` (single response)    | `ai:chat` invoke + `ai:event` listener (streaming)          |
+| `window.dripnex.ai.query()` (single response)    | `ai:chat` invoke + `ai:event` listener (streaming)          |
 | `AiPanel.tsx` handleSubmit (await response)      | Event-driven: accumulate text deltas, handle errors by code |
 
 ### What gets moved
@@ -623,7 +623,7 @@ function estimateMessageTokens(content: MessageContent): number {
 
 ### AI Commands Migration
 
-The existing AI command system (`AiInitialCommand` in `AiPanel.tsx`) uses `window.readied.ai.query()` synchronously to get a full response before doing `replaceSelection()` or `insertAtCursor()`.
+The existing AI command system (`AiInitialCommand` in `AiPanel.tsx`) uses `window.dripnex.ai.query()` synchronously to get a full response before doing `replaceSelection()` or `insertAtCursor()`.
 
 **Phase 1 approach:** AI commands use the same streaming protocol but **accumulate the full response** before executing the output action:
 
@@ -700,5 +700,5 @@ This is streaming-compatible (benefits from retry, error codes, cancellation) wh
 | API keys resolved in main process                 | Renderer never sees keys; settings store is source of truth   |
 | `system` in `ChatOptions` (set by ContextBuilder) | Clean separation: builder decides prompt, provider sends it   |
 | Jitter in retry backoff                           | Prevents thundering herd on rate limits                       |
-| Static model list + live fallback                 | Works offline (Readied philosophy), updates when online       |
+| Static model list + live fallback                 | Works offline (Dripnex philosophy), updates when online       |
 | 30s inter-chunk timeout                           | Prevents stale streams from hanging indefinitely              |

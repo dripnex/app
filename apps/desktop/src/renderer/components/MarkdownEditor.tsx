@@ -32,15 +32,15 @@ import {
   insertHorizontalRule,
   undoChange,
   redoChange,
-} from '@readied/commands';
+} from '@dripnex/commands';
 import {
   wikilinkExtension,
   createWikilinkAutocomplete,
   setCurrentNoteId,
   currentNoteIdField,
-} from '@readied/wikilinks';
-import { embedInlinePreview } from '@readied/embeds/codemirror';
-import { pluginExtensionCompartment, editorPluginStore } from '@readied/plugin-api';
+} from '@dripnex/wikilinks';
+import { embedInlinePreview } from '@dripnex/embeds/codemirror';
+import { pluginExtensionCompartment, editorPluginStore } from '@dripnex/plugin-api';
 import { htmlToGfmMarkdown } from '../utils/htmlToMarkdown';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
@@ -114,11 +114,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       () =>
         createWikilinkAutocomplete({
           searchNotes: async query => {
-            const notes = await window.readied.notes.search(query, 20);
+            const notes = await window.dripnex.notes.search(query, 20);
             return notes.map(n => ({ id: n.id, title: n.title }));
           },
           listNotes: async () => {
-            const notes = await window.readied.notes.list({
+            const notes = await window.dripnex.notes.list({
               sortBy: 'updatedAt',
               sortOrder: 'desc',
               archived: 'active',
@@ -362,7 +362,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         e.preventDefault();
 
         const bytes = await file.arrayBuffer();
-        const result = await window.readied.embeds.saveAsset(
+        const result = await window.dripnex.embeds.saveAsset(
           currentNoteId,
           file.type,
           bytes,
@@ -411,7 +411,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           if (!blob) return;
 
           const bytes = await blob.arrayBuffer();
-          const result = await window.readied.embeds.saveAsset(currentNoteId, blob.type, bytes);
+          const result = await window.dripnex.embeds.saveAsset(currentNoteId, blob.type, bytes);
           if (!result.ok) {
             console.error('Failed to save asset:', result.error);
             return;
@@ -463,7 +463,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           // edits don't cause us to rewrite the wrong occurrence.
           const insertedFrom = from;
           const insertedTo = from + plainText.length;
-          window.readied.editor
+          window.dripnex.editor
             .fetchUrlTitle(plainText)
             .then(({ title }) => {
               if (!title) return;

@@ -2,7 +2,6 @@
 
 import { useRef, type ComponentPropsWithoutRef, type FC, type ReactNode } from 'react';
 import { motion, type MotionValue, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-
 import { cn } from '@/lib/utils';
 
 export interface TextRevealProps extends ComponentPropsWithoutRef<'div'> {

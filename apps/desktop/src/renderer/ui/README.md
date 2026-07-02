@@ -1,4 +1,4 @@
-# Readied UI System
+# Dripnex UI System
 
 Canonical UI layer for the desktop renderer.
 
@@ -24,7 +24,7 @@ These are unopinionated and purely structural.
 
 ## Patterns
 
-Composed from primitives. These encode specific Readied UX patterns
+Composed from primitives. These encode specific Dripnex UX patterns
 like slide-in panels, context menus, and toasts.
 
 ## Components

@@ -1,11 +1,11 @@
 ---
 title: Plugin Development
-description: Build custom plugins for Readied — commands, UI components, editor extensions, and more
+description: Build custom plugins for Dripnex — commands, UI components, editor extensions, and more
 ---
 
 # Plugin Development
 
-Readied supports a plugin system that lets you extend the editor with custom functionality. Plugins can add commands, UI components, editor extensions, and more.
+Dripnex supports a plugin system that lets you extend the editor with custom functionality. Plugins can add commands, UI components, editor extensions, and more.
 
 ## Quick Start
 
@@ -14,7 +14,7 @@ Readied supports a plugin system that lets you extend the editor with custom fun
 ### Scaffold a new plugin
 
 ```bash
-npx readied-plugin init "My Plugin"
+npx dripnex-plugin init "My Plugin"
 cd my-plugin
 npm install
 ```
@@ -22,7 +22,7 @@ npm install
 This creates a plugin project with TypeScript, the plugin API types, and a starter template.
 
 <Callout type="info">
-Readied ships with 8 built-in plugins you can use as reference. Check the `apps/desktop/src/renderer/plugins/` directory for real-world examples.
+Dripnex ships with 8 built-in plugins you can use as reference. Check the `apps/desktop/src/renderer/plugins/` directory for real-world examples.
 </Callout>
 
 ### Write your plugin
@@ -30,7 +30,7 @@ Readied ships with 8 built-in plugins you can use as reference. Check the `apps/
 Edit `src/index.ts`:
 
 ```typescript
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 export const plugin: PluginManifest = {
   id: 'my-plugin',
@@ -68,27 +68,27 @@ export const plugin: PluginManifest = {
 npm run build
 ```
 
-Copy the output to your Readied plugins directory:
+Copy the output to your Dripnex plugins directory:
 
 <Tabs items={['macOS', 'Windows', 'Linux']}>
   <Tab value="macOS">
     ```bash
-    cp -r dist/ ~/Library/Application\ Support/Readied/plugins/my-plugin/
+    cp -r dist/ ~/Library/Application\ Support/Dripnex/plugins/my-plugin/
     ```
   </Tab>
   <Tab value="Windows">
     ```bash
-    xcopy /E dist\ %APPDATA%\Readied\plugins\my-plugin\
+    xcopy /E dist\ %APPDATA%\Dripnex\plugins\my-plugin\
     ```
   </Tab>
   <Tab value="Linux">
     ```bash
-    cp -r dist/ ~/.config/Readied/plugins/my-plugin/
+    cp -r dist/ ~/.config/Dripnex/plugins/my-plugin/
     ```
   </Tab>
 </Tabs>
 
-### Reload Readied
+### Reload Dripnex
 
 The plugin will be discovered and loaded automatically on next launch. Toggle it in **Settings > Plugins**.
 
@@ -97,7 +97,7 @@ The plugin will be discovered and loaded automatically on next launch. Toggle it
 ## Plugin Contract
 
 <Callout title="The five rules" type="warn">
-Readied plugins must follow these rules to maintain the offline-first, markdown-portable principle.
+Dripnex plugins must follow these rules to maintain the offline-first, markdown-portable principle.
 </Callout>
 
 1. **Removable without breaking `.md` files** — Your plugin can be uninstalled and all notes remain valid markdown.
@@ -112,7 +112,7 @@ Readied plugins must follow these rules to maintain the offline-first, markdown-
 load → activate(context) → [user interacts] → dispose()
 ```
 
-1. **Load** — Readied discovers your plugin and reads `manifest.json`
+1. **Load** — Dripnex discovers your plugin and reads `manifest.json`
 2. **Activate** — Your `activate()` function receives a `PluginContext` with the full API
 3. **Running** — Your plugin responds to commands, events, and editor changes
 4. **Dispose** — When disabled or on app exit, your `dispose()` function cleans up

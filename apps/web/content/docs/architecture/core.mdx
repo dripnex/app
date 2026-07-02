@@ -1,11 +1,11 @@
 ---
 title: Core Package
-description: Domain logic for Readied — pure functions, zero framework dependencies, testable in Node.js
+description: Domain logic for Dripnex — pure functions, zero framework dependencies, testable in Node.js
 ---
 
 # Core Package
 
-`@readied/core` contains all domain logic for Readied.
+`@dripnex/core` contains all domain logic for Dripnex.
 
 ## Principles
 
@@ -92,22 +92,22 @@ interface NoteRepository {
 
 Several packages extend core's markdown parsing capabilities. These are separate packages but work closely with the core domain:
 
-### Wikilinks (`@readied/wikilinks`)
+### Wikilinks (`@dripnex/wikilinks`)
 
 Parses `[[wikilink]]` syntax from markdown content. Extracts link targets and display text, enabling bidirectional linking between notes. The parser identifies wikilinks in raw markdown so the editor and storage layers can resolve them to actual note references.
 
-### Tasks (`@readied/tasks`)
+### Tasks (`@dripnex/tasks`)
 
 Extracts task items (`- [ ]` and `- [x]`) from markdown content. Provides structured task data including completion status, enabling task-oriented views and aggregation across notes.
 
-### Embeds (`@readied/embeds`)
+### Embeds (`@dripnex/embeds`)
 
 Resolves URLs to rich embed metadata. Recognizes known URL patterns (YouTube, images, etc.) and provides embed type information so the renderer can display rich previews instead of plain links.
 
 ## Testing
 
 ```bash
-pnpm --filter @readied/core test
+pnpm --filter @dripnex/core test
 ```
 
 68 tests covering all domain logic.

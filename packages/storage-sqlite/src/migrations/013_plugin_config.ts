@@ -1,4 +1,4 @@
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const pluginConfig: Migration = {
   version: 20260210000001,

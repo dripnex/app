@@ -47,7 +47,7 @@ export interface LocalServerHandlers {
 // Constants
 // ============================================================================
 
-const DEFAULT_PORT = 29168; // "readied" in phone keypad
+const DEFAULT_PORT = 29168; // "dripnex" in phone keypad
 const TOKEN_FILE = 'api-token.txt';
 
 // ============================================================================

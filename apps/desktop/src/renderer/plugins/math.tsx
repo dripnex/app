@@ -13,8 +13,8 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { PluginManifest } from '@readied/plugin-api';
-import type { CodeBlockRendererProps } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
+import type { CodeBlockRendererProps } from '@dripnex/plugin-api';
 
 // Inject styles once; keep a ref to remove on dispose
 let styleInjected = false;
@@ -132,7 +132,7 @@ function MathRenderer({ code }: CodeBlockRendererProps) {
 }
 
 export const mathPlugin: PluginManifest = {
-  id: 'readied-math',
+  id: 'dripnex-math',
   name: 'Math / LaTeX',
   version: '1.0.0',
   description:

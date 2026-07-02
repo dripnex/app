@@ -24,8 +24,8 @@ import {
   Terminal,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { CommandCategory } from '@readied/command-registry';
-import { LayoutZone } from '@readied/plugin-api';
+import type { CommandCategory } from '@dripnex/command-registry';
+import { LayoutZone } from '@dripnex/plugin-api';
 import {
   useCommandRegistry,
   dispatchCommand,

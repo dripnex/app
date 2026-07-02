@@ -7,8 +7,8 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { PluginManifest } from '@readied/plugin-api';
-import type { CodeBlockRendererProps } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
+import type { CodeBlockRendererProps } from '@dripnex/plugin-api';
 
 // Inject styles once; keep a ref to remove on dispose
 let styleInjected = false;
@@ -144,7 +144,7 @@ function MermaidRenderer({ code }: CodeBlockRendererProps) {
 }
 
 export const mermaidPlugin: PluginManifest = {
-  id: 'readied-mermaid',
+  id: 'dripnex-mermaid',
   name: 'Mermaid Diagrams',
   version: '1.0.0',
   description:

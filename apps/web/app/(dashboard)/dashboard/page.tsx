@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import DashboardContent from './DashboardContent';
 
 export const metadata: Metadata = {
-  title: 'Dashboard — Readied',
+  title: 'Dashboard — Dripnex',
   description: 'App metrics and analytics.',
   robots: 'noindex',
 };

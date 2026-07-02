@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Check, Download } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Welcome to Readied Pro!',
+  title: 'Welcome to Dripnex Pro!',
   description: 'Your subscription is active. Download the app to get started.',
 };
 
@@ -17,7 +17,7 @@ export default function SubscriptionSuccessPage() {
         </div>
 
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-accent">
-          Welcome to Readied Pro!
+          Welcome to Dripnex Pro!
         </h1>
         <p className="text-lg sm:text-xl text-[#a1a1aa] mb-12">Your subscription is now active</p>
 
@@ -32,7 +32,7 @@ export default function SubscriptionSuccessPage() {
                 1
               </span>
               <div>
-                <strong className="block text-lg text-[#f4f4f5] mb-1">Download Readied</strong>
+                <strong className="block text-lg text-[#f4f4f5] mb-1">Download Dripnex</strong>
                 <p className="text-[#a1a1aa] m-0">Get the app for your platform</p>
               </div>
             </li>
@@ -66,7 +66,7 @@ export default function SubscriptionSuccessPage() {
             className="inline-flex items-center gap-2 px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-semibold rounded-lg bg-accent text-white transition-colors hover:bg-accent-hover"
           >
             <Download size={20} />
-            Download Readied
+            Download Dripnex
           </Link>
         </div>
 
@@ -93,7 +93,7 @@ export default function SubscriptionSuccessPage() {
 
         <p className="mt-12 text-[#a1a1aa]">
           Need help?{' '}
-          <a href="mailto:support@readied.app" className="text-accent hover:underline">
+          <a href="mailto:support@dripnex.app" className="text-accent hover:underline">
             Contact support
           </a>
         </p>

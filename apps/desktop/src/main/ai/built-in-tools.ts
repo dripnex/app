@@ -1,5 +1,5 @@
 // apps/desktop/src/main/ai/built-in-tools.ts
-import type { ToolRegistry } from '@readied/ai-core';
+import type { ToolRegistry } from '@dripnex/ai-core';
 
 /**
  * Register built-in AI tools for note operations.

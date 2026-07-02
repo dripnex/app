@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Questions & Discussions
-    url: https://github.com/tomymaritano/readide/discussions
+    url: https://github.com/dripnex/readide/discussions
     about: Ask questions and discuss ideas
   - name: Documentation
-    url: https://tomymaritano.github.io/readide/
+    url: https://dripnex.github.io/readide/
     about: Check the documentation first
   - name: Contribute
-    url: https://github.com/tomymaritano/readide/contribute
+    url: https://github.com/dripnex/readide/contribute
     about: Find beginner-friendly issues to work on

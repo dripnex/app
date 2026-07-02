@@ -5,10 +5,10 @@ import { existsSync, mkdirSync, readFileSync } from 'fs';
 export function getPluginsDir(): string {
   const base =
     process.platform === 'darwin'
-      ? join(homedir(), 'Library', 'Application Support', 'readied')
+      ? join(homedir(), 'Library', 'Application Support', 'dripnex')
       : process.platform === 'win32'
-        ? join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'readied')
-        : join(homedir(), '.config', 'readied');
+        ? join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'dripnex')
+        : join(homedir(), '.config', 'dripnex');
   const pluginsDir = join(base, 'plugins');
   if (!existsSync(pluginsDir)) {
     mkdirSync(pluginsDir, { recursive: true });

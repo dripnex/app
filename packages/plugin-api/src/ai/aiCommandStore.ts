@@ -9,7 +9,7 @@ import { createStore } from 'zustand/vanilla';
 
 /**
  * A registered AI command (from a plugin or imported preset).
- * Mirrors AiCommandDefinition from @readied/ai-assistant but includes pluginId for lifecycle.
+ * Mirrors AiCommandDefinition from @dripnex/ai-assistant but includes pluginId for lifecycle.
  */
 export interface AiCommandRegistration {
   /** Registration id (usually `pluginId:commandId`) */

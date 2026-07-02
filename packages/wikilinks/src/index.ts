@@ -1,11 +1,11 @@
 /**
- * @readied/wikilinks
+ * @dripnex/wikilinks
  *
- * Wikilink system for Readied.
+ * Wikilink system for Dripnex.
  * Pure domain logic - no Electron, React, or UI dependencies.
  *
  * USAGE:
- *   import { createWikilinkPlugin } from '@readied/wikilinks';
+ *   import { createWikilinkPlugin } from '@dripnex/wikilinks';
  *   const plugin = createWikilinkPlugin(resolver);
  *
  * The createWikilinkPlugin factory is the recommended entry point.

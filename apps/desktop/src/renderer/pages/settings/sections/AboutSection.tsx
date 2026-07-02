@@ -5,7 +5,7 @@ export function AboutSection() {
   const [version, setVersion] = useState('');
 
   useEffect(() => {
-    const result = window.readied?.app?.version?.();
+    const result = window.dripnex?.app?.version?.();
     if (result !== undefined) {
       Promise.resolve(result)
         .then(setVersion)
@@ -18,13 +18,13 @@ export function AboutSection() {
       <h2 className={styles.title}>About</h2>
 
       <div className={styles.infoBlock}>
-        <div className={styles.appName}>Readied</div>
+        <div className={styles.appName}>Dripnex</div>
         <div className={styles.version}>Version {version}</div>
       </div>
 
       <div className={styles.links}>
         <a
-          href="https://github.com/tomymaritano/readide"
+          href="https://github.com/dripnex/readide"
           target="_blank"
           rel="noopener noreferrer"
           className={styles.link}
@@ -32,7 +32,7 @@ export function AboutSection() {
           GitHub Repository
         </a>
         <a
-          href="https://tomymaritano.github.io/readide/"
+          href="https://dripnex.github.io/readide/"
           target="_blank"
           rel="noopener noreferrer"
           className={styles.link}

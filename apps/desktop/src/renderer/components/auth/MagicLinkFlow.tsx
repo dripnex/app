@@ -131,7 +131,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
             <>
               <div className={styles.header}>
                 <Mail size={32} className={styles.icon} />
-                <h2 className={styles.title}>Sign in to Readied</h2>
+                <h2 className={styles.title}>Sign in to Dripnex</h2>
                 <p className={styles.description}>
                   Enter your email to receive a magic link for secure, passwordless sign-in.
                 </p>

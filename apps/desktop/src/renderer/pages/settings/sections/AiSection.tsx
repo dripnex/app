@@ -7,15 +7,15 @@
 
 import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { CheckCircle, XCircle, Upload, Download, ExternalLink, Unplug, Plug } from 'lucide-react';
+import { aiCommandStore } from '@dripnex/plugin-api';
+import type { AiCommandRegistration } from '@dripnex/plugin-api';
+import { validateAiCommandPreset, serializePreset } from '@dripnex/ai-core';
+import type { AiCommandPreset } from '@dripnex/ai-core';
 import { useSettingsStore, selectAi } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, NumberInput } from '../components/controls';
 import { Button } from '../../../ui/primitives';
-import { aiCommandStore } from '@readied/plugin-api';
-import type { AiCommandRegistration } from '@readied/plugin-api';
-import { validateAiCommandPreset, serializePreset } from '@readied/ai-core';
-import type { AiCommandPreset } from '@readied/ai-core';
 import styles from './Section.module.css';
 
 type ConnectStatus = 'idle' | 'connecting' | 'connected' | 'error';
@@ -85,7 +85,7 @@ export function AiSection() {
   // Load connected providers on mount
   useEffect(() => {
     async function loadConnected() {
-      const providers = await window.readied.ai.listConnectedProviders();
+      const providers = await window.dripnex.ai.listConnectedProviders();
       const status: Record<string, ConnectStatus> = {};
       for (const p of providers) {
         status[p] = 'connected';
@@ -93,7 +93,7 @@ export function AiSection() {
       // Ollama is "connected" if reachable (no key needed)
       if (!status.ollama) {
         try {
-          const result = await window.readied.ai.validate({ provider: 'ollama', apiKey: '' });
+          const result = await window.dripnex.ai.validate({ provider: 'ollama', apiKey: '' });
           if (result.ok) status.ollama = 'connected';
         } catch {
           // Ollama not running
@@ -107,7 +107,7 @@ export function AiSection() {
   // Fetch Ollama models when it's connected
   useEffect(() => {
     if (ai.provider === 'ollama' && connectStatus.ollama === 'connected') {
-      window.readied.ai
+      window.dripnex.ai
         .validate({ provider: 'ollama', apiKey: '' })
         .then(() => {
           // TODO: fetch models via a dedicated IPC. For now, use common defaults
@@ -144,7 +144,7 @@ export function AiSection() {
       setConnectStatus(prev => ({ ...prev, ollama: 'connecting' }));
       setConnectError('');
       try {
-        const result = await window.readied.ai.validate({
+        const result = await window.dripnex.ai.validate({
           provider: 'ollama',
           apiKey: '',
         });
@@ -170,14 +170,14 @@ export function AiSection() {
     setConnectError('');
 
     try {
-      const result = await window.readied.ai.validate({
+      const result = await window.dripnex.ai.validate({
         provider: currentProvider,
         apiKey: apiKeyInput.trim(),
       });
 
       if (result.ok) {
         // Save key securely
-        await window.readied.ai.saveKey(currentProvider, apiKeyInput.trim());
+        await window.dripnex.ai.saveKey(currentProvider, apiKeyInput.trim());
         // Also update the settings store so existing chat flow works
         updateAi({ apiKey: apiKeyInput.trim() });
         setConnectStatus(prev => ({ ...prev, [currentProvider]: 'connected' }));
@@ -193,7 +193,7 @@ export function AiSection() {
   }, [currentProvider, apiKeyInput, updateAi]);
 
   const handleDisconnect = useCallback(async () => {
-    await window.readied.ai.removeKey(currentProvider);
+    await window.dripnex.ai.removeKey(currentProvider);
     updateAi({ apiKey: '' });
     setConnectStatus(prev => ({ ...prev, [currentProvider]: 'idle' }));
     setConnectError('');
@@ -209,7 +209,7 @@ export function AiSection() {
   useEffect(() => {
     async function loadKeyForProvider() {
       if (currentProvider === 'ollama') return;
-      const key = await window.readied.ai.getKey(currentProvider);
+      const key = await window.dripnex.ai.getKey(currentProvider);
       if (key) {
         updateAi({ apiKey: key });
       }
@@ -239,7 +239,7 @@ export function AiSection() {
       })),
     };
     try {
-      const result = await window.readied.ai.exportPreset(serializePreset(preset));
+      const result = await window.dripnex.ai.exportPreset(serializePreset(preset));
       if (result.ok) {
         setPresetMessage({
           type: 'success',
@@ -256,7 +256,7 @@ export function AiSection() {
   const handleImportPreset = useCallback(async () => {
     setPresetMessage(null);
     try {
-      const result = await window.readied.ai.importPreset();
+      const result = await window.dripnex.ai.importPreset();
       if (!result.ok) {
         if (result.error !== 'Import cancelled') {
           setPresetMessage({ type: 'error', text: result.error });

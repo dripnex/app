@@ -26,7 +26,7 @@ export function useBacklinks(noteId: string | null) {
     queryKey: linkKeys.backlinks(noteId ?? ''),
     queryFn: async (): Promise<BacklinkInfo[]> => {
       if (!noteId) return [];
-      return window.readied.links.getBacklinks(noteId);
+      return window.dripnex.links.getBacklinks(noteId);
     },
     enabled: !!noteId,
   });
@@ -43,7 +43,7 @@ export function useOutgoingLinks(noteId: string | null) {
     queryKey: linkKeys.outgoing(noteId ?? ''),
     queryFn: async (): Promise<OutgoingLinkInfo[]> => {
       if (!noteId) return [];
-      return window.readied.links.getOutgoing(noteId);
+      return window.dripnex.links.getOutgoing(noteId);
     },
     enabled: !!noteId,
   });
@@ -58,7 +58,7 @@ export function useSyncLinks() {
 
   return useMutation({
     mutationFn: async ({ noteId, content }: { noteId: string; content: string }) => {
-      await window.readied.links.sync(noteId, content);
+      await window.dripnex.links.sync(noteId, content);
     },
     onSuccess: () => {
       // Invalidate all link queries since links may have changed
@@ -75,7 +75,7 @@ export function useGraphData() {
   return useQuery({
     queryKey: linkKeys.graph(),
     queryFn: async (): Promise<GraphData> => {
-      return window.readied.links.getGraph();
+      return window.dripnex.links.getGraph();
     },
     staleTime: 1000 * 60 * 2, // Cache for 2 minutes
   });

@@ -1,17 +1,17 @@
 ---
 title: Built-in Plugins
-description: Overview of the 8 built-in plugins that ship with Readied
+description: Overview of the 8 built-in plugins that ship with Dripnex
 ---
 
 # Built-in Plugins
 
-Readied ships with 8 built-in plugins that cover core editing and productivity features. All plugins can be enabled or disabled from **Settings > Plugins**.
+Dripnex ships with 8 built-in plugins that cover core editing and productivity features. All plugins can be enabled or disabled from **Settings > Plugins**.
 
 ## Word Count
 
 Shows word, character, and line counts in the editor status bar. The counts update in real-time as you type.
 
-- **Plugin ID:** `readied-word-count`
+- **Plugin ID:** `dripnex-word-count`
 - **Toggle:** Use the command palette and search for "Toggle Word Count"
 - **Configuration:** None
 - **Keyboard shortcuts:** None
@@ -20,7 +20,7 @@ Shows word, character, and line counts in the editor status bar. The counts upda
 
 Displays estimated reading time in the editor status bar, calculated at approximately 200 words per minute. The minimum displayed value is 1 minute.
 
-- **Plugin ID:** `readied-reading-time`
+- **Plugin ID:** `dripnex-reading-time`
 - **Toggle:** Use the command palette and search for "Toggle Reading Time"
 - **Configuration:** None
 - **Keyboard shortcuts:** None
@@ -29,7 +29,7 @@ Displays estimated reading time in the editor status bar, calculated at approxim
 
 Highlights the line where the cursor is positioned, making it easier to track your place in the document. The highlight updates as you move the cursor and clears when switching notes.
 
-- **Plugin ID:** `readied-active-line`
+- **Plugin ID:** `dripnex-active-line`
 - **Toggle:** Use the command palette and search for "Toggle Active Line Highlight"
 - **Configuration:**
   - `enabled` (boolean, default: `true`) — Whether the highlight is active
@@ -39,7 +39,7 @@ Highlights the line where the cursor is positioned, making it easier to track yo
 
 Dims all lines except the current one for distraction-free writing. All non-active lines fade to 30% opacity with a smooth transition.
 
-- **Plugin ID:** `readied-focus-mode`
+- **Plugin ID:** `dripnex-focus-mode`
 - **Toggle:** <kbd>Cmd+Shift+F</kbd> (macOS) / <kbd>Ctrl+Shift+F</kbd> (Windows/Linux), or use the command palette
 - **Configuration:**
   - `enabled` (boolean, default: `false`) — Enable focus mode on startup
@@ -50,7 +50,7 @@ Dims all lines except the current one for distraction-free writing. All non-acti
 
 Keeps the current line centered in the editor viewport as you type, simulating a typewriter. The editor smoothly scrolls to keep the cursor near the vertical center. Scrolling is only triggered when the cursor moves more than 40 pixels from center.
 
-- **Plugin ID:** `readied-typewriter-mode`
+- **Plugin ID:** `dripnex-typewriter-mode`
 - **Toggle:** <kbd>Cmd+Shift+T</kbd> (macOS) / <kbd>Ctrl+Shift+T</kbd> (Windows/Linux), or use the command palette
 - **Configuration:**
   - `enabled` (boolean, default: `false`) — Enable typewriter mode on startup (persisted via config)
@@ -61,7 +61,7 @@ Keeps the current line centered in the editor viewport as you type, simulating a
 
 Copies the current note to your clipboard. Supports two formats: raw Markdown and rendered HTML.
 
-- **Plugin ID:** `readied-export-markdown`
+- **Plugin ID:** `dripnex-export-markdown`
 - **Commands:**
   - **Copy as Markdown** — Copies the raw Markdown source
   - **Copy as HTML** — Converts to HTML and copies (supports headers, bold, italic, code blocks, inline code, links, and lists)
@@ -73,7 +73,7 @@ Copies the current note to your clipboard. Supports two formats: raw Markdown an
 
 An AI-powered writing assistant panel powered by Claude. Opens a side panel where you can ask questions about your notes, get grammar suggestions, request summaries, and more. The assistant uses RAG (Retrieval-Augmented Generation) over your local notes for context-aware responses.
 
-- **Plugin ID:** `readied-ai-assistant`
+- **Plugin ID:** `dripnex-ai-assistant`
 - **Toggle:** <kbd>Cmd+Shift+A</kbd> (macOS) / <kbd>Ctrl+Shift+A</kbd> (Windows/Linux), or click the sparkles icon in the editor header
 - **Commands:**
   - **Toggle AI Assistant** — Open or close the panel
@@ -91,7 +91,7 @@ An AI-powered writing assistant panel powered by Claude. Opens a side panel wher
 
 Full GFM (GitHub Flavored Markdown) table support with visual editing, WYSIWYG rendering, sortable columns in preview, and CSV export.
 
-- **Plugin ID:** `readied-tables`
+- **Plugin ID:** `dripnex-tables`
 - **Features:**
   - **Insert Table** — Opens a visual grid picker to create a table with your chosen dimensions (up to 10 rows by 6 columns)
   - **WYSIWYG Rendering** — Tables are rendered as formatted HTML in the editor. Click into a table to see and edit the raw Markdown

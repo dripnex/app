@@ -18,7 +18,7 @@ const reviews = [
     name: 'Maria G.',
     role: 'Technical Writer',
     stars: 5,
-    text: "I switched from Notion and haven't looked back. Readied is fast, offline, and my files are just .md on disk. Love it.",
+    text: "I switched from Notion and haven't looked back. Dripnex is fast, offline, and my files are just .md on disk. Love it.",
     date: 'Mar 2026',
   },
   {

@@ -49,8 +49,8 @@ export interface GitDiff {
 export class GitService {
   private readonly baseDir: string;
   private readonly defaultAuthor = {
-    name: 'Readied User',
-    email: 'user@readied.app',
+    name: 'Dripnex User',
+    email: 'user@dripnex.app',
   };
 
   constructor(baseDir: string) {
@@ -85,7 +85,7 @@ export class GitService {
     // Create initial .gitignore
     const gitignorePath = path.join(repoPath, '.gitignore');
     const gitignoreContent = [
-      '# Readied internal files',
+      '# Dripnex internal files',
       '.DS_Store',
       'Thumbs.db',
       '',

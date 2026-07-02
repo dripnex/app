@@ -1,11 +1,11 @@
 {
-  "name": "@readied/plugin-cli",
+  "name": "@dripnex/plugin-cli",
   "version": "0.1.0",
   "private": true,
-  "description": "CLI tool for scaffolding Readied plugins",
+  "description": "CLI tool for scaffolding Dripnex plugins",
   "type": "module",
   "bin": {
-    "readied-plugin": "./dist/cli.js"
+    "dripnex-plugin": "./dist/cli.js"
   },
   "exports": {
     ".": {

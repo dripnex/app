@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { Check } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Philosophy — Readied',
-  description: 'Why Readied refuses to become a platform.',
+  title: 'Philosophy — Dripnex',
+  description: 'Why Dripnex refuses to become a platform.',
 };
 
 const sections = [
@@ -14,7 +14,7 @@ const sections = [
     content: [
       'It starts simple. Then it adds sync. Then it adds extensibility — not as optional tools, but as dependencies. Eventually, the app becomes a platform.',
       'Somewhere along the way, exports break. Incentives shift. Trust erodes.',
-      'Readied was built to avoid that cycle.',
+      'Dripnex was built to avoid that cycle.',
     ],
   },
   {
@@ -30,7 +30,7 @@ const sections = [
   },
   {
     title: 'Our constraint',
-    highlight: 'Readied is constrained by design.',
+    highlight: 'Dripnex is constrained by design.',
     content: [],
     list: [
       'No servers to maintain',
@@ -42,7 +42,7 @@ const sections = [
   },
   {
     title: 'The trade',
-    highlight: "Readied is not ambitious software. It's careful software.",
+    highlight: "Dripnex is not ambitious software. It's careful software.",
     content: [
       'We optimize for decades, not quarters.',
       'We ship less, not more.',
@@ -69,7 +69,7 @@ export default function PhilosophyPage() {
         <header className="text-center mb-16 md:mb-20">
           <span className="section-label">Our Philosophy</span>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-6">
-            Why Readied refuses to
+            Why Dripnex refuses to
             <br />
             <span className="gradient-text">become a platform</span>
           </h1>
@@ -123,7 +123,7 @@ export default function PhilosophyPage() {
               {i === 2 && (
                 <div className="mt-6 rounded-xl bg-inset border border-border p-6 font-mono text-sm leading-relaxed">
                   <div className="text-text-muted mb-2">
-                    {'// What happens when you delete Readied:'}
+                    {'// What happens when you delete Dripnex:'}
                   </div>
                   <div className="text-text-secondary">~/notes/</div>
                   <div className="text-text-secondary pl-4">

@@ -1,6 +1,6 @@
-# @readied/api
+# @dripnex/api
 
-Backend API for Readied cloud sync. Built with Hono for edge runtime compatibility.
+Backend API for Dripnex cloud sync. Built with Hono for edge runtime compatibility.
 
 ## Features
 

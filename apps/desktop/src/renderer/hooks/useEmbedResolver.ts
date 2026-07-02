@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { extractEmbedTargets } from '@readied/embeds';
+import { extractEmbedTargets } from '@dripnex/embeds';
 
 interface UseEmbedResolverOptions {
   noteId: string | null;
@@ -51,7 +51,7 @@ export function useEmbedResolver({
     const currentNoteId = noteId;
 
     let cancelled = false;
-    window.readied.embeds
+    window.dripnex.embeds
       .resolveBatch(localTargets, currentNoteId)
       .then(result => {
         if (!cancelled) setResolvedEmbeds(result);

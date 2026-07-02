@@ -5,7 +5,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
-import { themeRegistryStore } from '@readied/plugin-api';
+import { themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';

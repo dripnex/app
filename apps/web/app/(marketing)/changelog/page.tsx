@@ -4,8 +4,8 @@ import { fetchAllReleases } from '@/lib/github';
 import NewsletterForm from '@/components/NewsletterForm';
 
 export const metadata: Metadata = {
-  title: 'Changelog — Readied',
-  description: 'Release notes and version history for Readied.',
+  title: 'Changelog — Dripnex',
+  description: 'Release notes and version history for Dripnex.',
 };
 
 function typeColor(type: string): string {
@@ -174,7 +174,7 @@ export default async function ChangelogPage() {
         {/* GitHub link */}
         <div className="mt-12 text-center">
           <a
-            href="https://github.com/tomymaritano/readide/releases"
+            href="https://github.com/dripnex/readide/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 text-sm font-medium text-accent transition-colors hover:text-accent-hover"

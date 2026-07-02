@@ -1,6 +1,6 @@
-# Readied API Reference
+# Dripnex API Reference
 
-**Base URL:** `https://api.readied.app`
+**Base URL:** `https://api.dripnex.app`
 
 **Auth:** JWT Bearer token in `Authorization: Bearer <token>` header. Access tokens expire in 15 minutes; refresh tokens in 7 days.
 
@@ -240,8 +240,8 @@ Create a Stripe Checkout session. **Auth required.**
 | Field        | Type                      | Required                                                 |
 | ------------ | ------------------------- | -------------------------------------------------------- |
 | `plan`       | `"monthly"` \| `"annual"` | yes                                                      |
-| `successUrl` | URL                       | no (default: `https://readied.app/subscription/success`) |
-| `cancelUrl`  | URL                       | no (default: `https://readied.app/subscription/cancel`)  |
+| `successUrl` | URL                       | no (default: `https://dripnex.app/subscription/success`) |
+| `cancelUrl`  | URL                       | no (default: `https://dripnex.app/subscription/cancel`)  |
 
 **Response:** `{ url: "https://checkout.stripe.com/..." }`
 
@@ -286,7 +286,7 @@ Create or update a shared note. **Auth required.** Upserts on `(userId, noteId)`
 | `title`   | string | no (default: `""`) |
 | `content` | string | no (default: `""`) |
 
-**Response:** `{ slug: "a1b2c3d4", url: "https://readied.app/shared?slug=a1b2c3d4" }`
+**Response:** `{ slug: "a1b2c3d4", url: "https://dripnex.app/shared?slug=a1b2c3d4" }`
 
 ### `GET /share/:slug`
 

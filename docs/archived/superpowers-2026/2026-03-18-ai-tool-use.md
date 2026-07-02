@@ -1267,8 +1267,8 @@ Replace `apps/desktop/src/main/ai/setup.ts`:
 ```typescript
 // apps/desktop/src/main/ai/setup.ts
 import { net } from 'electron';
-import { ProviderRegistry, AnthropicProvider, AIServiceImpl, ToolRegistry } from '@readied/ai-core';
-import type { AIService, FetchFn } from '@readied/ai-core';
+import { ProviderRegistry, AnthropicProvider, AIServiceImpl, ToolRegistry } from '@dripnex/ai-core';
+import type { AIService, FetchFn } from '@dripnex/ai-core';
 
 let service: AIService | null = null;
 let toolRegistryInstance: ToolRegistry | null = null;
@@ -1298,8 +1298,8 @@ In `apps/desktop/src/main/ai/ipc-ai.ts`:
 Add imports:
 
 ```typescript
-import type { ToolCall, ToolResult } from '@readied/ai-core';
-import { ToolRegistry } from '@readied/ai-core';
+import type { ToolCall, ToolResult } from '@dripnex/ai-core';
+import { ToolRegistry } from '@dripnex/ai-core';
 ```
 
 Update `registerAIHandlers` signature:
@@ -1478,7 +1478,7 @@ Create `apps/desktop/src/main/ai/built-in-tools.ts`:
 
 ```typescript
 // apps/desktop/src/main/ai/built-in-tools.ts
-import type { ToolRegistry } from '@readied/ai-core';
+import type { ToolRegistry } from '@dripnex/ai-core';
 
 /**
  * Register built-in AI tools for note operations.
@@ -1729,7 +1729,7 @@ const [toolCalls, setToolCalls] = useState<
 >(new Map());
 ```
 
-In the `onEvent` handler (the `useEffect` with `window.readied.ai.onEvent`), add cases for tool events inside the switch:
+In the `onEvent` handler (the `useEffect` with `window.dripnex.ai.onEvent`), add cases for tool events inside the switch:
 
 ```typescript
         case 'tool_call':
@@ -1788,10 +1788,10 @@ In the `onEvent` handler (the `useEffect` with `window.readied.ai.onEvent`), add
           break;
 ```
 
-Update the `handleSubmit` to pass `tools: true` in the chat request (in the `window.readied.ai.chat()` call):
+Update the `handleSubmit` to pass `tools: true` in the chat request (in the `window.dripnex.ai.chat()` call):
 
 ```typescript
-const { requestId } = await window.readied.ai.chat({
+const { requestId } = await window.dripnex.ai.chat({
   // ...existing fields...
   tools: true,
 });
@@ -1802,13 +1802,13 @@ Add confirm/reject handlers:
 ```typescript
 const handleToolConfirm = useCallback((callId: string) => {
   if (activeRequestRef.current) {
-    window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
+    window.dripnex.ai.confirmTool(activeRequestRef.current, callId, true);
   }
 }, []);
 
 const handleToolReject = useCallback((callId: string) => {
   if (activeRequestRef.current) {
-    window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
+    window.dripnex.ai.confirmTool(activeRequestRef.current, callId, false);
     setToolCalls(prev => {
       const next = new Map(prev);
       const existing = next.get(callId);

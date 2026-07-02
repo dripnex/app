@@ -536,7 +536,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
     args: z.tuple([]),
     handler: () => {
       try {
-        void shell.openExternal('https://readied.app/pricing');
+        void shell.openExternal('https://dripnex.app/pricing');
         return { success: true };
       } catch (error) {
         return {

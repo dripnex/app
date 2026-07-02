@@ -6,7 +6,7 @@
  * Also adds unique constraint to sync_queue to prevent duplicates.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const notebookSyncTracking: Migration = {
   version: 20260311000001,

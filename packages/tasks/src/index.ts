@@ -1,7 +1,7 @@
 /**
- * @readied/tasks
+ * @dripnex/tasks
  *
- * Task parsing for Readied.
+ * Task parsing for Dripnex.
  * Pure domain logic - no Electron, React, or UI dependencies.
  */
 

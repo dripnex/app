@@ -10,10 +10,11 @@ import {
   useCssVariables,
   useThemeOverrides,
   themeRegistryStore,
-} from '@readied/plugin-api';
-import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
-import type { RegisteredCommand } from '@readied/command-registry';
+} from '@dripnex/plugin-api';
+import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
+import type { RegisteredCommand } from '@dripnex/command-registry';
 import { useStore } from 'zustand';
+import type { NoteSnapshot } from '../preload/index';
 import { UpdateBanner } from './components/UpdateBanner';
 import { NoteList } from './components/NoteList';
 import { NoteEditor } from './components/NoteEditor';
@@ -49,8 +50,6 @@ import { useAuthStore } from './stores/authStore';
 import { useSyncStore } from './stores/syncStore';
 import { useSettingsStore, selectAppearance } from './stores/settings';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
-import type { NoteSnapshot } from '../preload/index';
-
 // Extracted hooks
 import { useDeepLinks } from './hooks/useDeepLinks';
 import { useAutoSave } from './hooks/useAutoSave';
@@ -90,7 +89,7 @@ function NotesApp() {
 
   // First-run onboarding
   const [showWelcome, setShowWelcome] = useState(
-    () => !localStorage.getItem('readied-onboarding-done')
+    () => !localStorage.getItem('dripnex-onboarding-done')
   );
 
   // Restore saved plugin theme on startup
@@ -168,23 +167,23 @@ function NotesApp() {
           return { id: note.id, title: note.title, content: note.content };
         },
         async searchNotes(query) {
-          const notes = await window.readied.notes.search(query, 20);
+          const notes = await window.dripnex.notes.search(query, 20);
           return notes.map(n => ({ id: n.id, title: n.title }));
         },
         async getNoteById(id) {
-          const result = await window.readied.notes.get(id);
+          const result = await window.dripnex.notes.get(id);
           if (!result.ok) return null;
           return { id: result.data.id, title: result.data.title, content: result.data.content };
         },
         async getNoteTags(noteId) {
-          return window.readied.notes.getManualTags(noteId);
+          return window.dripnex.notes.getManualTags(noteId);
         },
         async getBacklinks(noteId) {
-          const links = await window.readied.links.getBacklinks(noteId);
+          const links = await window.dripnex.links.getBacklinks(noteId);
           return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
         },
         async listNotes() {
-          const notes = await window.readied.notes.list();
+          const notes = await window.dripnex.notes.list();
           return notes.map(n => ({
             id: n.id,
             title: n.title,
@@ -198,7 +197,7 @@ function NotesApp() {
           }));
         },
         async listNotebooks() {
-          const notebooks = await window.readied.notebooks.list();
+          const notebooks = await window.dripnex.notebooks.list();
           return notebooks.map(nb => ({
             id: nb.id,
             name: nb.name,
@@ -206,7 +205,7 @@ function NotesApp() {
           }));
         },
         async listTags() {
-          return window.readied.notes.tags();
+          return window.dripnex.notes.tags();
         },
       }),
     []
@@ -216,7 +215,7 @@ function NotesApp() {
     () =>
       createDataAPI({
         async getNotes(options) {
-          const notes = await window.readied.notes.list(
+          const notes = await window.dripnex.notes.list(
             options
               ? {
                   tag: options.tag,
@@ -261,23 +260,23 @@ function NotesApp() {
           };
         },
         async getNote(id) {
-          const result = await window.readied.notes.get(id);
+          const result = await window.dripnex.notes.get(id);
           if (!result.ok) return null;
           return { id: result.data.id, title: result.data.title, content: result.data.content };
         },
         async searchNotes(query, options) {
-          const notes = await window.readied.notes.search(query, options?.limit ?? 20);
+          const notes = await window.dripnex.notes.search(query, options?.limit ?? 20);
           return {
             results: notes.map(n => ({ id: n.id, title: n.title })),
             total: notes.length,
           };
         },
         async countNotes() {
-          const counts = await window.readied.notes.count();
+          const counts = await window.dripnex.notes.count();
           return counts.total;
         },
         async getNotebooks() {
-          const notebooks = await window.readied.notebooks.list();
+          const notebooks = await window.dripnex.notebooks.list();
           return notebooks.map(nb => ({ id: nb.id, name: nb.name, parentId: nb.parentId }));
         },
         async getNotebookTree() {
@@ -289,7 +288,7 @@ function NotesApp() {
             childCount: number;
             children: TreeNode[];
           };
-          const tree = await window.readied.notebooks.tree();
+          const tree = await window.dripnex.notebooks.tree();
           const mapNode = (node: {
             notebook: {
               id: string;
@@ -309,7 +308,7 @@ function NotesApp() {
           return tree.map(mapNode);
         },
         async getNotebook(id) {
-          const nb = await window.readied.notebooks.getWithMetadata(id);
+          const nb = await window.dripnex.notebooks.getWithMetadata(id);
           if (!nb) return null;
           return {
             id: nb.id,
@@ -320,17 +319,17 @@ function NotesApp() {
           };
         },
         async getTags() {
-          return window.readied.notes.tags();
+          return window.dripnex.notes.tags();
         },
         async getTagsWithColors() {
-          return window.readied.notes.tagsWithColors();
+          return window.dripnex.notes.tagsWithColors();
         },
         async getBacklinks(noteId) {
-          const links = await window.readied.links.getBacklinks(noteId);
+          const links = await window.dripnex.links.getBacklinks(noteId);
           return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
         },
         async getOutgoingLinks(noteId) {
-          const links = await window.readied.links.getOutgoing(noteId);
+          const links = await window.dripnex.links.getOutgoing(noteId);
           return links.map(l => ({
             targetId: l.targetNoteId,
             targetTitle: l.targetTitle ?? l.targetRef,
@@ -338,7 +337,7 @@ function NotesApp() {
           }));
         },
         async getGraphData() {
-          return window.readied.links.getGraph();
+          return window.dripnex.links.getGraph();
         },
       }),
     []
@@ -409,7 +408,7 @@ function NotesApp() {
 
   // Load AI plugin config once on mount
   useEffect(() => {
-    void window.readied.pluginConfig.getAll('readied-ai-assistant').then(config => {
+    void window.dripnex.pluginConfig.getAll('dripnex-ai-assistant').then(config => {
       aiConfigCache.current = config ?? {};
     });
   }, []);
@@ -421,12 +420,12 @@ function NotesApp() {
   }, []);
 
   const aiSearchNotes = useCallback(async (query: string) => {
-    const notes = await window.readied.notes.search(query, 20);
+    const notes = await window.dripnex.notes.search(query, 20);
     return notes.map(n => ({ id: n.id, title: n.title }));
   }, []);
 
   const aiGetNoteById = useCallback(async (id: string) => {
-    const result = await window.readied.notes.get(id);
+    const result = await window.dripnex.notes.get(id);
     if (!result.ok) return null;
     return { id: result.data.id, title: result.data.title, content: result.data.content };
   }, []);
@@ -444,7 +443,7 @@ function NotesApp() {
     void pluginRuntimeStore.getState().init();
     // Load built-in plugin enabled states
     void (async () => {
-      const stateList = await window.readied.plugins.listState();
+      const stateList = await window.dripnex.plugins.listState();
       const map: Record<string, boolean> = {};
       for (const s of stateList) {
         map[s.pluginId] = s.enabled;
@@ -457,7 +456,7 @@ function NotesApp() {
   useEffect(() => {
     const handler = () => {
       void (async () => {
-        const stateList = await window.readied.plugins.listState();
+        const stateList = await window.dripnex.plugins.listState();
         const map: Record<string, boolean> = {};
         for (const s of stateList) {
           map[s.pluginId] = s.enabled;
@@ -465,7 +464,7 @@ function NotesApp() {
         setBuiltInEnabledMap(map);
       })();
     };
-    return window.readied.ipc.on('plugins:reload', handler);
+    return window.dripnex.ipc.on('plugins:reload', handler);
   }, []);
 
   const allPlugins = useMemo(() => {
@@ -479,9 +478,9 @@ function NotesApp() {
 
   const configBridge = useMemo(
     () => ({
-      getAll: (pluginId: string) => window.readied.pluginConfig.getAll(pluginId),
+      getAll: (pluginId: string) => window.dripnex.pluginConfig.getAll(pluginId),
       set: (pluginId: string, key: string, value: unknown) =>
-        window.readied.pluginConfig.set(pluginId, key, value),
+        window.dripnex.pluginConfig.set(pluginId, key, value),
     }),
     []
   );
@@ -518,7 +517,7 @@ function NotesApp() {
   // Welcome screen completion handler
   const handleWelcomeComplete = useCallback(
     (createNote: boolean) => {
-      localStorage.setItem('readied-onboarding-done', 'true');
+      localStorage.setItem('dripnex-onboarding-done', 'true');
       setShowWelcome(false);
       if (createNote) {
         void handleNewNote();

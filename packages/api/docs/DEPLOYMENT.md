@@ -13,9 +13,9 @@ We use three environments:
 
 | Environment     | Worker Name              | URL                                                      | Branch    |
 | --------------- | ------------------------ | -------------------------------------------------------- | --------- |
-| **Development** | `readied-api` (local)    | `http://localhost:8787`                                  | Any       |
-| **Staging**     | `readied-api-staging`    | `https://readied-api-staging.your-subdomain.workers.dev` | `develop` |
-| **Production**  | `readied-api-production` | `https://api.readied.app`                                | `main`    |
+| **Development** | `dripnex-api` (local)    | `http://localhost:8787`                                  | Any       |
+| **Staging**     | `dripnex-api-staging`    | `https://dripnex-api-staging.your-subdomain.workers.dev` | `develop` |
+| **Production**  | `dripnex-api-production` | `https://api.dripnex.app`                                | `main`    |
 
 ## First-Time Setup
 
@@ -32,14 +32,14 @@ This opens browser for OAuth authentication.
 
 ```bash
 # Create separate staging database
-turso db create readied-staging --location aws-us-east-1
+turso db create dripnex-staging --location aws-us-east-1
 
 # Get URL
-turso db show readied-staging
-# Copy URL: libsql://readied-staging.turso.io
+turso db show dripnex-staging
+# Copy URL: libsql://dripnex-staging.turso.io
 
 # Create auth token
-turso db tokens create readied-staging --expiration none
+turso db tokens create dripnex-staging --expiration none
 # Copy token: eyJhbGci...
 ```
 
@@ -47,13 +47,13 @@ turso db tokens create readied-staging --expiration none
 
 ```bash
 # Point to staging database temporarily
-export TURSO_DATABASE_URL="libsql://readied-staging.turso.io"
+export TURSO_DATABASE_URL="libsql://dripnex-staging.turso.io"
 export TURSO_AUTH_TOKEN="eyJhbGci..."
 
 pnpm db:migrate
 
 # Verify
-turso db shell readied-staging
+turso db shell dripnex-staging
 > .tables
 > SELECT * FROM users LIMIT 1;
 ```
@@ -65,7 +65,7 @@ cd packages/api
 
 # Set secrets for staging environment
 wrangler secret put TURSO_DATABASE_URL --env staging
-# Paste: libsql://readied-staging.turso.io
+# Paste: libsql://dripnex-staging.turso.io
 
 wrangler secret put TURSO_AUTH_TOKEN --env staging
 # Paste: eyJhbGci... (staging token)
@@ -107,16 +107,16 @@ wrangler deploy --env staging
 **Output:**
 
 ```
-✨ Uploaded readied-api-staging
-✨ Published readied-api-staging (1.23 sec)
-   https://readied-api-staging.your-subdomain.workers.dev
+✨ Uploaded dripnex-api-staging
+✨ Published dripnex-api-staging (1.23 sec)
+   https://dripnex-api-staging.your-subdomain.workers.dev
 ```
 
 ### Verify Deployment
 
 ```bash
 # Health check
-curl https://readied-api-staging.your-subdomain.workers.dev/health
+curl https://dripnex-api-staging.your-subdomain.workers.dev/health
 
 # Expected:
 # {"status":"ok","timestamp":"2026-01-09T..."}
@@ -126,7 +126,7 @@ curl https://readied-api-staging.your-subdomain.workers.dev/health
 
 ```bash
 # Request magic link
-curl -X POST https://readied-api-staging.your-subdomain.workers.dev/auth/magic-link \
+curl -X POST https://dripnex-api-staging.your-subdomain.workers.dev/auth/magic-link \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com"}'
 
@@ -168,17 +168,17 @@ pnpm deploy:production
 In Cloudflare Dashboard:
 
 1. Go to Workers & Pages
-2. Select `readied-api-production`
+2. Select `dripnex-api-production`
 3. Settings > Triggers > Custom Domains
-4. Add `api.readied.app`
+4. Add `api.dripnex.app`
 5. Wait for DNS propagation (~5 min)
 
 ### 5. Update Stripe Webhook
 
 Update webhook URL in [Stripe Dashboard](https://dashboard.stripe.com/webhooks):
 
-- Old: `https://readied-api-staging...workers.dev/subscription/webhook`
-- New: `https://api.readied.app/subscription/webhook`
+- Old: `https://dripnex-api-staging...workers.dev/subscription/webhook`
+- New: `https://api.dripnex.app/subscription/webhook`
 
 ## CI/CD (Optional - Future)
 
@@ -197,7 +197,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
       - run: pnpm install
-      - run: pnpm --filter @readied/api build
+      - run: pnpm --filter @dripnex/api build
       - run: pnpm wrangler deploy --env staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -227,7 +227,7 @@ wrangler tail --env production --format pretty | grep ERROR
 
 View in Cloudflare Dashboard:
 
-- Workers & Pages > readied-api-staging > Analytics
+- Workers & Pages > dripnex-api-staging > Analytics
 - Requests per minute
 - Error rate
 - CPU time
@@ -273,7 +273,7 @@ wrangler secret put MISSING_SECRET --env staging
 
 ```bash
 # Verify database
-turso db show readied-staging
+turso db show dripnex-staging
 
 # Update secrets
 wrangler secret put TURSO_DATABASE_URL --env staging
@@ -298,7 +298,7 @@ wrangler secret put TURSO_AUTH_TOKEN --env staging
 
 ```bash
 # Bust cache
-curl -X PURGE https://api.readied.app/
+curl -X PURGE https://api.dripnex.app/
 
 # Or hard refresh in browser (Cmd+Shift+R)
 ```
@@ -339,7 +339,7 @@ Before deploying to production:
 - [ ] All tests passing (`pnpm test`)
 - [ ] Staging deployment tested
 - [ ] Secrets configured in production
-- [ ] Custom domain configured (`api.readied.app`)
+- [ ] Custom domain configured (`api.dripnex.app`)
 - [ ] Stripe webhook URL updated
 - [ ] Rate limiting tested
 - [ ] Error tracking configured (Sentry)
@@ -351,16 +351,16 @@ Before deploying to production:
 
 ```bash
 # 1. Health check
-curl https://api.readied.app/health
+curl https://api.dripnex.app/health
 
 # 2. Test auth
-curl -X POST https://api.readied.app/auth/magic-link \
+curl -X POST https://api.dripnex.app/auth/magic-link \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com"}'
 
 # 3. Check rate limiting
 for i in {1..15}; do
-  curl -X POST https://api.readied.app/auth/magic-link \
+  curl -X POST https://api.dripnex.app/auth/magic-link \
     -H "Content-Type: application/json" \
     -d '{"email":"test@example.com"}'
   echo ""

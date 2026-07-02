@@ -1,8 +1,8 @@
 {
-  "name": "@readied/embeds",
+  "name": "@dripnex/embeds",
   "version": "0.1.0",
   "private": true,
-  "description": "Embed system for Readied (![[filename]] syntax)",
+  "description": "Embed system for Dripnex (![[filename]] syntax)",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

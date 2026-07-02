@@ -10,8 +10,8 @@
  */
 
 import { createStore } from 'zustand/vanilla';
-import type { PluginManifest } from '@readied/plugin-api';
-import { loadPluginFromSource, loadInitScript } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
+import { loadPluginFromSource, loadInitScript } from '@dripnex/plugin-api';
 
 export interface PluginLoadError {
   pluginId: string;
@@ -56,7 +56,7 @@ let listenerAttached = false;
 function attachIpcListener() {
   if (listenerAttached) return;
   listenerAttached = true;
-  window.readied.ipc.on('plugins:reload', () => {
+  window.dripnex.ipc.on('plugins:reload', () => {
     void pluginRuntimeStore.getState().reload();
   });
 }
@@ -68,9 +68,9 @@ async function executeScan(generation: number): Promise<{
 } | null> {
   try {
     const [scanned, stateList, initCode] = await Promise.all([
-      window.readied.plugins.scan(),
-      window.readied.plugins.listState(),
-      window.readied.plugins.readInitScript(),
+      window.dripnex.plugins.scan(),
+      window.dripnex.plugins.listState(),
+      window.dripnex.plugins.readInitScript(),
     ]);
 
     // Race check: another scan started while this one was in-flight

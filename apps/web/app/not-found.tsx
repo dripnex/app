@@ -66,7 +66,7 @@ export default function NotFound() {
                     Changelog
                   </Link>
                   <a
-                    href="https://medium.com/@tomymaritano"
+                    href="https://medium.com/@dripnex"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-2 text-sm text-[#a1a1aa] border border-white/8 rounded-lg transition-colors hover:text-accent hover:bg-white/5"

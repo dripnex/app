@@ -41,7 +41,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
       setLoading(true);
       setError(null);
       try {
-        const result = await window.readied.notes.get(noteId);
+        const result = await window.dripnex.notes.get(noteId);
         if (result.ok) {
           setNote(result.data);
         } else {
@@ -66,7 +66,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
       }
 
       debounceRef.current = setTimeout(async () => {
-        const updated = await window.readied.notes.update({ id: note.id, content });
+        const updated = await window.dripnex.notes.update({ id: note.id, content });
         if (updated.ok) {
           setNote(updated.data);
           syncLinks.mutate({ noteId: note.id, content });
@@ -80,7 +80,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   const handleTitleUpdate = useCallback(
     async (title: string) => {
       if (!note) return;
-      const updated = await window.readied.notes.updateTitle({ id: note.id, title });
+      const updated = await window.dripnex.notes.updateTitle({ id: note.id, title });
       if (updated.ok) {
         setNote(updated.data);
         // Update window title
@@ -94,7 +94,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   const handleStatusChange = useCallback(
     async (status: NoteStatus) => {
       if (!note) return;
-      const updated = await window.readied.notes.setStatus(note.id, status);
+      const updated = await window.dripnex.notes.setStatus(note.id, status);
       if (updated.ok) {
         setNote(updated.data);
       }

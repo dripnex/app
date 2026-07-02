@@ -53,7 +53,7 @@ export const useShareStore = create<ShareStore>()(
       isShared: noteId => noteId in get().shares,
     }),
     {
-      name: 'readied-shares',
+      name: 'dripnex-shares',
     }
   )
 );

@@ -1,4 +1,4 @@
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const syncHistory: Migration = {
   version: 20260311000004,

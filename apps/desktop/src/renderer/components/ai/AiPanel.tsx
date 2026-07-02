@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucide-react';
-import type { ChatMessage, NoteContext, AiPanelMode, LLMEvent } from '@readied/ai-core';
+import type { ChatMessage, NoteContext, AiPanelMode, LLMEvent } from '@dripnex/ai-core';
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 import { ToolCallBlock } from './ToolCallBlock';
@@ -114,7 +114,7 @@ export function AiPanel({
     let cancelled = false;
     void (async () => {
       try {
-        const key = await window.readied.ai.getKey(aiSettings.provider);
+        const key = await window.dripnex.ai.getKey(aiSettings.provider);
         if (!cancelled) {
           useSettingsStore.getState().updateAi({ apiKey: key ?? '' });
         }
@@ -135,33 +135,33 @@ export function AiPanel({
 
   // Listen for renderer-executed tool requests from main process
   useEffect(() => {
-    const cleanup = window.readied.ai.onToolExecuteRequest(
+    const cleanup = window.dripnex.ai.onToolExecuteRequest(
       async (requestId: string, callId: string, toolName: string, args: unknown) => {
         const toolArgs = args as Record<string, unknown>;
         try {
           if (toolName === 'insert_text') {
             const text = toolArgs.text as string;
             insertAtCursor(text);
-            await window.readied.ai.sendToolResult(requestId, callId, {
+            await window.dripnex.ai.sendToolResult(requestId, callId, {
               ok: true,
               content: `Inserted ${text.length} characters at cursor`,
             });
           } else if (toolName === 'replace_selection' && replaceSelection) {
             const text = toolArgs.text as string;
             replaceSelection(text);
-            await window.readied.ai.sendToolResult(requestId, callId, {
+            await window.dripnex.ai.sendToolResult(requestId, callId, {
               ok: true,
               content: `Replaced selection with ${text.length} characters`,
             });
           } else {
-            await window.readied.ai.sendToolResult(requestId, callId, {
+            await window.dripnex.ai.sendToolResult(requestId, callId, {
               ok: false,
               content: `Unknown renderer tool: ${toolName}`,
               error: `Unknown renderer tool: ${toolName}`,
             });
           }
         } catch (err) {
-          await window.readied.ai.sendToolResult(requestId, callId, {
+          await window.dripnex.ai.sendToolResult(requestId, callId, {
             ok: false,
             content: err instanceof Error ? err.message : String(err),
             error: err instanceof Error ? err.message : String(err),
@@ -174,7 +174,7 @@ export function AiPanel({
 
   // Subscribe to AI streaming events
   useEffect(() => {
-    const cleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
+    const cleanup = window.dripnex.ai.onEvent((requestId: string, rawEvent: unknown) => {
       // Only process events for the active request; skip when a command listener owns the stream
       if (requestId !== activeRequestRef.current) return;
       if (commandActiveRef.current) return;
@@ -315,7 +315,7 @@ export function AiPanel({
       commandActiveRef.current = true;
 
       // Set up a one-time listener for this command's events
-      const commandCleanup = window.readied.ai.onEvent((requestId: string, rawEvent: unknown) => {
+      const commandCleanup = window.dripnex.ai.onEvent((requestId: string, rawEvent: unknown) => {
         if (requestId !== activeRequestRef.current) return;
 
         const event = rawEvent as LLMEvent;
@@ -388,7 +388,7 @@ export function AiPanel({
       });
 
       try {
-        const { requestId } = await window.readied.ai.chat({
+        const { requestId } = await window.dripnex.ai.chat({
           query: initialCommand.userPrompt,
           currentNote: null,
           relevantNotes: [],
@@ -491,7 +491,7 @@ export function AiPanel({
       }));
 
       // Start streaming chat via IPC
-      const { requestId } = await window.readied.ai.chat({
+      const { requestId } = await window.dripnex.ai.chat({
         query,
         currentNote: currentNote
           ? { id: currentNote.id, title: currentNote.title, content: currentNote.content }
@@ -534,13 +534,13 @@ export function AiPanel({
 
   const handleToolConfirm = useCallback((callId: string) => {
     if (activeRequestRef.current) {
-      void window.readied.ai.confirmTool(activeRequestRef.current, callId, true);
+      void window.dripnex.ai.confirmTool(activeRequestRef.current, callId, true);
     }
   }, []);
 
   const handleToolReject = useCallback((callId: string) => {
     if (activeRequestRef.current) {
-      void window.readied.ai.confirmTool(activeRequestRef.current, callId, false);
+      void window.dripnex.ai.confirmTool(activeRequestRef.current, callId, false);
       setToolCalls(prev => {
         const next = new Map(prev);
         const existing = next.get(callId);
@@ -553,7 +553,7 @@ export function AiPanel({
   const handleClear = useCallback(() => {
     // Cancel any active request
     if (activeRequestRef.current) {
-      void window.readied.ai.cancel(activeRequestRef.current);
+      void window.dripnex.ai.cancel(activeRequestRef.current);
       activeRequestRef.current = null;
     }
     setMessages([]);

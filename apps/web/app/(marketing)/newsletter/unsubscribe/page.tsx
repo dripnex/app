@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import UnsubscribeContent from './UnsubscribeContent';
 
 export const metadata: Metadata = {
-  title: 'Unsubscribe — Readied',
-  description: 'Unsubscribe from the Readied newsletter.',
+  title: 'Unsubscribe — Dripnex',
+  description: 'Unsubscribe from the Dripnex newsletter.',
 };
 
 export default function UnsubscribePage() {

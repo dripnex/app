@@ -1,12 +1,12 @@
 /**
  * SQLite Note Repository
  *
- * Implements the ExtendedNoteRepository interface from @readied/storage-core
+ * Implements the ExtendedNoteRepository interface from @dripnex/storage-core
  */
 
-import type { ExtendedNoteRepository, ListNotesOptions } from '@readied/storage-core';
-import { type Note, type NoteId, type Tag, createNoteId, createTag } from '@readied/core';
-import { extractWikilinks } from '@readied/wikilinks';
+import type { ExtendedNoteRepository, ListNotesOptions } from '@dripnex/storage-core';
+import { type Note, type NoteId, type Tag, createNoteId, createTag } from '@dripnex/core';
+import { extractWikilinks } from '@dripnex/wikilinks';
 import type { DatabaseConnection } from '../database.js';
 import {
   rowToNote,

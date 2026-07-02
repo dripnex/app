@@ -1,14 +1,14 @@
 export function indexTemplate(id: string, name: string): string {
   return `/**
- * ${name} — Readied Plugin
+ * ${name} — Dripnex Plugin
  */
 
-/** @type {import('@readied/plugin-api').PluginManifest} */
+/** @type {import('@dripnex/plugin-api').PluginManifest} */
 module.exports = {
   id: '${id}',
   name: '${name}',
   version: '0.1.0',
-  description: 'A Readied plugin',
+  description: 'A Dripnex plugin',
 
   activate(context) {
     context.log.info('${name} activated');

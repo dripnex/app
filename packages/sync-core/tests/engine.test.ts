@@ -274,7 +274,7 @@ describe('SyncEngine', () => {
       await engine.sync();
 
       expect(client.registerDevice).toHaveBeenCalledWith({
-        name: 'Readied Desktop',
+        name: 'Dripnex Desktop',
         platform: 'darwin',
         version: '0.6.2',
       });

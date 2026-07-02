@@ -11,7 +11,7 @@ import {
   renameNotebook,
   moveNotebook,
   INBOX_NOTEBOOK_ID,
-} from '@readied/core';
+} from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNotebookRepository } from './types.js';
 

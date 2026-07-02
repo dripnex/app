@@ -5,7 +5,7 @@
  * Used by App.tsx (plugin loading) and PluginsSection (settings display).
  */
 
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 import { wordCountPlugin } from './wordCount';
 import { typewriterModePlugin } from './typewriterMode';
 import { activeLineHighlightPlugin } from './activeLineHighlight';

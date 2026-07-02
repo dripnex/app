@@ -1,8 +1,8 @@
 {
-  "name": "@readied/tasks",
+  "name": "@dripnex/tasks",
   "version": "0.1.0",
   "private": true,
-  "description": "Task parsing for Readied",
+  "description": "Task parsing for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

@@ -1,24 +1,24 @@
 /**
- * Test Helpers for Readied API
+ * Test Helpers for Dripnex API
  *
  * Provides utilities for testing Hono routes against
  * an in-memory SQLite database via libSQL.
  */
 
-import { createClient } from '@libsql/client';
-import * as jose from 'jose';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync } from 'node:fs';
+import { createClient } from '@libsql/client';
+import * as jose from 'jose';
 import type { Env } from '../src/db/client.js';
 
-const TEST_JWT_SECRET = 'test-jwt-secret-for-readied-api-tests';
+const TEST_JWT_SECRET = 'test-jwt-secret-for-dripnex-api-tests';
 
 /**
  * Create a test environment with a unique temp SQLite file.
  * Each test suite gets its own DB; calls within the suite share it.
  */
 export function createTestEnv(): { env: Env } {
-  const dbPath = `/tmp/readied-test-${randomUUID()}.db`;
+  const dbPath = `/tmp/dripnex-test-${randomUUID()}.db`;
   return {
     env: {
       TURSO_DATABASE_URL: `file:${dbPath}`,

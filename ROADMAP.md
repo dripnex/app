@@ -1,4 +1,4 @@
-# Readied --- Product Roadmap
+# Dripnex --- Product Roadmap
 
 > **Last updated:** 2026-03-13
 > **Current version:** v0.9.0
@@ -8,7 +8,7 @@
 
 ## Vision
 
-Readied is a **Markdown-first thinking workspace for builders**. Raycast meets Obsidian meets lightweight IDE for ideas.
+Dripnex is a **Markdown-first thinking workspace for builders**. Raycast meets Obsidian meets lightweight IDE for ideas.
 
 Your notes survive the app. Your thinking stays yours. AI augments, never replaces.
 
@@ -84,7 +84,7 @@ Your notes survive the app. Your thinking stays yours. AI augments, never replac
 
 ## Phase 6: Markdown Workspace Enhancement
 
-> **Goal:** Make Readied feel like a real workspace, not a single-note editor.
+> **Goal:** Make Dripnex feel like a real workspace, not a single-note editor.
 
 | Feature                  | Description                                                | Priority |
 | ------------------------ | ---------------------------------------------------------- | -------- |
@@ -261,7 +261,7 @@ System prompt
 
 ## Phase 12: Developer Workflows
 
-> **Goal:** Make Readied the best place to think about code, not write code.
+> **Goal:** Make Dripnex the best place to think about code, not write code.
 
 | Feature                       | Description                                              | Priority |
 | ----------------------------- | -------------------------------------------------------- | -------- |
@@ -390,7 +390,7 @@ flowchart LR
 
 ### Versioning
 
-Readied follows [Semantic Versioning](https://semver.org/):
+Dripnex follows [Semantic Versioning](https://semver.org/):
 
 | Version bump      | When                              | Example                    |
 | ----------------- | --------------------------------- | -------------------------- |
@@ -433,7 +433,7 @@ main            <-- Production releases only
 
 ```mermaid
 gantt
-    title Readied Roadmap
+    title Dripnex Roadmap
     dateFormat YYYY-MM
     axisFormat %b %Y
 
@@ -463,9 +463,9 @@ gantt
 
 ## Contributing
 
-Readied is built in the open. If you want to contribute:
+Dripnex is built in the open. If you want to contribute:
 
-1. Check the [issues](https://github.com/tomymaritano/readide/issues) for `good first issue` labels
+1. Check the [issues](https://github.com/dripnex/readide/issues) for `good first issue` labels
 2. Read `CLAUDE.md` for project conventions
 3. Read `plan.md` for architecture decisions
 4. Branch from `develop`, target PRs to `develop`

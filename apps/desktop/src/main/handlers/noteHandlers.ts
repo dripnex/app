@@ -24,8 +24,8 @@ import {
   restoreDeletedNote,
   setNoteStatus,
   type NoteStatus,
-} from '@readied/core';
-import { createNoteId, createNotebookId, createTag } from '@readied/core';
+} from '@dripnex/core';
+import { createNoteId, createNotebookId, createTag } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, DataPaths, NoteToSnapshotFn } from './types.js';
 

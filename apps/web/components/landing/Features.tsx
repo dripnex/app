@@ -15,7 +15,7 @@ const features = [
     icon: Puzzle,
     title: 'Plugin Ecosystem',
     description:
-      '8 built-in plugins with an extensible architecture. Load community plugins to make Readied yours.',
+      '8 built-in plugins with an extensible architecture. Load community plugins to make Dripnex yours.',
   },
   {
     icon: WifiOff,

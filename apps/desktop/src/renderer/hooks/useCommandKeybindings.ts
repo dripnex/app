@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { KeyModifier, KeyBinding } from '@readied/command-registry';
+import type { KeyModifier, KeyBinding } from '@dripnex/command-registry';
 import { registry, getEditorView } from './useCommandRegistry';
 
 /**

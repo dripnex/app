@@ -11,13 +11,13 @@ import { getPluginsDir, readManifest } from '../utils';
  */
 export function installPlugin(source: string): void {
   if (!source) {
-    console.error('Usage: readied-plugin install <path>');
+    console.error('Usage: dripnex-plugin install <path>');
     console.error('');
     console.error('  <path>  Path to a plugin directory, .tar.gz, .tgz, or .zip file');
     console.error('');
     console.error('Examples:');
-    console.error('  readied-plugin install ./my-plugin');
-    console.error('  readied-plugin install plugin-v1.0.0.tar.gz');
+    console.error('  dripnex-plugin install ./my-plugin');
+    console.error('  dripnex-plugin install plugin-v1.0.0.tar.gz');
     process.exit(1);
   }
 
@@ -36,7 +36,7 @@ export function installPlugin(source: string): void {
     pluginSourceDir = sourcePath;
   } else if (stat.isFile()) {
     // Extract archive to a temp directory
-    tempDir = join(tmpdir(), `readied-plugin-install-${Date.now()}`);
+    tempDir = join(tmpdir(), `dripnex-plugin-install-${Date.now()}`);
     mkdirSync(tempDir, { recursive: true });
 
     try {
@@ -86,7 +86,7 @@ export function installPlugin(source: string): void {
   if (existsSync(targetDir)) {
     cleanup(tempDir);
     console.error(`Error: Plugin "${manifest.id}" is already installed at ${targetDir}`);
-    console.error('       Run "readied-plugin uninstall ' + manifest.id + '" first.');
+    console.error('       Run "dripnex-plugin uninstall ' + manifest.id + '" first.');
     process.exit(1);
   }
 

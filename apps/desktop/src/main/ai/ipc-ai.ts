@@ -2,8 +2,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { ipcMain, app, dialog } from 'electron';
 import { z } from 'zod';
-import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@readied/ai-core';
-import type { ToolRegistry } from '@readied/ai-core';
+import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@dripnex/ai-core';
+import type { ToolRegistry } from '@dripnex/ai-core';
 
 const BATCH_INTERVAL_MS = 50;
 

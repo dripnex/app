@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { runMigrations } from '@readied/storage-core';
-import { createNote, createNoteId } from '@readied/core';
+import { runMigrations } from '@dripnex/storage-core';
+import { createNote, createNoteId } from '@dripnex/core';
 import { createInMemoryDatabase, type DatabaseConnection } from '../src/database.js';
 import { allMigrations } from '../src/migrations/index.js';
 import { SQLiteNoteRepository } from '../src/repositories/SQLiteNoteRepository.js';

@@ -90,7 +90,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
       if (selectedTag === tag) {
         onSelectTag(null);
       }
-      await window.readied.notes.deleteTag(tag);
+      await window.dripnex.notes.deleteTag(tag);
       // Invalidate tags query for sidebar
       void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
       // Remove from colors cache (tag no longer exists)
@@ -101,7 +101,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
 
   const handleRenameTag = useCallback(
     async (oldTag: string, newTag: string) => {
-      const result = await window.readied.notes.renameTag(oldTag, newTag);
+      const result = await window.dripnex.notes.renameTag(oldTag, newTag);
       if (result.ok) {
         // Update selected tag filter if renaming the active filter
         if (selectedTag === oldTag) {
