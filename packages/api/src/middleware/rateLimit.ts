@@ -58,7 +58,6 @@ export function rateLimit(config: RateLimitConfig) {
       const { success } = await limiter.limit({ key: keyGenerator(c) });
       if (!success) {
         c.header('Retry-After', String(windowSeconds));
-        c.header('X-RateLimit-Remaining', '0');
         return deny(c);
       }
     }
