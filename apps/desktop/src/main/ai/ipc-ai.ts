@@ -1,10 +1,59 @@
 // apps/desktop/src/main/ai/ipc-ai.ts
-import { ipcMain, app, dialog } from 'electron';
 import { readFile, writeFile } from 'node:fs/promises';
+import { ipcMain, app, dialog } from 'electron';
+import { z } from 'zod';
 import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@readied/ai-core';
 import type { ToolRegistry } from '@readied/ai-core';
 
 const BATCH_INTERVAL_MS = 50;
+
+// ─── Input validation ───────────────────────────────────
+// These channels stream (they need event.sender) so they can't use the
+// tuple-based defineIpcHandler, but renderer input is still untrusted and
+// must be bounded. Parse before touching business logic.
+
+const MAX_CONTENT = 1024 * 1024; // 1 MB per field
+const IdStrSchema = z.string().min(1).max(256);
+const NoteContextSchema = z.object({
+  id: z.string().max(256),
+  title: z.string().max(4096),
+  content: z.string().max(MAX_CONTENT),
+});
+const ChatRequestSchema = z.object({
+  query: z.string().max(MAX_CONTENT),
+  currentNote: NoteContextSchema.nullish(),
+  relevantNotes: z.array(NoteContextSchema).max(200).default([]),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().max(MAX_CONTENT),
+      })
+    )
+    .max(1000)
+    .default([]),
+  mode: z.enum(['chat', 'ask-notes']),
+  provider: z.string().min(1).max(64),
+  model: z.string().min(1).max(256),
+  providerConfig: z
+    .object({
+      apiKey: z.string().max(4096).optional(),
+      baseUrl: z.string().max(2048).optional(),
+    })
+    .default({}),
+  maxResponseTokens: z.number().int().positive().max(200_000).optional(),
+  tools: z.boolean().optional(),
+});
+const ValidateConfigSchema = z.object({
+  provider: z.string().min(1).max(64),
+  apiKey: z.string().max(4096).optional(),
+  baseUrl: z.string().max(2048).optional(),
+});
+const RendererToolResultSchema = z.object({
+  ok: z.boolean(),
+  content: z.string().max(MAX_CONTENT),
+  error: z.string().max(4096).optional(),
+});
 
 // Per-window active handle tracking
 const activeHandles = new Map<number, Map<string, ChatHandle | ToolChatHandle>>();
@@ -39,6 +88,12 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
         tools?: boolean;
       }
     ) => {
+      const parsed = ChatRequestSchema.safeParse(request);
+      if (!parsed.success) {
+        throw new Error(`Invalid ai:chat request: ${parsed.error.message}`);
+      }
+      request = parsed.data as typeof request;
+
       const windowId = event.sender.id;
       const toolDefs = request.tools ? toolRegistry.getDefinitions() : [];
 
@@ -94,6 +149,7 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
 
   // ─── Cancel ─────────────────────────────────────────────
   ipcMain.handle('ai:cancel', (event, requestId: string) => {
+    if (!IdStrSchema.safeParse(requestId).success) return;
     const windowId = event.sender.id;
     const handles = activeHandles.get(windowId);
     const handle = handles?.get(requestId);
@@ -107,6 +163,11 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   ipcMain.handle(
     'ai:validate',
     async (_event, config: { provider: string; apiKey?: string; baseUrl?: string }) => {
+      const parsedConfig = ValidateConfigSchema.safeParse(config);
+      if (!parsedConfig.success) {
+        return { ok: false, error: `Invalid ai:validate config: ${parsedConfig.error.message}` };
+      }
+      config = parsedConfig.data;
       try {
         const handle = service.chat({
           query: 'Say "ok".',
@@ -172,6 +233,13 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   ipcMain.handle(
     'ai:tool-confirm',
     (event, requestId: string, callId: string, approved: boolean) => {
+      if (
+        !IdStrSchema.safeParse(requestId).success ||
+        !IdStrSchema.safeParse(callId).success ||
+        typeof approved !== 'boolean'
+      ) {
+        return;
+      }
       // Verify the sender owns this request
       const windowId = event.sender.id;
       if (!activeHandles.get(windowId)?.has(requestId)) return;
@@ -193,6 +261,13 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
       callId: string,
       result: { ok: boolean; content: string; error?: string }
     ) => {
+      if (
+        !IdStrSchema.safeParse(requestId).success ||
+        !IdStrSchema.safeParse(callId).success ||
+        !RendererToolResultSchema.safeParse(result).success
+      ) {
+        return;
+      }
       // Verify the sender owns this request
       const windowId = event.sender.id;
       if (!activeHandles.get(windowId)?.has(requestId)) return;

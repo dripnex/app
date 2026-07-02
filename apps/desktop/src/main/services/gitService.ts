@@ -125,7 +125,7 @@ export class GitService {
    */
   async writeNoteFile(notebookId: string, noteId: string, content: string): Promise<void> {
     const repoPath = this.getRepoPath(notebookId);
-    const filePath = path.join(repoPath, `${noteId}.md`);
+    const filePath = this.getNoteFilePath(repoPath, noteId);
 
     // Ensure directory exists
     if (!fs.existsSync(repoPath)) {
@@ -141,7 +141,7 @@ export class GitService {
    */
   async readNoteFile(notebookId: string, noteId: string): Promise<string | null> {
     const repoPath = this.getRepoPath(notebookId);
-    const filePath = path.join(repoPath, `${noteId}.md`);
+    const filePath = this.getNoteFilePath(repoPath, noteId);
 
     if (!fs.existsSync(filePath)) {
       return null;
@@ -155,7 +155,7 @@ export class GitService {
    */
   async deleteNoteFile(notebookId: string, noteId: string): Promise<void> {
     const repoPath = this.getRepoPath(notebookId);
-    const filePath = path.join(repoPath, `${noteId}.md`);
+    const filePath = this.getNoteFilePath(repoPath, noteId);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -430,10 +430,33 @@ export class GitService {
   // ==========================================================================
 
   /**
+   * Resolve `segments` against `base` and guarantee the result stays inside
+   * `base`. Defense-in-depth against path traversal: the IPC layer already
+   * restricts ID charsets (see gitHandlers.ts), but this ensures a malformed
+   * or future-changed ID can never escape the notebooks directory.
+   */
+  private resolveWithin(base: string, ...segments: string[]): string {
+    const normalizedBase = path.resolve(base);
+    const target = path.resolve(normalizedBase, ...segments);
+    if (target !== normalizedBase && !target.startsWith(normalizedBase + path.sep)) {
+      throw new Error('Resolved path escapes the allowed directory');
+    }
+    return target;
+  }
+
+  /**
    * Get the filesystem path to a notebook's git repository
    */
   private getRepoPath(notebookId: string): string {
-    return path.join(this.baseDir, 'notebooks', notebookId);
+    return this.resolveWithin(path.join(this.baseDir, 'notebooks'), notebookId);
+  }
+
+  /**
+   * Get the filesystem path to a note file within a notebook repo, validating
+   * that it stays inside the repository directory.
+   */
+  private getNoteFilePath(repoPath: string, noteId: string): string {
+    return this.resolveWithin(repoPath, `${noteId}.md`);
   }
 
   /**
