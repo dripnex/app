@@ -8,8 +8,8 @@ const API_VERSION = '2023-06-01';
 
 const STATIC_MODELS: ModelInfo[] = [
   {
-    id: 'claude-sonnet-4-20250514',
-    displayName: 'Claude Sonnet 4',
+    id: 'claude-sonnet-5',
+    displayName: 'Claude Sonnet 5',
     contextWindow: 200_000,
     maxOutputTokens: 8192,
     supportsStreaming: true,
@@ -24,8 +24,8 @@ const STATIC_MODELS: ModelInfo[] = [
     supportsTools: true,
   },
   {
-    id: 'claude-opus-4-20250514',
-    displayName: 'Claude Opus 4',
+    id: 'claude-opus-4-8',
+    displayName: 'Claude Opus 4.8',
     contextWindow: 200_000,
     maxOutputTokens: 8192,
     supportsStreaming: true,
