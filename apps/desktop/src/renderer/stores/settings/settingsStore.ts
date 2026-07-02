@@ -195,6 +195,16 @@ export const useSettingsStore = create<SettingsStore>()(
       name: 'readied-settings',
       version: SETTINGS_VERSION,
       migrate: migrateSettings,
+      // SECURITY: never persist the AI API key to localStorage. The key is
+      // stored encrypted via Electron safeStorage (OS keychain) and rehydrated
+      // into memory on demand (see AiPanel/AiSection). Writing it here would
+      // leave it in cleartext on disk, defeating safeStorage.
+      partialize: state => ({
+        settings: {
+          ...state.settings,
+          ai: { ...state.settings.ai, apiKey: '' },
+        },
+      }),
     }
   )
 );
@@ -264,7 +274,14 @@ if (typeof window !== 'undefined' && window.readied?.settings) {
   let prevSettings = useSettingsStore.getState().settings;
   useSettingsStore.subscribe(state => {
     if (!isRemoteUpdate && state.settings !== prevSettings) {
-      window.readied.settings.broadcast(state.settings as unknown as Record<string, unknown>);
+      // SECURITY: strip the API key before broadcasting across windows. Each
+      // window rehydrates the key from safeStorage on its own; it must never
+      // travel over the cross-window IPC channel in cleartext.
+      const safeSettings = {
+        ...state.settings,
+        ai: { ...state.settings.ai, apiKey: '' },
+      };
+      window.readied.settings.broadcast(safeSettings as unknown as Record<string, unknown>);
     }
     prevSettings = state.settings;
   });
