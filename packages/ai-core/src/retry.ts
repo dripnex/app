@@ -33,7 +33,7 @@ export function classifyError(err: unknown): LLMErrorCode {
     const msg = err.message.toLowerCase();
     if (msg.includes('429') || msg.includes('rate limit') || msg.includes('rate_limit'))
       return 'rate_limit';
-    if (msg.includes('401') || msg.includes('unauthorized') || /invalid.*key/.test(msg))
+    if (msg.includes('401') || msg.includes('unauthorized') || /invalid.{0,80}key/.test(msg))
       return 'auth_failed';
     if (msg.includes('context') || msg.includes('too long') || msg.includes('too many tokens'))
       return 'context_overflow';

@@ -4,6 +4,17 @@ import type { LLMEvent, ChatOptions, MessageContent, ContentPart } from '../type
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
 
+/**
+ * Strip trailing slashes without a regex. `String.replace(/\/+$/, '')` is
+ * flagged as polynomial ReDoS (js/polynomial-redos) because baseUrl is
+ * config-controlled; a linear scan is backtracking-free.
+ */
+function stripTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url.charCodeAt(end - 1) === 47 /* '/' */) end--;
+  return url.slice(0, end);
+}
+
 function normalizeContent(content: MessageContent): string {
   if (typeof content === 'string') return content;
   return content
@@ -57,7 +68,7 @@ export class OllamaProvider implements LLMProvider {
 
   async *chat(options: ChatOptions, config: ProviderConfig): AsyncIterable<LLMEvent> {
     const { model, system, messages, maxTokens, signal, tools } = options;
-    const baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    const baseUrl = stripTrailingSlashes(config.baseUrl ?? DEFAULT_BASE_URL);
 
     // Build Ollama message format
     const ollamaMessages: Array<Record<string, unknown>> = [];
@@ -271,7 +282,7 @@ export class OllamaProvider implements LLMProvider {
   }
 
   async validate(config: ProviderConfig): Promise<{ ok: boolean; error?: string }> {
-    const baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    const baseUrl = stripTrailingSlashes(config.baseUrl ?? DEFAULT_BASE_URL);
 
     try {
       const response = await this.fetchFn(`${baseUrl}/api/tags`, {
@@ -304,7 +315,7 @@ export class OllamaProvider implements LLMProvider {
   }
 
   async listModels(config: ProviderConfig): Promise<ModelInfo[]> {
-    const baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
+    const baseUrl = stripTrailingSlashes(config.baseUrl ?? DEFAULT_BASE_URL);
 
     try {
       const response = await this.fetchFn(`${baseUrl}/api/tags`, {

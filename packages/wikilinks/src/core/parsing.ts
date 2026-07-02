@@ -16,7 +16,11 @@ import type { WikilinkRef } from './types.js';
  *
  * Groups: [1]=target, [2]=anchor (optional), [3]=display (optional)
  */
-const WIKILINK_PATTERN = /\[\[([^[\]|#]+)(?:#([^[\]|]+))?(?:\|([^\]]+))?\]\]/g;
+// Segment lengths are bounded ({1,200}) to prevent polynomial-time backtracking
+// (ReDoS, js/polynomial-redos): the three adjacent quantifiers over overlapping
+// character classes could otherwise blow up on crafted note content. A wikilink
+// target/anchor/display longer than 200 chars is not a real case.
+const WIKILINK_PATTERN = /\[\[([^[\]|#]{1,200})(?:#([^[\]|]{1,200}))?(?:\|([^\]]{1,200}))?\]\]/g;
 
 /**
  * Extract all wikilinks from markdown content.
