@@ -28,8 +28,11 @@ export const PlanningColumn = memo(function PlanningColumn({
 }: PlanningColumnProps) {
   const [isOver, setIsOver] = useState(false);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (!e.dataTransfer.types.includes(NOTE_MIME)) return;
+  // A card carries either our custom MIME or (as a fallback) text/plain. Some
+  // Chromium/Electron builds don't enumerate custom types in `types` during
+  // dragover, so we must not gate preventDefault() on that check — otherwise the
+  // drop event never fires. We allow the drop and only read the id on drop.
+  const allowDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setIsOver(true);
@@ -46,6 +49,9 @@ export const PlanningColumn = memo(function PlanningColumn({
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsOver(false);
+      // getData reads custom types reliably on drop (the enumeration quirk only
+      // affects dragover). Reading our MIME avoids acting on notebook drags,
+      // which also set text/plain.
       const noteId = e.dataTransfer.getData(NOTE_MIME);
       if (noteId) onDropNote(noteId, stage);
     },
@@ -55,7 +61,8 @@ export const PlanningColumn = memo(function PlanningColumn({
   return (
     <section
       className={`planning-column ${isOver ? 'planning-column--over' : ''}`}
-      onDragOver={handleDragOver}
+      onDragEnter={allowDrop}
+      onDragOver={allowDrop}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       aria-label={BOARD_STAGE_LABELS[stage]}
