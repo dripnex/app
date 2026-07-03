@@ -161,33 +161,20 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      # e2e launches the REAL Electron app, so it needs Electron's runtime binary
+      # and better-sqlite3 rebuilt for Electron. The shared `setup` cache is
+      # installed with --ignore-scripts (no binary) and restoring it makes a
+      # later install a no-op, so this job does its own full install WITH scripts
+      # (fresh node_modules → electron's install.js downloads the binary,
+      # desktop postinstall runs electron-builder install-app-deps).
+      - name: Install dependencies (with postinstall scripts)
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright system deps
         working-directory: apps/desktop
         run: npx playwright install-deps chromium
-
-      # The `setup` job installs with --ignore-scripts, so Electron's postinstall
-      # (which downloads the runtime binary) and the desktop postinstall
-      # (electron-builder install-app-deps → better-sqlite3 rebuilt for Electron)
-      # never ran. e2e launches the real Electron app, so complete the install
-      # here — otherwise electron.launch fails with "Electron failed to install".
-      # `pnpm install` re-runs the desktop postinstall (native rebuild) but NOT
-      # electron's own install script (already "installed"), so the runtime
-      # binary is still missing; `pnpm rebuild electron` force-runs it to fetch
-      # the binary.
-      - name: Complete install for Electron (binary + native modules)
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm rebuild electron
 
       - name: Build desktop bundle
         run: pnpm --filter @dripnex/desktop build
