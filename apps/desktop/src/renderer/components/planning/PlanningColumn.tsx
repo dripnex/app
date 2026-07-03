@@ -91,24 +91,25 @@ export const PlanningColumn = memo(function PlanningColumn({
         </button>
       </header>
       <div className="planning-column__cards">
-        {notes.length === 0 ? (
-          <button type="button" className="planning-column__empty" onClick={() => onAddCard(stage)}>
-            <Plus size={14} /> Add a card
-          </button>
-        ) : (
-          notes.map(note => (
-            <PlanningCard
-              key={note.id}
-              note={note}
-              onOpen={onOpenNote}
-              onMoveStage={onMoveStage}
-              onSetPriority={onSetPriority}
-              onRemoveFromBoard={onRemoveFromBoard}
-              onDelete={onDeleteNote}
-              onDropCard={handleDropCard}
-            />
-          ))
-        )}
+        {notes.map(note => (
+          <PlanningCard
+            key={note.id}
+            note={note}
+            onOpen={onOpenNote}
+            onMoveStage={onMoveStage}
+            onSetPriority={onSetPriority}
+            onRemoveFromBoard={onRemoveFromBoard}
+            onDelete={onDeleteNote}
+            onDropCard={handleDropCard}
+          />
+        ))}
+        <button
+          type="button"
+          className="planning-column__add-card"
+          onClick={() => onAddCard(stage)}
+        >
+          <Plus size={14} /> Add card
+        </button>
       </div>
     </section>
   );
