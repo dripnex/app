@@ -2,18 +2,25 @@ name: Auto-merge
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
+  # Owner PRs are auto-merged ONLY when explicitly opted in with the `automerge`
+  # label. This prevents PRs from merging before review (e.g. before CodeRabbit
+  # comments are resolved) and prevents stacked PRs targeting an unprotected
+  # feature branch from merging the instant CI passes. Add the label when the PR
+  # is actually ready to merge; don't add it (or remove it) to hold.
   automerge-owner:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'tomymaritano'
+    if: >-
+      github.event.pull_request.user.login == 'tomymaritano' &&
+      contains(github.event.pull_request.labels.*.name, 'automerge')
     steps:
-      - name: Enable auto-merge for owner PRs
+      - name: Enable auto-merge for opted-in owner PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
