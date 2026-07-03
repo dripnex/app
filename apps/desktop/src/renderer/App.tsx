@@ -553,34 +553,40 @@ function NotesApp() {
               aria-orientation="vertical"
             />
 
-            <section className="app__notelist" style={{ width: notelistWidth }}>
-              <NoteList
-                notes={displayedNotes}
-                selectedId={selectedNote?.id ?? null}
-                selectedNotebookId={selectedNotebookId}
-                selectedTag={selectedTag}
-                selectedQuickFilter={selectedQuickFilter}
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSelect={handleSelectNote}
-                onDelete={handleDeleteNote}
-                onArchive={handleArchiveNote}
-                onDuplicate={handleDuplicateNote}
-                onPin={handlePinNote}
-                onMove={handleMoveNote}
-                onSearch={handleSearch}
-                onNewNote={handleNewNote}
-                onSortChange={setSort}
-                onTagClick={goToTag}
-                isLoading={isLoading}
-              />
-            </section>
-            <div
-              className="resize-handle"
-              onMouseDown={startResizeNotelist}
-              role="separator"
-              aria-orientation="vertical"
-            />
+            {/* The note list is redundant on the Planning board (the board owns
+                its own notes), so hide it there and let the board fill the pane. */}
+            {navigation.kind !== 'planning' && (
+              <>
+                <section className="app__notelist" style={{ width: notelistWidth }}>
+                  <NoteList
+                    notes={displayedNotes}
+                    selectedId={selectedNote?.id ?? null}
+                    selectedNotebookId={selectedNotebookId}
+                    selectedTag={selectedTag}
+                    selectedQuickFilter={selectedQuickFilter}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSelect={handleSelectNote}
+                    onDelete={handleDeleteNote}
+                    onArchive={handleArchiveNote}
+                    onDuplicate={handleDuplicateNote}
+                    onPin={handlePinNote}
+                    onMove={handleMoveNote}
+                    onSearch={handleSearch}
+                    onNewNote={handleNewNote}
+                    onSortChange={setSort}
+                    onTagClick={goToTag}
+                    isLoading={isLoading}
+                  />
+                </section>
+                <div
+                  className="resize-handle"
+                  onMouseDown={startResizeNotelist}
+                  role="separator"
+                  aria-orientation="vertical"
+                />
+              </>
+            )}
 
             <main className="app__editor">
               {navigation.kind === 'planning' ? (
