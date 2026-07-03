@@ -592,6 +592,7 @@ function NotesApp() {
               {navigation.kind === 'planning' ? (
                 <PlanningBoard
                   onOpenNote={noteId => {
+                    setIsGraphOpen(false); // else the editor pane may render GraphView, not the note
                     goToNotebook(PLANNING_NOTEBOOK_ID);
                     void handleSelectNote(noteId);
                   }}

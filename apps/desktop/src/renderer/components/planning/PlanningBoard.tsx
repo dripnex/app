@@ -4,6 +4,7 @@ import { BOARD_STAGES, PLANNING_NOTEBOOK_ID, INBOX_NOTEBOOK_ID } from '@dripnex/
 import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
 import { useNotes, useNoteMutations } from '../../hooks/useNotes';
 import { GraphView } from '../GraphView';
+import { toast } from '../../ui/primitives';
 import { PlanningColumn } from './PlanningColumn';
 import { PlanningToolbar } from './PlanningToolbar';
 import { computeReorderedIds } from './reorder';
@@ -129,12 +130,18 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     setPriority.mutate({ id: noteId, priority });
   };
 
-  const handleRemoveFromBoard = (noteId: string) => {
+  const handleRemoveFromBoard = async (noteId: string) => {
     // Board membership is notebook-based, so removing = moving the note out of
     // the Planning notebook (nulling the stage alone would just re-group it into
-    // Backlog). Also clear the stage so it isn't stale if moved back later.
-    setBoardStage.mutate({ id: noteId, boardStage: null });
-    moveNote.mutate({ noteId, notebookId: INBOX_NOTEBOOK_ID });
+    // Backlog). Sequence the two writes: move first (the authoritative removal),
+    // then clear the now-irrelevant stage, so a failure can't leave the note
+    // both cleared and still on the board.
+    try {
+      await moveNote.mutateAsync({ noteId, notebookId: INBOX_NOTEBOOK_ID });
+      await setBoardStage.mutateAsync({ id: noteId, boardStage: null });
+    } catch {
+      toast.error('Could not remove the card from the board');
+    }
   };
 
   const handleDeleteNote = (noteId: string) => {
@@ -144,14 +151,20 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
   const handleAddCard = async (stage: BoardStage) => {
     // Create an empty note in the Planning notebook (defaults to Backlog), move
     // it to the requested column, then open it so the user can start typing.
-    const created = await createNote.mutateAsync({
-      content: '',
-      notebookId: PLANNING_NOTEBOOK_ID,
-    });
-    if (stage !== 'backlog') {
-      await setBoardStage.mutateAsync({ id: created.id, boardStage: stage });
+    // Errors are handled here so the async call sites (column "+" buttons) stay
+    // safe fire-and-forget without leaking unhandled rejections.
+    try {
+      const created = await createNote.mutateAsync({
+        content: '',
+        notebookId: PLANNING_NOTEBOOK_ID,
+      });
+      if (stage !== 'backlog') {
+        await setBoardStage.mutateAsync({ id: created.id, boardStage: stage });
+      }
+      onOpenNote(created.id);
+    } catch {
+      toast.error('Could not add a card');
     }
-    onOpenNote(created.id);
   };
 
   return (

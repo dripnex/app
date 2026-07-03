@@ -148,19 +148,22 @@ describe('SQLiteNoteRepository', () => {
       expect(ro!.boardStage).toBeNull();
     });
 
-    it('does not modify note content (markdown is sacred)', async () => {
+    it('does not modify note content or updatedAt (markdown is sacred)', async () => {
       const note = createNote({
         id: createNoteId('c'),
         content: '# Keep me\n\nbody',
         notebookId: PLANNING_NOTEBOOK_ID,
       });
       await repository.save(note);
+      const before = await repository.get(note.id);
 
       repository.reorderBoard('in_progress', ['c']);
 
       const r = await repository.get(note.id);
       expect(r!.content).toBe('# Keep me\n\nbody');
       expect(r!.boardStage).toBe('in_progress');
+      // Reordering is metadata-only; it must not touch content-derived timestamps.
+      expect(r!.metadata.updatedAt).toBe(before!.metadata.updatedAt);
     });
   });
 

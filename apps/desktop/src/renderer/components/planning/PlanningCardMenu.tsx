@@ -91,7 +91,10 @@ export function PlanningCardMenu({
             role="menuitem"
             className="planning-card__menu-item"
             aria-expanded={showMove}
-            onClick={() => setShowMove(s => !s)}
+            onClick={() => {
+              setShowMove(s => !s);
+              setShowPriority(false);
+            }}
           >
             <ArrowRightLeft size={13} /> Move to…
           </button>
@@ -120,7 +123,10 @@ export function PlanningCardMenu({
             role="menuitem"
             className="planning-card__menu-item"
             aria-expanded={showPriority}
-            onClick={() => setShowPriority(s => !s)}
+            onClick={() => {
+              setShowPriority(s => !s);
+              setShowMove(false);
+            }}
           >
             <Flag size={13} /> Priority…
           </button>

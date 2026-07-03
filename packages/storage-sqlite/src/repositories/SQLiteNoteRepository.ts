@@ -123,11 +123,14 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
    * board metadata can only ever land on Planning-notebook notes.
    */
   reorderBoard(stage: BoardStage, orderedIds: readonly string[]): void {
+    // Dedupe defensively: duplicate ids would otherwise assign the same note
+    // two positions (last wins) and leave a gap in the sequence.
+    const uniqueIds = [...new Set(orderedIds)];
     const update = this.db.prepare(
       'UPDATE notes SET board_stage = ?, board_order = ? WHERE id = ? AND notebook_id = ?'
     );
     this.db.transaction(() => {
-      orderedIds.forEach((id, index) => {
+      uniqueIds.forEach((id, index) => {
         update.run(stage, index, id, PLANNING_NOTEBOOK_ID);
       });
     });

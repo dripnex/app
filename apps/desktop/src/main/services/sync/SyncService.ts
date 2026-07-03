@@ -14,6 +14,7 @@ import {
   createNotebookId,
   createNotebook,
   createTimestamp,
+  DEFAULT_NOTE_PRIORITY,
   type NoteStatus,
 } from '@dripnex/core';
 import type {
@@ -897,7 +898,7 @@ export class SyncService {
             isDeleted: false,
             status: 'active' as NoteStatus,
             boardStage: null, // Synced notes default to inbox, not on the board
-            priority: 'none',
+            priority: DEFAULT_NOTE_PRIORITY,
             boardOrder: 0,
             metadata: {
               title: newTitle,

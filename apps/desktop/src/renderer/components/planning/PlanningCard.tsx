@@ -99,7 +99,12 @@ export const PlanningCard = memo(function PlanningCard({
       // the menu button doesn't also open the note.
       onClick={() => onOpen(note.id)}
       onKeyDown={e => {
-        if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(note.id);
+        // Enter/Space open the card, but only when the card itself is focused
+        // (not a nested control like the menu button).
+        if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+          e.preventDefault();
+          onOpen(note.id);
+        }
       }}
       tabIndex={0}
       aria-label={`Open note: ${note.title || 'Untitled'}`}
@@ -119,7 +124,7 @@ export const PlanningCard = memo(function PlanningCard({
           currentPriority={priority}
           onOpen={() => onOpen(note.id)}
           onMoveStage={stage => onMoveStage(note.id, stage)}
-          onSetPriority={priority => onSetPriority(note.id, priority)}
+          onSetPriority={p => onSetPriority(note.id, p)}
           onRemoveFromBoard={() => onRemoveFromBoard(note.id)}
           onDelete={() => onDelete(note.id)}
         />
