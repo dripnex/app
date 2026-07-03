@@ -3,18 +3,21 @@ import {
   MoreHorizontal,
   SquareArrowOutUpRight,
   ArrowRightLeft,
+  Flag,
   EyeOff,
   Trash2,
   Check,
 } from 'lucide-react';
 import { BOARD_STAGES } from '@dripnex/core';
-import type { BoardStage } from '../../../preload/index';
-import { BOARD_STAGE_LABELS } from './constants';
+import type { BoardStage, NotePriority } from '../../../preload/index';
+import { BOARD_STAGE_LABELS, PRIORITY_ORDER, PRIORITY_CONFIG } from './constants';
 
 interface PlanningCardMenuProps {
   readonly currentStage: BoardStage;
+  readonly currentPriority: NotePriority;
   readonly onOpen: () => void;
   readonly onMoveStage: (stage: BoardStage) => void;
+  readonly onSetPriority: (priority: NotePriority) => void;
   readonly onRemoveFromBoard: () => void;
   readonly onDelete: () => void;
 }
@@ -22,13 +25,16 @@ interface PlanningCardMenuProps {
 /** The "…" actions menu on a Planning card. */
 export function PlanningCardMenu({
   currentStage,
+  currentPriority,
   onOpen,
   onMoveStage,
+  onSetPriority,
   onRemoveFromBoard,
   onDelete,
 }: PlanningCardMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showMove, setShowMove] = useState(false);
+  const [showPriority, setShowPriority] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +43,7 @@ export function PlanningCardMenu({
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
         setShowMove(false);
+        setShowPriority(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -46,6 +53,7 @@ export function PlanningCardMenu({
   const close = useCallback(() => {
     setIsOpen(false);
     setShowMove(false);
+    setShowPriority(false);
   }, []);
 
   // Stop clicks from bubbling to the card (which would open the note or start a drag).
@@ -102,6 +110,42 @@ export function PlanningCardMenu({
                 >
                   <span>{BOARD_STAGE_LABELS[stage]}</span>
                   {stage === currentStage && <Check size={12} />}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            role="menuitem"
+            className="planning-card__menu-item"
+            aria-expanded={showPriority}
+            onClick={() => setShowPriority(s => !s)}
+          >
+            <Flag size={13} /> Priority…
+          </button>
+          {showPriority && (
+            <div className="planning-card__submenu" role="menu">
+              {PRIORITY_ORDER.map(priority => (
+                <button
+                  key={priority}
+                  type="button"
+                  role="menuitem"
+                  className={`planning-card__menu-item ${priority === currentPriority ? 'is-current' : ''}`}
+                  onClick={() => {
+                    if (priority !== currentPriority) onSetPriority(priority);
+                    close();
+                  }}
+                >
+                  <span className="planning-card__menu-swatch-wrap">
+                    <span
+                      className="planning-card__menu-swatch"
+                      style={{ backgroundColor: PRIORITY_CONFIG[priority].color }}
+                      aria-hidden="true"
+                    />
+                    {PRIORITY_CONFIG[priority].label}
+                  </span>
+                  {priority === currentPriority && <Check size={12} />}
                 </button>
               ))}
             </div>

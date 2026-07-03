@@ -27,6 +27,7 @@ export type NoteToSnapshotFn = (note: {
   isDeleted: boolean;
   status: import('@dripnex/core').NoteStatus;
   boardStage: import('@dripnex/core').BoardStage | null;
+  priority: import('@dripnex/core').NotePriority;
   metadata: {
     createdAt: string;
     updatedAt: string;
@@ -49,6 +50,7 @@ export type NoteToSnapshotFn = (note: {
   isDeleted: boolean;
   status: import('@dripnex/core').NoteStatus;
   boardStage: import('@dripnex/core').BoardStage | null;
+  priority: import('@dripnex/core').NotePriority;
 };
 
 export type {

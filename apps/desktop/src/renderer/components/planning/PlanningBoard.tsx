@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { KanbanSquare, Network } from 'lucide-react';
 import { BOARD_STAGES, PLANNING_NOTEBOOK_ID } from '@dripnex/core';
-import type { NoteSnapshot, BoardStage } from '../../../preload/index';
+import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
 import { useNotes, useNoteMutations } from '../../hooks/useNotes';
 import { GraphView } from '../GraphView';
 import { PlanningColumn } from './PlanningColumn';
@@ -27,7 +27,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     sortOrder: 'desc',
     archived: 'active',
   });
-  const { setBoardStage, createNote, softDeleteNote } = useNoteMutations();
+  const { setBoardStage, setPriority, createNote, softDeleteNote } = useNoteMutations();
 
   const planningNotes = useMemo(
     () =>
@@ -55,6 +55,10 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
 
   const handleDropNote = (noteId: string, stage: BoardStage) => {
     setBoardStage.mutate({ id: noteId, boardStage: stage });
+  };
+
+  const handleSetPriority = (noteId: string, priority: NotePriority) => {
+    setPriority.mutate({ id: noteId, priority });
   };
 
   const handleRemoveFromBoard = (noteId: string) => {
@@ -115,6 +119,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
               onAddCard={handleAddCard}
               onOpenNote={onOpenNote}
               onMoveStage={handleDropNote}
+              onSetPriority={handleSetPriority}
               onRemoveFromBoard={handleRemoveFromBoard}
               onDeleteNote={handleDeleteNote}
             />

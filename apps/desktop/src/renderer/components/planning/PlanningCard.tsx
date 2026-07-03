@@ -1,15 +1,16 @@
 import { memo, useCallback } from 'react';
 import { countMarkdownTasks } from '@dripnex/tasks';
-import type { NoteSnapshot, BoardStage } from '../../../preload/index';
+import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
 import { extractExcerpt } from '../../hooks/useNotes';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
-import { NOTE_MIME } from './constants';
+import { NOTE_MIME, PRIORITY_CONFIG } from './constants';
 import { PlanningCardMenu } from './PlanningCardMenu';
 
 interface PlanningCardProps {
   readonly note: NoteSnapshot;
   readonly onOpen: (id: string) => void;
   readonly onMoveStage: (id: string, stage: BoardStage) => void;
+  readonly onSetPriority: (id: string, priority: NotePriority) => void;
   readonly onRemoveFromBoard: (id: string) => void;
   readonly onDelete: (id: string) => void;
 }
@@ -28,6 +29,7 @@ export const PlanningCard = memo(function PlanningCard({
   note,
   onOpen,
   onMoveStage,
+  onSetPriority,
   onRemoveFromBoard,
   onDelete,
 }: PlanningCardProps) {
@@ -59,11 +61,21 @@ export const PlanningCard = memo(function PlanningCard({
       tabIndex={0}
     >
       <div className="planning-card__top">
+        {note.priority !== 'none' && (
+          <span
+            className="planning-card__priority"
+            style={{ backgroundColor: PRIORITY_CONFIG[note.priority].color }}
+            title={`Priority: ${PRIORITY_CONFIG[note.priority].label}`}
+            aria-label={`Priority: ${PRIORITY_CONFIG[note.priority].label}`}
+          />
+        )}
         <h4 className="planning-card__title">{note.title || 'Untitled'}</h4>
         <PlanningCardMenu
           currentStage={currentStage}
+          currentPriority={note.priority}
           onOpen={() => onOpen(note.id)}
           onMoveStage={stage => onMoveStage(note.id, stage)}
+          onSetPriority={priority => onSetPriority(note.id, priority)}
           onRemoveFromBoard={() => onRemoveFromBoard(note.id)}
           onDelete={() => onDelete(note.id)}
         />

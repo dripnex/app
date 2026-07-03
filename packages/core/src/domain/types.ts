@@ -84,3 +84,12 @@ export type BoardStage = (typeof BOARD_STAGES)[number];
 
 /** Default stage for a note that enters the board */
 export const DEFAULT_BOARD_STAGE: BoardStage = 'backlog';
+
+/** All valid note priorities, low→high (single source of truth) */
+export const NOTE_PRIORITIES = ['none', 'low', 'medium', 'high', 'urgent'] as const;
+
+/** Priority of a note (Linear-style), used to sort/flag work on the board */
+export type NotePriority = (typeof NOTE_PRIORITIES)[number];
+
+/** Default priority for new notes */
+export const DEFAULT_NOTE_PRIORITY: NotePriority = 'none';

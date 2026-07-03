@@ -24,9 +24,12 @@ import {
   restoreDeletedNote,
   setNoteStatus,
   setBoardStage,
+  setNotePriority,
   BOARD_STAGES,
+  NOTE_PRIORITIES,
   type NoteStatus,
   type BoardStage,
+  type NotePriority,
 } from '@dripnex/core';
 import { createNoteId, createNotebookId, createTag } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
@@ -44,6 +47,7 @@ const ContentSchema = z.string().max(10 * 1024 * 1024); // 10 MiB cap on note co
 const TagSchema = z.string().min(1).max(64);
 const StatusSchema: z.ZodType<NoteStatus> = z.enum(['active', 'on_hold', 'completed', 'dropped']);
 const BoardStageSchema: z.ZodType<BoardStage | null> = z.enum(BOARD_STAGES).nullable();
+const PrioritySchema: z.ZodType<NotePriority> = z.enum(NOTE_PRIORITIES);
 
 export function registerNoteHandlers(deps: NoteHandlerDeps): void {
   const { noteRepository: repo, dataPaths, noteToSnapshot } = deps;
@@ -187,6 +191,18 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
       const note = await repo.get(createNoteId(id));
       if (!note) return { ok: false, error: { type: 'NOT_FOUND', id } };
       const updatedNote = setBoardStage(note, boardStage);
+      await repo.save(updatedNote);
+      return { ok: true, data: noteToSnapshot(updatedNote) };
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'notes:setPriority',
+    args: z.tuple([IdSchema, PrioritySchema]),
+    handler: async (id, priority) => {
+      const note = await repo.get(createNoteId(id));
+      if (!note) return { ok: false, error: { type: 'NOT_FOUND', id } };
+      const updatedNote = setNotePriority(note, priority);
       await repo.save(updatedNote);
       return { ok: true, data: noteToSnapshot(updatedNote) };
     },

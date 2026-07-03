@@ -10,12 +10,14 @@ import {
   type Note,
   type NoteStatus,
   type BoardStage,
+  type NotePriority,
   type Tag,
   type Timestamp,
   createNote,
   createNoteId,
   createNotebookId,
   DEFAULT_NOTE_STATUS,
+  DEFAULT_NOTE_PRIORITY,
 } from '@dripnex/core';
 import type { ArchivedFilter } from '@dripnex/storage-core';
 
@@ -33,6 +35,7 @@ export interface NoteRow {
   is_deleted: number;
   status: string;
   board_stage: string | null;
+  priority: string | null;
 }
 
 /** Row shape for tag joins (just the tag name) */
@@ -81,6 +84,7 @@ export function rowToNote(row: NoteRow, tags: Tag[]): Note {
     isDeleted: row.is_deleted === 1,
     status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
     boardStage: (row.board_stage as BoardStage | null) ?? null,
+    priority: (row.priority as NotePriority) || DEFAULT_NOTE_PRIORITY,
     metadata: {
       ...note.metadata,
       title: row.title,

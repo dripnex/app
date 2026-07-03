@@ -16,6 +16,9 @@ export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
 /** Kanban board stage for planning notes (null = not on the board) */
 export type BoardStage = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'in_staging';
 
+/** Linear-style priority for a note */
+export type NotePriority = 'none' | 'low' | 'medium' | 'high' | 'urgent';
+
 /** Note snapshot from the API */
 export interface NoteSnapshot {
   id: string;
@@ -32,6 +35,7 @@ export interface NoteSnapshot {
   isDeleted: boolean;
   status: NoteStatus;
   boardStage: BoardStage | null;
+  priority: NotePriority;
 }
 
 /** Notebook snapshot from the API */

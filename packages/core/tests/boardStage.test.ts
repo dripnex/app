@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createNote, setBoardStage } from '../src/domain/note.js';
+import { createNote, setBoardStage, setNotePriority } from '../src/domain/note.js';
 import {
   createInboxNotebook,
   createPlanningNotebook,
@@ -57,6 +57,26 @@ describe('Board stage (Kanban)', () => {
       const note = createNote({ content: '# Task', notebookId: PLANNING_NOTEBOOK_ID });
       expect(toSnapshot(note).boardStage).toBe('backlog');
     });
+  });
+});
+
+describe('Note priority', () => {
+  it("defaults to 'none'", () => {
+    expect(createNote({ content: '# Task' }).priority).toBe('none');
+  });
+
+  it('setNotePriority changes only the priority and preserves content/updatedAt', () => {
+    const original = createNote({ content: '# Task' });
+    const updated = setNotePriority(original, 'urgent');
+
+    expect(updated.priority).toBe('urgent');
+    expect(updated.content).toBe(original.content);
+    expect(updated.metadata.updatedAt).toBe(original.metadata.updatedAt);
+  });
+
+  it('is included in the snapshot', () => {
+    const note = setNotePriority(createNote({ content: '# Task' }), 'high');
+    expect(toSnapshot(note).priority).toBe('high');
   });
 });
 

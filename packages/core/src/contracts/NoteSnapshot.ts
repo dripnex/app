@@ -5,7 +5,14 @@
  */
 
 import type { Note } from '../domain/note.js';
-import type { NoteId, Tag, Timestamp, NoteStatus, BoardStage } from '../domain/types.js';
+import type {
+  NoteId,
+  Tag,
+  Timestamp,
+  NoteStatus,
+  BoardStage,
+  NotePriority,
+} from '../domain/types.js';
 
 /** A read-only snapshot of a note for the UI */
 export interface NoteSnapshot {
@@ -23,6 +30,7 @@ export interface NoteSnapshot {
   readonly isDeleted: boolean;
   readonly status: NoteStatus;
   readonly boardStage: BoardStage | null;
+  readonly priority: NotePriority;
 }
 
 /** Converts a Note entity to a NoteSnapshot */
@@ -42,6 +50,7 @@ export function toSnapshot(note: Note): NoteSnapshot {
     isDeleted: note.isDeleted,
     status: note.status,
     boardStage: note.boardStage,
+    priority: note.priority,
   };
 }
 
@@ -62,6 +71,7 @@ export interface NoteSummary {
   readonly isDeleted: boolean;
   readonly status: NoteStatus;
   readonly boardStage: BoardStage | null;
+  readonly priority: NotePriority;
 }
 
 /** Converts a Note to a NoteSummary */
@@ -86,5 +96,6 @@ export function toSummary(note: Note, excerptLength: number = 200): NoteSummary 
     isDeleted: note.isDeleted,
     status: note.status,
     boardStage: note.boardStage,
+    priority: note.priority,
   };
 }

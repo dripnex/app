@@ -1,6 +1,6 @@
 import { memo, useCallback, useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { NoteSnapshot, BoardStage } from '../../../preload/index';
+import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
 import { PlanningCard } from './PlanningCard';
 import { NOTE_MIME, BOARD_STAGE_LABELS } from './constants';
 
@@ -11,6 +11,7 @@ interface PlanningColumnProps {
   readonly onAddCard: (stage: BoardStage) => void;
   readonly onOpenNote: (id: string) => void;
   readonly onMoveStage: (id: string, stage: BoardStage) => void;
+  readonly onSetPriority: (id: string, priority: NotePriority) => void;
   readonly onRemoveFromBoard: (id: string) => void;
   readonly onDeleteNote: (id: string) => void;
 }
@@ -23,6 +24,7 @@ export const PlanningColumn = memo(function PlanningColumn({
   onAddCard,
   onOpenNote,
   onMoveStage,
+  onSetPriority,
   onRemoveFromBoard,
   onDeleteNote,
 }: PlanningColumnProps) {
@@ -92,6 +94,7 @@ export const PlanningColumn = memo(function PlanningColumn({
               note={note}
               onOpen={onOpenNote}
               onMoveStage={onMoveStage}
+              onSetPriority={onSetPriority}
               onRemoveFromBoard={onRemoveFromBoard}
               onDelete={onDeleteNote}
             />

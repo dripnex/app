@@ -66,6 +66,7 @@ export type {
   Result,
   NoteStatus,
   BoardStage,
+  NotePriority,
   NoteSnapshot,
   NotebookSnapshot,
   NotebookWithMetadata,

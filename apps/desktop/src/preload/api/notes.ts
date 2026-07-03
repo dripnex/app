@@ -4,6 +4,7 @@ import type {
   NoteSnapshot,
   NoteStatus,
   BoardStage,
+  NotePriority,
   ListOptions,
   NoteCounts,
   TagWithColor,
@@ -31,6 +32,7 @@ export interface NotesAPI {
   restoreDeleted: (id: string) => Promise<Result<NoteSnapshot>>;
   setStatus: (id: string, status: NoteStatus) => Promise<Result<NoteSnapshot>>;
   setBoardStage: (id: string, boardStage: BoardStage | null) => Promise<Result<NoteSnapshot>>;
+  setPriority: (id: string, priority: NotePriority) => Promise<Result<NoteSnapshot>>;
   list: (options?: ListOptions) => Promise<NoteSnapshot[]>;
   search: (query: string, limit?: number) => Promise<NoteSnapshot[]>;
   tags: () => Promise<string[]>;
@@ -61,6 +63,7 @@ export function createNotesApi(): NotesAPI {
     restoreDeleted: id => ipcRenderer.invoke('notes:restoreDeleted', id),
     setStatus: (id, status) => ipcRenderer.invoke('notes:setStatus', id, status),
     setBoardStage: (id, boardStage) => ipcRenderer.invoke('notes:setBoardStage', id, boardStage),
+    setPriority: (id, priority) => ipcRenderer.invoke('notes:setPriority', id, priority),
     list: options => ipcRenderer.invoke('notes:list', options),
     search: (query, limit) => ipcRenderer.invoke('notes:search', query, limit),
     tags: () => ipcRenderer.invoke('notes:tags'),

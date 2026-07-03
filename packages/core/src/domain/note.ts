@@ -5,7 +5,15 @@
  * The Note entity wraps raw markdown with computed metadata
  */
 
-import type { NoteId, NotebookId, Tag, Timestamp, NoteStatus, BoardStage } from './types.js';
+import type {
+  NoteId,
+  NotebookId,
+  Tag,
+  Timestamp,
+  NoteStatus,
+  BoardStage,
+  NotePriority,
+} from './types.js';
 import {
   createTimestamp,
   generateNoteId,
@@ -13,6 +21,7 @@ import {
   PLANNING_NOTEBOOK_ID,
   DEFAULT_NOTE_STATUS,
   DEFAULT_BOARD_STAGE,
+  DEFAULT_NOTE_PRIORITY,
 } from './types.js';
 import { extractTitle, extractTags, countWords, type NoteMetadata } from './metadata.js';
 
@@ -44,6 +53,9 @@ export interface Note {
    * null means the note is not tracked on the board.
    */
   readonly boardStage: BoardStage | null;
+
+  /** Priority of the note (defaults to 'none') */
+  readonly priority: NotePriority;
 
   /** Computed metadata derived from content */
   readonly metadata: NoteMetadata;
@@ -80,6 +92,9 @@ export interface CreateNoteOptions {
    * Planning notebook, otherwise null.
    */
   boardStage?: BoardStage | null;
+
+  /** Priority (defaults to 'none') */
+  priority?: NotePriority;
 }
 
 /** Creates a new Note from markdown content */
@@ -110,6 +125,7 @@ export function createNote(options: CreateNoteOptions): Note {
     status: options.status ?? DEFAULT_NOTE_STATUS,
     boardStage:
       options.boardStage ?? (notebookId === PLANNING_NOTEBOOK_ID ? DEFAULT_BOARD_STAGE : null),
+    priority: options.priority ?? DEFAULT_NOTE_PRIORITY,
     metadata,
   };
 }
@@ -136,6 +152,7 @@ export function updateNoteContent(note: Note, newContent: string): Note {
     isDeleted: note.isDeleted,
     status: note.status,
     boardStage: note.boardStage,
+    priority: note.priority,
     metadata,
   };
 }
@@ -197,6 +214,7 @@ export function duplicateNote(note: Note): Note {
     isDeleted: false, // Duplicates are never in trash
     status: DEFAULT_NOTE_STATUS, // Reset status to active
     boardStage: note.boardStage, // Duplicate stays on the board in the same column
+    priority: note.priority,
     metadata: {
       ...note.metadata,
       title: duplicatedTitle,
@@ -297,6 +315,14 @@ export function setBoardStage(note: Note, boardStage: BoardStage | null): Note {
   return {
     ...note,
     boardStage,
+  };
+}
+
+/** Updates a note's priority (metadata-only, doesn't change updatedAt) */
+export function setNotePriority(note: Note, priority: NotePriority): Note {
+  return {
+    ...note,
+    priority,
   };
 }
 
