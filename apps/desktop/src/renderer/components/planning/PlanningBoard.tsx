@@ -52,7 +52,11 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<NotePriority | null>(null);
+  // Scope the query to the Planning notebook in SQL, with no artificial cap, so
+  // the board never silently drops aged/high-count cards (repo default is 50).
   const { data: allNotes } = useNotes({
+    notebookId: PLANNING_NOTEBOOK_ID,
+    limit: 100000,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
     archived: 'active',
