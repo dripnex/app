@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runMigrations } from '@dripnex/storage-core';
-import { createNote, createNoteId } from '@dripnex/core';
+import { createNote, createNoteId, setBoardStage, PLANNING_NOTEBOOK_ID } from '@dripnex/core';
 import { createInMemoryDatabase, type DatabaseConnection } from '../src/database.js';
 import { allMigrations } from '../src/migrations/index.js';
 import { SQLiteNoteRepository } from '../src/repositories/SQLiteNoteRepository.js';
@@ -57,6 +57,42 @@ describe('SQLiteNoteRepository', () => {
 
       const retrieved = await repository.get(note.id);
       expect(retrieved!.metadata.title).toBe('Updated Content');
+    });
+  });
+
+  describe('board stage (Kanban)', () => {
+    it('defaults to null for a regular note and round-trips through save/get', async () => {
+      const note = createNote({ id: createNoteId('board-1'), content: '# Task' });
+      expect(note.boardStage).toBeNull();
+
+      await repository.save(note);
+      const retrieved = await repository.get(note.id);
+      expect(retrieved!.boardStage).toBeNull();
+    });
+
+    it('persists an updated board stage', async () => {
+      const note = createNote({
+        id: createNoteId('board-2'),
+        content: '# Task',
+        notebookId: PLANNING_NOTEBOOK_ID,
+      });
+      await repository.save(note);
+
+      const moved = setBoardStage(note, 'in_progress');
+      await repository.save(moved);
+
+      const retrieved = await repository.get(note.id);
+      expect(retrieved!.boardStage).toBe('in_progress');
+      // Moving a card must not touch the markdown content
+      expect(retrieved!.content).toBe(note.content);
+    });
+
+    it('seeds the special Planning notebook (idempotent migration)', () => {
+      const row = db
+        .prepare('SELECT id, name FROM notebooks WHERE id = ?')
+        .get(PLANNING_NOTEBOOK_ID) as { id: string; name: string } | undefined;
+      expect(row).toBeDefined();
+      expect(row!.name).toBe('Planning');
     });
   });
 

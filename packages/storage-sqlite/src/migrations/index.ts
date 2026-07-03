@@ -20,6 +20,7 @@ import { pluginRegistry } from './014_plugin_registry.js';
 import { notebookSyncTracking } from './015_notebook_sync_tracking.js';
 import { tagSyncTracking } from './016_tag_sync_tracking.js';
 import { syncHistory } from './017_sync_history.js';
+import { addBoardStage } from './018_board_stage.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -40,6 +41,7 @@ export const allMigrations: Migration[] = [
   notebookSyncTracking,
   tagSyncTracking,
   syncHistory,
+  addBoardStage,
 ];
 
 export {
@@ -60,4 +62,5 @@ export {
   notebookSyncTracking,
   tagSyncTracking,
   syncHistory,
+  addBoardStage,
 };

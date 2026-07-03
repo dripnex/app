@@ -5,12 +5,14 @@
  * The Note entity wraps raw markdown with computed metadata
  */
 
-import type { NoteId, NotebookId, Tag, Timestamp, NoteStatus } from './types.js';
+import type { NoteId, NotebookId, Tag, Timestamp, NoteStatus, BoardStage } from './types.js';
 import {
   createTimestamp,
   generateNoteId,
   INBOX_NOTEBOOK_ID,
+  PLANNING_NOTEBOOK_ID,
   DEFAULT_NOTE_STATUS,
+  DEFAULT_BOARD_STAGE,
 } from './types.js';
 import { extractTitle, extractTags, countWords, type NoteMetadata } from './metadata.js';
 
@@ -36,6 +38,12 @@ export interface Note {
 
   /** Workflow status of the note */
   readonly status: NoteStatus;
+
+  /**
+   * Kanban board stage. Non-null only for notes on the Planning board;
+   * null means the note is not tracked on the board.
+   */
+  readonly boardStage: BoardStage | null;
 
   /** Computed metadata derived from content */
   readonly metadata: NoteMetadata;
@@ -66,6 +74,12 @@ export interface CreateNoteOptions {
 
   /** Workflow status (defaults to 'active') */
   status?: NoteStatus;
+
+  /**
+   * Kanban board stage. Defaults to 'backlog' when the note is created in the
+   * Planning notebook, otherwise null.
+   */
+  boardStage?: BoardStage | null;
 }
 
 /** Creates a new Note from markdown content */
@@ -84,14 +98,18 @@ export function createNote(options: CreateNoteOptions): Note {
     archivedAt: null,
   };
 
+  const notebookId = options.notebookId ?? INBOX_NOTEBOOK_ID;
+
   return {
     id: options.id ?? generateNoteId(),
-    notebookId: options.notebookId ?? INBOX_NOTEBOOK_ID,
+    notebookId,
     title,
     content: options.content,
     isPinned: options.isPinned ?? false,
     isDeleted: options.isDeleted ?? false,
     status: options.status ?? DEFAULT_NOTE_STATUS,
+    boardStage:
+      options.boardStage ?? (notebookId === PLANNING_NOTEBOOK_ID ? DEFAULT_BOARD_STAGE : null),
     metadata,
   };
 }
@@ -117,6 +135,7 @@ export function updateNoteContent(note: Note, newContent: string): Note {
     isPinned: note.isPinned,
     isDeleted: note.isDeleted,
     status: note.status,
+    boardStage: note.boardStage,
     metadata,
   };
 }
@@ -177,6 +196,7 @@ export function duplicateNote(note: Note): Note {
     isPinned: false, // Duplicates are never pinned
     isDeleted: false, // Duplicates are never in trash
     status: DEFAULT_NOTE_STATUS, // Reset status to active
+    boardStage: note.boardStage, // Duplicate stays on the board in the same column
     metadata: {
       ...note.metadata,
       title: duplicatedTitle,
@@ -266,6 +286,17 @@ export function setNoteStatus(note: Note, status: NoteStatus): Note {
   return {
     ...note,
     status,
+  };
+}
+
+/**
+ * Updates a note's Kanban board stage (metadata-only, doesn't change updatedAt).
+ * Pass null to remove the note from the board.
+ */
+export function setBoardStage(note: Note, boardStage: BoardStage | null): Note {
+  return {
+    ...note,
+    boardStage,
   };
 }
 

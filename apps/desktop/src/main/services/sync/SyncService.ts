@@ -896,6 +896,7 @@ export class SyncService {
             isPinned: false,
             isDeleted: false,
             status: 'active' as NoteStatus,
+            boardStage: null, // Synced notes default to inbox, not on the board
             metadata: {
               title: newTitle,
               createdAt: createTimestamp(new Date(change.createdAt)),

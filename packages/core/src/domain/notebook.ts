@@ -10,6 +10,7 @@ import {
   createTimestamp,
   generateNotebookId,
   INBOX_NOTEBOOK_ID,
+  PLANNING_NOTEBOOK_ID,
   MAX_NOTEBOOK_DEPTH,
 } from './types.js';
 
@@ -108,6 +109,21 @@ export function createInboxNotebook(): Notebook {
   };
 }
 
+/** Creates the special Planning notebook (backs the Kanban board) */
+export function createPlanningNotebook(): Notebook {
+  const now = createTimestamp();
+
+  return {
+    id: PLANNING_NOTEBOOK_ID,
+    name: 'Planning',
+    parentId: null,
+    depth: 0,
+    order: 1, // Right after Inbox
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 /** Renames a notebook */
 export function renameNotebook(notebook: Notebook, newName: string): Notebook {
   if (isInbox(notebook)) {
@@ -179,9 +195,14 @@ export function isInbox(notebook: Notebook): boolean {
   return notebook.id === INBOX_NOTEBOOK_ID;
 }
 
-/** Checks if a notebook can be deleted (Inbox cannot) */
+/** Checks if this is the special Planning notebook (backs the Kanban board) */
+export function isPlanning(notebook: Notebook): boolean {
+  return notebook.id === PLANNING_NOTEBOOK_ID;
+}
+
+/** Checks if a notebook can be deleted (Inbox and Planning cannot) */
 export function canDelete(notebook: Notebook): boolean {
-  return !isInbox(notebook);
+  return !isInbox(notebook) && !isPlanning(notebook);
 }
 
 /** Builds a tree structure from a flat list of notebooks */

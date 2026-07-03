@@ -31,7 +31,7 @@ import {
   SQLiteNoteRepository,
   SQLiteNotebookRepository,
 } from '@dripnex/storage-sqlite';
-import { createNoteId, createNoteOperation, type NoteStatus } from '@dripnex/core';
+import { createNoteId, createNoteOperation, type NoteStatus, type BoardStage } from '@dripnex/core';
 import { initLogger, getLogger, loggers } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
 import { AiKeyStorage } from './services/aiKeyStorage.js';
@@ -110,6 +110,7 @@ export function noteToSnapshot(note: {
   isPinned: boolean;
   isDeleted: boolean;
   status: NoteStatus;
+  boardStage: BoardStage | null;
   metadata: {
     createdAt: string;
     updatedAt: string;
@@ -132,6 +133,7 @@ export function noteToSnapshot(note: {
     isPinned: note.isPinned,
     isDeleted: note.isDeleted,
     status: note.status,
+    boardStage: note.boardStage,
   };
 }
 

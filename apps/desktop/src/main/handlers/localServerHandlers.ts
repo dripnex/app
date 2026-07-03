@@ -14,7 +14,7 @@ import {
   type LocalServerHandlers,
 } from '../services/localServer.js';
 import { defineIpcHandler } from '../ipc/registry.js';
-import type { SQLiteNoteRepository, DataPaths } from './types.js';
+import type { SQLiteNoteRepository, DataPaths, NoteToSnapshotFn } from './types.js';
 
 // ============================================================================
 // Types
@@ -23,36 +23,7 @@ import type { SQLiteNoteRepository, DataPaths } from './types.js';
 export interface LocalServerHandlerDeps {
   noteRepository: SQLiteNoteRepository;
   dataPaths: DataPaths;
-  noteToSnapshot: (note: {
-    id: string;
-    notebookId: string;
-    content: string;
-    title: string;
-    isPinned: boolean;
-    isDeleted: boolean;
-    status: import('@dripnex/core').NoteStatus;
-    metadata: {
-      createdAt: string;
-      updatedAt: string;
-      tags: readonly string[];
-      wordCount: number;
-      archivedAt: string | null;
-    };
-  }) => {
-    id: string;
-    notebookId: string;
-    content: string;
-    title: string;
-    createdAt: string;
-    updatedAt: string;
-    tags: string[];
-    wordCount: number;
-    archivedAt: string | null;
-    isArchived: boolean;
-    isPinned: boolean;
-    isDeleted: boolean;
-    status: import('@dripnex/core').NoteStatus;
-  };
+  noteToSnapshot: NoteToSnapshotFn;
 }
 
 // ============================================================================

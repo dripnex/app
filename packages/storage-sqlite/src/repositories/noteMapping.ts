@@ -9,6 +9,7 @@
 import {
   type Note,
   type NoteStatus,
+  type BoardStage,
   type Tag,
   type Timestamp,
   createNote,
@@ -31,6 +32,7 @@ export interface NoteRow {
   is_pinned: number; // SQLite stores booleans as 0/1
   is_deleted: number;
   status: string;
+  board_stage: string | null;
 }
 
 /** Row shape for tag joins (just the tag name) */
@@ -78,6 +80,7 @@ export function rowToNote(row: NoteRow, tags: Tag[]): Note {
     isPinned: row.is_pinned === 1,
     isDeleted: row.is_deleted === 1,
     status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
+    boardStage: (row.board_stage as BoardStage | null) ?? null,
     metadata: {
       ...note.metadata,
       title: row.title,

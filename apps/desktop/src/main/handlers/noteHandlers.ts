@@ -23,7 +23,9 @@ import {
   softDeleteNote,
   restoreDeletedNote,
   setNoteStatus,
+  setBoardStage,
   type NoteStatus,
+  type BoardStage,
 } from '@dripnex/core';
 import { createNoteId, createNotebookId, createTag } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
@@ -40,6 +42,9 @@ const TitleSchema = z.string().max(512);
 const ContentSchema = z.string().max(10 * 1024 * 1024); // 10 MiB cap on note content
 const TagSchema = z.string().min(1).max(64);
 const StatusSchema: z.ZodType<NoteStatus> = z.enum(['active', 'on_hold', 'completed', 'dropped']);
+const BoardStageSchema: z.ZodType<BoardStage | null> = z
+  .enum(['backlog', 'todo', 'in_progress', 'in_review', 'in_staging'])
+  .nullable();
 
 export function registerNoteHandlers(deps: NoteHandlerDeps): void {
   const { noteRepository: repo, dataPaths, noteToSnapshot } = deps;
@@ -171,6 +176,18 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
       const note = await repo.get(createNoteId(id));
       if (!note) return { ok: false, error: { type: 'NOT_FOUND', id } };
       const updatedNote = setNoteStatus(note, status);
+      await repo.save(updatedNote);
+      return { ok: true, data: noteToSnapshot(updatedNote) };
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'notes:setBoardStage',
+    args: z.tuple([IdSchema, BoardStageSchema]),
+    handler: async (id, boardStage) => {
+      const note = await repo.get(createNoteId(id));
+      if (!note) return { ok: false, error: { type: 'NOT_FOUND', id } };
+      const updatedNote = setBoardStage(note, boardStage);
       await repo.save(updatedNote);
       return { ok: true, data: noteToSnapshot(updatedNote) };
     },

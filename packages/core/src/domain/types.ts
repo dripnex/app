@@ -52,6 +52,9 @@ export function generateNotebookId(): NotebookId {
 /** Special Inbox notebook ID - all notes without a notebook go here */
 export const INBOX_NOTEBOOK_ID = createNotebookId('inbox');
 
+/** Special Planning notebook ID - notes here appear as cards on the Kanban board */
+export const PLANNING_NOTEBOOK_ID = createNotebookId('planning');
+
 /** Maximum allowed nesting depth for notebooks (0, 1, 2 = 3 levels) */
 export const MAX_NOTEBOOK_DEPTH = 2;
 
@@ -68,3 +71,22 @@ export const NOTE_STATUSES: readonly NoteStatus[] = [
 
 /** Default status for new notes */
 export const DEFAULT_NOTE_STATUS: NoteStatus = 'active';
+
+/**
+ * Kanban board stage for planning notes.
+ * Independent from NoteStatus: this is the column a note occupies on the
+ * Planning board. Only notes on the board carry a stage (others are null).
+ */
+export type BoardStage = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'in_staging';
+
+/** All valid board stages, in column order */
+export const BOARD_STAGES: readonly BoardStage[] = [
+  'backlog',
+  'todo',
+  'in_progress',
+  'in_review',
+  'in_staging',
+] as const;
+
+/** Default stage for a note that enters the board */
+export const DEFAULT_BOARD_STAGE: BoardStage = 'backlog';

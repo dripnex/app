@@ -13,6 +13,9 @@ export type Result<T> =
 /** Note status for workflow tracking */
 export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
 
+/** Kanban board stage for planning notes (null = not on the board) */
+export type BoardStage = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'in_staging';
+
 /** Note snapshot from the API */
 export interface NoteSnapshot {
   id: string;
@@ -28,6 +31,7 @@ export interface NoteSnapshot {
   isPinned: boolean;
   isDeleted: boolean;
   status: NoteStatus;
+  boardStage: BoardStage | null;
 }
 
 /** Notebook snapshot from the API */
