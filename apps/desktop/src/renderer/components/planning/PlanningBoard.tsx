@@ -5,6 +5,7 @@ import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/in
 import { useNotes, useNoteMutations } from '../../hooks/useNotes';
 import { GraphView } from '../GraphView';
 import { PlanningColumn } from './PlanningColumn';
+import { PlanningToolbar } from './PlanningToolbar';
 import './PlanningBoard.css';
 
 interface PlanningBoardProps {
@@ -22,6 +23,9 @@ type ViewMode = 'board' | 'graph';
  */
 export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
   const [mode, setMode] = useState<ViewMode>('board');
+  const [search, setSearch] = useState('');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<NotePriority | null>(null);
   const { data: allNotes } = useNotes({
     sortBy: 'updatedAt',
     sortOrder: 'desc',
@@ -38,6 +42,35 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     [allNotes]
   );
 
+  // Tags present across the board, for the filter dropdown.
+  const availableTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const n of planningNotes) for (const t of n.tags) set.add(t);
+    return [...set].sort();
+  }, [planningNotes]);
+
+  const isFiltering = search.trim() !== '' || tagFilter !== null || priorityFilter !== null;
+
+  const clearFilters = () => {
+    setSearch('');
+    setTagFilter(null);
+    setPriorityFilter(null);
+  };
+
+  // Apply search + tag + priority filters before grouping into columns.
+  const filteredNotes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return planningNotes.filter(n => {
+      if (priorityFilter && n.priority !== priorityFilter) return false;
+      if (tagFilter && !n.tags.includes(tagFilter)) return false;
+      if (q) {
+        const haystack = `${n.title}\n${n.content}\n${n.tags.join(' ')}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [planningNotes, search, tagFilter, priorityFilter]);
+
   const notesByStage = useMemo(() => {
     const groups: Record<BoardStage, NoteSnapshot[]> = {
       backlog: [],
@@ -46,7 +79,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
       in_review: [],
       in_staging: [],
     };
-    for (const note of planningNotes) {
+    for (const note of filteredNotes) {
       // Notes with no explicit stage (e.g. moved into the notebook) land in Backlog.
       const stage = note.boardStage ?? 'backlog';
       groups[stage].push(note);
@@ -58,7 +91,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
       );
     }
     return groups;
-  }, [planningNotes]);
+  }, [filteredNotes]);
 
   const handleReorder = (
     draggedId: string,
@@ -131,6 +164,20 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
           </button>
         </div>
       </header>
+
+      {mode === 'board' && (
+        <PlanningToolbar
+          search={search}
+          onSearch={setSearch}
+          tag={tagFilter}
+          onTag={setTagFilter}
+          priority={priorityFilter}
+          onPriority={setPriorityFilter}
+          tags={availableTags}
+          isFiltering={isFiltering}
+          onClear={clearFilters}
+        />
+      )}
 
       {mode === 'board' ? (
         <div className="planning-board__columns">

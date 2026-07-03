@@ -50,6 +50,71 @@
   color: var(--text-primary);
 }
 
+.planning-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.planning-toolbar__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 260px;
+}
+
+.planning-toolbar__search-icon {
+  position: absolute;
+  left: 8px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.planning-toolbar__input {
+  width: 100%;
+  padding: 5px 8px 5px 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.planning-toolbar__input::placeholder {
+  color: var(--text-faint);
+}
+
+.planning-toolbar__select {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.planning-toolbar__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.planning-toolbar__clear:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
 .planning-board__columns {
   display: flex;
   gap: 12px;
