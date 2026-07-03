@@ -10,14 +10,12 @@ export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: { type: string; error?: unknown } };
 
-/** Note status for workflow tracking */
-export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
-
-/** Kanban board stage for planning notes (null = not on the board) */
-export type BoardStage = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'in_staging';
-
-/** Linear-style priority for a note */
-export type NotePriority = 'none' | 'low' | 'medium' | 'high' | 'urgent';
+// Single source of truth: these unions live in @dripnex/core. Imported for local
+// use and re-exported (type-only, erased at build) so the renderer keeps
+// importing them from the preload barrel while adding a new value only ever
+// means editing core.
+import type { NoteStatus, BoardStage, NotePriority } from '@dripnex/core';
+export type { NoteStatus, BoardStage, NotePriority };
 
 /** Note snapshot from the API */
 export interface NoteSnapshot {
