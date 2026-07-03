@@ -65,7 +65,7 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
         notebookId: snap.notebookId,
         createdAt: snap.createdAt,
         updatedAt: snap.updatedAt,
-        tags: snap.tags,
+        tags: [...snap.tags],
         wordCount: snap.wordCount,
         isPinned: snap.isPinned,
       };

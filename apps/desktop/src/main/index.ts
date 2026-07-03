@@ -31,13 +31,7 @@ import {
   SQLiteNoteRepository,
   SQLiteNotebookRepository,
 } from '@dripnex/storage-sqlite';
-import {
-  createNoteId,
-  createNoteOperation,
-  type NoteStatus,
-  type BoardStage,
-  type NotePriority,
-} from '@dripnex/core';
+import { createNoteId, createNoteOperation, toSnapshot } from '@dripnex/core';
 import { initLogger, getLogger, loggers } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
 import { AiKeyStorage } from './services/aiKeyStorage.js';
@@ -107,45 +101,12 @@ export function broadcastToWindows(channel: string, ...args: unknown[]): void {
   }
 }
 
-/** Helper to convert a Note to a snapshot for IPC */
-export function noteToSnapshot(note: {
-  id: string;
-  notebookId: string;
-  content: string;
-  title: string;
-  isPinned: boolean;
-  isDeleted: boolean;
-  status: NoteStatus;
-  boardStage: BoardStage | null;
-  priority: NotePriority;
-  boardOrder: number;
-  metadata: {
-    createdAt: string;
-    updatedAt: string;
-    tags: readonly string[];
-    wordCount: number;
-    archivedAt: string | null;
-  };
-}) {
-  return {
-    id: note.id,
-    notebookId: note.notebookId,
-    content: note.content,
-    title: note.title,
-    createdAt: note.metadata.createdAt,
-    updatedAt: note.metadata.updatedAt,
-    tags: [...note.metadata.tags],
-    wordCount: note.metadata.wordCount,
-    archivedAt: note.metadata.archivedAt,
-    isArchived: note.metadata.archivedAt !== null,
-    isPinned: note.isPinned,
-    isDeleted: note.isDeleted,
-    status: note.status,
-    boardStage: note.boardStage,
-    priority: note.priority,
-    boardOrder: note.boardOrder,
-  };
-}
+/**
+ * Convert a domain Note to a snapshot for IPC. Single source of truth is
+ * @dripnex/core's `toSnapshot` — re-exported here under the name the handler
+ * dependency wiring already uses.
+ */
+export const noteToSnapshot = toSnapshot;
 
 // File-based license storage and window state persistence live in
 // dedicated modules under ./services/. See:

@@ -17,43 +17,12 @@ export type Database = ReturnType<typeof import('@dripnex/storage-sqlite').creat
 /** Broadcast helper signature */
 export type BroadcastFn = (channel: string, ...args: unknown[]) => void;
 
-/** Helper to convert a Note to a snapshot for IPC */
-export type NoteToSnapshotFn = (note: {
-  id: string;
-  notebookId: string;
-  content: string;
-  title: string;
-  isPinned: boolean;
-  isDeleted: boolean;
-  status: import('@dripnex/core').NoteStatus;
-  boardStage: import('@dripnex/core').BoardStage | null;
-  priority: import('@dripnex/core').NotePriority;
-  boardOrder: number;
-  metadata: {
-    createdAt: string;
-    updatedAt: string;
-    tags: readonly string[];
-    wordCount: number;
-    archivedAt: string | null;
-  };
-}) => {
-  id: string;
-  notebookId: string;
-  content: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  wordCount: number;
-  archivedAt: string | null;
-  isArchived: boolean;
-  isPinned: boolean;
-  isDeleted: boolean;
-  status: import('@dripnex/core').NoteStatus;
-  boardStage: import('@dripnex/core').BoardStage | null;
-  priority: import('@dripnex/core').NotePriority;
-  boardOrder: number;
-};
+/**
+ * Helper to convert a domain Note to a snapshot for IPC. This is exactly
+ * @dripnex/core's `toSnapshot`, so the shape lives in one place (core) instead
+ * of being hand-mirrored here.
+ */
+export type NoteToSnapshotFn = typeof import('@dripnex/core').toSnapshot;
 
 export type {
   DataPaths,
