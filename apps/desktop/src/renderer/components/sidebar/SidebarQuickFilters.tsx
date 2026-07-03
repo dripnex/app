@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { FileText, Pin, Trash2, Network } from 'lucide-react';
+import { FileText, Pin, Trash2, Network, KanbanSquare } from 'lucide-react';
 
 export type QuickFilterType = 'all' | 'pinned' | 'trash';
 
@@ -11,6 +11,8 @@ interface SidebarQuickFiltersProps {
   readonly onSelectFilter: (filter: QuickFilterType) => void;
   readonly isNotebookContext?: boolean;
   readonly onOpenGraph?: () => void;
+  readonly onOpenPlanning?: () => void;
+  readonly isPlanningSelected?: boolean;
 }
 
 interface QuickFilterItemProps {
@@ -54,6 +56,8 @@ export const SidebarQuickFilters = memo(function SidebarQuickFilters({
   onSelectFilter,
   isNotebookContext = false,
   onOpenGraph,
+  onOpenPlanning,
+  isPlanningSelected = false,
 }: SidebarQuickFiltersProps) {
   return (
     <nav className="sidebar-quick-filters" aria-label="Quick filters">
@@ -81,6 +85,20 @@ export const SidebarQuickFilters = memo(function SidebarQuickFilters({
           isSelected={selectedFilter === 'trash'}
           onClick={() => onSelectFilter('trash')}
         />
+      )}
+      {onOpenPlanning && (
+        <button
+          type="button"
+          className={`sidebar-quick-filter ${isPlanningSelected ? 'selected' : ''}`}
+          onClick={onOpenPlanning}
+          aria-pressed={isPlanningSelected}
+          title="Open Planning board"
+        >
+          <span className="sidebar-quick-filter-icon" aria-hidden="true">
+            <KanbanSquare size={16} />
+          </span>
+          <span className="sidebar-quick-filter-label">Planning</span>
+        </button>
       )}
       {onOpenGraph && (
         <button

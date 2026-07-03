@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ListOptions, NoteStatus, NoteSnapshot } from '../../preload/index';
+import type { ListOptions, NoteStatus, BoardStage, NoteSnapshot } from '../../preload/index';
 
 // ============================================================================
 // Excerpt Helper (shared between filtered notes and search results)
@@ -234,6 +234,15 @@ export function useNoteMutations() {
     onSuccess: () => invalidateNotes(),
   });
 
+  const setBoardStage = useMutation({
+    mutationFn: async ({ id, boardStage }: { id: string; boardStage: BoardStage | null }) => {
+      const result = await window.dripnex.notes.setBoardStage(id, boardStage);
+      if (!result.ok) throw new Error(result.error.type);
+      return result.data;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
   return {
     createNote,
     updateNote,
@@ -248,5 +257,6 @@ export function useNoteMutations() {
     softDeleteNote,
     restoreDeletedNote,
     setNoteStatus,
+    setBoardStage,
   };
 }

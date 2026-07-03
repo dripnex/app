@@ -12,7 +12,8 @@ export type NavigationState =
   | { kind: 'global'; filter: 'all' | 'pinned' | 'trash' }
   | { kind: 'notebook'; id: string }
   | { kind: 'tag'; name: string }
-  | { kind: 'search'; query: string };
+  | { kind: 'search'; query: string }
+  | { kind: 'planning' };
 
 /**
  * Status filter - orthogonal to navigation, can combine with any view
@@ -50,6 +51,7 @@ interface NavigationStore {
   goToNotebook: (id: string) => void;
   goToTag: (name: string) => void;
   goToSearch: (query: string) => void;
+  goToPlanning: () => void;
   clearNavigation: () => void;
 
   // Actions - Filters
@@ -98,6 +100,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   goToTag: name => set({ navigation: { kind: 'tag', name }, statusFilter: null, tagFilter: null }),
   goToSearch: query =>
     set({ navigation: { kind: 'search', query }, statusFilter: null, tagFilter: null }),
+  goToPlanning: () =>
+    set({ navigation: { kind: 'planning' }, statusFilter: null, tagFilter: null }),
   clearNavigation: () =>
     set({ navigation: DEFAULT_NAVIGATION, statusFilter: null, tagFilter: null }),
 
@@ -124,6 +128,9 @@ export const selectIsNotebookContext = (state: NavigationStore) =>
   state.navigation.kind === 'notebook';
 
 export const selectIsGlobalContext = (state: NavigationStore) => state.navigation.kind === 'global';
+
+export const selectIsPlanningContext = (state: NavigationStore) =>
+  state.navigation.kind === 'planning';
 
 export const selectIsTrashView = (state: NavigationStore) =>
   state.navigation.kind === 'global' && state.navigation.filter === 'trash';

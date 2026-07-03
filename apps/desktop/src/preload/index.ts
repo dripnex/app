@@ -65,6 +65,7 @@ import type {
 export type {
   Result,
   NoteStatus,
+  BoardStage,
   NoteSnapshot,
   NotebookSnapshot,
   NotebookWithMetadata,
