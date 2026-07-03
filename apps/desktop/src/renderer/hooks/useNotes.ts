@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { applyBoardReorder } from '../components/planning/reorder';
 import type {
   ListOptions,
   NoteStatus,
@@ -264,7 +265,22 @@ export function useNoteMutations() {
       if (!result.ok) throw new Error('REORDER_FAILED');
       return result;
     },
-    onSuccess: () => invalidateNotes(),
+    // Optimistic: patch every cached note list immediately so the drag doesn't
+    // flicker while the write round-trips; roll back on error, resync on settle.
+    onMutate: async ({ stage, orderedIds }) => {
+      await queryClient.cancelQueries({ queryKey: noteKeys.lists() });
+      const previous = queryClient.getQueriesData<NoteSnapshot[]>({ queryKey: noteKeys.lists() });
+      queryClient.setQueriesData<NoteSnapshot[]>({ queryKey: noteKeys.lists() }, old =>
+        old ? applyBoardReorder(old, stage, orderedIds) : old
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      context?.previous?.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+    },
   });
 
   return {

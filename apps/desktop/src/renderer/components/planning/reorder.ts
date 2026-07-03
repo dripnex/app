@@ -3,7 +3,25 @@
  * be unit-tested independently of React/DnD.
  */
 
+import type { BoardStage } from '../../../preload/index';
+
 export type ReorderSide = 'above' | 'below' | 'append';
+
+/**
+ * Apply a column reorder to a list of notes for an optimistic cache update —
+ * mirrors what the repo's reorderBoard does server-side: notes whose id is in
+ * `orderedIds` get `boardStage = stage` and `boardOrder = their index`; every
+ * other note is returned unchanged. Pure and generic so it can be unit-tested.
+ */
+export function applyBoardReorder<
+  T extends { id: string; boardStage: BoardStage | null; boardOrder: number },
+>(notes: readonly T[], stage: BoardStage, orderedIds: readonly string[]): T[] {
+  const indexById = new Map(orderedIds.map((id, i) => [id, i]));
+  return notes.map(note => {
+    const index = indexById.get(note.id);
+    return index === undefined ? note : { ...note, boardStage: stage, boardOrder: index };
+  });
+}
 
 /**
  * Compute the new ordered id list for a column after dropping `draggedId`
