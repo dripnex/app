@@ -24,6 +24,7 @@ import {
   restoreDeletedNote,
   setNoteStatus,
   setBoardStage,
+  BOARD_STAGES,
   type NoteStatus,
   type BoardStage,
 } from '@dripnex/core';
@@ -42,9 +43,7 @@ const TitleSchema = z.string().max(512);
 const ContentSchema = z.string().max(10 * 1024 * 1024); // 10 MiB cap on note content
 const TagSchema = z.string().min(1).max(64);
 const StatusSchema: z.ZodType<NoteStatus> = z.enum(['active', 'on_hold', 'completed', 'dropped']);
-const BoardStageSchema: z.ZodType<BoardStage | null> = z
-  .enum(['backlog', 'todo', 'in_progress', 'in_review', 'in_staging'])
-  .nullable();
+const BoardStageSchema: z.ZodType<BoardStage | null> = z.enum(BOARD_STAGES).nullable();
 
 export function registerNoteHandlers(deps: NoteHandlerDeps): void {
   const { noteRepository: repo, dataPaths, noteToSnapshot } = deps;

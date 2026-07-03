@@ -1,4 +1,5 @@
 import { memo, useCallback, useState } from 'react';
+import { Plus } from 'lucide-react';
 import type { NoteSnapshot, BoardStage } from '../../../preload/index';
 import { PlanningCard } from './PlanningCard';
 import { NOTE_MIME, BOARD_STAGE_LABELS } from './constants';
@@ -7,7 +8,11 @@ interface PlanningColumnProps {
   readonly stage: BoardStage;
   readonly notes: readonly NoteSnapshot[];
   readonly onDropNote: (noteId: string, stage: BoardStage) => void;
+  readonly onAddCard: (stage: BoardStage) => void;
   readonly onOpenNote: (id: string) => void;
+  readonly onMoveStage: (id: string, stage: BoardStage) => void;
+  readonly onRemoveFromBoard: (id: string) => void;
+  readonly onDeleteNote: (id: string) => void;
 }
 
 /** A droppable Kanban column for a single board stage. */
@@ -15,7 +20,11 @@ export const PlanningColumn = memo(function PlanningColumn({
   stage,
   notes,
   onDropNote,
+  onAddCard,
   onOpenNote,
+  onMoveStage,
+  onRemoveFromBoard,
+  onDeleteNote,
 }: PlanningColumnProps) {
   const [isOver, setIsOver] = useState(false);
 
@@ -54,11 +63,33 @@ export const PlanningColumn = memo(function PlanningColumn({
       <header className="planning-column__header">
         <span className="planning-column__title">{BOARD_STAGE_LABELS[stage]}</span>
         <span className="planning-column__count">{notes.length}</span>
+        <button
+          type="button"
+          className="planning-column__add"
+          onClick={() => onAddCard(stage)}
+          aria-label={`Add card to ${BOARD_STAGE_LABELS[stage]}`}
+          title="Add card"
+        >
+          <Plus size={14} />
+        </button>
       </header>
       <div className="planning-column__cards">
-        {notes.map(note => (
-          <PlanningCard key={note.id} note={note} onOpen={onOpenNote} />
-        ))}
+        {notes.length === 0 ? (
+          <button type="button" className="planning-column__empty" onClick={() => onAddCard(stage)}>
+            <Plus size={14} /> Add a card
+          </button>
+        ) : (
+          notes.map(note => (
+            <PlanningCard
+              key={note.id}
+              note={note}
+              onOpen={onOpenNote}
+              onMoveStage={onMoveStage}
+              onRemoveFromBoard={onRemoveFromBoard}
+              onDelete={onDeleteNote}
+            />
+          ))
+        )}
       </div>
     </section>
   );

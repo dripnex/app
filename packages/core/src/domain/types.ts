@@ -72,21 +72,15 @@ export const NOTE_STATUSES: readonly NoteStatus[] = [
 /** Default status for new notes */
 export const DEFAULT_NOTE_STATUS: NoteStatus = 'active';
 
+/** All valid board stages, in column order (single source of truth) */
+export const BOARD_STAGES = ['backlog', 'todo', 'in_progress', 'in_review', 'in_staging'] as const;
+
 /**
  * Kanban board stage for planning notes.
  * Independent from NoteStatus: this is the column a note occupies on the
  * Planning board. Only notes on the board carry a stage (others are null).
  */
-export type BoardStage = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'in_staging';
-
-/** All valid board stages, in column order */
-export const BOARD_STAGES: readonly BoardStage[] = [
-  'backlog',
-  'todo',
-  'in_progress',
-  'in_review',
-  'in_staging',
-] as const;
+export type BoardStage = (typeof BOARD_STAGES)[number];
 
 /** Default stage for a note that enters the board */
 export const DEFAULT_BOARD_STAGE: BoardStage = 'backlog';

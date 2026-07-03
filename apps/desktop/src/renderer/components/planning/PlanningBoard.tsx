@@ -27,7 +27,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     sortOrder: 'desc',
     archived: 'active',
   });
-  const { setBoardStage } = useNoteMutations();
+  const { setBoardStage, createNote, softDeleteNote } = useNoteMutations();
 
   const planningNotes = useMemo(
     () =>
@@ -55,6 +55,27 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
 
   const handleDropNote = (noteId: string, stage: BoardStage) => {
     setBoardStage.mutate({ id: noteId, boardStage: stage });
+  };
+
+  const handleRemoveFromBoard = (noteId: string) => {
+    setBoardStage.mutate({ id: noteId, boardStage: null });
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    softDeleteNote.mutate(noteId);
+  };
+
+  const handleAddCard = async (stage: BoardStage) => {
+    // Create an empty note in the Planning notebook (defaults to Backlog), move
+    // it to the requested column, then open it so the user can start typing.
+    const created = await createNote.mutateAsync({
+      content: '',
+      notebookId: PLANNING_NOTEBOOK_ID,
+    });
+    if (stage !== 'backlog') {
+      await setBoardStage.mutateAsync({ id: created.id, boardStage: stage });
+    }
+    onOpenNote(created.id);
   };
 
   return (
@@ -91,7 +112,11 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
               stage={stage}
               notes={notesByStage[stage]}
               onDropNote={handleDropNote}
+              onAddCard={handleAddCard}
               onOpenNote={onOpenNote}
+              onMoveStage={handleDropNote}
+              onRemoveFromBoard={handleRemoveFromBoard}
+              onDeleteNote={handleDeleteNote}
             />
           ))}
         </div>
