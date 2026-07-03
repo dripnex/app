@@ -180,8 +180,14 @@ jobs:
       # (electron-builder install-app-deps → better-sqlite3 rebuilt for Electron)
       # never ran. e2e launches the real Electron app, so complete the install
       # here — otherwise electron.launch fails with "Electron failed to install".
-      - name: Complete install for Electron (run postinstall scripts)
-        run: pnpm install --frozen-lockfile
+      # `pnpm install` re-runs the desktop postinstall (native rebuild) but NOT
+      # electron's own install script (already "installed"), so the runtime
+      # binary is still missing; `pnpm rebuild electron` force-runs it to fetch
+      # the binary.
+      - name: Complete install for Electron (binary + native modules)
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm rebuild electron
 
       - name: Build desktop bundle
         run: pnpm --filter @dripnex/desktop build
