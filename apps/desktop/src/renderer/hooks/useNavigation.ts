@@ -6,6 +6,7 @@ import {
   selectStatusFilter,
   selectTagFilter,
   selectIsNotebookContext,
+  selectIsPlanningContext,
   selectSelectedNotebookId,
   selectGlobalFilter,
   selectSelectedTag,
@@ -51,6 +52,9 @@ export const useTagFilter = () => useNavigationStore(selectTagFilter);
 /** Check if in notebook context */
 export const useIsNotebookContext = () => useNavigationStore(selectIsNotebookContext);
 
+/** Check if in planning (Kanban board) context */
+export const useIsPlanningContext = () => useNavigationStore(selectIsPlanningContext);
+
 /** Get selected notebook ID (null if not in notebook view) */
 export const useSelectedNotebookId = () => useNavigationStore(selectSelectedNotebookId);
 
@@ -79,6 +83,7 @@ export function useNavigationActions() {
   const goToNotebook = useNavigationStore(s => s.goToNotebook);
   const goToTag = useNavigationStore(s => s.goToTag);
   const goToSearch = useNavigationStore(s => s.goToSearch);
+  const goToPlanning = useNavigationStore(s => s.goToPlanning);
   const clearNavigation = useNavigationStore(s => s.clearNavigation);
   const setStatusFilter = useNavigationStore(s => s.setStatusFilter);
   const setTagFilter = useNavigationStore(s => s.setTagFilter);
@@ -93,6 +98,7 @@ export function useNavigationActions() {
     goToNotebook,
     goToTag,
     goToSearch,
+    goToPlanning,
     clearNavigation,
     setStatusFilter,
     setTagFilter,
@@ -154,6 +160,12 @@ export function useFilteredNotes(): NoteWithExcerpt[] {
       case 'search':
         // Search is handled separately via useSearchNotes
         notes = notes.filter(n => !n.isDeleted && !n.isArchived);
+        break;
+
+      case 'planning':
+        // The Planning board fetches and groups its own notes by boardStage;
+        // the standard note list is empty in this view.
+        notes = [];
         break;
     }
 

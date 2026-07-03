@@ -18,6 +18,8 @@ interface GraphViewProps {
   onNodeClick?: (noteId: string) => void;
   /** Callback to close the graph view */
   onClose?: () => void;
+  /** When set, restrict the graph to notes in this notebook (and links between them) */
+  filterNotebookId?: string;
 }
 
 interface GraphNode {
@@ -31,7 +33,12 @@ interface GraphNode {
   vy?: number;
 }
 
-export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewProps) {
+export function GraphView({
+  selectedNoteId,
+  onNodeClick,
+  onClose,
+  filterNotebookId,
+}: GraphViewProps) {
   const { data, isLoading, error } = useGraphData();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
@@ -40,18 +47,28 @@ export function GraphView({ selectedNoteId, onNodeClick, onClose }: GraphViewPro
   const graphData = useMemo(() => {
     if (!data) return { nodes: [], links: [] };
 
+    // Optionally restrict to a single notebook (e.g. the Planning board),
+    // keeping only links whose endpoints both remain in the filtered set.
+    const nodes = filterNotebookId
+      ? data.nodes.filter(n => n.notebookId === filterNotebookId)
+      : data.nodes;
+    const includedIds = new Set(nodes.map(n => n.id));
+    const edges = filterNotebookId
+      ? data.edges.filter(e => includedIds.has(e.source) && includedIds.has(e.target))
+      : data.edges;
+
     return {
-      nodes: data.nodes.map(n => ({
+      nodes: nodes.map(n => ({
         id: n.id,
         title: n.title,
         notebookId: n.notebookId,
       })),
-      links: data.edges.map(e => ({
+      links: edges.map(e => ({
         source: e.source,
         target: e.target,
       })),
     };
-  }, [data]);
+  }, [data, filterNotebookId]);
 
   // Node color based on selection (using hex - CSS vars don't work in canvas)
   const getNodeColor = useCallback(

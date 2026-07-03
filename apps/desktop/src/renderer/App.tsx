@@ -14,6 +14,7 @@ import {
 import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { RegisteredCommand } from '@dripnex/command-registry';
 import { useStore } from 'zustand';
+import { PLANNING_NOTEBOOK_ID } from '@dripnex/core';
 import type { NoteSnapshot } from '../preload/index';
 import { UpdateBanner } from './components/UpdateBanner';
 import { NoteList } from './components/NoteList';
@@ -21,6 +22,7 @@ import { NoteEditor } from './components/NoteEditor';
 import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
+import { PlanningBoard } from './components/planning/PlanningBoard';
 import { CommandPalette } from './components/CommandPalette';
 import { AiPanel } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
@@ -120,7 +122,7 @@ function NotesApp() {
   const selectedTag = useSelectedTag();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
-  const { goToTag, setSort } = useNavigationActions();
+  const { goToTag, goToNotebook, setSort } = useNavigationActions();
 
   // Load tag colors on mount (once)
   useEffect(() => {
@@ -581,7 +583,14 @@ function NotesApp() {
             />
 
             <main className="app__editor">
-              {isGraphOpen ? (
+              {navigation.kind === 'planning' ? (
+                <PlanningBoard
+                  onOpenNote={noteId => {
+                    goToNotebook(PLANNING_NOTEBOOK_ID);
+                    void handleSelectNote(noteId);
+                  }}
+                />
+              ) : isGraphOpen ? (
                 <GraphView
                   selectedNoteId={selectedNote?.id}
                   onNodeClick={noteId => {

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LayoutZone } from '@dripnex/plugin-api';
 import {
   useIsNotebookContext,
+  useIsPlanningContext,
   useSelectedNotebookId,
   useGlobalFilter,
   useNavigationActions,
@@ -51,6 +52,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
   // Granular selectors
   const isNotebookContext = useIsNotebookContext();
+  const isPlanningContext = useIsPlanningContext();
   const selectedNotebookId = useSelectedNotebookId();
   const globalFilter = useGlobalFilter();
   const globalCounts = useGlobalCounts();
@@ -67,6 +69,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     goToPinned,
     goToTrash,
     goToNotebook,
+    goToPlanning,
     clearNavigation,
     setStatusFilter,
     setTagFilter,
@@ -124,6 +127,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           }}
           isNotebookContext={isNotebookContext}
           onOpenGraph={onOpenGraph}
+          onOpenPlanning={goToPlanning}
+          isPlanningSelected={isPlanningContext}
         />
 
         <SidebarSection title="Notebooks" collapsible onAdd={openCreateInContext}>
