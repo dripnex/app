@@ -49,14 +49,14 @@ jobs:
           cache: 'pnpm'
 
       - name: Cache pnpm store
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.pnpm-store
           key: pnpm-${{ matrix.platform }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ matrix.platform }}-
 
       - name: Cache Electron downloads
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.ELECTRON_CACHE }}
           key: electron-v3-${{ matrix.platform }}-${{ hashFiles('apps/desktop/package.json') }}
