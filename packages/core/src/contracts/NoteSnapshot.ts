@@ -31,6 +31,7 @@ export interface NoteSnapshot {
   readonly status: NoteStatus;
   readonly boardStage: BoardStage | null;
   readonly priority: NotePriority;
+  readonly boardOrder: number;
 }
 
 /** Converts a Note entity to a NoteSnapshot */
@@ -51,6 +52,7 @@ export function toSnapshot(note: Note): NoteSnapshot {
     status: note.status,
     boardStage: note.boardStage,
     priority: note.priority,
+    boardOrder: note.boardOrder,
   };
 }
 
@@ -72,6 +74,7 @@ export interface NoteSummary {
   readonly status: NoteStatus;
   readonly boardStage: BoardStage | null;
   readonly priority: NotePriority;
+  readonly boardOrder: number;
 }
 
 /** Converts a Note to a NoteSummary */
@@ -97,5 +100,6 @@ export function toSummary(note: Note, excerptLength: number = 200): NoteSummary 
     status: note.status,
     boardStage: note.boardStage,
     priority: note.priority,
+    boardOrder: note.boardOrder,
   };
 }

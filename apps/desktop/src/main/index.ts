@@ -118,6 +118,7 @@ export function noteToSnapshot(note: {
   status: NoteStatus;
   boardStage: BoardStage | null;
   priority: NotePriority;
+  boardOrder: number;
   metadata: {
     createdAt: string;
     updatedAt: string;
@@ -142,6 +143,7 @@ export function noteToSnapshot(note: {
     status: note.status,
     boardStage: note.boardStage,
     priority: note.priority,
+    boardOrder: note.boardOrder,
   };
 }
 

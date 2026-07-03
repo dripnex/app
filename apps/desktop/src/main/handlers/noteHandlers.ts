@@ -25,6 +25,7 @@ import {
   setNoteStatus,
   setBoardStage,
   setNotePriority,
+  setBoardPosition,
   BOARD_STAGES,
   NOTE_PRIORITIES,
   type NoteStatus,
@@ -46,7 +47,8 @@ const TitleSchema = z.string().max(512);
 const ContentSchema = z.string().max(10 * 1024 * 1024); // 10 MiB cap on note content
 const TagSchema = z.string().min(1).max(64);
 const StatusSchema: z.ZodType<NoteStatus> = z.enum(['active', 'on_hold', 'completed', 'dropped']);
-const BoardStageSchema: z.ZodType<BoardStage | null> = z.enum(BOARD_STAGES).nullable();
+const BoardStageValueSchema: z.ZodType<BoardStage> = z.enum(BOARD_STAGES);
+const BoardStageSchema: z.ZodType<BoardStage | null> = BoardStageValueSchema.nullable();
 const PrioritySchema: z.ZodType<NotePriority> = z.enum(NOTE_PRIORITIES);
 
 export function registerNoteHandlers(deps: NoteHandlerDeps): void {
@@ -205,6 +207,22 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
       const updatedNote = setNotePriority(note, priority);
       await repo.save(updatedNote);
       return { ok: true, data: noteToSnapshot(updatedNote) };
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'notes:reorderColumn',
+    args: z.tuple([BoardStageValueSchema, z.array(IdSchema).max(2000)]),
+    handler: async (stage, orderedIds) => {
+      // Reindex the whole column: each note gets board_stage=stage and
+      // board_order=its position. Metadata-only; markdown untouched.
+      for (let i = 0; i < orderedIds.length; i++) {
+        const id = orderedIds[i];
+        if (!id) continue;
+        const note = await repo.get(createNoteId(id));
+        if (note) await repo.save(setBoardPosition(note, stage, i));
+      }
+      return { ok: true };
     },
   });
 

@@ -4,10 +4,18 @@ import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/in
 import { PlanningCard } from './PlanningCard';
 import { NOTE_MIME, BOARD_STAGE_LABELS } from './constants';
 
+type DropSide = 'above' | 'below' | 'append';
+
 interface PlanningColumnProps {
   readonly stage: BoardStage;
   readonly notes: readonly NoteSnapshot[];
-  readonly onDropNote: (noteId: string, stage: BoardStage) => void;
+  /** Move `draggedId` into this column relative to `targetId` (null = append). */
+  readonly onReorder: (
+    draggedId: string,
+    stage: BoardStage,
+    targetId: string | null,
+    side: DropSide
+  ) => void;
   readonly onAddCard: (stage: BoardStage) => void;
   readonly onOpenNote: (id: string) => void;
   readonly onMoveStage: (id: string, stage: BoardStage) => void;
@@ -20,7 +28,7 @@ interface PlanningColumnProps {
 export const PlanningColumn = memo(function PlanningColumn({
   stage,
   notes,
-  onDropNote,
+  onReorder,
   onAddCard,
   onOpenNote,
   onMoveStage,
@@ -30,10 +38,8 @@ export const PlanningColumn = memo(function PlanningColumn({
 }: PlanningColumnProps) {
   const [isOver, setIsOver] = useState(false);
 
-  // A card carries either our custom MIME or (as a fallback) text/plain. Some
-  // Chromium/Electron builds don't enumerate custom types in `types` during
-  // dragover, so we must not gate preventDefault() on that check — otherwise the
-  // drop event never fires. We allow the drop and only read the id on drop.
+  // preventDefault unconditionally so the drop always fires (some Chromium
+  // builds don't enumerate custom types in `types` during dragover).
   const allowDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -41,23 +47,25 @@ export const PlanningColumn = memo(function PlanningColumn({
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLElement>) => {
-    // Only clear when the pointer actually leaves the column (not a child).
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsOver(false);
-    }
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsOver(false);
   }, []);
 
+  // Drops that reach the column background (not a card) append to the end.
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsOver(false);
-      // getData reads custom types reliably on drop (the enumeration quirk only
-      // affects dragover). Reading our MIME avoids acting on notebook drags,
-      // which also set text/plain.
       const noteId = e.dataTransfer.getData(NOTE_MIME);
-      if (noteId) onDropNote(noteId, stage);
+      if (noteId) onReorder(noteId, stage, null, 'append');
     },
-    [onDropNote, stage]
+    [onReorder, stage]
+  );
+
+  const handleDropCard = useCallback(
+    (draggedId: string, targetId: string, side: 'above' | 'below') => {
+      onReorder(draggedId, stage, targetId, side);
+    },
+    [onReorder, stage]
   );
 
   return (
@@ -97,6 +105,7 @@ export const PlanningColumn = memo(function PlanningColumn({
               onSetPriority={onSetPriority}
               onRemoveFromBoard={onRemoveFromBoard}
               onDelete={onDeleteNote}
+              onDropCard={handleDropCard}
             />
           ))
         )}

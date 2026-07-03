@@ -48,7 +48,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
       SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-             is_pinned, is_deleted, status, board_stage, priority
+             is_pinned, is_deleted, status, board_stage, priority, board_order
       FROM notes
       WHERE id = ?
     `);
@@ -66,8 +66,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       // Upsert note
       const stmt = this.db.prepare(`
         INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-                           is_pinned, is_deleted, status, board_stage, priority)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                           is_pinned, is_deleted, status, board_stage, priority, board_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           notebook_id = excluded.notebook_id,
           content = excluded.content,
@@ -79,7 +79,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
           is_deleted = excluded.is_deleted,
           status = excluded.status,
           board_stage = excluded.board_stage,
-          priority = excluded.priority
+          priority = excluded.priority,
+          board_order = excluded.board_order
       `);
 
       stmt.run(
@@ -95,7 +96,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         note.isDeleted ? 1 : 0,
         note.status,
         note.boardStage,
-        note.priority
+        note.priority,
+        note.boardOrder
       );
 
       // Update content-extracted tags (preserves manual tags)
@@ -134,7 +136,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     if (tag) {
       sql = `
         SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at,
-               n.is_pinned, n.is_deleted, n.status, n.board_stage, n.priority
+               n.is_pinned, n.is_deleted, n.status, n.board_stage, n.priority, n.board_order
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
@@ -146,7 +148,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     } else {
       sql = `
         SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-               is_pinned, is_deleted, status, board_stage, priority
+               is_pinned, is_deleted, status, board_stage, priority, board_order
         FROM notes n
         WHERE 1=1 ${archivedCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
@@ -182,7 +184,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     const stmt = this.db.prepare<NoteRow>(`
       SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
-             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status, n.board_stage, n.priority
+             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status, n.board_stage, n.priority, n.board_order
       FROM notes_fts fts
       JOIN notes n ON fts.id = n.id
       WHERE notes_fts MATCH ? ${archivedCondition}
@@ -625,6 +627,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       status: string;
       board_stage: string | null;
       priority: string | null;
+      board_order: number;
       local_version: number;
       last_synced_at: string | null;
     }>(`
@@ -649,6 +652,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       status: string;
       board_stage: string | null;
       priority: string | null;
+      board_order: number;
       local_version: number;
       last_synced_at: string | null;
     }>;

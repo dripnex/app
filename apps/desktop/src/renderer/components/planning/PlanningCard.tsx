@@ -1,10 +1,12 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { countMarkdownTasks } from '@dripnex/tasks';
 import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
 import { extractExcerpt } from '../../hooks/useNotes';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
 import { NOTE_MIME, PRIORITY_CONFIG } from './constants';
 import { PlanningCardMenu } from './PlanningCardMenu';
+
+type DropSide = 'above' | 'below';
 
 interface PlanningCardProps {
   readonly note: NoteSnapshot;
@@ -13,6 +15,8 @@ interface PlanningCardProps {
   readonly onSetPriority: (id: string, priority: NotePriority) => void;
   readonly onRemoveFromBoard: (id: string) => void;
   readonly onDelete: (id: string) => void;
+  /** Reorder: drop `draggedId` above/below this card. */
+  readonly onDropCard: (draggedId: string, targetId: string, side: DropSide) => void;
 }
 
 function formatDate(iso: string): string {
@@ -22,8 +26,9 @@ function formatDate(iso: string): string {
 }
 
 /**
- * A draggable card on the Planning board. Dragging carries the note id via a
- * custom MIME type; dropping on a column updates the note's boardStage.
+ * A draggable card on the Planning board. It is also a drop target so cards can
+ * be reordered within a column (drop above/below the hovered card). Dragging
+ * carries the note id via a custom MIME type.
  */
 export const PlanningCard = memo(function PlanningCard({
   note,
@@ -32,8 +37,10 @@ export const PlanningCard = memo(function PlanningCard({
   onSetPriority,
   onRemoveFromBoard,
   onDelete,
+  onDropCard,
 }: PlanningCardProps) {
   const getColor = useTagColorsStore(state => state.getColor);
+  const [dropSide, setDropSide] = useState<DropSide | null>(null);
 
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
@@ -44,15 +51,44 @@ export const PlanningCard = memo(function PlanningCard({
     [note.id]
   );
 
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>) => {
+    // Take over from the column so the drop lands at this precise position.
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDropSide(e.clientY < rect.top + rect.height / 2 ? 'above' : 'below');
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropSide(null);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const side = dropSide ?? 'above';
+      setDropSide(null);
+      const draggedId = e.dataTransfer.getData(NOTE_MIME);
+      if (draggedId && draggedId !== note.id) onDropCard(draggedId, note.id, side);
+    },
+    [dropSide, note.id, onDropCard]
+  );
+
   const tasks = countMarkdownTasks(note.content);
   const excerpt = extractExcerpt(note.content, 120);
   const currentStage: BoardStage = note.boardStage ?? 'backlog';
+  const dropClass = dropSide ? `planning-card--drop-${dropSide}` : '';
 
   return (
     <article
-      className="planning-card"
+      className={`planning-card ${dropClass}`}
       draggable
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={() => onOpen(note.id)}
       onKeyDown={e => {
         if (e.key === 'Enter') onOpen(note.id);

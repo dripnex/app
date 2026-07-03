@@ -258,6 +258,15 @@ export function useNoteMutations() {
     onSuccess: () => invalidateNotes(),
   });
 
+  const reorderColumn = useMutation({
+    mutationFn: async ({ stage, orderedIds }: { stage: BoardStage; orderedIds: string[] }) => {
+      const result = await window.dripnex.notes.reorderColumn(stage, orderedIds);
+      if (!result.ok) throw new Error('REORDER_FAILED');
+      return result;
+    },
+    onSuccess: () => invalidateNotes(),
+  });
+
   return {
     createNote,
     updateNote,
@@ -274,5 +283,6 @@ export function useNoteMutations() {
     setNoteStatus,
     setBoardStage,
     setPriority,
+    reorderColumn,
   };
 }

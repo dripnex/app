@@ -173,6 +173,15 @@
   border-color: var(--accent-muted);
 }
 
+/* Reorder drop indicators */
+.planning-card--drop-above {
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
+
+.planning-card--drop-below {
+  box-shadow: inset 0 -2px 0 0 var(--accent);
+}
+
 .planning-card__top {
   display: flex;
   align-items: center;

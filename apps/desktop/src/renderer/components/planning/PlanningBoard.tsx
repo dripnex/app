@@ -27,7 +27,8 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     sortOrder: 'desc',
     archived: 'active',
   });
-  const { setBoardStage, setPriority, createNote, softDeleteNote } = useNoteMutations();
+  const { setBoardStage, setPriority, reorderColumn, createNote, softDeleteNote } =
+    useNoteMutations();
 
   const planningNotes = useMemo(
     () =>
@@ -50,11 +51,34 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
       const stage = note.boardStage ?? 'backlog';
       groups[stage].push(note);
     }
+    // Within each column, order by boardOrder, then newest-first as a tiebreak.
+    for (const stage of Object.keys(groups) as BoardStage[]) {
+      groups[stage].sort(
+        (a, b) => a.boardOrder - b.boardOrder || b.createdAt.localeCompare(a.createdAt)
+      );
+    }
     return groups;
   }, [planningNotes]);
 
-  const handleDropNote = (noteId: string, stage: BoardStage) => {
-    setBoardStage.mutate({ id: noteId, boardStage: stage });
+  const handleReorder = (
+    draggedId: string,
+    stage: BoardStage,
+    targetId: string | null,
+    side: 'above' | 'below' | 'append'
+  ) => {
+    const ids = notesByStage[stage].map(n => n.id).filter(id => id !== draggedId);
+    let insertAt = ids.length;
+    if (targetId !== null) {
+      const ti = ids.indexOf(targetId);
+      if (ti !== -1) insertAt = side === 'below' ? ti + 1 : ti;
+    }
+    ids.splice(insertAt, 0, draggedId);
+    reorderColumn.mutate({ stage, orderedIds: ids });
+  };
+
+  // Menu "Move to <stage>": append to the end of the target column.
+  const handleMoveStage = (noteId: string, stage: BoardStage) => {
+    handleReorder(noteId, stage, null, 'append');
   };
 
   const handleSetPriority = (noteId: string, priority: NotePriority) => {
@@ -115,10 +139,10 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
               key={stage}
               stage={stage}
               notes={notesByStage[stage]}
-              onDropNote={handleDropNote}
+              onReorder={handleReorder}
               onAddCard={handleAddCard}
               onOpenNote={onOpenNote}
-              onMoveStage={handleDropNote}
+              onMoveStage={handleMoveStage}
               onSetPriority={handleSetPriority}
               onRemoveFromBoard={handleRemoveFromBoard}
               onDeleteNote={handleDeleteNote}

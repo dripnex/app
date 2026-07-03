@@ -22,6 +22,7 @@ import { tagSyncTracking } from './016_tag_sync_tracking.js';
 import { syncHistory } from './017_sync_history.js';
 import { addBoardStage } from './018_board_stage.js';
 import { addNotePriority } from './019_note_priority.js';
+import { addBoardOrder } from './020_board_order.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -44,6 +45,7 @@ export const allMigrations: Migration[] = [
   syncHistory,
   addBoardStage,
   addNotePriority,
+  addBoardOrder,
 ];
 
 export {
@@ -66,4 +68,5 @@ export {
   syncHistory,
   addBoardStage,
   addNotePriority,
+  addBoardOrder,
 };

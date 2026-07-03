@@ -57,6 +57,9 @@ export interface Note {
   /** Priority of the note (defaults to 'none') */
   readonly priority: NotePriority;
 
+  /** Sort order within its board column (ascending; lower = higher up) */
+  readonly boardOrder: number;
+
   /** Computed metadata derived from content */
   readonly metadata: NoteMetadata;
 }
@@ -95,6 +98,9 @@ export interface CreateNoteOptions {
 
   /** Priority (defaults to 'none') */
   priority?: NotePriority;
+
+  /** Sort order within its board column (defaults to 0) */
+  boardOrder?: number;
 }
 
 /** Creates a new Note from markdown content */
@@ -126,6 +132,7 @@ export function createNote(options: CreateNoteOptions): Note {
     boardStage:
       options.boardStage ?? (notebookId === PLANNING_NOTEBOOK_ID ? DEFAULT_BOARD_STAGE : null),
     priority: options.priority ?? DEFAULT_NOTE_PRIORITY,
+    boardOrder: options.boardOrder ?? 0,
     metadata,
   };
 }
@@ -153,6 +160,7 @@ export function updateNoteContent(note: Note, newContent: string): Note {
     status: note.status,
     boardStage: note.boardStage,
     priority: note.priority,
+    boardOrder: note.boardOrder,
     metadata,
   };
 }
@@ -215,6 +223,7 @@ export function duplicateNote(note: Note): Note {
     status: DEFAULT_NOTE_STATUS, // Reset status to active
     boardStage: note.boardStage, // Duplicate stays on the board in the same column
     priority: note.priority,
+    boardOrder: note.boardOrder,
     metadata: {
       ...note.metadata,
       title: duplicatedTitle,
@@ -323,6 +332,18 @@ export function setNotePriority(note: Note, priority: NotePriority): Note {
   return {
     ...note,
     priority,
+  };
+}
+
+/**
+ * Places a note on the board at a given stage and order (metadata-only,
+ * doesn't change updatedAt). Used for drag-to-reorder within/between columns.
+ */
+export function setBoardPosition(note: Note, boardStage: BoardStage, boardOrder: number): Note {
+  return {
+    ...note,
+    boardStage,
+    boardOrder,
   };
 }
 

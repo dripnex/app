@@ -36,6 +36,7 @@ export interface NoteSnapshot {
   status: NoteStatus;
   boardStage: BoardStage | null;
   priority: NotePriority;
+  boardOrder: number;
 }
 
 /** Notebook snapshot from the API */

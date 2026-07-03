@@ -36,6 +36,7 @@ export interface NoteRow {
   status: string;
   board_stage: string | null;
   priority: string | null;
+  board_order: number;
 }
 
 /** Row shape for tag joins (just the tag name) */
@@ -85,6 +86,7 @@ export function rowToNote(row: NoteRow, tags: Tag[]): Note {
     status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
     boardStage: (row.board_stage as BoardStage | null) ?? null,
     priority: (row.priority as NotePriority) || DEFAULT_NOTE_PRIORITY,
+    boardOrder: row.board_order ?? 0,
     metadata: {
       ...note.metadata,
       title: row.title,
