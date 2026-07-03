@@ -5,7 +5,15 @@
  */
 
 import type { ExtendedNoteRepository, ListNotesOptions } from '@dripnex/storage-core';
-import { type Note, type NoteId, type Tag, createNoteId, createTag } from '@dripnex/core';
+import {
+  type Note,
+  type NoteId,
+  type Tag,
+  type BoardStage,
+  createNoteId,
+  createTag,
+  PLANNING_NOTEBOOK_ID,
+} from '@dripnex/core';
 import { extractWikilinks } from '@dripnex/wikilinks';
 import type { DatabaseConnection } from '../database.js';
 import {
@@ -112,12 +120,30 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     // Tags are cleaned up via ON DELETE CASCADE
   }
 
+  /**
+   * Reindex a Planning board column in one atomic transaction: every id gets
+   * board_stage=stage and board_order=its position. Direct metadata UPDATEs
+   * (no content change, so no tag re-extraction). The `notebook_id` guard means
+   * board metadata can only ever land on Planning-notebook notes.
+   */
+  reorderBoard(stage: BoardStage, orderedIds: readonly string[]): void {
+    const update = this.db.prepare(
+      'UPDATE notes SET board_stage = ?, board_order = ? WHERE id = ? AND notebook_id = ?'
+    );
+    this.db.transaction(() => {
+      orderedIds.forEach((id, index) => {
+        update.run(stage, index, id, PLANNING_NOTEBOOK_ID);
+      });
+    });
+  }
+
   /** List notes with optional filtering and pagination */
   async list(options: ListNotesOptions = {}): Promise<Note[]> {
     const {
       limit = 50,
       offset = 0,
       tag,
+      notebookId,
       sortBy = 'updatedAt',
       sortOrder = 'desc',
       archived = 'active',
@@ -130,6 +156,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     }[sortBy];
 
     const archivedCondition = archivedConditionSql(archived, 'n');
+    const notebookCondition = notebookId ? 'AND n.notebook_id = ?' : '';
     let sql: string;
     let params: (string | number)[];
 
@@ -140,21 +167,23 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
-        WHERE t.name = ? ${archivedCondition}
+        WHERE t.name = ? ${archivedCondition} ${notebookCondition}
         ORDER BY n.${sortColumn} ${sortOrder.toUpperCase()}
         LIMIT ? OFFSET ?
       `;
-      params = [tag.toLowerCase(), limit, offset];
+      params = notebookId
+        ? [tag.toLowerCase(), notebookId, limit, offset]
+        : [tag.toLowerCase(), limit, offset];
     } else {
       sql = `
         SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
                is_pinned, is_deleted, status, board_stage, priority, board_order
         FROM notes n
-        WHERE 1=1 ${archivedCondition}
+        WHERE 1=1 ${archivedCondition} ${notebookCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
         LIMIT ? OFFSET ?
       `;
-      params = [limit, offset];
+      params = notebookId ? [notebookId, limit, offset] : [limit, offset];
     }
 
     const stmt = this.db.prepare<NoteRow>(sql);

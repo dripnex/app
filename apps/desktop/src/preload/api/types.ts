@@ -70,6 +70,7 @@ export interface ListOptions {
   limit?: number;
   offset?: number;
   tag?: string;
+  notebookId?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'title';
   sortOrder?: 'asc' | 'desc';
   archived?: 'active' | 'archived' | 'all';

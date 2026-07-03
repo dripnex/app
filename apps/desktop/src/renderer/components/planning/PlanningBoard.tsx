@@ -1,12 +1,38 @@
 import { useMemo, useState } from 'react';
 import { KanbanSquare, Network } from 'lucide-react';
-import { BOARD_STAGES, PLANNING_NOTEBOOK_ID } from '@dripnex/core';
+import { BOARD_STAGES, PLANNING_NOTEBOOK_ID, INBOX_NOTEBOOK_ID } from '@dripnex/core';
 import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
 import { useNotes, useNoteMutations } from '../../hooks/useNotes';
 import { GraphView } from '../GraphView';
 import { PlanningColumn } from './PlanningColumn';
 import { PlanningToolbar } from './PlanningToolbar';
+import { computeReorderedIds } from './reorder';
 import './PlanningBoard.css';
+
+/** Group notes into board columns (by stage) and sort each column. */
+function groupByStage(notes: readonly NoteSnapshot[]): Record<BoardStage, NoteSnapshot[]> {
+  const groups: Record<BoardStage, NoteSnapshot[]> = {
+    backlog: [],
+    todo: [],
+    in_progress: [],
+    in_review: [],
+    in_staging: [],
+  };
+  for (const note of notes) {
+    // Notes with no/unknown stage (legacy value, moved-in note) land in Backlog.
+    const raw = note.boardStage ?? 'backlog';
+    const stage: BoardStage = (BOARD_STAGES as readonly string[]).includes(raw)
+      ? (raw as BoardStage)
+      : 'backlog';
+    groups[stage].push(note);
+  }
+  for (const stage of BOARD_STAGES) {
+    groups[stage].sort(
+      (a, b) => (a.boardOrder ?? 0) - (b.boardOrder ?? 0) || b.createdAt.localeCompare(a.createdAt)
+    );
+  }
+  return groups;
+}
 
 interface PlanningBoardProps {
   /** Open a note in the editor (leaves the board). */
@@ -31,7 +57,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     sortOrder: 'desc',
     archived: 'active',
   });
-  const { setBoardStage, setPriority, reorderColumn, createNote, softDeleteNote } =
+  const { setBoardStage, setPriority, reorderColumn, createNote, softDeleteNote, moveNote } =
     useNoteMutations();
 
   const planningNotes = useMemo(
@@ -41,6 +67,10 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
       ),
     [allNotes]
   );
+
+  // Full (unfiltered) grouping — used so reordering keeps every card's order
+  // contiguous even when a search/tag/priority filter is hiding some cards.
+  const unfilteredByStage = useMemo(() => groupByStage(planningNotes), [planningNotes]);
 
   // Tags present across the board, for the filter dropdown.
   const availableTags = useMemo(() => {
@@ -71,28 +101,7 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     });
   }, [planningNotes, search, tagFilter, priorityFilter]);
 
-  const notesByStage = useMemo(() => {
-    const groups: Record<BoardStage, NoteSnapshot[]> = {
-      backlog: [],
-      todo: [],
-      in_progress: [],
-      in_review: [],
-      in_staging: [],
-    };
-    for (const note of filteredNotes) {
-      // Notes with no explicit stage (e.g. moved into the notebook) land in Backlog.
-      const stage = note.boardStage ?? 'backlog';
-      groups[stage].push(note);
-    }
-    // Within each column, order by boardOrder, then newest-first as a tiebreak.
-    for (const stage of Object.keys(groups) as BoardStage[]) {
-      groups[stage].sort(
-        (a, b) =>
-          (a.boardOrder ?? 0) - (b.boardOrder ?? 0) || b.createdAt.localeCompare(a.createdAt)
-      );
-    }
-    return groups;
-  }, [filteredNotes]);
+  const notesByStage = useMemo(() => groupByStage(filteredNotes), [filteredNotes]);
 
   const handleReorder = (
     draggedId: string,
@@ -100,14 +109,11 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     targetId: string | null,
     side: 'above' | 'below' | 'append'
   ) => {
-    const ids = notesByStage[stage].map(n => n.id).filter(id => id !== draggedId);
-    let insertAt = ids.length;
-    if (targetId !== null) {
-      const ti = ids.indexOf(targetId);
-      if (ti !== -1) insertAt = side === 'below' ? ti + 1 : ti;
-    }
-    ids.splice(insertAt, 0, draggedId);
-    reorderColumn.mutate({ stage, orderedIds: ids });
+    // Reindex over the FULL column (not the filtered view) so cards hidden by an
+    // active filter keep contiguous board_order values.
+    const fullIds = unfilteredByStage[stage].map(n => n.id);
+    const orderedIds = computeReorderedIds(fullIds, draggedId, targetId, side);
+    reorderColumn.mutate({ stage, orderedIds });
   };
 
   // Menu "Move to <stage>": append to the end of the target column.
@@ -120,7 +126,11 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
   };
 
   const handleRemoveFromBoard = (noteId: string) => {
+    // Board membership is notebook-based, so removing = moving the note out of
+    // the Planning notebook (nulling the stage alone would just re-group it into
+    // Backlog). Also clear the stage so it isn't stale if moved back later.
     setBoardStage.mutate({ id: noteId, boardStage: null });
+    moveNote.mutate({ noteId, notebookId: INBOX_NOTEBOOK_ID });
   };
 
   const handleDeleteNote = (noteId: string) => {

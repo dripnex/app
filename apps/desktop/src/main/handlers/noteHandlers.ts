@@ -25,7 +25,7 @@ import {
   setNoteStatus,
   setBoardStage,
   setNotePriority,
-  setBoardPosition,
+  PLANNING_NOTEBOOK_ID,
   BOARD_STAGES,
   NOTE_PRIORITIES,
   type NoteStatus,
@@ -192,6 +192,10 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
     handler: async (id, boardStage) => {
       const note = await repo.get(createNoteId(id));
       if (!note) return { ok: false, error: { type: 'NOT_FOUND', id } };
+      // Board metadata may only ever be set on Planning-notebook notes.
+      if (boardStage !== null && note.notebookId !== PLANNING_NOTEBOOK_ID) {
+        return { ok: true, data: noteToSnapshot(note) };
+      }
       const updatedNote = setBoardStage(note, boardStage);
       await repo.save(updatedNote);
       return { ok: true, data: noteToSnapshot(updatedNote) };
@@ -214,14 +218,9 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
     channel: 'notes:reorderColumn',
     args: z.tuple([BoardStageValueSchema, z.array(IdSchema).max(2000)]),
     handler: async (stage, orderedIds) => {
-      // Reindex the whole column: each note gets board_stage=stage and
-      // board_order=its position. Metadata-only; markdown untouched.
-      for (let i = 0; i < orderedIds.length; i++) {
-        const id = orderedIds[i];
-        if (!id) continue;
-        const note = await repo.get(createNoteId(id));
-        if (note) await repo.save(setBoardPosition(note, stage, i));
-      }
+      // Atomic reindex of the column (metadata-only; markdown untouched). The
+      // repo guards notebook membership so ids outside Planning are ignored.
+      repo.reorderBoard(stage, orderedIds);
       return { ok: true };
     },
   });
@@ -234,6 +233,7 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
           limit: z.number().int().positive().max(100000).optional(),
           offset: z.number().int().nonnegative().optional(),
           tag: TagSchema.optional(),
+          notebookId: IdSchema.optional(),
           sortBy: z.enum(['createdAt', 'updatedAt', 'title']).optional(),
           sortOrder: z.enum(['asc', 'desc']).optional(),
           archived: z.enum(['active', 'archived', 'all']).optional(),

@@ -96,6 +96,53 @@ describe('SQLiteNoteRepository', () => {
     });
   });
 
+  describe('reorderBoard', () => {
+    it('reindexes a column atomically and only touches Planning notes', async () => {
+      const a = createNote({
+        id: createNoteId('a'),
+        content: '# A',
+        notebookId: PLANNING_NOTEBOOK_ID,
+      });
+      const b = createNote({
+        id: createNoteId('b'),
+        content: '# B',
+        notebookId: PLANNING_NOTEBOOK_ID,
+      });
+      const outsider = createNote({ id: createNoteId('out'), content: '# Out' }); // Inbox
+      await repository.save(a);
+      await repository.save(b);
+      await repository.save(outsider);
+
+      repository.reorderBoard('todo', ['b', 'a', 'out']);
+
+      const ra = await repository.get(a.id);
+      const rb = await repository.get(b.id);
+      const ro = await repository.get(outsider.id);
+
+      expect(rb!.boardStage).toBe('todo');
+      expect(rb!.boardOrder).toBe(0);
+      expect(ra!.boardStage).toBe('todo');
+      expect(ra!.boardOrder).toBe(1);
+      // A non-Planning note is ignored by the notebook_id guard.
+      expect(ro!.boardStage).toBeNull();
+    });
+
+    it('does not modify note content (markdown is sacred)', async () => {
+      const note = createNote({
+        id: createNoteId('c'),
+        content: '# Keep me\n\nbody',
+        notebookId: PLANNING_NOTEBOOK_ID,
+      });
+      await repository.save(note);
+
+      repository.reorderBoard('in_progress', ['c']);
+
+      const r = await repository.get(note.id);
+      expect(r!.content).toBe('# Keep me\n\nbody');
+      expect(r!.boardStage).toBe('in_progress');
+    });
+  });
+
   describe('tags', () => {
     it('saves and retrieves tags', async () => {
       const note = createNote({

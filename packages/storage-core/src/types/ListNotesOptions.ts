@@ -11,6 +11,8 @@ export interface ListNotesOptions {
   limit?: number;
   offset?: number;
   tag?: string;
+  /** Restrict results to a single notebook (filtered in SQL). */
+  notebookId?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'title';
   sortOrder?: 'asc' | 'desc';
   /** Filter by archived status. Defaults to 'active' (non-archived) */
