@@ -93,12 +93,16 @@ export const PlanningCard = memo(function PlanningCard({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      // No role="button": the card contains interactive controls (the menu),
+      // which is invalid inside a button. Mouse clicks are safe because the menu
+      // stops propagation; Enter is gated to the card itself so pressing Enter on
+      // the menu button doesn't also open the note.
       onClick={() => onOpen(note.id)}
       onKeyDown={e => {
-        if (e.key === 'Enter') onOpen(note.id);
+        if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(note.id);
       }}
-      role="button"
       tabIndex={0}
+      aria-label={`Open note: ${note.title || 'Untitled'}`}
     >
       <div className="planning-card__top">
         {priority !== 'none' && (

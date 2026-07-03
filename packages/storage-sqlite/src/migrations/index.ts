@@ -23,6 +23,7 @@ import { syncHistory } from './017_sync_history.js';
 import { addBoardStage } from './018_board_stage.js';
 import { addNotePriority } from './019_note_priority.js';
 import { addBoardOrder } from './020_board_order.js';
+import { addFtsUpdateGuard } from './021_fts_update_guard.js';
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -46,6 +47,7 @@ export const allMigrations: Migration[] = [
   addBoardStage,
   addNotePriority,
   addBoardOrder,
+  addFtsUpdateGuard,
 ];
 
 export {
@@ -69,4 +71,5 @@ export {
   addBoardStage,
   addNotePriority,
   addBoardOrder,
+  addFtsUpdateGuard,
 };
