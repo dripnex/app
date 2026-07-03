@@ -87,7 +87,8 @@ export function PlanningBoard({ onOpenNote }: PlanningBoardProps) {
     // Within each column, order by boardOrder, then newest-first as a tiebreak.
     for (const stage of Object.keys(groups) as BoardStage[]) {
       groups[stage].sort(
-        (a, b) => a.boardOrder - b.boardOrder || b.createdAt.localeCompare(a.createdAt)
+        (a, b) =>
+          (a.boardOrder ?? 0) - (b.boardOrder ?? 0) || b.createdAt.localeCompare(a.createdAt)
       );
     }
     return groups;

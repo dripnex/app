@@ -79,6 +79,10 @@ export const PlanningCard = memo(function PlanningCard({
   const tasks = countMarkdownTasks(note.content);
   const excerpt = extractExcerpt(note.content, 120);
   const currentStage: BoardStage = note.boardStage ?? 'backlog';
+  // Be resilient to snapshots missing/with unknown priority (e.g. a stale main
+  // process during dev HMR, or notes synced before the field existed).
+  const priority: NotePriority = note.priority ?? 'none';
+  const priorityConfig = PRIORITY_CONFIG[priority] ?? PRIORITY_CONFIG.none;
   const dropClass = dropSide ? `planning-card--drop-${dropSide}` : '';
 
   return (
@@ -97,18 +101,18 @@ export const PlanningCard = memo(function PlanningCard({
       tabIndex={0}
     >
       <div className="planning-card__top">
-        {note.priority !== 'none' && (
+        {priority !== 'none' && (
           <span
             className="planning-card__priority"
-            style={{ backgroundColor: PRIORITY_CONFIG[note.priority].color }}
-            title={`Priority: ${PRIORITY_CONFIG[note.priority].label}`}
-            aria-label={`Priority: ${PRIORITY_CONFIG[note.priority].label}`}
+            style={{ backgroundColor: priorityConfig.color }}
+            title={`Priority: ${priorityConfig.label}`}
+            aria-label={`Priority: ${priorityConfig.label}`}
           />
         )}
         <h4 className="planning-card__title">{note.title || 'Untitled'}</h4>
         <PlanningCardMenu
           currentStage={currentStage}
-          currentPriority={note.priority}
+          currentPriority={priority}
           onOpen={() => onOpen(note.id)}
           onMoveStage={stage => onMoveStage(note.id, stage)}
           onSetPriority={priority => onSetPriority(note.id, priority)}
