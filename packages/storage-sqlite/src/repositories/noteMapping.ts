@@ -21,6 +21,36 @@ import {
 } from '@dripnex/core';
 import type { ArchivedFilter } from '@dripnex/storage-core';
 
+/**
+ * The full ordered column list for the `notes` table — the single source of
+ * truth for SELECT lists and the upsert. Adding a note column means editing
+ * this array (plus the row type below and a migration), not 8 SQL statements.
+ */
+export const NOTE_COLUMNS = [
+  'id',
+  'notebook_id',
+  'content',
+  'title',
+  'created_at',
+  'updated_at',
+  'word_count',
+  'archived_at',
+  'is_pinned',
+  'is_deleted',
+  'status',
+  'board_stage',
+  'priority',
+  'board_order',
+] as const;
+
+/** Columns rewritten on an upsert conflict (everything except id/created_at). */
+export const NOTE_UPDATABLE_COLUMNS = NOTE_COLUMNS.filter(c => c !== 'id' && c !== 'created_at');
+
+/** Render the note column list for a SELECT, optionally alias-prefixed (e.g. `n`). */
+export function noteColumns(alias?: string): string {
+  return alias ? NOTE_COLUMNS.map(c => `${alias}.${c}`).join(', ') : NOTE_COLUMNS.join(', ');
+}
+
 /** Row shape returned by `SELECT * FROM notes` */
 export interface NoteRow {
   id: string;

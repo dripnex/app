@@ -94,6 +94,27 @@ describe('SQLiteNoteRepository', () => {
       expect(row).toBeDefined();
       expect(row!.name).toBe('Planning');
     });
+
+    it('list() carries board fields and honors the notebookId filter', async () => {
+      const planned = createNote({
+        id: createNoteId('l1'),
+        content: '# L',
+        notebookId: PLANNING_NOTEBOOK_ID,
+        priority: 'high',
+      });
+      const other = createNote({ id: createNoteId('l2'), content: '# Other' }); // Inbox
+      await repository.save(planned);
+      await repository.save(other);
+
+      const rows = await repository.list({ notebookId: PLANNING_NOTEBOOK_ID, limit: 100 });
+
+      expect(rows.some(r => r.id === other.id)).toBe(false); // notebook filter works
+      const found = rows.find(r => r.id === planned.id);
+      expect(found).toBeDefined();
+      expect(found!.boardStage).toBe('backlog'); // created in the Planning notebook
+      expect(found!.priority).toBe('high');
+      expect(typeof found!.boardOrder).toBe('number');
+    });
   });
 
   describe('reorderBoard', () => {

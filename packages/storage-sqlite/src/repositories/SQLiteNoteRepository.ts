@@ -20,6 +20,9 @@ import {
   rowToNote,
   prepareFtsQuery,
   archivedConditionSql,
+  noteColumns,
+  NOTE_COLUMNS,
+  NOTE_UPDATABLE_COLUMNS,
   type NoteRow,
   type TagRow,
   type TagWithColorRow,
@@ -55,8 +58,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-             is_pinned, is_deleted, status, board_stage, priority, board_order
+      SELECT ${noteColumns()}
       FROM notes
       WHERE id = ?
     `);
@@ -71,42 +73,36 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Save a note (insert or update) */
   async save(note: Note): Promise<void> {
     this.db.transaction(() => {
-      // Upsert note
+      // Upsert note. Columns/values/SET are all derived from NOTE_COLUMNS, and
+      // bound by name, so adding a column can't silently misalign positions.
+      const cols = NOTE_COLUMNS.join(', ');
+      const values = NOTE_COLUMNS.map(c => `@${c}`).join(', ');
+      const setClause = NOTE_UPDATABLE_COLUMNS.map(c => `${c} = excluded.${c}`).join(
+        ',\n          '
+      );
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-                           is_pinned, is_deleted, status, board_stage, priority, board_order)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (${cols})
+        VALUES (${values})
         ON CONFLICT(id) DO UPDATE SET
-          notebook_id = excluded.notebook_id,
-          content = excluded.content,
-          title = excluded.title,
-          updated_at = excluded.updated_at,
-          word_count = excluded.word_count,
-          archived_at = excluded.archived_at,
-          is_pinned = excluded.is_pinned,
-          is_deleted = excluded.is_deleted,
-          status = excluded.status,
-          board_stage = excluded.board_stage,
-          priority = excluded.priority,
-          board_order = excluded.board_order
+          ${setClause}
       `);
 
-      stmt.run(
-        note.id,
-        note.notebookId,
-        note.content,
-        note.title, // Use structural title
-        note.metadata.createdAt,
-        note.metadata.updatedAt,
-        note.metadata.wordCount,
-        note.metadata.archivedAt,
-        note.isPinned ? 1 : 0,
-        note.isDeleted ? 1 : 0,
-        note.status,
-        note.boardStage,
-        note.priority,
-        note.boardOrder
-      );
+      stmt.run({
+        id: note.id,
+        notebook_id: note.notebookId,
+        content: note.content,
+        title: note.title, // Use structural title
+        created_at: note.metadata.createdAt,
+        updated_at: note.metadata.updatedAt,
+        word_count: note.metadata.wordCount,
+        archived_at: note.metadata.archivedAt,
+        is_pinned: note.isPinned ? 1 : 0,
+        is_deleted: note.isDeleted ? 1 : 0,
+        status: note.status,
+        board_stage: note.boardStage,
+        priority: note.priority,
+        board_order: note.boardOrder,
+      });
 
       // Update content-extracted tags (preserves manual tags)
       this.syncExtractedTags(note.id, note.metadata.tags);
@@ -162,8 +158,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     if (tag) {
       sql = `
-        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at,
-               n.is_pinned, n.is_deleted, n.status, n.board_stage, n.priority, n.board_order
+        SELECT DISTINCT ${noteColumns('n')}
         FROM notes n
         JOIN note_tags nt ON n.id = nt.note_id
         JOIN tags t ON nt.tag_id = t.id
@@ -176,8 +171,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         : [tag.toLowerCase(), limit, offset];
     } else {
       sql = `
-        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-               is_pinned, is_deleted, status, board_stage, priority, board_order
+        SELECT ${noteColumns('n')}
         FROM notes n
         WHERE 1=1 ${archivedCondition} ${notebookCondition}
         ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
@@ -212,8 +206,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const ftsQuery = prepareFtsQuery(trimmedQuery);
 
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
-             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status, n.board_stage, n.priority, n.board_order
+      SELECT ${noteColumns('n')}
       FROM notes_fts fts
       JOIN notes n ON fts.id = n.id
       WHERE notes_fts MATCH ? ${archivedCondition}
