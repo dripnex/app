@@ -175,6 +175,14 @@ jobs:
         working-directory: apps/desktop
         run: npx playwright install-deps chromium
 
+      # The `setup` job installs with --ignore-scripts, so Electron's postinstall
+      # (which downloads the runtime binary) and the desktop postinstall
+      # (electron-builder install-app-deps → better-sqlite3 rebuilt for Electron)
+      # never ran. e2e launches the real Electron app, so complete the install
+      # here — otherwise electron.launch fails with "Electron failed to install".
+      - name: Complete install for Electron (run postinstall scripts)
+        run: pnpm install --frozen-lockfile
+
       - name: Build desktop bundle
         run: pnpm --filter @dripnex/desktop build
 
