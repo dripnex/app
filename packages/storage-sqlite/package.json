@@ -29,7 +29,7 @@
     "@types/better-sqlite3": "^7.6.12",
     "better-sqlite3": "^12.10.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   },
   "license": "MIT"
 }

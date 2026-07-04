@@ -86,7 +86,7 @@
     "rehype-sanitize": "^6.0.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   },
   "build": {
     "appId": "app.dripnex.desktop",
