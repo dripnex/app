@@ -13,7 +13,17 @@ test.describe('app launch (smoke)', () => {
       // First window must render *something* — a <body> element with non-zero
       // size is a low bar that catches the regression class from PR #266
       // (editor mount crashes that produced a blank window).
-      const bodyBox = await window.locator('body').boundingBox();
+      // launchApp only waits for `domcontentloaded`, which fires before the
+      // first paint/layout, so the body can briefly measure 0×0. Poll until it
+      // actually lays out before measuring (this is a render race, not a blank
+      // window).
+      const body = window.locator('body');
+      await expect
+        .poll(async () => (await body.boundingBox())?.width ?? 0, {
+          message: 'body should lay out with non-zero width',
+        })
+        .toBeGreaterThan(0);
+      const bodyBox = await body.boundingBox();
       expect(bodyBox).not.toBeNull();
       expect(bodyBox!.width).toBeGreaterThan(0);
       expect(bodyBox!.height).toBeGreaterThan(0);
