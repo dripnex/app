@@ -1,8 +1,10 @@
 import { memo, useCallback, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { NoteSnapshot, BoardStage, NotePriority } from '../../../preload/index';
+import { usePlanningStore } from '../../stores/planningStore';
 import { PlanningCard } from './PlanningCard';
 import { NOTE_MIME, BOARD_STAGE_LABELS } from './constants';
+import { isOverWipLimit, parseWipLimit } from './wip';
 
 type DropSide = 'above' | 'below' | 'append';
 
@@ -37,6 +39,19 @@ export const PlanningColumn = memo(function PlanningColumn({
   onDeleteNote,
 }: PlanningColumnProps) {
   const [isOver, setIsOver] = useState(false);
+
+  const wipLimit = usePlanningStore(s => s.wipLimits[stage]);
+  const setWipLimit = usePlanningStore(s => s.setWipLimit);
+  const [editingLimit, setEditingLimit] = useState(false);
+  const overLimit = isOverWipLimit(notes.length, wipLimit);
+
+  const commitLimit = useCallback(
+    (raw: string) => {
+      setWipLimit(stage, parseWipLimit(raw));
+      setEditingLimit(false);
+    },
+    [setWipLimit, stage]
+  );
 
   // preventDefault unconditionally so the drop always fires (some Chromium
   // builds don't enumerate custom types in `types` during dragover).
@@ -79,7 +94,31 @@ export const PlanningColumn = memo(function PlanningColumn({
     >
       <header className="planning-column__header">
         <span className="planning-column__title">{BOARD_STAGE_LABELS[stage]}</span>
-        <span className="planning-column__count">{notes.length}</span>
+        {editingLimit ? (
+          <input
+            type="number"
+            min={1}
+            className="planning-column__wip-input"
+            defaultValue={wipLimit ?? ''}
+            placeholder="∞"
+            autoFocus
+            aria-label={`WIP limit for ${BOARD_STAGE_LABELS[stage]}`}
+            onBlur={e => commitLimit(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commitLimit((e.target as HTMLInputElement).value);
+              else if (e.key === 'Escape') setEditingLimit(false);
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            className={`planning-column__count ${overLimit ? 'is-over' : ''}`}
+            onClick={() => setEditingLimit(true)}
+            title={wipLimit ? `WIP limit ${wipLimit} — click to edit` : 'Set a WIP limit'}
+          >
+            {wipLimit ? `${notes.length} / ${wipLimit}` : notes.length}
+          </button>
+        )}
         <button
           type="button"
           className="planning-column__add"

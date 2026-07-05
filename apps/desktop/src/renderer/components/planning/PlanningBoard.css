@@ -168,8 +168,32 @@
   font-size: 11px;
   color: var(--text-muted);
   background: var(--bg-elevated);
+  border: 1px solid transparent;
   border-radius: 10px;
   padding: 1px 8px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.planning-column__count:hover {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/* Over the WIP limit */
+.planning-column__count.is-over {
+  color: #fff;
+  background: var(--error);
+}
+
+.planning-column__wip-input {
+  width: 52px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .planning-column__add {
