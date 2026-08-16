@@ -140,6 +140,21 @@ export class ApiError extends Error {
   }
 }
 
+/** Default budget for a single HTTP attempt. Hanging DNS/TLS must not lock the UI. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+
+function isAbortError(error: unknown): boolean {
+  return (
+    (error instanceof Error || error instanceof DOMException) && error.name === 'AbortError'
+  );
+}
+
+function requestSignal(existing?: AbortSignal | null): AbortSignal {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  if (!existing) return timeout;
+  return AbortSignal.any([existing, timeout]);
+}
+
 export type RefreshErrorType = 'success' | 'expired' | 'network' | 'device_limit' | 'unknown';
 
 export interface RefreshResult {
@@ -214,6 +229,7 @@ export class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: requestSignal(options.signal),
       });
 
       // Handle 401 - Token expired
@@ -263,6 +279,10 @@ export class ApiClient {
         throw error;
       }
 
+      if (isAbortError(error)) {
+        throw new ApiError(0, 'Request timed out');
+      }
+
       // Retry on network errors (5xx) with exponential backoff
       if (retries > 0 && this.isRetryableError(error)) {
         await this.delay(Math.pow(2, 3 - retries) * 1000); // 1s, 2s, 4s
@@ -308,6 +328,7 @@ export class ApiClient {
           refreshToken,
           deviceId: this.deviceInfo.deviceId,
         }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -357,7 +378,11 @@ export class ApiClient {
       await this.tokenStorage.saveTokens(data.accessToken, data.refreshToken);
       return { type: 'success' };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown network error';
+      const message = isAbortError(error)
+        ? 'Request timed out'
+        : error instanceof Error
+          ? error.message
+          : 'Unknown network error';
       console.error('[ApiClient] Token refresh failed: network error', { message });
       return { type: 'network', message };
     }
