@@ -55,4 +55,32 @@ test.describe('app launch (smoke)', () => {
       await cleanup();
     }
   });
+
+  // Regression for #311: optimizeDeps only covers the dev server. The
+  // production rollup/rolldown build used to split @codemirror/@lezer
+  // across lazy chunks, so HighlightStyle.define() saw `tags` as
+  // undefined and the packaged editor logged "[CodeMirror] plugin error:
+  // TypeError: tags is not iterable". This test must load MarkdownEditor
+  // (lazy from NoteEditor) against the built bundle.
+  test('opening a note loads CodeMirror without plugin errors', async () => {
+    const { window, cleanup } = await launchApp();
+    const consoleErrors: string[] = [];
+    window.on('console', msg => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    window.on('pageerror', err => consoleErrors.push(`pageerror: ${err.message}`));
+
+    try {
+      await window.getByRole('button', { name: 'Create Your First Note' }).click();
+
+      const content = window.locator('.cm-content');
+      await expect(content).toBeVisible({ timeout: 15_000 });
+      await expect(content).toContainText('Untitled');
+
+      const codeMirrorErrors = consoleErrors.filter(line => /\[CodeMirror\]/.test(line));
+      expect(codeMirrorErrors, codeMirrorErrors.join('\n')).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
 });
