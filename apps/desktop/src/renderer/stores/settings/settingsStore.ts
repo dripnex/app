@@ -33,6 +33,8 @@ import {
 interface SettingsStore {
   /** Current settings state */
   settings: SettingsSchema;
+  /** Loud error from boot-time safeStorage hydration. Not persisted. */
+  aiKeyHydrationError: string | null;
 
   // Granular update actions (immutable updates)
   updateGeneral: (updates: Partial<GeneralSettings>) => void;
@@ -106,6 +108,16 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
   return { settings };
 }
 
+/** Persist shape: provider stays, the secret never hits localStorage. */
+export function partializeSettings(state: SettingsStore): { settings: SettingsSchema } {
+  return {
+    settings: {
+      ...state.settings,
+      ai: { ...state.settings.ai, apiKey: '' },
+    },
+  };
+}
+
 // ============================================================================
 // Store Implementation
 // ============================================================================
@@ -114,6 +126,7 @@ export const useSettingsStore = create<SettingsStore>()(
   persist(
     set => ({
       settings: DEFAULT_SETTINGS,
+      aiKeyHydrationError: null,
 
       // Update general settings
       updateGeneral: updates =>
@@ -199,12 +212,7 @@ export const useSettingsStore = create<SettingsStore>()(
       // stored encrypted via Electron safeStorage (OS keychain) and rehydrated
       // into memory on demand (see AiPanel/AiSection). Writing it here would
       // leave it in cleartext on disk, defeating safeStorage.
-      partialize: state => ({
-        settings: {
-          ...state.settings,
-          ai: { ...state.settings.ai, apiKey: '' },
-        },
-      }),
+      partialize: partializeSettings,
     }
   )
 );
@@ -218,6 +226,7 @@ export const selectGeneral = (state: SettingsStore) => state.settings.general;
 export const selectUpdates = (state: SettingsStore) => state.settings.updates;
 export const selectAppearance = (state: SettingsStore) => state.settings.appearance;
 export const selectAi = (state: SettingsStore) => state.settings.ai;
+export const selectAiKeyHydrationError = (state: SettingsStore) => state.aiKeyHydrationError;
 export const selectEditor = (state: SettingsStore) => state.settings.editor;
 export const selectBackup = (state: SettingsStore) => state.settings.backup;
 
@@ -257,6 +266,40 @@ if (typeof window !== 'undefined') {
     }
   } catch {
     // Malformed/absent storage — nothing to scrub.
+  }
+
+  const hydrateFromSafeStorage = () => {
+    const api = window.dripnex?.ai;
+    if (!api?.getKey) return;
+    const provider = useSettingsStore.getState().settings.ai.provider;
+    if (!provider || provider === 'ollama') return;
+    void api
+      .getKey(provider)
+      .then(key => {
+        if (key) useSettingsStore.getState().updateAi({ apiKey: key });
+        useSettingsStore.setState({ aiKeyHydrationError: null });
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Failed to load AI API key';
+        console.error('[settings] failed to hydrate AI key from safeStorage', err);
+        useSettingsStore.setState({ aiKeyHydrationError: message });
+      });
+  };
+
+  // Persist rehydrates async from localStorage (apiKey always ''). If we
+  // load safeStorage first, that write gets clobbered. Wait until persist
+  // has finished, then overlay the key.
+  type PersistApi = {
+    hasHydrated: () => boolean;
+    onFinishHydration: (fn: () => void) => void;
+  };
+  const persistApi = (useSettingsStore as { persist?: PersistApi }).persist;
+  if (persistApi?.hasHydrated()) {
+    hydrateFromSafeStorage();
+  } else if (persistApi?.onFinishHydration) {
+    persistApi.onFinishHydration(hydrateFromSafeStorage);
+  } else {
+    hydrateFromSafeStorage();
   }
 }
 
