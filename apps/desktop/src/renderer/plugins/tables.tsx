@@ -72,7 +72,7 @@ interface TableRange {
   text: string;
 }
 
-function findTableRanges(docText: string): TableRange[] {
+export function findTableRanges(docText: string): TableRange[] {
   const ranges: TableRange[] = [];
   const lines = docText.split('\n');
   let i = 0;
@@ -272,9 +272,19 @@ function buildTableDecorations(state: EditorState): DecorationSet {
   const sel = state.selection.main;
 
   for (const range of ranges) {
-    // Skip if cursor is inside this table range (show raw markdown for editing)
-    if (sel.from >= range.from && sel.from <= range.to) continue;
-    if (sel.to >= range.from && sel.to <= range.to) continue;
+    const cursorInside =
+      (sel.from >= range.from && sel.from <= range.to) ||
+      (sel.to >= range.from && sel.to <= range.to);
+
+    const startLine = doc.lineAt(range.from);
+    const endLine = doc.lineAt(Math.max(range.from, range.to - 1));
+    for (let n = startLine.number; n <= endLine.number; n++) {
+      const line = doc.line(n);
+      builder.add(line.from, line.from, Decoration.line({ class: 'cm-table-range' }));
+    }
+
+    // Cursor inside: keep raw markdown so the table is editable.
+    if (cursorInside) continue;
 
     const parsed = parseGfmTable(range.text, range.from);
     if (!parsed) continue;
@@ -399,54 +409,56 @@ function SortableTable(
 
   // Render with modified thead (sort indicators) and sorted tbody
   return (
-    <table {...rest} className="sortable-table">
-      {thead && (
-        <thead>
-          {React.Children.map(
-            (thead as ReactElement<{ children?: React.ReactNode }>).props.children,
-            trChild => {
-              if (!React.isValidElement(trChild)) return trChild;
-              const trEl = trChild as ReactElement<{
-                children?: React.ReactNode;
-                style?: React.CSSProperties;
-              }>;
-              return React.cloneElement(trEl, {
-                children: React.Children.map(
-                  (trChild as ReactElement<{ children?: React.ReactNode }>).props.children,
-                  (thChild, colIdx) => {
-                    if (!React.isValidElement(thChild)) return thChild;
-                    const el = thChild as ReactElement<{
-                      children?: React.ReactNode;
-                      style?: React.CSSProperties;
-                      className?: string;
-                    }>;
-                    const isSorted = sortCol === colIdx;
-                    const arrow = isSorted ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
-                    return React.cloneElement(el, {
-                      className: `sortable-th${isSorted ? ' sorted' : ''}`,
-                      onClick: () => handleHeaderClick(colIdx),
-                      style: {
-                        ...(el.props.style ?? {}),
-                        cursor: 'pointer',
-                        userSelect: 'none' as const,
-                      },
-                      children: (
-                        <>
-                          {el.props.children}
-                          {arrow && <span className="sort-indicator">{arrow}</span>}
-                        </>
-                      ),
-                    } as Record<string, unknown>);
-                  }
-                ),
-              } as Record<string, unknown>);
-            }
-          )}
-        </thead>
-      )}
-      {tbody && sortedTbodyChildren && <tbody>{sortedTbodyChildren}</tbody>}
-      {otherChildren}
-    </table>
+    <div className="sortable-table-wrap">
+      <table {...rest} className="sortable-table">
+        {thead && (
+          <thead>
+            {React.Children.map(
+              (thead as ReactElement<{ children?: React.ReactNode }>).props.children,
+              trChild => {
+                if (!React.isValidElement(trChild)) return trChild;
+                const trEl = trChild as ReactElement<{
+                  children?: React.ReactNode;
+                  style?: React.CSSProperties;
+                }>;
+                return React.cloneElement(trEl, {
+                  children: React.Children.map(
+                    (trChild as ReactElement<{ children?: React.ReactNode }>).props.children,
+                    (thChild, colIdx) => {
+                      if (!React.isValidElement(thChild)) return thChild;
+                      const el = thChild as ReactElement<{
+                        children?: React.ReactNode;
+                        style?: React.CSSProperties;
+                        className?: string;
+                      }>;
+                      const isSorted = sortCol === colIdx;
+                      const arrow = isSorted ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
+                      return React.cloneElement(el, {
+                        className: `sortable-th${isSorted ? ' sorted' : ''}`,
+                        onClick: () => handleHeaderClick(colIdx),
+                        style: {
+                          ...(el.props.style ?? {}),
+                          cursor: 'pointer',
+                          userSelect: 'none' as const,
+                        },
+                        children: (
+                          <>
+                            {el.props.children}
+                            {arrow && <span className="sort-indicator">{arrow}</span>}
+                          </>
+                        ),
+                      } as Record<string, unknown>);
+                    }
+                  ),
+                } as Record<string, unknown>);
+              }
+            )}
+          </thead>
+        )}
+        {tbody && sortedTbodyChildren && <tbody>{sortedTbodyChildren}</tbody>}
+        {otherChildren}
+      </table>
+    </div>
   );
 }
 
