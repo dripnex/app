@@ -13,13 +13,15 @@
 
 .cm-table-widget {
   overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
   margin: var(--space-3) 0;
   border-radius: var(--radius-md);
-  overflow: hidden;           /* clip child table to border-radius */
 }
 
 .cm-table-visual {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 0.9em;
 }
@@ -28,17 +30,25 @@
   background: var(--bg-elevated);
 }
 
-.cm-table-visual th {
+.cm-table-visual th,
+.cm-table-visual td {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.cm-table-visual th {
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .cm-table-visual td {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
   color: var(--text-primary);
+}
+
+.cm-table-range {
+  background: color-mix(in srgb, var(--accent, #6366f1) 8%, transparent);
 }
 
 .cm-table-visual tr:nth-child(even) {
@@ -104,7 +114,9 @@
   background: var(--bg-elevated);
   cursor: pointer;
   padding: 0;
-  transition: background 0.1s ease, border-color 0.1s ease;
+  transition:
+    background 0.1s ease,
+    border-color 0.1s ease;
 }
 
 .insert-table-modal-cell:hover {
@@ -120,8 +132,14 @@
    C. Sortable Preview Tables
    =================================================================== */
 
+.sortable-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
 .sortable-table {
   width: 100%;
+  max-width: 100%;
   margin: 1em 0;
   border-collapse: collapse;
   font-size: 0.9em;
@@ -131,6 +149,8 @@
 .sortable-table td {
   padding: 10px 12px;
   border: 1px solid var(--border);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .sortable-table th {
