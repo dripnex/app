@@ -286,7 +286,21 @@ if (typeof window !== 'undefined') {
       });
   };
 
-  hydrateFromSafeStorage();
+  // Persist rehydrates async from localStorage (apiKey always ''). If we
+  // load safeStorage first, that write gets clobbered. Wait until persist
+  // has finished, then overlay the key.
+  type PersistApi = {
+    hasHydrated: () => boolean;
+    onFinishHydration: (fn: () => void) => void;
+  };
+  const persistApi = (useSettingsStore as { persist?: PersistApi }).persist;
+  if (persistApi?.hasHydrated()) {
+    hydrateFromSafeStorage();
+  } else if (persistApi?.onFinishHydration) {
+    persistApi.onFinishHydration(hydrateFromSafeStorage);
+  } else {
+    hydrateFromSafeStorage();
+  }
 }
 
 // ============================================================================
