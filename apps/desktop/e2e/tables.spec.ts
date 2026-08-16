@@ -20,11 +20,11 @@ test.describe('tables overflow', () => {
       const content = window.locator('.cm-content');
       await expect(content).toBeVisible({ timeout: 15_000 });
       await content.click();
-      await window.keyboard.press('Meta+A');
+      await window.keyboard.press('ControlOrMeta+A');
       await window.keyboard.insertText(WIDE_TABLE);
 
-      // Move the cursor out of the table so the WYSIWYG widget paints.
-      await window.getByText('end', { exact: true }).click();
+      // Leave the table so the WYSIWYG widget paints (Linux has no Meta).
+      await window.keyboard.press('ControlOrMeta+Home');
 
       const widget = window.locator('.cm-table-widget').first();
       await expect(widget).toBeVisible({ timeout: 10_000 });
