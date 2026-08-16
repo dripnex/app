@@ -145,7 +145,11 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if gh pr list --base develop --head main --repo "$GITHUB_REPOSITORY" --json number --jq 'length' | grep -qx 0; then
+          if ! pr_count="$(gh pr list --base develop --head main --repo "$GITHUB_REPOSITORY" --json number --jq 'length')"; then
+            echo "::error::Unable to check for an existing sync PR."
+            exit 1
+          fi
+          if [ "$pr_count" -eq 0 ]; then
             gh pr create \
               --base develop \
               --head main \

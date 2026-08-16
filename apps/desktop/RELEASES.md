@@ -29,7 +29,7 @@ Do **not** bump versions or push tags by hand. `semantic-release` owns that.
 v0.15.3 shipped with a dead PAT: the tag push used `GITHUB_TOKEN` so Build never started, and `sync-develop` failed silently.
 
 1. GitHub → Settings → Developer settings → Fine-grained PAT.
-2. Resource owner: `dripnex`. Repo: `readide`. Permissions: **Contents: Read and write**, **Pull requests: Read and write**.
+2. Resource owner: `dripnex`. Repo: `readide`. Permissions: **Contents: Read and write**, **Pull requests: Read and write**, **Actions: Read and write** (needed for `gh workflow run`).
 3. Repo **Settings → Secrets and variables → Actions** → update secret `GH_TOKEN`.
 4. Next release: confirm the tag push starts Build & Publish on its own. Until that is verified, the fallback is `gh workflow run "Build & Publish" --ref vX.Y.Z`.
 
@@ -39,12 +39,13 @@ The update-install crash and the CodeMirror `tags is not iterable` bug only repr
 
 ```bash
 pnpm --filter @dripnex/desktop build
-pnpm --filter @dripnex/desktop exec electron-builder --dir --mac -c.mac.notarize=false
+# Apple Silicon host. --arm64 matches the launch path below.
+pnpm --filter @dripnex/desktop exec electron-builder --dir --mac --arm64 -c.mac.notarize=false
 # then:
 ./apps/desktop/release/mac-arm64/Dripnex.app/Contents/MacOS/Dripnex --enable-logging
 ```
 
-Record the results in the promotion PR:
+Complete this checklist **in the promotion PR body before merging** (edit the PR, do not comment after it closes):
 
 - [ ] Note with headings / fenced code / GFM table → log has **zero** `tags is not iterable` or `[CodeMirror] plugin error`
 - [ ] Long AI stream + **Install Now** ×3–5 → WARN `dropped IPC send`, no uncaught exception, app relaunches
