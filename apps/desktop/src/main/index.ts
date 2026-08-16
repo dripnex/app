@@ -1026,9 +1026,12 @@ app.on('open-url', (event, url) => {
 
         // Send token to renderer process — queue if window isn't ready yet
         const mainWin = BrowserWindow.getAllWindows().find(
-          win => !win.isDestroyed() && win.webContents.isLoading() === false
+          win =>
+            !win.isDestroyed() &&
+            !win.webContents.isDestroyed() &&
+            win.webContents.isLoading() === false
         );
-        if (mainWin) {
+        if (mainWin && !mainWin.webContents.isDestroyed()) {
           mainWin.webContents.send('auth:verify-token', token);
           mainWin.show();
           mainWin.focus();
@@ -1086,9 +1089,12 @@ app.on('second-instance', (_event, commandLine) => {
           log.info('Auth verification token received via second-instance');
 
           const mainWin = BrowserWindow.getAllWindows().find(
-            win => !win.isDestroyed() && win.webContents.isLoading() === false
+            win =>
+              !win.isDestroyed() &&
+              !win.webContents.isDestroyed() &&
+              win.webContents.isLoading() === false
           );
-          if (mainWin) {
+          if (mainWin && !mainWin.webContents.isDestroyed()) {
             mainWin.webContents.send('auth:verify-token', token);
             mainWin.show();
             mainWin.focus();
@@ -1106,7 +1112,9 @@ app.on('second-instance', (_event, commandLine) => {
   }
 
   // Focus the existing window
-  const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+  const mainWin = BrowserWindow.getAllWindows().find(
+    win => !win.isDestroyed() && !win.webContents.isDestroyed()
+  );
   if (mainWin) {
     if (mainWin.isMinimized()) mainWin.restore();
     mainWin.focus();

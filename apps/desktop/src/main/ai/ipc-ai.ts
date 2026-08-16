@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@dripnex/ai-core';
 import { DEFAULT_MODEL } from '@dripnex/ai-core';
 import type { ToolRegistry } from '@dripnex/ai-core';
+import { getLogger } from '../logger.js';
 
 const BATCH_INTERVAL_MS = 50;
 
@@ -58,6 +59,60 @@ const RendererToolResultSchema = z.object({
 
 // Per-window active handle tracking
 const activeHandles = new Map<number, Map<string, ChatHandle | ToolChatHandle>>();
+const activeStreamHandles = new Set<ChatHandle | ToolChatHandle>();
+
+const DROPPED_SEND = 'dropped IPC send: webContents destroyed';
+
+/** Send to the renderer only if the webContents is still alive. Never throws. */
+export function safeSend(
+  sender: Electron.WebContents,
+  channel: string,
+  ...args: unknown[]
+): boolean {
+  if (sender.isDestroyed()) {
+    warnDropped(channel);
+    return false;
+  }
+  try {
+    sender.send(channel, ...args);
+    return true;
+  } catch {
+    warnDropped(channel);
+    return false;
+  }
+}
+
+function warnDropped(channel: string): void {
+  try {
+    getLogger().warn({ channel }, DROPPED_SEND);
+  } catch {
+    console.warn(`[ai] ${DROPPED_SEND}`, channel);
+  }
+}
+
+export function trackHandle(windowId: number, handle: ChatHandle | ToolChatHandle): void {
+  if (!activeHandles.has(windowId)) {
+    activeHandles.set(windowId, new Map());
+  }
+  activeHandles.get(windowId)!.set(handle.requestId, handle);
+  activeStreamHandles.add(handle);
+}
+
+function untrackHandle(handle: ChatHandle | ToolChatHandle): void {
+  activeStreamHandles.delete(handle);
+  for (const handles of activeHandles.values()) {
+    handles.delete(handle.requestId);
+  }
+}
+
+/** Abort every in-flight AI stream. Call before destroying windows on update. */
+export function abortAllStreams(): void {
+  for (const handle of activeStreamHandles) {
+    handle.abort();
+  }
+  activeStreamHandles.clear();
+  activeHandles.clear();
+}
 
 // Pending tool confirmations: requestId -> callId -> resolve function
 const pendingConfirmations = new Map<string, Map<string, (approved: boolean) => void>>();
@@ -111,10 +166,14 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
         }
 
         if (tool.requiresConfirmation) {
-          event.sender.send('ai:event', requestId, {
-            type: 'tool_confirm_needed',
-            callId: call.id,
-          });
+          if (
+            !safeSend(event.sender, 'ai:event', requestId, {
+              type: 'tool_confirm_needed',
+              callId: call.id,
+            })
+          ) {
+            return { ok: false, content: 'Renderer gone', error: 'destroyed' };
+          }
           const approved = await waitForConfirmation(requestId, call.id);
           if (!approved) {
             return { ok: false, content: 'Tool execution cancelled by user', error: 'Cancelled' };
@@ -135,12 +194,7 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           : service.chat(request);
 
       requestId = handle.requestId;
-
-      // Track handle
-      if (!activeHandles.has(windowId)) {
-        activeHandles.set(windowId, new Map());
-      }
-      activeHandles.get(windowId)!.set(handle.requestId, handle);
+      trackHandle(windowId, handle);
 
       void consumeStream(event.sender, handle);
 
@@ -328,7 +382,11 @@ export function executeToolInRenderer(
   const key = `${requestId}:${callId}`;
   return new Promise(resolve => {
     pendingRendererResults.set(key, resolve);
-    sender.send('ai:tool-execute-in-renderer', requestId, callId, toolName, args);
+    if (!safeSend(sender, 'ai:tool-execute-in-renderer', requestId, callId, toolName, args)) {
+      pendingRendererResults.delete(key);
+      resolve({ ok: false, content: 'Renderer gone', error: 'destroyed' });
+      return;
+    }
 
     setTimeout(() => {
       if (pendingRendererResults.has(key)) {
@@ -341,19 +399,25 @@ export function executeToolInRenderer(
 
 // ─── Stream consumer with batching ────────────────────────
 
-async function consumeStream(
+export async function consumeStream(
   sender: Electron.WebContents,
   handle: ChatHandle | ToolChatHandle
 ): Promise<void> {
   let textBuffer = '';
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const flush = (): void => {
-    if (textBuffer && !sender.isDestroyed()) {
-      sender.send('ai:event', handle.requestId, { type: 'text', delta: textBuffer });
+  const flush = (): boolean => {
+    if (textBuffer) {
+      const ok = safeSend(sender, 'ai:event', handle.requestId, {
+        type: 'text',
+        delta: textBuffer,
+      });
       textBuffer = '';
+      flushTimer = null;
+      return ok;
     }
     flushTimer = null;
+    return true;
   };
 
   try {
@@ -375,7 +439,10 @@ async function consumeStream(
           flushTimer = null;
         }
         flush();
-        sender.send('ai:event', handle.requestId, event);
+        if (!safeSend(sender, 'ai:event', handle.requestId, event)) {
+          handle.abort();
+          break;
+        }
       }
     }
 
@@ -387,18 +454,13 @@ async function consumeStream(
     flush();
   } catch (err) {
     flush();
-    if (!sender.isDestroyed()) {
-      sender.send('ai:event', handle.requestId, {
-        type: 'error',
-        code: 'provider_error',
-        error: err instanceof Error ? err.message : String(err),
-        retryable: false,
-      });
-    }
+    safeSend(sender, 'ai:event', handle.requestId, {
+      type: 'error',
+      code: 'provider_error',
+      error: err instanceof Error ? err.message : String(err),
+      retryable: false,
+    });
   } finally {
-    // Remove from active handles
-    for (const handles of activeHandles.values()) {
-      handles.delete(handle.requestId);
-    }
+    untrackHandle(handle);
   }
 }
