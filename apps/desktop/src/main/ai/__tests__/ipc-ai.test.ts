@@ -4,6 +4,12 @@ import type { LLMEvent } from '@dripnex/ai-core';
 
 const warn = vi.fn();
 
+vi.mock('electron', () => ({
+  ipcMain: { handle: vi.fn() },
+  app: { on: vi.fn() },
+  dialog: { showSaveDialog: vi.fn(), showOpenDialog: vi.fn() },
+}));
+
 vi.mock('../../logger.js', () => ({
   getLogger: () => ({ warn, info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
