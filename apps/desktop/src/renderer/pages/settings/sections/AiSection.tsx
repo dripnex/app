@@ -11,7 +11,7 @@ import { aiCommandStore } from '@dripnex/plugin-api';
 import type { AiCommandRegistration } from '@dripnex/plugin-api';
 import { validateAiCommandPreset, serializePreset } from '@dripnex/ai-core';
 import type { AiCommandPreset } from '@dripnex/ai-core';
-import { useSettingsStore, selectAi } from '../../../stores/settings';
+import { useSettingsStore, selectAi, selectAiKeyHydrationError } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { Select, NumberInput } from '../components/controls';
@@ -70,6 +70,7 @@ function useAiCommands(): AiCommandRegistration[] {
 export function AiSection() {
   const ai = useSettingsStore(selectAi);
   const updateAi = useSettingsStore(s => s.updateAi);
+  const hydrationError = useSettingsStore(selectAiKeyHydrationError);
 
   const [connectStatus, setConnectStatus] = useState<Record<string, ConnectStatus>>({});
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -209,9 +210,14 @@ export function AiSection() {
   useEffect(() => {
     async function loadKeyForProvider() {
       if (currentProvider === 'ollama') return;
-      const key = await window.dripnex.ai.getKey(currentProvider);
-      if (key) {
-        updateAi({ apiKey: key });
+      try {
+        const key = await window.dripnex.ai.getKey(currentProvider);
+        if (key) {
+          updateAi({ apiKey: key });
+        }
+        setConnectError('');
+      } catch (err) {
+        setConnectError(err instanceof Error ? err.message : 'Failed to load API key');
       }
     }
     void loadKeyForProvider();
@@ -422,10 +428,10 @@ export function AiSection() {
                 </div>
               )}
 
-              {connectError && (
+              {(connectError || hydrationError) && (
                 <div className={styles.aiErrorBox}>
                   <XCircle size={14} />
-                  {connectError}
+                  {connectError || hydrationError}
                 </div>
               )}
             </div>
