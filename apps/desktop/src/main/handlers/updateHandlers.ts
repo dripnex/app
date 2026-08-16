@@ -7,6 +7,7 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { z } from 'zod';
+import { abortAllStreams } from '../ai/ipc-ai.js';
 import { defineIpcHandler } from '../ipc/registry.js';
 import { loggers } from '../logger';
 import type { BroadcastFn } from './types.js';
@@ -77,6 +78,7 @@ export function registerUpdateHandlers(_deps: UpdateHandlerDeps): void {
   // Promise<unknown> and we don't want async semantics interfering with
   // the synchronous window-destruction path.
   ipcMain.handle('updates:installNow', () => {
+    abortAllStreams();
     BrowserWindow.getAllWindows().forEach(win => {
       if (!win.isDestroyed()) win.destroy();
     });
