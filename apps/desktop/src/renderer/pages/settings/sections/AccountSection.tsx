@@ -22,6 +22,7 @@ import {
   selectUser,
   selectIsAuthenticated,
   selectIsLoading,
+  selectError,
 } from '../../../stores/authStore';
 import {
   useSyncStore,
@@ -52,6 +53,7 @@ export function AccountSection() {
   const user = useAuthStore(selectUser);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isLoading = useAuthStore(selectIsLoading);
+  const authError = useAuthStore(selectError);
   const logout = useAuthStore(state => state.logout);
   const loadSession = useAuthStore(state => state.loadSession);
   const syncNow = useSyncStore(state => state.syncNow);
@@ -260,14 +262,8 @@ export function AccountSection() {
             label="Sign in"
             description="Sign in to enable sync and access your notes from any device"
           >
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<LogIn size={14} />}
-              loading={isLoading}
-              onClick={handleSignIn}
-            >
-              {isLoading ? 'Loading...' : 'Sign In'}
+            <Button variant="primary" size="sm" icon={<LogIn size={14} />} onClick={handleSignIn}>
+              Sign In
             </Button>
           </SettingRow>
         )}
@@ -405,6 +401,8 @@ export function AccountSection() {
           </SettingGroup>
         </>
       )}
+
+      {authError && <div className={styles.errorMessage}>{authError}</div>}
 
       {message && (
         <div className={isAuthenticated ? styles.successMessage : styles.infoMessage}>
