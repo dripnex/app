@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
+      # GH_TOKEN must be a fine-grained PAT (contents:write + pull-requests:write).
+      # The default GITHUB_TOKEN cannot start Build & Publish when this job
+      # pushes the version tag — GitHub suppresses workflow triggers from it.
       - name: Checkout
         uses: actions/checkout@v5
         with:

@@ -13,63 +13,44 @@ The app uses `electron-updater` to automatically check for and install updates f
 
 ---
 
-## Release Workflow
+## Release Workflow (automated)
 
-### 1. Update Version
+Do **not** bump versions or push tags by hand. `semantic-release` owns that.
 
-Edit `apps/desktop/package.json`:
+1. Open a promotion PR **`develop` → `main`**. Title must be conventional (`fix(release): cut v0.15.4 …`). Merge with a **merge commit**, never squash — squashing collapses every `fix:`/`feat:` and the changelog dies.
+2. On `main`, **Actions → Release → Run workflow**.
+3. semantic-release analyzes commits, bumps `package.json` + `apps/desktop/package.json`, pushes tag `vX.Y.Z`, opens a **draft** GitHub Release.
+4. The tag push must trigger **Build & Publish** (mac / win / linux). That only happens if `GH_TOKEN` is a **fine-grained PAT** (`contents: write` + `pull-requests: write`). `GITHUB_TOKEN` cannot start other workflows.
+5. All three builds green → the `publish` job undrafts the release → electron-updater sees it.
+6. `sync-develop` opens `main` → `develop` for the release commit + changelog.
 
-```json
-{
-  "version": "0.1.7" // Increment version
-}
-```
+### Rotate `GH_TOKEN` (required after expiry)
 
-### 2. Commit and Tag
+v0.15.3 shipped with a dead PAT: the tag push used `GITHUB_TOKEN` so Build never started, and `sync-develop` failed silently.
+
+1. GitHub → Settings → Developer settings → Fine-grained PAT.
+2. Resource owner: `dripnex`. Repo: `readide`. Permissions: **Contents: Read and write**, **Pull requests: Read and write**.
+3. Repo **Settings → Secrets and variables → Actions** → update secret `GH_TOKEN`.
+4. Next release: confirm the tag push starts Build & Publish on its own. Until that is verified, the fallback is `gh workflow run "Build & Publish" --ref vX.Y.Z`.
+
+### Packaged verification (v0.15.4)
+
+The update-install crash and the CodeMirror `tags is not iterable` bug only reproduce in the **packaged** `.app`. `pnpm e2e` runs `out/`, not the asar.
 
 ```bash
-git add apps/desktop/package.json
-git commit -m "chore(desktop): bump version to 0.1.7"
-git tag v0.1.7
-git push origin develop
-git push origin v0.1.7
+pnpm --filter @dripnex/desktop build
+pnpm --filter @dripnex/desktop exec electron-builder --dir --mac -c.mac.notarize=false
+# then:
+./apps/desktop/release/mac-arm64/Dripnex.app/Contents/MacOS/Dripnex --enable-logging
 ```
 
-### 3. Build Releases
+Record the results in the promotion PR:
 
-```bash
-cd apps/desktop
-pnpm build
-pnpm dist:mac    # Creates DMG and ZIP for macOS (x64 + arm64)
-pnpm dist:win    # Creates NSIS installer for Windows
-pnpm dist:linux  # Creates AppImage and DEB for Linux
-```
-
-**Output location**: `apps/desktop/release/`
-
-### 4. Create GitHub Release
-
-1. Go to: https://github.com/dripnex/readide/releases/new
-2. **Tag**: `v0.1.7` (same as git tag)
-3. **Title**: `Dripnex v0.1.7`
-4. **Description**: Changelog/release notes
-5. **Attach files** from `apps/desktop/release/`:
-   - `Dripnex-0.1.7-arm64.dmg`
-   - `Dripnex-0.1.7-x64.dmg`
-   - `Dripnex-0.1.7-arm64-mac.zip`
-   - `Dripnex-0.1.7-x64-mac.zip`
-   - `Dripnex Setup 0.1.7.exe`
-   - `Dripnex-0.1.7-x64.AppImage`
-   - `dripnex_0.1.7_amd64.deb`
-6. **Publish release**
-
-### 5. Verify Auto-Update
-
-1. Open the app (with older version)
-2. After ~60 seconds, should show update notification
-3. Click "Download Update"
-4. Quit app → Update installs automatically
-5. Restart → New version loads
+- [ ] Note with headings / fenced code / GFM table → log has **zero** `tags is not iterable` or `[CodeMirror] plugin error`
+- [ ] Long AI stream + **Install Now** ×3–5 → WARN `dropped IPC send`, no uncaught exception, app relaunches
+- [ ] API key still works after that restart; `localStorage` key `dripnex-settings` has empty `ai.apiKey`
+- [ ] Network blackholed → Sign In is clickable immediately; session-check error ≤ 15s
+- [ ] `open "dripnex://auth/verify?token=x"` right after closing the main window → no crash
 
 ---
 
@@ -118,46 +99,10 @@ pnpm dist:mac
 
 ---
 
-## GitHub Actions (Optional - Future)
+## Workflows
 
-Create `.github/workflows/release.yml`:
-
-```yaml
-name: Release Desktop App
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build
-        run: |
-          cd apps/desktop
-          pnpm build
-          pnpm dist
-
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: apps/desktop/release/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
+- **Release** (`.github/workflows/release.yml`) — `workflow_dispatch` on `main` only. semantic-release + version bump.
+- **Build & Publish** (`.github/workflows/build.yml`) — on `v*` tags (must be triggered by the PAT) or `workflow_dispatch`.
 
 ---
 
