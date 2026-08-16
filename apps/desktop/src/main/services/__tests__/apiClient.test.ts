@@ -83,9 +83,7 @@ describe('ApiClient timeouts', () => {
 
   it('does not treat an aborted refresh as expired when the caller retries auth', async () => {
     tokens = { accessToken: 'stale', refreshToken: 'refresh' };
-    mockedFetch
-      .mockResolvedValueOnce(jsonResponse({}, 401))
-      .mockRejectedValueOnce(abortError());
+    mockedFetch.mockResolvedValueOnce(jsonResponse({}, 401)).mockRejectedValueOnce(abortError());
 
     await expect(client.requestMagicLink('user@example.test')).rejects.toMatchObject({
       name: 'ApiError',

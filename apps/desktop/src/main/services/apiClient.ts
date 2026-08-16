@@ -144,9 +144,7 @@ export class ApiError extends Error {
 export const REQUEST_TIMEOUT_MS = 15_000;
 
 function isAbortError(error: unknown): boolean {
-  return (
-    (error instanceof Error || error instanceof DOMException) && error.name === 'AbortError'
-  );
+  return (error instanceof Error || error instanceof DOMException) && error.name === 'AbortError';
 }
 
 function requestSignal(existing?: AbortSignal | null): AbortSignal {

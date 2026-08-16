@@ -262,12 +262,7 @@ export function AccountSection() {
             label="Sign in"
             description="Sign in to enable sync and access your notes from any device"
           >
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<LogIn size={14} />}
-              onClick={handleSignIn}
-            >
+            <Button variant="primary" size="sm" icon={<LogIn size={14} />} onClick={handleSignIn}>
               Sign In
             </Button>
           </SettingRow>
