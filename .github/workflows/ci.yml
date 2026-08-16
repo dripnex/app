@@ -149,27 +149,30 @@ jobs:
         run: pnpm typecheck
 
   # ── Tier 2: E2E (Playwright + Electron, xvfb on Linux) ─────────────────
-  # Starts as continue-on-error: true while we stabilize the suite.
-  # Flip to required once it's reliably green on develop.
+  # Must NOT restore the setup job's --ignore-scripts cache: that tree has
+  # no Electron binary and a Node-built better-sqlite3. A full install with
+  # scripts + the two explicit materialize steps is what makes electron.launch
+  # work. This job is required (no continue-on-error).
   e2e:
     needs: setup
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install dependencies (with postinstall scripts)
+        run: pnpm install --frozen-lockfile
+
+      - name: Materialize Electron binary
+        working-directory: apps/desktop
+        run: node node_modules/electron/install.js
+
+      - name: Rebuild native modules for Electron
+        run: pnpm --filter @dripnex/desktop exec electron-builder install-app-deps
 
       - name: Install Playwright system deps
         working-directory: apps/desktop
