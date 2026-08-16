@@ -276,15 +276,17 @@ function buildTableDecorations(state: EditorState): DecorationSet {
       (sel.from >= range.from && sel.from <= range.to) ||
       (sel.to >= range.from && sel.to <= range.to);
 
-    const startLine = doc.lineAt(range.from);
-    const endLine = doc.lineAt(Math.max(range.from, range.to - 1));
-    for (let n = startLine.number; n <= endLine.number; n++) {
-      const line = doc.line(n);
-      builder.add(line.from, line.from, Decoration.line({ class: 'cm-table-range' }));
+    if (cursorInside) {
+      // Line marks only — adding these AND a replace at range.from is
+      // illegal (replace.from < later line.from).
+      const startLine = doc.lineAt(range.from);
+      const endLine = doc.lineAt(Math.max(range.from, range.to - 1));
+      for (let n = startLine.number; n <= endLine.number; n++) {
+        const line = doc.line(n);
+        builder.add(line.from, line.from, Decoration.line({ class: 'cm-table-range' }));
+      }
+      continue;
     }
-
-    // Cursor inside: keep raw markdown so the table is editable.
-    if (cursorInside) continue;
 
     const parsed = parseGfmTable(range.text, range.from);
     if (!parsed) continue;
