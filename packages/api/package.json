@@ -24,21 +24,30 @@
     "tail:production": "wrangler tail --env production",
     "wrangler": "wrangler",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "email:preview": "email dev --dir src/emails --port 3333"
   },
   "dependencies": {
     "@dripnex/sync-core": "workspace:*",
     "@hono/zod-validator": "^0.8.0",
     "@libsql/client": "^0.17.3",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.23",
     "jose": "^6.2.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "stripe": "^22.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260608.1",
+    "@react-email/ui": "^6.9.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
+    "react-email": "^6.9.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8",
     "wrangler": "^4.98.0"
