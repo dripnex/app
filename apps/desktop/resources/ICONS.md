@@ -1,8 +1,15 @@
 # App Icons
 
 Source mark: `logo.png` (tight brand PNG for in-app chrome).
-Master raster: `icon.png` (1024×1024, mark inset ~18% for the macOS
-squircle). Rebuild `icon.icns` and `icons/*.png` from that master.
+Master raster: `icon.png` — **square 1024, no rounded corners**. Apple
+applies the Dock squircle to the packaged `.icns`.
+Runtime Dock: `icon-dock.png` — same art **pre-masked**. `app.dock.setIcon`
+does not apply the system mask, so a square PNG shows as a square.
+
+```
+swift scripts/make-dock-icon.swift apps/desktop/resources/icon.png \
+  apps/desktop/resources/icon-dock.png
+```
 
 Place the following icon files in this directory before building for release:
 

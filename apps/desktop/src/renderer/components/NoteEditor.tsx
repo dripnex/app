@@ -328,14 +328,17 @@ export function NoteEditor({
       <div ref={toolbarRowRef} className="note-editor-toolbar-row">
         <FormattingToolbar onVisibilityChange={setToolbarVisibility} containerRef={toolbarRowRef} />
         <LayoutZone name="editor-toolbar" />
-        {saveStatus && (
-          <span
-            className={`save-indicator ${showSaved ? 'save-indicator--fade' : ''}`}
-            aria-live="polite"
-          >
-            {saveStatus}
-          </span>
-        )}
+        <div className="note-editor-toolbar-end">
+          {saveStatus && (
+            <span
+              className={`save-indicator ${showSaved ? 'save-indicator--fade' : ''}`}
+              aria-live="polite"
+            >
+              {saveStatus}
+            </span>
+          )}
+          <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
+        </div>
       </div>
       <div className={`note-editor-body note-editor-body--${viewMode}`}>
         {showEditor && (
@@ -379,10 +382,6 @@ export function NoteEditor({
           </div>
         )}
 
-        {/* Floating View Toggle */}
-        <div className="floating-view-toggle">
-          <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
-        </div>
       </div>
 
       {/* Plugin Status Bar */}

@@ -560,11 +560,18 @@
 
 /* Save indicator in toolbar row */
 .save-indicator {
-  margin-left: auto;
   font-size: 12px;
   color: var(--text-muted);
   transition: opacity 0.3s ease;
   user-select: none;
+}
+
+.note-editor-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .save-indicator--fade {

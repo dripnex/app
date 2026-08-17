@@ -97,6 +97,17 @@ function resolveAppIconPath(): string | undefined {
   return candidates.find(candidate => existsSync(candidate));
 }
 
+/** Runtime dock image. Must already be squircles — dock.setIcon does not mask. */
+function resolveDockIconPath(): string | undefined {
+  const candidates = [
+    join(__dirname, '../../resources/icon-dock.png'),
+    join(process.resourcesPath, 'icon-dock.png'),
+    join(__dirname, '../../resources/icon.png'),
+    join(process.resourcesPath, 'icon.png'),
+  ];
+  return candidates.find(candidate => existsSync(candidate));
+}
+
 /** Safely send IPC message to all windows, ignoring destroyed ones */
 export function broadcastToWindows(channel: string, ...args: unknown[]): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -652,9 +663,11 @@ app
   .whenReady()
   .then(() => {
     if (!gotTheLock) return; // Extra guard: don't initialize if secondary
-    const appIcon = resolveAppIconPath();
-    if (appIcon && process.platform === 'darwin') {
-      app.dock?.setIcon(appIcon);
+    // Packaged builds use icon.icns; macOS applies the Dock squircle.
+    // Dev runs as Electron.app, so we must set a pre-masked PNG.
+    if (process.platform === 'darwin' && !app.isPackaged) {
+      const dockIcon = resolveDockIconPath();
+      if (dockIcon) app.dock?.setIcon(dockIcon);
     }
     // Initialize data paths first (creates directories)
     dataPaths = initDataPaths();

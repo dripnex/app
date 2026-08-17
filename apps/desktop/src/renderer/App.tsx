@@ -28,6 +28,8 @@ import { ToastProvider, useToast } from './components/Toast';
 import { Toaster } from './ui/primitives';
 import type { PluginLoadError } from './stores/pluginRuntimeStore';
 import { Welcome } from './components/Welcome';
+import { AuthGate } from './components/auth/AuthGate';
+import { useAuthStore, selectIsAuthenticated, selectSessionHydrated } from './stores/authStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -46,7 +48,7 @@ import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useResizableLayout } from './hooks/useResizableLayout';
-import { useAuthStore } from './stores/authStore';
+
 import { useSyncStore } from './stores/syncStore';
 import { useSettingsStore, selectAppearance } from './stores/settings';
 import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
@@ -91,6 +93,9 @@ function NotesApp() {
   const [showWelcome, setShowWelcome] = useState(
     () => !localStorage.getItem('dripnex-onboarding-done')
   );
+  const sessionHydrated = useAuthStore(selectSessionHydrated);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const skipAuthGate = window.dripnex?.app?.isE2E?.() === true;
 
   // Restore saved plugin theme on startup
   const appearance = useSettingsStore(selectAppearance);
@@ -110,8 +115,14 @@ function NotesApp() {
   }, [appearance?.activeThemeId, registeredThemeCount]);
 
   // Resizable layout
-  const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
-    useResizableLayout();
+  const {
+    sidebarWidth,
+    notelistWidth,
+    sidebarCollapsed,
+    toggleSidebar,
+    startResizeSidebar,
+    startResizeNotelist,
+  } = useResizableLayout();
 
   // Navigation state from Zustand
   const navigation = useNavigation();
@@ -526,7 +537,25 @@ function NotesApp() {
     [handleNewNote]
   );
 
-  if (showWelcome) {
+  if (!skipAuthGate && !sessionHydrated) {
+    return (
+      <ToastProvider>
+        <AuthGate hydrating />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
+
+  if (!skipAuthGate && !isAuthenticated) {
+    return (
+      <ToastProvider>
+        <AuthGate />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
+
+  if (showWelcome && skipAuthGate) {
     return (
       <ToastProvider>
         <Welcome onComplete={handleWelcomeComplete} />
@@ -541,15 +570,19 @@ function NotesApp() {
         <div className="app">
           <UpdateBanner />
           <div className="app__layout">
-            <aside className="app__sidebar" style={{ width: sidebarWidth }}>
-              <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
-            </aside>
-            <div
-              className="resize-handle"
-              onMouseDown={startResizeSidebar}
-              role="separator"
-              aria-orientation="vertical"
-            />
+            {!sidebarCollapsed ? (
+              <>
+                <aside className="app__sidebar" style={{ width: sidebarWidth }}>
+                  <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
+                </aside>
+                <div
+                  className="resize-handle"
+                  onMouseDown={startResizeSidebar}
+                  role="separator"
+                  aria-orientation="vertical"
+                />
+              </>
+            ) : null}
 
             <section className="app__notelist" style={{ width: notelistWidth }}>
               <NoteList
@@ -570,6 +603,8 @@ function NotesApp() {
                 onNewNote={handleNewNote}
                 onSortChange={setSort}
                 onTagClick={goToTag}
+                onToggleSidebar={toggleSidebar}
+                sidebarCollapsed={sidebarCollapsed}
                 isLoading={isLoading}
               />
             </section>

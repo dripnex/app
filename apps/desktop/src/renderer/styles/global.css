@@ -53,7 +53,7 @@ body {
 }
 
 /* Overlay policy: when drawer is open, degrade floating toggle */
-:root[data-overlay-open="true"] .floating-view-toggle {
+:root[data-overlay-open="true"] .note-editor-toolbar-end {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   background: var(--glass-bg-fallback);
@@ -470,58 +470,7 @@ input:focus-visible {
   display: none;
 }
 
-/* Floating View Toggle - Inkdrop style (dark, minimal) */
-.floating-view-toggle {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  z-index: 10;
-  background: rgba(15, 16, 18, 0.95);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 20px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
-.floating-view-toggle .editor-view-toggle {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-}
-
-/* Override base styles from preview.css with higher specificity */
-.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn.active,
-.floating-view-toggle .editor-view-toggle .editor-view-toggle-btn.active.filled {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-}
 
 .markdown-editor {
   height: 100%;

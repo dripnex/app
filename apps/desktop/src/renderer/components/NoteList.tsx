@@ -7,6 +7,7 @@ import {
   Check,
   SquarePen,
   ArrowUpDown,
+  PanelLeft,
   Pin,
   PinOff,
   Globe,
@@ -41,6 +42,8 @@ interface NoteListProps {
   onNewNote: () => void;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
   onTagClick: (tag: string) => void;
+  onToggleSidebar?: () => void;
+  sidebarCollapsed?: boolean;
   isLoading: boolean;
 }
 
@@ -134,6 +137,8 @@ export function NoteList({
   onNewNote,
   onSortChange,
   onTagClick,
+  onToggleSidebar,
+  sidebarCollapsed,
   isLoading,
 }: NoteListProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -245,6 +250,18 @@ export function NoteList({
     <nav className="note-list" aria-label="Notes navigation">
       {/* Header Toolbar */}
       <div className="note-list-header">
+        {onToggleSidebar ? (
+          <button
+            type="button"
+            className="header-btn"
+            onClick={onToggleSidebar}
+            aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+            aria-pressed={!sidebarCollapsed}
+            title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+          >
+            <PanelLeft size={16} aria-hidden="true" />
+          </button>
+        ) : null}
         <div className="sort-btn-container" ref={sortDropdownRef}>
           <button
             type="button"

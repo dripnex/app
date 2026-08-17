@@ -22,8 +22,8 @@
 .note-list-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
+  gap: 6px;
+  padding: 12px 12px 12px 10px;
   border-bottom: 1px solid var(--border-subtle);
   -webkit-app-region: drag;
 }
@@ -49,9 +49,14 @@
 }
 
 .header-title {
+  flex: 1;
+  min-width: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Sort Button Container (for dropdown positioning) */
