@@ -873,8 +873,7 @@ app
         aiKeyStorage = new AiKeyStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
-        const apiBaseUrl =
-          process.env.DRIPNEX_API_URL || 'https://readied-api-production.readied.workers.dev';
+        const apiBaseUrl = process.env.DRIPNEX_API_URL || 'https://api.dripnex.app';
         apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
 
         encryptionService = new EncryptionService(dataPaths.root);

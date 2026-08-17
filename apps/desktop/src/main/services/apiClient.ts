@@ -143,6 +143,9 @@ export class ApiError extends Error {
 /** Default budget for a single HTTP attempt. Hanging DNS/TLS must not lock the UI. */
 export const REQUEST_TIMEOUT_MS = 15_000;
 
+/** Live workers.dev origin while api.dripnex.app DNS is still propagating. */
+export const API_FALLBACK_URL = 'https://readied-api-production.readied.workers.dev';
+
 function isAbortError(error: unknown): boolean {
   return (error instanceof Error || error instanceof DOMException) && error.name === 'AbortError';
 }
@@ -279,6 +282,15 @@ export class ApiClient {
 
       if (isAbortError(error)) {
         throw new ApiError(0, 'Request timed out');
+      }
+
+      const raw = error instanceof Error ? error.message : '';
+      if (
+        this.baseURL.includes('api.dripnex.app') &&
+        /enotfound|getaddrinfo|could not resolve|err_name_not_resolved/i.test(raw)
+      ) {
+        this.baseURL = API_FALLBACK_URL;
+        return this.request<T>(endpoint, options, retries);
       }
 
       // Retry on network errors (5xx) with exponential backoff
