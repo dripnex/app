@@ -9,12 +9,31 @@ import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://dripnex.app'),
   title: {
-    default: 'Dripnex — Offline-first Markdown editor for developers',
+    default: 'Dripnex — Your Markdown, on your machine.',
     template: '%s | Dripnex',
   },
-  description:
-    'A beautiful Markdown editor that works offline, stores files locally, and never locks you in.',
+  description: 'A clean editor for notes that remain files. Local Markdown, no platform.',
+  applicationName: 'Dripnex',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+  },
+  openGraph: {
+    type: 'website',
+    url: 'https://dripnex.app',
+    siteName: 'Dripnex',
+    images: [{ url: '/icon.png', width: 512, height: 512, alt: 'Dripnex' }],
+  },
+  twitter: {
+    card: 'summary',
+    images: ['/icon.png'],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

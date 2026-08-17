@@ -1,5 +1,9 @@
 # App Icons
 
+Source mark: `logo.png` (tight brand PNG for in-app chrome).
+Master raster: `icon.png` (1024×1024, mark inset ~18% for the macOS
+squircle). Rebuild `icon.icns` and `icons/*.png` from that master.
+
 Place the following icon files in this directory before building for release:
 
 ## Required Files
