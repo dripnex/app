@@ -46,7 +46,14 @@ app.use(
 app.use(
   '/admin/*',
   cors({
-    origin: ['https://dripnex.app', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: [
+      'https://dripnex.app',
+      'https://www.dripnex.app',
+      'https://readied-web.pages.dev',
+      'http://localhost:3000',
+      'http://localhost:3010',
+      'http://localhost:5173',
+    ],
     allowMethods: ['GET', 'OPTIONS'],
     // Authorization is required: admin auth now accepts a verified JWT bearer
     // token (see routes/admin.ts), in addition to the x-admin-token header.
@@ -58,7 +65,15 @@ app.use(
 app.use(
   '*',
   cors({
-    origin: ['https://dripnex.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: [
+      'https://dripnex.app',
+      'https://www.dripnex.app',
+      'https://readied-web.pages.dev',
+      'http://localhost:5173',
+      'http://localhost:5176',
+      'http://localhost:3000',
+      'http://localhost:3010',
+    ],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

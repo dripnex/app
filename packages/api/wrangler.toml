@@ -38,6 +38,11 @@ simple = { limit = 100, period = 60 }
 name = "readied-api-production"
 vars = { ENVIRONMENT = "production" }
 
+# Apex dripnex.app is the marketing site (Pages). This Worker owns the API host.
+[[env.production.routes]]
+pattern = "api.dripnex.app"
+custom_domain = true
+
 [[env.production.ratelimits]]
 name = "AUTH_RL"
 namespace_id = "3001"

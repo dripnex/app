@@ -34,6 +34,7 @@ import {
 import { createNoteId, createNoteOperation, type NoteStatus } from '@dripnex/core';
 import { initLogger, getLogger, loggers } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
+import { LocalIdentity } from './services/localIdentity.js';
 import { AiKeyStorage } from './services/aiKeyStorage.js';
 import { FileLicenseStorage } from './services/fileLicenseStorage.js';
 import { loadWindowState, saveWindowState } from './services/windowState.js';
@@ -87,6 +88,14 @@ let gitService: GitService | null = null;
 // ============================================================================
 // Shared Helpers (exported for handler modules)
 // ============================================================================
+
+function resolveAppIconPath(): string | undefined {
+  const candidates = [
+    join(__dirname, '../../resources/icon.png'),
+    join(process.resourcesPath, 'icon.png'),
+  ];
+  return candidates.find(candidate => existsSync(candidate));
+}
 
 /** Safely send IPC message to all windows, ignoring destroyed ones */
 export function broadcastToWindows(channel: string, ...args: unknown[]): void {
@@ -253,6 +262,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     show: false,
+    icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
     backgroundColor: '#0a0b0d',
@@ -339,6 +349,7 @@ function createNoteWindow(noteId: string, noteTitle: string): void {
     minWidth: 500,
     minHeight: 400,
     show: false,
+    icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
     backgroundColor: '#0a0b0d',
@@ -403,6 +414,7 @@ function createQuickCaptureWindow(): void {
     alwaysOnTop: true,
     skipTaskbar: true,
     show: false,
+    icon: resolveAppIconPath(),
     backgroundColor: '#0a0b0d',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -450,13 +462,14 @@ function createSettingsWindow(): void {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 720,
-    height: 520,
-    minWidth: 620,
-    minHeight: 460,
+    width: 960,
+    height: 680,
+    minWidth: 800,
+    minHeight: 560,
     show: false,
+    icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 8, y: 8 },
+    trafficLightPosition: { x: 16, y: 18 },
     backgroundColor: '#0a0b0d',
     title: 'Settings',
     webPreferences: {
@@ -471,9 +484,6 @@ function createSettingsWindow(): void {
 
   settingsWindow.on('ready-to-show', () => {
     settingsWindow?.show();
-    if (process.env.NODE_ENV === 'development') {
-      settingsWindow?.webContents.openDevTools();
-    }
   });
 
   settingsWindow.on('closed', () => {
@@ -642,6 +652,10 @@ app
   .whenReady()
   .then(() => {
     if (!gotTheLock) return; // Extra guard: don't initialize if secondary
+    const appIcon = resolveAppIconPath();
+    if (appIcon && process.platform === 'darwin') {
+      app.dock?.setIcon(appIcon);
+    }
     // Initialize data paths first (creates directories)
     dataPaths = initDataPaths();
 
@@ -859,7 +873,8 @@ app
         aiKeyStorage = new AiKeyStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
-        const apiBaseUrl = process.env.DRIPNEX_API_URL || 'https://api.dripnex.app';
+        const apiBaseUrl =
+          process.env.DRIPNEX_API_URL || 'https://readied-api-production.readied.workers.dev';
         apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
 
         encryptionService = new EncryptionService(dataPaths.root);
@@ -885,6 +900,7 @@ app
           tokenStorage,
           syncService,
           encryptionService,
+          localIdentity: new LocalIdentity(dataPaths.root),
           broadcastToWindows,
         });
         registerShareHandlers({ apiClient });
