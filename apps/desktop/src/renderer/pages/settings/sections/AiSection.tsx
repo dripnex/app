@@ -24,6 +24,12 @@ const PROVIDER_INFO: Record<
   string,
   { name: string; keyUrl: string; placeholder: string; description: string }
 > = {
+  dripnex: {
+    name: 'Dripnex AI',
+    keyUrl: '',
+    placeholder: '',
+    description: 'Included with your account. No key to paste.',
+  },
   anthropic: {
     name: 'Anthropic',
     keyUrl: 'https://console.anthropic.com/settings/keys',
@@ -36,6 +42,12 @@ const PROVIDER_INFO: Record<
     placeholder: 'sk-proj-...',
     description: 'GPT-4o, o1, GPT-4 Turbo',
   },
+  grok: {
+    name: 'Grok',
+    keyUrl: 'https://console.x.ai/',
+    placeholder: 'xai-...',
+    description: 'xAI Grok 4 and Grok 3',
+  },
   ollama: {
     name: 'Ollama',
     keyUrl: '',
@@ -45,6 +57,11 @@ const PROVIDER_INFO: Record<
 };
 
 const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+  dripnex: [
+    { value: 'claude-sonnet-5', label: 'Dripnex Sonnet' },
+    { value: 'claude-haiku-4-5-20251001', label: 'Dripnex Haiku' },
+    { value: 'claude-opus-4-8', label: 'Dripnex Opus' },
+  ],
   anthropic: [
     { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
     { value: 'claude-opus-4-8', label: 'Claude Opus 4.8' },
@@ -56,6 +73,11 @@ const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
     { value: 'o1', label: 'o1' },
     { value: 'o1-mini', label: 'o1 Mini' },
     { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  ],
+  grok: [
+    { value: 'grok-4', label: 'Grok 4' },
+    { value: 'grok-3', label: 'Grok 3' },
+    { value: 'grok-3-mini', label: 'Grok 3 Mini' },
   ],
   ollama: [],
 };
@@ -91,6 +113,7 @@ export function AiSection() {
       for (const p of providers) {
         status[p] = 'connected';
       }
+      status.dripnex = 'connected';
       // Ollama is "connected" if reachable (no key needed)
       if (!status.ollama) {
         try {
@@ -209,7 +232,7 @@ export function AiSection() {
   // Load key into settings when switching providers
   useEffect(() => {
     async function loadKeyForProvider() {
-      if (currentProvider === 'ollama') return;
+      if (currentProvider === 'ollama' || currentProvider === 'dripnex') return;
       try {
         const key = await window.dripnex.ai.getKey(currentProvider);
         if (key) {
@@ -307,8 +330,10 @@ export function AiSection() {
   }, []);
 
   const providerOptions = [
+    { value: 'dripnex', label: 'Dripnex AI' },
     { value: 'anthropic', label: 'Anthropic' },
     { value: 'openai', label: 'OpenAI' },
+    { value: 'grok', label: 'Grok (xAI)' },
     { value: 'ollama', label: 'Ollama (Local)' },
   ];
 
@@ -327,7 +352,12 @@ export function AiSection() {
             id="aiProvider"
             value={ai.provider}
             onChange={value => {
-              updateAi({ provider: value as 'anthropic' | 'openai' | 'ollama' });
+              const next = value as typeof ai.provider;
+              const firstModel = MODEL_OPTIONS[next]?.[0]?.value;
+              updateAi({
+                provider: next,
+                ...(firstModel ? { model: firstModel } : {}),
+              });
               setConnectError('');
               setApiKeyInput('');
             }}
@@ -347,18 +377,22 @@ export function AiSection() {
                 <div>
                   <div className={styles.aiConnectedTitle}>Connected to {providerInfo.name}</div>
                   <div className={styles.aiConnectedSubtitle}>
-                    API key stored securely in your system keychain
+                    {currentProvider === 'dripnex'
+                      ? 'Included with your Dripnex account'
+                      : 'API key stored securely in your system keychain'}
                   </div>
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Unplug size={14} />}
-                onClick={handleDisconnect}
-              >
-                Disconnect
-              </Button>
+              {currentProvider !== 'dripnex' && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Unplug size={14} />}
+                  onClick={handleDisconnect}
+                >
+                  Disconnect
+                </Button>
+              )}
             </div>
           </div>
         ) : (

@@ -5,6 +5,8 @@ import {
   AnthropicProvider,
   OpenAIProvider,
   OllamaProvider,
+  DripnexProvider,
+  GrokProvider,
   AIServiceImpl,
   ToolRegistry,
 } from '@dripnex/ai-core';
@@ -19,8 +21,10 @@ export function createAIService(): AIService {
   const registry = new ProviderRegistry();
   const fetchFn = net.fetch as unknown as FetchFn;
 
+  registry.register(new DripnexProvider(fetchFn));
   registry.register(new AnthropicProvider(fetchFn));
   registry.register(new OpenAIProvider(fetchFn));
+  registry.register(new GrokProvider(fetchFn));
   registry.register(new OllamaProvider(fetchFn));
 
   service = new AIServiceImpl(registry);

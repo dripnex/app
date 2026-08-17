@@ -65,7 +65,7 @@ export interface BackupSettings {
 /** AI Assistant settings */
 export interface AiSettings {
   /** LLM provider id */
-  provider: 'anthropic' | 'openai' | 'ollama';
+  provider: 'dripnex' | 'anthropic' | 'openai' | 'grok' | 'ollama';
   /** API key (provider-specific) */
   apiKey: string;
   /** Model id */
@@ -151,7 +151,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
 };
 
 export const DEFAULT_AI: AiSettings = {
-  provider: 'anthropic',
+  provider: 'dripnex',
   apiKey: '',
   model: DEFAULT_MODEL,
   maxContextNotes: 5,

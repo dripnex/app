@@ -51,6 +51,8 @@ export type { RetryOptions } from './retry.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 export { OpenAIProvider } from './providers/openai.js';
 export { OllamaProvider } from './providers/ollama.js';
+export { DripnexProvider } from './providers/dripnex.js';
+export { GrokProvider } from './providers/grok.js';
 
 export { AIServiceImpl } from './ai-service.js';
 export type {
