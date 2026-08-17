@@ -58,16 +58,16 @@ jobs:
           npx wrangler@3 pages deploy apps/web/out --project-name=dripnex-web --branch main --commit-dirty=true
 
           ZONE_ID="$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=dripnex.app" \
-            -H "$AUTH_HEADER" | jq -r '.result[0].id')"
+            -H "$AUTH_HEADER" | jq -r '.result[0].id // empty')"
           echo "zone=${ZONE_ID}"
-          curl -sS "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?per_page=100" \
-            -H "$AUTH_HEADER" | jq -c '.result[] | {id,type,name,content,proxied}'
+          DNS_JSON="$(curl -sS "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?per_page=100" \
+            -H "$AUTH_HEADER")"
+          echo "$DNS_JSON" | jq -c '{success,errors,count:(.result|length?)}'
+          echo "$DNS_JSON" | jq -c '.result[]? | {id,type,name,content,proxied}'
 
           # Drop parking/forwarding records on apex + www so Pages can own them.
           # Leave api.dripnex.app (Worker) and mail/TXT/MX alone.
-          curl -sS "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?per_page=100" \
-            -H "$AUTH_HEADER" \
-            | jq -r '.result[]
+          echo "$DNS_JSON" | jq -r '.result[]?
                 | select((.name=="dripnex.app" or .name=="www.dripnex.app")
                     and (.type=="A" or .type=="AAAA" or .type=="CNAME")
                     and ((.content // "") | test("pages.dev|workers.dev") | not))
@@ -77,7 +77,7 @@ jobs:
                 echo "deleting conflicting record ${rec_id}"
                 curl -sS -X DELETE \
                   "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${rec_id}" \
-                  -H "$AUTH_HEADER" | jq -c '{success,errors}'
+                  -H "$AUTH_HEADER" | jq -c '{success,errors}' || true
               done
 
           for host in dripnex.app www.dripnex.app; do

@@ -61,7 +61,11 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
   // non-http(s) hrefs), which left desktop users unable to click the link.
   // The `client` param is forwarded so the web page can tailor its messaging.
   const emailService = createEmailService(c.env.RESEND_API_KEY);
-  const magicLinkUrl = `https://dripnex.app/auth/verify?token=${token}&client=${encodeURIComponent(
+  // Apex dripnex.app is still a parking lander; Pages production is live here.
+  // Switch back to https://dripnex.app/auth/verify once the zone A/AAAA records
+  // point at dripnex-web (not GoDaddy /lander).
+  const verifyOrigin = 'https://dripnex-web.pages.dev';
+  const magicLinkUrl = `${verifyOrigin}/auth/verify?token=${token}&client=${encodeURIComponent(
     client
   )}`;
   const emailSent = await emailService.sendMagicLink(email, magicLinkUrl);
