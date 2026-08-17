@@ -8,7 +8,6 @@ const links = [
   { label: 'Download', href: '/download' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Docs', href: '/docs' },
-  { label: 'Sign in', href: '/login' },
 ];
 
 const navLinkClass =
@@ -36,6 +35,15 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <Link href="/login" className={navLinkClass}>
+            Sign in
+          </Link>
+          <Link
+            href="/signup"
+            className="ml-1 rounded-md bg-text-primary px-2.5 py-1 text-[13px] font-medium text-background hover:opacity-80"
+          >
+            Sign up
+          </Link>
         </div>
 
         <div className="flex md:hidden">
@@ -59,17 +67,19 @@ export default function Navbar() {
                 </SheetTitle>
               </SheetHeader>
               <ul className="mt-8 space-y-1">
-                {links.map(link => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      onClick={() => setOpen(false)}
-                      className="block rounded-md px-3 py-3 text-sm text-text-secondary hover:bg-white/[0.04] hover:text-text-primary"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {[...links, { label: 'Sign in', href: '/login' }, { label: 'Sign up', href: '/signup' }].map(
+                  link => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setOpen(false)}
+                        className="block rounded-md px-3 py-3 text-sm text-text-secondary hover:bg-white/[0.04] hover:text-text-primary"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  )
+                )}
               </ul>
             </SheetContent>
           </Sheet>
