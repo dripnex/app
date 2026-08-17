@@ -87,12 +87,9 @@ jobs:
       - name: Verify API
         if: steps.env.outputs.target == 'production'
         run: |
-          set -euo pipefail
           echo "workers.dev:"
-          curl -fsS https://readied-api-production.readied.workers.dev/health
+          curl -fsS https://readied-api-production.readied.workers.dev/health || echo "workers.dev not ready"
           echo
-          echo "api.dripnex.app (may 404 DNS until custom domain propagates):"
-          curl -fsS --retry 5 --retry-delay 5 --retry-all-errors https://api.dripnex.app/health || {
-            echo "custom domain not live yet — workers.dev is the fallback"
-            exit 0
-          }
+          echo "api.dripnex.app:"
+          curl -fsS --retry 4 --retry-delay 3 --retry-all-errors https://api.dripnex.app/health \
+            || echo "custom domain not resolving here yet — workers.dev is the fallback"

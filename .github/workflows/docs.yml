@@ -48,6 +48,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # Live custom domain dripnex.app is attached to this project (not dripnex-web).
+          # Live project. Do not create dripnex-web — dripnex.app must stay on this one.
           npx wrangler@3 pages project create readied-web --production-branch main 2>/dev/null || true
           npx wrangler@3 pages deploy apps/web/out --project-name=readied-web --commit-dirty=true
+          # Attach apex if the zone lives in this account (idempotent).
+          curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/readied-web/domains" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"name":"dripnex.app"}' || true
