@@ -7,6 +7,7 @@
 
 import { shell } from 'electron';
 import { z } from 'zod';
+import { LocalNotePushSchema } from '@dripnex/sync-core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { LocalIdentity } from '../services/localIdentity.js';
 import { resolveSession } from '../services/session.js';
@@ -39,16 +40,6 @@ const KeyHexSchema = z
   .max(256)
   .regex(/^[a-f0-9]+$/i);
 const UrlSchema = z.string().url().max(2048);
-
-const SyncChangeSchema = z.object({
-  noteId: IdSchema,
-  operation: z.enum(['create', 'update', 'delete']),
-  content: z
-    .string()
-    .max(10 * 1024 * 1024)
-    .optional(),
-  localVersion: z.number().int().nonnegative().optional(),
-});
 
 export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
   const {
@@ -190,7 +181,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
 
   defineIpcHandler({
     channel: 'sync:push',
-    args: z.tuple([z.array(SyncChangeSchema).max(100000)]),
+    args: z.tuple([z.array(LocalNotePushSchema).max(100000)]),
     handler: async changes => {
       try {
         const result = await sync.push(changes);

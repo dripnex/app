@@ -16,6 +16,7 @@ import {
   createTag,
   createTimestamp,
 } from '@dripnex/core';
+import type { LocalNotePush } from '@dripnex/sync-core';
 import type {
   ApiClient,
   SyncChange,
@@ -287,14 +288,7 @@ export class SyncService {
   /**
    * Push local changes to server
    */
-  async push(
-    changes: Array<{
-      noteId: string;
-      operation: 'create' | 'update' | 'delete';
-      content?: string;
-      localVersion?: number;
-    }>
-  ): Promise<{
+  async push(changes: LocalNotePush[]): Promise<{
     success: boolean;
     results: Array<{
       noteId: string;

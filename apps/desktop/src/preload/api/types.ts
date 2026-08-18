@@ -6,6 +6,12 @@
  */
 
 import type { NoteStatus } from '@dripnex/core';
+import type {
+  NotePullResponse,
+  NotePushResponse,
+  NotePushResult,
+  RemoteNoteChange,
+} from '@dripnex/sync-core';
 
 export type { NoteStatus, NoteSnapshot } from '@dripnex/core';
 
@@ -217,37 +223,10 @@ export interface User {
   email: string;
 }
 
-/** Sync change */
-export interface SyncChange {
-  id: string;
-  noteId: string;
-  version: number;
-  operation: 'create' | 'update' | 'delete';
-  encryptedData: string | null;
-  deviceId: string;
-  createdAt: string;
-}
-
-/** Pull response */
-export interface PullResponse {
-  changes: SyncChange[];
-  cursor: number;
-  hasMore: boolean;
-}
-
-/** Push result */
-export interface PushResult {
-  noteId: string;
-  version: number;
-  status: 'applied' | 'conflict';
-  serverVersion?: number;
-}
-
-/** Push response */
-export interface PushResponse {
-  results: PushResult[];
-  cursor: number;
-}
+export type SyncChange = RemoteNoteChange;
+export type PullResponse = NotePullResponse;
+export type PushResult = NotePushResult;
+export type PushResponse = NotePushResponse;
 
 /** Sync status */
 export interface SyncStatus {
