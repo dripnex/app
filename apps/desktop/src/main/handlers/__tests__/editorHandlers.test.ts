@@ -14,6 +14,10 @@ describe('titleFromHtml', () => {
     expect(titleFromHtml('<title>&amp;lt;</title>')).toBe('&lt;');
   });
 
+  it('keeps a less-than in the title text', () => {
+    expect(titleFromHtml('<title>C < C++</title>')).toBe('C < C++');
+  });
+
   it('returns null when there is no title', () => {
     expect(titleFromHtml('<html><p>none</p></html>')).toBeNull();
   });

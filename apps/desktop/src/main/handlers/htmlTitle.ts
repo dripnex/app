@@ -8,7 +8,7 @@ const ENTITIES: Record<string, string> = {
 };
 
 export function titleFromHtml(html: string): string | null {
-  const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  const match = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
   const raw = match?.[1]?.trim();
   if (!raw) return null;
   const title = raw
