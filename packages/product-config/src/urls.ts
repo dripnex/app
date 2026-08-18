@@ -4,6 +4,8 @@
 
 export const URLS = {
   website: 'https://dripnex.app',
+  /** Live marketing Pages until apex CNAME leaves the parking lander. */
+  marketing: 'https://dripnex-marketing.pages.dev',
   docs: 'https://dripnex.app/docs',
   pricing: 'https://dripnex.app/pricing',
   download: 'https://dripnex.app/download',

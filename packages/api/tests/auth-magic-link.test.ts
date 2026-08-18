@@ -63,7 +63,9 @@ describe('POST /auth/magic-link — email link is webmail-clickable', () => {
     expect(capturedBody).not.toBeNull();
 
     // The clickable button href must be https so Gmail/Outlook keep it clickable.
-    expect(capturedBody!.html).toContain('href="https://dripnex-web.pages.dev/auth/verify?token=');
+    expect(capturedBody!.html).toContain(
+      'href="https://dripnex-marketing.pages.dev/auth/verify?token='
+    );
     // A raw custom-scheme deep link would be stripped by webmail — must not appear.
     expect(capturedBody!.html).not.toContain('href="dripnex://');
     expect(capturedBody!.text).not.toContain('dripnex://');
@@ -72,7 +74,9 @@ describe('POST /auth/magic-link — email link is webmail-clickable', () => {
   it('web client email uses an https link', async () => {
     const res = await requestMagicLink('web');
     expect(res.status).toBe(200);
-    expect(capturedBody!.html).toContain('href="https://dripnex-web.pages.dev/auth/verify?token=');
+    expect(capturedBody!.html).toContain(
+      'href="https://dripnex-marketing.pages.dev/auth/verify?token='
+    );
     expect(capturedBody!.html).not.toContain('href="dripnex://');
   });
 });

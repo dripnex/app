@@ -11,12 +11,12 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, isNull } from 'drizzle-orm';
+import { getProductConfig, URLS } from '@dripnex/product-config';
 import { createDb, type Env } from '../db/client.js';
 import { users, magicLinks, devices, subscriptions } from '../db/schema.js';
 import { createTokens, verifyRefreshToken, authMiddleware } from '../middleware/auth.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
 import { createEmailService } from '../services/email.js';
-import { getProductConfig } from '@dripnex/product-config';
 
 const auth = new Hono<{ Bindings: Env }>();
 
@@ -54,18 +54,16 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
 
   // Send email — ALWAYS link to the https web verify page, which is clickable
   // in email clients and then hands off to the desktop app via the custom-
-  // scheme deep link (see apps/web .../auth/verify: it redirects to
-  // dripnex://auth/verify and shows an "Open" fallback button).
+  // scheme deep link (see dripnex/marketing .../auth/verify).
   //
   // A custom-scheme URL (dripnex://…) placed directly in an email is NOT
   // clickable in most mail clients (Gmail, Apple Mail, Outlook strip or ignore
   // non-http(s) hrefs), which left desktop users unable to click the link.
   // The `client` param is forwarded so the web page can tailor its messaging.
   const emailService = createEmailService(c.env.RESEND_API_KEY);
-  // Apex dripnex.app is still a parking lander; Pages production is live here.
-  // Switch back to https://dripnex.app/auth/verify once the zone A/AAAA records
-  // point at dripnex-web (not GoDaddy /lander).
-  const verifyOrigin = 'https://dripnex-web.pages.dev';
+  // Apex dripnex.app is still a parking lander; marketing Pages is live.
+  // Switch to https://dripnex.app/auth/verify once the zone points at Pages.
+  const verifyOrigin = URLS.marketing;
   const magicLinkUrl = `${verifyOrigin}/auth/verify?token=${token}&client=${encodeURIComponent(
     client
   )}`;
