@@ -37,6 +37,7 @@ import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js
 import { ApiClient } from './services/apiClient.js';
 import { EncryptionService } from './services/encryptionService.js';
 import { SyncService } from './services/syncService.js';
+import { SyncCursorStore } from './services/sync/cursorStore.js';
 import { GitService } from './services/gitService.js';
 import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
@@ -569,6 +570,9 @@ app
           encryptionService,
           noteRepository,
           notebookRepository
+        );
+        await syncService.restoreCursors(
+          new SyncCursorStore(join(dataPaths.root, 'sync-cursors.json'))
         );
 
         registerAuthSyncHandlers({

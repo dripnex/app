@@ -13,8 +13,8 @@ import {
   createNoteId,
   createNotebookId,
   createNotebook,
+  createTag,
   createTimestamp,
-  type NoteStatus,
 } from '@dripnex/core';
 import type {
   ApiClient,
@@ -31,6 +31,8 @@ import type {
   SyncStatusListener,
 } from './types.js';
 import { MAX_BACKOFF_MS, isNetworkError, isAuthError } from './helpers.js';
+import { parseSyncedNote, serializeSyncedNote } from './envelope.js';
+import type { SyncCursorStore } from './cursorStore.js';
 
 // ============================================================================
 // SyncService Class
@@ -47,6 +49,7 @@ export class SyncService {
   private baseAutoSyncInterval: number = 5 * 60 * 1000; // remember the original interval for reset
   private abortController: AbortController | null = null;
   private statusListener: SyncStatusListener | null = null;
+  private cursorStore: SyncCursorStore | null = null;
 
   constructor(
     apiClient: ApiClient,
@@ -68,6 +71,23 @@ export class SyncService {
       lastError: null,
       consecutiveFailures: 0,
     };
+  }
+
+  async restoreCursors(store: SyncCursorStore): Promise<void> {
+    this.cursorStore = store;
+    const saved = await store.load();
+    this.state.cursor = saved.cursor;
+    this.state.tagCursor = saved.tagCursor;
+    this.state.notebookCursor = saved.notebookCursor;
+  }
+
+  private persistCursors(): void {
+    if (!this.cursorStore) return;
+    void this.cursorStore.save({
+      cursor: this.state.cursor,
+      tagCursor: this.state.tagCursor,
+      notebookCursor: this.state.notebookCursor,
+    });
   }
 
   // ==========================================================================
@@ -133,6 +153,7 @@ export class SyncService {
       this.state.cursor =
         appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
       this.state.lastSyncAt = Date.now();
+      this.persistCursors();
 
       return {
         success: true,
@@ -183,6 +204,7 @@ export class SyncService {
       // Only advance cursor to last successfully applied change
       this.state.notebookCursor =
         appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
+      this.persistCursors();
 
       return {
         success: true,
@@ -298,8 +320,8 @@ export class SyncService {
       // Push to server
       const result = await this.apiClient.pushChanges(encryptedChanges);
 
-      // Update cursor
       this.state.cursor = result.cursor;
+      this.persistCursors();
 
       return {
         success: true,
@@ -347,6 +369,7 @@ export class SyncService {
 
       this.state.tagCursor =
         applied === result.changes.length ? result.cursor : this.state.tagCursor;
+      this.persistCursors();
 
       return { success: true, applied };
     } catch (error) {
@@ -385,6 +408,7 @@ export class SyncService {
 
       this.noteRepository.markMultipleTagsAsSynced(successIds);
       this.state.tagCursor = result.cursor;
+      this.persistCursors();
 
       return { success: true, pushed: successIds.length };
     } catch (error) {
@@ -509,7 +533,16 @@ export class SyncService {
         const changesToPush = pendingChanges.map(({ note, localVersion }) => ({
           noteId: note.id,
           operation: (note.isDeleted ? 'delete' : 'update') as 'create' | 'update' | 'delete',
-          content: !note.isDeleted ? note.content : undefined,
+          content: !note.isDeleted
+            ? serializeSyncedNote({
+                content: note.content,
+                notebookId: note.notebookId,
+                isPinned: note.isPinned,
+                isDeleted: note.isDeleted,
+                status: note.status,
+                tags: [...note.metadata.tags],
+              })
+            : undefined,
           localVersion,
         }));
 
@@ -834,16 +867,18 @@ export class SyncService {
     const decryptedContent = change.encryptedData
       ? await this.encryptionService.decrypt(change.encryptedData)
       : null;
+    const payload = decryptedContent ? parseSyncedNote(decryptedContent) : null;
 
     switch (change.operation) {
       case 'create':
       case 'update': {
-        if (!decryptedContent) {
+        if (!payload) {
           throw new Error(`No content for ${change.operation} operation`);
         }
 
         // Check for existing note
         const existingNote = await this.noteRepository.get(noteId);
+        const remoteTitle = this.extractTitle(payload.content);
 
         if (existingNote) {
           // Conflict detection:
@@ -860,7 +895,7 @@ export class SyncService {
             conflicts.push({
               noteId: change.noteId,
               localContent: existingNote.content,
-              remoteContent: decryptedContent,
+              remoteContent: payload.content,
               localVersion: change.version - 1, // Estimate
               remoteVersion: change.version,
               timestamp: new Date().toISOString(),
@@ -879,43 +914,42 @@ export class SyncService {
             });
           }
 
-          // Apply remote change (overwrite local)
-          const remoteTitle = this.extractTitle(decryptedContent);
           await this.noteRepository.save({
             ...existingNote,
-            content: decryptedContent,
+            notebookId: createNotebookId(payload.notebookId),
+            content: payload.content,
             title: remoteTitle,
+            isPinned: payload.isPinned,
+            isDeleted: payload.isDeleted,
+            status: payload.status,
             metadata: {
               ...existingNote.metadata,
               title: remoteTitle,
               updatedAt: createTimestamp(new Date(change.createdAt)),
+              tags: payload.tags.map(createTag),
             },
           });
 
-          // Mark as synced to avoid re-pushing
           this.noteRepository.markAsSynced(noteId);
         } else {
-          // Create new note
-          const newTitle = this.extractTitle(decryptedContent);
           await this.noteRepository.save({
             id: noteId,
-            notebookId: createNotebookId('inbox'), // Default to inbox
-            content: decryptedContent,
-            title: newTitle,
-            isPinned: false,
-            isDeleted: false,
-            status: 'active' as NoteStatus,
+            notebookId: createNotebookId(payload.notebookId),
+            content: payload.content,
+            title: remoteTitle,
+            isPinned: payload.isPinned,
+            isDeleted: payload.isDeleted,
+            status: payload.status,
             metadata: {
-              title: newTitle,
+              title: remoteTitle,
               createdAt: createTimestamp(new Date(change.createdAt)),
               updatedAt: createTimestamp(new Date(change.createdAt)),
-              tags: [],
-              wordCount: decryptedContent.split(/\s+/).length,
+              tags: payload.tags.map(createTag),
+              wordCount: payload.content.split(/\s+/).length,
               archivedAt: null,
             },
           });
 
-          // Mark as synced to avoid re-pushing
           this.noteRepository.markAsSynced(noteId);
         }
         break;
@@ -923,8 +957,12 @@ export class SyncService {
 
       case 'delete': {
         const existingNote = await this.noteRepository.get(noteId);
-        if (existingNote) {
-          await this.noteRepository.delete(noteId);
+        if (existingNote && !existingNote.isDeleted) {
+          await this.noteRepository.save({
+            ...existingNote,
+            isDeleted: true,
+          });
+          this.noteRepository.markAsSynced(noteId);
         }
         break;
       }
