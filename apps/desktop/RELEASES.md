@@ -17,7 +17,7 @@ The app uses `electron-updater` to automatically check for and install updates f
 
 Do **not** bump versions or push tags by hand. `semantic-release` owns that.
 
-1. Write **What’s New** first: `apps/web/content/releases/vX.Y.Z.md` (see `docs/WHATS_NEW.md`). Without that file the website has nothing human to show.
+1. Write **What’s New** first: `dripnex/marketing` → `content/releases/vX.Y.Z.md` (see `docs/WHATS_NEW.md`). Without that file the website has nothing human to show.
 2. Open a promotion PR **`develop` → `main`**. Title must be `chore(release): promote X.Y.Z` — **never** `feat(release): cut …` (that is why older notes say “cut v0.15.2”). Merge with a **merge commit**, never squash.
 3. On `main`, **Actions → Release → Run workflow**.
 4. semantic-release analyzes commits, bumps `package.json` + `apps/desktop/package.json`, pushes tag `vX.Y.Z`, opens a **draft** GitHub Release. Paste the What’s New body into that draft if you want GitHub to match the site.

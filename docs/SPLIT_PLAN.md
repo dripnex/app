@@ -1,9 +1,8 @@
 # Repo Split Plan — dripnex
 
-> Draft for review with the incoming team (Alicio +). Goal: move from the current
-> monorepo to separate repos as collaborators join, **without** creating rework.
-> Nothing here is executed yet — we do the in-repo groundwork first, then split
-> once ownership boundaries are agreed.
+> Historical. Marketing and docs already left (`dripnex/marketing`, `dripnex/docs-site`).
+> Do **not** extract `core` / plugins / the desktop into more git repos.
+> Community plugins stay their own repos. This file is not a backlog.
 
 ## Why split (and the honest caveat)
 
