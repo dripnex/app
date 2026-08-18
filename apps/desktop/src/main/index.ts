@@ -50,6 +50,7 @@ import { registerAuthSyncHandlers } from './handlers/authSyncHandlers.js';
 import { registerGitHandlers } from './handlers/gitHandlers.js';
 import { registerPluginHandlers } from './handlers/pluginHandlers.js';
 import { registerClipboardHandlers } from './handlers/clipboardHandlers.js';
+import { registerEditorHandlers } from './handlers/editorHandlers.js';
 import { registerAiKeyHandlers } from './handlers/aiKeyHandlers.js';
 import { noteToSnapshot } from './handlers/noteSnapshot.js';
 import { startPluginWatcher, startUserFileWatcher, stopPluginWatcher } from './pluginWatcher.js';
@@ -70,9 +71,9 @@ import { inferEdgesFromChunks } from './ai/inferred-graph.js';
 import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
 import { registerLocalServerHandlers, stopLocalServer } from './handlers/localServerHandlers.js';
 import { registerIntegrations } from './integrations/register.js';
-import { isBlockedFetchHost } from './network/ssrf.js';
 import { registerNavigationGuards } from './network/navigation.js';
 import { broadcastToWindows } from './windows/broadcast.js';
+import { flushOpenEditors } from './windows/flushEditors.js';
 import { resolveDockIconPath } from './windows/icons.js';
 import { deliverAuthToken, parseAuthVerifyToken, queueAuthToken } from './windows/authDeepLink.js';
 import {
@@ -444,54 +445,7 @@ app
     });
 
     ipcMain.handle('app:version', () => app.getVersion());
-
-    ipcMain.handle('editor:fetchUrlTitle', async (_event, url: string) => {
-      try {
-        if (typeof url !== 'string' || url.length > 2048) {
-          return { title: null };
-        }
-        const parsed = new URL(url);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          return { title: null };
-        }
-        if (isBlockedFetchHost(parsed.hostname)) {
-          return { title: null };
-        }
-        const response = await net.fetch(url, {
-          signal: AbortSignal.timeout(3000),
-          headers: { 'User-Agent': 'Dripnex/' + app.getVersion() },
-        });
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('text/html')) {
-          return { title: null };
-        }
-        const reader = response.body?.getReader();
-        if (!reader) return { title: null };
-        let html = '';
-        const decoder = new TextDecoder();
-        while (html.length < 16384) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          html += decoder.decode(value, { stream: true });
-          if (/<\/title>/i.test(html)) break;
-        }
-        reader.cancel().catch(() => {});
-        const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        const raw = match?.[1]?.trim();
-        if (!raw) return { title: null };
-        const title = raw
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;|&apos;/g, "'")
-          .replace(/[\r\n]+/g, ' ')
-          .trim();
-        return { title: title || null };
-      } catch {
-        return { title: null };
-      }
-    });
+    registerEditorHandlers();
 
     ipcMain.on('theme:set-source', (_event, source: string) => {
       if (source === 'dark' || source === 'light' || source === 'system') {
@@ -644,6 +598,15 @@ app.on('before-quit', async event => {
 
   globalShortcut.unregisterAll();
   stopPluginWatcher();
+
+  try {
+    await flushOpenEditors();
+  } catch (err) {
+    getLogger().error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Error flushing editors during shutdown'
+    );
+  }
 
   try {
     await stopLocalServer();

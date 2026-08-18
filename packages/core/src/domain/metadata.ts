@@ -3,7 +3,8 @@
  * These values are computed, not stored separately
  */
 
-import type { Tag, Timestamp } from './types.js';
+import { scanMarkdown } from '@dripnex/markdown';
+import { createTag, type Tag, type Timestamp } from './types.js';
 
 /** Metadata derived from a note's content */
 export interface NoteMetadata {
@@ -43,18 +44,7 @@ export function extractTitle(content: string, fallback: string = 'Untitled'): st
 
 /** Extracts tags from markdown content */
 export function extractTags(content: string): Tag[] {
-  const searchable = content.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]+`/g, ' ');
-  const tagPattern = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
-  const tags = new Set<string>();
-
-  let match;
-  while ((match = tagPattern.exec(searchable)) !== null) {
-    if (match[1]) {
-      tags.add(match[1].toLowerCase());
-    }
-  }
-
-  return Array.from(tags) as Tag[];
+  return scanMarkdown(content).tags.map(createTag);
 }
 
 /** Counts words in content */

@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dripnex/markdown": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

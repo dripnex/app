@@ -105,6 +105,11 @@ describe('Metadata', () => {
       );
       expect(extractTags(content)).toEqual(['real']);
     });
+
+    it('ignores hashtags inside tilde fences', () => {
+      const content = ['~~~', '#fake', '~~~', 'keep #real'].join('\n');
+      expect(extractTags(content)).toEqual(['real']);
+    });
   });
 
   describe('countWords', () => {

@@ -30,4 +30,6 @@ export interface MarkdownScan {
   embedTargets: string[];
   wikilinks: MarkdownWikilink[];
   tasks: MarkdownTasks;
+  /** Inline #tags, lowercase, unique, fences and inline code stripped. */
+  tags: string[];
 }

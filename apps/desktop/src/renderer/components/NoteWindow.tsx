@@ -6,11 +6,11 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useThemeOverrides } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useSyncLinks } from '../hooks/useLinks';
 import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
 import { useOfficialThemes } from '../hooks/useOfficialThemes';
-import { useThemeOverrides } from '@dripnex/plugin-api';
 import { ToastProvider } from './Toast';
 import { NoteEditor } from './NoteEditor';
 import './NoteWindow.css';
@@ -27,6 +27,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingContentRef = useRef<string | null>(null);
   const syncLinks = useSyncLinks();
 
   // Load note on mount
@@ -54,6 +55,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   const handleUpdate = useCallback(
     async (content: string) => {
       if (!note) return;
+      pendingContentRef.current = content;
 
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
@@ -64,11 +66,40 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
         if (updated.ok) {
           setNote(updated.data);
           syncLinks.mutate({ noteId: note.id, content });
+          if (pendingContentRef.current === content) {
+            pendingContentRef.current = null;
+          }
         }
       }, 500);
     },
     [note, syncLinks]
   );
+
+  useEffect(() => {
+    return window.dripnex.editor.onFlushRequest(id => {
+      void (async () => {
+        try {
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+          }
+          const pending = pendingContentRef.current;
+          if (pending !== null && note) {
+            const updated = await window.dripnex.notes.update({ id: note.id, content: pending });
+            if (updated.ok) {
+              setNote(updated.data);
+              syncLinks.mutate({ noteId: note.id, content: pending });
+              if (pendingContentRef.current === pending) {
+                pendingContentRef.current = null;
+              }
+            }
+          }
+        } finally {
+          window.dripnex.editor.notifyFlushed(id);
+        }
+      })();
+    });
+  }, [note, syncLinks]);
 
   // Update note title
   const handleTitleUpdate = useCallback(

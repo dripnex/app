@@ -17,6 +17,8 @@ export interface LogAPI {
 
 export interface EditorAPI {
   fetchUrlTitle: (url: string) => Promise<{ title: string | null }>;
+  onFlushRequest: (listener: (id: string) => void) => () => void;
+  notifyFlushed: (id: string) => void;
 }
 
 export interface ClipboardAPI {
@@ -123,6 +125,18 @@ export function createWindowsApi(): WindowsAPI {
 export function createEditorApi(): EditorAPI {
   return {
     fetchUrlTitle: (url: string) => ipcRenderer.invoke('editor:fetchUrlTitle', url),
+    onFlushRequest: listener => {
+      const handler = (_event: Electron.IpcRendererEvent, id: unknown) => {
+        if (typeof id === 'string') listener(id);
+      };
+      ipcRenderer.on('editor:flush', handler);
+      return () => {
+        ipcRenderer.removeListener('editor:flush', handler);
+      };
+    },
+    notifyFlushed: id => {
+      ipcRenderer.send('editor:flushed', id);
+    },
   };
 }
 

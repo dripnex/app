@@ -21,6 +21,23 @@ describe('scanMarkdown', () => {
       { target: 'Note A' },
       { target: 'Note A', anchor: 'Heading', display: 'alias' },
     ]);
+    expect(scan.tags).toEqual([]);
+  });
+
+  it('collects inline tags and skips fences and inline code', () => {
+    const md = [
+      '# Title #heading-tag',
+      'See #Ship and #ship again',
+      '```',
+      '#fake',
+      '```',
+      'also `#nope`',
+      '~~~',
+      '#alsofake',
+      '~~~',
+      'and #Review',
+    ].join('\n');
+    expect(scanMarkdown(md).tags).toEqual(['heading-tag', 'ship', 'review']);
   });
 
   it('skips headings, tasks and links inside fenced code', () => {
