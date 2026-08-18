@@ -4,7 +4,7 @@ Living board. Seeded as note `dripnex-now` so MCP agents can search `NOW`.
 
 #now #roadmap #debt
 
-Updated: 2026-08-17. Version in tree: 0.15.2.
+Updated: 2026-08-18. Version in tree: 0.15.2.
 
 ## Now (true today)
 
@@ -89,11 +89,14 @@ Keep CSS modules + tokens. Do not add Tailwind to desktop.
 
 ## Debt that still bites
 
-- Sync Retry is a no-op until you create a passphrase (Set up in the footer).
-- `docs/ROADMAP.md` is a pointer here; do not revive the March 2026 phases.
-- MCP writes (if enabled) still mutate SQLite directly; the desktop refetches on focus and on `dripnex.external-write`.
-- Vectors need Ollama running (`nomic-embed-text`). Without it, retrieve stays keyword-only.
-- `sync-core` is tree validation + types. Live sync is desktop `SyncService`.
+- You: apex DNS, passphrase, 1Password SDK, `DRIPNEX_AI_KEY`. Footer Retry is no-op until the CEK exists.
+- Magic-link origin and session wipe: #478 (deploy API after merge).
+- Sync metadata / cursors / soft-delete: #479.
+- Plugin zip-slip + host allowlist: #480.
+- `apps/web` leftover tree still on disk; it is out of the pnpm workspace.
+- MCP writes (if enabled) still mutate SQLite directly.
+- Vectors need Ollama (`nomic-embed-text`). Without it, retrieve is keyword-only.
+- `docs/FIX_PLAN.md` is a pointer. Do not treat it as an inventory.
 
 ## How to audit with agents
 

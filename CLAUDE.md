@@ -15,7 +15,6 @@
 ```
 apps/
   desktop/           # Electron app (main, preload, renderer)
-  web/               # Next.js marketing site + docs
 packages/
   ai-core/           # Provider-agnostic AI: streaming, LLM providers, context builder
   core/              # Domain logic + markdown parsing
@@ -25,7 +24,8 @@ packages/
   storage-sqlite/    # SQLite adapter (peerDep for better-sqlite3)
   licensing/         # License validation
   product-config/    # Product configuration
-  sync-core/         # Sync engine
+  sync-core/         # Sync contracts + notebook tree validation
+                     # Live sync is desktop SyncService, not this package
 ```
 
 ## Commands
@@ -73,7 +73,7 @@ Pattern for workspace packages with native deps:
 
 ## Type Version Alignment
 
-Each app manages its own `@types/react` version: `apps/desktop` uses React 18 types and `apps/web` uses React 19 types. Global overrides were removed to prevent cross-app type conflicts.
+`apps/desktop` pins `@types/react` to match its React version. Marketing and docs live in `dripnex/marketing` and `dripnex/docs-site`, not this repo.
 
 **If you see `'X' cannot be used as a JSX component` errors:** Check that each app's `package.json` pins `@types/react` to match its React version.
 

@@ -26,9 +26,6 @@
         "e2e/**/*.{ts,spec.ts}"
       ]
     },
-    "apps/web": {
-      "entry": ["src/**/*.{ts,tsx,astro}", "astro.config.{ts,js,mjs}"]
-    },
     "packages/*": {
       "entry": ["src/index.ts"]
     }
