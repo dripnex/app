@@ -1,63 +1,54 @@
 ---
 title: Cloud Sync
-description: Optional cloud sync via Supabase — backup and sync notes across devices
+description: Optional end-to-end encrypted sync across devices
 ---
 
 # Cloud Sync
 
-Dripnex works 100% offline by default. Cloud sync is an **optional** feature for backing up your notes and syncing them across multiple devices. You never need to create an account or connect to the internet to use Dripnex.
+Dripnex works offline. Sync is optional. You never need an account to take notes.
 
 ## Authentication
 
-Dripnex uses **magic link** email authentication powered by Supabase. There are no passwords to remember.
+Magic-link email via `api.dripnex.app`. No password.
 
-1. Open **Settings > Account**
-2. Enter your email address
-3. Check your inbox for the magic link
-4. Click the link to sign in
+1. Open **Settings → Account**
+2. Enter your email
+3. Open the link
+4. If you want cloud sync, create an encryption passphrase (**Set up** in the footer)
 
-Once authenticated, sync begins automatically.
+Without a passphrase there is no content-encryption key. Sign-in alone does not upload notes.
 
 ## How Sync Works
 
-- Notes are synced to Supabase cloud storage (PostgreSQL)
-- Sync runs **automatically in the background** while you work
-- When you go offline, changes are **queued locally** and pushed when your connection returns
-- **Conflict resolution** uses a last-write-wins strategy with local priority — your local edits always take precedence if the same note was modified on two devices simultaneously
-
-Because Dripnex is offline-first, you will never lose work due to a network issue. The local SQLite database is always the primary source of truth.
+- SQLite on disk is the source of truth
+- Desktop `SyncService` encrypts each change with AES-256-GCM (CEK from your passphrase)
+- `api.dripnex.app` stores ciphertext. The Worker cannot read markdown
+- Auto-sync runs in the background while you are signed in and have a CEK
+- Offline edits wait locally and push when the network returns
 
 ## Sync Status
 
-The **sync status indicator** in the sidebar footer shows the current state at a glance:
+The footer shows the current state:
 
-| Status      | Meaning                                            |
-| ----------- | -------------------------------------------------- |
-| **Synced**  | All notes are up to date with the cloud            |
-| **Syncing** | A sync operation is currently in progress          |
-| **Offline** | No internet connection; changes are queued locally |
-| **Error**   | Something went wrong; check troubleshooting below  |
+| Status | Meaning |
+| ------ | ------- |
+| **Synced** | Local and cloud agree |
+| **Syncing** | Push or pull in flight |
+| **Offline** | No network; changes stay local |
+| **Error** | Often a missing passphrase — use **Set up** |
 
 ## Privacy
 
-- Your data is stored in Supabase (PostgreSQL) when sync is enabled
-- All data transfer uses **HTTPS**
-- You can **delete your cloud data** at any time from **Settings > Account**
-- Sync is entirely optional — you can use Dripnex without ever signing in
-- If you sign out, your local notes remain untouched on your machine
+- Plaintext never leaves the machine
+- You can keep using the app signed out
+- Signing out does not delete local notes
 
 ## Troubleshooting
 
-### Sync appears stuck
+### Sync error after sign-in
 
-Open **Settings > Account** and use **Force Sync** to trigger a full re-sync.
+Create the encryption passphrase (Set up). Retry is a no-op until a CEK exists.
 
-### Sync shows an error state
+### Notes missing on another device
 
-1. Check your internet connection
-2. Try signing out and signing back in to refresh your authentication token
-3. If the issue persists, check the Dripnex logs for details
-
-### Notes not appearing on another device
-
-Make sure you are signed in with the same email on both devices. After signing in, allow a moment for the initial sync to complete.
+Same account, same passphrase, wait for the first pull.

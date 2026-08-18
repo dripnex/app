@@ -212,6 +212,28 @@ describe('PluginRegistry', () => {
       );
       expect(setBridge).toHaveBeenCalledWith('test-plugin', 'font', 'mono');
     });
+
+    it('config.observe fires when set or applyPluginConfig updates the key', async () => {
+      const { applyPluginConfig } = await import('../src/lifecycle/configRuntime');
+      const seen: unknown[] = [];
+
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.config.observe('theme', value => {
+              seen.push(value);
+            });
+            ctx.config.set('theme', 'dark');
+          },
+        })
+      );
+
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(seen).toEqual(['dark']);
+
+      applyPluginConfig('test-plugin', 'theme', 'light');
+      expect(seen).toEqual(['dark', 'light']);
+    });
   });
 
   describe('command registration', () => {

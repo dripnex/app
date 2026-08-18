@@ -5,30 +5,14 @@
  * from `../preload/index`.
  */
 
+import type { NoteStatus } from '@dripnex/core';
+
+export type { NoteStatus, NoteSnapshot } from '@dripnex/core';
+
 /** Result type from operations */
 export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: { type: string; error?: unknown } };
-
-/** Note status for workflow tracking */
-export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
-
-/** Note snapshot from the API */
-export interface NoteSnapshot {
-  id: string;
-  notebookId: string;
-  content: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  wordCount: number;
-  archivedAt: string | null;
-  isArchived: boolean;
-  isPinned: boolean;
-  isDeleted: boolean;
-  status: NoteStatus;
-}
 
 /** Notebook snapshot from the API */
 export interface NotebookSnapshot {
@@ -61,9 +45,17 @@ export interface ListOptions {
   limit?: number;
   offset?: number;
   tag?: string;
+  /** AND of all listed tags; combined with `tag` when both are set */
+  tags?: string[];
   sortBy?: 'createdAt' | 'updatedAt' | 'title';
   sortOrder?: 'asc' | 'desc';
   archived?: 'active' | 'archived' | 'all';
+  notebookId?: string;
+  status?: NoteStatus;
+  isPinned?: boolean;
+  /** Undefined = do not filter by deleted state */
+  isDeleted?: boolean;
+  excludeNotebookIds?: string[];
 }
 
 /** Note counts */
@@ -74,6 +66,14 @@ export interface NoteCounts {
   pinned: number;
   deleted: number;
   byStatus: Record<NoteStatus, number>;
+  byNotebook: Record<string, number>;
+}
+
+/** Counts under the same WHERE as list (limit/sort ignored) */
+export interface NoteScopedCounts {
+  total: number;
+  byStatus: Record<NoteStatus, number>;
+  byTag: Record<string, number>;
 }
 
 /** Activity stats for heatmap */
@@ -198,7 +198,13 @@ export interface OutgoingLinkInfo {
 
 /** Graph data for visualization */
 export interface GraphData {
-  nodes: Array<{ id: string; title: string; notebookId: string }>;
+  nodes: Array<{
+    id: string;
+    title: string;
+    notebookId: string;
+    status?: string;
+    tags?: string[];
+  }>;
   edges: Array<{ source: string; target: string }>;
 }
 

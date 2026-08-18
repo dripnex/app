@@ -17,10 +17,15 @@ export type EditorViewMode = 'editor' | 'split' | 'preview';
 interface EditorPreferencesStore {
   // State
   viewMode: EditorViewMode;
+  outlineOpen: boolean;
 
   // Actions
   setViewMode: (mode: EditorViewMode) => void;
   cycleViewMode: () => void;
+  togglePreview: () => void;
+  toggleSplit: () => void;
+  toggleOutline: () => void;
+  setOutlineOpen: (open: boolean) => void;
 }
 
 // ============================================================================
@@ -34,15 +39,24 @@ export const useEditorPreferencesStore = create<EditorPreferencesStore>()(
     (set, get) => ({
       // Initial state
       viewMode: 'editor',
+      outlineOpen: false,
 
       // Actions
       setViewMode: mode => set({ viewMode: mode }),
+      toggleOutline: () => set(state => ({ outlineOpen: !state.outlineOpen })),
+      setOutlineOpen: open => set({ outlineOpen: open }),
 
       cycleViewMode: () => {
         const current = get().viewMode;
         const currentIndex = VIEW_MODE_CYCLE.indexOf(current);
         const nextIndex = (currentIndex + 1) % VIEW_MODE_CYCLE.length;
         set({ viewMode: VIEW_MODE_CYCLE[nextIndex] });
+      },
+      togglePreview: () => {
+        set({ viewMode: get().viewMode === 'preview' ? 'editor' : 'preview' });
+      },
+      toggleSplit: () => {
+        set({ viewMode: get().viewMode === 'split' ? 'editor' : 'split' });
       },
     }),
     {
@@ -56,6 +70,7 @@ export const useEditorPreferencesStore = create<EditorPreferencesStore>()(
 // ============================================================================
 
 export const selectViewMode = (state: EditorPreferencesStore) => state.viewMode;
+export const selectOutlineOpen = (state: EditorPreferencesStore) => state.outlineOpen;
 
 export const selectIsEditorVisible = (state: EditorPreferencesStore) =>
   state.viewMode === 'editor' || state.viewMode === 'split';

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from 'react';
+import { sc } from './noteEditorSc';
 
 interface TitleInputProps {
   /** Current title value */
@@ -110,7 +111,7 @@ export function TitleInput({
     <input
       ref={inputRef}
       type="text"
-      className="title-input"
+      className={sc('title-input')}
       value={localValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}

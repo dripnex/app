@@ -58,6 +58,12 @@ export function linkPlugin(source: string): void {
 
   console.log(`Linked "${manifest.name}" (${manifest.id}@${manifest.version})`);
   console.log(`  ${linkPath} -> ${sourcePath}`);
+  const mainPath = join(sourcePath, manifest.main ?? 'dist/index.js');
+  if (!existsSync(mainPath)) {
+    console.log('');
+    console.log(`Warning: ${manifest.main ?? 'dist/index.js'} is missing.`);
+    console.log('Build the plugin before Dripnex can load it (npm run build).');
+  }
   console.log('');
-  console.log('Changes to the source directory will be reflected immediately.');
+  console.log('Reload plugins from Settings → Plugins, or restart Dripnex.');
 }

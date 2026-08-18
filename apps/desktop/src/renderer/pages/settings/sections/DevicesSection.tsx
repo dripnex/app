@@ -1,13 +1,13 @@
 /**
- * Devices Section — displays linked devices with rename/revoke controls
+ * Devices — linked sessions, rename, sign out.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Monitor, Smartphone, Laptop, Trash2, Check, X, LogOut } from 'lucide-react';
+import { Monitor, Smartphone, Laptop, Check, X, Pencil, LogOut } from 'lucide-react';
 import { SettingGroup } from '../components/SettingGroup';
 import { Button } from '../../../ui/primitives';
-import styles from './Section.module.css';
+import styles from './DevicesSection.module.css';
 
 interface Device {
   id: string;
@@ -22,15 +22,12 @@ interface Device {
 function getPlatformIcon(platform: string | null) {
   switch (platform) {
     case 'darwin':
-      return <Laptop size={16} />;
-    case 'win32':
-    case 'linux':
-      return <Monitor size={16} />;
+      return <Laptop size={18} />;
     case 'ios':
     case 'android':
-      return <Smartphone size={16} />;
+      return <Smartphone size={18} />;
     default:
-      return <Monitor size={16} />;
+      return <Monitor size={18} />;
   }
 }
 
@@ -51,18 +48,24 @@ function getPlatformLabel(platform: string | null): string {
   }
 }
 
+function tidyHost(name: string | null): string {
+  return (name ?? '').replace(/\.local$/i, '').trim();
+}
+
+function displayName(device: Device): string {
+  return tidyHost(device.name) || 'Unnamed device';
+}
+
 function formatLastSeen(iso: string): string {
   const date = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  if (diffMin < 1) return 'Just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffMin = Math.floor((Date.now() - date.getTime()) / 60_000);
+  if (diffMin < 1) return 'Active now';
+  if (diffMin < 60) return `Active ${diffMin}m ago`;
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffHr < 24) return `Active ${diffHr}h ago`;
   const diffDays = Math.floor(diffHr / 24);
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  if (diffDays < 30) return `Last seen ${diffDays}d ago`;
+  return `Last seen ${date.toLocaleDateString()}`;
 }
 
 function DeviceRow({
@@ -75,7 +78,7 @@ function DeviceRow({
   onRevoke: (deviceId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(device.name ?? '');
+  const [editName, setEditName] = useState(displayName(device));
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -84,82 +87,91 @@ function DeviceRow({
 
   const handleSave = () => {
     const trimmed = editName.trim();
-    if (trimmed && trimmed !== device.name) {
+    if (trimmed && trimmed !== displayName(device)) {
       onRename(device.deviceId, trimmed);
     }
     setEditing(false);
   };
 
-  const handleCancel = () => {
-    setEditName(device.name ?? '');
-    setEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') handleCancel();
-  };
-
   return (
-    <div className={styles.deviceRow}>
-      <div className={styles.deviceIcon}>{getPlatformIcon(device.platform)}</div>
-      <div className={styles.deviceInfo}>
+    <div className={styles.row} data-current={device.isCurrent}>
+      <div className={styles.icon}>{getPlatformIcon(device.platform)}</div>
+      <div className={styles.info}>
         {editing ? (
-          <div className={styles.deviceEditRow}>
+          <div className={styles.editRow}>
             <input
               ref={inputRef}
-              className={styles.deviceNameInput}
+              className={styles.nameInput}
               value={editName}
-              onChange={e => setEditName(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onChange={event => setEditName(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') handleSave();
+                if (event.key === 'Escape') setEditing(false);
+              }}
               onBlur={handleSave}
               maxLength={100}
+              aria-label="Device name"
             />
-            <button type="button" className={styles.iconButton} onClick={handleSave}>
-              <Check size={14} />
-            </button>
-            <button
-              type="button"
-              className={styles.iconButton}
-              onMouseDown={e => {
-                e.preventDefault();
-                handleCancel();
+            <Button variant="secondary" size="sm" icon={<Check size={14} />} onClick={handleSave}>
+              Save
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<X size={14} />}
+              onMouseDown={event => {
+                event.preventDefault();
+                setEditing(false);
+                setEditName(displayName(device));
               }}
             >
-              <X size={14} />
-            </button>
+              Cancel
+            </Button>
           </div>
         ) : (
-          <button
-            type="button"
-            className={styles.deviceName}
-            onClick={() => setEditing(true)}
-            title="Click to rename"
-          >
-            {device.name || 'Unnamed Device'}
-          </button>
+          <>
+            <div className={styles.nameRow}>
+              <p className={styles.name}>{displayName(device)}</p>
+              {device.isCurrent ? <span className={styles.badge}>This device</span> : null}
+            </div>
+            <span className={styles.meta}>
+              {getPlatformLabel(device.platform)} · {formatLastSeen(device.lastSeenAt)}
+            </span>
+          </>
         )}
-        <span className={styles.deviceMeta}>
-          {getPlatformLabel(device.platform)} &middot; {formatLastSeen(device.lastSeenAt)}
-          {device.isCurrent && <span className={styles.currentBadge}>This device</span>}
-        </span>
       </div>
-      <button
-        type="button"
-        className={styles.dangerIconButton}
-        onClick={() => onRevoke(device.deviceId)}
-        title={device.isCurrent ? 'Sign out this device' : 'Revoke device'}
-      >
-        <Trash2 size={14} />
-      </button>
+      {editing ? null : (
+        <div className={styles.actions}>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Pencil size={13} />}
+            onClick={() => {
+              setEditName(displayName(device));
+              setEditing(true);
+            }}
+          >
+            Rename
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            icon={<LogOut size={13} />}
+            onClick={() => onRevoke(device.deviceId)}
+          >
+            {device.isCurrent ? 'Sign out' : 'Remove'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 export function DevicesSection() {
   const queryClient = useQueryClient();
-  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
-  const [confirmRevokeOthers, setConfirmRevokeOthers] = useState(false);
+  const [pending, setPending] = useState<{ kind: 'one' | 'others'; deviceId?: string } | null>(
+    null
+  );
 
   const { data: deviceList = [], isLoading } = useQuery({
     queryKey: ['devices'],
@@ -183,6 +195,13 @@ export function DevicesSection() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }),
   });
 
+  const sorted = useMemo(
+    () => [...deviceList].sort((a, b) => Number(b.isCurrent) - Number(a.isCurrent)),
+    [deviceList]
+  );
+  const otherCount = deviceList.filter(device => !device.isCurrent).length;
+  const pendingDevice = sorted.find(device => device.deviceId === pending?.deviceId);
+
   const handleRename = useCallback(
     (deviceId: string, name: string) => {
       renameMutation.mutate({ deviceId, name });
@@ -190,103 +209,88 @@ export function DevicesSection() {
     [renameMutation]
   );
 
-  const handleRevoke = useCallback(
-    (deviceId: string) => {
-      const device = deviceList.find(d => d.deviceId === deviceId);
-      if (device?.isCurrent) {
-        setConfirmRevokeId(deviceId);
-      } else {
-        revokeMutation.mutate(deviceId);
-      }
-    },
-    [deviceList, revokeMutation]
-  );
-
-  const handleConfirmRevoke = useCallback(() => {
-    if (confirmRevokeId) {
-      revokeMutation.mutate(confirmRevokeId);
-      setConfirmRevokeId(null);
-      // Current device revoked = logout
-      void window.dripnex.auth.logout();
+  const confirm = () => {
+    if (pending?.kind === 'others') {
+      revokeOthersMutation.mutate();
+    } else if (pending?.kind === 'one' && pending.deviceId) {
+      const current = deviceList.find(device => device.deviceId === pending.deviceId)?.isCurrent;
+      revokeMutation.mutate(pending.deviceId);
+      if (current) void window.dripnex.auth.logout();
     }
-  }, [confirmRevokeId, revokeMutation]);
-
-  const handleRevokeOthers = useCallback(() => {
-    setConfirmRevokeOthers(true);
-  }, []);
-
-  const handleConfirmRevokeOthers = useCallback(() => {
-    revokeOthersMutation.mutate();
-    setConfirmRevokeOthers(false);
-  }, [revokeOthersMutation]);
-
-  const otherDeviceCount = deviceList.filter(d => !d.isCurrent).length;
+    setPending(null);
+  };
 
   return (
     <SettingGroup title="Devices">
       {isLoading ? (
-        <div className={styles.infoMessage}>Loading devices...</div>
-      ) : deviceList.length === 0 ? (
-        <div className={styles.infoMessage}>No devices registered.</div>
+        <div className={styles.inset}>Loading devices…</div>
+      ) : sorted.length === 0 ? (
+        <div className={styles.inset}>No devices registered.</div>
       ) : (
         <>
-          <div className={styles.deviceList}>
-            {deviceList.map(device => (
+          <div className={styles.list}>
+            {sorted.map(device => (
               <DeviceRow
                 key={device.deviceId}
                 device={device}
                 onRename={handleRename}
-                onRevoke={handleRevoke}
+                onRevoke={deviceId => setPending({ kind: 'one', deviceId })}
               />
             ))}
           </div>
 
-          {otherDeviceCount > 0 && (
-            <div className={styles.deviceActions}>
+          {otherCount > 0 && pending?.kind !== 'others' ? (
+            <div className={styles.footer}>
+              <p className={styles.footerHint}>
+                {otherCount} other {otherCount === 1 ? 'device' : 'devices'} can open this account.
+              </p>
               <Button
                 variant="danger"
                 size="sm"
                 icon={<LogOut size={14} />}
-                onClick={handleRevokeOthers}
+                onClick={() => setPending({ kind: 'others' })}
                 disabled={revokeOthersMutation.isPending}
               >
-                Sign out other devices ({otherDeviceCount})
+                Sign out others
               </Button>
             </div>
-          )}
+          ) : null}
+
+          {pending?.kind === 'one' && pendingDevice ? (
+            <div className={styles.confirm}>
+              <p>
+                {pendingDevice.isCurrent
+                  ? 'Sign out of this Mac? You will need a magic link to come back.'
+                  : `Remove ${displayName(pendingDevice)}? It will need to sign in again.`}
+              </p>
+              <div className={styles.confirmActions}>
+                <Button variant="secondary" size="sm" onClick={() => setPending(null)}>
+                  Cancel
+                </Button>
+                <Button variant="danger" size="sm" onClick={confirm}>
+                  {pendingDevice.isCurrent ? 'Sign out' : 'Remove'}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {pending?.kind === 'others' ? (
+            <div className={styles.confirm}>
+              <p>
+                Sign out {otherCount} other {otherCount === 1 ? 'device' : 'devices'}? This Mac
+                stays signed in.
+              </p>
+              <div className={styles.confirmActions}>
+                <Button variant="secondary" size="sm" onClick={() => setPending(null)}>
+                  Cancel
+                </Button>
+                <Button variant="danger" size="sm" onClick={confirm}>
+                  Sign out others
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </>
-      )}
-
-      {/* Confirm revoke current device */}
-      {confirmRevokeId && (
-        <div className={styles.confirmDialog}>
-          <p>This will sign you out of this device. Continue?</p>
-          <div className={styles.buttonGroup}>
-            <Button variant="danger" size="sm" onClick={handleConfirmRevoke}>
-              Sign Out
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setConfirmRevokeId(null)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm revoke others */}
-      {confirmRevokeOthers && (
-        <div className={styles.confirmDialog}>
-          <p>
-            Sign out {otherDeviceCount} other device{otherDeviceCount > 1 ? 's' : ''}?
-          </p>
-          <div className={styles.buttonGroup}>
-            <Button variant="danger" size="sm" onClick={handleConfirmRevokeOthers}>
-              Sign Out Others
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setConfirmRevokeOthers(false)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
       )}
     </SettingGroup>
   );

@@ -130,6 +130,16 @@
 | Utility       | Tailwind (as engine only) | Fast iteration            |
 | Editor styles | Isolated scope            | Never inherit from UI kit |
 
+### 3.8 Transactional email
+
+| Decision  | Choice                                                      | Rationale                                                                                                           |
+| --------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Templates | **React Email** (`@react-email/components`)                 | Real HTML structure, previewable, same design tokens as the product. No more hand-rolled `<div style="…">` strings. |
+| Transport | Resend (unchanged)                                          | React Email renders HTML/text; Resend only delivers.                                                                |
+| Scope     | Magic link + welcome first; later receipts / device notices | Those two are the only live senders in `packages/api/src/services/email.ts`.                                        |
+
+Do not author new transactional HTML as template literals. Render with React Email, keep a plaintext alternative, and preview before shipping.
+
 ---
 
 ## 4. Architecture

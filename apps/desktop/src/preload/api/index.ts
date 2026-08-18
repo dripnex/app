@@ -46,6 +46,7 @@ export {
   createWindowsApi,
   createShareApi,
   createEditorApi,
+  createClipboardApi,
 } from './app';
 export type {
   AppVersionAPI,
@@ -55,7 +56,18 @@ export type {
   WindowsAPI,
   ShareAPI,
   EditorAPI,
+  ClipboardAPI,
 } from './app';
 
 export { createLocalServerApi } from './localServer';
 export type { LocalServerAPI } from './localServer';
+
+export { createIntegrationsApi } from './integrations';
+export type {
+  IntegrationsAPI,
+  OnePasswordAPI,
+  OnePasswordSaveInput,
+  OnePasswordSaveResult,
+  GitHubAPI,
+  GitHubStatus,
+} from './integrations';

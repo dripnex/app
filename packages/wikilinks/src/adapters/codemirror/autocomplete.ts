@@ -8,6 +8,7 @@
 import {
   type CompletionContext,
   type CompletionResult,
+  type CompletionSource,
   autocompletion,
 } from '@codemirror/autocomplete';
 import type { EditorView } from '@codemirror/view';
@@ -20,6 +21,18 @@ interface WikilinkAutocompleteConfig {
   searchNotes: (query: string) => Promise<WikilinkNote[]>;
   /** List recent notes (no query) */
   listNotes: () => Promise<WikilinkNote[]>;
+  /** Extra completion sources (e.g. emoji shortcodes) */
+  extraSources?: CompletionSource[];
+  /** Create a note from the typed title. Link is inserted first. */
+  createNote?: (title: string) => void | Promise<void>;
+}
+
+/** Offer "Create …" when the query is non-empty and not an exact title. */
+export function createWikilinkTitle(query: string, notes: WikilinkNote[]): string | null {
+  const title = query.trim().replace(/[\r\n\]]/g, '');
+  if (!title) return null;
+  if (notes.some(n => n.title.toLowerCase() === title.toLowerCase())) return null;
+  return title;
 }
 
 /** Effect to update the current note ID in editor state */
@@ -46,7 +59,7 @@ export const currentNoteIdField = StateField.define<string | null>({
  * @returns CodeMirror extension array
  */
 export function createWikilinkAutocomplete(config: WikilinkAutocompleteConfig): Extension {
-  const { searchNotes, listNotes } = config;
+  const { searchNotes, listNotes, extraSources = [], createNote } = config;
 
   /**
    * Check if position is inside a fenced code block or inline code.
@@ -94,31 +107,47 @@ export function createWikilinkAutocomplete(config: WikilinkAutocompleteConfig): 
       notes = notes.filter(n => n.id !== currentNoteId);
     }
 
-    // NOTE: Empty result is valid UX (matches Obsidian behavior).
-    // The autocomplete closes silently when no notes match — this is intentional.
+    const onCreate = createNote;
+    const createTitle = onCreate ? createWikilinkTitle(query, notes) : null;
+    const options = notes.slice(0, 14).map(note => ({
+      label: note.title,
+      apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
+        const text = `[[${note.title}]]`;
+        view.dispatch({
+          changes: { from, to, insert: text },
+          selection: { anchor: from + text.length },
+        });
+      },
+    }));
 
-    return {
-      from: match.from,
-      options: notes.slice(0, 15).map(note => ({
-        label: note.title,
+    if (createTitle && onCreate) {
+      const make = onCreate;
+      options.unshift({
+        label: `Create “${createTitle}”`,
         apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
-          // CONTRACT: Wikilinks are inserted as [[title]].
-          // Future migration to [[id|title]] format must happen here only.
-          const text = `[[${note.title}]]`;
+          const text = `[[${createTitle}]]`;
           view.dispatch({
             changes: { from, to, insert: text },
             selection: { anchor: from + text.length },
           });
+          void make(createTitle);
         },
-      })),
-      filter: false, // Already filtered via searchNotes()
+      });
+    }
+
+    if (options.length === 0) return null;
+
+    return {
+      from: match.from,
+      options,
+      filter: false,
     };
   }
 
   return [
     currentNoteIdField,
     autocompletion({
-      override: [wikilinkCompletions],
+      override: [wikilinkCompletions, ...extraSources],
       activateOnTyping: true,
       maxRenderedOptions: 15,
     }),

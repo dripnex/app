@@ -31,7 +31,9 @@ import {
   createWindowsApi,
   createShareApi,
   createEditorApi,
+  createClipboardApi,
   createLocalServerApi,
+  createIntegrationsApi,
 } from './api';
 import type {
   NotesAPI,
@@ -58,7 +60,9 @@ import type {
   WindowsAPI,
   ShareAPI,
   EditorAPI,
+  ClipboardAPI,
   LocalServerAPI,
+  IntegrationsAPI,
 } from './api';
 
 // Re-export all types so the renderer can still import from '../preload/index'
@@ -72,6 +76,7 @@ export type {
   NotebookTree,
   ListOptions,
   NoteCounts,
+  NoteScopedCounts,
   BackupInfo,
   BackupResult,
   ExportResult,
@@ -125,7 +130,9 @@ export interface DripnexAPI {
   theme: ThemeAPI;
   plugins: PluginsAPI;
   editor: EditorAPI;
+  clipboard: ClipboardAPI;
   localServer: LocalServerAPI;
+  integrations: IntegrationsAPI;
 }
 
 // Compose and expose the API
@@ -154,7 +161,9 @@ const api: DripnexAPI = {
   theme: createThemeApi(),
   plugins: createPluginsApi(),
   editor: createEditorApi(),
+  clipboard: createClipboardApi(),
   localServer: createLocalServerApi(),
+  integrations: createIntegrationsApi(),
 };
 
 contextBridge.exposeInMainWorld('dripnex', api);

@@ -7,6 +7,8 @@ import {
   type KeyBinding,
 } from '@dripnex/command-registry';
 import { editorCommands } from '@dripnex/command-registry/definitions';
+import { openSearchPanel, findNext, findPrevious } from '@codemirror/search';
+import { toggleFold, foldAll, unfoldAll } from '@codemirror/language';
 import {
   toggleBold,
   toggleItalic,
@@ -52,6 +54,24 @@ const editorExecutors: Record<string, (view: EditorView) => void> = {
   'editor:insert-quote': insertQuote,
   'editor:insert-code-block': insertCodeBlock,
   'editor:insert-horizontal-rule': insertHorizontalRule,
+  'editor:find': view => {
+    openSearchPanel(view);
+  },
+  'editor:find-next': view => {
+    findNext(view);
+  },
+  'editor:find-previous': view => {
+    findPrevious(view);
+  },
+  'editor:toggle-fold': view => {
+    toggleFold(view);
+  },
+  'editor:fold-all': view => {
+    foldAll(view);
+  },
+  'editor:unfold-all': view => {
+    unfoldAll(view);
+  },
   'editor:undo': undoChange,
   'editor:redo': redoChange,
 };

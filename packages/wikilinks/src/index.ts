@@ -31,6 +31,7 @@ export {
 // Adapters (for advanced use only)
 export {
   createWikilinkAutocomplete,
+  createWikilinkTitle,
   setCurrentNoteId,
   currentNoteIdField,
 } from './adapters/codemirror/autocomplete.js';

@@ -1,4 +1,4 @@
-name = "readied-api"
+name = "dripnex-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
@@ -18,9 +18,14 @@ name = "SYNC_RL"
 namespace_id = "1002"
 simple = { limit = 100, period = 60 }
 
+[[ratelimits]]
+name = "PUBLIC_RL"
+namespace_id = "1003"
+simple = { limit = 60, period = 60 }
+
 # Staging environment
 [env.staging]
-name = "readied-api-staging"
+name = "dripnex-api-staging"
 vars = { ENVIRONMENT = "staging" }
 
 [[env.staging.ratelimits]]
@@ -33,10 +38,22 @@ name = "SYNC_RL"
 namespace_id = "2002"
 simple = { limit = 100, period = 60 }
 
-# Production environment
+[[env.staging.ratelimits]]
+name = "PUBLIC_RL"
+namespace_id = "2003"
+simple = { limit = 60, period = 60 }
+
+# Production script name stays readied-api-production until its secrets
+# (Turso / JWT / Resend) are re-keyed onto dripnex-api-production.
 [env.production]
 name = "readied-api-production"
+workers_dev = true
 vars = { ENVIRONMENT = "production" }
+
+# Apex dripnex.app is the marketing site (Pages). This Worker owns the API host.
+[[env.production.routes]]
+pattern = "api.dripnex.app"
+custom_domain = true
 
 [[env.production.ratelimits]]
 name = "AUTH_RL"
@@ -47,6 +64,11 @@ simple = { limit = 10, period = 60 }
 name = "SYNC_RL"
 namespace_id = "3002"
 simple = { limit = 100, period = 60 }
+
+[[env.production.ratelimits]]
+name = "PUBLIC_RL"
+namespace_id = "3003"
+simple = { limit = 60, period = 60 }
 
 # Secrets (set via wrangler secret put):
 # - Development: wrangler secret put <KEY>

@@ -89,6 +89,8 @@ export interface PluginConfigSchema {
 export interface PluginConfigAPI {
   get<T>(key: string): T | undefined;
   set(key: string, value: unknown): void;
+  /** Live updates from Settings or other windows. Returns unsubscribe. */
+  observe<T>(key: string, callback: (value: T) => void): () => void;
 }
 
 export interface PluginLogger {
@@ -176,6 +178,22 @@ export interface PluginContext {
   registerAiCommand(options: PluginAiCommandOptions): () => void;
   /** Register CSS custom properties (theme overrides or custom variables) */
   registerCssVariables(id: string, variables: Record<string, string>): () => void;
+  /**
+   * Add an item to the application Plugins menu.
+   * `click` is registered as a command. `command` reuses an existing command id.
+   */
+  menu: {
+    add(item: {
+      label: string;
+      accelerator?: string;
+      command?: string;
+      click?: () => boolean | void | Promise<boolean | void>;
+    }): () => void;
+  };
+  clipboard: {
+    readText(): Promise<string>;
+    writeText(text: string): Promise<void>;
+  };
   /** Register a complete theme with validated tokens */
   registerTheme(theme: {
     id: string;

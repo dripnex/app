@@ -22,6 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dripnex/markdown": "workspace:*",
     "unist-util-visit": "^5.1.0"
   },
   "peerDependencies": {

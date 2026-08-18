@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { PluginManifest } from '@dripnex/plugin-api';
 import { DEFAULT_MODEL } from '@dripnex/ai-core';
-import '../styles/ai-panel.css';
+import { sc as noteEditorSc } from '../components/noteEditorSc';
 
 /**
  * Custom event name used to communicate between the plugin toggle button
@@ -23,7 +23,7 @@ function AiToggleButton() {
   return (
     <button
       type="button"
-      className="note-editor-actions-btn"
+      className={noteEditorSc('note-editor-actions-btn')}
       onClick={handleClick}
       title="AI Assistant (⌘K)"
       aria-label="Toggle AI Assistant"

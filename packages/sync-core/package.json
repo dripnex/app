@@ -2,7 +2,7 @@
   "name": "@dripnex/sync-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Core sync logic for Dripnex - pure TypeScript, no platform deps",
+  "description": "Shared sync contracts and notebook tree validation. Desktop SyncService is the live engine.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

@@ -26,37 +26,31 @@ export interface NoteMetadata {
   readonly archivedAt: Timestamp | null;
 }
 
+export function isPlaceholderTitle(title: string): boolean {
+  return title.trim().length === 0 || title.trim().toLowerCase() === 'untitled';
+}
+
 /** Extracts the title from markdown content */
 export function extractTitle(content: string, fallback: string = 'Untitled'): string {
-  // Match first H1 heading: # Title
-  const h1Match = content.match(/^#\s+(.+)$/m);
-  if (h1Match?.[1]) {
-    return h1Match[1].trim();
-  }
+  // Only the first non-empty line. A heading later in the note is body, not title.
+  const firstLine = content.split(/\r?\n/).find(line => line.trim().length > 0);
+  if (!firstLine) return fallback;
 
-  // Fallback to first non-empty line
-  const firstLine = content.split('\n').find(line => line.trim().length > 0);
-  if (firstLine) {
-    // Remove any markdown formatting
-    return (
-      firstLine
-        .replace(/^#+\s*/, '')
-        .trim()
-        .slice(0, 100) || fallback
-    );
-  }
-
-  return fallback;
+  const heading = firstLine.match(/^#{1,6}\s+(.+)$/);
+  const raw = (heading?.[1] ?? firstLine).trim();
+  return raw.slice(0, 100) || fallback;
 }
 
 /** Extracts tags from markdown content */
 export function extractTags(content: string): Tag[] {
-  // Match #tag patterns (not inside code blocks)
+  const searchable = content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`\n]+`/g, ' ');
   const tagPattern = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
   const tags = new Set<string>();
 
   let match;
-  while ((match = tagPattern.exec(content)) !== null) {
+  while ((match = tagPattern.exec(searchable)) !== null) {
     if (match[1]) {
       tags.add(match[1].toLowerCase());
     }

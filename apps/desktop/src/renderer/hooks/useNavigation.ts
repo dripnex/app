@@ -17,8 +17,9 @@ import {
   type SortBy,
   type SortOrder,
 } from '../stores/navigationStore';
-import { useNotes, useNoteCounts, withExcerpt } from './useNotes';
+import { useNotes, useNoteCounts, useScopedNoteCounts, withExcerpt } from './useNotes';
 import { useNotebookTree, getNotebookPath, getAncestorIds } from './useNotebooks';
+import { listOptionsFromNav } from '../utils/listOptionsFromNav';
 
 // ============================================================================
 // Note with Excerpt (for list display)
@@ -117,59 +118,13 @@ export function useFilteredNotes(): NoteWithExcerpt[] {
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
 
-  // Fetch notes with current sort config from store
-  const { data: allNotes } = useNotes({
-    sortBy,
-    sortOrder,
-    archived: 'all',
-  });
+  const options = useMemo(
+    () => listOptionsFromNav({ navigation, statusFilter, tagFilter, sortBy, sortOrder }),
+    [navigation, statusFilter, tagFilter, sortBy, sortOrder]
+  );
+  const { data: notes } = useNotes(options);
 
-  return useMemo(() => {
-    if (!allNotes) return [];
-
-    let notes = [...allNotes];
-
-    // 1. Filter by navigation state
-    switch (navigation.kind) {
-      case 'global':
-        if (navigation.filter === 'all') {
-          notes = notes.filter(n => !n.isDeleted && !n.isArchived);
-        } else if (navigation.filter === 'pinned') {
-          notes = notes.filter(n => n.isPinned && !n.isDeleted);
-        } else if (navigation.filter === 'trash') {
-          notes = notes.filter(n => n.isDeleted);
-        }
-        break;
-
-      case 'notebook':
-        notes = notes.filter(n => n.notebookId === navigation.id && !n.isDeleted && !n.isArchived);
-        break;
-
-      case 'tag':
-        notes = notes.filter(
-          n => n.tags.some(t => t === navigation.name) && !n.isDeleted && !n.isArchived
-        );
-        break;
-
-      case 'search':
-        // Search is handled separately via useSearchNotes
-        notes = notes.filter(n => !n.isDeleted && !n.isArchived);
-        break;
-    }
-
-    // 2. Filter by status (orthogonal)
-    if (statusFilter) {
-      notes = notes.filter(n => n.status === statusFilter);
-    }
-
-    // 3. Filter by tag (orthogonal)
-    if (tagFilter) {
-      notes = notes.filter(n => n.tags.some(t => t === tagFilter));
-    }
-
-    // 4. Add excerpt for list display
-    return notes.map(withExcerpt);
-  }, [allNotes, navigation, statusFilter, tagFilter]);
+  return useMemo(() => (notes ?? []).map(withExcerpt), [notes]);
 }
 
 /**
@@ -239,4 +194,36 @@ export function useGlobalCounts() {
 export function useDisplayedNotesCount(): number {
   const notes = useFilteredNotes();
   return notes.length;
+}
+
+/**
+ * Notes in the current nav context only (no status/tag overlay).
+ * Used for sidebar All Notes / Status / Tags counts.
+ */
+export function useContextNotes(): NoteSnapshot[] {
+  const navigation = useNavigation();
+  const options = useMemo(
+    () => listOptionsFromNav({ navigation, statusFilter: null, tagFilter: null }),
+    [navigation]
+  );
+  const { data: notes } = useNotes(options);
+  return notes ?? [];
+}
+
+export function useScopedSidebarCounts() {
+  const navigation = useNavigation();
+  const options = useMemo(
+    () => listOptionsFromNav({ navigation, statusFilter: null, tagFilter: null }),
+    [navigation]
+  );
+  const { data } = useScopedNoteCounts(options);
+
+  return useMemo(
+    () => ({
+      all: data?.total ?? 0,
+      byStatus: data?.byStatus ?? { active: 0, on_hold: 0, completed: 0, dropped: 0 },
+      byTag: data?.byTag ?? {},
+    }),
+    [data]
+  );
 }

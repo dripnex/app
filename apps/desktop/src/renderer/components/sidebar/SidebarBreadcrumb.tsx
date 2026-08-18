@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { Folder, ChevronRight, X } from 'lucide-react';
+import { BookOpen, Inbox, ChevronRight, X } from 'lucide-react';
 import { useNotebookTree, getNotebookPath } from '../../hooks/useNotebooks';
+import { sc } from './sc';
 
 interface SidebarBreadcrumbProps {
   readonly selectedNotebookId: string | null;
@@ -193,38 +194,38 @@ export function SidebarBreadcrumb({
       ? 'sidebar-breadcrumb-content--entering'
       : state === 'exiting'
         ? 'sidebar-breadcrumb-content--exiting'
-        : '';
+        : undefined;
 
   return (
-    <nav className="sidebar-breadcrumb" aria-label="Notebook path">
+    <nav className={sc('sidebar-breadcrumb')} aria-label="Notebook path">
       <div
-        className={`sidebar-breadcrumb-content ${containerClass}`}
+        className={sc('sidebar-breadcrumb-content', containerClass)}
         onAnimationEnd={handleAnimationEnd}
       >
         {hasNotebookPath && (
           <>
             <button
               type="button"
-              className="sidebar-breadcrumb-icon"
+              className={sc('sidebar-breadcrumb-icon')}
               onClick={handleRootClick}
               aria-label="Go to all notebooks"
             >
-              <Folder size={14} aria-hidden="true" />
+              <BookOpen size={14} aria-hidden="true" />
             </button>
 
             {/* Exiting segments (rendered first, positioned absolute) */}
             {exitingSegments.map((seg, index) => (
               <span
                 key={`exit-${seg.id}`}
-                className="sidebar-breadcrumb-segment segment--exiting"
+                className={sc('sidebar-breadcrumb-segment', 'segment--exiting')}
                 style={{ '--segment-index': commonPrefixLength + index } as React.CSSProperties}
               >
                 <ChevronRight
                   size={10}
-                  className="sidebar-breadcrumb-separator"
+                  className={sc('sidebar-breadcrumb-separator')}
                   aria-hidden="true"
                 />
-                <span className="sidebar-breadcrumb-item">{seg.name}</span>
+                <span className={sc('sidebar-breadcrumb-item')}>{seg.name}</span>
               </span>
             ))}
 
@@ -235,19 +236,25 @@ export function SidebarBreadcrumb({
               return (
                 <span
                   key={seg.id}
-                  className={`sidebar-breadcrumb-segment ${seg.status === 'entering' ? 'segment--entering' : ''}`}
+                  className={sc(
+                    'sidebar-breadcrumb-segment',
+                    seg.status === 'entering' && 'segment--entering'
+                  )}
                 >
                   <ChevronRight
                     size={10}
-                    className="sidebar-breadcrumb-separator"
+                    className={sc('sidebar-breadcrumb-separator')}
                     aria-hidden="true"
                   />
                   <button
                     type="button"
-                    className={`sidebar-breadcrumb-item ${isLast ? 'current' : ''}`}
+                    className={sc('sidebar-breadcrumb-item', isLast && 'current')}
                     onClick={() => handleItemClick(seg.id)}
                     aria-current={isLast ? 'location' : undefined}
                   >
+                    {seg.id === 'inbox' ? (
+                      <Inbox size={13} aria-hidden="true" />
+                    ) : null}
                     {seg.name}
                   </button>
                 </span>
@@ -257,15 +264,15 @@ export function SidebarBreadcrumb({
         )}
 
         {tagFilter && (
-          <span className="sidebar-breadcrumb-segment">
+          <span className={sc('sidebar-breadcrumb-segment')}>
             {hasNotebookPath && (
-              <ChevronRight size={10} className="sidebar-breadcrumb-separator" aria-hidden="true" />
+              <ChevronRight size={10} className={sc('sidebar-breadcrumb-separator')} aria-hidden="true" />
             )}
-            <span className="sidebar-breadcrumb-tag">
-              <span className="sidebar-breadcrumb-tag-name">#{tagFilter}</span>
+            <span className={sc('sidebar-breadcrumb-tag')}>
+              <span className={sc('sidebar-breadcrumb-tag-name')}>#{tagFilter}</span>
               <button
                 type="button"
-                className="sidebar-breadcrumb-tag-clear"
+                className={sc('sidebar-breadcrumb-tag-clear')}
                 onClick={onClearTagFilter}
                 aria-label={`Clear tag filter: ${tagFilter}`}
               >

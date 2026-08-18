@@ -91,12 +91,24 @@ export { validateManifest, assertValidManifest, validateConfigValue } from './va
 export type { ManifestError, ConfigValidationResult } from './validation';
 
 // Loader
+export { pluginMenuStore } from './menu/pluginMenuStore';
+export type { PluginMenuItem } from './menu/pluginMenuStore';
+
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
 export { loadInitScript } from './loader/loadInitScript';
+export { createInitApi, USER_INIT_ID } from './loader/createInitApi';
+export type { InitApi } from './loader/createInitApi';
+export {
+  setHostCommandDispatch,
+  dispatchHostCommand,
+  setHostVim,
+  getHostVim,
+} from './loader/hostBridges';
 
 // Lifecycle
 export { PluginRegistry } from './lifecycle/PluginRegistry';
 export type { RegisterCommandFn, ConfigBridge } from './lifecycle/PluginRegistry';
+export { applyPluginConfig } from './lifecycle/configRuntime';
 export { PluginHost } from './lifecycle/PluginHost';
 export { sortPlugins } from './lifecycle/sortPlugins';
 export type { SortResult } from './lifecycle/sortPlugins';

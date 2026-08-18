@@ -14,7 +14,12 @@ Dripnex supports a plugin system that lets you extend the editor with custom fun
 ### Scaffold a new plugin
 
 ```bash
+# In this repo:
+pnpm plugin init "My Plugin"
+
+# Or, once published:
 npx dripnex-plugin init "My Plugin"
+
 cd my-plugin
 npm install
 ```
@@ -68,29 +73,20 @@ export const plugin: PluginManifest = {
 npm run build
 ```
 
-Copy the output to your Dripnex plugins directory:
+Install into the same data directory the desktop uses (`~/Library/Application Support/@dripnex/desktop/plugins` on macOS):
 
-<Tabs items={['macOS', 'Windows', 'Linux']}>
-  <Tab value="macOS">
-    ```bash
-    cp -r dist/ ~/Library/Application\ Support/Dripnex/plugins/my-plugin/
-    ```
-  </Tab>
-  <Tab value="Windows">
-    ```bash
-    xcopy /E dist\ %APPDATA%\Dripnex\plugins\my-plugin\
-    ```
-  </Tab>
-  <Tab value="Linux">
-    ```bash
-    cp -r dist/ ~/.config/Dripnex/plugins/my-plugin/
-    ```
-  </Tab>
-</Tabs>
+```bash
+pnpm plugin link
+# or: dripnex-plugin install .
+```
+
+To ship it as its own repo (the real path), see [Publish a plugin](/docs/plugins/publishing).
+
+Override the data dir with `DRIPNEX_DATA_DIR` if needed.
 
 ### Reload Dripnex
 
-The plugin will be discovered and loaded automatically on next launch. Toggle it in **Settings > Plugins**.
+**Settings → Plugins → Reload**. Linked plugins pick up rebuilt `dist/` on the next reload.
 
 </Steps>
 

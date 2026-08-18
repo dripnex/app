@@ -21,6 +21,10 @@ import {
   getCommandKeybinding,
   formatKeybinding,
 } from '../../hooks/useCommandRegistry';
+import { cssm } from '../../lib/cssm';
+import styles from './FormattingToolbar.module.css';
+
+const sc = cssm(styles);
 
 interface FormattingToolbarProps {
   /** Optional callback when visibility changes (for passing to ActionsPanel) */
@@ -62,17 +66,17 @@ export const FormattingToolbar = memo(function FormattingToolbar({
   return (
     <div
       ref={toolbarRef}
-      className="formatting-toolbar"
+      className={sc('formatting-toolbar')}
       role="toolbar"
       aria-label="Formatting options"
     >
       {/* Text formatting - always visible */}
       {visibility.text && (
         <>
-          <div className="formatting-toolbar-group">
+          <div className={sc('formatting-toolbar-group')}>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-heading')}
               title={`Heading (H2)${fmtKey('editor:insert-heading')}`}
               aria-label="Insert heading"
@@ -81,7 +85,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:toggle-bold')}
               title={`Bold${fmtKey('editor:toggle-bold')}`}
               aria-label="Toggle bold"
@@ -90,7 +94,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:toggle-italic')}
               title={`Italic${fmtKey('editor:toggle-italic')}`}
               aria-label="Toggle italic"
@@ -99,7 +103,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:toggle-strikethrough')}
               title="Strikethrough"
               aria-label="Toggle strikethrough"
@@ -108,7 +112,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:toggle-inline-code')}
               title={`Inline Code${fmtKey('editor:toggle-inline-code')}`}
               aria-label="Toggle inline code"
@@ -117,7 +121,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-link')}
               title={`Link${fmtKey('editor:insert-link')}`}
               aria-label="Insert link"
@@ -125,17 +129,17 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               <Link size={18} />
             </button>
           </div>
-          {visibility.lists && <div className="formatting-toolbar-divider" />}
+          {visibility.lists && <div className={sc('formatting-toolbar-divider')} />}
         </>
       )}
 
       {/* Lists - hidden when width < 300px */}
       {visibility.lists && (
         <>
-          <div className="formatting-toolbar-group">
+          <div className={sc('formatting-toolbar-group')}>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-unordered-list')}
               title="Bullet List"
               aria-label="Insert bullet list"
@@ -144,7 +148,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-ordered-list')}
               title="Numbered List"
               aria-label="Insert numbered list"
@@ -153,7 +157,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-checkbox')}
               title="Checkbox"
               aria-label="Insert checkbox"
@@ -161,17 +165,17 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               <CheckSquare size={18} />
             </button>
           </div>
-          {visibility.blocks && <div className="formatting-toolbar-divider" />}
+          {visibility.blocks && <div className={sc('formatting-toolbar-divider')} />}
         </>
       )}
 
       {/* Blocks - hidden when width < 400px */}
       {visibility.blocks && (
         <>
-          <div className="formatting-toolbar-group">
+          <div className={sc('formatting-toolbar-group')}>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-quote')}
               title="Quote"
               aria-label="Insert quote"
@@ -180,7 +184,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-code-block')}
               title="Code Block"
               aria-label="Insert code block"
@@ -189,7 +193,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             </button>
             <button
               type="button"
-              className="formatting-toolbar-btn"
+              className={sc('formatting-toolbar-btn')}
               onClick={() => dispatchCommand('editor:insert-horizontal-rule')}
               title="Horizontal Rule"
               aria-label="Insert horizontal rule"
@@ -197,16 +201,16 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               <Minus size={18} />
             </button>
           </div>
-          {visibility.history && <div className="formatting-toolbar-divider" />}
+          {visibility.history && <div className={sc('formatting-toolbar-divider')} />}
         </>
       )}
 
       {/* History - hidden when width < 500px */}
       {visibility.history && (
-        <div className="formatting-toolbar-group">
+        <div className={sc('formatting-toolbar-group')}>
           <button
             type="button"
-            className="formatting-toolbar-btn formatting-toolbar-btn--undo"
+            className={sc('formatting-toolbar-btn', 'formatting-toolbar-btn--undo')}
             onClick={() => dispatchCommand('editor:undo')}
             title={`Undo${fmtKey('editor:undo')}`}
             aria-label="Undo"
@@ -215,7 +219,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
           </button>
           <button
             type="button"
-            className="formatting-toolbar-btn formatting-toolbar-btn--redo"
+            className={sc('formatting-toolbar-btn', 'formatting-toolbar-btn--redo')}
             onClick={() => dispatchCommand('editor:redo')}
             title={`Redo${fmtKey('editor:redo')}`}
             aria-label="Redo"

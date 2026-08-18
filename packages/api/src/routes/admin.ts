@@ -14,6 +14,7 @@ import { Hono } from 'hono';
 import { sql, desc, eq } from 'drizzle-orm';
 import * as jose from 'jose';
 import { createDb, type Env } from '../db/client.js';
+import { listMigrationStatus, runMigrations } from '../db/runMigrations.js';
 import {
   users,
   subscriptions,
@@ -28,7 +29,7 @@ import {
 const admin = new Hono<{ Bindings: Env }>();
 
 // Admin emails that can access the dashboard
-const ADMIN_EMAILS = ['dripnex@gmail.com'];
+const ADMIN_EMAILS = ['dripnex@gmail.com', 'tomymaritano@gmail.com'];
 
 // Admin auth — accepts admin token OR authenticated admin user
 admin.use('*', async (c, next) => {
@@ -213,6 +214,17 @@ admin.get('/sync', async c => {
     tagSyncEntries: tagSyncCount?.count ?? 0,
     notebookSyncEntries: notebookSyncCount?.count ?? 0,
   });
+});
+
+admin.get('/migrations', async c => {
+  const status = await listMigrationStatus(c.env);
+  return c.json({ ok: true, ...status });
+});
+
+/** Apply every pending Drizzle migration. Safe to call repeatedly. */
+admin.post('/migrate', async c => {
+  const report = await runMigrations(c.env);
+  return c.json({ ok: true, ...report });
 });
 
 export { admin };

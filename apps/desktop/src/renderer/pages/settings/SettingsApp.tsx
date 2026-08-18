@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
+import { useOfficialThemes } from '../../hooks/useOfficialThemes';
+import { useThemeOverrides } from '@dripnex/plugin-api';
 import { Toaster } from '../../ui/primitives';
 import styles from './SettingsApp.module.css';
 import { SettingsSidebar } from './components/SettingsSidebar';
@@ -12,6 +14,8 @@ import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
 import { UpdatesSection } from './sections/UpdatesSection';
 import { PluginsSection } from './sections/PluginsSection';
+import { EncryptionSection } from './sections/EncryptionSection';
+import { IntegrationsSection } from './sections/IntegrationsSection';
 
 export type SettingsSection =
   | 'general'
@@ -20,12 +24,16 @@ export type SettingsSection =
   | 'ai'
   | 'plugins'
   | 'account'
+  | 'encryption'
+  | 'integrations'
   | 'backup'
   | 'updates'
   | 'about';
 
 export function SettingsApp() {
   useAppearanceSettings();
+  useOfficialThemes();
+  useThemeOverrides();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   const renderSection = () => {
@@ -42,6 +50,10 @@ export function SettingsApp() {
         return <PluginsSection />;
       case 'account':
         return <AccountSection />;
+      case 'encryption':
+        return <EncryptionSection />;
+      case 'integrations':
+        return <IntegrationsSection onOpenEncryption={() => setActiveSection('encryption')} />;
       case 'backup':
         return <BackupSection />;
       case 'updates':

@@ -1,12 +1,9 @@
 /**
- * AI Assistant Settings Section
- *
- * Provider connection with "Connect" flow, model selection,
- * and AI command preset management.
+ * AI Assistant Settings — one card per provider SDK.
  */
 
 import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
-import { CheckCircle, XCircle, Upload, Download, ExternalLink, Unplug, Plug } from 'lucide-react';
+import { CheckCircle, XCircle, Upload, Download, RefreshCw } from 'lucide-react';
 import { aiCommandStore } from '@dripnex/plugin-api';
 import type { AiCommandRegistration } from '@dripnex/plugin-api';
 import { validateAiCommandPreset, serializePreset } from '@dripnex/ai-core';
@@ -14,51 +11,14 @@ import type { AiCommandPreset } from '@dripnex/ai-core';
 import { useSettingsStore, selectAi, selectAiKeyHydrationError } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Select, NumberInput } from '../components/controls';
-import { Button } from '../../../ui/primitives';
+import { Button, NumberInput, Select } from '../../../ui/primitives';
+import { FALLBACK_MODELS, PROVIDER_CATALOG, type AiProviderId } from '../ai/providers';
+import { ProviderMark } from '../ai/ProviderMark';
+import { OllamaConnect, ProviderConnect } from '../ai/ProviderConnect';
 import styles from './Section.module.css';
+import cardStyles from './AiProviders.module.css';
 
-type ConnectStatus = 'idle' | 'connecting' | 'connected' | 'error';
-
-const PROVIDER_INFO: Record<
-  string,
-  { name: string; keyUrl: string; placeholder: string; description: string }
-> = {
-  anthropic: {
-    name: 'Anthropic',
-    keyUrl: 'https://console.anthropic.com/settings/keys',
-    placeholder: 'sk-ant-api03-...',
-    description: 'Claude models — Sonnet, Opus, Haiku',
-  },
-  openai: {
-    name: 'OpenAI',
-    keyUrl: 'https://platform.openai.com/api-keys',
-    placeholder: 'sk-proj-...',
-    description: 'GPT-4o, o1, GPT-4 Turbo',
-  },
-  ollama: {
-    name: 'Ollama',
-    keyUrl: '',
-    placeholder: 'http://localhost:11434',
-    description: 'Local models — no API key needed',
-  },
-};
-
-const MODEL_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
-  anthropic: [
-    { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
-    { value: 'claude-opus-4-8', label: 'Claude Opus 4.8' },
-    { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
-  ],
-  openai: [
-    { value: 'gpt-4o', label: 'GPT-4o' },
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-    { value: 'o1', label: 'o1' },
-    { value: 'o1-mini', label: 'o1 Mini' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-  ],
-  ollama: [],
-};
+type ConnectStatus = 'idle' | 'connecting' | 'connected' | 'error' | 'unavailable';
 
 function useAiCommands(): AiCommandRegistration[] {
   return useSyncExternalStore(
@@ -66,6 +26,21 @@ function useAiCommands(): AiCommandRegistration[] {
     () => aiCommandStore.getState().registrations
   );
 }
+
+function kindLabel(kind: 'included' | 'cloud' | 'local'): string {
+  if (kind === 'included') return 'Account';
+  if (kind === 'local') return 'Local';
+  return 'Your key';
+}
+
+const PROVIDER_GROUPS: Array<{
+  title: string;
+  kinds: Array<'included' | 'cloud' | 'local'>;
+}> = [
+  { title: 'With your account', kinds: ['included'] },
+  { title: 'Your own key', kinds: ['cloud'] },
+  { title: 'This machine', kinds: ['local'] },
+];
 
 export function AiSection() {
   const ai = useSettingsStore(selectAi);
@@ -75,85 +50,189 @@ export function AiSection() {
   const [connectStatus, setConnectStatus] = useState<Record<string, ConnectStatus>>({});
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [connectError, setConnectError] = useState('');
-  const [ollamaModels, setOllamaModels] = useState<Array<{ value: string; label: string }>>([]);
+  const [liveModels, setLiveModels] = useState<Array<{ value: string; label: string }>>([]);
   const [presetMessage, setPresetMessage] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const [kb, setKb] = useState<{
+    pending: number;
+    embedded: number;
+    model: string;
+    provider?: string;
+    dim?: number;
+  } | null>(null);
+  const [embedCatalog, setEmbedCatalog] = useState<
+    Array<{
+      id: string;
+      displayName: string;
+      models: Array<{ id: string; displayName: string; dimensions: number }>;
+    }>
+  >([]);
 
   const registeredAiCommands = useAiCommands();
+  const currentProvider = ai.provider;
+  const catalog = PROVIDER_CATALOG.find(item => item.id === currentProvider) ?? PROVIDER_CATALOG[0]!;
+  const isConnected = connectStatus[currentProvider] === 'connected';
+  const isConnecting = connectStatus[currentProvider] === 'connecting';
 
-  // Load connected providers on mount
   useEffect(() => {
     async function loadConnected() {
+      if (!window.dripnex?.ai) return;
       const providers = await window.dripnex.ai.listConnectedProviders();
       const status: Record<string, ConnectStatus> = {};
-      for (const p of providers) {
-        status[p] = 'connected';
+      for (const provider of providers) {
+        if (provider !== 'dripnex') status[provider] = 'connected';
       }
-      // Ollama is "connected" if reachable (no key needed)
+      try {
+        const firstParty = await window.dripnex.ai.firstPartyStatus();
+        status.dripnex = firstParty.available ? 'connected' : 'unavailable';
+      } catch {
+        status.dripnex = 'unavailable';
+      }
       if (!status.ollama) {
         try {
-          const result = await window.dripnex.ai.validate({ provider: 'ollama', apiKey: '' });
+          const result = await window.dripnex.ai.validate({
+            provider: 'ollama',
+            apiKey: '',
+            baseUrl: useSettingsStore.getState().settings.ai.baseUrl || undefined,
+          });
           if (result.ok) status.ollama = 'connected';
         } catch {
           // Ollama not running
         }
       }
       setConnectStatus(status);
+      const current = useSettingsStore.getState().settings.ai.provider;
+      const currentReady = current === 'dripnex' ? status.dripnex === 'connected' : status[current] === 'connected';
+      if (status.dripnex === 'connected' && !currentReady) {
+        const firstModel = FALLBACK_MODELS.dripnex[0]?.value;
+        updateAi({
+          provider: 'dripnex',
+          ...(firstModel ? { model: firstModel } : {}),
+        });
+      }
     }
     void loadConnected();
+  }, [updateAi]);
+
+  const refreshKb = useCallback(async () => {
+    const api = window.dripnex?.ai;
+    if (!api || typeof api.kbStatus !== 'function') {
+      setKb(null);
+      return;
+    }
+    try {
+      setKb(await api.kbStatus());
+    } catch {
+      setKb(null);
+    }
   }, []);
 
-  // Fetch Ollama models when it's connected
   useEffect(() => {
-    if (ai.provider === 'ollama' && connectStatus.ollama === 'connected') {
-      window.dripnex.ai
-        .validate({ provider: 'ollama', apiKey: '' })
-        .then(() => {
-          // TODO: fetch models via a dedicated IPC. For now, use common defaults
-          setOllamaModels([
-            { value: 'llama3.1', label: 'Llama 3.1' },
-            { value: 'llama3.2', label: 'Llama 3.2' },
-            { value: 'mistral', label: 'Mistral' },
-            { value: 'codellama', label: 'Code Llama' },
-            { value: 'gemma2', label: 'Gemma 2' },
-          ]);
-        })
-        .catch(() => setOllamaModels([]));
+    void refreshKb();
+  }, [refreshKb]);
+
+  useEffect(() => {
+    const api = window.dripnex?.ai;
+    if (!api || typeof api.kbCatalog !== 'function') return;
+    void api.kbCatalog().then(setEmbedCatalog).catch(() => setEmbedCatalog([]));
+  }, []);
+
+  const embedProvider = ai.embedProvider ?? 'ollama';
+  const embedModel = ai.embedModel ?? 'nomic-embed-text';
+  const embedProviderEntry =
+    embedCatalog.find(item => item.id === embedProvider) ?? embedCatalog[0];
+  const embedModelOptions = (embedProviderEntry?.models ?? []).map(model => ({
+    value: model.id,
+    label: `${model.displayName} (${model.dimensions}d)`,
+  }));
+
+  const applyEmbed = useCallback(
+    async (next: { embedProvider: 'ollama' | 'openai'; embedModel: string }) => {
+      updateAi(next);
+      const api = window.dripnex?.ai;
+      if (api && typeof api.kbSetEmbed === 'function') {
+        await api.kbSetEmbed({
+          provider: next.embedProvider,
+          model: next.embedModel,
+          baseUrl: useSettingsStore.getState().settings.ai.baseUrl || undefined,
+        });
+      }
+      await refreshKb();
+    },
+    [updateAi, refreshKb]
+  );
+
+  useEffect(() => {
+    if (!isConnected) {
+      setLiveModels([]);
+      return;
     }
-  }, [ai.provider, connectStatus.ollama]);
+    let cancelled = false;
+    if (!window.dripnex?.ai) {
+      return () => {
+        cancelled = true;
+      };
+    }
+    void window.dripnex.ai
+      .listModels({
+        provider: currentProvider,
+        apiKey: currentProvider === 'ollama' || currentProvider === 'dripnex' ? '' : ai.apiKey,
+        baseUrl: ai.baseUrl || undefined,
+      })
+      .then(result => {
+        if (cancelled) return;
+        if (!result.ok || result.models.length === 0) {
+          setLiveModels([]);
+          return;
+        }
+        setLiveModels(
+          result.models.map(model => ({
+            value: model.id,
+            label: model.displayName ?? model.id,
+          }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setLiveModels([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProvider, isConnected, ai.apiKey, ai.baseUrl]);
 
-  const currentProvider = ai.provider;
-  const providerInfo = (PROVIDER_INFO[currentProvider] ?? PROVIDER_INFO.anthropic) as {
-    name: string;
-    keyUrl: string;
-    placeholder: string;
-    description: string;
-  };
-  const isConnected = connectStatus[currentProvider] === 'connected';
-  const isConnecting = connectStatus[currentProvider] === 'connecting';
+  const modelOptions =
+    liveModels.length > 0 ? liveModels : (FALLBACK_MODELS[currentProvider] ?? []);
 
-  const modelOptions: Array<{ value: string; label: string }> =
-    currentProvider === 'ollama'
-      ? ollamaModels
-      : (MODEL_OPTIONS[currentProvider] ?? MODEL_OPTIONS.anthropic!);
+  const selectProvider = useCallback(
+    (next: AiProviderId) => {
+      const firstModel = FALLBACK_MODELS[next]?.[0]?.value;
+      updateAi({
+        provider: next,
+        ...(firstModel ? { model: firstModel } : {}),
+      });
+      setConnectError('');
+      setApiKeyInput('');
+    },
+    [updateAi]
+  );
 
   const handleConnect = useCallback(async () => {
     if (currentProvider === 'ollama') {
-      // Ollama doesn't need a key, just validate connection
       setConnectStatus(prev => ({ ...prev, ollama: 'connecting' }));
       setConnectError('');
       try {
         const result = await window.dripnex.ai.validate({
           provider: 'ollama',
           apiKey: '',
+          baseUrl: useSettingsStore.getState().settings.ai.baseUrl || undefined,
         });
         if (result.ok) {
           setConnectStatus(prev => ({ ...prev, ollama: 'connected' }));
         } else {
           setConnectStatus(prev => ({ ...prev, ollama: 'error' }));
-          setConnectError(result.error || 'Cannot connect to Ollama');
+          setConnectError(result.error || 'Cannot reach Ollama. Is it running?');
         }
       } catch (err) {
         setConnectStatus(prev => ({ ...prev, ollama: 'error' }));
@@ -163,7 +242,7 @@ export function AiSection() {
     }
 
     if (!apiKeyInput.trim()) {
-      setConnectError('Please paste your API key');
+      setConnectError('Paste your API key');
       return;
     }
 
@@ -177,9 +256,7 @@ export function AiSection() {
       });
 
       if (result.ok) {
-        // Save key securely
         await window.dripnex.ai.saveKey(currentProvider, apiKeyInput.trim());
-        // Also update the settings store so existing chat flow works
         updateAi({ apiKey: apiKeyInput.trim() });
         setConnectStatus(prev => ({ ...prev, [currentProvider]: 'connected' }));
         setApiKeyInput('');
@@ -200,21 +277,12 @@ export function AiSection() {
     setConnectError('');
   }, [currentProvider, updateAi]);
 
-  const handleOpenKeyPage = useCallback(() => {
-    if (providerInfo.keyUrl) {
-      window.open(providerInfo.keyUrl, '_blank');
-    }
-  }, [providerInfo.keyUrl]);
-
-  // Load key into settings when switching providers
   useEffect(() => {
     async function loadKeyForProvider() {
-      if (currentProvider === 'ollama') return;
+      if (currentProvider === 'ollama' || currentProvider === 'dripnex') return;
       try {
         const key = await window.dripnex.ai.getKey(currentProvider);
-        if (key) {
-          updateAi({ apiKey: key });
-        }
+        if (key) updateAi({ apiKey: key });
         setConnectError('');
       } catch (err) {
         setConnectError(err instanceof Error ? err.message : 'Failed to load API key');
@@ -306,154 +374,204 @@ export function AiSection() {
     }
   }, []);
 
-  const providerOptions = [
-    { value: 'anthropic', label: 'Anthropic' },
-    { value: 'openai', label: 'OpenAI' },
-    { value: 'ollama', label: 'Ollama (Local)' },
-  ];
-
   return (
     <div className={styles.section}>
       <h2 className={styles.title}>AI Assistant</h2>
+      <p className={styles.lede}>
+        Dripnex AI is included with your account — no key. Other clouds still require a
+        one-time key until those providers open a public OAuth for apps. Keys stay in the
+        keychain. Ollama never leaves this machine.
+      </p>
 
-      {/* ── Provider Selection ── */}
-      <SettingGroup title="Provider">
+      {PROVIDER_GROUPS.map(group => {
+        const items = PROVIDER_CATALOG.filter(item => group.kinds.includes(item.kind));
+        if (items.length === 0) return null;
+        return (
+          <section key={group.title} className={cardStyles.group}>
+            <h3 className={cardStyles.groupTitle}>{group.title}</h3>
+            <div className={cardStyles.list}>
+              {items.map(item => {
+                const active = item.id === currentProvider;
+                const status = connectStatus[item.id] ?? (item.id === 'dripnex' ? 'unavailable' : 'idle');
+                const connected = status === 'connected';
+                const unavailable = status === 'unavailable';
+                const badge = connected
+                  ? item.kind === 'included'
+                    ? 'Authorized'
+                    : 'Connected'
+                  : unavailable
+                    ? 'Not in this build'
+                    : status === 'error'
+                      ? 'Failed'
+                      : 'Not connected';
+                const tone = connected
+                  ? 'ok'
+                  : status === 'error'
+                    ? 'warn'
+                    : unavailable
+                      ? 'muted'
+                      : 'idle';
+                return (
+                  <article
+                    key={item.id}
+                    className={cardStyles.card}
+                    data-active={active}
+                    data-tone={connected && active ? 'ok' : undefined}
+                    onClick={() => {
+                      if (!active) selectProvider(item.id);
+                    }}
+                  >
+                    <div className={cardStyles.top}>
+                      <ProviderMark id={item.id} />
+                      <div className={cardStyles.copy}>
+                        <div className={cardStyles.nameRow}>
+                          <h3 className={cardStyles.name}>{item.name}</h3>
+                          <span className={cardStyles.kind}>{kindLabel(item.kind)}</span>
+                          <span className={cardStyles.badge} data-tone={tone}>
+                            {badge}
+                          </span>
+                        </div>
+                        <p className={cardStyles.desc}>{item.description}</p>
+                      </div>
+                    </div>
+
+                    {active ? (
+                      <div className={cardStyles.body} onClick={event => event.stopPropagation()}>
+                        <p className={cardStyles.hint}>
+                          {unavailable && item.unavailableHint ? item.unavailableHint : item.hint}
+                        </p>
+
+                        {item.kind === 'included' && connected ? (
+                          <p className={cardStyles.hint}>
+                            Authorized with this Dripnex account. No key to paste.
+                          </p>
+                        ) : null}
+
+                        {item.kind === 'cloud' ? (
+                          <ProviderConnect
+                            item={item}
+                            connected={connected}
+                            connecting={isConnecting}
+                            storedKey={ai.apiKey}
+                            error={connectError || hydrationError}
+                            value={apiKeyInput}
+                            onChange={next => {
+                              setApiKeyInput(next);
+                              setConnectError('');
+                            }}
+                            onConnect={() => void handleConnect()}
+                            onDisconnect={() => void handleDisconnect()}
+                          />
+                        ) : null}
+
+                        {item.id === 'ollama' ? (
+                          <OllamaConnect
+                            url={ai.baseUrl ?? ''}
+                            connecting={isConnecting}
+                            connected={connected}
+                            error={connectError}
+                            onUrlChange={next => updateAi({ baseUrl: next })}
+                            onConnect={() => void handleConnect()}
+                          />
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+
+      <SettingGroup title="Knowledge base">
         <SettingRow
-          label="LLM Provider"
-          description={providerInfo.description}
-          htmlFor="aiProvider"
+          label="Local index"
+          description="Passages stay on this machine. Vectors never leave it."
+        >
+          <div className={styles.statusBadge} data-tone={kb && kb.embedded > 0 ? 'ok' : undefined}>
+            {kb
+              ? `${kb.embedded} embedded${kb.pending > 0 ? ` · ${kb.pending} waiting` : ''}`
+              : window.dripnex?.ai
+                ? 'No passages indexed yet'
+                : 'Preload missing — restart Dripnex'}
+          </div>
+        </SettingRow>
+        <SettingRow
+          label="Embed provider"
+          description="Ollama stays on this machine. OpenAI uses the key from the OpenAI card."
+          htmlFor="embedProvider"
         >
           <Select
-            id="aiProvider"
-            value={ai.provider}
+            id="embedProvider"
+            value={embedProvider}
             onChange={value => {
-              updateAi({ provider: value as 'anthropic' | 'openai' | 'ollama' });
-              setConnectError('');
-              setApiKeyInput('');
+              const provider = value === 'openai' ? 'openai' : 'ollama';
+              const models = embedCatalog.find(item => item.id === provider)?.models ?? [];
+              const nextModel =
+                models.some(model => model.id === embedModel) ? embedModel : (models[0]?.id ?? embedModel);
+              void applyEmbed({ embedProvider: provider, embedModel: nextModel });
             }}
-            options={providerOptions}
+            options={
+              embedCatalog.length > 0
+                ? embedCatalog.map(item => ({ value: item.id, label: item.displayName }))
+                : [
+                    { value: 'ollama', label: 'Ollama (Local)' },
+                    { value: 'openai', label: 'OpenAI' },
+                  ]
+            }
           />
+        </SettingRow>
+        <SettingRow
+          label="Embedding model"
+          description="Changing model rebuilds vectors for Ask Notes. Old vectors are dropped."
+          htmlFor="embedModel"
+        >
+          <Select
+            id="embedModel"
+            value={embedModel}
+            onChange={value => {
+              void applyEmbed({ embedProvider, embedModel: value });
+            }}
+            options={
+              embedModelOptions.length > 0
+                ? embedModelOptions
+                : [{ value: embedModel, label: embedModel }]
+            }
+          />
+        </SettingRow>
+        <SettingRow label="Index now" description="Embed passages that are still waiting">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RefreshCw size={14} />}
+            disabled={typeof window.dripnex.ai.kbReindex !== 'function'}
+            onClick={() => {
+              void window.dripnex.ai.kbReindex?.().then(() => refreshKb());
+            }}
+          >
+            Index
+          </Button>
         </SettingRow>
       </SettingGroup>
 
-      {/* ── Connection ── */}
-      <SettingGroup title="Connection">
-        {isConnected ? (
-          /* Connected state */
-          <div className={styles.aiConnectionWrapper}>
-            <div className={styles.aiConnectedBox}>
-              <div className={styles.aiConnectedInfo}>
-                <CheckCircle size={20} className={styles.aiConnectedIcon} />
-                <div>
-                  <div className={styles.aiConnectedTitle}>Connected to {providerInfo.name}</div>
-                  <div className={styles.aiConnectedSubtitle}>
-                    API key stored securely in your system keychain
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Unplug size={14} />}
-                onClick={handleDisconnect}
-              >
-                Disconnect
-              </Button>
-            </div>
-          </div>
-        ) : (
-          /* Not connected — show connect flow */
-          <div className={styles.aiConnectionWrapper}>
-            <div className={styles.aiConnectBox}>
-              {currentProvider !== 'ollama' && (
-                <>
-                  <div className={styles.aiConnectHeader}>
-                    <span className={styles.aiConnectLabel}>
-                      Connect your {providerInfo.name} account
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={<ExternalLink size={12} />}
-                      onClick={handleOpenKeyPage}
-                    >
-                      Get API Key
-                    </Button>
-                  </div>
-                  <div className={styles.aiKeyInputRow}>
-                    <input
-                      type="password"
-                      value={apiKeyInput}
-                      onChange={e => {
-                        setApiKeyInput(e.target.value);
-                        setConnectError('');
-                      }}
-                      placeholder={providerInfo.placeholder}
-                      autoComplete="off"
-                      spellCheck={false}
-                      className={styles.aiKeyInput}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') void handleConnect();
-                      }}
-                    />
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      icon={<Plug size={14} />}
-                      loading={isConnecting}
-                      onClick={handleConnect}
-                      disabled={isConnecting || !apiKeyInput.trim()}
-                    >
-                      {isConnecting ? 'Connecting...' : 'Connect'}
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {currentProvider === 'ollama' && (
-                <div className={styles.aiOllamaInfo}>
-                  <div className={styles.aiOllamaDescription}>
-                    Ollama runs locally — no API key needed. Make sure Ollama is running on your
-                    machine.
-                  </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={<Plug size={14} />}
-                    loading={isConnecting}
-                    onClick={handleConnect}
-                  >
-                    {isConnecting ? 'Connecting...' : 'Connect to Ollama'}
-                  </Button>
-                </div>
-              )}
-
-              {(connectError || hydrationError) && (
-                <div className={styles.aiErrorBox}>
-                  <XCircle size={14} />
-                  {connectError || hydrationError}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </SettingGroup>
-
-      {/* ── Model & Context ── */}
-      {isConnected && (
+      {isConnected ? (
         <SettingGroup title="Model">
-          <SettingRow label="Model" description="AI model to use for queries" htmlFor="aiModel">
+          <SettingRow label="Model" description={`Used when chatting with ${catalog.name}`} htmlFor="aiModel">
             <Select
               id="aiModel"
               value={ai.model}
               onChange={value => updateAi({ model: value })}
-              options={modelOptions}
+              options={
+                modelOptions.length > 0
+                  ? modelOptions
+                  : [{ value: ai.model || 'default', label: 'No models found' }]
+              }
             />
           </SettingRow>
-
           <SettingRow
-            label="Max Context Notes"
-            description="Maximum notes to include as context in Ask Notes mode"
+            label="Max context notes"
+            description="How many notes Ask Notes may pull in"
             htmlFor="aiMaxContextNotes"
           >
             <NumberInput
@@ -466,33 +584,30 @@ export function AiSection() {
             />
           </SettingRow>
         </SettingGroup>
-      )}
+      ) : null}
 
-      {/* ── Presets ── */}
       <SettingGroup title="AI Command Presets">
         <SettingRow label="Import Preset" description="Load AI commands from a JSON file">
           <Button
             variant="secondary"
             size="sm"
             icon={<Upload size={14} />}
-            onClick={handleImportPreset}
+            onClick={() => void handleImportPreset()}
           >
             Import
           </Button>
         </SettingRow>
-
         <SettingRow label="Export Preset" description="Save AI commands to a shareable file">
           <Button
             variant="secondary"
             size="sm"
             icon={<Download size={14} />}
-            onClick={handleExportPreset}
+            onClick={() => void handleExportPreset()}
             disabled={registeredAiCommands.length === 0}
           >
             Export
           </Button>
         </SettingRow>
-
         {presetMessage?.type === 'success' && (
           <div className={styles.successMessage}>
             <span className={styles.aiMessageIcon}>
@@ -501,7 +616,6 @@ export function AiSection() {
             </span>
           </div>
         )}
-
         {presetMessage?.type === 'error' && (
           <div className={styles.errorMessage}>
             <span className={styles.aiMessageIcon}>
@@ -510,7 +624,6 @@ export function AiSection() {
             </span>
           </div>
         )}
-
         {registeredAiCommands.length > 0 && (
           <div className={styles.aiCommandListWrapper}>
             <div className={styles.aiCommandListTitle}>

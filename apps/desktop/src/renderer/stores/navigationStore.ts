@@ -82,12 +82,10 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   goToAllInCurrentContext: () => {
     const { navigation } = get();
     if (navigation.kind === 'notebook') {
-      // Stay in notebook, just clear filters
       set({ statusFilter: null, tagFilter: null });
-    } else {
-      // Go to global "all notes"
-      set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null });
+      return;
     }
+    set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null });
   },
   goToPinned: () =>
     set({ navigation: { kind: 'global', filter: 'pinned' }, statusFilter: null, tagFilter: null }),
@@ -95,7 +93,20 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     set({ navigation: { kind: 'global', filter: 'trash' }, statusFilter: null, tagFilter: null }),
   goToNotebook: id =>
     set({ navigation: { kind: 'notebook', id }, statusFilter: null, tagFilter: null }),
-  goToTag: name => set({ navigation: { kind: 'tag', name }, statusFilter: null, tagFilter: null }),
+  goToTag: name => {
+    const { tagFilter, navigation } = get();
+    const next = tagFilter === name || (navigation.kind === 'tag' && navigation.name === name)
+      ? null
+      : name;
+    if (navigation.kind === 'tag') {
+      set({
+        navigation: { kind: 'global', filter: 'all' },
+        tagFilter: next,
+      });
+      return;
+    }
+    set({ tagFilter: next });
+  },
   goToSearch: query =>
     set({ navigation: { kind: 'search', query }, statusFilter: null, tagFilter: null }),
   clearNavigation: () =>
@@ -135,7 +146,7 @@ export const selectGlobalFilter = (state: NavigationStore) =>
   state.navigation.kind === 'global' ? state.navigation.filter : null;
 
 export const selectSelectedTag = (state: NavigationStore) =>
-  state.navigation.kind === 'tag' ? state.navigation.name : null;
+  state.tagFilter ?? (state.navigation.kind === 'tag' ? state.navigation.name : null);
 
 export const selectSortBy = (state: NavigationStore) => state.sortBy;
 export const selectSortOrder = (state: NavigationStore) => state.sortOrder;

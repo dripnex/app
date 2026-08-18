@@ -11,42 +11,26 @@
 import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
+import { resolveUserDataRoot, userDataRootCandidates } from '@dripnex/storage-core';
 
 export type Database = DatabaseSync;
 
-function getDbPath(): string {
+export function resolveDbPath(override?: string): string {
+  if (override) return override;
+  return findDbPath();
+}
+
+function findDbPath(): string {
   if (process.env.DRIPNEX_DB_PATH) {
     return process.env.DRIPNEX_DB_PATH;
   }
 
-  const home = homedir();
-  const platform = process.platform;
+  const preferred = join(resolveUserDataRoot(), 'dripnex.db');
+  if (existsSync(preferred)) return preferred;
 
-  const candidates =
-    platform === 'darwin'
-      ? [
-          join(home, 'Library/Application Support/@dripnex/desktop/dripnex.db'),
-          join(home, 'Library/Application Support/dripnex/dripnex.db'),
-        ]
-      : platform === 'win32'
-        ? [
-            join(home, 'AppData/Roaming/@dripnex/desktop/dripnex.db'),
-            join(home, 'AppData/Roaming/dripnex/dripnex.db'),
-          ]
-        : [
-            join(home, '.config/@dripnex/desktop/dripnex.db'),
-            join(home, '.config/dripnex/dripnex.db'),
-          ];
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
+  const searched = userDataRootCandidates().map(root => join(root, 'dripnex.db'));
   throw new Error(
-    `Dripnex database not found. Searched:\n${candidates.join('\n')}\n\nSet DRIPNEX_DB_PATH environment variable to override.`
+    `Dripnex database not found. Searched:\n${searched.join('\n')}\n\nSet DRIPNEX_DB_PATH or DRIPNEX_DATA_DIR to override.`
   );
 }
 
@@ -64,10 +48,11 @@ function assertFts5Available(db: DatabaseSync): void {
 }
 
 export function openDb(dbPath?: string): DatabaseSync {
-  const resolvedPath = dbPath ?? getDbPath();
+  const resolvedPath = resolveDbPath(dbPath);
   const db = new DatabaseSync(resolvedPath);
   if (resolvedPath !== ':memory:') {
     db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA busy_timeout = 5000');
   }
   assertFts5Available(db);
   return db;

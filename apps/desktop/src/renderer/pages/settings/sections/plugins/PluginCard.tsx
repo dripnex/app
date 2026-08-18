@@ -5,8 +5,9 @@
 import { useState } from 'react';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
-import { Toggle, TextInput, NumberInput, RangeInput, Select } from '../../components/controls';
-import styles from '../Section.module.css';
+import { Input, NumberInput, Select, Toggle } from '../../../../ui/primitives';
+import { RangeInput } from '../../components/controls';
+import styles from './Plugins.module.css';
 
 export interface PluginCardProps {
   name: string;
@@ -108,10 +109,10 @@ export function PluginCard({
                         />
                       )}
                       {field.type === 'string' && (
-                        <TextInput
+                        <Input
                           id={fieldId}
                           value={(value as string) ?? ''}
-                          onChange={v => onConfigChange?.(key, v)}
+                          onChange={event => onConfigChange?.(key, event.target.value)}
                         />
                       )}
                       {field.type === 'number' && (

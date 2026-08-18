@@ -14,3 +14,6 @@ export {
   keybindingsMatch,
   formatKeybinding,
 } from './registry';
+
+export { parseChord, parseKeymap, stripJsonc } from './keymap';
+export type { ParseKeymapResult } from './keymap';

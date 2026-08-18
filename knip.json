@@ -4,6 +4,7 @@
     ".": {
       "entry": ["eslint.config.js"],
       "ignoreDependencies": [
+        "@changesets/cli",
         "@semantic-release/changelog",
         "@semantic-release/commit-analyzer",
         "@semantic-release/exec",

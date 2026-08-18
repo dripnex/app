@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /**
  * useThemeOverrides Hook
  *
@@ -29,16 +30,15 @@ export function useThemeOverrides(): void {
     const applied = new Set<string>();
 
     if (theme) {
-      // Set plugin theme color scheme on data-theme (separate from data-color-scheme)
-      root.setAttribute('data-theme', theme.colorScheme);
+      root.setAttribute('data-theme', theme.id);
+      root.setAttribute('data-color-scheme', theme.colorScheme);
+      root.style.colorScheme = theme.colorScheme;
 
-      // Apply theme tokens
       for (const [prop, value] of Object.entries(theme.tokens)) {
         root.style.setProperty(prop, value);
         applied.add(prop);
       }
     } else {
-      // No active plugin theme — remove the attribute so it doesn't conflict
       root.removeAttribute('data-theme');
     }
 

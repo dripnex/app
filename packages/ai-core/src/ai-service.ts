@@ -1,6 +1,6 @@
 // packages/ai-core/src/ai-service.ts
 import type { LLMEvent, ChatOptions, ChatMessage, ToolDefinition } from './types.js';
-import type { ProviderConfig } from './provider.js';
+import type { ProviderConfig, ModelInfo } from './provider.js';
 import { ProviderRegistry } from './provider-registry.js';
 import { buildContext, SYSTEM_PROMPT, ASK_NOTES_SYSTEM_PROMPT } from './context-builder.js';
 import type { NoteContext } from './context-builder.js';
@@ -44,12 +44,15 @@ export interface ToolChatHandle {
 export interface AIService {
   chat(request: ChatRequest): ChatHandle;
   chatWithTools(request: ToolChatRequest): ToolChatHandle;
+  listModels(providerId: string, config: ProviderConfig): Promise<ModelInfo[]>;
   cancelAll(): void;
 }
 
 // ─── Implementation ─────────────────────────────────────────
 
 const DEFAULT_MAX_RESPONSE_TOKENS = 4096;
+/** Unknown models must not inherit a 200k window or they overflow silently. */
+const FALLBACK_CONTEXT_WINDOW = 32_000;
 
 export class AIServiceImpl implements AIService {
   private activeRequests = new Map<string, AbortController>();
@@ -90,6 +93,10 @@ export class AIServiceImpl implements AIService {
     };
   }
 
+  listModels(providerId: string, config: ProviderConfig): Promise<ModelInfo[]> {
+    return this.registry.get(providerId).listModels(config);
+  }
+
   cancelAll(): void {
     for (const controller of this.activeRequests.values()) {
       controller.abort();
@@ -110,7 +117,7 @@ export class AIServiceImpl implements AIService {
 
       const models = await provider.listModels(request.providerConfig);
       const modelInfo = models.find(m => m.id === request.model);
-      const contextWindow = modelInfo?.contextWindow ?? 200_000;
+      const contextWindow = modelInfo?.contextWindow ?? FALLBACK_CONTEXT_WINDOW;
 
       const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
       const context = buildContext(
@@ -119,6 +126,7 @@ export class AIServiceImpl implements AIService {
           currentNote: request.currentNote,
           history: request.history,
           relevantNotes: request.relevantNotes,
+          query: request.query,
         },
         { maxContextTokens: contextWindow, maxResponseTokens }
       );
@@ -187,7 +195,7 @@ export class AIServiceImpl implements AIService {
 
       const models = await provider.listModels(request.providerConfig);
       const modelInfo = models.find(m => m.id === request.model);
-      const contextWindow = modelInfo?.contextWindow ?? 200_000;
+      const contextWindow = modelInfo?.contextWindow ?? FALLBACK_CONTEXT_WINDOW;
 
       const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
       const context = buildContext(
@@ -196,6 +204,7 @@ export class AIServiceImpl implements AIService {
           currentNote: request.currentNote,
           history: request.history,
           relevantNotes: request.relevantNotes,
+          query: request.query,
         },
         { maxContextTokens: contextWindow, maxResponseTokens }
       );

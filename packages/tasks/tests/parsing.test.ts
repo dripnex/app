@@ -78,6 +78,11 @@ describe('countMarkdownTasks', () => {
     expect(result).toEqual({ total: 0, completed: 0 });
   });
 
+  it('ignores tasks inside fenced code', () => {
+    const content = ['- [x] real', '```', '- [ ] fake', '```', '- [ ] also real'].join('\n');
+    expect(countMarkdownTasks(content)).toEqual({ total: 2, completed: 1 });
+  });
+
   it('handles tasks mixed with regular text', () => {
     const content = `
 # Title

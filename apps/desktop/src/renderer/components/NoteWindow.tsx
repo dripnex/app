@@ -6,22 +6,14 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useSyncLinks } from '../hooks/useLinks';
 import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
+import { useOfficialThemes } from '../hooks/useOfficialThemes';
+import { useThemeOverrides } from '@dripnex/plugin-api';
 import { ToastProvider } from './Toast';
 import { NoteEditor } from './NoteEditor';
 import './NoteWindow.css';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60,
-      retry: 1,
-    },
-  },
-});
 
 interface NoteWindowContentProps {
   noteId: string;
@@ -29,6 +21,8 @@ interface NoteWindowContentProps {
 
 function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   useAppearanceSettings();
+  useOfficialThemes();
+  useThemeOverrides();
   const [note, setNote] = useState<NoteSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,10 +131,8 @@ interface NoteWindowProps {
 
 export function NoteWindow({ noteId }: NoteWindowProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <NoteWindowContent noteId={noteId} />
-      </ToastProvider>
-    </QueryClientProvider>
+    <ToastProvider>
+      <NoteWindowContent noteId={noteId} />
+    </ToastProvider>
   );
 }

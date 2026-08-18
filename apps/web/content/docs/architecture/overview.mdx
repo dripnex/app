@@ -5,7 +5,7 @@ description: Clean architecture with strict separation of concerns — monorepo 
 
 # Architecture Overview
 
-Dripnex follows a clean architecture with strict separation of concerns.
+Dripnex is a desktop-first note app. The marketing site is a separate surface. Sync is optional and end-to-end encrypted.
 
 ## Monorepo Structure
 
@@ -13,17 +13,14 @@ Dripnex follows a clean architecture with strict separation of concerns.
   <Folder name="apps" defaultOpen>
     <Folder name="desktop" defaultOpen>
       <Folder name="src/main">
-        <File name="SQLite, IPC, sync" />
+        <File name="SQLite, IPC, SyncService, AI" />
       </Folder>
       <Folder name="src/preload">
-        <File name="Secure bridge" />
+        <File name="Typed window.dripnex bridge" />
       </Folder>
       <Folder name="src/renderer">
-        <File name="React UI" />
+        <File name="React UI + CodeMirror 6" />
       </Folder>
-    </Folder>
-    <Folder name="docs-site">
-      <File name="Documentation (VitePress)" />
     </Folder>
     <Folder name="web">
       <File name="Marketing + docs (Next.js + Fumadocs)" />
@@ -31,25 +28,28 @@ Dripnex follows a clean architecture with strict separation of concerns.
   </Folder>
   <Folder name="packages" defaultOpen>
     <Folder name="core">
-      <File name="Domain logic + markdown parsing" />
+      <File name="Domain logic — no Electron/React" />
     </Folder>
     <Folder name="storage-core">
-      <File name="Storage interfaces (pure TS)" />
+      <File name="Storage ports (pure TS)" />
     </Folder>
     <Folder name="storage-sqlite">
-      <File name="SQLite adapter (better-sqlite3)" />
+      <File name="better-sqlite3 adapter" />
     </Folder>
     <Folder name="plugin-api">
-      <File name="Plugin system API" />
+      <File name="Plugin lifecycle + APIs" />
     </Folder>
     <Folder name="sync-core">
-      <File name="Sync engine (Supabase)" />
+      <File name="Shared types + notebook tree validation" />
     </Folder>
-    <File name="+ 11 more packages" />
+    <Folder name="api">
+      <File name="Cloudflare Worker — E2E blobs, auth, Stripe" />
+    </Folder>
+    <File name="+ ai-core, mcp-server, plugin-cli, …" />
   </Folder>
 </Files>
 
-16 packages organized by domain responsibility.
+The product is `apps/desktop`. `apps/web` does not read notes. `packages/api` never sees plaintext markdown.
 
 ## Key Boundaries
 
@@ -58,7 +58,7 @@ Dripnex follows a clean architecture with strict separation of concerns.
     Pure domain logic. No Electron/React. Testable in Node.js.
   </Card>
   <Card title="Storage" href="/docs/architecture/storage">
-    Database adapter interfaces, migrations, backup/export/import.
+    Ports in storage-core. SQLite adapter. Live sync is desktop SyncService.
   </Card>
   <Card title="Editor" href="/docs/architecture/editor">
     CodeMirror 6 configuration and extension system.
@@ -71,48 +71,39 @@ Dripnex follows a clean architecture with strict separation of concerns.
 ## Data Flow
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                      Renderer Process                            │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
-│  │ React UI │->│ TanStack │->│  Zustand  │->│   Preload    │    │
-│  │          │  │  Query   │  │  Stores   │  │   Bridge     │    │
-│  └──────────┘  └──────────┘  └──────────┘  └──────┬───────┘    │
-└───────────────────────────────────────────────────┼─────────────┘
-                                                    │ IPC
-┌───────────────────────────────────────────────────┼─────────────┐
-│                      Main Process                 │             │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────┴───────┐    │
-│  │  SQLite  │<-│   Core   │<-│  Plugin  │<-│    IPC      │    │
-│  │ (better  │  │Operations│  │  System  │  │  Handlers   │    │
-│  │ -sqlite3)│  │          │  │          │  │             │    │
-│  └──────────┘  └──────────┘  └──────────┘  └─────────────┘    │
-│                                    │                            │
-│                              ┌─────┴───────┐                    │
-│                              │  Sync Core  │                    │
-│                              │  (Supabase) │                    │
-│                              └─────────────┘                    │
-└─────────────────────────────────────────────────────────────────┘
+Renderer (React + TanStack Query + Zustand)
+    ↓ window.dripnex.*
+Preload (contextIsolation)
+    ↓ ipcRenderer.invoke (Zod at the boundary)
+Main handlers
+    ↓ @dripnex/core operations
+SQLiteNoteRepository
+    ↓
+SQLite (better-sqlite3)  +  optional SyncService → api.dripnex.app (ciphertext)
 ```
+
+Plugins run in the **renderer**. They receive a controlled `PluginContext`. They do not get raw SQL or Node `fs`.
 
 ## Security Model
 
-| Rule               | Description                     |
-| ------------------ | ------------------------------- |
-| No nodeIntegration | Renderer is sandboxed           |
-| IPC whitelist      | Typed channels only             |
-| No executeSQL      | No raw SQL in renderer          |
-| Preload minimal    | Only necessary APIs exposed     |
-| Plugin sandbox     | Plugins run in isolated context |
+| Rule | Reality |
+| ---- | ------- |
+| No `nodeIntegration` | Renderer cannot require Node. |
+| `contextIsolation` | Only `window.dripnex` is exposed. |
+| No `executeSQL` | Renderer never sees SQL. |
+| Typed IPC | `defineIpcHandler` + Zod on main. |
+| Plugins | **Trusted**, not sandboxed. `new Function()` in the renderer. Only load what the user installed. |
+| Sync | AES-256-GCM client-side. The Worker stores blobs. |
 
 ## Technology Stack
 
-| Layer    | Technology                          |
-| -------- | ----------------------------------- |
-| Runtime  | Electron                            |
-| Build    | electron-vite                       |
-| Database | SQLite (better-sqlite3)             |
-| Editor   | CodeMirror 6                        |
-| UI State | TanStack Query + Zustand            |
-| Styling  | CSS Modules + CSS custom properties |
-| Sync     | Supabase (via sync-core)            |
-| Monorepo | pnpm + turborepo                    |
+| Layer | Technology |
+| ----- | ---------- |
+| Runtime | Electron |
+| Build | electron-vite |
+| Database | SQLite (better-sqlite3) |
+| Editor | CodeMirror 6 |
+| UI state | TanStack Query + Zustand |
+| Styling | CSS modules + tokens (no Tailwind on desktop) |
+| Sync | Desktop `SyncService` → Cloudflare Worker (`api.dripnex.app`) |
+| Monorepo | pnpm + turborepo |

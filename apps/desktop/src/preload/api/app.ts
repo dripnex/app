@@ -3,6 +3,8 @@ import type { BacklinkInfo, OutgoingLinkInfo, GraphData } from './types';
 
 export interface AppVersionAPI {
   version: () => Promise<string>;
+  /** Isolated e2e runs set DRIPNEX_E2E=1 so the auth gate does not block tests. */
+  isE2E: () => boolean;
 }
 
 export interface LogAPI {
@@ -15,6 +17,11 @@ export interface LogAPI {
 
 export interface EditorAPI {
   fetchUrlTitle: (url: string) => Promise<{ title: string | null }>;
+}
+
+export interface ClipboardAPI {
+  readText: () => Promise<string>;
+  writeText: (text: string) => Promise<void>;
 }
 
 export interface LinksAPI {
@@ -40,6 +47,7 @@ export interface WindowsAPI {
   openSettings: () => Promise<{ ok: boolean }>;
   openQuickCapture: () => Promise<{ ok: boolean }>;
   closeSelf: () => Promise<{ ok: boolean }>;
+  setButtonVisibility: (visible: boolean) => Promise<{ ok: boolean }>;
 }
 
 export interface ShareAPI {
@@ -58,6 +66,7 @@ export interface ShareAPI {
 export function createAppApi(): AppVersionAPI {
   return {
     version: () => ipcRenderer.invoke('app:version'),
+    isE2E: () => process.env.DRIPNEX_E2E === '1',
   };
 }
 
@@ -107,12 +116,20 @@ export function createWindowsApi(): WindowsAPI {
     openSettings: () => ipcRenderer.invoke('window:openSettings'),
     openQuickCapture: () => ipcRenderer.invoke('window:openQuickCapture'),
     closeSelf: () => ipcRenderer.invoke('window:closeSelf'),
+    setButtonVisibility: visible => ipcRenderer.invoke('window:setButtonVisibility', visible),
   };
 }
 
 export function createEditorApi(): EditorAPI {
   return {
     fetchUrlTitle: (url: string) => ipcRenderer.invoke('editor:fetchUrlTitle', url),
+  };
+}
+
+export function createClipboardApi(): ClipboardAPI {
+  return {
+    readText: () => ipcRenderer.invoke('clipboard:readText'),
+    writeText: text => ipcRenderer.invoke('clipboard:writeText', text),
   };
 }
 

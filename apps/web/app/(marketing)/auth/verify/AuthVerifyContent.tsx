@@ -7,10 +7,11 @@ import Link from 'next/link';
 export default function AuthVerifyContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const client = searchParams.get('client');
   const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    if (token && client !== 'web') {
       window.location.href = `dripnex://auth/verify?token=${encodeURIComponent(token)}`;
 
       const timer = setTimeout(() => {
@@ -19,7 +20,26 @@ export default function AuthVerifyContent() {
 
       return () => clearTimeout(timer);
     }
-  }, [token]);
+  }, [token, client]);
+
+  if (token && client === 'web') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-[420px] text-center">
+          <h1 className="text-2xl font-semibold text-[#f4f4f5] mb-3">You&apos;re in</h1>
+          <p className="text-[#a1a1aa] mb-6">
+            Your account is ready. Download the desktop app to open your workspace.
+          </p>
+          <Link
+            href="/download"
+            className="inline-block px-6 py-2.5 bg-accent text-white font-medium rounded-lg transition-colors hover:bg-accent-hover"
+          >
+            Download Dripnex
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!token) {
     return (

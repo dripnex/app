@@ -6,7 +6,7 @@ import { useState, useCallback, useSyncExternalStore } from 'react';
 import { RefreshCw, ChevronDown, AlertTriangle } from 'lucide-react';
 import { pluginRuntimeStore } from '../../../../stores/pluginRuntimeStore';
 import { Button } from '../../../../ui/primitives';
-import styles from '../Section.module.css';
+import styles from './Plugins.module.css';
 
 export function PluginInspector() {
   const [open, setOpen] = useState(false);

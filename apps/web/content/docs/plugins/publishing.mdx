@@ -1,0 +1,68 @@
+---
+title: Publish a plugin
+description: A community plugin is its own git repo. Tag it, attach a tarball, install it by owner/repo.
+---
+
+# Publish a plugin
+
+A community plugin is **not** a folder inside Dripnex. It is its own git
+repository, versioned with git tags, shipped as a tarball on a GitHub
+release.
+
+Built-ins stay in the desktop until they earn that repo. Dummy 20-line
+plugins do not.
+
+## Contract
+
+| Piece | What it is |
+| ----- | ---------- |
+| Repo | One plugin, one repository |
+| Version | `manifest.json` `version` **and** git tag `vX.Y.Z` |
+| Artifact | `<id>-<version>.tar.gz` from `dripnex-plugin pack` |
+| Install | `dripnex-plugin install owner/repo[@tag]` |
+
+The catalog on dripnex.app/plugins lists **core** and **optional** plugins
+people should know about. It is not an app store. Connecting a plugin is
+pointing at a release, not uploading source into this monorepo.
+
+## Author loop
+
+```bash
+dripnex-plugin init "Mermaid Plus"
+cd mermaid-plus
+# …write the plugin, keep it useful…
+npm install && npm run build
+dripnex-plugin publish
+```
+
+`publish` packs the tarball and prints the GitHub commands:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+gh release create v1.2.3 mermaid-plus-1.2.3.tar.gz --title "Mermaid Plus 1.2.3"
+```
+
+The release **must** attach that `.tar.gz`. Source zip is not enough —
+install looks for a built archive (`manifest.json` + `dist/`).
+
+## Install from someone else's repo
+
+```bash
+dripnex-plugin install acme/mermaid-plus
+dripnex-plugin install acme/mermaid-plus@v1.2.3
+dripnex-plugin install https://github.com/acme/mermaid-plus
+```
+
+No tag means the latest GitHub release. Then reload plugins (`⌥⌘R`) or
+restart the app.
+
+The same spec works in **Settings → Plugins → Connect**. A public
+marketplace waits until there is a real external plugin to list.
+
+## What does not belong here
+
+- Proof toys (word count, typewriter, reading time) stay off the site.
+- Do not open a plugin PR against `dripnex/readide` unless it is becoming
+  a built-in.
+- Do not invent a second version number besides the git tag.

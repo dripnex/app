@@ -1,0 +1,162 @@
+.screen {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 52px 20px 32px;
+  background: #09090b;
+  overflow: hidden;
+  -webkit-app-region: drag;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  -webkit-app-region: no-drag;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 28px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(12, 12, 14, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tab,
+.tabActive {
+  flex: 1;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.tabActive {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 550;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.copy {
+  margin: 10px 0 24px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--border-strong);
+}
+
+.submit {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--text-primary);
+  padding: 10px 14px;
+  color: var(--bg-base);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.local {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.local:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.local:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error,
+.sent {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.sent {
+  color: var(--text-secondary);
+}

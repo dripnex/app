@@ -84,8 +84,8 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   /** Delete a notebook (notes move to Inbox via SET DEFAULT) */
   async delete(id: NotebookId): Promise<void> {
     // Cannot delete Inbox
-    if (id === INBOX_NOTEBOOK_ID) {
-      throw new Error('Cannot delete Inbox notebook');
+    if (id === INBOX_NOTEBOOK_ID || id === 'templates') {
+      throw new Error('Cannot delete a reserved notebook');
     }
 
     // Move notes to Inbox before delete (in case SET DEFAULT doesn't work as expected)

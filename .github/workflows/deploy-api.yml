@@ -67,6 +67,9 @@ jobs:
 
       - run: pnpm install --filter '@dripnex/api...' --ignore-scripts
 
+      - name: Embed migrations
+        run: pnpm --filter @dripnex/api db:embed
+
       - name: Determine environment
         id: env
         run: |
@@ -76,6 +79,13 @@ jobs:
             echo "target=production" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Migrate Turso
+        if: ${{ secrets.TURSO_DATABASE_URL != '' }}
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: pnpm --filter @dripnex/api db:migrate
+
       - name: Deploy to Cloudflare Workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -83,3 +93,13 @@ jobs:
           DEPLOY_ENV: ${{ steps.env.outputs.target }}
         run: npx wrangler deploy --env "$DEPLOY_ENV"
         working-directory: packages/api
+
+      - name: Verify API
+        if: steps.env.outputs.target == 'production'
+        run: |
+          echo "workers.dev:"
+          curl -fsS https://readied-api-production.readied.workers.dev/health || echo "workers.dev not ready"
+          echo
+          echo "api.dripnex.app:"
+          curl -fsS --retry 4 --retry-delay 3 --retry-all-errors https://api.dripnex.app/health \
+            || echo "custom domain not resolving here yet — workers.dev is the fallback"

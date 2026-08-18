@@ -1,15 +1,9 @@
 import { join } from 'path';
-import { homedir } from 'os';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { resolveUserDataRoot } from '@dripnex/storage-core';
 
 export function getPluginsDir(): string {
-  const base =
-    process.platform === 'darwin'
-      ? join(homedir(), 'Library', 'Application Support', 'dripnex')
-      : process.platform === 'win32'
-        ? join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'dripnex')
-        : join(homedir(), '.config', 'dripnex');
-  const pluginsDir = join(base, 'plugins');
+  const pluginsDir = join(resolveUserDataRoot(), 'plugins');
   if (!existsSync(pluginsDir)) {
     mkdirSync(pluginsDir, { recursive: true });
   }
@@ -21,6 +15,7 @@ export interface PluginManifest {
   name: string;
   version: string;
   description?: string;
+  main?: string;
 }
 
 export function readManifest(pluginDir: string): PluginManifest | null {

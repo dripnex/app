@@ -32,4 +32,5 @@ export interface MarketplacePlugin {
   tags: string[];
   downloads: number;
   bundleUrl: string | null;
+  repositoryUrl?: string | null;
 }

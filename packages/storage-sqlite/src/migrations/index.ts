@@ -20,6 +20,19 @@ import { pluginRegistry } from './014_plugin_registry.js';
 import { notebookSyncTracking } from './015_notebook_sync_tracking.js';
 import { tagSyncTracking } from './016_tag_sync_tracking.js';
 import { syncHistory } from './017_sync_history.js';
+import { ftsIncludeDeleted } from './018_fts_include_deleted.js';
+import { embeddings } from './019_embeddings.js';
+
+/** Fail fast if two files share a version (the runner keys on version). */
+export function assertMigrationVersionsUnique(migrations: Migration[]): void {
+  const seen = new Set<number>();
+  for (const migration of migrations) {
+    if (seen.has(migration.version)) {
+      throw new Error(`Duplicate migration version ${migration.version} (${migration.name})`);
+    }
+    seen.add(migration.version);
+  }
+}
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -40,7 +53,11 @@ export const allMigrations: Migration[] = [
   notebookSyncTracking,
   tagSyncTracking,
   syncHistory,
+  ftsIncludeDeleted,
+  embeddings,
 ];
+
+assertMigrationVersionsUnique(allMigrations);
 
 export {
   initialSchema,
@@ -60,4 +77,6 @@ export {
   notebookSyncTracking,
   tagSyncTracking,
   syncHistory,
+  ftsIncludeDeleted,
+  embeddings,
 };

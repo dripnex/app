@@ -8,14 +8,15 @@
  * (`[[unsafe.bindings]]` with `type = "ratelimit"`); the `namespace_id` is a
  * self-assigned integer (no resource to provision) and `period` must be 10 or 60s.
  *
- * - auth endpoints: 10 requests / 60s per IP  → AUTH_RL
- * - sync endpoints: 100 requests / 60s per IP → SYNC_RL
+ * - auth endpoints: 10 requests / 60s per IP   → AUTH_RL
+ * - sync endpoints: 100 requests / 60s per IP  → SYNC_RL
+ * - public share reads: 60 requests / 60s / IP → PUBLIC_RL
  */
 
 import type { Context, Next } from 'hono';
 import type { Env, RateLimitBinding } from '../db/client.js';
 
-type BindingName = 'AUTH_RL' | 'SYNC_RL';
+type BindingName = 'AUTH_RL' | 'SYNC_RL' | 'PUBLIC_RL';
 
 export interface RateLimitConfig {
   /** wrangler.toml ratelimit binding to enforce against. */
@@ -71,3 +72,6 @@ export const authRateLimit = rateLimit({ binding: 'AUTH_RL', max: 10, windowSeco
 
 /** Moderate limit for sync endpoints: 100 requests / 60s per IP. */
 export const syncRateLimit = rateLimit({ binding: 'SYNC_RL', max: 100, windowSeconds: 60 });
+
+/** Public unauthenticated reads (shared notes). */
+export const publicRateLimit = rateLimit({ binding: 'PUBLIC_RL', max: 60, windowSeconds: 60 });

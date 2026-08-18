@@ -51,6 +51,18 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
       padding: '0 12px 0 16px',
       minWidth: '40px',
     },
+    '.cm-foldGutter .cm-gutterElement': {
+      padding: '0 4px 0 2px',
+      width: '14px',
+    },
+    '.cm-foldPlaceholder': {
+      backgroundColor: 'var(--bg-hover)',
+      border: 'none',
+      color: 'var(--text-muted)',
+      borderRadius: '4px',
+      margin: '0 4px',
+      padding: '0 6px',
+    },
     '.cm-scroller': {
       overflow: 'auto',
     },

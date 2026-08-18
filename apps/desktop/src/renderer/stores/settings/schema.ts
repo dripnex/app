@@ -16,7 +16,7 @@ import { DEFAULT_MODEL } from '@dripnex/ai-core';
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 3;
+export const SETTINGS_VERSION = 5;
 
 // ============================================================================
 // Section Types
@@ -28,6 +28,8 @@ export interface GeneralSettings {
   defaultNotebookId: string;
   /** Remember window position and size on startup */
   rememberWindowPosition: boolean;
+  /** Right-click Inspect Element and Toggle Developer Tools */
+  developmentMode: boolean;
 }
 
 /** Update checker settings (stateful, not just a boolean) */
@@ -65,13 +67,19 @@ export interface BackupSettings {
 /** AI Assistant settings */
 export interface AiSettings {
   /** LLM provider id */
-  provider: 'anthropic' | 'openai' | 'ollama';
+  provider: 'dripnex' | 'anthropic' | 'openai' | 'grok' | 'ollama';
   /** API key (provider-specific) */
   apiKey: string;
   /** Model id */
   model: string;
   /** Maximum number of notes to include as context */
   maxContextNotes: number;
+  /** Ollama (or compatible) base URL. Empty = default localhost:11434 */
+  baseUrl?: string;
+  /** Local index embed provider */
+  embedProvider: 'ollama' | 'openai';
+  /** Embedding model id (must match the provider) */
+  embedModel: string;
 }
 
 /** Editor settings for CodeMirror */
@@ -122,8 +130,16 @@ export interface SettingsSchemaV3 extends Omit<SettingsSchemaV2, 'version'> {
   version: 3;
 }
 
+export interface SettingsSchemaV4 extends Omit<SettingsSchemaV3, 'version'> {
+  version: 4;
+}
+
+export interface SettingsSchemaV5 extends Omit<SettingsSchemaV4, 'version'> {
+  version: 5;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV3;
+export type SettingsSchema = SettingsSchemaV5;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -135,6 +151,7 @@ export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
 export const DEFAULT_GENERAL: GeneralSettings = {
   defaultNotebookId: 'inbox',
   rememberWindowPosition: true,
+  developmentMode: false,
 };
 
 export const DEFAULT_UPDATES: UpdatesSettings = {
@@ -151,10 +168,13 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
 };
 
 export const DEFAULT_AI: AiSettings = {
-  provider: 'anthropic',
+  provider: 'dripnex',
   apiKey: '',
   model: DEFAULT_MODEL,
   maxContextNotes: 5,
+  baseUrl: '',
+  embedProvider: 'ollama',
+  embedModel: 'nomic-embed-text',
 };
 
 export const DEFAULT_EDITOR: EditorSettings = {
@@ -179,7 +199,7 @@ export const DEFAULT_BACKUP: BackupSettings = {
 
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 3,
+  version: 5,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,

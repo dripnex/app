@@ -8,6 +8,13 @@ export interface PluginsAPI {
   listState: () => Promise<PluginRegistryState[]>;
   requestReload: () => void;
   readInitScript: () => Promise<string | null>;
+  readUserStyles: () => Promise<string | null>;
+  readKeymap: () => Promise<string | null>;
+  openUserFile: (kind: 'init' | 'styles' | 'keymap') => Promise<{
+    success: boolean;
+    path?: string;
+    error?: string;
+  }>;
   install: () => Promise<{
     success: boolean;
     pluginId?: string;
@@ -23,7 +30,28 @@ export interface PluginsAPI {
     pluginName?: string;
     error?: string;
   }>;
+  installFromSpec: (spec: string) => Promise<{
+    success: boolean;
+    pluginId?: string;
+    pluginName?: string;
+    error?: string;
+  }>;
   uninstall: (pluginId: string) => Promise<{ success: boolean; error?: string }>;
+  listRegistry: () => Promise<{
+    plugins: Array<{
+      slug: string;
+      name: string;
+      description: string;
+      version: string;
+      author: string;
+      repositoryUrl: string | null;
+      bundleUrl: string | null;
+    }>;
+    source: 'registry' | 'fallback';
+  }>;
+  setMenuItems: (
+    items: Array<{ pluginId: string; label: string; commandId: string; accelerator?: string }>
+  ) => void;
 }
 
 export interface PluginConfigAPI {
@@ -41,6 +69,9 @@ export function createPluginsApi(): PluginsAPI {
     listState: () => ipcRenderer.invoke('plugins:listState'),
     requestReload: () => ipcRenderer.send('plugins:requestReload'),
     readInitScript: () => ipcRenderer.invoke('plugins:readInitScript'),
+    readUserStyles: () => ipcRenderer.invoke('plugins:readUserStyles'),
+    readKeymap: () => ipcRenderer.invoke('plugins:readKeymap'),
+    openUserFile: kind => ipcRenderer.invoke('plugins:openUserFile', kind),
     install: () => ipcRenderer.invoke('plugins:install'),
     installFromUrl: (url: string, slug: string) => {
       // Validate URL is HTTPS before sending to main process
@@ -54,7 +85,10 @@ export function createPluginsApi(): PluginsAPI {
       }
       return ipcRenderer.invoke('plugins:installFromUrl', url, slug);
     },
+    installFromSpec: (spec: string) => ipcRenderer.invoke('plugins:installFromSpec', spec),
     uninstall: (pluginId: string) => ipcRenderer.invoke('plugins:uninstall', pluginId),
+    listRegistry: () => ipcRenderer.invoke('plugins:listRegistry'),
+    setMenuItems: items => ipcRenderer.send('menu:setPluginItems', items),
   };
 }
 

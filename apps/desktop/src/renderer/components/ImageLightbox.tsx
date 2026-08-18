@@ -7,6 +7,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { cssm } from '../lib/cssm';
+import styles from './ImageLightbox.module.css';
+
+const sc = cssm(styles);
 
 interface ImageLightboxProps {
   readonly src: string;
@@ -61,22 +65,22 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
   const rotate = useCallback(() => setRotation(r => (r + 90) % 360), []);
 
   return (
-    <div className="lightbox-overlay" onClick={handleBackdropClick}>
+    <div className={sc('lightbox-overlay')} onClick={handleBackdropClick}>
       {/* Controls */}
-      <div className="lightbox-controls">
+      <div className={sc('lightbox-controls')}>
         <button
           type="button"
-          className="lightbox-btn"
+          className={sc('lightbox-btn')}
           onClick={zoomOut}
           aria-label="Zoom out"
           title="Zoom out (-)"
         >
           <ZoomOut size={20} />
         </button>
-        <span className="lightbox-zoom-level">{Math.round(scale * 100)}%</span>
+        <span className={sc('lightbox-zoom-level')}>{Math.round(scale * 100)}%</span>
         <button
           type="button"
-          className="lightbox-btn"
+          className={sc('lightbox-btn')}
           onClick={zoomIn}
           aria-label="Zoom in"
           title="Zoom in (+)"
@@ -85,7 +89,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
         </button>
         <button
           type="button"
-          className="lightbox-btn"
+          className={sc('lightbox-btn')}
           onClick={rotate}
           aria-label="Rotate"
           title="Rotate (R)"
@@ -94,7 +98,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
         </button>
         <button
           type="button"
-          className="lightbox-btn lightbox-btn--close"
+          className={sc('lightbox-btn', 'lightbox-btn--close')}
           onClick={onClose}
           aria-label="Close"
           title="Close (Esc)"
@@ -104,11 +108,11 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
       </div>
 
       {/* Image */}
-      <div className="lightbox-image-container">
+      <div className={sc('lightbox-image-container')}>
         <img
           src={src}
           alt={alt || 'Image preview'}
-          className="lightbox-image"
+          className={sc('lightbox-image')}
           style={{
             transform: `scale(${scale}) rotate(${rotation}deg)`,
           }}
@@ -117,7 +121,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
       </div>
 
       {/* Filename */}
-      {alt && <div className="lightbox-filename">{alt}</div>}
+      {alt && <div className={sc('lightbox-filename')}>{alt}</div>}
     </div>
   );
 }

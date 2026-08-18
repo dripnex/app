@@ -20,7 +20,14 @@ import {
 } from '@dripnex/storage-core';
 import { createDatabase, allMigrations } from '@dripnex/storage-sqlite';
 import { runMigrations } from '@dripnex/storage-core';
-import { createNoteOperation } from '@dripnex/core';
+import {
+  createNoteOperation,
+  createNoteId,
+  pinNote,
+  setNoteStatus,
+  softDeleteNote,
+  type NoteStatus,
+} from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, Database } from './types.js';
 
@@ -158,6 +165,11 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
         tags: [...note.metadata.tags],
         wordCount: note.metadata.wordCount,
         archivedAt: note.metadata.archivedAt,
+        notebookId: note.notebookId,
+        isArchived: note.metadata.archivedAt !== null,
+        isPinned: note.isPinned,
+        isDeleted: note.isDeleted,
+        status: note.status,
       }));
 
       const result = exportNotes(snapshots, {
@@ -240,14 +252,30 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
 
       // Import each note
       let imported = 0;
+      const statuses = new Set<NoteStatus>(['active', 'on_hold', 'completed', 'dropped']);
       for (const imported_note of result.notes) {
         try {
-          await createNoteOperation(
+          const created = await createNoteOperation(
             {
               content: imported_note.content,
+              id: imported_note.id,
+              notebookId: imported_note.notebookId,
             },
             repo
           );
+          if (!created.ok) continue;
+          const note = await repo.get(createNoteId(created.data.id));
+          if (!note) {
+            imported++;
+            continue;
+          }
+          let next = note;
+          if (imported_note.isPinned) next = pinNote(next);
+          if (imported_note.status && statuses.has(imported_note.status as NoteStatus)) {
+            next = setNoteStatus(next, imported_note.status as NoteStatus);
+          }
+          if (imported_note.isDeleted) next = softDeleteNote(next);
+          if (next !== note) await repo.save(next);
           imported++;
         } catch {
           // Skip notes that fail to import

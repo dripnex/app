@@ -68,15 +68,21 @@ describe('Note Entity', () => {
   });
 
   describe('updateNoteContent', () => {
-    it('updates content while preserving ID and structural title', () => {
+    it('updates content while preserving ID and a chosen title', () => {
       const original = createNote({ content: '# Original' });
       const updated = updateNoteContent(original, '# Updated');
 
       expect(updated.id).toBe(original.id);
       expect(updated.content).toBe('# Updated');
-      // Title is structural and preserved (not re-extracted from content)
       expect(updated.title).toBe('Original');
       expect(updated.metadata.title).toBe('Original');
+    });
+
+    it('adopts the first heading while the title is still Untitled', () => {
+      const original = createNote({ content: '# Untitled\n\n' });
+      const updated = updateNoteContent(original, '# Ship the graph\n\nbody');
+      expect(updated.title).toBe('Ship the graph');
+      expect(updated.metadata.title).toBe('Ship the graph');
     });
 
     it('preserves createdAt timestamp', () => {

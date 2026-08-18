@@ -7,9 +7,10 @@
  * @module ApiClient
  */
 
-import fetch from 'cross-fetch';
 import type { TokenStorage } from './tokenStorage.js';
 import type { DeviceInfo } from './deviceInfo.js';
+
+export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 
 // ============================================================================
 // Types
@@ -143,6 +144,9 @@ export class ApiError extends Error {
 /** Default budget for a single HTTP attempt. Hanging DNS/TLS must not lock the UI. */
 export const REQUEST_TIMEOUT_MS = 15_000;
 
+/** Live workers.dev origin while api.dripnex.app DNS is still propagating. */
+export const API_FALLBACK_URL = 'https://readied-api-production.readied.workers.dev';
+
 function isAbortError(error: unknown): boolean {
   return (error instanceof Error || error instanceof DOMException) && error.name === 'AbortError';
 }
@@ -168,15 +172,22 @@ export class ApiClient {
   private baseURL: string;
   private tokenStorage: TokenStorage;
   private deviceInfo: DeviceInfo;
+  private fetchFn: FetchFn;
   private isRefreshing = false;
   private refreshPromise: Promise<RefreshResult> | null = null;
   private _bytesSent = 0;
   private _bytesReceived = 0;
 
-  constructor(baseURL: string, tokenStorage: TokenStorage, deviceInfo: DeviceInfo) {
+  constructor(
+    baseURL: string,
+    tokenStorage: TokenStorage,
+    deviceInfo: DeviceInfo,
+    fetchFn: FetchFn = globalThis.fetch
+  ) {
     this.baseURL = baseURL;
     this.tokenStorage = tokenStorage;
     this.deviceInfo = deviceInfo;
+    this.fetchFn = fetchFn;
   }
 
   // ==========================================================================
@@ -224,7 +235,7 @@ export class ApiClient {
     }
 
     try {
-      const response = await fetch(url, {
+      const response = await this.fetchFn(url, {
         ...options,
         headers,
         signal: requestSignal(options.signal),
@@ -258,7 +269,10 @@ export class ApiClient {
 
       // Handle non-OK responses
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
+        const errorBody = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string;
+        };
         throw new ApiError(
           response.status,
           errorBody.error || errorBody.message || 'Request failed',
@@ -279,6 +293,15 @@ export class ApiClient {
 
       if (isAbortError(error)) {
         throw new ApiError(0, 'Request timed out');
+      }
+
+      const raw = error instanceof Error ? error.message : '';
+      if (
+        this.baseURL.includes('api.dripnex.app') &&
+        /enotfound|getaddrinfo|could not resolve|err_name_not_resolved/i.test(raw)
+      ) {
+        this.baseURL = API_FALLBACK_URL;
+        return this.request<T>(endpoint, options, retries);
       }
 
       // Retry on network errors (5xx) with exponential backoff
@@ -319,7 +342,7 @@ export class ApiClient {
         return { type: 'expired', message: 'No refresh token available' };
       }
 
-      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+      const response = await this.fetchFn(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -66,6 +66,35 @@ describe('runToolLoop', () => {
     expect(types).not.toContain('tool_executing');
   });
 
+  it('retries a retryable error on a provider round', async () => {
+    let calls = 0;
+    const provider: LLMProvider = {
+      id: 'mock',
+      displayName: 'Mock',
+      async *chat() {
+        calls += 1;
+        if (calls === 1) {
+          yield { type: 'error', code: 'rate_limit', error: '429', retryable: true };
+          return;
+        }
+        yield { type: 'text', delta: 'ok' };
+        yield { type: 'stop', reason: 'end_turn' };
+      },
+      async validate() {
+        return { ok: true as const };
+      },
+      async listModels() {
+        return [];
+      },
+    };
+
+    const events = await collectEvents(
+      baseOptions(provider, { retry: { maxRetries: 1, baseDelay: 0, jitter: false } })
+    );
+    expect(calls).toBe(2);
+    expect(events.some(e => e.type === 'text')).toBe(true);
+  });
+
   it('executes tool and re-sends on tool_use stop', async () => {
     const executeTool = vi.fn().mockResolvedValue({ ok: true, content: '[{"id":"1"}]' });
 

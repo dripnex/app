@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { CommitHistory } from '../git/CommitHistory';
+import { sc } from './sc';
 
 type DropPosition = 'above' | 'inside' | 'below' | null;
 
@@ -315,15 +316,17 @@ export const NotebookItem = memo(function NotebookItem({
     ]
   );
 
-  // CSS class for drop indicator
-  const dropClass = dropPosition ? `drop-${dropPosition}` : '';
-  const draggingClass = isDragging ? 'dragging' : '';
-
   return (
-    <li className="notebook-item" role="treeitem" aria-expanded={isExpanded}>
+    <li className={sc('notebook-item')} role="treeitem" aria-expanded={isExpanded}>
       <div
         ref={rowRef}
-        className={`notebook-item-row ${isSelected ? 'selected' : ''} ${isInPath ? 'in-path' : ''} ${dropClass} ${draggingClass}`}
+        className={sc(
+          'notebook-item-row',
+          isSelected && 'selected',
+          isInPath && 'in-path',
+          dropPosition && `drop-${dropPosition}`,
+          isDragging && 'dragging'
+        )}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -340,7 +343,7 @@ export const NotebookItem = memo(function NotebookItem({
         {/* Drag handle — only visible on hover, enables dragging */}
         {!isInbox && !isEditing && (
           <span
-            className="notebook-item-drag-handle"
+            className={sc('notebook-item-drag-handle')}
             aria-hidden="true"
             onMouseEnter={() => setCanDrag(true)}
             onMouseLeave={() => setCanDrag(false)}
@@ -352,7 +355,7 @@ export const NotebookItem = memo(function NotebookItem({
         {hasChildren ? (
           <button
             type="button"
-            className="notebook-item-toggle"
+            className={sc('notebook-item-toggle')}
             onClick={handleToggle}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
           >
@@ -363,21 +366,21 @@ export const NotebookItem = memo(function NotebookItem({
             )}
           </button>
         ) : (
-          <span className="notebook-item-spacer" aria-hidden="true" />
+          <span className={sc('notebook-item-spacer')} aria-hidden="true" />
         )}
 
-        <span className="notebook-item-icon" aria-hidden="true">
+        <span className={sc('notebook-item-icon')} aria-hidden="true">
           {isInbox ? <Inbox size={14} /> : <Folder size={14} />}
         </span>
 
         {isGitEnabled && !isInbox && (
-          <span className="notebook-item-git-badge" aria-label="Git enabled" title="Git enabled">
+          <span className={sc('notebook-item-git-badge')} aria-label="Git enabled" title="Git enabled">
             <GitBranch size={10} />
           </span>
         )}
 
         {isEditing ? (
-          <form onSubmit={handleEditSubmit} className="notebook-item-edit-form">
+          <form onSubmit={handleEditSubmit} className={sc('notebook-item-edit-form')}>
             <input
               type="text"
               value={editName}
@@ -385,24 +388,24 @@ export const NotebookItem = memo(function NotebookItem({
               onKeyDown={handleEditKeyDown}
               onBlur={handleEditSubmit}
               autoFocus
-              className="notebook-item-edit-input"
+              className={sc('notebook-item-edit-input')}
             />
           </form>
         ) : (
-          <span className="notebook-item-name">{node.notebook.name}</span>
+          <span className={sc('notebook-item-name')}>{node.notebook.name}</span>
         )}
 
         {noteCount !== undefined && noteCount > 0 && (
-          <span className="notebook-item-count" aria-label={`${noteCount} notes`}>
+          <span className={sc('notebook-item-count')} aria-label={`${noteCount} notes`}>
             {noteCount}
           </span>
         )}
 
         {!isInbox && (
-          <div className="notebook-item-actions">
+          <div className={sc('notebook-item-actions')}>
             <button
               type="button"
-              className={`notebook-item-action ${isGitEnabled ? 'notebook-item-action--git-enabled' : ''}`}
+              className={sc('notebook-item-action', isGitEnabled && 'notebook-item-action--git-enabled')}
               onClick={handleToggleGit}
               disabled={isGitLoading}
               aria-label={isGitEnabled ? 'Disable git' : 'Enable git'}
@@ -413,7 +416,7 @@ export const NotebookItem = memo(function NotebookItem({
             {isGitEnabled && (
               <button
                 type="button"
-                className="notebook-item-action"
+                className={sc('notebook-item-action')}
                 onClick={handleShowHistory}
                 aria-label="View commit history"
                 title="View commit history"
@@ -424,7 +427,7 @@ export const NotebookItem = memo(function NotebookItem({
             {canHaveChildren && (
               <button
                 type="button"
-                className="notebook-item-action"
+                className={sc('notebook-item-action')}
                 onClick={handleAddChild}
                 aria-label="Add sub-notebook"
               >
@@ -433,7 +436,7 @@ export const NotebookItem = memo(function NotebookItem({
             )}
             <button
               type="button"
-              className="notebook-item-action notebook-item-action--delete"
+              className={sc('notebook-item-action', 'notebook-item-action--delete')}
               onClick={handleDelete}
               aria-label="Delete notebook"
             >
@@ -444,7 +447,7 @@ export const NotebookItem = memo(function NotebookItem({
       </div>
 
       {hasChildren && isExpanded && (
-        <ul className="notebook-item-children" role="group">
+        <ul className={sc('notebook-item-children')} role="group">
           {node.children.map(child => (
             <NotebookItem
               key={child.notebook.id}

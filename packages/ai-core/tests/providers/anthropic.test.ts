@@ -134,6 +134,19 @@ describe('AnthropicProvider', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('rejects an invalid API key from the models endpoint', async () => {
+    const provider = new AnthropicProvider(createMockFetch([], 401));
+    const result = await provider.validate({ apiKey: 'sk-bad' });
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/invalid/i);
+  });
+
+  it('accepts a key that the models endpoint accepts', async () => {
+    const provider = new AnthropicProvider(createMockFetch([], 200));
+    const result = await provider.validate({ apiKey: 'sk-good' });
+    expect(result.ok).toBe(true);
+  });
+
   it('lists static models', async () => {
     const provider = new AnthropicProvider(createMockFetch([]));
     const models = await provider.listModels({});

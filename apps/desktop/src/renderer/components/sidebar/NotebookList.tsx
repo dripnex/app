@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useNotebookTree, useNotebookMutations, getAncestorIds } from '../../hooks/useNotebooks';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { NotebookItem } from './NotebookItem';
+import { sc } from './sc';
 
 interface NotebookListProps {
   readonly selectedNotebookId: string | null;
@@ -9,21 +10,22 @@ interface NotebookListProps {
   readonly filterParentId?: string | null;
   /** Request to create a child notebook */
   readonly onRequestCreateChild: (parentId: string) => void;
+  readonly nameFilter?: string;
 }
 
 function NotebookListSkeleton() {
   return (
-    <div className="notebook-list-skeleton" aria-busy="true">
-      <div className="skeleton-item" />
-      <div className="skeleton-item" />
-      <div className="skeleton-item" />
+    <div className={sc('notebook-list-skeleton')} aria-busy="true">
+      <div className={sc('skeleton-item')} />
+      <div className={sc('skeleton-item')} />
+      <div className={sc('skeleton-item')} />
     </div>
   );
 }
 
 function NotebookListEmpty() {
   return (
-    <div className="notebook-list-empty">
+    <div className={sc('notebook-list-empty')}>
       <p>No notebooks yet</p>
     </div>
   );
@@ -31,7 +33,7 @@ function NotebookListEmpty() {
 
 function NotebookListError({ message }: { message: string }) {
   return (
-    <div className="notebook-list-error" role="alert">
+    <div className={sc('notebook-list-error')} role="alert">
       <p>Error loading notebooks: {message}</p>
     </div>
   );
@@ -48,6 +50,7 @@ export function NotebookList({
   onSelectNotebook,
   filterParentId,
   onRequestCreateChild,
+  nameFilter = '',
 }: NotebookListProps) {
   const { data: tree, isLoading, error } = useNotebookTree();
   const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks } = useNotebookMutations();
@@ -75,8 +78,31 @@ export function NotebookList({
     return findChildren(tree);
   }, [tree, filterParentId]);
 
+  const filteredTree = useMemo(() => {
+    const q = nameFilter.trim().toLowerCase();
+    if (!q) return displayedTree;
+
+    function match(nodes: NotebookTreeNode[]): NotebookTreeNode[] {
+      const next: NotebookTreeNode[] = [];
+      for (const node of nodes) {
+        const children = match(node.children);
+        if (node.notebook.name.toLowerCase().includes(q) || children.length > 0) {
+          next.push({ ...node, children });
+        }
+      }
+      return next;
+    }
+
+    return match(displayedTree);
+  }, [displayedTree, nameFilter]);
+
+  const visibleTree = useMemo(
+    () => filteredTree.filter(node => node.notebook.id !== 'templates'),
+    [filteredTree]
+  );
+
   // Sibling IDs at the root level (for reorder)
-  const rootSiblingIds = useMemo(() => displayedTree.map(n => n.notebook.id), [displayedTree]);
+  const rootSiblingIds = useMemo(() => visibleTree.map(n => n.notebook.id), [visibleTree]);
 
   const handleRename = useCallback(
     async (id: string, name: string) => {
@@ -125,9 +151,9 @@ export function NotebookList({
   }
 
   return (
-    <div className="notebook-list">
-      <ul className="notebook-list-tree" role="tree" aria-label="Notebooks">
-        {displayedTree.map(node => (
+    <div className={sc('notebook-list')}>
+      <ul className={sc('notebook-list-tree')} role="tree" aria-label="Notebooks">
+        {visibleTree.map(node => (
           <NotebookItem
             key={node.notebook.id}
             node={node}

@@ -83,10 +83,10 @@ interface NoteRepository {
   get(id: NoteId): Promise<Note | null>;
   save(note: Note): Promise<void>;
   delete(id: NoteId): Promise<void>;
-  list(options?: ListOptions): Promise<Note[]>;
-  search(term: string): Promise<Note[]>;
 }
 ```
+
+List, search, counts, tags, and the knowledge graph live on `ExtendedNoteRepository` in `@dripnex/storage-core`. Domain operations only need the write port.
 
 ## Companion Packages
 

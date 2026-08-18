@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { extractEmbedTargets } from '@dripnex/embeds';
+import { scanMarkdown } from '@dripnex/markdown';
 
 interface UseEmbedResolverOptions {
   noteId: string | null;
@@ -32,7 +32,7 @@ export function useEmbedResolver({
       return;
     }
 
-    const targets = extractEmbedTargets(content);
+    const targets = scanMarkdown(content).embedTargets;
     if (targets.length === 0) {
       setResolvedEmbeds({});
       return;

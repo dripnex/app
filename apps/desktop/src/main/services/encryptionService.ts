@@ -92,30 +92,19 @@ export class EncryptionService {
       return true;
     }
 
-    try {
-      // Try cached CEK first (from previous passphrase setup)
-      if (existsSync(this.cekCachePath)) {
-        const encryptedCek = await readFile(this.cekCachePath);
-        const cekHex = safeStorage.decryptString(encryptedCek);
-        this.key = Buffer.from(cekHex, 'hex');
-        return true;
-      }
-
-      // Fallback: try legacy per-device key (pre-key-hierarchy)
-      if (existsSync(this.legacyKeyPath)) {
-        const encryptedKey = await readFile(this.legacyKeyPath);
-        const keyHex = safeStorage.decryptString(encryptedKey);
-        this.key = Buffer.from(keyHex, 'hex');
-        return true;
-      }
-
-      return false; // No key available — passphrase setup required
-    } catch (error) {
-      throw new Error(
-        `Failed to initialize encryption: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { cause: error }
-      );
+    const cached = await this.readCachedKey(this.cekCachePath);
+    if (cached) {
+      this.key = cached;
+      return true;
     }
+
+    const legacy = await this.readCachedKey(this.legacyKeyPath);
+    if (legacy) {
+      this.key = legacy;
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -196,10 +185,11 @@ export class EncryptionService {
    */
   async unlockWithRecoveryKey(recoveryKeyHex: string, wrappedCekRecovery: string): Promise<void> {
     // Validate hex string before parsing — reject malformed input early
-    if (!/^[0-9a-fA-F]+$/.test(recoveryKeyHex) || recoveryKeyHex.length !== KEY_LENGTH * 2) {
+    const normalized = recoveryKeyHex.replace(/[\s-]/g, '').toLowerCase();
+    if (!/^[0-9a-f]+$/.test(normalized) || normalized.length !== KEY_LENGTH * 2) {
       throw new Error('Invalid recovery key format — expected 64 hex characters');
     }
-    const recoveryKeyBuf = Buffer.from(recoveryKeyHex, 'hex');
+    const recoveryKeyBuf = Buffer.from(normalized, 'hex');
     const wrappedBuf = Buffer.from(wrappedCekRecovery, 'base64');
 
     const cek = this.unwrapKey(recoveryKeyBuf, wrappedBuf);
@@ -455,7 +445,34 @@ export class EncryptionService {
    */
   private async cacheCek(cek: Buffer): Promise<void> {
     const cekHex = cek.toString('hex');
-    const encryptedCek = safeStorage.encryptString(cekHex);
-    await writeFile(this.cekCachePath, encryptedCek);
+    const payload = safeStorage.isEncryptionAvailable()
+      ? safeStorage.encryptString(cekHex)
+      : Buffer.from(cekHex, 'utf8');
+    await writeFile(this.cekCachePath, payload, { mode: 0o600 });
+  }
+
+  private async readCachedKey(path: string): Promise<Buffer | null> {
+    if (!existsSync(path)) return null;
+    let data: Buffer;
+    try {
+      data = await readFile(path);
+    } catch {
+      return null;
+    }
+
+    const asText = data.toString('utf8').trim();
+    if (/^[0-9a-f]{64}$/i.test(asText)) {
+      return Buffer.from(asText, 'hex');
+    }
+
+    if (!safeStorage.isEncryptionAvailable()) {
+      return null;
+    }
+
+    try {
+      return Buffer.from(safeStorage.decryptString(data), 'hex');
+    } catch {
+      return null;
+    }
   }
 }

@@ -10,6 +10,7 @@ import type { GitService } from './types.js';
 
 export interface GitHandlerDeps {
   gitService: GitService;
+  getGithubToken?: () => Promise<string | null>;
 }
 
 // Notebook/note IDs are UUIDs (crypto.randomUUID) or safe slugs like 'inbox'.
@@ -32,7 +33,7 @@ const CommitMessageSchema = z.string().min(1).max(8192);
 const NoteContentSchema = z.string().max(1024 * 1024);
 
 export function registerGitHandlers(deps: GitHandlerDeps): void {
-  const { gitService: git } = deps;
+  const { gitService: git, getGithubToken } = deps;
 
   defineIpcHandler({
     channel: 'git:init',
@@ -177,6 +178,55 @@ export function registerGitHandlers(deps: GitHandlerDeps): void {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'Failed to delete note file',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'git:remotes',
+    args: z.tuple([IdSchema]),
+    handler: async notebookId => {
+      try {
+        const remotes = await git.listRemotes(notebookId);
+        return { success: true, remotes };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to list remotes',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'git:setRemote',
+    args: z.tuple([IdSchema, z.string().max(512)]),
+    handler: async (notebookId, url) => {
+      try {
+        const remote = await git.setGithubRemote(notebookId, url);
+        return { success: true, remote };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to set remote',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'git:push',
+    args: z.tuple([IdSchema]),
+    handler: async notebookId => {
+      try {
+        const token = (await getGithubToken?.()) ?? '';
+        await git.pushOrigin(notebookId, token);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to push',
         };
       }
     },

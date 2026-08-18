@@ -1,33 +1,22 @@
 /**
  * Task Parsing
  *
- * Pure domain logic for extracting task information from markdown content.
- * No dependencies on storage, UI, or external libraries.
+ * Delegates to the shared fence-aware scan.
  */
 
+import { scanMarkdown } from '@dripnex/markdown';
 import type { TaskProgress } from './types.js';
 
 /**
  * Count markdown task checkboxes in content.
  *
- * Matches GFM-style task lists:
- * - `- [ ]` or `- [x]` (dash)
- * - `* [ ]` or `* [x]` (asterisk)
- *
- * @param content - Markdown content to parse
- * @returns Object with total and completed task counts
+ * Matches GFM-style task lists (`- [ ]`, `- [x]`, `* [ ]`, `* [x]`).
+ * Skips fenced code.
  *
  * @example
  * countMarkdownTasks("- [x] done\n- [ ] todo")
  * // Returns: { total: 2, completed: 1 }
  */
 export function countMarkdownTasks(content: string): TaskProgress {
-  // Match: - [ ] or - [x] or * [ ] or * [x] (with optional leading whitespace)
-  const all = content.match(/^[ \t]*[-*]\s+\[.\]/gm) ?? [];
-  const done = content.match(/^[ \t]*[-*]\s+\[[xX]\]/gm) ?? [];
-
-  return {
-    total: all.length,
-    completed: done.length,
-  };
+  return scanMarkdown(content).tasks;
 }

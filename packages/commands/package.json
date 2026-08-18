@@ -17,6 +17,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@dripnex/markdown": "workspace:*"
+  },
   "peerDependencies": {
     "@codemirror/commands": "^6.0.0",
     "@codemirror/state": "^6.0.0",

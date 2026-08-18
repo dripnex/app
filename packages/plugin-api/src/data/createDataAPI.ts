@@ -60,6 +60,8 @@ export interface DataAPIBridge {
   getNotebook(id: string): Promise<NotebookDetailInfo | null>;
   getTags(): Promise<string[]>;
   getTagsWithColors(): Promise<Array<{ name: string; color: string | null }>>;
+  /** Preferred: filter/limit run in SQLite. */
+  queryTags?(options?: TagQueryOptions): Promise<TagInfo[]>;
   getBacklinks(noteId: string): Promise<LinkInfo[]>;
   getOutgoingLinks(noteId: string): Promise<OutgoingLinkInfo[]>;
   getGraphData(): Promise<GraphData>;
@@ -127,6 +129,10 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
 
     async getTags(options?: TagQueryOptions): Promise<TagInfo[]> {
       return safeBridgeCall('getTags', async () => {
+        if (bridge.queryTags) {
+          return bridge.queryTags(options);
+        }
+
         let tags: TagInfo[];
 
         if (options?.includeColors) {
@@ -137,13 +143,11 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
           tags = raw.map(name => ({ name }));
         }
 
-        // Client-side case-insensitive substring filter
         if (options?.filter) {
           const filterLower = options.filter.toLowerCase();
           tags = tags.filter(t => t.name.toLowerCase().includes(filterLower));
         }
 
-        // Client-side pagination
         const offset = options?.offset ?? 0;
         const limit = options?.limit;
         if (limit !== undefined) {

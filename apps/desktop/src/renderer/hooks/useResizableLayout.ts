@@ -5,11 +5,13 @@ const STORAGE_KEY = 'dripnex:layout';
 interface LayoutState {
   sidebarWidth: number;
   notelistWidth: number;
+  sidebarCollapsed: boolean;
 }
 
 const DEFAULT_LAYOUT: LayoutState = {
   sidebarWidth: 220,
   notelistWidth: 280,
+  sidebarCollapsed: false,
 };
 
 const MIN_SIDEBAR = 200;
@@ -37,6 +39,7 @@ export function useResizableLayout() {
             MIN_NOTELIST,
             MAX_NOTELIST
           ),
+          sidebarCollapsed: Boolean(parsed.sidebarCollapsed),
         };
       }
     } catch {
@@ -114,9 +117,15 @@ export function useResizableLayout() {
     [layout.notelistWidth]
   );
 
+  const toggleSidebar = useCallback(() => {
+    setLayout(prev => ({ ...prev, sidebarCollapsed: !prev.sidebarCollapsed }));
+  }, []);
+
   return {
-    sidebarWidth: layout.sidebarWidth,
+    sidebarWidth: layout.sidebarCollapsed ? 0 : layout.sidebarWidth,
     notelistWidth: layout.notelistWidth,
+    sidebarCollapsed: layout.sidebarCollapsed,
+    toggleSidebar,
     startResizeSidebar,
     startResizeNotelist,
   };

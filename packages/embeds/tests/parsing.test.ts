@@ -54,6 +54,11 @@ describe('extractEmbeds', () => {
     expect(result).toEqual([{ target: 'file.png', display: 'Label' }]);
   });
 
+  it('ignores embeds inside fenced and inline code', () => {
+    const result = extractEmbeds('![[real.png]]\n```\n![[fake.png]]\n```\nand `![[also-fake.png]]`');
+    expect(result).toEqual([{ target: 'real.png' }]);
+  });
+
   it('handles embeds in multiline content', () => {
     const content = `
 # Title

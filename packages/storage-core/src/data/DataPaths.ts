@@ -6,6 +6,7 @@
  */
 
 import { existsSync, mkdirSync } from 'fs';
+import { homedir } from 'os';
 import { join } from 'path';
 
 export interface DataPaths {
@@ -66,6 +67,44 @@ export function ensureDirectory(path: string): void {
 /**
  * Generate backup filename with timestamp.
  */
+/** Default Electron userData roots, most specific first. */
+export function userDataRootCandidates(): string[] {
+  const home = homedir();
+  if (process.platform === 'darwin') {
+    return [
+      join(home, 'Library', 'Application Support', '@dripnex', 'desktop'),
+      join(home, 'Library', 'Application Support', 'Dripnex'),
+      join(home, 'Library', 'Application Support', 'dripnex'),
+    ];
+  }
+  if (process.platform === 'win32') {
+    const roaming = process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
+    return [join(roaming, '@dripnex', 'desktop'), join(roaming, 'dripnex')];
+  }
+  return [
+    join(home, '.config', '@dripnex', 'desktop'),
+    join(home, '.config', 'dripnex'),
+  ];
+}
+
+/**
+ * Resolve the desktop data directory (where dripnex.db and plugins/ live).
+ * Honors DRIPNEX_DATA_DIR. Otherwise picks the first existing candidate,
+ * falling back to `@dripnex/desktop`.
+ */
+export function resolveUserDataRoot(override?: string): string {
+  const explicit = override ?? process.env.DRIPNEX_DATA_DIR;
+  if (explicit) return explicit;
+
+  const candidates = userDataRootCandidates();
+  for (const root of candidates) {
+    if (existsSync(join(root, 'dripnex.db')) || existsSync(join(root, 'plugins'))) {
+      return root;
+    }
+  }
+  return candidates[0] ?? join(homedir(), '.dripnex');
+}
+
 export function generateBackupFilename(prefix: string = 'backup'): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   return `${prefix}-${timestamp}.db`;

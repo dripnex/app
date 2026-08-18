@@ -4,9 +4,12 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
-        <span className="font-mono text-base font-bold tracking-tight">
-          dripnex<span className="text-[var(--color-accent)]">.</span>
-          <span className="ml-2 text-[11px] font-normal text-fd-muted-foreground">docs</span>
+        <span className="inline-flex items-center gap-2 font-mono text-base font-bold tracking-tight">
+          <img src="/logo.png" alt="" width={20} height={20} className="rounded-[4px]" />
+          <span>
+            dripnex<span className="text-[var(--color-accent)]">.</span>
+          </span>
+          <span className="text-[11px] font-normal text-fd-muted-foreground">docs</span>
         </span>
       ),
       transparentMode: 'top',

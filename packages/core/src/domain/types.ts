@@ -52,6 +52,9 @@ export function generateNotebookId(): NotebookId {
 /** Special Inbox notebook ID - all notes without a notebook go here */
 export const INBOX_NOTEBOOK_ID = createNotebookId('inbox');
 
+/** Reserved notebook for reusable note templates */
+export const TEMPLATES_NOTEBOOK_ID = createNotebookId('templates');
+
 /** Maximum allowed nesting depth for notebooks (0, 1, 2 = 3 levels) */
 export const MAX_NOTEBOOK_DEPTH = 2;
 

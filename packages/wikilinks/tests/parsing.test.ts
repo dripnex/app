@@ -82,6 +82,21 @@ describe('extractWikilinks', () => {
     const result = extractWikilinks('[[A]][[B]][[C]]');
     expect(result).toEqual([{ target: 'A' }, { target: 'B' }, { target: 'C' }]);
   });
+
+  it('does not treat embeds ![[file]] as wikilinks', () => {
+    const result = extractWikilinks('See [[Note A]] and ![[photo.png]]');
+    expect(result).toEqual([{ target: 'Note A' }]);
+  });
+
+  it('ignores wikilinks inside fenced and inline code', () => {
+    const result = extractWikilinks('[[Real]]\n```\n[[Fake]]\n```\nand `[[also-fake]]`');
+    expect(result).toEqual([{ target: 'Real' }]);
+  });
+
+  it('ignores wikilinks inside tilde fences', () => {
+    const result = extractWikilinks('[[Real]]\n~~~\n[[Fake]]\n~~~');
+    expect(result).toEqual([{ target: 'Real' }]);
+  });
 });
 
 describe('extractWikilinkTargets', () => {

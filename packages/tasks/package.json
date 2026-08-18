@@ -17,6 +17,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@dripnex/markdown": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"

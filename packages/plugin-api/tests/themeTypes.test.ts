@@ -17,7 +17,7 @@ describe('isValidThemeToken', () => {
 
   it('rejects unknown tokens', () => {
     expect(isValidThemeToken('--custom-thing')).toBe(false);
-    expect(isValidThemeToken('--accent')).toBe(false);
+    expect(isValidThemeToken('--accent')).toBe(true);
     expect(isValidThemeToken('color')).toBe(false);
     expect(isValidThemeToken('--font-sans')).toBe(false);
   });

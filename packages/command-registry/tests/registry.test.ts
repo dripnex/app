@@ -115,6 +115,60 @@ describe('CommandRegistry', () => {
     expect(reg.getKeybinding('bold')).toEqual({ key: 'b', modifiers: ['Mod', 'Shift'] });
   });
 
+  it('replaceKeybindingOverrides replaces the whole map', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'bold',
+        defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
+      })
+    );
+    reg.setKeybindingOverride({
+      commandId: 'bold',
+      keybinding: { key: 'x', modifiers: ['Mod'] },
+    });
+    reg.replaceKeybindingOverrides([
+      { commandId: 'bold', keybinding: { key: 'i', modifiers: ['Mod'] } },
+    ]);
+    expect(reg.getKeybinding('bold')).toEqual({ key: 'i', modifiers: ['Mod'] });
+    reg.replaceKeybindingOverrides([]);
+    expect(reg.getKeybinding('bold')).toEqual({ key: 'b', modifiers: ['Mod'] });
+  });
+
+  it('dispatch returns false when execute throws', async () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'boom',
+        execute: () => {
+          throw new Error('nope');
+        },
+      })
+    );
+    expect(await reg.dispatch('boom')).toBe(false);
+  });
+
+  it('detects a global binding overlapping another context', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'global-save',
+        context: 'global',
+        defaultKeybinding: { key: 's', modifiers: ['Mod'] },
+      })
+    );
+    reg.register(
+      makeCommand({
+        id: 'editor-save',
+        context: 'editor',
+        defaultKeybinding: { key: 's', modifiers: ['Mod'] },
+      })
+    );
+    const conflicts = reg.getConflicts();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]!.commands.map(c => c.id).sort()).toEqual(['editor-save', 'global-save']);
+  });
+
   it('detects conflicts', () => {
     const reg = new CommandRegistry();
     reg.register(

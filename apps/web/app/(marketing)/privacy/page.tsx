@@ -7,71 +7,77 @@ export const metadata: Metadata = {
   description: 'How Dripnex protects your privacy. Your notes stay on your device.',
 };
 
-const lastUpdated = 'January 2026';
+const lastUpdated = 'August 2026';
 
 const sections = [
   {
     title: 'Overview',
     content: [
-      'Dripnex is designed with privacy as a core principle. Your notes are stored locally on your device, not on our servers.',
-      'We believe your data belongs to you. This privacy policy explains what minimal information we collect and why.',
+      'Dripnex stores your notes on your device. An account is required to use the app.',
+      'Cloud sync is optional. When it is on, the server stores only ciphertext we cannot read.',
     ],
   },
   {
-    title: 'Data We Do Not Collect',
-    content: ['Dripnex does not collect, store, or transmit:'],
+    title: 'What stays on your device',
+    content: ['Unless you enable sync, Dripnex does not upload:'],
     list: [
-      'Your notes or any content you create',
-      'Your files or file names',
-      'Personal information (name, email, address)',
-      'Usage analytics or behavioral data',
-      'Location data',
-      'Device identifiers for tracking',
+      'Note bodies, titles, tags, or notebooks',
+      'Your encryption passphrase or content-encryption key',
+      'Local AI chat history',
     ],
   },
   {
-    title: 'Data We Collect',
+    title: 'Account and payments',
     content: [
-      'When you purchase Dripnex, our payment processor (Stripe) collects standard transaction information:',
+      'Sign-in uses a magic link to the email you provide. We store that email and session tokens to keep you signed in and check your license.',
+      'When you subscribe, Stripe collects payment details:',
     ],
     list: [
-      'Email address (for license delivery)',
-      'Payment information (processed securely by Stripe)',
-      'Transaction records (for refunds and support)',
+      'Email address (account + license)',
+      'Payment information (processed by Stripe)',
+      'Transaction records (refunds and support)',
     ],
     footer:
-      'This information is handled by our payment processors according to their respective privacy policies.',
+      'Stripe handles card data under their privacy policy. We do not see full card numbers.',
   },
   {
-    title: 'Subscription Verification',
+    title: 'Optional end-to-end sync',
     content: [
-      'When you sign in to Dripnex Pro, the app verifies your subscription status.',
-      'This check transmits only your account identifier. No personal data or note content is sent.',
-      'Free tier users require no account. The app works entirely offline.',
+      'If you set an encryption passphrase, the desktop encrypts notes before they leave the device.',
+      'api.dripnex.app stores encrypted blobs, device metadata, and sync versions. It does not have the key to decrypt note content.',
+      'If you never set a passphrase, sync stays off and nothing from your notes is uploaded.',
     ],
   },
   {
-    title: 'Updates',
+    title: 'Local AI',
     content: [
-      'Dripnex may periodically check for software updates.',
-      'These update checks do not transmit any personal data or content from your device.',
-      'You can disable automatic update checks in settings.',
+      'AI features run from the desktop against the provider you configure (Ollama locally, or an API key you paste).',
+      'Dripnex does not proxy those prompts through our servers. Whatever that provider logs is between you and them.',
     ],
   },
   {
-    title: 'Third-Party Services',
+    title: 'Updates and crash reports',
     content: [
-      'Dripnex does not integrate with third-party analytics, advertising, or tracking services.',
-      'The only external services involved are:',
+      'The app may check for updates. Those checks do not include note content.',
+      'If a Sentry DSN is configured in a build, crash reports may include stack traces and environment data — not note bodies.',
     ],
-    list: ['Payment processing (Stripe)', 'License validation server', 'Update server (optional)'],
   },
   {
-    title: 'Your Rights',
+    title: 'Third-party services',
+    content: ['We do not sell data or run advertising SDKs. Services that may see something:'],
+    list: [
+      'Stripe (payments)',
+      'api.dripnex.app (auth, license, optional encrypted sync)',
+      'The AI provider you choose, if you use AI',
+      'Sentry, only when a DSN is set in that build',
+    ],
+  },
+  {
+    title: 'Your rights',
     content: [
-      "Since we don't store your data, there's nothing to delete or export from our servers.",
-      'Your notes are standard Markdown files on your computer. You have complete control over them.',
-      "To delete your purchase data, contact us and we'll remove your records from our payment processor.",
+      'Your notes live on your computer (and as ciphertext on our sync store if you enabled it).',
+      'You can export Markdown at any time.',
+      'To delete your account or payment records, email privacy@dripnex.app.',
     ],
   },
   {
@@ -111,8 +117,8 @@ export default function PrivacyPage() {
               TL;DR
             </span>
             <p className="text-base text-text-secondary leading-7 m-0">
-              Your notes never leave your device. We only collect payment info through Stripe to
-              deliver your license.
+              Notes stay on your device unless you turn on end-to-end sync. Then we only store
+              ciphertext. We collect your email for the account and Stripe handles payments.
             </p>
           </div>
         </div>

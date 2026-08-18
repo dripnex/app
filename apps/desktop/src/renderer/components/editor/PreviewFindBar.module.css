@@ -1,0 +1,45 @@
+.preview-find {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.preview-find-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.preview-find-count {
+  min-width: 3.5em;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: right;
+}
+
+.preview-find-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.preview-find-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

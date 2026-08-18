@@ -1,19 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { EditorView } from '@codemirror/view';
-import {
-  PluginHost,
-  createEditorAPI,
-  createAppAPI,
-  createDataAPI,
-  editorPluginStore,
-  useCssVariables,
-  useThemeOverrides,
-  themeRegistryStore,
-} from '@dripnex/plugin-api';
-import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
-import type { RegisteredCommand } from '@dripnex/command-registry';
-import { useStore } from 'zustand';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCssVariables, useThemeOverrides } from '@dripnex/plugin-api';
 import type { NoteSnapshot } from '../preload/index';
 import { UpdateBanner } from './components/UpdateBanner';
 import { NoteList } from './components/NoteList';
@@ -24,59 +10,42 @@ import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
 import { AiPanel } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
-import { ToastProvider, useToast } from './components/Toast';
+import { ToastProvider } from './components/Toast';
 import { Toaster } from './ui/primitives';
-import type { PluginLoadError } from './stores/pluginRuntimeStore';
 import { Welcome } from './components/Welcome';
+import { AuthGate } from './components/auth/AuthGate';
+import { useAuthStore, selectIsAuthenticated, selectSessionHydrated } from './stores/authStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
   useFilteredNotes,
   useSelectedNotebookId,
   useSelectedTag,
+  useStatusFilter,
   useNavigationActions,
   useSortBy,
   useSortOrder,
+  useTagFilter,
 } from './hooks/useNavigation';
 import { useSearchNotes } from './hooks/useNotes';
 import { useDebouncedSearch } from './hooks/useDebouncedSearch';
-import { getEditorView, registry as commandRegistry } from './hooks/useCommandRegistry';
-import { builtInPlugins } from './plugins';
+import { matchNotebookId, parseNoteSearch } from './utils/parseNoteSearch';
+import { useNotebooks } from './hooks/useNotebooks';
+import { listOptionsFromNav } from './utils/listOptionsFromNav';
 import { useTagColorsStore } from './stores/tagColorsStore';
 import { usePerformanceMode } from './hooks/usePerformanceMode';
 import { useAppearanceSettings } from './hooks/useAppearanceSettings';
+import { useOfficialThemes } from './hooks/useOfficialThemes';
 import { useResizableLayout } from './hooks/useResizableLayout';
-import { useAuthStore } from './stores/authStore';
 import { useSyncStore } from './stores/syncStore';
-import { useSettingsStore, selectAppearance } from './stores/settings';
-import { pluginRuntimeStore } from './stores/pluginRuntimeStore';
-// Extracted hooks
+
 import { useDeepLinks } from './hooks/useDeepLinks';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useNoteActions } from './hooks/useNoteActions';
 import { useAppCommands } from './hooks/useAppCommands';
-
-/** Shows toast errors for plugins that failed to load */
-function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
-  const { showToast } = useToast();
-
-  useEffect(() => {
-    for (const err of errors) {
-      showToast(`Plugin "${err.pluginName}" failed to load`, 'error');
-    }
-  }, [errors, showToast]);
-
-  return null;
-}
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60, // 1 minute
-      retry: 1,
-    },
-  },
-});
+import { useEnsureNowBoard } from './hooks/useNowBoard';
+import { useRefreshOnWindowFocus } from './hooks/useRefreshOnWindowFocus';
+import { usePluginRuntime } from './hooks/usePluginRuntime';
 
 /**
  * Main Notes Application
@@ -84,6 +53,9 @@ const queryClient = new QueryClient({
 function NotesApp() {
   usePerformanceMode();
   useAppearanceSettings();
+  useOfficialThemes();
+  useEnsureNowBoard();
+  useRefreshOnWindowFocus();
   useThemeOverrides(); // Applies active theme tokens
   useCssVariables();
 
@@ -91,33 +63,36 @@ function NotesApp() {
   const [showWelcome, setShowWelcome] = useState(
     () => !localStorage.getItem('dripnex-onboarding-done')
   );
-
-  // Restore saved plugin theme on startup
-  const appearance = useSettingsStore(selectAppearance);
-  const registeredThemeCount = useSyncExternalStore(
-    themeRegistryStore.subscribe,
-    () => themeRegistryStore.getState().themes.length
-  );
-
-  useEffect(() => {
-    const savedThemeId = appearance?.activeThemeId;
-    if (savedThemeId && registeredThemeCount > 0) {
-      const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
-      if (exists) {
-        themeRegistryStore.getState().setActive(savedThemeId);
-      }
-    }
-  }, [appearance?.activeThemeId, registeredThemeCount]);
+  const sessionHydrated = useAuthStore(selectSessionHydrated);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const skipAuthGate = window.dripnex?.app?.isE2E?.() === true;
 
   // Resizable layout
-  const { sidebarWidth, notelistWidth, startResizeSidebar, startResizeNotelist } =
-    useResizableLayout();
+  const {
+    sidebarWidth,
+    notelistWidth,
+    sidebarCollapsed,
+    toggleSidebar,
+    startResizeSidebar,
+    startResizeNotelist,
+  } = useResizableLayout();
+
+  useEffect(() => {
+    const setVisibility = window.dripnex.windows.setButtonVisibility;
+    if (typeof setVisibility !== 'function') return;
+    void setVisibility(!sidebarCollapsed);
+    return () => {
+      void setVisibility(true);
+    };
+  }, [sidebarCollapsed]);
 
   // Navigation state from Zustand
   const navigation = useNavigation();
   const filteredNotes = useFilteredNotes();
   const selectedNotebookId = useSelectedNotebookId();
   const selectedTag = useSelectedTag();
+  const statusFilter = useStatusFilter();
+  const tagFilter = useTagFilter();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
   const { goToTag, setSort } = useNavigationActions();
@@ -151,215 +126,117 @@ function NotesApp() {
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
   const selectedNoteRef = useRef<NoteSnapshot | null>(null);
   selectedNoteRef.current = selectedNote;
+  const { appAPI, dataAPI, pluginSlot } = usePluginRuntime(selectedNoteRef);
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-  // Plugin system: create stable EditorAPI and AppAPI (early, so handlers can reference them)
-  const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
+  const { data: notebooks } = useNotebooks();
+  const parsedSearch = useMemo(() => parseNoteSearch(debouncedSearch), [debouncedSearch]);
+  const searchNotebookId = useMemo(() => {
+    if (!parsedSearch.notebook || !notebooks) return undefined;
+    return matchNotebookId(parsedSearch.notebook, notebooks);
+  }, [parsedSearch.notebook, notebooks]);
+  const searchOptions = useMemo(() => {
+    const scoped = listOptionsFromNav({
+      navigation,
+      statusFilter: parsedSearch.status ?? statusFilter,
+      tagFilter,
+      sortBy,
+      sortOrder,
+    });
+    const tags = [...new Set([...(scoped.tags ?? []), ...parsedSearch.tags])];
+    if (scoped.tag && !tags.includes(scoped.tag)) tags.unshift(scoped.tag);
+    return {
+      ...scoped,
+      tag: undefined,
+      tags: tags.length > 0 ? tags : undefined,
+      notebookId: searchNotebookId ?? scoped.notebookId,
+      isPinned: parsedSearch.pinned ?? scoped.isPinned,
+      isDeleted: parsedSearch.trash ?? scoped.isDeleted,
+      archived: parsedSearch.archived ? ('archived' as const) : scoped.archived,
+      limit: 50,
+    };
+  }, [
+    navigation,
+    parsedSearch,
+    searchNotebookId,
+    statusFilter,
+    tagFilter,
+    sortBy,
+    sortOrder,
+  ]);
+  const searchNotesQuery = useSearchNotes(parsedSearch.text, searchOptions);
 
-  const appAPI = useMemo<AppAPIWithEvents>(
-    () =>
-      createAppAPI({
-        getCurrentNote() {
-          const note = selectedNoteRef.current;
-          if (!note) return null;
-          return { id: note.id, title: note.title, content: note.content };
-        },
-        async searchNotes(query) {
-          const notes = await window.dripnex.notes.search(query, 20);
-          return notes.map(n => ({ id: n.id, title: n.title }));
-        },
-        async getNoteById(id) {
-          const result = await window.dripnex.notes.get(id);
-          if (!result.ok) return null;
-          return { id: result.data.id, title: result.data.title, content: result.data.content };
-        },
-        async getNoteTags(noteId) {
-          return window.dripnex.notes.getManualTags(noteId);
-        },
-        async getBacklinks(noteId) {
-          const links = await window.dripnex.links.getBacklinks(noteId);
-          return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
-        },
-        async listNotes() {
-          const notes = await window.dripnex.notes.list();
-          return notes.map(n => ({
-            id: n.id,
-            title: n.title,
-            notebookId: n.notebookId,
-            tags: [...n.tags],
-            wordCount: n.wordCount,
-            createdAt: n.createdAt,
-            updatedAt: n.updatedAt,
-            isPinned: n.isPinned,
-            status: n.status,
-          }));
-        },
-        async listNotebooks() {
-          const notebooks = await window.dripnex.notebooks.list();
-          return notebooks.map(nb => ({
-            id: nb.id,
-            name: nb.name,
-            parentId: nb.parentId,
-          }));
-        },
-        async listTags() {
-          return window.dripnex.notes.tags();
-        },
-      }),
-    []
-  );
+  const displayedNotes = useMemo(() => {
+    const hasText = parsedSearch.text.length > 0;
+    const hasOps =
+      parsedSearch.tags.length > 0 ||
+      parsedSearch.status !== null ||
+      parsedSearch.notebook !== null ||
+      parsedSearch.pinned !== null ||
+      parsedSearch.trash !== null ||
+      parsedSearch.archived !== null;
+    const usesQuery =
+      hasText ||
+      parsedSearch.trash !== null ||
+      parsedSearch.archived !== null ||
+      parsedSearch.notebook !== null;
+    let notes = usesQuery ? (searchNotesQuery.data ?? []) : filteredNotes;
 
-  const dataAPI = useMemo<DataAPIWithEvents>(
-    () =>
-      createDataAPI({
-        async getNotes(options) {
-          const notes = await window.dripnex.notes.list(
-            options
-              ? {
-                  tag: options.tag,
-                  sortBy: options.sortBy === 'wordCount' ? 'updatedAt' : options.sortBy,
-                  sortOrder: options.sortOrder,
-                }
-              : undefined
-          );
-          let filtered = notes;
-          if (options?.notebookId)
-            filtered = filtered.filter(n => n.notebookId === options.notebookId);
-          if (options?.status) filtered = filtered.filter(n => n.status === options.status);
-          if (options?.isPinned !== undefined)
-            filtered = filtered.filter(n => n.isPinned === options.isPinned);
+    if (hasText) {
+      const needle = parsedSearch.text.toLowerCase();
+      const extras = filteredNotes.filter(
+        n =>
+          n.title.toLowerCase().includes(needle) ||
+          n.tags.some(tag => tag.toLowerCase().includes(needle))
+      );
+      const seen = new Set(notes.map(n => n.id));
+      notes = [...notes, ...extras.filter(n => !seen.has(n.id))];
+    }
 
-          if (options?.sortBy === 'wordCount') {
-            const dir = options.sortOrder === 'asc' ? 1 : -1;
-            filtered = [...filtered].sort((a, b) => dir * (a.wordCount - b.wordCount));
-          }
+    if (!hasText && hasOps) {
+      if (parsedSearch.tags.length > 0) {
+        notes = notes.filter(n =>
+          parsedSearch.tags.every(tag => n.tags.some(noteTag => noteTag.toLowerCase() === tag))
+        );
+      }
+      if (parsedSearch.status) {
+        notes = notes.filter(n => n.status === parsedSearch.status);
+      }
+      if (searchNotebookId) {
+        notes = notes.filter(n => n.notebookId === searchNotebookId);
+      }
+      if (parsedSearch.pinned) {
+        notes = notes.filter(n => n.isPinned);
+      }
+      if (parsedSearch.trash) {
+        notes = notes.filter(n => n.isDeleted);
+      }
+      if (parsedSearch.archived) {
+        notes = notes.filter(n => n.archivedAt !== null);
+      }
+    }
 
-          const total = filtered.length;
+    return notes;
+  }, [filteredNotes, parsedSearch, searchNotebookId, searchNotesQuery.data]);
 
-          if (options?.offset || options?.limit) {
-            const start = options.offset ?? 0;
-            const end = options.limit ? start + options.limit : undefined;
-            filtered = filtered.slice(start, end);
-          }
-
-          return {
-            notes: filtered.map(n => ({
-              id: n.id,
-              title: n.title,
-              notebookId: n.notebookId,
-              tags: [...n.tags],
-              wordCount: n.wordCount,
-              createdAt: n.createdAt,
-              updatedAt: n.updatedAt,
-              isPinned: n.isPinned,
-              status: n.status,
-            })),
-            total,
-          };
-        },
-        async getNote(id) {
-          const result = await window.dripnex.notes.get(id);
-          if (!result.ok) return null;
-          return { id: result.data.id, title: result.data.title, content: result.data.content };
-        },
-        async searchNotes(query, options) {
-          const notes = await window.dripnex.notes.search(query, options?.limit ?? 20);
-          return {
-            results: notes.map(n => ({ id: n.id, title: n.title })),
-            total: notes.length,
-          };
-        },
-        async countNotes() {
-          const counts = await window.dripnex.notes.count();
-          return counts.total;
-        },
-        async getNotebooks() {
-          const notebooks = await window.dripnex.notebooks.list();
-          return notebooks.map(nb => ({ id: nb.id, name: nb.name, parentId: nb.parentId }));
-        },
-        async getNotebookTree() {
-          type TreeNode = {
-            id: string;
-            name: string;
-            parentId: string | null;
-            noteCount: number;
-            childCount: number;
-            children: TreeNode[];
-          };
-          const tree = await window.dripnex.notebooks.tree();
-          const mapNode = (node: {
-            notebook: {
-              id: string;
-              name: string;
-              parentId: string | null;
-              noteCount?: number;
-            };
-            children: unknown[];
-          }): TreeNode => ({
-            id: node.notebook.id,
-            name: node.notebook.name,
-            parentId: node.notebook.parentId,
-            noteCount: node.notebook.noteCount ?? 0,
-            childCount: node.children.length,
-            children: (node.children as typeof tree).map(mapNode),
-          });
-          return tree.map(mapNode);
-        },
-        async getNotebook(id) {
-          const nb = await window.dripnex.notebooks.getWithMetadata(id);
-          if (!nb) return null;
-          return {
-            id: nb.id,
-            name: nb.name,
-            parentId: nb.parentId,
-            noteCount: nb.noteCount,
-            childCount: nb.childCount,
-          };
-        },
-        async getTags() {
-          return window.dripnex.notes.tags();
-        },
-        async getTagsWithColors() {
-          return window.dripnex.notes.tagsWithColors();
-        },
-        async getBacklinks(noteId) {
-          const links = await window.dripnex.links.getBacklinks(noteId);
-          return links.map(l => ({ noteId: l.noteId, noteTitle: l.noteTitle }));
-        },
-        async getOutgoingLinks(noteId) {
-          const links = await window.dripnex.links.getOutgoing(noteId);
-          return links.map(l => ({
-            targetId: l.targetNoteId,
-            targetTitle: l.targetTitle ?? l.targetRef,
-            resolved: l.targetNoteId !== null,
-          }));
-        },
-        async getGraphData() {
-          return window.dripnex.links.getGraph();
-        },
-      }),
-    []
-  );
-
-  // Search query
-  const searchNotesQuery = useSearchNotes(debouncedSearch, 50);
-
-  // Determine which notes to display
-  const displayedNotes = debouncedSearch.trim() ? (searchNotesQuery.data ?? []) : filteredNotes;
-  const isLoading = debouncedSearch.trim() !== '' && searchNotesQuery.isLoading;
+  const isLoading = searchNotesQuery.isFetching && searchNotesQuery.isLoading;
 
   // Note CRUD actions (extracted hook)
   const {
     handleNewNote,
     handleSelectNote,
+    handleCreateLinkedNote,
     handleWikilinkClick,
     handleUpdateNote,
     handleUpdateTitle,
     handleDeleteNote,
+    handleRestoreDeleted,
+    handlePermanentDelete,
     handleArchiveNote,
     handleDuplicateNote,
+    handleCreateFromTemplate,
     handlePinNote,
     handleMoveNote,
     handleMoveSelectedNote,
@@ -374,6 +251,15 @@ function NotesApp() {
     displayedNotes,
   });
 
+  useEffect(() => {
+    const onCreate = (event: Event) => {
+      const title = (event as CustomEvent<{ title?: string }>).detail?.title?.trim();
+      if (title) void handleCreateLinkedNote(title);
+    };
+    window.addEventListener('dripnex:create-linked-note', onCreate);
+    return () => window.removeEventListener('dripnex:create-linked-note', onCreate);
+  }, [handleCreateLinkedNote]);
+
   // Flush pending saves before window close
   useAutoSave(handleUpdateNote);
 
@@ -382,6 +268,7 @@ function NotesApp() {
     isAiPanelOpen,
     aiPanelMode,
     pendingAiCommand,
+    openAskNotes,
     closeAiPanel,
     clearPendingAiCommand,
     aiReplaceSelection,
@@ -398,6 +285,8 @@ function NotesApp() {
     searchQuery,
     clearSearch,
     setSelectedNote,
+    displayedNotes,
+    onSelectNote: handleSelectNote,
   });
 
   // Determine selected quick filter for NoteList header
@@ -406,10 +295,14 @@ function NotesApp() {
   // AI Panel callbacks -- wired to existing app state
   const aiConfigCache = useRef<Record<string, unknown>>({});
 
-  // Load AI plugin config once on mount
+  // Load AI plugin config; stay current when Settings writes a key
   useEffect(() => {
     void window.dripnex.pluginConfig.getAll('dripnex-ai-assistant').then(config => {
       aiConfigCache.current = config ?? {};
+    });
+    return window.dripnex.ipc.on('pluginConfig:changed', (...args: unknown[]) => {
+      if (args[0] !== 'dripnex-ai-assistant' || typeof args[1] !== 'string') return;
+      aiConfigCache.current = { ...aiConfigCache.current, [args[1]]: args[2] };
     });
   }, []);
 
@@ -419,100 +312,9 @@ function NotesApp() {
     return { id: note.id, title: note.title, content: note.content };
   }, []);
 
-  const aiSearchNotes = useCallback(async (query: string) => {
-    const notes = await window.dripnex.notes.search(query, 20);
-    return notes.map(n => ({ id: n.id, title: n.title }));
-  }, []);
-
-  const aiGetNoteById = useCallback(async (id: string) => {
-    const result = await window.dripnex.notes.get(id);
-    if (!result.ok) return null;
-    return { id: result.data.id, title: result.data.title, content: result.data.content };
-  }, []);
-
   const aiGetConfig = useCallback(<T,>(key: string): T | undefined => {
     return aiConfigCache.current[key] as T | undefined;
   }, []);
-
-  // Plugin runtime: init once, React observes
-  const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
-  const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
-  const [builtInEnabledMap, setBuiltInEnabledMap] = useState<Record<string, boolean> | null>(null);
-
-  useEffect(() => {
-    void pluginRuntimeStore.getState().init();
-    // Load built-in plugin enabled states
-    void (async () => {
-      const stateList = await window.dripnex.plugins.listState();
-      const map: Record<string, boolean> = {};
-      for (const s of stateList) {
-        map[s.pluginId] = s.enabled;
-      }
-      setBuiltInEnabledMap(map);
-    })();
-  }, []);
-
-  // Re-check built-in enabled state when plugins reload
-  useEffect(() => {
-    const handler = () => {
-      void (async () => {
-        const stateList = await window.dripnex.plugins.listState();
-        const map: Record<string, boolean> = {};
-        for (const s of stateList) {
-          map[s.pluginId] = s.enabled;
-        }
-        setBuiltInEnabledMap(map);
-      })();
-    };
-    return window.dripnex.ipc.on('plugins:reload', handler);
-  }, []);
-
-  const allPlugins = useMemo(() => {
-    // Don't mount built-in plugins until the enabled state is loaded
-    // to avoid activating disabled plugins on the initial render
-    const enabledBuiltIn = builtInEnabledMap
-      ? builtInPlugins.filter(p => builtInEnabledMap[p.id] !== false)
-      : [];
-    return [...enabledBuiltIn, ...discoveredPlugins];
-  }, [discoveredPlugins, builtInEnabledMap]);
-
-  const configBridge = useMemo(
-    () => ({
-      getAll: (pluginId: string) => window.dripnex.pluginConfig.getAll(pluginId),
-      set: (pluginId: string, key: string, value: unknown) =>
-        window.dripnex.pluginConfig.set(pluginId, key, value),
-    }),
-    []
-  );
-
-  // Bridge: plugin commands -> global CommandRegistry
-  const registerPluginCommand = useCallback(
-    (cmd: Record<string, unknown>) => commandRegistry.register(cmd as unknown as RegisteredCommand),
-    []
-  );
-
-  // Bridge: CM6 editor updates -> plugin EditorAPI events
-  useEffect(() => {
-    const ext = EditorView.updateListener.of(update => {
-      if (update.docChanged) {
-        editorAPI._notifyDocChanged(update.state.doc.toString());
-      }
-      if (update.selectionSet) {
-        const sel = update.state.selection.main;
-        editorAPI._notifySelectionChanged({ from: sel.from, to: sel.to });
-      }
-    });
-
-    editorPluginStore.getState().register({
-      id: '__editor-event-bridge',
-      pluginId: '__system',
-      extensions: [ext],
-    });
-
-    return () => {
-      editorPluginStore.getState().unregister('__editor-event-bridge');
-    };
-  }, [editorAPI]);
 
   // Welcome screen completion handler
   const handleWelcomeComplete = useCallback(
@@ -526,7 +328,25 @@ function NotesApp() {
     [handleNewNote]
   );
 
-  if (showWelcome) {
+  if (!skipAuthGate && !sessionHydrated) {
+    return (
+      <ToastProvider>
+        <AuthGate hydrating />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
+
+  if (!skipAuthGate && !isAuthenticated) {
+    return (
+      <ToastProvider>
+        <AuthGate />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
+
+  if (showWelcome && skipAuthGate) {
     return (
       <ToastProvider>
         <Welcome onComplete={handleWelcomeComplete} />
@@ -541,15 +361,19 @@ function NotesApp() {
         <div className="app">
           <UpdateBanner />
           <div className="app__layout">
-            <aside className="app__sidebar" style={{ width: sidebarWidth }}>
-              <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
-            </aside>
-            <div
-              className="resize-handle"
-              onMouseDown={startResizeSidebar}
-              role="separator"
-              aria-orientation="vertical"
-            />
+            {!sidebarCollapsed ? (
+              <>
+                <aside className="app__sidebar" style={{ width: sidebarWidth }}>
+                  <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
+                </aside>
+                <div
+                  className="resize-handle"
+                  onMouseDown={startResizeSidebar}
+                  role="separator"
+                  aria-orientation="vertical"
+                />
+              </>
+            ) : null}
 
             <section className="app__notelist" style={{ width: notelistWidth }}>
               <NoteList
@@ -557,19 +381,25 @@ function NotesApp() {
                 selectedId={selectedNote?.id ?? null}
                 selectedNotebookId={selectedNotebookId}
                 selectedTag={selectedTag}
+                selectedStatus={statusFilter}
                 selectedQuickFilter={selectedQuickFilter}
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSelect={handleSelectNote}
                 onDelete={handleDeleteNote}
+                onRestoreDeleted={handleRestoreDeleted}
+                onPermanentDelete={handlePermanentDelete}
                 onArchive={handleArchiveNote}
                 onDuplicate={handleDuplicateNote}
                 onPin={handlePinNote}
                 onMove={handleMoveNote}
                 onSearch={handleSearch}
                 onNewNote={handleNewNote}
+                onCreateFromTemplate={handleCreateFromTemplate}
                 onSortChange={setSort}
                 onTagClick={goToTag}
+                onToggleSidebar={toggleSidebar}
+                sidebarCollapsed={sidebarCollapsed}
                 isLoading={isLoading}
               />
             </section>
@@ -584,9 +414,13 @@ function NotesApp() {
               {isGraphOpen ? (
                 <GraphView
                   selectedNoteId={selectedNote?.id}
-                  onNodeClick={noteId => {
+                  onOpenNote={noteId => {
                     void handleSelectNote(noteId);
                     setIsGraphOpen(false);
+                  }}
+                  onAskNote={noteId => {
+                    void handleSelectNote(noteId);
+                    openAskNotes();
                   }}
                   onClose={() => setIsGraphOpen(false)}
                 />
@@ -600,7 +434,18 @@ function NotesApp() {
                   onDuplicate={
                     selectedNote ? () => handleDuplicateNote(selectedNote.id) : undefined
                   }
+                  onUseTemplate={
+                    selectedNote?.notebookId === 'templates'
+                      ? () => handleCreateFromTemplate(selectedNote.id)
+                      : undefined
+                  }
                   onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
+                  onRestoreDeleted={
+                    selectedNote ? () => handleRestoreDeleted(selectedNote.id) : undefined
+                  }
+                  onPermanentDelete={
+                    selectedNote ? () => handlePermanentDelete(selectedNote.id) : undefined
+                  }
                   onPin={selectedNote ? () => handlePinNote(selectedNote.id) : undefined}
                   onWikilinkClick={handleWikilinkClick}
                   onNavigateToNote={handleSelectNote}
@@ -615,33 +460,25 @@ function NotesApp() {
                 <AiPanel
                   onClose={closeAiPanel}
                   getCurrentNote={aiGetCurrentNote}
-                  searchNotes={aiSearchNotes}
-                  getNoteById={aiGetNoteById}
                   getConfig={aiGetConfig}
                   insertAtCursor={aiInsertAtCursor}
                   initialMode={aiPanelMode}
                   initialCommand={pendingAiCommand}
                   replaceSelection={aiReplaceSelection}
                   onCommandExecuted={clearPendingAiCommand}
+                  onOpenNote={id => void handleSelectNote(id)}
                 />
               </aside>
             )}
           </div>
 
-          {/* Plugin Host - manages plugin lifecycle */}
-          <PluginHost
-            plugins={allPlugins}
-            editorAPI={editorAPI}
-            appAPI={appAPI}
-            dataAPI={dataAPI}
-            registerCommand={registerPluginCommand}
-            configBridge={configBridge}
-            getView={getEditorView}
+          {pluginSlot}
+
+          <CommandPalette
+            isOpen={isCommandPaletteOpen}
+            onClose={closeCommandPalette}
+            onOpenNote={id => void handleSelectNote(id)}
           />
-
-          <CommandPalette isOpen={isCommandPaletteOpen} onClose={closeCommandPalette} />
-
-          <PluginErrorNotifier errors={pluginErrors} />
           <Toaster />
         </div>
       </LicenseProvider>
@@ -666,9 +503,7 @@ export function App() {
   // Main app
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <NotesApp />
-      </QueryClientProvider>
+      <NotesApp />
     </ErrorBoundary>
   );
 }

@@ -8,6 +8,7 @@ import {
   PinOff,
   Trash2,
   History,
+  ArchiveRestore,
   Share2,
   ExternalLink,
   Globe,
@@ -32,9 +33,12 @@ interface ActionsPanelProps {
   readonly noteId: string;
   readonly noteTitle?: string;
   readonly isPinned?: boolean;
+  readonly isDeleted?: boolean;
   readonly onPin?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
+  readonly onRestoreDeleted?: () => void;
+  readonly onPermanentDelete?: () => void;
   readonly onRevisionHistory?: () => void;
   readonly onShareOnWeb?: () => void;
   readonly shareInfo?: ShareInfo | null;
@@ -51,7 +55,7 @@ interface ActionsPanelProps {
  * - Duplicate (functional)
  * - Copy Note Link (functional)
  * - Pin to Top / Unpin (functional)
- * - Move to Trash (functional)
+ * - Move to Trash / Restore / Delete forever (functional)
  * - Revision History (functional)
  * - Share on Web (coming soon)
  *
@@ -63,9 +67,12 @@ export const ActionsPanel = memo(function ActionsPanel({
   noteId,
   noteTitle,
   isPinned,
+  isDeleted,
   onPin,
   onDuplicate,
   onDelete,
+  onRestoreDeleted,
+  onPermanentDelete,
   onRevisionHistory,
   onShareOnWeb,
   shareInfo,
@@ -124,6 +131,16 @@ export const ActionsPanel = memo(function ActionsPanel({
     onDelete?.();
     onClose();
   }, [onDelete, onClose]);
+
+  const handleRestoreDeleted = useCallback(() => {
+    onRestoreDeleted?.();
+    onClose();
+  }, [onRestoreDeleted, onClose]);
+
+  const handlePermanentDelete = useCallback(() => {
+    onPermanentDelete?.();
+    onClose();
+  }, [onPermanentDelete, onClose]);
 
   // Handle revision history
   const handleRevisionHistory = useCallback(() => {
@@ -362,17 +379,44 @@ export const ActionsPanel = memo(function ActionsPanel({
 
             <div className={styles.divider} />
 
-            <button
-              type="button"
-              className={styles.itemDanger}
-              onClick={handleDelete}
-              disabled={!onDelete}
-            >
-              <span className={styles.icon}>
-                <Trash2 size={16} />
-              </span>
-              Move to Trash
-            </button>
+            {isDeleted ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.item}
+                  onClick={handleRestoreDeleted}
+                  disabled={!onRestoreDeleted}
+                >
+                  <span className={styles.icon}>
+                    <ArchiveRestore size={16} />
+                  </span>
+                  Restore
+                </button>
+                <button
+                  type="button"
+                  className={styles.itemDanger}
+                  onClick={handlePermanentDelete}
+                  disabled={!onPermanentDelete}
+                >
+                  <span className={styles.icon}>
+                    <Trash2 size={16} />
+                  </span>
+                  Delete forever
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={styles.itemDanger}
+                onClick={handleDelete}
+                disabled={!onDelete}
+              >
+                <span className={styles.icon}>
+                  <Trash2 size={16} />
+                </span>
+                Move to Trash
+              </button>
+            )}
           </div>
 
           {/* Advanced Section */}

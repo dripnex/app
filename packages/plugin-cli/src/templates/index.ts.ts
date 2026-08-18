@@ -13,23 +13,17 @@ module.exports = {
   activate(context) {
     context.log.info('${name} activated');
 
-    // Register a command in the command palette
-    const unregisterHello = context.registerCommand(
-      {
-        id: 'hello',
-        name: 'Say Hello',
-        icon: 'Smile',
-      },
-      () => {
+    const removeMenu = context.menu.add({
+      label: 'Say Hello',
+      click: () => {
         context.log.info('Hello from ${name}!');
         return true;
-      }
-    );
+      },
+    });
 
-    // Clean up when the plugin is deactivated
     return {
       dispose() {
-        unregisterHello();
+        removeMenu();
       },
     };
   },

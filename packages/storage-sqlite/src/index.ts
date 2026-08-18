@@ -16,10 +16,16 @@ export {
 // Repositories
 export {
   SQLiteNoteRepository,
+  noteFilterSql,
   type BacklinkInfo,
   type SyncHistoryEntry,
+  type NoteCountSummary,
+  type NoteCountScoped,
 } from './repositories/SQLiteNoteRepository.js';
 export { SQLiteNotebookRepository } from './repositories/SQLiteNotebookRepository.js';
+export { SQLiteChunkRepository } from './repositories/ChunkRepository.js';
+export { hashChunkContent, chunkRowId } from './repositories/chunkHash.js';
+export { indexNoteChunks } from './repositories/indexNoteChunks.js';
 
 // Migrations
 export {
@@ -31,4 +37,6 @@ export {
   addManualTags,
   addTagColors,
   addLinks,
+  ftsIncludeDeleted,
+  embeddings,
 } from './migrations/index.js';

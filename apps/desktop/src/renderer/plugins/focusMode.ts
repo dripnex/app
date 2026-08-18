@@ -66,6 +66,11 @@ export const focusModePlugin: PluginManifest = {
       setTimeout(applyFocusMode, 100);
     }
 
+    const unobserve = context.config.observe<boolean>('enabled', value => {
+      active = Boolean(value);
+      applyFocusMode();
+    });
+
     const unregisterCommand = context.registerCommand(
       {
         id: 'toggle',
@@ -86,6 +91,7 @@ export const focusModePlugin: PluginManifest = {
       dispose() {
         active = false;
         applyFocusMode();
+        unobserve();
         offNoteSelected();
         unregisterCommand();
       },

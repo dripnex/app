@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { cssm } from '../lib/cssm';
+import styles from './Toast.module.css';
+
+const sc = cssm(styles);
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,7 +50,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {createPortal(
-        <div className="toast-container" role="status" aria-live="polite">
+        <div className={sc('toast-container')} role="status" aria-live="polite">
           {toasts.map(toast => (
             <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
           ))}
@@ -77,12 +81,12 @@ function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
   const Icon = toast.type === 'success' ? CheckCircle2 : AlertCircle;
 
   return (
-    <div className={`toast-item toast-item--${toast.type} ${visible ? 'toast-item--visible' : ''}`}>
-      <Icon size={16} className="toast-icon" />
-      <span className="toast-message">{toast.message}</span>
+    <div className={sc('toast-item', `toast-item--${toast.type}`, visible && 'toast-item--visible')}>
+      <Icon size={16} className={sc('toast-icon')} />
+      <span className={sc('toast-message')}>{toast.message}</span>
       <button
         type="button"
-        className="toast-dismiss"
+        className={sc('toast-dismiss')}
         onClick={() => {
           setVisible(false);
           setTimeout(() => onDismiss(toast.id), 200);

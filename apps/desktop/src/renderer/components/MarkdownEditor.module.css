@@ -1,0 +1,90 @@
+/** CodeMirror host. CM classes stay global. */
+
+.markdown-editor {
+  height: 100%;
+}
+
+.markdown-editor :global(.cm-editor) {
+  height: 100%;
+  outline: none;
+}
+
+.markdown-editor :global(.cm-panels) {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.markdown-editor :global(.cm-search) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.markdown-editor :global(.cm-textfield) {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font: inherit;
+}
+
+.markdown-editor :global(.cm-button) {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.markdown-editor :global(.cm-button:hover) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.markdown-editor :global(.cm-search label) {
+  color: var(--text-muted);
+}
+
+.markdown-editor :global(.cm-searchMatch) {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.markdown-editor :global(.cm-searchMatch-selected) {
+  background: color-mix(in srgb, var(--accent) 48%, transparent);
+}
+
+/* Active Line Highlight plugin */
+:global(.cm-active-line-plugin) {
+  background-color: var(--surface-hover);
+}
+
+
+/* ===== CODEMIRROR EMBED PREVIEW ===== */
+:global(.cm-embed-wrapper) {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+}
+
+:global(.cm-embed-preview) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.95;
+  transition: opacity 0.15s ease;
+}
+
+:global(.cm-embed-preview):hover {
+  opacity: 1;
+}
+

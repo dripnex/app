@@ -2,6 +2,7 @@ import { memo, useState, useCallback, useRef, useMemo, type KeyboardEvent } from
 import { Tag, X } from 'lucide-react';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
 import { useTags } from '../../hooks/useNotes';
+import { sc } from './sc';
 
 interface TagsInputProps {
   /** All tags (merged content + manual) */
@@ -180,23 +181,23 @@ export const TagsInput = memo(function TagsInput({
 
   if (tags.length === 0 && !isInputVisible) {
     return (
-      <div className="tags-display" onClick={showInput} role="button" tabIndex={0}>
-        <Tag size={14} className="dropdown-icon" style={{ color: 'var(--text-faint)' }} />
-        <span className="tags-display-empty">Add Tags</span>
+      <div className={sc('tags-display')} onClick={showInput} role="button" tabIndex={0}>
+        <Tag size={14} className={sc('dropdown-icon')} style={{ color: 'var(--text-faint)' }} />
+        <span className={sc('tags-display-empty')}>Add Tags</span>
       </div>
     );
   }
 
   return (
-    <div className="tags-display tags-display--editable">
-      <Tag size={14} className="dropdown-icon" style={{ color: 'var(--text-muted)' }} />
-      <div className="tags-display-chips">
+    <div className={sc('tags-display', 'tags-display--editable')}>
+      <Tag size={14} className={sc('dropdown-icon')} style={{ color: 'var(--text-muted)' }} />
+      <div className={sc('tags-display-chips')}>
         {tags.map(tag => {
           const color = getColor(tag);
           return (
             <span
               key={tag}
-              className={`tag-chip ${color ? 'tag-chip--colored' : ''}`}
+              className={sc('tag-chip', color && 'tag-chip--colored')}
               style={
                 color
                   ? ({
@@ -206,12 +207,12 @@ export const TagsInput = memo(function TagsInput({
                   : undefined
               }
             >
-              <span className="tag-hash">#</span>
+              <span className={sc('tag-hash')}>#</span>
               {tag}
               {isManualTag(tag) && (
                 <button
                   type="button"
-                  className="tag-chip-remove"
+                  className={sc('tag-chip-remove')}
                   onClick={e => {
                     e.stopPropagation();
                     onRemoveTag(tag);
@@ -225,11 +226,11 @@ export const TagsInput = memo(function TagsInput({
           );
         })}
         {isInputVisible ? (
-          <div className="tags-input-wrapper">
+          <div className={sc('tags-input-wrapper')}>
             <input
               ref={inputRef}
               type="text"
-              className="tags-input-field"
+              className={sc('tags-input-field')}
               value={inputValue}
               onChange={e => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -239,19 +240,22 @@ export const TagsInput = memo(function TagsInput({
               autoComplete="off"
             />
             {filteredSuggestions.length > 0 && (
-              <div className="tags-suggestions">
+              <div className={sc('tags-suggestions')}>
                 {filteredSuggestions.map((tag, index) => {
                   const color = getColor(tag);
                   return (
                     <button
                       key={tag}
                       type="button"
-                      className={`tags-suggestion-item ${index === selectedSuggestionIndex ? 'selected' : ''}`}
+                      className={sc(
+                        'tags-suggestion-item',
+                        index === selectedSuggestionIndex && 'selected'
+                      )}
                       onMouseDown={() => selectSuggestion(tag)}
                       onMouseEnter={() => setSelectedSuggestionIndex(index)}
                     >
                       <span
-                        className="tags-suggestion-color"
+                        className={sc('tags-suggestion-color')}
                         style={color ? { background: color } : undefined}
                       />
                       #{tag}
@@ -264,7 +268,7 @@ export const TagsInput = memo(function TagsInput({
         ) : (
           <button
             type="button"
-            className="tag-chip tag-chip--add"
+            className={sc('tag-chip', 'tag-chip--add')}
             onClick={showInput}
             aria-label="Add tag"
           >

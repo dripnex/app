@@ -50,21 +50,77 @@ describe('loadInitScript', () => {
     warnSpy.mockRestore();
   });
 
-  it('returns null for code that throws', () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('defers a top-level throw to activate (probe cannot tell free-form from a bomb)', () => {
     const result = loadInitScript('throw new Error("boom");');
-
-    expect(result).toBeNull();
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('user-init');
+    expect(() =>
+      result!.activate({
+        log: { info() {}, warn() {}, error() {} },
+      } as never)
+    ).toThrow('boom');
   });
 
-  it('returns null for empty exports', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('wraps a comment-only file as user-init', () => {
     const result = loadInitScript('// nothing exported');
 
-    expect(result).toBeNull();
-    warnSpy.mockRestore();
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('user-init');
+    expect(result!.name).toBe('init.js');
+    expect(typeof result!.activate).toBe('function');
+  });
+
+  it('wraps free-form even when preload dripnex exists on globalThis', () => {
+    const prev = (globalThis as { dripnex?: unknown }).dripnex;
+    (globalThis as { dripnex?: unknown }).dripnex = { notes: {} };
+    try {
+      const manifest = loadInitScript(`
+        dripnex.menu.add({ label: 'Insert Date', click: function () {} });
+      `);
+      expect(manifest).not.toBeNull();
+      expect(manifest!.id).toBe('user-init');
+    } finally {
+      if (prev === undefined) delete (globalThis as { dripnex?: unknown }).dripnex;
+      else (globalThis as { dripnex?: unknown }).dripnex = prev;
+    }
+  });
+
+  it('wraps a free-form dripnex script as user-init', () => {
+    const registerCommand = vi.fn(() => () => {});
+    const code = `
+      dripnex.commands.add('hello', 'Say Hello', function () {});
+    `;
+
+    const manifest = loadInitScript(code);
+
+    expect(manifest).not.toBeNull();
+    expect(manifest!.id).toBe('user-init');
+
+    manifest!.activate({
+      registerCommand,
+      editor: {},
+      app: {},
+      data: {},
+      log: { info() {}, warn() {}, error() {} },
+      config: {},
+      layout: {},
+      decorations: {},
+      registerExtensions: vi.fn(),
+      registerAiCommand: vi.fn(),
+      registerCssVariables: vi.fn(),
+      menu: { add: vi.fn(() => () => {}) },
+      clipboard: { readText: vi.fn(async () => ''), writeText: vi.fn(async () => {}) },
+      registerTheme: vi.fn(),
+      registerRemarkPlugin: vi.fn(),
+      registerRehypePlugin: vi.fn(),
+      registerPreviewComponent: vi.fn(),
+      registerCodeBlockRenderer: vi.fn(),
+    } as never);
+
+    expect(registerCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'hello', name: 'Say Hello' }),
+      expect.any(Function)
+    );
   });
 
   it('returns null for invalid ID format', () => {

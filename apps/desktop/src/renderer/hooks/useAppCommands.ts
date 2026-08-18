@@ -10,13 +10,18 @@ import {
   resolveTemplate,
 } from '@dripnex/ai-core';
 import type { AiInitialCommand } from '../components/ai/AiPanel';
+import { openSearchPanel } from '@codemirror/search';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
+import { usePreviewFindStore } from '../stores/previewFindStore';
 import type { NoteSnapshot } from '../../preload/index';
+import { neighborId } from '../utils/neighborId';
 import { useRegisterAiCommands } from './useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './useRegisterPluginAiCommands';
 import { useCommandKeybindings } from './useCommandKeybindings';
 import { useRegisterAppCommands } from './useRegisterAppCommands';
 import { getEditorView } from './useCommandRegistry';
+import { useNavigationActions } from './useNavigation';
+import { ensureNowBoard } from './useNowBoard';
 
 interface UseAppCommandsOptions {
   handleNewNote: () => Promise<void>;
@@ -29,6 +34,8 @@ interface UseAppCommandsOptions {
   searchQuery: string;
   clearSearch: () => void;
   setSelectedNote: (note: NoteSnapshot | null) => void;
+  displayedNotes: ReadonlyArray<{ id: string }>;
+  onSelectNote: (id: string) => void;
 }
 
 export function useAppCommands({
@@ -42,8 +49,14 @@ export function useAppCommands({
   searchQuery,
   clearSearch,
   setSelectedNote,
+  displayedNotes,
+  onSelectNote,
 }: UseAppCommandsOptions) {
   const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
+  const togglePreview = useEditorPreferencesStore(state => state.togglePreview);
+  const toggleSplit = useEditorPreferencesStore(state => state.toggleSplit);
+  const toggleOutline = useEditorPreferencesStore(state => state.toggleOutline);
+  const { goToAllNotes } = useNavigationActions();
 
   // AI panel state
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -66,13 +79,71 @@ export function useAppCommands({
       if (selectedNote) void handleDuplicateNote(selectedNote.id);
     }, [selectedNote, handleDuplicateNote]),
     onFocusSearch: useCallback(() => {
-      const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+      const searchInput = document.getElementById('note-search') as HTMLInputElement | null;
+      searchInput?.focus();
+    }, []),
+    onFindInNote: useCallback(() => {
+      const viewMode = useEditorPreferencesStore.getState().viewMode;
+      const view = getEditorView();
+      if (view && (viewMode === 'editor' || viewMode === 'split')) {
+        openSearchPanel(view);
+        view.focus();
+        return;
+      }
+      if (viewMode === 'preview' || viewMode === 'split') {
+        usePreviewFindStore.getState().openPanel();
+        return;
+      }
+      const searchInput = document.getElementById('note-search') as HTMLInputElement | null;
       searchInput?.focus();
     }, []),
     onCycleViewMode: cycleViewMode,
+    onTogglePreview: togglePreview,
+    onToggleSplit: toggleSplit,
+    onNextNote: useCallback(() => {
+      const next = neighborId(
+        displayedNotes.map(n => n.id),
+        selectedNote?.id ?? null,
+        1
+      );
+      if (next) onSelectNote(next);
+    }, [displayedNotes, selectedNote?.id, onSelectNote]),
+    onPrevNote: useCallback(() => {
+      const prev = neighborId(
+        displayedNotes.map(n => n.id),
+        selectedNote?.id ?? null,
+        -1
+      );
+      if (prev) onSelectNote(prev);
+    }, [displayedNotes, selectedNote?.id, onSelectNote]),
+    onSaveNote: useCallback(() => {
+      window.dispatchEvent(new Event('dripnex:save-note'));
+    }, []),
+    onToggleOutline: toggleOutline,
     onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), [setIsGraphOpen]),
     onOpenSettings: useCallback(() => window.dripnex.windows.openSettings(), []),
     onCommandPalette: toggleCommandPalette,
+    onOpenNowBoard: useCallback(() => {
+      void (async () => {
+        const result = await ensureNowBoard();
+        if (!result) return;
+        goToAllNotes();
+        setSelectedNote(result.note);
+        clearSearch();
+      })();
+    }, [goToAllNotes, setSelectedNote, clearSearch]),
+    onOpenInitScript: useCallback(() => {
+      void window.dripnex.plugins.openUserFile('init');
+    }, []),
+    onOpenUserStyles: useCallback(() => {
+      void window.dripnex.plugins.openUserFile('styles');
+    }, []),
+    onOpenKeymap: useCallback(() => {
+      void window.dripnex.plugins.openUserFile('keymap');
+    }, []),
+    onReloadPlugins: useCallback(() => {
+      window.dripnex.plugins.requestReload();
+    }, []),
   });
 
   // AI panel toggle/modes
@@ -105,6 +176,24 @@ export function useAppCommands({
     const { from, to } = view.state.selection.main;
     return view.state.sliceDoc(from, to);
   }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ system?: string; instruction?: string }>).detail;
+      const selection = getSelectionText();
+      if (!selection || !detail?.system) return;
+      const extra = detail.instruction ? `\n\nInstruction: ${detail.instruction}` : '';
+      setPendingAiCommand({
+        systemPrompt: detail.system,
+        userPrompt: `Selection:\n${selection}${extra}`,
+        outputTarget: 'replace',
+      });
+      setAiPanelMode('chat');
+      setIsAiPanelOpen(true);
+    };
+    window.addEventListener('dripnex:ai:edit', handler);
+    return () => window.removeEventListener('dripnex:ai:edit', handler);
+  }, [getSelectionText]);
 
   /** Helper: replace selection in editor */
   const aiReplaceSelection = useCallback((text: string) => {
@@ -173,6 +262,8 @@ export function useAppCommands({
         setIsAiPanelOpen(false);
       } else if (isGraphOpen) {
         setIsGraphOpen(false);
+      } else if (usePreviewFindStore.getState().open) {
+        usePreviewFindStore.getState().closePanel();
       } else if (searchQuery) {
         clearSearch();
       } else if (selectedNote) {
@@ -207,6 +298,7 @@ export function useAppCommands({
     isAiPanelOpen,
     aiPanelMode,
     pendingAiCommand,
+    openAskNotes,
     closeAiPanel,
     clearPendingAiCommand,
     aiReplaceSelection,
