@@ -4,19 +4,18 @@
  * Handles plugin config persistence, discovery, install, uninstall, and reload.
  */
 
-import { join, normalize, basename } from 'path';
+import { join, normalize } from 'path';
 import { readFile, mkdir, rm, readdir, stat, rename } from 'fs/promises';
 import { existsSync } from 'fs';
-import { execFile } from 'child_process';
 import { writeFile } from 'fs/promises';
 import { ipcMain, dialog, BrowserWindow, net } from 'electron';
+import { z } from 'zod';
 import {
   USER_INIT_FILE,
   USER_KEYMAP_FILE,
   USER_STYLES_FILE,
   openUserHackFile,
 } from '../userHackFiles.js';
-import { z } from 'zod';
 import { defineIpcHandler } from '../ipc/registry.js';
 import { broadcastToWindows } from '../windows/broadcast.js';
 import { scanPlugins } from '../pluginScanner.js';
@@ -28,6 +27,7 @@ import {
   resolveRegistryBundle,
   uniqueReleaseTags,
 } from '../plugins/githubInstall.js';
+import { extractArchiveSafely } from '../plugins/extractArchive.js';
 import type { DataPaths, Database } from './types.js';
 
 export interface PluginHandlerDeps {
@@ -67,7 +67,7 @@ async function installPluginFromHttpsUrl(
   } catch {
     return { success: false, error: 'Invalid URL' };
   }
-  if (pluginSlug === undefined && !isAllowedPluginHost(hostname)) {
+  if (!isAllowedPluginHost(hostname)) {
     return { success: false, error: 'Only GitHub release archives are allowed' };
   }
 
@@ -101,36 +101,7 @@ async function installPluginFromHttpsUrl(
 
     const stageDir = join(tmpDir, 'extracted');
     await mkdir(stageDir, { recursive: true });
-
-    await new Promise<void>((resolve, reject) => {
-      const cb = (error: Error | null) => {
-        if (error) reject(error);
-        else resolve();
-      };
-      if (isZip) {
-        if (process.platform === 'win32') {
-          execFile(
-            'powershell',
-            [
-              '-NoProfile',
-              '-NonInteractive',
-              '-Command',
-              'Expand-Archive',
-              '-Force',
-              '-Path',
-              archivePath,
-              '-DestinationPath',
-              stageDir,
-            ],
-            cb
-          );
-        } else {
-          execFile('unzip', ['-o', archivePath, '-d', stageDir], cb);
-        }
-      } else {
-        execFile('tar', ['-xzf', archivePath, '-C', stageDir], cb);
-      }
-    });
+    await extractArchiveSafely(archivePath, stageDir);
 
     const entries = await readdir(stageDir);
     let pluginSourceDir = stageDir;
@@ -417,7 +388,6 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
       }
 
       const archivePath = filePaths[0];
-      const fileName = basename(archivePath).toLowerCase();
 
       // Hoist tmpDir so it can be cleaned up in finally
       let tmpDir: string | null = null;
@@ -430,36 +400,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
         tmpDir = join(paths.plugins, `__installing_${Date.now()}`);
         const extractDir = tmpDir;
         await mkdir(extractDir, { recursive: true });
-
-        await new Promise<void>((resolve, reject) => {
-          const cb = (error: Error | null) => {
-            if (error) reject(error);
-            else resolve();
-          };
-          if (fileName.endsWith('.zip')) {
-            if (process.platform === 'win32') {
-              execFile(
-                'powershell',
-                [
-                  '-NoProfile',
-                  '-NonInteractive',
-                  '-Command',
-                  'Expand-Archive',
-                  '-Force',
-                  '-Path',
-                  archivePath,
-                  '-DestinationPath',
-                  extractDir,
-                ],
-                cb
-              );
-            } else {
-              execFile('unzip', ['-o', archivePath, '-d', extractDir], cb);
-            }
-          } else {
-            execFile('tar', ['-xzf', archivePath, '-C', extractDir], cb);
-          }
-        });
+        await extractArchiveSafely(archivePath, extractDir);
 
         // Find the manifest.json — could be at root or one level deep
         const entries = await readdir(extractDir);
