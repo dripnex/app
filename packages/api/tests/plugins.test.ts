@@ -27,6 +27,9 @@ describe('plugin registry', () => {
     const body = (await res.json()) as { plugins: Array<{ slug: string; bundleUrl: string }> };
     expect(body.plugins.some(p => p.slug === 'stamp')).toBe(true);
     expect(body.plugins.find(p => p.slug === 'stamp')?.bundleUrl).toContain('plugin-stamp');
+    expect(body.plugins.map(p => p.slug).sort()).toEqual(
+      ['math', 'mermaid', 'stamp', 'theme-parchment'].sort()
+    );
   });
 
   it('serves the same index on /packages', async () => {
