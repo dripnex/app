@@ -6,10 +6,4 @@ Do not re-open embeddings, admin JWT, SSRF, magic-link atomicity, Stripe idempot
 
 Living board: [`NOW.md`](./NOW.md).
 
-Open work (PRs against `develop`):
-
-- #478 session + magic-link origin
-- #479 sync envelope + cursors + soft-delete
-- #480 plugin zip-slip + host allowlist
-
 Stale audits: `docs/archived/`.

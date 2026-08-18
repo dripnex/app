@@ -73,7 +73,7 @@ Shipped this week:
 - Settings → Plugins → Connect: paste `owner/repo[@tag]`. No fake marketplace.
 - Official palettes: Parchment, Wave, Night. Themes are token layers; community themes are repos.
 - Note templates: Meeting, Decision, Daily, Weekly, Reading, Issue (notebook `templates`).
-- What’s New is authored (`apps/web/content/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`.
+- What’s New is authored (`docs/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`.
 
 CSS path (decided 2026-08-17):
 Keep CSS modules + tokens. Do not add Tailwind to desktop.
@@ -91,9 +91,7 @@ Keep CSS modules + tokens. Do not add Tailwind to desktop.
 
 - Sync Retry is a no-op until you create a passphrase (Set up in the footer).
 - `docs/ROADMAP.md` is a pointer here; do not revive the March 2026 phases.
-- MCP writes (if enabled) still mutate SQLite directly; the desktop refetches on focus and on `dripnex.external-write`.
 - Vectors need Ollama running (`nomic-embed-text`). Without it, retrieve stays keyword-only.
-- `sync-core` engine/queue is leftover; live sync is desktop `SyncService`. The API only uses tree validation from that package.
 
 ## How to audit with agents
 

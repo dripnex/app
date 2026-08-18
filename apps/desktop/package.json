@@ -79,7 +79,6 @@
     "@dripnex/storage-core": "workspace:*",
     "@dripnex/storage-sqlite": "workspace:*",
     "@dripnex/sync-core": "workspace:*",
-    "@dripnex/tasks": "workspace:*",
     "@dripnex/wikilinks": "workspace:*",
     "@playwright/test": "^1.49.1",
     "@types/better-sqlite3": "^7.6.12",
