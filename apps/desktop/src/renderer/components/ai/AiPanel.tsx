@@ -10,6 +10,12 @@ import { useAiCommand } from './useAiCommand';
 import { useAiKeyHydration } from './useAiKeyHydration';
 import { useAiStream } from './useAiStream';
 import { sc } from './sc';
+import {
+  askNotesEmptyCopy,
+  askNotesMatchMode,
+  askNotesPlaceholder,
+  askNotesWordsHint,
+} from './askNotesCopy';
 import type { AiCitation, AiInitialCommand, ToolCallRecord } from './types';
 
 export type { AiInitialCommand } from './types';
@@ -48,6 +54,7 @@ export function AiPanel({
   const [contextCount, setContextCount] = useState(0);
   const [citations, setCitations] = useState<AiCitation[]>([]);
   const [toolCalls, setToolCalls] = useState<Map<string, ToolCallRecord>>(new Map());
+  const [embeddedCount, setEmbeddedCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const activeRequestRef = useRef<string | null>(null);
@@ -88,6 +95,23 @@ export function AiPanel({
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void window.dripnex?.ai
+      ?.kbStatus()
+      .then(status => {
+        if (!cancelled) setEmbeddedCount(status.embedded);
+      })
+      .catch(() => {
+        if (!cancelled) setEmbeddedCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const matchMode = askNotesMatchMode(embeddedCount);
 
   const handleSubmit = useCallback(async () => {
     const query = input.trim();
@@ -199,6 +223,7 @@ export function AiPanel({
       <AiPanelHeader
         mode={mode}
         contextCount={contextCount}
+        matchHint={mode === 'ask-notes' && matchMode === 'words' ? askNotesWordsHint() : null}
         lastAssistantExists={messages.some(m => m.role === 'assistant')}
         hasMessages={messages.length > 0}
         onToggleMode={() => setMode(prev => (prev === 'chat' ? 'ask-notes' : 'chat'))}
@@ -234,7 +259,7 @@ export function AiPanel({
         {messages.length === 0 && !loading && (
           <div className={sc('ai-panel-empty')}>
             {mode === 'ask-notes'
-              ? 'Ask a question and the AI will answer using your notes as context.'
+              ? askNotesEmptyCopy(matchMode)
               : 'Ask a question about your notes or the current document.'}
           </div>
         )}
@@ -273,7 +298,7 @@ export function AiPanel({
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            mode === 'ask-notes' ? 'Ask your notes a question...' : 'Ask about your notes...'
+            mode === 'ask-notes' ? askNotesPlaceholder(matchMode) : 'Ask about your notes...'
           }
           rows={2}
           disabled={loading}
