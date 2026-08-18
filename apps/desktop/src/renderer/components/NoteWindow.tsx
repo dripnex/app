@@ -66,7 +66,9 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
         if (updated.ok) {
           setNote(updated.data);
           syncLinks.mutate({ noteId: note.id, content });
-          pendingContentRef.current = null;
+          if (pendingContentRef.current === content) {
+            pendingContentRef.current = null;
+          }
         }
       }, 500);
     },
@@ -82,12 +84,14 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
             debounceRef.current = null;
           }
           const pending = pendingContentRef.current;
-          if (pending && note) {
+          if (pending !== null && note) {
             const updated = await window.dripnex.notes.update({ id: note.id, content: pending });
             if (updated.ok) {
               setNote(updated.data);
               syncLinks.mutate({ noteId: note.id, content: pending });
-              pendingContentRef.current = null;
+              if (pendingContentRef.current === pending) {
+                pendingContentRef.current = null;
+              }
             }
           }
         } finally {
