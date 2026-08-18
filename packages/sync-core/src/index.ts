@@ -16,9 +16,13 @@ export type {
   SyncableNotebook,
   EntityType,
   SyncOperation,
-  SyncChange,
-  PushResult,
-  PullResult,
+  LocalNotePush,
+  EncryptedNotePush,
+  EncryptedNotePushRequest,
+  RemoteNoteChange,
+  NotePushResult,
+  NotePushResponse,
+  NotePullResponse,
   ConflictType,
   SyncConflict,
   ConflictStrategy,
@@ -30,7 +34,16 @@ export type {
   AuthTokens,
 } from './types.js';
 
-export { SyncChangeSchema, PushResultSchema, PullResultSchema } from './types.js';
+export {
+  NoteOperationSchema,
+  LocalNotePushSchema,
+  EncryptedNotePushSchema,
+  EncryptedNotePushRequestSchema,
+  RemoteNoteChangeSchema,
+  NotePushResultSchema,
+  NotePushResponseSchema,
+  NotePullResponseSchema,
+} from './types.js';
 
 export {
   validateNotebookTree,

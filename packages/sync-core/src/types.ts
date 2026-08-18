@@ -83,39 +83,6 @@ export type EntityType = 'note' | 'notebook' | 'tag';
 /** Type of sync operation */
 export type SyncOperation = 'create' | 'update' | 'delete';
 
-/** A change record in the sync queue */
-export interface SyncChange {
-  id: string;
-  entityType: EntityType;
-  entityId: string;
-  operation: SyncOperation;
-  data: unknown;
-  timestamp: string;
-  synced: boolean;
-  retryCount: number;
-  lastError: string | null;
-}
-
-/** Result of a push operation */
-export interface PushResult {
-  /** IDs of successfully synced entities */
-  synced: string[];
-  /** Conflicts that need resolution */
-  conflicts: SyncConflict[];
-  /** Errors that occurred */
-  errors: SyncError[];
-}
-
-/** Result of a pull operation */
-export interface PullResult {
-  /** Entities that were updated locally */
-  updated: string[];
-  /** New cursor for next pull */
-  cursor: string;
-  /** Whether there are more changes to pull */
-  hasMore: boolean;
-}
-
 // ============================================================================
 // Conflicts
 // ============================================================================
@@ -200,47 +167,68 @@ export interface AuthTokens {
 }
 
 // ============================================================================
-// Zod Schemas (for validation)
+// Zod Schemas — live wire contracts
 // ============================================================================
 
-export const SyncChangeSchema = z.object({
+export const NoteOperationSchema = z.enum(['create', 'update', 'delete']);
+
+/** Renderer → main. Content is still plaintext. */
+export const LocalNotePushSchema = z.object({
+  noteId: z.string().min(1).max(128),
+  operation: NoteOperationSchema,
+  content: z
+    .string()
+    .max(10 * 1024 * 1024)
+    .optional(),
+  localVersion: z.number().int().nonnegative().optional(),
+});
+
+/** Main → API. Content is already encrypted. */
+export const EncryptedNotePushSchema = z.object({
+  noteId: z.string().min(1).max(128),
+  operation: NoteOperationSchema,
+  encryptedData: z.string().nullable().optional(),
+  localVersion: z.number().int().optional(),
+});
+
+export const EncryptedNotePushRequestSchema = z.object({
+  changes: z.array(EncryptedNotePushSchema).min(1).max(100),
+  deviceId: z.string().uuid(),
+});
+
+/** API → client pull item. */
+export const RemoteNoteChangeSchema = z.object({
   id: z.string(),
-  entityType: z.enum(['note', 'notebook', 'tag']),
-  entityId: z.string(),
-  operation: z.enum(['create', 'update', 'delete']),
-  data: z.unknown(),
-  timestamp: z.string(),
-  synced: z.boolean(),
-  retryCount: z.number(),
-  lastError: z.string().nullable(),
+  noteId: z.string(),
+  version: z.number().int(),
+  operation: NoteOperationSchema,
+  encryptedData: z.string().nullable(),
+  deviceId: z.string(),
+  createdAt: z.string(),
 });
 
-export const PushResultSchema = z.object({
-  synced: z.array(z.string()),
-  conflicts: z.array(
-    z.object({
-      entityType: z.enum(['note', 'notebook', 'tag']),
-      entityId: z.string(),
-      conflictType: z.enum(['update-update', 'delete-update', 'update-delete']),
-      localVersion: z.unknown(),
-      remoteVersion: z.unknown(),
-      localUpdatedAt: z.string(),
-      remoteUpdatedAt: z.string(),
-    })
-  ),
-  errors: z.array(
-    z.object({
-      entityId: z.string(),
-      entityType: z.enum(['note', 'notebook', 'tag']),
-      message: z.string(),
-      code: z.string(),
-      retryable: z.boolean(),
-    })
-  ),
+export const NotePushResultSchema = z.object({
+  noteId: z.string(),
+  version: z.number().int(),
+  status: z.enum(['applied', 'conflict']),
+  serverVersion: z.number().int().optional(),
 });
 
-export const PullResultSchema = z.object({
-  updated: z.array(z.string()),
-  cursor: z.string(),
+export const NotePushResponseSchema = z.object({
+  results: z.array(NotePushResultSchema),
+  cursor: z.number().int(),
+});
+
+export const NotePullResponseSchema = z.object({
+  changes: z.array(RemoteNoteChangeSchema),
+  cursor: z.number().int(),
   hasMore: z.boolean(),
 });
+
+export type LocalNotePush = z.infer<typeof LocalNotePushSchema>;
+export type EncryptedNotePush = z.infer<typeof EncryptedNotePushSchema>;
+export type EncryptedNotePushRequest = z.infer<typeof EncryptedNotePushRequestSchema>;
+export type RemoteNoteChange = z.infer<typeof RemoteNoteChangeSchema>;
+export type NotePushResult = z.infer<typeof NotePushResultSchema>;
+export type NotePushResponse = z.infer<typeof NotePushResponseSchema>;
+export type NotePullResponse = z.infer<typeof NotePullResponseSchema>;

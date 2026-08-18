@@ -7,6 +7,12 @@
  * @module ApiClient
  */
 
+import type {
+  NotePullResponse,
+  NotePushResponse,
+  NotePushResult,
+  RemoteNoteChange,
+} from '@dripnex/sync-core';
 import type { TokenStorage } from './tokenStorage.js';
 import type { DeviceInfo } from './deviceInfo.js';
 
@@ -27,33 +33,10 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-export interface SyncChange {
-  id: string;
-  noteId: string;
-  version: number;
-  operation: 'create' | 'update' | 'delete';
-  encryptedData: string | null;
-  deviceId: string;
-  createdAt: string;
-}
-
-export interface PullResponse {
-  changes: SyncChange[];
-  cursor: number;
-  hasMore: boolean;
-}
-
-export interface PushResult {
-  noteId: string;
-  version: number;
-  status: 'applied' | 'conflict';
-  serverVersion?: number;
-}
-
-export interface PushResponse {
-  results: PushResult[];
-  cursor: number;
-}
+export type SyncChange = RemoteNoteChange;
+export type PullResponse = NotePullResponse;
+export type PushResult = NotePushResult;
+export type PushResponse = NotePushResponse;
 
 export interface TagSyncChange {
   id: string;

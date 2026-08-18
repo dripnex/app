@@ -13,7 +13,11 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
-import { validateNotebookTree, type TreeNode } from '@dripnex/sync-core';
+import {
+  EncryptedNotePushRequestSchema,
+  validateNotebookTree,
+  type TreeNode,
+} from '@dripnex/sync-core';
 import { createDb, type Env } from '../db/client.js';
 import {
   syncLog,
@@ -111,20 +115,7 @@ sync.get('/', zValidator('query', pullSchema), async c => {
   });
 });
 
-// Push local changes
-const changeSchema = z.object({
-  noteId: z.string(),
-  operation: z.enum(['create', 'update', 'delete']),
-  encryptedData: z.string().nullable().optional(),
-  localVersion: z.number().int().optional(),
-});
-
-const pushSchema = z.object({
-  changes: z.array(changeSchema).min(1).max(100),
-  deviceId: z.string().uuid(),
-});
-
-sync.post('/', zValidator('json', pushSchema), async c => {
+sync.post('/', zValidator('json', EncryptedNotePushRequestSchema), async c => {
   const { changes, deviceId } = c.req.valid('json');
   const { userId } = c.get('user');
   const db = createDb(c.env);
