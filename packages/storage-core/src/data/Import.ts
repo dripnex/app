@@ -9,6 +9,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, extname, basename } from 'path';
+import { extractTags as extractContentTags } from '@dripnex/core';
 import { validateExportDir, readExportMetadata } from './Export.js';
 
 export interface ImportedNote {
@@ -361,11 +362,8 @@ function extractTags(frontmatter: Record<string, unknown> | null, content: strin
     }
   }
 
-  // From inline #tags
-  const inlineTags = content.match(/#[a-zA-Z][\w-/]*/g) ?? [];
-  for (const tag of inlineTags) {
-    const cleaned = tag.replace(/^#/, '').replace(/\//g, '-');
-    tags.add(cleaned);
+  for (const tag of extractContentTags(content)) {
+    tags.add(tag.replace(/\//g, '-'));
   }
 
   return Array.from(tags);

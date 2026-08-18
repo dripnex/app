@@ -11,6 +11,7 @@ const ATX = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/;
 const TASK = /^[ \t]*[-*]\s+\[(.)\]/;
 const EMBED = /!\[\[([^[\]|]{1,200})(?:\|([^\]]{1,200}))?\]\]/g;
 const WIKI = /\[\[([^[\]|#]{1,200})(?:#([^[\]|]{1,200}))?(?:\|([^\]]{1,200}))?\]\]/g;
+const TAG = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 
 export function headingToSlug(heading: string): string {
   return heading
@@ -37,6 +38,8 @@ export function scanMarkdown(content: string): MarkdownScan {
   const wikiSeen = new Set<string>();
   const embedSeen = new Set<string>();
   const embedTargets: string[] = [];
+  const tags: string[] = [];
+  const tagSeen = new Set<string>();
   let tasksTotal = 0;
   let tasksDone = 0;
 
@@ -106,6 +109,15 @@ export function scanMarkdown(content: string): MarkdownScan {
       if (display) link.display = display;
       wikilinks.push(link);
     }
+
+    TAG.lastIndex = 0;
+    let tagMatch: RegExpExecArray | null;
+    while ((tagMatch = TAG.exec(searchable)) !== null) {
+      const name = tagMatch[1]?.toLowerCase();
+      if (!name || tagSeen.has(name)) continue;
+      tagSeen.add(name);
+      tags.push(name);
+    }
   }
 
   return {
@@ -114,5 +126,6 @@ export function scanMarkdown(content: string): MarkdownScan {
     embedTargets,
     wikilinks,
     tasks: { total: tasksTotal, completed: tasksDone },
+    tags,
   };
 }

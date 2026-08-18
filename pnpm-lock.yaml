@@ -395,6 +395,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@dripnex/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       zod:
         specifier: ^4.4.3
         version: 4.4.3
