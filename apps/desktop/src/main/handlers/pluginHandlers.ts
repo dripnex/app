@@ -204,8 +204,8 @@ async function resolveConnectUrl(
   spec: Exclude<ReturnType<typeof parseConnectSpec>, { error: string }>
 ): Promise<{ url: string } | { error: string }> {
   if (spec.kind === 'registry') {
-    return resolveRegistryBundle(spec.slug, input =>
-      net.fetch(typeof input === 'string' ? input : String(input))
+    return resolveRegistryBundle(spec.slug, (input, init) =>
+      net.fetch(typeof input === 'string' ? input : String(input), init)
     );
   }
 

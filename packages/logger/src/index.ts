@@ -14,7 +14,7 @@ const sink: Record<LogLevel, (...args: unknown[]) => void> = {
   error: (...args) => console.error(...args),
 };
 
-/** Namespaced logger. Same shape as plugin `context.log` plus `debug`. */
+/** Namespaced console sink so plugins and app code share one logger shape. */
 export function createLogger(namespace: string): Logger {
   const prefix = `[${namespace}]`;
   const write =
