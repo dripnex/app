@@ -6,8 +6,9 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/co
 
 const links = [
   { label: 'Download', href: '/download' },
-  { label: 'Pricing', href: '/pricing' },
+  { label: 'Plugins', href: '/plugins' },
   { label: 'Docs', href: '/docs' },
+  { label: 'Pricing', href: '/pricing' },
 ];
 
 const navLinkClass =

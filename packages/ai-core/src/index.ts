@@ -11,6 +11,11 @@ export type {
 
 export type { FetchFn, ProviderConfig, ModelInfo, LLMProvider } from './provider.js';
 
+export { EmbeddingRegistry } from './embedding.js';
+export type { EmbeddingProvider, EmbeddingModelInfo } from './embedding.js';
+export { OllamaEmbeddingProvider } from './providers/ollama-embedding.js';
+export { OpenAIEmbeddingProvider } from './providers/openai-embedding.js';
+
 /** App-wide default model (Anthropic Sonnet). Single source of truth — do not
  * hardcode this string elsewhere; import it. */
 export const DEFAULT_MODEL = 'claude-sonnet-5';
@@ -40,6 +45,7 @@ export {
 export type {
   AiPanelMode,
   NoteContext,
+  ContextCitation,
   ContextSources,
   ContextBudget,
   ContextBuildResult,
@@ -53,6 +59,16 @@ export { OpenAIProvider } from './providers/openai.js';
 export { OllamaProvider } from './providers/ollama.js';
 export { DripnexProvider } from './providers/dripnex.js';
 export { GrokProvider } from './providers/grok.js';
+
+export {
+  createKeywordRetriever,
+  createHybridRetriever,
+  retrieveWithRelated,
+  cosineSimilarity,
+  rankByCosine,
+  reciprocalRankFusion,
+} from './retriever.js';
+export type { RetrievedNote, RetrieveOptions, Retriever, KeywordSearchHit } from './retriever.js';
 
 export { AIServiceImpl } from './ai-service.js';
 export type {

@@ -10,6 +10,7 @@ import {
   createTimestamp,
   generateNotebookId,
   INBOX_NOTEBOOK_ID,
+  TEMPLATES_NOTEBOOK_ID,
   MAX_NOTEBOOK_DEPTH,
 } from './types.js';
 
@@ -89,6 +90,20 @@ export function createNotebook(options: CreateNotebookOptions): Notebook {
     depth,
     order: options.order ?? 0,
     createdAt: options.createdAt ?? now,
+    updatedAt: now,
+  };
+}
+
+/** Creates the reserved Note Templates notebook */
+export function createTemplatesNotebook(): Notebook {
+  const now = createTimestamp();
+  return {
+    id: TEMPLATES_NOTEBOOK_ID,
+    name: 'Note Templates',
+    parentId: null,
+    depth: 0,
+    order: 1,
+    createdAt: now,
     updatedAt: now,
   };
 }
@@ -179,9 +194,13 @@ export function isInbox(notebook: Notebook): boolean {
   return notebook.id === INBOX_NOTEBOOK_ID;
 }
 
+export function isReservedNotebook(notebook: Notebook): boolean {
+  return notebook.id === INBOX_NOTEBOOK_ID || notebook.id === TEMPLATES_NOTEBOOK_ID;
+}
+
 /** Checks if a notebook can be deleted (Inbox cannot) */
 export function canDelete(notebook: Notebook): boolean {
-  return !isInbox(notebook);
+  return !isReservedNotebook(notebook);
 }
 
 /** Builds a tree structure from a flat list of notebooks */

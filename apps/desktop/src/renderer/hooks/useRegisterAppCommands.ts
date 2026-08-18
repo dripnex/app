@@ -6,10 +6,22 @@ interface AppCommandHandlers {
   onNewNote: () => void;
   onDuplicateNote: () => void;
   onFocusSearch: () => void;
+  onFindInNote: () => void;
   onCycleViewMode: () => void;
+  onTogglePreview: () => void;
+  onToggleSplit: () => void;
+  onNextNote: () => void;
+  onPrevNote: () => void;
+  onSaveNote: () => void;
+  onToggleOutline: () => void;
   onToggleGraph: () => void;
   onOpenSettings: () => void;
   onCommandPalette: () => void;
+  onOpenNowBoard: () => void;
+  onOpenInitScript: () => void;
+  onOpenUserStyles: () => void;
+  onOpenKeymap: () => void;
+  onReloadPlugins: () => void;
 }
 
 /**
@@ -25,10 +37,22 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
       'app:new-note': () => handlersRef.current.onNewNote(),
       'app:duplicate-note': () => handlersRef.current.onDuplicateNote(),
       'app:focus-search': () => handlersRef.current.onFocusSearch(),
+      'app:find-in-note': () => handlersRef.current.onFindInNote(),
       'app:cycle-view-mode': () => handlersRef.current.onCycleViewMode(),
+      'app:toggle-preview': () => handlersRef.current.onTogglePreview(),
+      'app:toggle-split': () => handlersRef.current.onToggleSplit(),
+      'app:next-note': () => handlersRef.current.onNextNote(),
+      'app:prev-note': () => handlersRef.current.onPrevNote(),
+      'app:save-note': () => handlersRef.current.onSaveNote(),
+      'app:toggle-outline': () => handlersRef.current.onToggleOutline(),
       'app:toggle-graph': () => handlersRef.current.onToggleGraph(),
       'app:open-settings': () => handlersRef.current.onOpenSettings(),
       'app:command-palette': () => handlersRef.current.onCommandPalette(),
+      'app:open-now-board': () => handlersRef.current.onOpenNowBoard(),
+      'app:open-init-script': () => handlersRef.current.onOpenInitScript(),
+      'app:open-user-styles': () => handlersRef.current.onOpenUserStyles(),
+      'app:open-keymap': () => handlersRef.current.onOpenKeymap(),
+      'app:reload-plugins': () => handlersRef.current.onReloadPlugins(),
     };
 
     const unregisters: Array<() => void> = [];

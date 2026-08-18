@@ -15,12 +15,14 @@ import type {
   TokenStorage,
   BroadcastFn,
 } from './types.js';
+import type { LocalIdentity } from '../services/localIdentity.js';
 
 export interface AuthSyncHandlerDeps {
   apiClient: ApiClient;
   tokenStorage: TokenStorage;
   syncService: SyncService;
   encryptionService: EncryptionService | null;
+  localIdentity: LocalIdentity;
   broadcastToWindows: BroadcastFn;
 }
 
@@ -53,6 +55,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
     tokenStorage: storage,
     syncService: sync,
     encryptionService: encryption,
+    localIdentity,
   } = deps;
 
   sync.onStatusChange(event => {
@@ -71,11 +74,28 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
         await client.requestMagicLink(email);
         return { success: true };
       } catch (error) {
+        const raw = error instanceof Error ? error.message : 'Failed to request magic link';
+        const unreachable = /enotfound|getaddrinfo|could not resolve|failed to fetch|network/i.test(
+          raw
+        );
+        const errorMessage = unreachable
+          ? 'Cannot reach api.dripnex.app. The API host is not live yet.'
+          : raw;
+        console.error('[auth] magic-link failed', { raw, errorMessage });
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to request magic link',
+          error: errorMessage,
         };
       }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'auth:continueLocally',
+    args: z.tuple([EmailSchema]),
+    handler: async email => {
+      const user = await localIdentity.save(email);
+      return { success: true, user };
     },
   });
 
@@ -102,12 +122,16 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
     handler: async () => {
       try {
         const hasTokens = await storage.hasTokens();
-        if (!hasTokens) return null;
-        const user = await client.getCurrentUser();
-        return { user };
+        if (hasTokens) {
+          const user = await client.getCurrentUser();
+          return { user };
+        }
+        const local = await localIdentity.read();
+        return local ? { user: local } : null;
       } catch {
         await storage.clearTokens();
-        return null;
+        const local = await localIdentity.read();
+        return local ? { user: local } : null;
       }
     },
   });
@@ -119,6 +143,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
       try {
         sync?.stopAutoSync();
         await storage.clearTokens();
+        await localIdentity.clear();
         return { success: true };
       } catch (error) {
         return {
@@ -135,7 +160,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
     handler: async () => {
       try {
         const refreshed = await client.refreshAccessToken();
-        return { success: refreshed };
+        return { success: refreshed.type === 'success' };
       } catch {
         return { success: false };
       }
@@ -438,7 +463,10 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
         if (!serverKeys.exists || !serverKeys.wrappedCekRecovery) {
           return { success: false, error: 'No recovery key found on server' };
         }
-        await encryption.unlockWithRecoveryKey(recoveryKey, serverKeys.wrappedCekRecovery);
+        await encryption.unlockWithRecoveryKey(
+          recoveryKey.replace(/[\s-]/g, ''),
+          serverKeys.wrappedCekRecovery
+        );
         return { success: true };
       } catch (error) {
         return {

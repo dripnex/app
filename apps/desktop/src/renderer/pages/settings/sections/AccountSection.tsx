@@ -239,7 +239,7 @@ export function AccountSection() {
         {isAuthenticated && user ? (
           <>
             <SettingRow label="Signed in as" description={user.email}>
-              <div className={styles.statusBadge}>
+              <div className={styles.statusBadge} data-tone="ok">
                 <UserIcon size={14} />
                 <span>Active</span>
               </div>
@@ -347,7 +347,7 @@ export function AccountSection() {
 
           <SettingGroup title="Subscription">
             <SettingRow label="Plan" description={`Current status: ${getLicenseStatusText()}`}>
-              <div className={styles.statusBadge}>
+              <div className={styles.statusBadge} data-tone={isProActive ? 'ok' : undefined}>
                 <CreditCard size={14} />
                 <span>{getLicenseStatusText()}</span>
               </div>

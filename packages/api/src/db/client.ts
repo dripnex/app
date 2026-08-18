@@ -30,6 +30,7 @@ export type Env = {
   // binding fail open rather than crash — see middleware/rateLimit.ts).
   AUTH_RL?: RateLimitBinding;
   SYNC_RL?: RateLimitBinding;
+  PUBLIC_RL?: RateLimitBinding;
 };
 
 /**

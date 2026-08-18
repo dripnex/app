@@ -1,138 +1,71 @@
 ---
 title: Storage
-description: Storage architecture — SQLite, sync engine, migrations, and backup system
+description: SQLite locally, optional E2E sync, migrations, backup
 ---
 
 # Storage
 
-Storage is split into multiple packages for isolation of native dependencies and separation of concerns.
+Storage is split so native dependencies stay in one package.
 
 ## Packages
 
 ### @dripnex/storage-core
 
-Interfaces and utilities with **no native dependencies**:
+No native dependencies:
 
 - `DatabaseAdapter` interface
+- `ExtendedNoteRepository` (the query port the app actually uses)
 - `Migration` types and runner
-- `DataPaths` management
-- Backup system
-- Export/Import utilities
+- `DataPaths`
+- Backup / export / import
 
 ### @dripnex/storage-sqlite
 
-SQLite implementation using `better-sqlite3`:
+`better-sqlite3` adapter:
 
-- `DatabaseConnection` adapter
-- `SQLiteNoteRepository`
-- `SQLiteNotebookRepository`
-- `SQLiteTagRepository`
-- Migration definitions
+- `SQLiteNoteRepository` implements `ExtendedNoteRepository`
+- Notebooks, chunks, embeddings
+- Forward-only migrations (currently through `019_embeddings`)
 - **Only package with native deps**
 
 ### @dripnex/sync-core
 
-Supabase-based sync engine:
+**Not a sync engine.** Shared TypeScript contracts and `validateNotebookTree`.
 
-- Push/pull operations against remote storage
-- Sync state tracking (last synced timestamps, dirty flags)
-- Conflict resolution strategy
-- Authentication integration (login/logout)
+Live sync is `apps/desktop/src/main/services/sync/SyncService.ts`. It talks to `packages/api` (Cloudflare). The server stores ciphertext.
 
 ## Why Split?
 
-Native modules (like better-sqlite3) cause issues:
+`better-sqlite3` must be rebuilt per Electron ABI. Isolating it lets storage-core and core tests run in plain Node.
 
-- Need rebuilding for each Electron version
-- Platform-specific binaries
-- Can't run in pure Node without native compilation
+## The note port
 
-By isolating native deps to `storage-sqlite`, we can:
-
-- Test storage-core anywhere
-- Swap implementations if needed
-- Keep clean dependency graph
-
-## Database Adapter
+Core's `NoteRepository` is the write port used by domain operations:
 
 ```typescript
-interface DatabaseAdapter {
-  run(sql: string): void;
-  prepare<T>(sql: string): PreparedStatement<T>;
-  transaction<T>(fn: () => T): T;
-  close(): void;
-  get isOpen(): boolean;
+interface NoteRepository {
+  get(id: NoteId): Promise<Note | null>;
+  save(note: Note): Promise<void>;
+  delete(id: NoteId): Promise<void>;
 }
 ```
 
-## Repositories
+The desktop (and anything that lists, searches, or draws a graph) depends on `ExtendedNoteRepository` in storage-core: list/search/count, tags, backlinks, graph. Sync bookkeeping stays on the SQLite class.
 
-The storage layer exposes multiple repository interfaces:
+## Sync
 
-| Repository           | Purpose            |
-| -------------------- | ------------------ |
-| `NoteRepository`     | CRUD for notes     |
-| `NotebookRepository` | Notebook hierarchy |
-| `TagRepository`      | Tag management     |
+1. Every write goes to SQLite first.
+2. Triggers mark `needs_sync` on content changes.
+3. `SyncService` encrypts and pushes blobs to `api.dripnex.app`.
+4. Pull decrypts locally. Conflicts are last-write-wins with a local CEK.
 
-Each repository interface is defined in `storage-core` and implemented in `storage-sqlite`.
+There is no Supabase in this stack.
 
-## Migrations
-
-Forward-only migrations run on startup:
+## Backup
 
 ```typescript
-const migrations: Migration[] = [
-  {
-    version: 1,
-    name: 'initial_schema',
-    up: `CREATE TABLE notes (...)`,
-  },
-  // Later migrations add:
-  // - notebooks table and note-notebook relationships
-  // - tags table
-  // - sync state tables (sync_log, sync_metadata)
-  // - indexes for performance
-];
-
-// Run pending migrations
-runMigrations(db, migrations);
-```
-
-The migration system has grown to include tables for notebooks, tags, and sync state alongside the original notes schema.
-
-## Sync Storage
-
-The `@dripnex/sync-core` package adds a sync layer on top of local storage:
-
-1. **Local-first** - All writes go to SQLite first
-2. **Sync state tracking** - Each record tracks its sync status (synced, dirty, conflict)
-3. **Push** - Dirty records are pushed to Supabase
-4. **Pull** - Remote changes are pulled and merged locally
-5. **Conflict resolution** - Last-write-wins with optional manual resolution
-
-Sync state tables track:
-
-- Last successful sync timestamp per entity type
-- Per-record dirty flags
-- Conflict markers for manual resolution
-
-## Backup System
-
-```typescript
-// Create backup
 createBackup({
   backupDir: paths.backups,
   databasePath: paths.database,
 });
-
-// List backups
-const backups = listBackups(paths.backups);
-
-// Restore
-restoreBackup(backupPath, databasePath);
 ```
-
-## Export/Import
-
-See [Data Management](/docs/guide/getting-started#import--export).

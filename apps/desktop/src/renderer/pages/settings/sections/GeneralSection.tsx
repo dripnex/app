@@ -10,8 +10,7 @@ import { useSettingsStore, selectGeneral } from '../../../stores/settings';
 import { useNotebooks } from '../../../hooks/useNotebooks';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Select, Toggle } from '../components/controls';
-import { Button } from '../../../ui/primitives';
+import { Button, Select, Toggle } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 export function GeneralSection() {
@@ -66,6 +65,20 @@ export function GeneralSection() {
             id="rememberWindowPosition"
             checked={general.rememberWindowPosition}
             onChange={checked => updateGeneral({ rememberWindowPosition: checked })}
+          />
+        </SettingRow>
+      </SettingGroup>
+
+      <SettingGroup title="Developer">
+        <SettingRow
+          label="Development Mode"
+          description="Right-click any element to inspect it. Reload is not required."
+          htmlFor="developmentMode"
+        >
+          <Toggle
+            id="developmentMode"
+            checked={general.developmentMode ?? false}
+            onChange={checked => updateGeneral({ developmentMode: checked })}
           />
         </SettingRow>
       </SettingGroup>

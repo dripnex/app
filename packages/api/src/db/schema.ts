@@ -283,6 +283,7 @@ export const pluginCatalog = sqliteTable(
     icon: text('icon').notNull().default('puzzle'),
     repositoryUrl: text('repository_url'),
     bundleUrl: text('bundle_url'),
+    ownerUserId: text('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
     downloads: integer('downloads').notNull().default(0),
     minApiVersion: text('min_api_version'),
     isBuiltIn: integer('is_built_in', { mode: 'boolean' }).notNull().default(false),
@@ -297,6 +298,32 @@ export const pluginCatalog = sqliteTable(
   table => [
     index('idx_plugin_catalog_category').on(table.category),
     index('idx_plugin_catalog_status').on(table.status),
+    index('idx_plugin_catalog_owner').on(table.ownerUserId),
+  ]
+);
+
+/**
+ * Plugin versions — each `ipm publish` / dripnex-plugin publish row.
+ */
+export const pluginVersions = sqliteTable(
+  'plugin_versions',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    pluginId: text('plugin_id')
+      .notNull()
+      .references(() => pluginCatalog.id, { onDelete: 'cascade' }),
+    version: text('version').notNull(),
+    bundleUrl: text('bundle_url').notNull(),
+    publishedBy: text('published_by'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  table => [
+    uniqueIndex('idx_plugin_versions_unique').on(table.pluginId, table.version),
+    index('idx_plugin_versions_plugin').on(table.pluginId),
   ]
 );
 
@@ -325,6 +352,15 @@ export const userKeys = sqliteTable('user_keys', {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+/** Stripe webhook events already applied — unique on event id for idempotency. */
+export const stripeEvents = sqliteTable('stripe_events', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // Type exports for use in routes
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -336,5 +372,6 @@ export type Newsletter = typeof newsletter.$inferSelect;
 export type SharedNote = typeof sharedNotes.$inferSelect;
 export type PluginCatalogEntry = typeof pluginCatalog.$inferSelect;
 export type NewPluginCatalogEntry = typeof pluginCatalog.$inferInsert;
+export type PluginVersion = typeof pluginVersions.$inferSelect;
 export type NotebookSyncLogEntry = typeof notebookSyncLog.$inferSelect;
 export type UserKeys = typeof userKeys.$inferSelect;

@@ -53,6 +53,7 @@ describe('initPlugin', () => {
     expect(index).toContain("id: 'demo'");
     expect(index).toContain("name: 'Demo'");
     expect(index).toContain('module.exports');
+    expect(index).toContain('context.menu.add');
   });
 
   it('throws if directory already exists', async () => {

@@ -339,5 +339,5 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 - **Architecture decisions:** `plan.md`
 - **Package docs:** `packages/*/README.md`
 - **Technical docs:** `apps/docs-site/`
-- **Live docs:** https://dripnex.github.io/readide/
+- **Live docs:** https://dripnex.app/docs
 - **GitHub:** https://github.com/dripnex/readide

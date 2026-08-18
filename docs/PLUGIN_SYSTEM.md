@@ -353,6 +353,84 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 ---
 
+## Hackable files (Inkdrop-aligned)
+
+User files in the data directory — same idea as Inkdrop's `init.js` + `styles.css`:
+
+| File | Role |
+| ---- | ---- |
+| `init.js` | Runs on load. Free-form `dripnex.*` **or** a CJS `PluginManifest`. Open from Settings → Plugins. |
+| `styles.css` | Injected into every renderer window. Save to apply. |
+| `keybindings.json` | Command id → chord (or `null` to unbind). Save to apply. |
+
+Free-form `init.js` is wrapped as plugin `user-init`. A full manifest export still works.
+
+These files do **not** exist until the user clicks Open. Templates are written on first open.
+
+### Vim (built-in, Inkdrop-shaped)
+
+Enable **Vim Mode** in Settings → Plugins. Same engine as Inkdrop (`@replit/codemirror-vim`) plus:
+
+| | |
+| ---- | ---- |
+| Ex | `:w` save, `:n` / `:next` next note, `:prev` previous, `:p` / `:preview`, `:side` split, `:cmd {id}` dispatch any command |
+| Options | relative line numbers, yank/delete → system clipboard |
+| Status | `NORMAL` / `INSERT` / `VISUAL` / `REPLACE` in the editor status bar |
+| Preview | `j` `k` `gg` `G` `Ctrl-d/u/f/b` when the preview is focused |
+
+From `init.js` (after enabling the plugin):
+
+```js
+const Vim = dripnex.vim
+if (Vim) {
+  Vim.map('jj', '<Esc>', 'insert')
+  Vim.map('Y', 'y$')
+  Vim.defineEx('find', 'f', () => {
+    void dripnex.commands.dispatch('app:focus-search')
+  })
+}
+```
+
+### CLI (`dripnex-plugin`)
+
+Same data dir as the desktop (`@dripnex/desktop`, overridable with `DRIPNEX_DATA_DIR`):
+
+```bash
+pnpm plugin init "My Plugin"
+cd my-plugin && npm install && npm run build
+pnpm plugin link
+# Settings → Plugins → Reload
+```
+
+Or from a built checkout: `pnpm --filter @dripnex/plugin-cli cli -- list`.
+
+---
+
+## Catalog: one plugin = one git repo
+
+Inkdrop’s registry is not a folder in the app. Each community plugin is its own
+repository, tagged `vX.Y.Z`, with a tarball on the GitHub Release.
+
+```
+dripnex-plugin pack
+dripnex-plugin publish   # prints: git tag + gh release create
+```
+
+`bundleUrl` points at that release asset. The desktop installs over HTTPS only.
+Built-ins stay in `apps/desktop` until they deserve their own repo.
+
+### What belongs in the app
+
+| Role | Plugins | Marketing? |
+| ---- | ------- | ---------- |
+| **core** | mermaid, math, tables, paste-as-link, AI | yes |
+| **optional** | vim, export | yes |
+| **proof** (API examples, hide from the site) | word-count, reading-time, typewriter, focus, active-line | no |
+
+Do not add more proof plugins to dripnex.app/plugins.
+
+---
+
 ## Phase 5: Plugin Ecosystem (futuro lejano)
 
 - Plugin registry/marketplace (HTTP API + UI)

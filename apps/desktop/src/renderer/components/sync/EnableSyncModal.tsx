@@ -10,10 +10,31 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Cloud, Mail, CheckCircle, X, RefreshCw, Sparkles } from 'lucide-react';
+import { X } from 'lucide-react';
+import { seedGeneratedPassphrase } from './PassphraseCreateForm';
+import { scorePassphrase } from '../../utils/passphrase';
 import { getProductConfig } from '@dripnex/product-config';
-import { useAuthStore, selectIsAuthenticated, selectError } from '../../stores/authStore';
+import {
+  useAuthStore,
+  selectIsAuthenticated,
+  selectError,
+  selectEmail,
+  startCloudSyncIfReady,
+} from '../../stores/authStore';
 import { useLicense } from '../../contexts/LicenseContext';
+import {
+  CheckingStep,
+  EmailStep,
+  PassphraseStep,
+  PricingStep,
+  RecoveryKeyStep,
+  RecoveryUnlockStep,
+  SentStep,
+  SuccessStep,
+  UnlockStep,
+  ValuePropStep,
+  WaitingPaymentStep,
+} from './EnableSyncSteps';
 import styles from './LoginModal.module.css';
 
 interface EnableSyncModalProps {
@@ -28,6 +49,10 @@ type Step =
   | 'email'
   | 'checking'
   | 'sent'
+  | 'passphrase'
+  | 'unlock'
+  | 'recovery'
+  | 'recovery-unlock'
   | 'success';
 
 const RESEND_COOLDOWN = 60; // seconds
@@ -41,6 +66,10 @@ function hasSyncCapability(status: string | undefined): boolean {
 export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<Step>('value-prop');
+  const [passphrase, setPassphrase] = useState('');
+  const [passphraseConfirm, setPassphraseConfirm] = useState('');
+  const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
+  const [recoveryInput, setRecoveryInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [isResending, setIsResending] = useState(false);
@@ -49,6 +78,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   const requestMagicLink = useAuthStore(state => state.requestMagicLink);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const authError = useAuthStore(selectError);
+  const accountEmail = useAuthStore(selectEmail);
   const { state: licenseState, openSubscribe } = useLicense();
   const config = useMemo(() => getProductConfig(), []);
   const proPricing = config.plans.pro.pricing!;
@@ -58,18 +88,47 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   // Compute smart initial step based on current auth + license state
   // Note: checkout requires auth, so unauthenticated users always go through email first
   const computeInitialStep = useCallback((): Step => {
-    if (isAuthenticated && canSync) return 'success';
     if (isAuthenticated && !canSync) return 'pricing';
-    // Not authenticated — always need to sign in first (checkout requires auth)
+    if (isAuthenticated && canSync) return 'passphrase';
     return 'value-prop';
   }, [isAuthenticated, canSync]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    const generated = seedGeneratedPassphrase();
+    setPassphrase(generated);
+    setPassphraseConfirm(generated);
+    setRecoveryInput('');
+    setStep(computeInitialStep());
+  }, [isOpen, computeInitialStep]);
+
+  useEffect(() => {
+    if (!isOpen || !isAuthenticated || !canSync) return;
+    let cancelled = false;
+    void (async () => {
+      const [ready, status] = await Promise.all([
+        window.dripnex.encryption.isReady(),
+        window.dripnex.encryption.getKeyStatus(),
+      ]);
+      if (cancelled) return;
+      if (ready.ready) {
+        setStep('success');
+        return;
+      }
+      setStep(status.hasServerKeys ? 'unlock' : 'passphrase');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, isAuthenticated, canSync]);
 
   // Watch for auth success (deep link verified in background)
   // If user has sync capability → success. If not → they need to pay first.
   useEffect(() => {
     if (isAuthenticated && (step === 'sent' || step === 'checking')) {
       if (canSync) {
-        setStep('success');
+        setStep('passphrase');
       } else {
         setStep('pricing');
       }
@@ -87,7 +146,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
   useEffect(() => {
     if (step === 'waiting-payment' && hasSyncCapability(licenseState?.status)) {
       if (isAuthenticated) {
-        setStep('success');
+        setStep('passphrase');
       } else {
         setStep('email');
       }
@@ -178,6 +237,65 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
     setStep('email');
   }, []);
 
+  const handleSetupPassphrase = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      setError(null);
+      if (passphrase !== passphraseConfirm) {
+        setError('Passphrases do not match.');
+        return;
+      }
+      if (!scorePassphrase(passphrase).ok) {
+        setError('Choose a stronger passphrase — six random words, or 16+ mixed characters.');
+        return;
+      }
+      const result = await window.dripnex.encryption.setupKeys(passphrase);
+      if (!result.success) {
+        setError(result.error || 'Failed to set up encryption');
+        return;
+      }
+      setRecoveryKey(result.recoveryKey ?? null);
+      await startCloudSyncIfReady();
+      setStep(result.recoveryKey ? 'recovery' : 'success');
+    },
+    [passphrase, passphraseConfirm]
+  );
+
+  const handleUnlock = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      setError(null);
+      const result = await window.dripnex.encryption.unlockWithPassphrase(passphrase);
+      if (!result.success) {
+        setError(result.wrongPassphrase ? 'Incorrect passphrase' : (result.error ?? 'Unlock failed'));
+        return;
+      }
+      await startCloudSyncIfReady();
+      setStep('success');
+    },
+    [passphrase]
+  );
+
+  const handleUnlockRecovery = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      setError(null);
+      const key = recoveryInput.trim();
+      if (!key) {
+        setError('Paste your recovery key.');
+        return;
+      }
+      const result = await window.dripnex.encryption.unlockWithRecoveryKey(key);
+      if (!result.success) {
+        setError(result.error ?? 'Recovery failed');
+        return;
+      }
+      await startCloudSyncIfReady();
+      setStep('success');
+    },
+    [recoveryInput]
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -199,192 +317,93 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
         </button>
 
         <div className={styles.content}>
-          {/* Step: Value Proposition */}
-          {step === 'value-prop' && (
-            <>
-              <div className={styles.iconWrapper}>
-                <Cloud size={36} />
-              </div>
-              <h2 id="sync-modal-title" className={styles.title}>
-                Sync across devices
-              </h2>
-              <p className={styles.subtitle}>
-                Your notes stay on your machine. Enable sync to access them from any device, with
-                end-to-end encryption.
-              </p>
-              <ul className={styles.benefits}>
-                <li>Access notes on all your devices</li>
-                <li>End-to-end encrypted — only you can read them</li>
-                <li>Works offline, syncs when connected</li>
-                <li>No account required to use Dripnex locally</li>
-              </ul>
-              <button type="button" className={styles.button} onClick={handleEnableSync}>
-                Get Started
-              </button>
-            </>
-          )}
-
-          {/* Step: Pricing */}
+          {step === 'value-prop' && <ValuePropStep onStart={handleEnableSync} />}
           {step === 'pricing' && (
-            <>
-              <div className={styles.iconWrapper}>
-                <Sparkles size={36} />
-              </div>
-              <h2 id="sync-modal-title" className={styles.title}>
-                Upgrade to Pro
-              </h2>
-              <p className={styles.subtitle}>
-                {licenseState?.trial && !licenseState.trial.isExpired
+            <PricingStep
+              trialDescription={
+                licenseState?.trial && !licenseState.trial.isExpired
                   ? config.trialDescription
-                  : 'Get cloud sync and all Pro features'}
-              </p>
-              <div className={styles.planButtons}>
-                <button
-                  type="button"
-                  className={styles.planButtonRecommended}
-                  onClick={() => handleSelectPlan('annual')}
-                >
-                  <span className={styles.planLabel}>
-                    Annual — {proPricing.intervals.annual.label}
-                  </span>
-                  {proPricing.annualSavings && (
-                    <span className={styles.savingsBadge}>Save {proPricing.annualSavings}</span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className={styles.planButton}
-                  onClick={() => handleSelectPlan('monthly')}
-                >
-                  <span className={styles.planLabel}>
-                    Monthly — {proPricing.intervals.monthly.label}
-                  </span>
-                </button>
-              </div>
-              {error && <p className={styles.error}>{error}</p>}
-              <button
-                type="button"
-                className={styles.linkButton}
-                onClick={() => {
-                  setError(null);
-                  setStep('value-prop');
-                }}
-              >
-                Back
-              </button>
-            </>
+                  : undefined
+              }
+              proPricing={proPricing}
+              error={error}
+              onSelectPlan={plan => void handleSelectPlan(plan)}
+              onBack={() => {
+                setError(null);
+                setStep('value-prop');
+              }}
+            />
           )}
-
-          {/* Step: Waiting for Payment */}
           {step === 'waiting-payment' && (
-            <div className={styles.checking}>
-              <div className={styles.spinner} />
-              <p>Complete checkout in your browser...</p>
-              <p className={styles.waitingHint}>This window will update automatically</p>
-              <button
-                type="button"
-                className={styles.linkButton}
-                onClick={() => setStep('pricing')}
-              >
-                Cancel
-              </button>
-            </div>
+            <WaitingPaymentStep onCancel={() => setStep('pricing')} />
           )}
-
-          {/* Step: Email Input */}
           {step === 'email' && (
-            <>
-              <div className={styles.iconWrapper}>
-                <Mail size={36} />
-              </div>
-              <h2 className={styles.title}>Sign in or create account</h2>
-              <p className={styles.subtitle}>
-                Enter your email and we'll send you a sign-in link. No password needed — if you're
-                new, your account is created automatically.
-              </p>
-              <form onSubmit={handleSubmitEmail} className={styles.form}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className={styles.input}
-                  aria-label="Email address"
-                  placeholder="you@example.com"
-                  required
-                  autoFocus
-                />
-                {error && <p className={styles.error}>{error}</p>}
-                <button type="submit" className={styles.button}>
-                  Continue with Email
-                </button>
-              </form>
-              <button
-                type="button"
-                className={styles.linkButton}
-                onClick={() => setStep('value-prop')}
-              >
-                Back
-              </button>
-            </>
+            <EmailStep
+              email={email}
+              error={error}
+              onEmailChange={setEmail}
+              onSubmit={e => void handleSubmitEmail(e)}
+              onBack={() => setStep('value-prop')}
+            />
           )}
-
-          {/* Step: Sending */}
-          {step === 'checking' && (
-            <div className={styles.checking}>
-              <div className={styles.spinner} />
-              <p>Sending magic link...</p>
-            </div>
-          )}
-
-          {/* Step: Email Sent — Waiting for Verification */}
+          {step === 'checking' && <CheckingStep />}
           {step === 'sent' && (
-            <div className={styles.sent}>
-              <CheckCircle size={48} className={styles.checkIcon} />
-              <h3>Check your email</h3>
-              <p>
-                We sent a magic link to <strong>{email}</strong>
-              </p>
-              <p className={styles.hint}>
-                Click the link in the email to sign in. This window will update automatically.
-              </p>
-
-              {error && <p className={styles.error}>{error}</p>}
-
-              <div className={styles.resendRow}>
-                {resendTimer > 0 ? (
-                  <span className={styles.resendTimer}>Resend in {resendTimer}s</span>
-                ) : (
-                  <button type="button" className={styles.linkButton} onClick={handleResend}>
-                    <RefreshCw size={12} />
-                    Resend magic link
-                  </button>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className={styles.linkButton}
-                onClick={() => {
-                  setStep('email');
-                  setError(null);
-                }}
-              >
-                Use a different email
-              </button>
-            </div>
+            <SentStep
+              email={email}
+              error={error}
+              resendTimer={resendTimer}
+              onResend={() => void handleResend()}
+              onChangeEmail={() => {
+                setStep('email');
+                setError(null);
+              }}
+            />
           )}
-
-          {/* Step: Success */}
-          {step === 'success' && (
-            <div className={styles.sent}>
-              <CheckCircle size={48} className={styles.successIcon} />
-              <h3>You're syncing!</h3>
-              <p>Your notes will now sync across all your devices.</p>
-              <button type="button" className={styles.button} onClick={handleClose}>
-                Done
-              </button>
-            </div>
+          {step === 'passphrase' && (
+            <PassphraseStep
+              passphrase={passphrase}
+              passphraseConfirm={passphraseConfirm}
+              error={error}
+              email={accountEmail ?? email}
+              onPassphraseChange={setPassphrase}
+              onConfirmChange={setPassphraseConfirm}
+              onSubmit={event => void handleSetupPassphrase(event)}
+            />
           )}
+          {step === 'unlock' && (
+            <UnlockStep
+              email={accountEmail ?? email}
+              passphrase={passphrase}
+              error={error}
+              onPassphraseChange={setPassphrase}
+              onSubmit={e => void handleUnlock(e)}
+              onUseRecovery={() => {
+                setError(null);
+                setStep('recovery-unlock');
+              }}
+            />
+          )}
+          {step === 'recovery-unlock' && (
+            <RecoveryUnlockStep
+              recoveryInput={recoveryInput}
+              error={error}
+              onRecoveryChange={setRecoveryInput}
+              onSubmit={e => void handleUnlockRecovery(e)}
+              onUsePassphrase={() => {
+                setError(null);
+                setStep('unlock');
+              }}
+            />
+          )}
+          {step === 'recovery' && (
+            <RecoveryKeyStep
+              email={accountEmail ?? email}
+              passphrase={passphrase}
+              recoveryKey={recoveryKey}
+              onDone={() => setStep('success')}
+            />
+          )}
+          {step === 'success' && <SuccessStep onClose={handleClose} />}
         </div>
 
         <div className={styles.footer}>

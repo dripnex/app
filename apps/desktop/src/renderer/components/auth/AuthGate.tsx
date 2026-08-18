@@ -93,10 +93,25 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
             </p>
 
             {sent ? (
-              <p className={styles.sent}>
-                Check <strong>{email}</strong> for a {mode === 'signup' ? 'sign-up' : 'sign-in'}{' '}
-                link.
-              </p>
+              <>
+                <p className={styles.sent}>
+                  Check <strong>{email}</strong> for a {mode === 'signup' ? 'sign-up' : 'sign-in'}{' '}
+                  link.
+                </p>
+                {localError ? <p className={styles.error}>{localError}</p> : null}
+                {localError ? (
+                  <button
+                    className={styles.local}
+                    type="button"
+                    onClick={() => {
+                      setSent(false);
+                      setLocalError(null);
+                    }}
+                  >
+                    Request a new link
+                  </button>
+                ) : null}
+              </>
             ) : (
               <form className={styles.form} onSubmit={e => void submit(e)}>
                 <label className={styles.label} htmlFor="auth-email">

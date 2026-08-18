@@ -4,11 +4,13 @@ import {
   Palette,
   Sparkles,
   User,
+  KeyRound,
   Database,
   Info,
   Download,
   Puzzle,
   RotateCcw,
+  Blocks,
 } from 'lucide-react';
 import { toast } from '../../../ui/primitives';
 import { useSettingsStore } from '../../../stores/settings';
@@ -28,6 +30,8 @@ const sections: { id: SettingsSection; label: string; Icon: any }[] = [
   { id: 'ai', label: 'AI Assistant', Icon: Sparkles },
   { id: 'plugins', label: 'Plugins', Icon: Puzzle },
   { id: 'account', label: 'Account', Icon: User },
+  { id: 'encryption', label: 'Encryption', Icon: KeyRound },
+  { id: 'integrations', label: 'Integrations', Icon: Blocks },
   { id: 'backup', label: 'Backup & Data', Icon: Database },
   { id: 'updates', label: 'Updates', Icon: Download },
   { id: 'about', label: 'About', Icon: Info },
@@ -45,9 +49,7 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Settings</h1>
-      </div>
+      <div className={styles.header} aria-hidden="true" />
       <nav className={styles.nav}>
         {sections.map(section => {
           const { Icon } = section;

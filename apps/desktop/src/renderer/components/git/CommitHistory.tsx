@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react';
+import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw, Upload } from 'lucide-react';
+import { Button, Input } from '../../ui/primitives';
 import styles from './CommitHistory.module.css';
 
 interface GitCommitData {
@@ -28,9 +29,16 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
+  const [remoteUrl, setRemoteUrl] = useState('');
+  const [remoteBusy, setRemoteBusy] = useState(false);
+  const [remoteMessage, setRemoteMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void loadCommits();
+    void window.dripnex.git.remotes?.(notebookId).then(result => {
+      const origin = result.remotes?.find(remote => remote.remote === 'origin');
+      if (origin) setRemoteUrl(origin.url);
+    });
   }, [notebookId]);
 
   const loadCommits = async () => {
@@ -74,6 +82,25 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
     },
     [notebookId, onClose]
   );
+
+  const saveRemote = useCallback(async () => {
+    if (!window.dripnex.git.setRemote) return;
+    setRemoteBusy(true);
+    setRemoteMessage(null);
+    const result = await window.dripnex.git.setRemote(notebookId, remoteUrl);
+    setRemoteBusy(false);
+    setRemoteMessage(result.success ? `Remote set to ${result.remote}` : (result.error ?? 'Failed'));
+    if (result.success && result.remote) setRemoteUrl(result.remote);
+  }, [notebookId, remoteUrl]);
+
+  const pushRemote = useCallback(async () => {
+    if (!window.dripnex.git.push) return;
+    setRemoteBusy(true);
+    setRemoteMessage(null);
+    const result = await window.dripnex.git.push(notebookId);
+    setRemoteBusy(false);
+    setRemoteMessage(result.success ? 'Pushed to origin' : (result.error ?? 'Push failed'));
+  }, [notebookId]);
 
   const toggleCommit = useCallback((oid: string) => {
     setExpandedCommit(prev => (prev === oid ? null : oid));
@@ -119,6 +146,29 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
             ×
           </button>
         </div>
+
+        <div className={styles.remoteBar}>
+          <Input
+            size="sm"
+            value={remoteUrl}
+            onChange={event => setRemoteUrl(event.target.value)}
+            placeholder="https://github.com/you/notes"
+            aria-label="GitHub remote"
+          />
+          <Button variant="secondary" size="sm" loading={remoteBusy} onClick={() => void saveRemote()}>
+            Set remote
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Upload size={13} />}
+            loading={remoteBusy}
+            onClick={() => void pushRemote()}
+          >
+            Push
+          </Button>
+        </div>
+        {remoteMessage ? <p className={styles.remoteMsg}>{remoteMessage}</p> : null}
 
         <div className={styles.body}>
           {isLoading && (

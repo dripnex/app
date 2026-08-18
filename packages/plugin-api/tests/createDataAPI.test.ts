@@ -133,6 +133,18 @@ describe('createDataAPI', () => {
       const result = await api.getTags({ limit: 2, offset: 1 });
       expect(result.map(t => t.name)).toEqual(['b', 'c']);
     });
+
+    it('prefers queryTags when the host implements SQL filtering', async () => {
+      const queryTags = async () => [{ name: 'from-sql', color: '#111' }];
+      const api = createDataAPI(
+        makeBridge({
+          getTags: async () => ['should-not-run'],
+          queryTags,
+        })
+      );
+      const result = await api.getTags({ filter: 'sql', limit: 1 });
+      expect(result).toEqual([{ name: 'from-sql', color: '#111' }]);
+    });
   });
 
   describe('getGraphData', () => {

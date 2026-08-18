@@ -1,12 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import fetch from 'cross-fetch';
-import { ApiClient, ApiError } from '../apiClient.js';
+import { ApiClient, ApiError, type FetchFn } from '../apiClient.js';
 import type { TokenStorage } from '../tokenStorage.js';
 import type { DeviceInfo } from '../deviceInfo.js';
 
-vi.mock('cross-fetch', () => ({ default: vi.fn() }));
-
-const mockedFetch = vi.mocked(fetch);
+const mockedFetch = vi.fn<FetchFn>();
 
 function abortError(): Error {
   const err = new Error('The operation was aborted');
@@ -47,7 +44,7 @@ describe('ApiClient timeouts', () => {
         tokens = null;
       }),
     } as unknown as TokenStorage;
-    client = new ApiClient('https://api.example.test', storage, device);
+    client = new ApiClient('https://api.example.test', storage, device, mockedFetch);
   });
 
   it('passes an AbortSignal on every request', async () => {

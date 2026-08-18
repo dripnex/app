@@ -9,8 +9,7 @@ import { Download, RotateCcw } from 'lucide-react';
 import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Toggle } from '../components/controls';
-import { Button } from '../../../ui/primitives';
+import { Button, Toggle } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 type UpdateState =
@@ -250,7 +249,7 @@ export function UpdatesSection() {
         >
           {renderButton()}
         </SettingRow>
-        {renderInfo()}
+        {renderInfo() ? <div className={styles.inset}>{renderInfo()}</div> : null}
       </SettingGroup>
     </div>
   );

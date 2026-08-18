@@ -45,6 +45,18 @@ export interface GitAPI {
     noteId: string
   ) => Promise<{ success: boolean; content?: string | null; error?: string }>;
   deleteNote: (notebookId: string, noteId: string) => Promise<{ success: boolean; error?: string }>;
+  remotes: (
+    notebookId: string
+  ) => Promise<{
+    success: boolean;
+    remotes?: Array<{ remote: string; url: string }>;
+    error?: string;
+  }>;
+  setRemote: (
+    notebookId: string,
+    url: string
+  ) => Promise<{ success: boolean; remote?: string; error?: string }>;
+  push: (notebookId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function createGitApi(): GitAPI {
@@ -63,5 +75,8 @@ export function createGitApi(): GitAPI {
       ipcRenderer.invoke('git:readNote', notebookId, noteId),
     deleteNote: (notebookId: string, noteId: string) =>
       ipcRenderer.invoke('git:deleteNote', notebookId, noteId),
+    remotes: notebookId => ipcRenderer.invoke('git:remotes', notebookId),
+    setRemote: (notebookId, url) => ipcRenderer.invoke('git:setRemote', notebookId, url),
+    push: notebookId => ipcRenderer.invoke('git:push', notebookId),
   };
 }

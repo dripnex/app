@@ -104,6 +104,33 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
     };
   }
 
+  // Migration: v3 -> v4 (embed provider/model for the local index)
+  if (version < 4) {
+    mutable = {
+      ...mutable,
+      version: 4,
+      ai: {
+        ...DEFAULT_AI,
+        ...mutable.ai,
+        embedProvider: mutable.ai?.embedProvider ?? DEFAULT_AI.embedProvider,
+        embedModel: mutable.ai?.embedModel ?? DEFAULT_AI.embedModel,
+      },
+    };
+  }
+
+  // Migration: v4 -> v5 (Development Mode / Inspect Element)
+  if (version < 5) {
+    mutable = {
+      ...mutable,
+      version: 5,
+      general: {
+        ...DEFAULT_GENERAL,
+        ...mutable.general,
+        developmentMode: mutable.general?.developmentMode ?? false,
+      },
+    };
+  }
+
   settings = mutable as SettingsSchema;
   return { settings };
 }

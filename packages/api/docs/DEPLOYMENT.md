@@ -163,6 +163,19 @@ wrangler secret put STRIPE_WEBHOOK_SECRET --env production
 pnpm deploy:production
 ```
 
+Schema migrations run automatically on the first request after deploy
+(`ensureMigrated` — journal in `drizzle/`, catalog in `src/db/migrations.generated.ts`).
+Pending files apply in order; already-applied schema is recorded in
+`schema_migrations`. To run the same runner from a laptop with Turso creds:
+
+```bash
+pnpm db:embed      # after drizzle-kit generate
+pnpm db:migrate    # needs TURSO_DATABASE_URL + TURSO_AUTH_TOKEN
+```
+
+CI (`deploy-api.yml`) embeds, migrates if `TURSO_*` secrets exist, then deploys.
+If those secrets are missing, the Worker still migrates on `/health`.
+
 ### 4. Configure Custom Domain
 
 In Cloudflare Dashboard:

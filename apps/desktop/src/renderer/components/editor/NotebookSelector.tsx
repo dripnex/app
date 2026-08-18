@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, memo } from 'react';
 import { Folder, Inbox, ChevronDown, Check } from 'lucide-react';
 import { useNotebookList } from '../../hooks/useNotebooks';
 import { useDropdownPosition } from '../../hooks/useDropdownPosition';
+import { sc } from './sc';
 
 interface NotebookSelectorProps {
   readonly notebookId: string;
@@ -52,27 +53,27 @@ export const NotebookSelector = memo(function NotebookSelector({
   };
 
   return (
-    <div className="editor-header-dropdown" ref={containerRef}>
+    <div className={sc('editor-header-dropdown')} ref={containerRef}>
       <button
         ref={triggerRef}
         type="button"
-        className="editor-header-dropdown-btn"
+        className={sc('editor-header-dropdown-btn')}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-label={`Notebook: ${displayName}`}
       >
-        <span className="dropdown-icon">
+        <span className={sc('dropdown-icon')}>
           {isInbox ? <Inbox size={14} /> : <Folder size={14} />}
         </span>
         <span>{displayName}</span>
-        <ChevronDown size={12} className="chevron-icon" />
+        <ChevronDown size={12} className={sc('chevron-icon')} />
       </button>
 
       {isOpen && (
         <div
           ref={menuRef}
-          className="editor-header-menu"
+          className={sc('editor-header-menu')}
           role="menu"
           style={{
             top: menuPosition.top,
@@ -86,16 +87,20 @@ export const NotebookSelector = memo(function NotebookSelector({
               key={notebook.id}
               type="button"
               role="menuitem"
-              className={`editor-header-menu-item notebook-selector-item ${notebook.id === notebookId ? 'selected' : ''}`}
+              className={sc(
+                'editor-header-menu-item',
+                'notebook-selector-item',
+                notebook.id === notebookId && 'selected'
+              )}
               style={{ '--depth': notebook.depth } as React.CSSProperties}
               onClick={() => handleSelect(notebook.id)}
             >
-              <span className="item-icon">
+              <span className={sc('item-icon')}>
                 {notebook.id === 'inbox' ? <Inbox size={14} /> : <Folder size={14} />}
               </span>
-              <span className="item-label">{notebook.name}</span>
+              <span className={sc('item-label')}>{notebook.name}</span>
               {notebook.id === notebookId && (
-                <span className="item-check">
+                <span className={sc('item-check')}>
                   <Check size={14} />
                 </span>
               )}

@@ -98,7 +98,9 @@
 /* Notebook item */
 .item {
   width: 100%;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 16px;
   background: transparent;
   border: none;

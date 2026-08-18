@@ -7,6 +7,8 @@ import { initSentry } from './sentry';
 initSentry();
 
 import './styles/global.css';
+import { UserStyles } from './components/UserStyles';
+import { UserKeymap } from './components/UserKeymap';
 
 // Detect which view to render based on query param
 const params = new URLSearchParams(window.location.search);
@@ -66,6 +68,8 @@ const RootComponent =
 createRoot(container).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
+      <UserStyles />
+      <UserKeymap />
       <Suspense fallback={<LoadingFallback />}>
         <RootComponent />
       </Suspense>

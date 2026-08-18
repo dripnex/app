@@ -66,14 +66,18 @@ export class CommandRegistry {
     }
   }
 
-  /** Execute a command by id. Returns false if not found or disabled. */
+  /** Execute a command by id. Returns false if not found, disabled, or thrown. */
   async dispatch(id: string): Promise<boolean> {
     const cmd = this.commands.get(id);
     if (!cmd) return false;
     if (cmd.enabled === false) return false;
 
-    const result = await cmd.execute();
-    return result !== false;
+    try {
+      const result = await cmd.execute();
+      return result !== false;
+    } catch {
+      return false;
+    }
   }
 
   /** Get a command by id */
@@ -110,6 +114,15 @@ export class CommandRegistry {
     this.notify();
   }
 
+  /** Replace every user override. Empty list clears the keymap. */
+  replaceKeybindingOverrides(overrides: readonly KeyBindingOverride[]): void {
+    this.overrides.clear();
+    for (const override of overrides) {
+      this.overrides.set(override.commandId, override.keybinding);
+    }
+    this.notify();
+  }
+
   /** Find command by keybinding within a given context */
   findByKeybinding(kb: KeyBinding, context?: CommandContext): RegisteredCommand | undefined {
     for (const cmd of this.commands.values()) {
@@ -122,21 +135,30 @@ export class CommandRegistry {
     return undefined;
   }
 
-  /** Detect keybinding conflicts (same binding, same context) */
+  /**
+   * Detect keybinding conflicts. Same chord in the same context, or a global
+   * binding that overlaps any other context (globals always fire).
+   */
   getConflicts(): Array<{ keybinding: string; commands: RegisteredCommand[] }> {
     const byKey = new Map<string, RegisteredCommand[]>();
 
     for (const cmd of this.commands.values()) {
       const kb = this.getKeybinding(cmd.id);
       if (!kb) continue;
-      const key = `${cmd.context}:${serializeKeybinding(kb)}`;
+      const key = serializeKeybinding(kb);
       const list = byKey.get(key) ?? [];
       list.push(cmd);
       byKey.set(key, list);
     }
 
     return Array.from(byKey.entries())
-      .filter(([, cmds]) => cmds.length > 1)
+      .filter(([, cmds]) => {
+        if (cmds.length < 2) return false;
+        const hasGlobal = cmds.some(cmd => cmd.context === 'global');
+        if (hasGlobal) return true;
+        const contexts = new Set(cmds.map(cmd => cmd.context));
+        return contexts.size < cmds.length;
+      })
       .map(([key, commands]) => ({ keybinding: key, commands }));
   }
 

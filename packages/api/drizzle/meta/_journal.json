@@ -57,6 +57,20 @@
       "when": 1743264000002,
       "tag": "0007_user_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1743264000003,
+      "tag": "0008_stripe_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1755475200000,
+      "tag": "0009_plugin_registry",
+      "breakpoints": true
     }
   ]
 }

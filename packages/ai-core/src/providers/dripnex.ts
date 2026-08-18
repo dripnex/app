@@ -3,8 +3,9 @@ import type { LLMEvent, ChatOptions } from '../types.js';
 import { AnthropicProvider } from './anthropic.js';
 
 /**
- * First-party Dripnex AI. Same models as Claude, key owned by the product
- * (passed in by the host — never collected from the user).
+ * First-party Dripnex AI is hosted Claude (Anthropic), not a separate model
+ * family. The product owns the key (`DRIPNEX_AI_KEY` in the host). Users never
+ * paste one. Dev / unsigned builds usually have no key — that is expected.
  */
 export class DripnexProvider implements LLMProvider {
   readonly id = 'dripnex';
@@ -20,7 +21,8 @@ export class DripnexProvider implements LLMProvider {
       yield {
         type: 'error',
         code: 'auth_failed',
-        error: 'Dripnex AI is not configured on this install.',
+        error:
+          'Dripnex AI is hosted Claude and is not configured on this install. Pick Anthropic, OpenAI, Grok, or Ollama.',
         retryable: false,
       };
       return;
@@ -30,7 +32,11 @@ export class DripnexProvider implements LLMProvider {
 
   async validate(config: ProviderConfig): Promise<{ ok: boolean; error?: string }> {
     if (!config.apiKey) {
-      return { ok: false, error: 'Dripnex AI is not configured on this install.' };
+      return {
+        ok: false,
+        error:
+          'Dripnex AI is hosted Claude and is not configured on this install. Pick Anthropic, OpenAI, Grok, or Ollama.',
+      };
     }
     return this.inner.validate(config);
   }

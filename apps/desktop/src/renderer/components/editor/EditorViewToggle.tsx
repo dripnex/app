@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Columns2, Eye, PenLine } from 'lucide-react';
 import type { EditorViewMode } from '../../stores/editorPreferencesStore';
+import { sc } from '../noteEditorSc';
 
 interface EditorViewToggleProps {
   readonly mode: EditorViewMode;
@@ -18,12 +19,12 @@ export const EditorViewToggle = memo(function EditorViewToggle({
   onModeChange,
 }: EditorViewToggleProps) {
   return (
-    <div className="editor-view-toggle" role="group" aria-label="View mode">
+    <div className={sc('editor-view-toggle')} role="group" aria-label="View mode">
       {MODES.map(({ id, label, Icon }) => (
         <button
           key={id}
           type="button"
-          className={`editor-view-toggle-btn ${mode === id ? 'active' : ''}`}
+          className={sc('editor-view-toggle-btn', mode === id && 'active')}
           onClick={() => onModeChange(id)}
           title={label}
           aria-label={label}

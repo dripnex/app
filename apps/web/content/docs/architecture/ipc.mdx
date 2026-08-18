@@ -5,179 +5,53 @@ description: Typed Inter-Process Communication between renderer and main process
 
 # IPC Contract
 
-Electron's Inter-Process Communication (IPC) connects the renderer to the main process.
+The renderer talks to main only through `window.dripnex`. Main validates args with Zod before any business logic.
 
 ## Architecture
 
 ```
 Renderer (React)
     ↓ window.dripnex.notes.create()
-Preload (Bridge)
+Preload (contextBridge)
     ↓ ipcRenderer.invoke('notes:create')
-Main (Handlers)
+Main (defineIpcHandler + Zod)
     ↓ createNoteOperation()
-Core + Storage
+@dripnex/core + SQLiteNoteRepository
 ```
 
 ## Preload API
 
-The preload script exposes a typed API via `window.dripnex`. The API is organized into namespaces by domain:
+Namespaces on `window.dripnex`:
 
-### `notes` - Note Operations
+| Namespace | Owns |
+| --------- | ---- |
+| `notes` | CRUD, trash/restore, pin, move, list, search, counts, tags |
+| `notebooks` | Hierarchy |
+| `data` | Backup, export/import, data-folder paths |
+| `sync` / `auth` / `encryption` | Optional E2E sync (not required to take notes) |
+| `ai` | Chat, tools, local index |
+| `plugins` | Scan, enable, install, `init.js` / `styles.css` |
+| `git` / `integrations` | Git notebooks, GitHub, 1Password |
+| `settings` | Cross-window broadcast (API keys never travel this channel) |
 
-Core CRUD operations plus advanced note management:
-
-- **CRUD** - create, get, update, delete
-- **Organization** - archive, restore, pin/unpin, move to notebook, duplicate
-- **Querying** - list (with filters), search, count, tags
-- **Bulk operations** - bulk delete, bulk archive, bulk move
-
-### `notebooks` - Notebook Management
-
-Hierarchical notebook organization:
-
-- **CRUD** - create, get, update, delete
-- **Hierarchy** - list with parent/child relationships
-- **Note association** - move notes between notebooks
-
-### `tags` - Tag Management
-
-- List all tags
-- Tag/untag notes
-
-### `data` - Data Management
-
-Backup, export, and import functionality:
-
-- **Backup** - create and restore backups
-- **Export** - export notes as markdown files or JSON
-- **Import** - import from files
-- **Paths** - get data directory paths
-- **Open folder** - reveal data folder in OS file manager
-
-### `app` - Application Info
-
-- **Version** - app version string
-- **Platform** - OS platform info
-
-### `sync` - Cloud Sync
-
-Supabase-based sync operations:
-
-- **Authentication** - login, logout, get auth status
-- **Sync status** - check sync state, last synced time
-- **Operations** - push local changes, pull remote changes
-
-### `appearance` - Appearance Settings
-
-- **Theme** - get/set color scheme (dark, light, system)
-- **Accent** - get/set accent color
-- **Zoom** - get/set zoom level
-
-### `plugins` - Plugin System
-
-- **Discovery** - scan for available plugins
-- **Lifecycle** - load, enable, disable plugins
-- **State** - get plugin status and metadata
-
-## Example
+## Main handlers
 
 ```typescript
-interface DripnexAPI {
-  notes: {
-    create: (input: CreateInput) => Promise<Result<NoteSnapshot>>;
-    get: (id: string) => Promise<Result<NoteSnapshot>>;
-    update: (input: UpdateInput) => Promise<Result<NoteSnapshot>>;
-    delete: (id: string) => Promise<Result<void>>;
-    archive: (id: string) => Promise<Result<NoteSnapshot>>;
-    restore: (id: string) => Promise<Result<NoteSnapshot>>;
-    pin: (id: string) => Promise<Result<NoteSnapshot>>;
-    move: (id: string, notebookId: string) => Promise<Result<NoteSnapshot>>;
-    duplicate: (id: string) => Promise<Result<NoteSnapshot>>;
-    list: (options?: ListOptions) => Promise<NoteSnapshot[]>;
-    search: (query: string) => Promise<NoteSnapshot[]>;
-    count: () => Promise<NoteCounts>;
-    // ... bulk operations
-  };
-  notebooks: {
-    create: (input: CreateNotebookInput) => Promise<Result<Notebook>>;
-    list: () => Promise<Notebook[]>;
-    update: (input: UpdateNotebookInput) => Promise<Result<Notebook>>;
-    delete: (id: string) => Promise<Result<void>>;
-    // ...
-  };
-  tags: {
-    /* ... */
-  };
-  data: {
-    backup: () => Promise<BackupResult>;
-    export: () => Promise<ExportResult>;
-    import: () => Promise<ImportResult>;
-    paths: () => Promise<DataPaths>;
-    openFolder: () => Promise<void>;
-  };
-  app: {
-    version: () => string;
-    platform: () => string;
-  };
-  sync: {
-    /* login, logout, status, push, pull */
-  };
-  appearance: {
-    /* theme, accent, zoom */
-  };
-  plugins: {
-    /* scan, load, enable, disable */
-  };
-}
-
-// Exposed as window.dripnex
-contextBridge.exposeInMainWorld('dripnex', api);
-```
-
-## Main Process Handlers
-
-```typescript
-// Register handlers on app ready
-ipcMain.handle('notes:create', async (_event, input) => {
-  return createNoteOperation(input, noteRepository);
-});
-
-ipcMain.handle('notes:list', async (_event, options) => {
-  const notes = await noteRepository.list(options);
-  return notes.map(toSnapshot);
-});
-
-ipcMain.handle('sync:push', async () => {
-  return syncEngine.push();
+defineIpcHandler({
+  channel: 'notes:create',
+  args: z.tuple([z.object({ content: z.string().max(10 * 1024 * 1024) })]),
+  handler: input => createNoteOperation(input, noteRepository),
 });
 ```
+
+There is no `syncEngine` in `sync-core`. Push/pull live on desktop `SyncService`.
 
 ## Security Rules
 
-| Rule               | Description                        |
-| ------------------ | ---------------------------------- |
-| No nodeIntegration | Renderer is sandboxed              |
-| contextIsolation   | Preload runs in isolated context   |
-| No executeSQL      | Raw SQL never exposed              |
-| Typed channels     | All IPC is typed                   |
-| Plugin sandbox     | Plugins cannot access IPC directly |
-
-## Usage in Renderer
-
-```typescript
-// In React component
-const result = await window.dripnex.notes.create({
-  content: '# Hello World',
-});
-
-if (result.ok) {
-  console.log('Created:', result.data.id);
-}
-
-// Sync
-await window.dripnex.sync.push();
-
-// Appearance
-await window.dripnex.appearance.theme('dark');
-```
+| Rule | Description |
+| ---- | ----------- |
+| No `nodeIntegration` | Renderer cannot require Node |
+| `contextIsolation` | Preload is the only bridge |
+| No `executeSQL` | Raw SQL never exposed |
+| Typed channels | Zod at the IPC boundary |
+| Plugins | Trusted renderer JS. They call `PluginContext`, not IPC directly |

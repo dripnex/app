@@ -20,21 +20,22 @@ export default function FaqPage() {
         {
           question: 'What is Dripnex?',
           answer:
-            'Dripnex is a Markdown editor designed for developers who want to own their notes. It works offline, stores files locally, and uses standard Markdown format.',
+            'Dripnex is a desktop Markdown notetaker. Notes live in a local SQLite database as Markdown. An account is required; cloud sync is optional and end-to-end encrypted.',
         },
         {
           question: 'Is my data stored in the cloud?',
           answer:
-            'No. All files stay on your local disk. We have no servers, no accounts, and no way to access your data.',
+            'By default, no. Notes stay on your machine. If you turn on sync, only encrypted blobs go to api.dripnex.app. We cannot read the contents.',
         },
         {
           question: 'Does Dripnex work offline?',
-          answer: 'Yes, 100%. Dripnex works entirely offline. No internet connection required.',
+          answer:
+            'Yes. Reading and writing notes works offline. Sign-in, license checks, and optional sync need the network.',
         },
         {
           question: 'What file format does Dripnex use?',
           answer:
-            'Standard Markdown (.md files). You can open your notes with any text editor, now or 20 years from now.',
+            'Note bodies are standard Markdown stored in local SQLite. You can export Markdown any time and open it in another editor.',
         },
       ],
     },
@@ -44,20 +45,21 @@ export default function FaqPage() {
         {
           question: 'Can I sync between devices?',
           answer:
-            'Not built-in. We intentionally avoid cloud features. You can use Dropbox, iCloud, Google Drive, or git to sync your folder.',
+            'Yes, optionally. Sync is end-to-end encrypted: you set a passphrase, and the server only stores ciphertext. Sync will not start until that key is set up.',
         },
         {
           question: 'Does Dripnex support backlinks?',
-          answer: 'Yes. Backlinks are computed from your files on-the-fly. No database dependency.',
+          answer: 'Yes. Wikilinks and backlinks are computed from your notes.',
         },
         {
           question: 'Can I use plugins?',
           answer:
-            'No. Plugins that modify your files create lock-in. We keep the app simple and your Markdown standard.',
+            'Built-in plugins ship with the app (Mermaid, Vim, KaTeX, tables). There is no third-party plugin marketplace in v1.',
         },
         {
           question: 'Does Dripnex have AI features?',
-          answer: 'No. AI features require servers and trust. We keep everything local.',
+          answer:
+            'Yes, on the desktop. AI talks to the provider you configure (local Ollama or your own API key). Notes are not sent to Dripnex servers for generation.',
         },
       ],
     },
@@ -87,7 +89,7 @@ export default function FaqPage() {
         {
           question: 'Can I export my data?',
           answer:
-            'Your data is already Markdown files on your disk. Nothing to export. Open them with any editor.',
+            'Yes. Export notes as Markdown. The local database is also on your disk if you want a raw backup.',
         },
         {
           question: 'What if Dripnex stops being developed?',

@@ -43,7 +43,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 ## Links
 
 - [Website](https://dripnex.app)
-- [Documentation](https://dripnex.github.io/readide/)
+- [Documentation](https://dripnex.app/docs)
 - [Releases](https://github.com/dripnex/readide/releases)
 
 ## License

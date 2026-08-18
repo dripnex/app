@@ -14,10 +14,11 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "deploy": "wrangler deploy",
-    "deploy:staging": "wrangler deploy --env staging",
-    "deploy:production": "wrangler deploy --env production",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "deploy:staging": "node scripts/embed-migrations.mjs && wrangler deploy --env staging",
+    "deploy:production": "node scripts/embed-migrations.mjs && wrangler deploy --env production",
+    "db:generate": "drizzle-kit generate && node scripts/embed-migrations.mjs",
+    "db:embed": "node scripts/embed-migrations.mjs",
+    "db:migrate": "node --experimental-strip-types src/db/migrate.cli.ts",
     "db:studio": "drizzle-kit studio",
     "tail": "wrangler tail",
     "tail:staging": "wrangler tail --env staging",
@@ -28,6 +29,7 @@
     "email:preview": "email dev --dir src/emails --port 3333"
   },
   "dependencies": {
+    "@dripnex/product-config": "workspace:^",
     "@dripnex/sync-core": "workspace:*",
     "@hono/zod-validator": "^0.8.0",
     "@libsql/client": "^0.17.3",

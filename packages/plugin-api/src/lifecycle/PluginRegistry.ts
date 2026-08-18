@@ -25,6 +25,14 @@ import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
 import { aiCommandStore } from '../ai/aiCommandStore';
+import { pluginMenuStore } from '../menu/pluginMenuStore';
+import {
+  applyPluginConfig,
+  clearPluginConfig,
+  getPluginConfig,
+  observePluginConfig,
+  resetPluginConfig,
+} from './configRuntime';
 
 export const MAX_CRASH_COUNT = 3;
 
@@ -152,16 +160,22 @@ export class PluginRegistry {
 
     // Hydrate config cache from persistence before plugin starts
     const configCache: Record<string, unknown> = configBridge ? await configBridge.getAll(id) : {};
+    resetPluginConfig(id, configCache);
 
     const config: PluginConfigAPI = {
       get<T>(key: string): T | undefined {
-        return configCache[key] as T | undefined;
+        return getPluginConfig<T>(id, key);
       },
       set(key: string, value: unknown) {
-        configCache[key] = value;
+        applyPluginConfig(id, key, value);
         if (configBridge) {
           void configBridge.set(id, key, value);
         }
+      },
+      observe<T>(key: string, callback: (value: T) => void) {
+        return observePluginConfig(id, key, raw => {
+          callback(raw as T);
+        });
       },
     };
 
@@ -270,10 +284,44 @@ export class PluginRegistry {
       },
     };
 
+    const menu = {
+      add(item: {
+        label: string;
+        accelerator?: string;
+        command?: string;
+        click?: () => boolean | void | Promise<boolean | void>;
+      }): () => void {
+        const localId = item.command ?? `menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
+        if (item.click) {
+          registerCommand(
+            {
+              id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
+              name: item.label,
+              keybinding: parseAccelerator(item.accelerator),
+              showInPalette: true,
+            },
+            item.click
+          );
+        }
+        pluginMenuStore.getState().add({
+          pluginId: id,
+          label: item.label,
+          commandId,
+          accelerator: item.accelerator,
+        });
+        return () => pluginMenuStore.getState().remove(commandId);
+      },
+    };
+
+    const clipboard = createClipboardApi();
+
     const context: PluginContext = {
       layout: createLayoutManager(id),
       editor: trackedEditor,
       decorations: decoResult?.api ?? noopDecorations,
+      menu,
+      clipboard,
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
           id: extId,
@@ -370,7 +418,6 @@ export class PluginRegistry {
       },
       config,
       log: {
-        // eslint-disable-next-line no-console
         info: (msg: string, ...args: unknown[]) => console.info(`[${id}]`, msg, ...args),
         warn: (msg: string, ...args: unknown[]) => console.warn(`[${id}]`, msg, ...args),
         error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
@@ -399,6 +446,7 @@ export class PluginRegistry {
       cssVariableStore.getState().unregisterAll(id);
       themeRegistryStore.getState().unregisterAll(id);
       aiCommandStore.getState().unregisterAll(id);
+      pluginMenuStore.getState().removeAll(id);
       const layoutManager = createLayoutManager(id);
       layoutManager.removeAllForPlugin(id);
       for (const unregister of entry.commandUnregisters) {
@@ -446,6 +494,7 @@ export class PluginRegistry {
 
     // Cleanup AI command registrations
     aiCommandStore.getState().unregisterAll(id);
+    pluginMenuStore.getState().removeAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {
@@ -461,6 +510,7 @@ export class PluginRegistry {
 
     entry.state = 'deactivated';
     entry.disposable = undefined;
+    clearPluginConfig(id);
   }
 
   /** Unload a plugin completely */
@@ -508,4 +558,58 @@ export class PluginRegistry {
     if (!entry) return false;
     return entry.state === 'error' && entry.errorCount >= MAX_CRASH_COUNT;
   }
+}
+
+function createClipboardApi(): PluginContext['clipboard'] {
+  const host = (
+    globalThis as {
+      window?: {
+        dripnex?: {
+          clipboard?: {
+            readText: () => Promise<string>;
+            writeText: (text: string) => Promise<void>;
+          };
+        };
+      };
+    }
+  ).window?.dripnex?.clipboard;
+
+  return {
+    async readText() {
+      if (host?.readText) {
+        try {
+          return await host.readText();
+        } catch {
+          return '';
+        }
+      }
+      try {
+        return await navigator.clipboard.readText();
+      } catch {
+        return '';
+      }
+    },
+    async writeText(text) {
+      if (host?.writeText) {
+        await host.writeText(text);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // locked session / missing permission
+      }
+    },
+  };
+}
+
+function parseAccelerator(
+  accelerator: string | undefined
+): PluginCommandOptions['keybinding'] | undefined {
+  if (!accelerator) return undefined;
+  const parts = accelerator.split('+').map(p => p.trim()).filter(Boolean);
+  const key = parts.pop();
+  if (!key) return undefined;
+  const modifiers = parts.map(p => (p === 'CmdOrCtrl' || p === 'Command' ? 'Mod' : p));
+  return { key, modifiers };
 }

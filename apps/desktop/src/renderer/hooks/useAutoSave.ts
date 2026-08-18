@@ -12,16 +12,26 @@ export function useAutoSave(handleUpdateNote: (content: string) => Promise<void>
   handleUpdateNoteRef.current = handleUpdateNote;
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const flush = () => {
       const bufferState = useEditorBufferStore.getState();
       if (bufferState.isDirty && bufferState.noteId) {
-        // Fire the save — can't await in beforeunload, but the IPC call
-        // will be queued before the renderer is torn down
         void handleUpdateNoteRef.current(bufferState.liveContent);
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') flush();
+    };
+
+    window.addEventListener('beforeunload', flush);
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('dripnex:save-note', flush);
+    document.addEventListener('visibilitychange', onHidden);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('dripnex:save-note', flush);
+      document.removeEventListener('visibilitychange', onHidden);
+    };
   }, []);
 }

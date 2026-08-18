@@ -16,6 +16,7 @@ import { users, magicLinks, devices, subscriptions } from '../db/schema.js';
 import { createTokens, verifyRefreshToken, authMiddleware } from '../middleware/auth.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
 import { createEmailService } from '../services/email.js';
+import { getProductConfig } from '@dripnex/product-config';
 
 const auth = new Hono<{ Bindings: Env }>();
 
@@ -91,27 +92,18 @@ auth.post('/verify', zValidator('json', verifySchema), async c => {
   const db = createDb(c.env);
 
   // Find valid magic link
+  const now = new Date().toISOString();
   const [link] = await db
-    .select()
-    .from(magicLinks)
+    .update(magicLinks)
+    .set({ usedAt: now })
     .where(
-      and(
-        eq(magicLinks.token, token),
-        gt(magicLinks.expiresAt, new Date().toISOString()),
-        isNull(magicLinks.usedAt)
-      )
+      and(eq(magicLinks.token, token), gt(magicLinks.expiresAt, now), isNull(magicLinks.usedAt))
     )
-    .limit(1);
+    .returning();
 
   if (!link) {
     return c.json({ error: 'Invalid or expired token' }, 400);
   }
-
-  // Mark as used
-  await db
-    .update(magicLinks)
-    .set({ usedAt: new Date().toISOString() })
-    .where(eq(magicLinks.id, link.id));
 
   // Get user
   const [user] = await db.select().from(users).where(eq(users.id, link.userId)).limit(1);
@@ -148,7 +140,7 @@ auth.post('/verify', zValidator('json', verifySchema), async c => {
     .limit(1);
 
   if (!existingSub) {
-    const trialDays = 14;
+    const trialDays = getProductConfig().trialDays;
     const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
     await db.insert(subscriptions).values({
       userId: user.id,

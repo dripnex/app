@@ -9,6 +9,7 @@ import {
   selectPendingCount,
   selectError,
 } from '../../stores/syncStore';
+import { sc } from './sc';
 
 interface SidebarFooterProps {
   readonly appVersion: string;
@@ -39,7 +40,11 @@ function formatRelativeTime(timestamp: number): string {
  * - offline              → "Offline — N pending"
  * - idle + pending === 0 → hidden (nothing to show)
  */
-const SyncProgressIndicator = memo(function SyncProgressIndicator() {
+const SyncProgressIndicator = memo(function SyncProgressIndicator({
+  onSetupEncryption,
+}: {
+  onSetupEncryption?: () => void;
+}) {
   const syncStatus = useSyncStore(selectStatus);
   const lastSyncAt = useSyncStore(selectLastSyncAt);
   const pendingCount = useSyncStore(selectPendingCount);
@@ -79,15 +84,37 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
     return () => clearInterval(interval);
   }, [refreshPendingCount]);
 
-  const handleRetry = useCallback(() => {
+  const [encryptionReady, setEncryptionReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      const ready = await window.dripnex.encryption.isReady();
+      if (!cancelled) setEncryptionReady(ready.ready);
+    };
+    void check();
+    const timer = setInterval(() => void check(), 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [syncStatus]);
+
+  const handleRetry = useCallback(async () => {
+    const ready = await window.dripnex.encryption.isReady();
+    setEncryptionReady(ready.ready);
+    if (!ready.ready && onSetupEncryption) {
+      onSetupEncryption();
+      return;
+    }
     void syncNow();
-  }, [syncNow]);
+  }, [onSetupEncryption, syncNow]);
 
   // Syncing
   if (syncStatus === 'syncing') {
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--syncing">
-        <RefreshCw size={11} className="sidebar-footer-sync-spinning" />
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--syncing')}>
+        <RefreshCw size={11} className={sc('sidebar-footer-sync-spinning')} />
         <span>Syncing...</span>
       </div>
     );
@@ -96,24 +123,49 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   // Just synced flash
   if (showSynced) {
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--synced">
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--synced')}>
         <Check size={11} />
         <span>Synced</span>
       </div>
     );
   }
 
+  if (encryptionReady === false && onSetupEncryption) {
+    return (
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
+        <AlertCircle size={11} />
+        <span>Set up encryption</span>
+        <button
+          type="button"
+          className={sc('sidebar-footer-progress-retry')}
+          onClick={() => onSetupEncryption()}
+        >
+          Set up
+        </button>
+      </div>
+    );
+  }
+
   // Error or auth-expired
   if (syncStatus === 'error' || syncStatus === 'auth-expired') {
+    const needsEncryption = encryptionReady === false || /encryption|passphrase/i.test(syncError ?? '');
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--error">
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
         <AlertCircle size={11} />
         <span title={syncError ?? undefined}>
-          {syncStatus === 'auth-expired' ? 'Session expired' : 'Sync error'}
+          {syncStatus === 'auth-expired'
+            ? 'Session expired'
+            : needsEncryption
+              ? 'Set up encryption'
+              : (syncError ?? 'Sync error')}
         </span>
         {syncStatus === 'error' && (
-          <button type="button" className="sidebar-footer-progress-retry" onClick={handleRetry}>
-            Retry
+          <button
+            type="button"
+            className={sc('sidebar-footer-progress-retry')}
+            onClick={() => void handleRetry()}
+          >
+            {needsEncryption ? 'Set up' : 'Retry'}
           </button>
         )}
       </div>
@@ -123,7 +175,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   // Offline
   if (syncStatus === 'offline') {
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--offline">
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--offline')}>
         <CloudOff size={11} />
         <span>{pendingCount > 0 ? `Offline \u2014 ${pendingCount} pending` : 'Offline'}</span>
       </div>
@@ -133,7 +185,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   // Idle with pending changes
   if (pendingCount > 0) {
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--pending">
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--pending')}>
         <Cloud size={11} />
         <span>{pendingCount} pending</span>
       </div>
@@ -143,10 +195,10 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   // Idle with many consecutive failures (no error state yet)
   if (consecutiveFailures >= 2) {
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--error">
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
         <AlertCircle size={11} />
         <span>Sync unstable</span>
-        <button type="button" className="sidebar-footer-progress-retry" onClick={handleRetry}>
+        <button type="button" className={sc('sidebar-footer-progress-retry')} onClick={handleRetry}>
           Retry
         </button>
       </div>
@@ -156,7 +208,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator() {
   // Idle, no pending, has sync history — show relative time
   if (lastSyncAt) {
     return (
-      <div className="sidebar-footer-progress sidebar-footer-progress--idle">
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--idle')}>
         <Cloud size={11} />
         <span>Synced {formatRelativeTime(lastSyncAt)}</span>
       </div>
@@ -178,7 +230,7 @@ export const SidebarFooter = memo(function SidebarFooter({
   const getSyncIcon = () => {
     switch (syncStatus) {
       case 'syncing':
-        return <RefreshCw size={12} className="sidebar-footer-sync-spinning" />;
+        return <RefreshCw size={12} className={sc('sidebar-footer-sync-spinning')} />;
       case 'error':
       case 'auth-expired':
         return <AlertCircle size={12} />;
@@ -209,27 +261,29 @@ export const SidebarFooter = memo(function SidebarFooter({
   };
 
   return (
-    <footer className="sidebar-footer">
+    <footer className={sc('sidebar-footer')}>
       {isAuthenticated && email ? (
-        <div className="sidebar-footer-auth">
-          <span className="sidebar-footer-email" title={email}>
+        <div className={sc('sidebar-footer-auth')}>
+          <span className={sc('sidebar-footer-email')} title={email}>
             {email}
           </span>
-          <span
-            className={`sidebar-footer-sync sidebar-footer-sync--${syncStatus}`}
+          <button
+            type="button"
+            className={sc('sidebar-footer-sync', `sidebar-footer-sync--${syncStatus}`)}
             title={getSyncTooltip()}
+            onClick={onEnableSyncClick}
           >
             {getSyncIcon()}
-          </span>
+          </button>
         </div>
       ) : (
-        <button type="button" className="sidebar-footer-signin" onClick={onEnableSyncClick}>
+        <button type="button" className={sc('sidebar-footer-signin')} onClick={onEnableSyncClick}>
           <Cloud size={12} />
           <span>Enable Sync</span>
         </button>
       )}
-      {isAuthenticated && <SyncProgressIndicator />}
-      <span className="sidebar-footer-version" aria-label={`App version ${appVersion}`}>
+      {isAuthenticated && <SyncProgressIndicator onSetupEncryption={onEnableSyncClick} />}
+      <span className={sc('sidebar-footer-version')} aria-label={`App version ${appVersion}`}>
         v{appVersion}
       </span>
     </footer>

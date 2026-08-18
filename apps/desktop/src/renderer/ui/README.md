@@ -19,8 +19,8 @@ All colors, spacing, radii, and transitions are defined here.
 
 ## Primitives
 
-Low-level components built on Radix UI (or native HTML).
-These are unopinionated and purely structural.
+Low-level native components: Button, Input, Select, NumberInput, Field, Toggle, Toast.
+No Radix / shadcn — desktop stays on CSS modules + tokens.
 
 ## Patterns
 

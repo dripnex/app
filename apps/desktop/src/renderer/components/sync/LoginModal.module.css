@@ -128,6 +128,21 @@
   color: var(--color-text-tertiary, #999);
 }
 
+.recoveryKey {
+  width: 100%;
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-all;
+  text-align: left;
+  color: var(--color-text-primary, #111);
+  background: var(--color-bg-secondary, #fafafa);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: var(--radius-md, 6px);
+}
+
 /* Error */
 .error {
   margin: 0;
@@ -247,6 +262,18 @@
 .linkButton:hover {
   color: var(--color-primary-hover, #2563eb);
   text-decoration: underline;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Footer */

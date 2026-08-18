@@ -2,8 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 1rem;
-  gap: 1.5rem;
+  padding: 1.05rem 1.25rem;
+  gap: 0.75rem 1.25rem;
+  flex-wrap: wrap;
   transition: background 0.1s ease;
 }
 
@@ -11,27 +12,30 @@
   background: var(--bg-active, rgba(255, 255, 255, 0.02));
 }
 
-.info {
-  flex: 1;
+.info,
+.labelContainer {
+  flex: 1 1 220px;
   min-width: 0;
 }
 
 .label {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-primary);
   cursor: default;
 }
 
 .description {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
-  line-height: 1.4;
-  margin-top: 2px;
+  line-height: 1.45;
+  margin-top: 3px;
 }
 
 .control {
-  flex-shrink: 0;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  max-width: 100%;
 }

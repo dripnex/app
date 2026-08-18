@@ -67,6 +67,9 @@ jobs:
 
       - run: pnpm install --filter '@dripnex/api...' --ignore-scripts
 
+      - name: Embed migrations
+        run: pnpm --filter @dripnex/api db:embed
+
       - name: Determine environment
         id: env
         run: |
@@ -75,6 +78,13 @@ jobs:
           else
             echo "target=production" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Migrate Turso
+        if: ${{ secrets.TURSO_DATABASE_URL != '' }}
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: pnpm --filter @dripnex/api db:migrate
 
       - name: Deploy to Cloudflare Workers
         env:

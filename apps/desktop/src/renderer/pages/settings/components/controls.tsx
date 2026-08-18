@@ -1,11 +1,19 @@
 /**
  * Form Controls
  *
- * Reusable form controls for settings pages.
+ * Settings-specific controls. Text/number/select wrap ui/primitives.
  */
 
-import type { ChangeEvent } from 'react';
+import {
+  Input,
+  NumberInput as PrimitiveNumberInput,
+  Select as PrimitiveSelect,
+  Toggle as PrimitiveToggle,
+  type SelectOption,
+} from '../../../ui/primitives';
 import styles from './controls.module.css';
+
+export type { SelectOption };
 
 // ============================================================================
 // Toggle (Checkbox)
@@ -19,16 +27,7 @@ export interface ToggleProps {
 }
 
 export function Toggle({ id, checked, onChange, disabled }: ToggleProps) {
-  return (
-    <input
-      type="checkbox"
-      id={id}
-      checked={checked}
-      onChange={e => onChange(e.target.checked)}
-      disabled={disabled}
-      className={styles.toggle}
-    />
-  );
+  return <PrimitiveToggle id={id} checked={checked} onChange={onChange} disabled={disabled} />;
 }
 
 // ============================================================================
@@ -46,24 +45,15 @@ export interface NumberInputProps {
 }
 
 export function NumberInput({ id, value, onChange, min, max, step, disabled }: NumberInputProps) {
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const num = parseFloat(e.target.value);
-    if (!isNaN(num)) {
-      onChange(num);
-    }
-  };
-
   return (
-    <input
-      type="number"
+    <PrimitiveNumberInput
       id={id}
       value={value}
-      onChange={handleChange}
+      onChange={onChange}
       min={min}
       max={max}
       step={step}
       disabled={disabled}
-      className={styles.numberInput}
     />
   );
 }
@@ -78,19 +68,31 @@ export interface TextInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  type?: 'text' | 'password';
+  autoComplete?: string;
 }
 
-export function TextInput({ id, value, onChange, placeholder, disabled }: TextInputProps) {
+export function TextInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  type = 'text',
+  autoComplete,
+}: TextInputProps) {
   return (
-    <input
-      type="text"
-      id={id}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      disabled={disabled}
-      className={styles.textInput}
-    />
+    <div className={styles.textInput}>
+      <Input
+        id={id}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        type={type}
+        autoComplete={autoComplete}
+      />
+    </div>
   );
 }
 
@@ -131,11 +133,6 @@ export function RangeInput({ id, value, onChange, min, max, step = 1, disabled }
 // Select (Dropdown)
 // ============================================================================
 
-export interface SelectOption {
-  value: string;
-  label: string;
-}
-
 export interface SelectProps {
   id?: string;
   value: string;
@@ -146,19 +143,13 @@ export interface SelectProps {
 
 export function Select({ id, value, onChange, options, disabled }: SelectProps) {
   return (
-    <select
+    <PrimitiveSelect
       id={id}
       value={value}
-      onChange={e => onChange(e.target.value)}
+      onChange={onChange}
+      options={options}
       disabled={disabled}
-      className={styles.select}
-    >
-      {options.map(option => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+    />
   );
 }
 

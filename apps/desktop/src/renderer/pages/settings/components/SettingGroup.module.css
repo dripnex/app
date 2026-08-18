@@ -3,18 +3,18 @@
 }
 
 .groupTitle {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 0 0 0.5rem 0.125rem;
+  margin: 0 0 0.6rem 0.125rem;
 }
 
 .groupContent {
   display: flex;
   flex-direction: column;
-  background: var(--bg-hover, var(--bg-secondary));
+  background: var(--bg-elevated, var(--bg-surface, var(--bg-secondary)));
   border: 1px solid var(--border-subtle);
   border-radius: 0.75rem;
   overflow: hidden;

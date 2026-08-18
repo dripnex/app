@@ -172,6 +172,7 @@ export class OllamaProvider implements LLMProvider {
     let buffer = '';
     let totalOutputTokens = 0;
     let totalInputTokens = 0;
+    let emittedToolCalls = false;
 
     try {
       while (true) {
@@ -213,6 +214,7 @@ export class OllamaProvider implements LLMProvider {
               function: { name: string; arguments: Record<string, unknown> };
             }>;
             for (const tc of toolCalls) {
+              emittedToolCalls = true;
               yield {
                 type: 'tool_call',
                 id: `ollama-tc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -249,7 +251,7 @@ export class OllamaProvider implements LLMProvider {
             }
 
             // Determine stop reason
-            const hadToolCalls = message?.tool_calls != null;
+            const hadToolCalls = emittedToolCalls || message?.tool_calls != null;
             yield {
               type: 'stop',
               reason: hadToolCalls ? 'tool_use' : 'end_turn',

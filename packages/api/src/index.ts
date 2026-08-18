@@ -26,8 +26,31 @@ import { share } from './routes/share.js';
 import { plugins } from './routes/plugins.js';
 import { deviceRoutes } from './routes/devices.js';
 import { admin } from './routes/admin.js';
+import { ensureMigrated } from './db/runMigrations.js';
 
 const app = new Hono<{ Bindings: Env }>();
+
+app.use('*', async (c, next) => {
+  if (!c.env?.TURSO_DATABASE_URL) {
+    return next();
+  }
+  try {
+    await ensureMigrated(c.env);
+  } catch (error) {
+    console.error('[migrate]', error);
+    if (c.req.path === '/health' || c.req.path === '/') {
+      return c.json(
+        {
+          status: 'error',
+          error: 'schema migration failed',
+        },
+        500
+      );
+    }
+    return c.json({ error: 'Service unavailable' }, 503);
+  }
+  return next();
+});
 
 // Global middleware
 app.use('*', logger());
@@ -103,6 +126,7 @@ app.route('/subscription', subscription);
 app.route('/newsletter', newsletterRoute);
 app.route('/share', share);
 app.route('/plugins', plugins);
+app.route('/packages', plugins);
 app.route('/devices', deviceRoutes);
 app.route('/admin', admin);
 

@@ -11,6 +11,7 @@ interface Plugin {
   category: string;
   icon: string;
   builtin: boolean;
+  repository?: string;
   tags: string[];
   downloads?: number;
 }
@@ -141,8 +142,8 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
       >
         {filteredPlugins.map(plugin => {
           const installCmd = plugin.builtin
-            ? `dripnex plugin enable ${plugin.id}`
-            : `dripnex plugin install ${plugin.id}`;
+            ? 'ships in the app'
+            : `dripnex-plugin install ${plugin.repository ?? plugin.id}`;
 
           return (
             <div
@@ -159,9 +160,13 @@ export default function PluginFilter({ plugins }: PluginFilterProps) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate text-sm font-semibold text-[#f4f4f5]">{plugin.name}</h3>
-                    {plugin.builtin && (
+                    {plugin.builtin ? (
                       <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
                         Built-in
+                      </span>
+                    ) : (
+                      <span className="shrink-0 rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-medium text-[#a1a1aa]">
+                        Community
                       </span>
                     )}
                   </div>

@@ -7,7 +7,7 @@
 import { useSettingsStore, selectEditor } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Toggle, NumberInput, TextInput } from '../components/controls';
+import { Input, NumberInput, Toggle } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 export function EditorSection() {
@@ -115,10 +115,10 @@ export function EditorSection() {
           description="Font family for editor text"
           htmlFor="fontFamily"
         >
-          <TextInput
+          <Input
             id="fontFamily"
             value={editor.fontFamily}
-            onChange={value => updateEditor({ fontFamily: value })}
+            onChange={event => updateEditor({ fontFamily: event.target.value })}
             placeholder="ui-monospace, monospace"
           />
         </SettingRow>

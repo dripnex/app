@@ -58,6 +58,12 @@ export const typewriterModePlugin: PluginManifest = {
       enable();
     }
 
+    const unobserve = context.config.observe<boolean>('enabled', value => {
+      enabled = Boolean(value);
+      if (enabled) enable();
+      else disable();
+    });
+
     // Register toggle command
     const unregisterCommand = context.registerCommand(
       {
@@ -80,6 +86,7 @@ export const typewriterModePlugin: PluginManifest = {
 
     return {
       dispose() {
+        unobserve();
         disable();
         unregisterCommand();
       },

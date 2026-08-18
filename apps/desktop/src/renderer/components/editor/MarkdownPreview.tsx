@@ -8,15 +8,12 @@ import {
   useSyncExternalStore,
 } from 'react';
 import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
-import '../../styles/code-highlight.css';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
-import { remarkWikilink } from '@dripnex/wikilinks';
-import { extractEmbedTargets } from '@dripnex/embeds';
-import { countMarkdownTasks } from '@dripnex/tasks';
+import { scanMarkdown } from '@dripnex/markdown';
+import { coreRemarkPlugins } from '../../lib/coreRemarkPlugins';
 import {
   remarkPluginStore,
   rehypePluginStore,
@@ -25,6 +22,13 @@ import {
 } from '@dripnex/plugin-api';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
+import { usePreviewFindStore } from '../../stores/previewFindStore';
+import { applyPreviewFind, unwrapPreviewFindMarks } from '../../utils/previewFind';
+import { PreviewFindBar } from './PreviewFindBar';
+import { cssm } from '../../lib/cssm';
+import styles from './MarkdownPreview.module.css';
+
+const sc = cssm(styles);
 
 /** Escape special regex characters in a string */
 function escapeRegex(str: string): string {
@@ -49,6 +53,7 @@ export interface MarkdownPreviewHandle {
   setScrollFraction: (fraction: number) => void;
   onScroll: (callback: (fraction: number) => void) => () => void;
   canScroll: () => boolean;
+  jumpToHeading: (text: string) => void;
 }
 
 export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
@@ -69,6 +74,10 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     const [internalResolvedEmbeds, setInternalResolvedEmbeds] = useState<
       Record<string, string | null>
     >({});
+    const [findCount, setFindCount] = useState(0);
+    const findOpen = usePreviewFindStore(s => s.open);
+    const findQuery = usePreviewFindStore(s => s.query);
+    const findIndex = usePreviewFindStore(s => s.index);
 
     // Subscribe to plugin preview stores
     const pluginRemarkRegs = useSyncExternalStore(
@@ -105,6 +114,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         tagNames: [
           ...(base.tagNames ?? []),
           'embed-image',
+          'mark',
           ...pluginComponentRegs.map(r => r.tagName),
         ],
         attributes: {
@@ -124,6 +134,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     // Use live buffer content if available for this note, otherwise fall back to prop
     const liveContent = useEditorBufferStore(selectContentForNote(noteId));
     const content = liveContent ?? contentProp;
+    const scan = useMemo(() => scanMarkdown(content), [content]);
 
     // Use prop if provided, otherwise internal state
     const resolvedEmbeds = resolvedEmbedsProp ?? internalResolvedEmbeds;
@@ -133,7 +144,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       // Skip if parent is managing resolved embeds
       if (resolvedEmbedsProp !== undefined) return;
 
-      const targets = extractEmbedTargets(content);
+      const targets = scan.embedTargets;
       if (targets.length === 0) {
         setInternalResolvedEmbeds({});
         return;
@@ -141,13 +152,13 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       void window.dripnex.embeds.resolveBatch(targets, noteId).then(result => {
         setInternalResolvedEmbeds(result);
       });
-    }, [content, noteId, resolvedEmbedsProp]);
+    }, [scan.embedTargets, noteId, resolvedEmbedsProp]);
 
     // Invariant:
     // Never normalize embeds to markdown images until all URLs are resolved.
     // Violating this produces <img src=""> and broken previews.
     const resolvedContent = useMemo(() => {
-      const targets = extractEmbedTargets(content);
+      const targets = scan.embedTargets;
       if (targets.length === 0) return content;
 
       // Check if all LOCAL targets are resolved (external URLs don't need IPC)
@@ -177,7 +188,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         );
       }
       return result;
-    }, [content, resolvedEmbeds]);
+    }, [content, resolvedEmbeds, scan.embedTargets]);
 
     // Click handler for wikilinks and embeds
     const handleClick = (e: React.MouseEvent) => {
@@ -235,28 +246,48 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         if (!el) return false;
         return el.scrollHeight > el.clientHeight + 1;
       },
+      jumpToHeading: (text: string) => {
+        const el = containerRef.current;
+        if (!el) return;
+        const headings = el.querySelectorAll('h1,h2,h3,h4,h5,h6');
+        const target = Array.from(headings).find(h => (h.textContent ?? '').trim() === text);
+        target?.scrollIntoView({ block: 'start' });
+      },
     }));
 
-    const tasks = useMemo(() => countMarkdownTasks(content), [content]);
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      if (!findOpen) {
+        unwrapPreviewFindMarks(el);
+        setFindCount(0);
+        return;
+      }
+      setFindCount(applyPreviewFind(el, findQuery, findIndex));
+    }, [content, findOpen, findQuery, findIndex]);
+
+    const tasks = scan.tasks;
     const hasProgress = tasks.total > 0;
     const progressPercent = hasProgress ? (tasks.completed / tasks.total) * 100 : 0;
 
     return (
-      <div ref={containerRef} className="markdown-preview" onClick={handleClick}>
-        <div className="preview-metadata-header">
+      <div className={sc('preview-shell')}>
+        {findOpen ? <PreviewFindBar matchCount={findCount} /> : null}
+      <div ref={containerRef} className={sc('markdown-preview')} data-preview onClick={handleClick}>
+        <div className={sc('preview-metadata-header')}>
           {hasProgress && (
-            <div className="preview-meta-item">
-              <ListChecks size={12} className="preview-meta-icon" aria-hidden="true" />
-              <div className="preview-meta-content">
-                <span className="preview-meta-label">PROGRESS</span>
-                <div className="preview-meta-progress">
-                  <div className="preview-progress-bar">
+            <div className={sc('preview-meta-item')}>
+              <ListChecks size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+              <div className={sc('preview-meta-content')}>
+                <span className={sc('preview-meta-label')}>PROGRESS</span>
+                <div className={sc('preview-meta-progress')}>
+                  <div className={sc('preview-progress-bar')}>
                     <div
-                      className="preview-progress-fill"
+                      className={sc('preview-progress-fill')}
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
-                  <span className="preview-progress-text">
+                  <span className={sc('preview-progress-text')}>
                     {tasks.completed} of {tasks.total} tasks
                   </span>
                 </div>
@@ -265,21 +296,21 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
           )}
 
           {createdAt && (
-            <div className="preview-meta-item">
-              <Clock size={12} className="preview-meta-icon" aria-hidden="true" />
-              <div className="preview-meta-content">
-                <span className="preview-meta-label">CREATED AT</span>
-                <span className="preview-meta-value">{formatDateTime(createdAt)}</span>
+            <div className={sc('preview-meta-item')}>
+              <Clock size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+              <div className={sc('preview-meta-content')}>
+                <span className={sc('preview-meta-label')}>CREATED AT</span>
+                <span className={sc('preview-meta-value')}>{formatDateTime(createdAt)}</span>
               </div>
             </div>
           )}
 
           {updatedAt && (
-            <div className="preview-meta-item">
-              <CalendarPlus size={12} className="preview-meta-icon" aria-hidden="true" />
-              <div className="preview-meta-content">
-                <span className="preview-meta-label">UPDATED AT</span>
-                <span className="preview-meta-value">{formatDateTime(updatedAt)}</span>
+            <div className={sc('preview-meta-item')}>
+              <CalendarPlus size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+              <div className={sc('preview-meta-content')}>
+                <span className={sc('preview-meta-label')}>UPDATED AT</span>
+                <span className={sc('preview-meta-value')}>{formatDateTime(updatedAt)}</span>
               </div>
             </div>
           )}
@@ -288,8 +319,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         <Markdown
           remarkPlugins={
             [
-              remarkGfm,
-              remarkWikilink,
+              ...coreRemarkPlugins(),
               ...pluginRemarkRegs.map(r => r.plugin),
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ] as any[]
@@ -313,7 +343,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
               },
               // Custom embed-image element bypasses rehype URL sanitization
               'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
-                <img src={src} alt={alt} className="embed embed-image" loading="lazy" />
+                <img src={src} alt={alt} className={sc('embed', 'embed-image')} loading="lazy" />
               ),
               // Code block renderer delegation to plugins
               code: ({ className, children, ...props }) => {
@@ -340,6 +370,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         >
           {resolvedContent}
         </Markdown>
+      </div>
       </div>
     );
   }

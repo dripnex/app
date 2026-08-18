@@ -221,7 +221,7 @@ describe('POST /sync/tags — push tag changes', () => {
 
     expect(res.status).toBe(422);
     const body = await res.json();
-    expect(body.error).toBe('Tag data must include name');
+    expect(body.error).toBe('Tag data must include a valid name');
   });
 
   it('detects conflicts between devices', async () => {

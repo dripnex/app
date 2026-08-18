@@ -5,9 +5,27 @@ import { z } from 'zod';
 import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@dripnex/ai-core';
 import { DEFAULT_MODEL } from '@dripnex/ai-core';
 import type { ToolRegistry } from '@dripnex/ai-core';
+import { defineIpcHandler } from '../ipc/registry.js';
 import { getLogger } from '../logger.js';
 
 const BATCH_INTERVAL_MS = 50;
+
+function firstPartyAiKey(): string {
+  return process.env.DRIPNEX_AI_KEY || process.env.ANTHROPIC_API_KEY || '';
+}
+
+function applyFirstPartyAi<
+  T extends { provider: string; providerConfig: { apiKey?: string; baseUrl?: string } },
+>(request: T): T {
+  if (request.provider !== 'dripnex') return request;
+  return {
+    ...request,
+    providerConfig: {
+      ...request.providerConfig,
+      apiKey: request.providerConfig.apiKey || firstPartyAiKey(),
+    },
+  };
+}
 
 // ─── Input validation ───────────────────────────────────
 // These channels stream (they need event.sender) so they can't use the
@@ -20,6 +38,8 @@ const NoteContextSchema = z.object({
   id: z.string().max(256),
   title: z.string().max(4096),
   content: z.string().max(MAX_CONTENT),
+  heading: z.string().max(4096).nullable().optional(),
+  score: z.number().optional(),
 });
 const ChatRequestSchema = z.object({
   query: z.string().max(MAX_CONTENT),
@@ -125,11 +145,79 @@ const pendingRendererResults = new Map<
 >();
 const RENDERER_TOOL_TIMEOUT_MS = 30_000;
 
-export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistry): void {
+export function registerAIHandlers(
+  service: AIService,
+  toolRegistry: ToolRegistry,
+  deps?: {
+    /** `undefined` = store not ready; `null` = ready but empty; string = use it */
+    resolveApiKey?: (provider: string) => Promise<string | null | undefined>;
+    retrieve?: (input: {
+      query: string;
+      relatedQuery?: string | null;
+      topK: number;
+      excludeIds: string[];
+    }) => Promise<
+      Array<{ id: string; title: string; content: string; heading?: string | null; score?: number }>
+    >;
+  }
+): void {
+  async function bindStoredKey(
+    request: {
+      provider: string;
+      providerConfig: { apiKey?: string; baseUrl?: string };
+    },
+    allowRendererFallback: boolean
+  ): Promise<typeof request> {
+    if (request.provider === 'ollama' || request.provider === 'dripnex') {
+      return request;
+    }
+    const stored = await deps?.resolveApiKey?.(request.provider);
+    if (typeof stored === 'string' && stored.length > 0) {
+      return {
+        ...request,
+        providerConfig: { ...request.providerConfig, apiKey: stored },
+      };
+    }
+    if (stored === null && !allowRendererFallback) {
+      return {
+        ...request,
+        providerConfig: { ...request.providerConfig, apiKey: '' },
+      };
+    }
+    return request;
+  }
+
+  defineIpcHandler({
+    channel: 'ai:firstPartyStatus',
+    args: z.tuple([]),
+    handler: () => ({ available: Boolean(firstPartyAiKey()) }),
+  });
+
+  defineIpcHandler({
+    channel: 'ai:retrieve',
+    args: z.tuple([
+      z.object({
+        query: z.string().max(2048),
+        relatedQuery: z.string().max(2048).optional().nullable(),
+        topK: z.number().int().min(1).max(50).default(5),
+        excludeIds: z.array(z.string().max(256)).max(50).default([]),
+      }),
+    ]),
+    handler: async input => {
+      if (!deps?.retrieve) return [];
+      return deps.retrieve({
+        query: input.query,
+        relatedQuery: input.relatedQuery,
+        topK: input.topK,
+        excludeIds: input.excludeIds,
+      });
+    },
+  });
+
   // ─── Streaming chat ─────────────────────────────────────
   ipcMain.handle(
     'ai:chat',
-    (
+    async (
       event,
       request: {
         query: string;
@@ -149,6 +237,8 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
         throw new Error(`Invalid ai:chat request: ${parsed.error.message}`);
       }
       request = parsed.data as typeof request;
+      request = (await bindStoredKey(request, false)) as typeof request;
+      request = applyFirstPartyAi(request);
 
       const windowId = event.sender.id;
       const toolDefs = request.tools ? toolRegistry.getDefinitions() : [];
@@ -224,14 +314,22 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
       }
       config = parsedConfig.data;
       try {
+        const bound = await bindStoredKey(
+          {
+            provider: config.provider ?? 'dripnex',
+            providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
+          },
+          true
+        );
+        const resolved = applyFirstPartyAi(bound);
         const handle = service.chat({
           query: 'Say "ok".',
           history: [],
           relevantNotes: [],
           mode: 'chat',
-          provider: config.provider ?? 'anthropic',
+          provider: resolved.provider,
           model: DEFAULT_MODEL,
-          providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
+          providerConfig: resolved.providerConfig,
           maxResponseTokens: 1,
         });
         // Consume stream to actually trigger the provider call
@@ -247,6 +345,33 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           }
         }
         return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'ai:listModels',
+    async (_event, config: { provider: string; apiKey?: string; baseUrl?: string }) => {
+      const parsedConfig = ValidateConfigSchema.safeParse(config);
+      if (!parsedConfig.success) {
+        return { ok: false, error: `Invalid ai:listModels config: ${parsedConfig.error.message}` };
+      }
+      try {
+        const bound = await bindStoredKey(
+          {
+            provider: parsedConfig.data.provider,
+            providerConfig: {
+              apiKey: parsedConfig.data.apiKey,
+              baseUrl: parsedConfig.data.baseUrl,
+            },
+          },
+          true
+        );
+        const resolved = applyFirstPartyAi(bound);
+        const models = await service.listModels(resolved.provider, resolved.providerConfig);
+        return { ok: true, models };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
@@ -338,11 +463,12 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
 
   // ─── Cleanup on window destroy ──────────────────────────
   app.on('browser-window-created', (_event, window) => {
+    const wcId = window.webContents.id;
     window.webContents.on('destroyed', () => {
-      const handles = activeHandles.get(window.webContents.id);
+      const handles = activeHandles.get(wcId);
       if (handles) {
         for (const handle of handles.values()) handle.abort();
-        activeHandles.delete(window.webContents.id);
+        activeHandles.delete(wcId);
       }
     });
   });

@@ -1,17 +1,5 @@
 /**
- * Note Snapshot
- *
- * Represents a note for export/import operations.
- * This is a plain data structure, independent of domain logic.
+ * Re-export the canonical wire snapshot. Export/import used to keep a
+ * slimmer local copy; that drifted from core.
  */
-
-export interface NoteSnapshot {
-  id: string;
-  content: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  wordCount: number;
-  archivedAt: string | null;
-}
+export type { NoteSnapshot } from '@dripnex/core';

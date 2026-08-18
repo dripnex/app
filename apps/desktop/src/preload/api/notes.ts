@@ -5,6 +5,7 @@ import type {
   NoteStatus,
   ListOptions,
   NoteCounts,
+  NoteScopedCounts,
   TagWithColor,
   ActivityStats,
 } from './types';
@@ -30,15 +31,22 @@ export interface NotesAPI {
   restoreDeleted: (id: string) => Promise<Result<NoteSnapshot>>;
   setStatus: (id: string, status: NoteStatus) => Promise<Result<NoteSnapshot>>;
   list: (options?: ListOptions) => Promise<NoteSnapshot[]>;
-  search: (query: string, limit?: number) => Promise<NoteSnapshot[]>;
+  search: (query: string, limitOrOptions?: number | ListOptions) => Promise<NoteSnapshot[]>;
   tags: () => Promise<string[]>;
   tagsWithColors: () => Promise<TagWithColor[]>;
+  queryTags: (options?: {
+    filter?: string;
+    limit?: number;
+    offset?: number;
+    includeCount?: boolean;
+  }) => Promise<Array<{ name: string; color: string | null; count?: number }>>;
   setTagColor: (tagName: string, color: string | null) => Promise<{ ok: boolean }>;
   deleteTag: (tagName: string) => Promise<{ ok: boolean }>;
   renameTag: (oldName: string, newName: string) => Promise<{ ok: boolean; error?: string }>;
   setManualTags: (noteId: string, tags: string[]) => Promise<{ ok: boolean }>;
   getManualTags: (noteId: string) => Promise<string[]>;
   count: () => Promise<NoteCounts>;
+  countScoped: (options?: ListOptions) => Promise<NoteScopedCounts>;
   activityStats: () => Promise<ActivityStats>;
 }
 
@@ -59,15 +67,17 @@ export function createNotesApi(): NotesAPI {
     restoreDeleted: id => ipcRenderer.invoke('notes:restoreDeleted', id),
     setStatus: (id, status) => ipcRenderer.invoke('notes:setStatus', id, status),
     list: options => ipcRenderer.invoke('notes:list', options),
-    search: (query, limit) => ipcRenderer.invoke('notes:search', query, limit),
+    search: (query, limitOrOptions) => ipcRenderer.invoke('notes:search', query, limitOrOptions),
     tags: () => ipcRenderer.invoke('notes:tags'),
     tagsWithColors: () => ipcRenderer.invoke('tags:listWithColors'),
+    queryTags: options => ipcRenderer.invoke('tags:query', options),
     setTagColor: (tagName, color) => ipcRenderer.invoke('tags:setColor', tagName, color),
     deleteTag: tagName => ipcRenderer.invoke('tags:delete', tagName),
     renameTag: (oldName, newName) => ipcRenderer.invoke('tags:rename', oldName, newName),
     setManualTags: (noteId, tags) => ipcRenderer.invoke('notes:setManualTags', noteId, tags),
     getManualTags: noteId => ipcRenderer.invoke('notes:getManualTags', noteId),
     count: () => ipcRenderer.invoke('notes:count'),
+    countScoped: options => ipcRenderer.invoke('notes:countScoped', options),
     activityStats: () => ipcRenderer.invoke('notes:activityStats'),
   };
 }

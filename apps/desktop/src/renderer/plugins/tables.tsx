@@ -3,6 +3,10 @@ import { WidgetType, Decoration, EditorView, type DecorationSet } from '@codemir
 import { RangeSetBuilder, StateField, type EditorState } from '@codemirror/state';
 import type { PluginManifest, ZoneComponentProps } from '@dripnex/plugin-api';
 import React from 'react';
+import { cssm } from '../lib/cssm';
+import tableStyles from './tables.module.css';
+
+const sc = cssm(tableStyles);
 
 // ============================================================
 // Shared: GFM Table Parser
@@ -168,22 +172,23 @@ function InsertTableModal({ meta }: InsertTableModalProps) {
   );
 
   return (
-    <div className="insert-table-modal" onClick={e => e.stopPropagation()}>
-      <div className="insert-table-modal-header">
-        <span className="insert-table-modal-title">Insert Table</span>
-        <span className="insert-table-modal-size">
+    <div className={sc('insert-table-modal')} onClick={e => e.stopPropagation()}>
+      <div className={sc('insert-table-modal-header')}>
+        <span className={sc('insert-table-modal-title')}>Insert Table</span>
+        <span className={sc('insert-table-modal-size')}>
           {hoverRow > 0 && hoverCol > 0 ? `${hoverRow} x ${hoverCol}` : 'Select size'}
         </span>
       </div>
-      <div className="insert-table-modal-grid">
+      <div className={sc('insert-table-modal-grid')}>
         {Array.from({ length: maxRows }, (_, r) => (
-          <div key={r} className="insert-table-modal-row">
+          <div key={r} className={sc('insert-table-modal-row')}>
             {Array.from({ length: maxCols }, (_, c) => (
               <button
                 key={c}
-                className={`insert-table-modal-cell${
-                  r + 1 <= hoverRow && c + 1 <= hoverCol ? ' active' : ''
-                }`}
+                className={sc(
+                  'insert-table-modal-cell',
+                  r + 1 <= hoverRow && c + 1 <= hoverCol && 'active'
+                )}
                 onMouseEnter={() => {
                   setHoverRow(r + 1);
                   setHoverCol(c + 1);
@@ -411,8 +416,8 @@ function SortableTable(
 
   // Render with modified thead (sort indicators) and sorted tbody
   return (
-    <div className="sortable-table-wrap">
-      <table {...rest} className="sortable-table">
+    <div className={sc('sortable-table-wrap')}>
+      <table {...rest} className={sc('sortable-table')}>
         {thead && (
           <thead>
             {React.Children.map(
@@ -436,7 +441,7 @@ function SortableTable(
                       const isSorted = sortCol === colIdx;
                       const arrow = isSorted ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
                       return React.cloneElement(el, {
-                        className: `sortable-th${isSorted ? ' sorted' : ''}`,
+                        className: sc('sortable-th', isSorted && 'sorted'),
                         onClick: () => handleHeaderClick(colIdx),
                         style: {
                           ...(el.props.style ?? {}),
@@ -446,7 +451,7 @@ function SortableTable(
                         children: (
                           <>
                             {el.props.children}
-                            {arrow && <span className="sort-indicator">{arrow}</span>}
+                            {arrow && <span className={sc('sort-indicator')}>{arrow}</span>}
                           </>
                         ),
                       } as Record<string, unknown>);

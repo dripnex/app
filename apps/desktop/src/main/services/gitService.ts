@@ -10,6 +10,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
+import { normalizeGithubRemote } from './gitRemote.js';
 
 // ============================================================================
 // Types
@@ -428,6 +430,40 @@ export class GitService {
   // ==========================================================================
   // Utility Methods
   // ==========================================================================
+
+  async listRemotes(notebookId: string): Promise<Array<{ remote: string; url: string }>> {
+    const repoPath = this.getRepoPath(notebookId);
+    return git.listRemotes({ fs, dir: repoPath });
+  }
+
+  async setGithubRemote(notebookId: string, url: string): Promise<string> {
+    const normalized = normalizeGithubRemote(url);
+    if (!normalized) {
+      throw new Error('Use an https://github.com/owner/repo URL.');
+    }
+    const repoPath = this.getRepoPath(notebookId);
+    const remotes = await git.listRemotes({ fs, dir: repoPath });
+    if (remotes.some(remote => remote.remote === 'origin')) {
+      await git.deleteRemote({ fs, dir: repoPath, remote: 'origin' });
+    }
+    await git.addRemote({ fs, dir: repoPath, remote: 'origin', url: normalized });
+    return normalized;
+  }
+
+  async pushOrigin(notebookId: string, token: string): Promise<void> {
+    if (!token.trim()) {
+      throw new Error('Connect GitHub in Settings → Integrations first.');
+    }
+    const repoPath = this.getRepoPath(notebookId);
+    await git.push({
+      fs,
+      http,
+      dir: repoPath,
+      remote: 'origin',
+      ref: 'main',
+      onAuth: () => ({ username: 'x-access-token', password: token }),
+    });
+  }
 
   /**
    * Resolve `segments` against `base` and guarantee the result stays inside

@@ -28,7 +28,8 @@ export const noteKeys = {
   list: (options?: ListOptions) => [...noteKeys.lists(), options ?? {}] as const,
   details: () => [...noteKeys.all, 'detail'] as const,
   detail: (id: string) => [...noteKeys.details(), id] as const,
-  search: (query: string) => [...noteKeys.all, 'search', query] as const,
+  search: (query: string, options?: number | ListOptions) =>
+    [...noteKeys.all, 'search', query, options ?? {}] as const,
   tags: () => [...noteKeys.all, 'tags'] as const,
   counts: () => [...noteKeys.all, 'counts'] as const,
   activityStats: () => [...noteKeys.all, 'activityStats'] as const,
@@ -43,14 +44,24 @@ export function useNotes(options?: ListOptions) {
 }
 
 /** Hook for searching notes (returns notes with excerpt) */
-export function useSearchNotes(query: string, limit?: number) {
+export function useSearchNotes(query: string, options?: number | ListOptions) {
+  const scoped =
+    typeof options === 'object' &&
+    (options.isDeleted === true ||
+      options.archived === 'archived' ||
+      Boolean(options.notebookId));
+
   return useQuery({
-    queryKey: noteKeys.search(query),
+    queryKey: noteKeys.search(query, options),
     queryFn: async () => {
-      const notes = await window.dripnex.notes.search(query, limit);
+      if (query.trim().length === 0 && typeof options === 'object') {
+        const notes = await window.dripnex.notes.list(options);
+        return notes.map(withExcerpt);
+      }
+      const notes = await window.dripnex.notes.search(query, options);
       return notes.map(withExcerpt);
     },
-    enabled: query.trim().length > 0,
+    enabled: query.trim().length > 0 || scoped,
   });
 }
 
@@ -80,6 +91,13 @@ export function useNoteCounts() {
   return useQuery({
     queryKey: noteKeys.counts(),
     queryFn: () => window.dripnex.notes.count(),
+  });
+}
+
+export function useScopedNoteCounts(options: ListOptions) {
+  return useQuery({
+    queryKey: [...noteKeys.counts(), 'scoped', options],
+    queryFn: () => window.dripnex.notes.countScoped(options),
   });
 }
 

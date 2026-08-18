@@ -24,6 +24,11 @@ export interface ImportedNote {
   createdAt: string;
   /** Updated date (from frontmatter or file stats) */
   updatedAt: string;
+  id?: string;
+  notebookId?: string;
+  isPinned?: boolean;
+  isDeleted?: boolean;
+  status?: string;
   /** Original metadata (for reference) */
   originalMetadata?: Record<string, unknown>;
 }
@@ -115,6 +120,11 @@ function importFromDripnexExport(dir: string): ImportResult {
         tags: noteMeta.tags,
         createdAt: noteMeta.createdAt,
         updatedAt: noteMeta.updatedAt,
+        id: noteMeta.id,
+        notebookId: noteMeta.notebookId,
+        isPinned: noteMeta.isPinned,
+        isDeleted: noteMeta.isDeleted,
+        status: noteMeta.status,
         originalMetadata: noteMeta as unknown as Record<string, unknown>,
       });
     }
@@ -273,12 +283,10 @@ function parseFrontmatter(content: string): {
         const key = line.substring(0, colonIndex).trim();
         let value: unknown = line.substring(colonIndex + 1).trim();
 
-        // Parse arrays [a, b, c]
         if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
-          value = value
-            .slice(1, -1)
-            .split(',')
-            .map(s => s.trim().replace(/^["']|["']$/g, ''));
+          value = splitYamlList(value.slice(1, -1));
+        } else if (typeof value === 'string') {
+          value = unquoteYaml(value);
         }
 
         frontmatter[key] = value;
@@ -381,6 +389,45 @@ function convertWikilinks(content: string): string {
 /**
  * Convert filename to title.
  */
+function unquoteYaml(raw: string): string | boolean {
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
+    return raw
+      .slice(1, -1)
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+  return raw;
+}
+
+function splitYamlList(inner: string): string[] {
+  const items: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i]!;
+    if (ch === '"' && inner[i - 1] !== '\\') {
+      inQuotes = !inQuotes;
+      current += ch;
+      continue;
+    }
+    if (ch === ',' && !inQuotes) {
+      const trimmed = current.trim();
+      if (trimmed) items.push(String(unquoteYaml(trimmed)));
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  const trimmed = current.trim();
+  if (trimmed) items.push(String(unquoteYaml(trimmed)));
+  return items;
+}
+
 function filenameToTitle(filename: string): string {
   return basename(filename, extname(filename)).replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
 }

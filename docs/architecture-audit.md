@@ -1,6 +1,9 @@
 # Architecture Audit — Dripnex Markdown Note App
 
-> Last verified: 2026-01-06
+> Last verified: 2026-01-06. **Stale in places.** Current topology (2026-08-17):
+> desktop is the product; live sync is `SyncService` → Cloudflare (`api.dripnex.app`), not Supabase;
+> `sync-core` is types + tree validation only; plugins are trusted renderer JS, not sandboxed;
+> embeddings exist (`019_embeddings`). Prefer `docs/NOW.md` and `apps/web/content/docs/architecture/`.
 
 ## 1. Estado Actual (Enero 2026)
 

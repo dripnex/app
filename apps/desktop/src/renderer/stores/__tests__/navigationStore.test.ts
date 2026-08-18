@@ -16,6 +16,7 @@ describe('navigationStore', () => {
     useNavigationStore.setState({
       navigation: { kind: 'global', filter: 'all' },
       statusFilter: null,
+      tagFilter: null,
     });
   });
 
@@ -71,13 +72,19 @@ describe('navigationStore', () => {
       });
     });
 
-    it('goToTag sets navigation to tag view with name', () => {
+    it('goToTag sets the tag filter without leaving the current notebook', () => {
+      useNavigationStore.getState().goToNotebook('inbox');
       useNavigationStore.getState().goToTag('javascript');
 
-      expect(useNavigationStore.getState().navigation).toEqual({
-        kind: 'tag',
-        name: 'javascript',
-      });
+      const state = useNavigationStore.getState();
+      expect(state.navigation).toEqual({ kind: 'notebook', id: 'inbox' });
+      expect(state.tagFilter).toBe('javascript');
+    });
+
+    it('goToTag toggles the same tag off', () => {
+      useNavigationStore.getState().goToTag('javascript');
+      useNavigationStore.getState().goToTag('javascript');
+      expect(useNavigationStore.getState().tagFilter).toBeNull();
     });
 
     it('goToSearch sets navigation to search view with query', () => {

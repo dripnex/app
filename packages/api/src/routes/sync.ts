@@ -31,6 +31,14 @@ const sync = new Hono<{
   Variables: { user: AuthUser };
 }>();
 
+function parseClientJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+}
+
 // All sync routes require auth and rate limiting
 sync.use('*', authMiddleware);
 sync.use('*', syncRateLimit);
@@ -332,7 +340,8 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
     processedIds.add(entry.notebookId);
     // Skip deleted notebooks — they shouldn't appear in the validation tree
     if (entry.operation === 'delete' || !entry.data) continue;
-    const parsed = JSON.parse(entry.data);
+    const parsed = parseClientJson(entry.data) as { parentId?: string; depth?: number } | undefined;
+    if (!parsed) continue;
     latestByNotebook.set(entry.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
   }
 
@@ -502,9 +511,9 @@ sync.post('/tags', zValidator('json', tagPushSchema), async c => {
   // Validate tag data
   for (const change of changes) {
     if (change.operation !== 'delete' && change.data) {
-      const parsed = JSON.parse(change.data);
-      if (!parsed.name || typeof parsed.name !== 'string') {
-        return c.json({ error: 'Tag data must include name' }, 422);
+      const parsed = parseClientJson(change.data) as { name?: unknown } | undefined;
+      if (!parsed || typeof parsed.name !== 'string' || !parsed.name) {
+        return c.json({ error: 'Tag data must include a valid name' }, 422);
       }
     }
   }
@@ -602,7 +611,7 @@ sync.get('/keys', async c => {
     salt: keys.salt,
     wrappedCek: keys.wrappedCek,
     wrappedCekRecovery: keys.wrappedCekRecovery,
-    kdfParams: JSON.parse(keys.kdfParams),
+    kdfParams: parseClientJson(keys.kdfParams) ?? {},
   });
 });
 

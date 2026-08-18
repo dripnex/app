@@ -1,6 +1,36 @@
 import Link from 'next/link';
 import ProductDemo from '@/components/landing/ProductDemo';
 
+const editor = [
+  {
+    title: 'Slash, toolbar, alerts',
+    body: 'Type / for headings, fences, lists, GitHub alerts. Select text for the floating toolbar. Highlight stays in the Markdown.',
+  },
+  {
+    title: 'Outline',
+    body: 'Headings on the right. Click to jump. Toggle from the # in the header.',
+  },
+  {
+    title: 'Paste as Link',
+    body: 'Paste a URL to wrap the selection, or pick Title / Link / <url>. ⌘⇧K does the wrap from the clipboard.',
+  },
+];
+
+const notes = [
+  {
+    title: 'Notebooks',
+    body: 'Nest them. A note lives in one place, not a web of folders pretending to be files.',
+  },
+  {
+    title: 'Status, tags, pin',
+    body: 'Active, on hold, completed. Tag inline or on the note. Pin what must stay up.',
+  },
+  {
+    title: 'Yours to script',
+    body: 'init.js, styles.css, keybindings.json. A plugin is its own git repo — tag, pack, install.',
+  },
+];
+
 const decisions = [
   {
     title: 'Files on disk',
@@ -44,6 +74,34 @@ export default function HomePage() {
 
       <section className="mx-auto max-w-6xl pb-20">
         <ProductDemo />
+      </section>
+
+      <section className="mx-auto max-w-3xl border-t border-white/[0.06] py-20">
+        <h2 className="text-[13px] font-medium uppercase tracking-[0.12em] text-text-muted">
+          The editor
+        </h2>
+        <div className="mt-8 grid gap-12 sm:grid-cols-3 sm:gap-8">
+          {editor.map(item => (
+            <div key={item.title}>
+              <h3 className="text-[15px] font-medium text-text-primary">{item.title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-text-secondary">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-3xl border-t border-white/[0.06] py-20">
+        <h2 className="text-[13px] font-medium uppercase tracking-[0.12em] text-text-muted">
+          Notes at a glance
+        </h2>
+        <div className="mt-8 grid gap-12 sm:grid-cols-3 sm:gap-8">
+          {notes.map(item => (
+            <div key={item.title}>
+              <h3 className="text-[15px] font-medium text-text-primary">{item.title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-text-secondary">{item.body}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="mx-auto max-w-3xl border-t border-white/[0.06] py-20">

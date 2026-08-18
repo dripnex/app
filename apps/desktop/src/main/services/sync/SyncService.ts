@@ -780,7 +780,16 @@ export class SyncService {
 
     this.autoSyncTimer = setTimeout(async () => {
       try {
-        await this.syncNow();
+        if (!this.encryptionService.isReady()) {
+          this.emitStatus({
+            type: 'sync-error',
+            error: 'Encryption not ready. Set up a passphrase to sync.',
+            isNetworkError: false,
+            consecutiveFailures: this.state.consecutiveFailures,
+          });
+        } else {
+          await this.syncNow();
+        }
       } catch (error) {
         console.error('Auto-sync failed:', error);
       }

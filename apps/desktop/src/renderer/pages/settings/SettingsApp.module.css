@@ -8,9 +8,11 @@
 
 .content {
   flex: 1;
-  padding: 2rem 2.5rem 3rem;
+  min-width: 0;
+  padding: 52px 36px 40px;
   overflow-y: auto;
   overflow-x: hidden;
+  background: var(--bg-base);
 }
 
 /* Thin scrollbar */

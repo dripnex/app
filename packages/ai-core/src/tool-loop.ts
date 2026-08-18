@@ -2,6 +2,7 @@
 import type { LLMEvent, ChatOptions, ChatMessage, ContentPart } from './types.js';
 import type { LLMProvider, ProviderConfig } from './provider.js';
 import type { ToolResult } from './tool-registry.js';
+import { withRetry, type RetryOptions } from './retry.js';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -25,12 +26,14 @@ export interface ToolLoopOptions {
   maxRoundTrips: number;
   signal: AbortSignal;
   executeTool: (call: ToolCall) => Promise<ToolResult>;
+  retry?: Partial<RetryOptions>;
 }
 
 // ─── Implementation ─────────────────────────────────────────
 
 export async function* runToolLoop(options: ToolLoopOptions): AsyncIterable<ToolLoopEvent> {
-  const { provider, providerConfig, chatOptions, maxRoundTrips, signal, executeTool } = options;
+  const { provider, providerConfig, chatOptions, maxRoundTrips, signal, executeTool, retry } =
+    options;
 
   // Mutable copy of messages for multi-turn
   const messages: ChatMessage[] = [...chatOptions.messages];
@@ -50,7 +53,10 @@ export async function* runToolLoop(options: ToolLoopOptions): AsyncIterable<Tool
     let stopReason: string | null = null;
     const textParts: string[] = [];
 
-    for await (const event of provider.chat(currentOptions, providerConfig)) {
+    for await (const event of withRetry(
+      () => provider.chat(currentOptions, providerConfig),
+      retry ?? { maxRetries: 3 }
+    )) {
       if (signal.aborted) return;
 
       // Collect tool calls

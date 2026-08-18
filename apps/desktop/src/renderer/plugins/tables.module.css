@@ -1,0 +1,133 @@
+/** Insert-table modal + sortable preview tables (plugin-owned). */
+
+/* ===================================================================
+   B. Insert Table Modal
+   =================================================================== */
+
+.insert-table-modal {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  min-width: 180px;
+  user-select: none;
+}
+
+.insert-table-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.insert-table-modal-title {
+  font-weight: 600;
+  font-size: 0.85em;
+  color: var(--text-primary);
+}
+
+.insert-table-modal-size {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.insert-table-modal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.insert-table-modal-row {
+  display: flex;
+  gap: 2px;
+}
+
+.insert-table-modal-cell {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background 0.1s ease,
+    border-color 0.1s ease;
+}
+
+.insert-table-modal-cell:hover {
+  border-color: var(--accent);
+}
+
+.insert-table-modal-cell.active {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+}
+
+/* ===================================================================
+   C. Sortable Preview Tables
+   =================================================================== */
+
+.sortable-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.sortable-table {
+  width: 100%;
+  max-width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.sortable-table th,
+.sortable-table td {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.sortable-table th {
+  background: var(--bg-elevated);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sortable-table tr:nth-child(even) {
+  background: var(--bg-surface);
+}
+
+.sortable-table tbody tr:hover {
+  background: var(--bg-hover);
+  transition: background 0.15s ease;
+}
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.sortable-th:hover {
+  color: var(--accent);
+}
+
+.sortable-th.sorted {
+  color: var(--accent);
+}
+
+.sort-indicator {
+  color: var(--text-muted);
+  font-size: 0.75em;
+  margin-left: 4px;
+}
+
+.sortable-th.sorted .sort-indicator {
+  color: var(--accent);
+}

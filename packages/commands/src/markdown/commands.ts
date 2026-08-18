@@ -132,6 +132,28 @@ export function insertLink(view: EditorView): void {
   view.focus();
 }
 
+const ALERT_KINDS = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'] as const;
+export type GithubAlertKind = (typeof ALERT_KINDS)[number];
+
+/** Wrap the current selection (or insert) as a GitHub alert. */
+export function insertGithubAlert(view: EditorView, kind: GithubAlertKind = 'NOTE'): void {
+  const { state } = view;
+  const { from, to } = state.selection.main;
+  const selected = state.sliceDoc(from, to);
+  const body = selected
+    ? selected
+        .split('\n')
+        .map(line => `> ${line}`)
+        .join('\n')
+    : '> ';
+  const text = `> [!${kind}]\n${body}`;
+  view.dispatch({
+    changes: { from, to, insert: text },
+    selection: EditorSelection.cursor(from + text.length),
+  });
+  view.focus();
+}
+
 /** Insert heading at current line */
 export function insertHeading(view: EditorView, level: 1 | 2 | 3 | 4 | 5 | 6 = 2): void {
   const { state } = view;

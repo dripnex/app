@@ -5,6 +5,7 @@ const columns = [
     title: 'Product',
     links: [
       { label: 'Download', href: '/download' },
+      { label: 'Plugins', href: '/plugins' },
       { label: 'Pricing', href: '/pricing' },
       { label: 'Sign in', href: '/login' },
       { label: 'Sign up', href: '/signup' },
@@ -14,6 +15,7 @@ const columns = [
     title: 'Notes',
     links: [
       { label: 'Docs', href: '/docs' },
+      { label: 'What’s New', href: '/changelog' },
       { label: 'Philosophy', href: '/philosophy' },
       { label: 'FAQ', href: '/faq' },
     ],

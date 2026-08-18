@@ -1,0 +1,383 @@
+/**
+ * Note editor chrome (header, empty state, CodeMirror host).
+ */
+
+/* Note Editor */
+.note-editor {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+}
+
+.note-editor-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.note-editor-empty .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.note-editor-empty .empty-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+
+.note-editor-empty .empty-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Editor loading spinner */
+.note-editor-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes editor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.editor-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: editor-spin 0.8s linear infinite;
+}
+
+.note-editor-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  padding: 6px 16px;
+  border-bottom: none;
+  -webkit-app-region: drag;
+}
+
+.note-editor-header-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+/* Editable title input */
+.title-input {
+  min-width: 0;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  outline: none;
+  padding: 2px 0;
+  -webkit-app-region: no-drag;
+  transition: color var(--transition-fast);
+}
+
+.title-input::placeholder {
+  color: var(--text-faint);
+}
+
+.title-input:focus {
+  color: var(--accent);
+}
+
+.note-editor-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.note-editor-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Header right section (words + actions button) */
+.note-editor-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+/* Actions button (vertical dots) */
+.note-editor-actions-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  -webkit-app-region: no-drag;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.note-editor-actions-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.note-editor-actions-btn:active {
+  transform: scale(0.95);
+}
+
+.note-editor-actions-btn.active {
+  color: var(--accent);
+  background: var(--accent-muted);
+}
+
+/* Header actions group (backlinks + more actions) */
+.note-editor-use-template {
+  -webkit-app-region: no-drag;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.note-editor-use-template:hover {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.note-editor-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+/* Badge for backlinks count */
+.note-editor-actions-btn .badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-editor-actions-btn.has-badge {
+  position: relative;
+}
+
+.note-editor-workspace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.note-editor-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+/* Plugin status bar below the editor body */
+.note-editor-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 24px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.note-editor-status-bar:empty {
+  display: none;
+}
+
+
+
+/* Split pane wrappers */
+.split-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* crítico: contiene el scroll de hijos */
+}
+
+.split-pane--editor {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden; /* CodeMirror maneja su propio scroll */
+}
+
+.split-pane--preview {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Preview scroll - siempre vive aquí */
+.split-pane--preview :global([data-preview]) {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 24px;
+}
+
+/* View mode layouts */
+.note-editor-body--split {
+  display: flex;
+  gap: 1px;
+  background: var(--border);
+}
+
+.note-editor-body--split .split-pane--editor {
+  border-right: 1px solid var(--border);
+}
+
+/* Preview-only mode */
+.note-editor-body--preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.note-editor-body--preview :global([data-preview]) {
+  flex: 1;
+  max-width: none;
+  overflow-y: auto;
+  padding: 12px 24px;
+}
+
+/* View toggle buttons */
+.editor-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.editor-view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editor-view-toggle-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.editor-view-toggle-btn.active {
+  color: var(--accent);
+  background: var(--bg-base);
+}
+
+/* Filled state for Eye icon in preview mode */
+.editor-view-toggle-btn.filled.active {
+  background: var(--accent-muted);
+}
+
+.editor-view-toggle-btn.filled.active svg {
+  fill: currentColor;
+  fill-opacity: 0.25;
+}
+
+.editor-view-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Toolbar row layout */
+.note-editor-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
+}
+
+.note-editor-toolbar-row:empty {
+  display: none;
+}
+
+
+/* Save indicator in toolbar row */
+.save-indicator {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: opacity 0.3s ease;
+  user-select: none;
+}
+
+.note-editor-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.save-indicator--fade {
+  opacity: 0.7;
+}
+
+
+:global(:root[data-overlay-open="true"]) .note-editor-toolbar-end {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--glass-bg-fallback);
+}

@@ -19,6 +19,31 @@ export {
   insertQuote,
   insertCodeBlock,
   insertHorizontalRule,
+  insertGithubAlert,
   undoChange,
   redoChange,
 } from './markdown/commands.js';
+export type { GithubAlertKind } from './markdown/commands.js';
+
+export {
+  SLASH_ITEMS,
+  FENCE_LANGUAGES,
+  matchSlashLine,
+  filterSlashItems,
+  matchFenceLang,
+  filterFenceLanguages,
+} from './markdown/slash.js';
+export type { SlashItem, SlashSection } from './markdown/slash.js';
+
+export { extractHeadings } from './markdown/headings.js';
+export type { Heading } from './markdown/headings.js';
+
+export {
+  isBareHttpUrl,
+  isInsideMarkdownLink,
+  formatPastedUrl,
+  wrapSelectionWithUrl,
+  sanitizeLinkTitle,
+} from './markdown/urlPaste.js';
+export type { UrlPasteFormat } from './markdown/urlPaste.js';
+

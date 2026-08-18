@@ -3,7 +3,7 @@ import type { AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useNoteMutations } from './useNotes';
 import { useSyncLinks } from './useLinks';
-import { useNavigationActions, useStatusFilter } from './useNavigation';
+import { useNavigationActions, useStatusFilter, useGlobalFilter } from './useNavigation';
 
 interface UseNoteActionsOptions {
   selectedNote: NoteSnapshot | null;
@@ -36,23 +36,38 @@ export function useNoteActions({
     setNoteStatus,
     pinNote,
     unpinNote,
+    softDeleteNote,
+    restoreDeletedNote,
   } = useNoteMutations();
 
   const syncLinks = useSyncLinks();
-  const { goToAllNotes } = useNavigationActions();
+  const { goToAllNotes, goToNotebook } = useNavigationActions();
   const statusFilter = useStatusFilter();
+  const globalFilter = useGlobalFilter();
 
   // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
+    if (globalFilter === 'trash') {
+      goToAllNotes();
+    }
     const newNote = await createNote.mutateAsync({
       content: '# Untitled\n\n',
-      notebookId: selectedNotebookId ?? undefined,
+      notebookId: globalFilter === 'trash' ? 'inbox' : (selectedNotebookId ?? undefined),
     });
     setSelectedNote(newNote);
     clearSearch();
     appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
     dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
-  }, [createNote, selectedNotebookId, clearSearch, appAPI, dataAPI, setSelectedNote]);
+  }, [
+    createNote,
+    selectedNotebookId,
+    globalFilter,
+    goToAllNotes,
+    clearSearch,
+    appAPI,
+    dataAPI,
+    setSelectedNote,
+  ]);
 
   // Select note
   const handleSelectNote = useCallback(
@@ -68,6 +83,22 @@ export function useNoteActions({
       }
     },
     [appAPI, setSelectedNote]
+  );
+
+  const handleCreateLinkedNote = useCallback(
+    async (title: string) => {
+      const notebookId =
+        selectedNotebookId && selectedNotebookId !== 'templates' ? selectedNotebookId : undefined;
+      const newNote = await createNote.mutateAsync({
+        content: `# ${title}\n\n`,
+        notebookId,
+      });
+      setSelectedNote(newNote);
+      clearSearch();
+      appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
+    },
+    [createNote, selectedNotebookId, setSelectedNote, clearSearch, appAPI, dataAPI]
   );
 
   // Handle wikilink click - best-effort navigation by title
@@ -145,8 +176,31 @@ export function useNoteActions({
     [selectedNote, updateNoteTitle, dataAPI, setSelectedNote]
   );
 
-  // Delete note
+  // Soft-delete note (move to trash)
   const handleDeleteNote = useCallback(
+    async (id: string) => {
+      await softDeleteNote.mutateAsync(id);
+      if (selectedNote?.id === id) {
+        setSelectedNote(null);
+      }
+      appAPI._notifyNoteDeleted(id);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'deleted', id });
+    },
+    [selectedNote, softDeleteNote, appAPI, dataAPI, setSelectedNote]
+  );
+
+  const handleRestoreDeleted = useCallback(
+    async (id: string) => {
+      await restoreDeletedNote.mutateAsync(id);
+      if (selectedNote?.id === id) {
+        setSelectedNote(null);
+      }
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id });
+    },
+    [selectedNote, restoreDeletedNote, dataAPI, setSelectedNote]
+  );
+
+  const handlePermanentDelete = useCallback(
     async (id: string) => {
       await deleteNote.mutateAsync(id);
       if (selectedNote?.id === id) {
@@ -174,6 +228,25 @@ export function useNoteActions({
       }
     },
     [selectedNote, archiveNote, restoreNote, setSelectedNote]
+  );
+
+  const handleCreateFromTemplate = useCallback(
+    async (templateNoteId: string) => {
+      const result = await window.dripnex.notes.get(templateNoteId);
+      if (!result.ok) return;
+      const destinationNotebookId =
+        selectedNotebookId && selectedNotebookId !== 'templates' ? selectedNotebookId : 'inbox';
+      const newNote = await createNote.mutateAsync({
+        content: result.data.content,
+        notebookId: destinationNotebookId,
+      });
+      goToNotebook(destinationNotebookId);
+      setSelectedNote(newNote);
+      clearSearch();
+      appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
+    },
+    [createNote, selectedNotebookId, goToNotebook, setSelectedNote, clearSearch, appAPI, dataAPI]
   );
 
   // Duplicate note
@@ -235,12 +308,16 @@ export function useNoteActions({
   return {
     handleNewNote,
     handleSelectNote,
+    handleCreateLinkedNote,
     handleWikilinkClick,
     handleUpdateNote,
     handleUpdateTitle,
     handleDeleteNote,
+    handleRestoreDeleted,
+    handlePermanentDelete,
     handleArchiveNote,
     handleDuplicateNote,
+    handleCreateFromTemplate,
     handlePinNote,
     handleMoveNote,
     handleMoveSelectedNote,

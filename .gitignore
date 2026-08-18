@@ -32,6 +32,7 @@ npm-debug.log*
 
 # Cache
 .eslintcache
+*.tsbuildinfo
 
 # Vitest coverage reports
 coverage/

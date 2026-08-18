@@ -71,29 +71,10 @@
   cursor: not-allowed;
 }
 
-/* Text Input */
+/* Settings rows keep a readable control width */
 .textInput {
-  width: 100%;
-  max-width: 280px;
-  padding: 0.375rem 0.625rem;
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  color: var(--text-primary);
-  font-size: 0.8125rem;
-  font-family: inherit;
-  transition: border-color 0.15s ease;
-}
-
-.textInput:focus {
-  outline: none;
-  border-color: var(--accent-primary, var(--accent));
-  box-shadow: 0 0 0 2px var(--accent-muted, rgba(99, 102, 241, 0.15));
-}
-
-.textInput:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  width: 220px;
+  max-width: 100%;
 }
 
 /* Range Input (Slider) */

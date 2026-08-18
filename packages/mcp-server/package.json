@@ -21,6 +21,8 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
+    "@dripnex/core": "workspace:*",
+    "@dripnex/storage-core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.4.3"
   },

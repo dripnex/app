@@ -24,7 +24,8 @@ export function registerBuiltInTools(
 ): void {
   registry.register({
     name: 'search_notes',
-    description: 'Search notes by keyword query. Returns matching note IDs, titles, and snippets.',
+    description:
+      'Search notes by keyword, plus meaning when the local index has embeddings. Returns matching note IDs, titles, and snippets.',
     parameters: {
       type: 'object',
       properties: {

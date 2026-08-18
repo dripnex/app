@@ -17,12 +17,13 @@ The app uses `electron-updater` to automatically check for and install updates f
 
 Do **not** bump versions or push tags by hand. `semantic-release` owns that.
 
-1. Open a promotion PR **`develop` → `main`**. Title must be conventional (`fix(release): cut v0.15.4 …`). Merge with a **merge commit**, never squash — squashing collapses every `fix:`/`feat:` and the changelog dies.
-2. On `main`, **Actions → Release → Run workflow**.
-3. semantic-release analyzes commits, bumps `package.json` + `apps/desktop/package.json`, pushes tag `vX.Y.Z`, opens a **draft** GitHub Release.
-4. The tag push must trigger **Build & Publish** (mac / win / linux). That only happens if `GH_TOKEN` is a **fine-grained PAT** (`contents: write` + `pull-requests: write`). `GITHUB_TOKEN` cannot start other workflows.
-5. All three builds green → the `publish` job undrafts the release → electron-updater sees it.
-6. `sync-develop` opens `main` → `develop` for the release commit + changelog.
+1. Write **What’s New** first: `apps/web/content/releases/vX.Y.Z.md` (see `docs/WHATS_NEW.md`). Without that file the website has nothing human to show.
+2. Open a promotion PR **`develop` → `main`**. Title must be `chore(release): promote X.Y.Z` — **never** `feat(release): cut …` (that is why older notes say “cut v0.15.2”). Merge with a **merge commit**, never squash.
+3. On `main`, **Actions → Release → Run workflow**.
+4. semantic-release analyzes commits, bumps `package.json` + `apps/desktop/package.json`, pushes tag `vX.Y.Z`, opens a **draft** GitHub Release. Paste the What’s New body into that draft if you want GitHub to match the site.
+5. The tag push must trigger **Build & Publish** (mac / win / linux). That only happens if `GH_TOKEN` is a **fine-grained PAT** (`contents: write` + `pull-requests: write`). `GITHUB_TOKEN` cannot start other workflows.
+6. All three builds green → the `publish` job undrafts the release → electron-updater sees it. Flip the What’s New file to `status: published`.
+7. `sync-develop` opens `main` → `develop` for the release commit + changelog.
 
 ### Rotate `GH_TOKEN` (required after expiry)
 
