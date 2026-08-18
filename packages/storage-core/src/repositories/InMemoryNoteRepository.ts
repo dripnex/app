@@ -46,7 +46,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
   async list(options: ListNotesOptions = {}): Promise<Note[]> {
     const { limit = 50, offset = 0, sortBy = 'updatedAt', sortOrder = 'desc' } = options;
 
-    let notes = this.applyFilters(Array.from(this.notes.values()), options);
+    const notes = this.applyFilters(Array.from(this.notes.values()), options);
 
     // Sort
     notes.sort((a, b) => {

@@ -148,7 +148,7 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
   const { category, search, q, sort, limit, offset } = c.req.valid('query');
   const query = (search ?? q ?? '').trim();
 
-  let rows: ListedPlugin[] = [];
+  let rows: ListedPlugin[];
   try {
     const db = createDb(c.env);
     const conditions = [eq(pluginCatalog.status, 'published')];

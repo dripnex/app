@@ -342,7 +342,10 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
     if (entry.operation === 'delete' || !entry.data) continue;
     const parsed = parseClientJson(entry.data) as { parentId?: string; depth?: number } | undefined;
     if (!parsed) continue;
-    latestByNotebook.set(entry.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
+    latestByNotebook.set(entry.notebookId, {
+      parentId: parsed.parentId ?? null,
+      depth: parsed.depth ?? 0,
+    });
   }
 
   // Validate tree integrity

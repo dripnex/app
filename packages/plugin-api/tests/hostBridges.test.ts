@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  dispatchHostCommand,
-  getHostVim,
-  setHostCommandDispatch,
-  setHostVim,
-} from '../src/loader/hostBridges';
+import { setHostCommandDispatch, setHostVim } from '../src/loader/hostBridges';
 import { createInitApi } from '../src/loader/createInitApi';
 
 describe('hostBridges', () => {

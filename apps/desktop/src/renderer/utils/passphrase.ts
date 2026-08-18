@@ -44,7 +44,7 @@ export function formatRecoveryKey(hex: string): string {
 }
 
 export function normalizeRecoveryKey(input: string): string {
-  return input.replace(/[\s\-]/g, '').toLowerCase();
+  return input.replace(/[\s-]/g, '').toLowerCase();
 }
 
 const PASSPHRASE_WORD_SET = new Set(PASSPHRASE_WORDS);

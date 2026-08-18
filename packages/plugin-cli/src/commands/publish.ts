@@ -77,7 +77,7 @@ export async function publishPlugin(source: string): Promise<void> {
   }
 
   const archive = packPlugin(sourcePath);
-  let bundleUrl = tryGithubRelease(sourcePath, archive, manifest);
+  const bundleUrl = tryGithubRelease(sourcePath, archive, manifest);
 
   if (!bundleUrl) {
     const repo = githubOrigin(sourcePath);

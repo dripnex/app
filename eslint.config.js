@@ -141,5 +141,19 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
     },
+  },
+
+  {
+    files: ['**/scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
   }
 );
