@@ -24,7 +24,8 @@ const STATUS_ALIASES: Record<string, NoteStatus> = {
 const OPERATOR =
   /(?:^|\s)(?:(tag):([^\s]+)|#([^\s]+)|status:([^\s]+)|(?:notebook|in):([^\s]+)|is:(pinned|trash|deleted|archived))/gi;
 
-export const SEARCH_OPERATOR_HINT = 'tag:work · status:active · notebook:inbox · is:pinned · is:trash';
+export const SEARCH_OPERATOR_HINT =
+  'tag:work · status:active · notebook:inbox · is:pinned · is:trash';
 
 export function parseNoteSearch(raw: string): ParsedNoteSearch {
   const tags: string[] = [];

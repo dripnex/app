@@ -74,9 +74,7 @@ function buildTemplate(): MenuItemConstructorOptions[] {
       },
     },
     { type: 'separator' },
-    ...(contributed.length > 0
-      ? contributed
-      : [{ label: 'No plugin commands', enabled: false }]),
+    ...(contributed.length > 0 ? contributed : [{ label: 'No plugin commands', enabled: false }]),
   ];
 
   const template: MenuItemConstructorOptions[] = [

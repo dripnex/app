@@ -81,7 +81,9 @@ function ToastItem({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
   const Icon = toast.type === 'success' ? CheckCircle2 : AlertCircle;
 
   return (
-    <div className={sc('toast-item', `toast-item--${toast.type}`, visible && 'toast-item--visible')}>
+    <div
+      className={sc('toast-item', `toast-item--${toast.type}`, visible && 'toast-item--visible')}
+    >
       <Icon size={16} className={sc('toast-icon')} />
       <span className={sc('toast-message')}>{toast.message}</span>
       <button

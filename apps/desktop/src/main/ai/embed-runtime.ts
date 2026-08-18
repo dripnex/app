@@ -48,8 +48,7 @@ export async function embedTexts(
   getOpenAiKey: () => Promise<string | null | undefined>
 ): Promise<number[][]> {
   const provider = getEmbeddingRegistry().get(config.provider);
-  const apiKey =
-    config.provider === 'openai' ? ((await getOpenAiKey()) ?? undefined) : undefined;
+  const apiKey = config.provider === 'openai' ? ((await getOpenAiKey()) ?? undefined) : undefined;
   return provider.embed(texts, {
     apiKey,
     baseUrl: config.baseUrl || undefined,

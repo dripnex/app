@@ -157,15 +157,7 @@ function NotesApp() {
       archived: parsedSearch.archived ? ('archived' as const) : scoped.archived,
       limit: 50,
     };
-  }, [
-    navigation,
-    parsedSearch,
-    searchNotebookId,
-    statusFilter,
-    tagFilter,
-    sortBy,
-    sortOrder,
-  ]);
+  }, [navigation, parsedSearch, searchNotebookId, statusFilter, tagFilter, sortBy, sortOrder]);
   const searchNotesQuery = useSearchNotes(parsedSearch.text, searchOptions);
 
   const displayedNotes = useMemo(() => {

@@ -356,7 +356,11 @@ function MermaidRenderer({ code }: CodeBlockRendererProps) {
               <div className="mermaid-block mermaid-block--full">
                 <div className="mermaid-block__header">
                   <span className="mermaid-block__label">Mermaid Diagram</span>
-                  <button className="mermaid-block__btn" onClick={() => setFull(false)} type="button">
+                  <button
+                    className="mermaid-block__btn"
+                    onClick={() => setFull(false)}
+                    type="button"
+                  >
                     Close
                   </button>
                 </div>

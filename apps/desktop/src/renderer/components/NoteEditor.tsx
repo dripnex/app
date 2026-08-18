@@ -3,7 +3,11 @@ import { FileText, MoreVertical, Link2, Hash } from 'lucide-react';
 import { LayoutZone } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
-import { useEditorBufferStore, selectIsDirty, selectContentForNote } from '../stores/editorBufferStore';
+import {
+  useEditorBufferStore,
+  selectIsDirty,
+  selectContentForNote,
+} from '../stores/editorBufferStore';
 import { useShareStore, selectShareInfo } from '../stores/shareStore';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';

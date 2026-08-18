@@ -132,8 +132,7 @@ export function insertLink(view: EditorView): void {
   view.focus();
 }
 
-const ALERT_KINDS = ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'] as const;
-export type GithubAlertKind = (typeof ALERT_KINDS)[number];
+export type GithubAlertKind = 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION';
 
 /** Wrap the current selection (or insert) as a GitHub alert. */
 export function insertGithubAlert(view: EditorView, kind: GithubAlertKind = 'NOTE'): void {

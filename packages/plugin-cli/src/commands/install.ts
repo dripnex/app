@@ -200,7 +200,9 @@ async function resolveGithubAsset(owner: string, repo: string, tag?: string): Pr
       console.error(
         `Error: Release ${release.tag_name ?? tag ?? 'latest'} of ${owner}/${repo} has no .tar.gz.`
       );
-      console.error('       Authors: dripnex-plugin pack && attach the archive to the GitHub release.');
+      console.error(
+        '       Authors: dripnex-plugin pack && attach the archive to the GitHub release.'
+      );
       process.exit(1);
     }
     console.log(`Fetching ${owner}/${repo}@${release.tag_name ?? tag} (${asset.name})`);

@@ -75,9 +75,7 @@ export function SaveProviderKey({ item, apiKey }: SaveProviderKeyProps) {
 
   if (!available && !status) return null;
 
-  const caption = busy
-    ? 'Waiting for 1Password…'
-    : (status ?? 'Save to 1Password');
+  const caption = busy ? 'Waiting for 1Password…' : (status ?? 'Save to 1Password');
 
   return (
     <div className={styles.wrap}>

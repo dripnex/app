@@ -30,7 +30,6 @@ import styles from './NoteList.module.css';
 
 const sc = cssm(styles);
 
-
 interface NoteListProps {
   notes: NoteWithExcerpt[];
   selectedId: string | null;
@@ -320,7 +319,9 @@ export function NoteList({
             {isLoading ? 'Searching...' : `${notes.length} results`}
           </span>
         )}
-        <p className={sc('search-hint')}>tag:work · status:active · notebook:inbox · is:pinned · is:trash</p>
+        <p className={sc('search-hint')}>
+          tag:work · status:active · notebook:inbox · is:pinned · is:trash
+        </p>
       </div>
 
       {/* Note list content */}

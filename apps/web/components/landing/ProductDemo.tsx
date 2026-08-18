@@ -41,7 +41,9 @@ export default function ProductDemo() {
   function updateSelected(patch: Partial<Pick<DemoNote, 'title' | 'content'>>) {
     if (!selected) return;
     setNotes(current =>
-      current.map(note => (note.id === selected.id ? { ...note, ...patch, updated: 'just now' } : note))
+      current.map(note =>
+        note.id === selected.id ? { ...note, ...patch, updated: 'just now' } : note
+      )
     );
   }
 
@@ -77,7 +79,9 @@ export default function ProductDemo() {
         <aside className={styles.sidebar} aria-label="Notebooks">
           {notebooks.map(item => {
             const count =
-              item.id === 'all' ? notes.length : notes.filter(note => note.notebook === item.id).length;
+              item.id === 'all'
+                ? notes.length
+                : notes.filter(note => note.notebook === item.id).length;
             return (
               <button
                 key={item.id}
@@ -96,7 +100,9 @@ export default function ProductDemo() {
 
         <section className={styles.list} aria-label="Notes">
           <div className={styles.listHead}>
-            <span>{filter === 'all' ? 'All Notes' : notebooks.find(n => n.id === filter)?.label}</span>
+            <span>
+              {filter === 'all' ? 'All Notes' : notebooks.find(n => n.id === filter)?.label}
+            </span>
             <button type="button" className={styles.newBtn} onClick={addNote}>
               New
             </button>
@@ -158,7 +164,9 @@ export default function ProductDemo() {
                   <div className={styles.read} dangerouslySetInnerHTML={{ __html: html }} />
                 )}
               </div>
-              <p className={styles.hint}>Runs in the browser. Download the app to keep files on disk.</p>
+              <p className={styles.hint}>
+                Runs in the browser. Download the app to keep files on disk.
+              </p>
             </>
           ) : (
             <p className={styles.empty}>Select a note or create one.</p>

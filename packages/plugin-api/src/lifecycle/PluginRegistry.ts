@@ -1,3 +1,4 @@
+import { createLogger } from '@dripnex/logger';
 import type { Extension } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import type { ComponentType } from 'react';
@@ -291,7 +292,8 @@ export class PluginRegistry {
         command?: string;
         click?: () => boolean | void | Promise<boolean | void>;
       }): () => void {
-        const localId = item.command ?? `menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const localId =
+          item.command ?? `menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
         const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
         if (item.click) {
           registerCommand(
@@ -417,11 +419,7 @@ export class PluginRegistry {
         return () => themeRegistryStore.getState().unregister(theme.id);
       },
       config,
-      log: {
-        info: (msg: string, ...args: unknown[]) => console.info(`[${id}]`, msg, ...args),
-        warn: (msg: string, ...args: unknown[]) => console.warn(`[${id}]`, msg, ...args),
-        error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
-      },
+      log: createLogger(id),
       app: trackedApp,
       data: trackedData,
     };
@@ -607,7 +605,10 @@ function parseAccelerator(
   accelerator: string | undefined
 ): PluginCommandOptions['keybinding'] | undefined {
   if (!accelerator) return undefined;
-  const parts = accelerator.split('+').map(p => p.trim()).filter(Boolean);
+  const parts = accelerator
+    .split('+')
+    .map(p => p.trim())
+    .filter(Boolean);
   const key = parts.pop();
   if (!key) return undefined;
   const modifiers = parts.map(p => (p === 'CmdOrCtrl' || p === 'Command' ? 'Mod' : p));

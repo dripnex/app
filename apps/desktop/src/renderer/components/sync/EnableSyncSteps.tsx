@@ -21,8 +21,8 @@ export function ValuePropStep({ onStart }: { onStart: () => void }) {
         Sync across devices
       </h2>
       <p className={styles.subtitle}>
-        Your notes stay on your machine. Enable sync to access them from any device, with
-        end-to-end encryption.
+        Your notes stay on your machine. Enable sync to access them from any device, with end-to-end
+        encryption.
       </p>
       <ul className={styles.benefits}>
         <li>Access notes on all your devices</li>
@@ -70,11 +70,7 @@ export function PricingStep({
             <span className={styles.savingsBadge}>Save {proPricing.annualSavings}</span>
           )}
         </button>
-        <button
-          type="button"
-          className={styles.planButton}
-          onClick={() => onSelectPlan('monthly')}
-        >
+        <button type="button" className={styles.planButton} onClick={() => onSelectPlan('monthly')}>
           <span className={styles.planLabel}>Monthly — {proPricing.intervals.monthly.label}</span>
         </button>
       </div>

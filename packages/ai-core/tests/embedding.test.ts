@@ -26,7 +26,12 @@ describe('EmbeddingRegistry', () => {
 
 describe('OllamaEmbeddingProvider', () => {
   it('embeds a batch via /api/embed', async () => {
-    const fetchFn = jsonFetch({ embeddings: [[0.1, 0.2], [0.3, 0.4]] });
+    const fetchFn = jsonFetch({
+      embeddings: [
+        [0.1, 0.2],
+        [0.3, 0.4],
+      ],
+    });
     const provider = new OllamaEmbeddingProvider(fetchFn);
     const vectors = await provider.embed(['a', 'b'], {});
     expect(vectors).toEqual([

@@ -307,9 +307,7 @@ export function createGitHubService(dataDir: string, notes?: GitHubNoteSink) {
       if (!notes) throw new Error('Note store is not ready.');
       const token = await requireToken();
       const store = readStore();
-      const targets = watcherId
-        ? store.watchers.filter(w => w.id === watcherId)
-        : store.watchers;
+      const targets = watcherId ? store.watchers.filter(w => w.id === watcherId) : store.watchers;
       const result: GitHubPullResult = { created: 0, updated: 0, skipped: 0, errors: [] };
 
       for (const watcher of targets) {

@@ -45,9 +45,7 @@ export interface GitAPI {
     noteId: string
   ) => Promise<{ success: boolean; content?: string | null; error?: string }>;
   deleteNote: (notebookId: string, noteId: string) => Promise<{ success: boolean; error?: string }>;
-  remotes: (
-    notebookId: string
-  ) => Promise<{
+  remotes: (notebookId: string) => Promise<{
     success: boolean;
     remotes?: Array<{ remote: string; url: string }>;
     error?: string;

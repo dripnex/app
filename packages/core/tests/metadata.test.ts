@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { extractTitle, extractTags, countWords, isPlaceholderTitle } from '../src/domain/metadata.js';
+import {
+  extractTitle,
+  extractTags,
+  countWords,
+  isPlaceholderTitle,
+} from '../src/domain/metadata.js';
 
 describe('Metadata', () => {
   describe('extractTitle', () => {

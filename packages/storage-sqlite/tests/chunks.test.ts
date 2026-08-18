@@ -161,9 +161,9 @@ describe('SQLiteChunkRepository', () => {
     expect(await chunks.invalidateOtherModels({ model: 'nomic-embed-text', dim: 3 })).toBe(0);
     expect(await chunks.countEmbedded({ model: 'nomic-embed-text', dim: 3 })).toBe(1);
 
-    expect(
-      await chunks.invalidateOtherModels({ model: 'text-embedding-3-small', dim: 1536 })
-    ).toBe(1);
+    expect(await chunks.invalidateOtherModels({ model: 'text-embedding-3-small', dim: 1536 })).toBe(
+      1
+    );
     expect(await chunks.countEmbedded({ model: 'nomic-embed-text', dim: 3 })).toBe(0);
     expect(await chunks.listPending(10)).toHaveLength(1);
   });

@@ -25,9 +25,10 @@ export default function AuthCard({ mode }: { mode: Mode }) {
         body: JSON.stringify({ email: email.trim(), client: 'web' }),
       });
       if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as
-          | { message?: string; error?: string }
-          | null;
+        const data = (await response.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
         throw new Error(data?.error || data?.message || 'Could not send the email link.');
       }
       setSent(true);
@@ -45,7 +46,9 @@ export default function AuthCard({ mode }: { mode: Mode }) {
         <Link
           href="/login"
           className={`flex-1 rounded-md py-1.5 text-center text-[13px] font-medium ${
-            !isSignup ? 'bg-white/[0.08] text-text-primary' : 'text-text-muted hover:text-text-secondary'
+            !isSignup
+              ? 'bg-white/[0.08] text-text-primary'
+              : 'text-text-muted hover:text-text-secondary'
           }`}
         >
           Sign in
@@ -53,7 +56,9 @@ export default function AuthCard({ mode }: { mode: Mode }) {
         <Link
           href="/signup"
           className={`flex-1 rounded-md py-1.5 text-center text-[13px] font-medium ${
-            isSignup ? 'bg-white/[0.08] text-text-primary' : 'text-text-muted hover:text-text-secondary'
+            isSignup
+              ? 'bg-white/[0.08] text-text-primary'
+              : 'text-text-muted hover:text-text-secondary'
           }`}
         >
           Sign up
@@ -98,7 +103,10 @@ export default function AuthCard({ mode }: { mode: Mode }) {
           {isSignup ? (
             <p className="mt-2 text-[12px] leading-relaxed text-text-muted">
               By creating an account you agree to the{' '}
-              <Link href="/terms" className="underline underline-offset-2 hover:text-text-secondary">
+              <Link
+                href="/terms"
+                className="underline underline-offset-2 hover:text-text-secondary"
+              >
                 Terms
               </Link>{' '}
               and{' '}

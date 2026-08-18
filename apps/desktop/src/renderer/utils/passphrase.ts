@@ -14,7 +14,11 @@ export function generatePassphrase(wordCount = GENERATED_WORD_COUNT): string {
   return words.join(' ');
 }
 
-export function scorePassphrase(value: string): { score: 0 | 1 | 2 | 3 | 4; label: string; ok: boolean } {
+export function scorePassphrase(value: string): {
+  score: 0 | 1 | 2 | 3 | 4;
+  label: string;
+  ok: boolean;
+} {
   const trimmed = value.trim();
   if (!trimmed) return { score: 0, label: 'Too short', ok: false };
 
@@ -44,7 +48,7 @@ export function formatRecoveryKey(hex: string): string {
 }
 
 export function normalizeRecoveryKey(input: string): string {
-  return input.replace(/[\s\-]/g, '').toLowerCase();
+  return input.replace(/[\s-]/g, '').toLowerCase();
 }
 
 const PASSPHRASE_WORD_SET = new Set(PASSPHRASE_WORDS);

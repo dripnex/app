@@ -89,7 +89,9 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
     setRemoteMessage(null);
     const result = await window.dripnex.git.setRemote(notebookId, remoteUrl);
     setRemoteBusy(false);
-    setRemoteMessage(result.success ? `Remote set to ${result.remote}` : (result.error ?? 'Failed'));
+    setRemoteMessage(
+      result.success ? `Remote set to ${result.remote}` : (result.error ?? 'Failed')
+    );
     if (result.success && result.remote) setRemoteUrl(result.remote);
   }, [notebookId, remoteUrl]);
 
@@ -155,7 +157,12 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
             placeholder="https://github.com/you/notes"
             aria-label="GitHub remote"
           />
-          <Button variant="secondary" size="sm" loading={remoteBusy} onClick={() => void saveRemote()}>
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={remoteBusy}
+            onClick={() => void saveRemote()}
+          >
             Set remote
           </Button>
           <Button

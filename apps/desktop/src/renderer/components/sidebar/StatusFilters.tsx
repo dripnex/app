@@ -16,8 +16,6 @@ const statusConfig: Record<NoteStatus, { label: string }> = {
   dropped: { label: 'Dropped' },
 };
 
-
-
 export const StatusFilters = memo(function StatusFilters({
   counts,
   selectedStatus,

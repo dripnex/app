@@ -131,11 +131,7 @@ function MathRenderer({ code }: CodeBlockRendererProps) {
         <span className="math-block__label">LaTeX Math</span>
         <div className="math-block__actions">
           {copied && <span className="math-block__copied">Copied!</span>}
-          <button
-            className="math-block__btn"
-            onClick={() => setShowSource(v => !v)}
-            type="button"
-          >
+          <button className="math-block__btn" onClick={() => setShowSource(v => !v)} type="button">
             {showSource ? 'Hide source' : 'Source'}
           </button>
           <button className="math-block__btn" onClick={copySource} type="button">

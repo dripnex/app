@@ -3,10 +3,7 @@ type ConfigListener = (value: unknown) => void;
 const caches = new Map<string, Record<string, unknown>>();
 const observers = new Map<string, Map<string, Set<ConfigListener>>>();
 
-export function resetPluginConfig(
-  pluginId: string,
-  initial: Record<string, unknown> = {}
-): void {
+export function resetPluginConfig(pluginId: string, initial: Record<string, unknown> = {}): void {
   caches.set(pluginId, { ...initial });
   observers.delete(pluginId);
 }

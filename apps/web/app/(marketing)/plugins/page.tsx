@@ -18,8 +18,8 @@ export default function PluginsPage() {
             Extend <span className="text-accent">Dripnex</span>
           </h1>
           <p className="text-lg text-text-secondary max-w-[50ch] mx-auto leading-relaxed">
-            Core plugins ship in the app. Anything else is its own repository —
-            tagged, packed, installed by name.
+            Core plugins ship in the app. Anything else is its own repository — tagged, packed,
+            installed by name.
           </p>
         </header>
 
@@ -28,9 +28,9 @@ export default function PluginsPage() {
         <aside className="mt-16 mx-auto max-w-2xl border-t border-white/[0.06] pt-10">
           <h2 className="text-[15px] font-medium text-text-primary">Your plugin is a repo</h2>
           <p className="mt-3 text-[14px] leading-relaxed text-text-secondary">
-            One git repository per plugin. Version is the git tag. The artifact is
-            the tarball from <code className="font-mono text-accent">dripnex-plugin pack</code>{' '}
-            attached to that GitHub release.
+            One git repository per plugin. Version is the git tag. The artifact is the tarball from{' '}
+            <code className="font-mono text-accent">dripnex-plugin pack</code> attached to that
+            GitHub release.
           </p>
           <pre className="mt-5 overflow-x-auto rounded-md bg-white/[0.04] px-4 py-3 font-mono text-[13px] text-text-secondary">
             {`dripnex-plugin install dripnex/plugin-stamp
@@ -45,7 +45,10 @@ export default function PluginsPage() {
               dripnex/plugin-stamp
             </a>
             .{' '}
-            <Link href="/docs/plugins/publishing" className="text-text-secondary underline-offset-4 hover:text-text-primary hover:underline">
+            <Link
+              href="/docs/plugins/publishing"
+              className="text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+            >
               How to publish
             </Link>
             .

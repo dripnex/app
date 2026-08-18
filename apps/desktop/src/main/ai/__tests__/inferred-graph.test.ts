@@ -17,15 +17,16 @@ describe('inferEdgesFromChunks', () => {
   });
 
   function pairOf(edge: { source: string; target: string }): string {
-    return edge.source < edge.target ? `${edge.source}|${edge.target}` : `${edge.target}|${edge.source}`;
+    return edge.source < edge.target
+      ? `${edge.source}|${edge.target}`
+      : `${edge.target}|${edge.source}`;
   }
 
   it('emits a high-score pair when vectors align', () => {
-    const edges = inferEdgesFromChunks(
-      [vec('a', [1, 0]), vec('b', [1, 0])],
-      [],
-      { minScore: 0.9, maxPerNote: 2 }
-    );
+    const edges = inferEdgesFromChunks([vec('a', [1, 0]), vec('b', [1, 0])], [], {
+      minScore: 0.9,
+      maxPerNote: 2,
+    });
     expect(edges).toHaveLength(1);
     expect(edges[0]?.score).toBeGreaterThan(0.99);
   });

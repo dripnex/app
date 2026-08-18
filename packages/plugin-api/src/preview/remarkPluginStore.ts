@@ -36,7 +36,6 @@ export const remarkPluginStore = createStore<RemarkPluginState>((set, get) => ({
         { ...registration, plugin: wrappedPlugin },
       ],
     }));
-
   },
 
   unregister(id) {

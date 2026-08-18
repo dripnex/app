@@ -46,7 +46,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
   async list(options: ListNotesOptions = {}): Promise<Note[]> {
     const { limit = 50, offset = 0, sortBy = 'updatedAt', sortOrder = 'desc' } = options;
 
-    let notes = this.applyFilters(Array.from(this.notes.values()), options);
+    const notes = this.applyFilters(Array.from(this.notes.values()), options);
 
     // Sort
     notes.sort((a, b) => {
@@ -183,11 +183,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
   async findByTitle(title: string): Promise<Note | null> {
     const needle = title.trim().toLowerCase();
     for (const note of this.notes.values()) {
-      if (
-        !note.isDeleted &&
-        !note.metadata.archivedAt &&
-        note.title.toLowerCase() === needle
-      ) {
+      if (!note.isDeleted && !note.metadata.archivedAt && note.title.toLowerCase() === needle) {
         return note;
       }
     }

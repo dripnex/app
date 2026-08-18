@@ -11,7 +11,6 @@ import { createNoteId } from '@dripnex/core';
 import type { SQLiteNoteRepository } from '../handlers/types.js';
 import { headingFrom, pickPassages } from './passages.js';
 
-
 function snippetFrom(content: string, max = 200): string {
   return content.replace(/\s+/g, ' ').trim().slice(0, max);
 }
@@ -89,10 +88,17 @@ export async function retrieveAskNotes(
     countEmbedded?: () => Promise<number>;
     listForNote?: (noteId: string) => Promise<StoredChunk[]>;
   }
-): Promise<Array<{ id: string; title: string; content: string; heading: string | null; score: number }>> {
+): Promise<
+  Array<{ id: string; title: string; content: string; heading: string | null; score: number }>
+> {
   const keyword = createSqliteRetriever(repo);
   let semanticRetriever: Retriever | undefined;
-  if (extras?.listEmbedded && extras.embedQuery && extras.countEmbedded && (await extras.countEmbedded()) > 0) {
+  if (
+    extras?.listEmbedded &&
+    extras.embedQuery &&
+    extras.countEmbedded &&
+    (await extras.countEmbedded()) > 0
+  ) {
     semanticRetriever = createChunkSemanticRetriever({
       listEmbedded: extras.listEmbedded,
       embedQuery: extras.embedQuery,
@@ -134,5 +140,3 @@ export async function retrieveAskNotes(
   }
   return passages;
 }
-
-

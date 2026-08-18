@@ -6,10 +6,10 @@ into one line. `CHANGELOG.md` and dripnex.app/changelog then repeat that line.
 
 Two artifacts. Two audiences.
 
-| Artifact | Audience | Who writes it |
-| -------- | -------- | ------------- |
-| `CHANGELOG.md` + GitHub Release body | Engineers | semantic-release (keep) |
-| `apps/web/content/releases/vX.Y.Z.md` | Humans | You, **before** the promotion PR |
+| Artifact                              | Audience  | Who writes it                    |
+| ------------------------------------- | --------- | -------------------------------- |
+| `CHANGELOG.md` + GitHub Release body  | Engineers | semantic-release (keep)          |
+| `apps/web/content/releases/vX.Y.Z.md` | Humans    | You, **before** the promotion PR |
 
 ## Rules
 

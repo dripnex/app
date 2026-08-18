@@ -73,11 +73,7 @@ import { isBlockedFetchHost } from './network/ssrf.js';
 import { registerNavigationGuards } from './network/navigation.js';
 import { broadcastToWindows } from './windows/broadcast.js';
 import { resolveDockIconPath } from './windows/icons.js';
-import {
-  deliverAuthToken,
-  parseAuthVerifyToken,
-  queueAuthToken,
-} from './windows/authDeepLink.js';
+import { deliverAuthToken, parseAuthVerifyToken, queueAuthToken } from './windows/authDeepLink.js';
 import {
   createMainWindow,
   registerQuickCaptureShortcut,
@@ -220,8 +216,9 @@ app
     setInterval(() => embeddingIndexer?.schedule(), 30_000);
 
     const applyKbFromSettings = async (settings: unknown) => {
-      const ai = (settings as { ai?: { embedProvider?: string; embedModel?: string; baseUrl?: string } })
-        ?.ai;
+      const ai = (
+        settings as { ai?: { embedProvider?: string; embedModel?: string; baseUrl?: string } }
+      )?.ai;
       if (!ai) return;
       const { changed, meta } = applyEmbedConfig({
         provider: ai.embedProvider === 'openai' ? 'openai' : 'ollama',
@@ -267,7 +264,9 @@ app
         });
         const graph = noteRepository.getGraphData();
         const existing = graph.edges.map(edge =>
-          edge.source < edge.target ? `${edge.source}|${edge.target}` : `${edge.target}|${edge.source}`
+          edge.source < edge.target
+            ? `${edge.source}|${edge.target}`
+            : `${edge.target}|${edge.source}`
         );
         return inferEdgesFromChunks(
           chunks
@@ -289,8 +288,7 @@ app
     });
     registerGitHandlers({
       gitService: gitService!,
-      getGithubToken: () =>
-        aiKeyStorage ? aiKeyStorage.getKey('github') : Promise.resolve(null),
+      getGithubToken: () => (aiKeyStorage ? aiKeyStorage.getKey('github') : Promise.resolve(null)),
     });
     registerClipboardHandlers();
     registerPluginHandlers({
@@ -303,13 +301,14 @@ app
       dataPaths,
       noteToSnapshot,
     });
+    const notesRepo = noteRepository;
     registerIntegrations({
       dataDir: dataPaths.root,
       getAppVersion: () => app.getVersion(),
-      githubNotes: noteRepository
+      githubNotes: notesRepo
         ? {
             create: async (content, notebookId) => {
-              const result = await createNoteOperation({ content, notebookId }, noteRepository);
+              const result = await createNoteOperation({ content, notebookId }, notesRepo);
               if (!result.ok) return null;
               writeFileSync(externalWriteSignal, `${Date.now()}\n`);
               embeddingIndexer?.schedule();
@@ -318,7 +317,7 @@ app
             update: async (id, content) => {
               const result = await updateNoteOperation(
                 { id: createNoteId(id), content },
-                noteRepository
+                notesRepo
               );
               if (!result.ok) return false;
               writeFileSync(externalWriteSignal, `${Date.now()}\n`);
@@ -326,7 +325,7 @@ app
               return true;
             },
             get: async id => {
-              const note = await noteRepository.get(createNoteId(id));
+              const note = await notesRepo.get(createNoteId(id));
               if (!note) return null;
               return { id: note.id, content: note.content, isDeleted: note.isDeleted };
             },
@@ -376,7 +375,11 @@ app
       const nbRepo = notebookRepository;
       registerBuiltInTools(getToolRegistry(), {
         searchNotes: async (query, limit) => {
-          const hits = await retrieveAskNotes(noteRepo, { query, topK: limit ?? 10 }, retrieveExtras);
+          const hits = await retrieveAskNotes(
+            noteRepo,
+            { query, topK: limit ?? 10 },
+            retrieveExtras
+          );
           return hits.map(hit => ({
             id: hit.id,
             title: hit.title,

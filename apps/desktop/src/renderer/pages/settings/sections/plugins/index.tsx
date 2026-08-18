@@ -281,8 +281,8 @@ export function PluginsSection() {
     <div className={layout.section}>
       <h2 className={layout.title}>Plugins</h2>
       <p className={layout.lede}>
-        Built-ins ship in the app. Community plugins are their own git repos —
-        Browse and click Install.
+        Built-ins ship in the app. Community plugins are their own git repos — Browse and click
+        Install.
       </p>
 
       <SettingGroup title="Customize">

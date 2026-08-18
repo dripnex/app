@@ -20,7 +20,9 @@ describe('createKeywordRetriever', () => {
   });
 
   it('excludes ids and respects topK', async () => {
-    const retriever = createKeywordRetriever(async (_q, limit) => hits(['a', 'b', 'c', 'd']).slice(0, limit));
+    const retriever = createKeywordRetriever(async (_q, limit) =>
+      hits(['a', 'b', 'c', 'd']).slice(0, limit)
+    );
     const result = await retriever.retrieve('q', { topK: 2, excludeIds: ['a'] });
     expect(result.map(h => h.id)).toEqual(['b', 'c']);
   });
@@ -69,9 +71,15 @@ describe('rankByCosine', () => {
 
 describe('reciprocalRankFusion', () => {
   it('promotes ids that appear in both lists', () => {
-    const fused = reciprocalRankFusion([[{ id: 'a' }, { id: 'b' }], [{ id: 'b' }, { id: 'c' }]], {
-      topK: 3,
-    });
+    const fused = reciprocalRankFusion(
+      [
+        [{ id: 'a' }, { id: 'b' }],
+        [{ id: 'b' }, { id: 'c' }],
+      ],
+      {
+        topK: 3,
+      }
+    );
     expect(fused[0]!.id).toBe('b');
     expect(fused.map(item => item.id).sort()).toEqual(['a', 'b', 'c']);
   });

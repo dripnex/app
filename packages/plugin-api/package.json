@@ -17,6 +17,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@dripnex/logger": "workspace:*"
+  },
   "peerDependencies": {
     "react": "^18.0.0",
     "zustand": "^5.0.0",

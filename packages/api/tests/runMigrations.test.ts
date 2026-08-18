@@ -53,7 +53,9 @@ describe('applyMigrations', () => {
     const path = `/tmp/dripnex-migrate-${randomUUID()}.db`;
     paths.push(path);
     const client = createClient({ url: `file:${path}` });
-    await client.execute('CREATE TABLE users (id text PRIMARY KEY, email text, created_at text, updated_at text)');
+    await client.execute(
+      'CREATE TABLE users (id text PRIMARY KEY, email text, created_at text, updated_at text)'
+    );
 
     const report = await applyMigrations(client);
     expect(report.recordedExisting).toContain('0000_chubby_zzzax');

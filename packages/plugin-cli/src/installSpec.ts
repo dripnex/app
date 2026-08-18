@@ -10,7 +10,10 @@ export type InstallSpec =
  * Local paths win when they exist. Otherwise `owner/repo[@tag]`,
  * `github:owner/repo[@tag]`, a GitHub URL, or any https archive URL.
  */
-export function parseInstallSource(source: string, pathExists: (p: string) => boolean): InstallSpec {
+export function parseInstallSource(
+  source: string,
+  pathExists: (p: string) => boolean
+): InstallSpec {
   const trimmed = source.trim();
   if (!trimmed) {
     throw new Error('empty install spec');

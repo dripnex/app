@@ -29,11 +29,7 @@ import {
 } from '@dripnex/core';
 import type { Database } from './db.js';
 import { openDb, resolveDbPath } from './db.js';
-import {
-  markExternalWrite,
-  packageDirFromModuleUrl,
-  readPackageVersion,
-} from './notes.js';
+import { markExternalWrite, packageDirFromModuleUrl, readPackageVersion } from './notes.js';
 import { NodeSqliteNoteRepository } from './sqliteRepo.js';
 
 function query(db: Database, sql: string, params: unknown[] = []): Record<string, unknown>[] {
@@ -177,76 +173,78 @@ function createServer(db: Database, options: { dbPath?: string } = {}) {
   );
 
   if (allowWrites) {
-  // ── Create note ─────────────────────────────────────────────────────────
+    // ── Create note ─────────────────────────────────────────────────────────
 
-  server.registerTool(
-    'dripnex_create_note',
-    {
-      description: 'Create a new note in Dripnex. Content should be markdown.',
-      inputSchema: {
-        content: z.string().describe('Markdown content for the note'),
-        notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
+    server.registerTool(
+      'dripnex_create_note',
+      {
+        description: 'Create a new note in Dripnex. Content should be markdown.',
+        inputSchema: {
+          content: z.string().describe('Markdown content for the note'),
+          notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
+        },
       },
-    },
-    async ({ content, notebook }) => {
-      let notebookId: string | undefined;
-      if (notebook) {
-        const id = notes.findNotebookIdByName(notebook);
-        if (!id) {
+      async ({ content, notebook }) => {
+        let notebookId: string | undefined;
+        if (notebook) {
+          const id = notes.findNotebookIdByName(notebook);
+          if (!id) {
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: `Notebook "${notebook}" not found. Note was not created.`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          notebookId = id;
+        }
+
+        const result = await createNoteOperation({ content, notebookId }, notes);
+        if (!result.ok) {
           return {
-            content: [
-              {
-                type: 'text' as const,
-                text: `Notebook "${notebook}" not found. Note was not created.`,
-              },
-            ],
+            content: [{ type: 'text' as const, text: 'Failed to create note.' }],
             isError: true,
           };
         }
-        notebookId = id;
-      }
+        afterWrite();
 
-      const result = await createNoteOperation({ content, notebookId }, notes);
-      if (!result.ok) {
         return {
-          content: [{ type: 'text' as const, text: 'Failed to create note.' }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Note created: "${result.data.title}" (ID: ${result.data.id})`,
+            },
+          ],
         };
       }
-      afterWrite();
+    );
 
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Note created: "${result.data.title}" (ID: ${result.data.id})`,
-          },
-        ],
-      };
-    }
-  );
+    // ── Update note ─────────────────────────────────────────────────────────
 
-  // ── Update note ─────────────────────────────────────────────────────────
-
-  server.registerTool(
-    'dripnex_update_note',
-    {
-      description: 'Update an existing note. Replaces the full content.',
-      inputSchema: {
-        id: z.string().describe('Note ID'),
-        content: z.string().describe('New markdown content'),
+    server.registerTool(
+      'dripnex_update_note',
+      {
+        description: 'Update an existing note. Replaces the full content.',
+        inputSchema: {
+          id: z.string().describe('Note ID'),
+          content: z.string().describe('New markdown content'),
+        },
       },
-    },
-    async ({ id, content }) => {
-      const result = await updateNoteOperation({ id: createNoteId(id), content }, notes);
-      if (!result.ok) {
-        return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
-      }
-      afterWrite();
+      async ({ id, content }) => {
+        const result = await updateNoteOperation({ id: createNoteId(id), content }, notes);
+        if (!result.ok) {
+          return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
+        }
+        afterWrite();
 
-      return { content: [{ type: 'text' as const, text: `Note updated: "${result.data.title}"` }] };
-    }
-  );
+        return {
+          content: [{ type: 'text' as const, text: `Note updated: "${result.data.title}"` }],
+        };
+      }
+    );
   }
 
   // ── Search notes (FTS5) ──────────────────────────────────────────────────
@@ -344,25 +342,25 @@ function createServer(db: Database, options: { dbPath?: string } = {}) {
   );
 
   if (allowWrites) {
-  server.registerTool(
-    'dripnex_trash_note',
-    {
-      description: 'Move a note to trash (soft delete).',
-      inputSchema: {
-        id: z.string().describe('Note ID'),
+    server.registerTool(
+      'dripnex_trash_note',
+      {
+        description: 'Move a note to trash (soft delete).',
+        inputSchema: {
+          id: z.string().describe('Note ID'),
+        },
       },
-    },
-    async ({ id }) => {
-      const existing = await notes.get(createNoteId(id));
-      if (!existing) {
-        return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
-      }
-      await notes.save(softDeleteNote(existing));
-      afterWrite();
+      async ({ id }) => {
+        const existing = await notes.get(createNoteId(id));
+        if (!existing) {
+          return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
+        }
+        await notes.save(softDeleteNote(existing));
+        afterWrite();
 
-      return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };
-    }
-  );
+        return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };
+      }
+    );
   }
 
   return server;

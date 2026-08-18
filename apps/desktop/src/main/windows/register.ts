@@ -49,7 +49,9 @@ export function registerQuickCaptureShortcut(): void {
     createQuickCaptureWindow();
   });
   if (!registered) {
-    getLogger().warn('Failed to register global shortcut CommandOrControl+Shift+N — already in use?');
+    getLogger().warn(
+      'Failed to register global shortcut CommandOrControl+Shift+N — already in use?'
+    );
   }
 }
 

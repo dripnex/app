@@ -42,7 +42,8 @@ export function VimStatusIndicator() {
         fontWeight: 600,
         fontSize: 11,
         letterSpacing: '0.05em',
-        color: label === 'INSERT' || label === 'REPLACE' ? 'var(--accent)' : 'var(--text-secondary)',
+        color:
+          label === 'INSERT' || label === 'REPLACE' ? 'var(--accent)' : 'var(--text-secondary)',
       }}
     >
       {label}

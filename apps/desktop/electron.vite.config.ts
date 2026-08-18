@@ -19,11 +19,7 @@ function dayjsEsm(): Plugin {
     enforce: 'pre',
     resolveId(source) {
       const bare = source.split('?')[0] ?? source;
-      if (
-        bare === 'dayjs' ||
-        bare.endsWith('/dayjs.min.js') ||
-        bare.endsWith('/dayjs.js')
-      ) {
+      if (bare === 'dayjs' || bare.endsWith('/dayjs.min.js') || bare.endsWith('/dayjs.js')) {
         return resolve(dayjsRoot, 'esm/index.js');
       }
       const plugin = bare.match(/(?:^|\/)dayjs\/plugin\/([^/]+?)(?:\.js)?$/);

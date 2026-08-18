@@ -54,12 +54,15 @@ export interface GitHubPullResult {
 
 export interface GitHubAPI {
   status: () => Promise<GitHubStatus>;
-  connect: (token?: string | null) => Promise<{ success: true; login: string } | { success: false; error: string }>;
+  connect: (
+    token?: string | null
+  ) => Promise<{ success: true; login: string } | { success: false; error: string }>;
   disconnect: () => Promise<{ success: true }>;
   importIssue: (
     url: string
   ) => Promise<
-    { success: true; title: string; content: string; htmlUrl: string } | { success: false; error: string }
+    | { success: true; title: string; content: string; htmlUrl: string }
+    | { success: false; error: string }
   >;
   listWatchers: () => Promise<GitHubWatcher[]>;
   addWatcher: (

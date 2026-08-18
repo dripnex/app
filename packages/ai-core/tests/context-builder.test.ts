@@ -126,7 +126,9 @@ describe('buildContext', () => {
       },
       { maxContextTokens: 10000, maxResponseTokens: 100 }
     );
-    expect(result.system.indexOf('Beta › Recipe')).toBeLessThan(result.system.indexOf('Alpha › Intro'));
+    expect(result.system.indexOf('Beta › Recipe')).toBeLessThan(
+      result.system.indexOf('Alpha › Intro')
+    );
     expect(result.system).toContain('Source [1]: "Beta › Recipe"');
     expect(result.system).toContain('Source [2]: "Alpha › Intro"');
     expect(result.citations[0]).toMatchObject({ id: '2', title: 'Beta', heading: 'Recipe' });

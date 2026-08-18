@@ -50,7 +50,9 @@ export function printPublishHelp(source: string): void {
   console.log('');
   console.log(`  git tag ${tag}`);
   console.log(`  git push origin ${tag}`);
-  console.log(`  gh release create ${tag} ${archive} --title "${manifest.name} ${manifest.version}"`);
+  console.log(
+    `  gh release create ${tag} ${archive} --title "${manifest.name} ${manifest.version}"`
+  );
   console.log('');
   console.log('Then register it in the catalog with:');
   console.log(`  slug: ${manifest.id}`);

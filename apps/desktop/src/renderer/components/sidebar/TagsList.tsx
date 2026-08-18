@@ -36,12 +36,7 @@ interface TagsListProps {
   readonly filterQuery?: string;
 }
 
-export function TagsList({
-  selectedTag,
-  onSelectTag,
-  counts,
-  filterQuery = '',
-}: TagsListProps) {
+export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }: TagsListProps) {
   const queryClient = useQueryClient();
   const { data: tags = [], isLoading } = useTags();
   const getColor = useTagColorsStore(state => state.getColor);

@@ -30,7 +30,8 @@ const AI_ACTIONS = [
   {
     id: 'table',
     label: 'Convert to Markdown table',
-    system: 'Convert the selection into a GitHub-flavored markdown table. Reply with the table only.',
+    system:
+      'Convert the selection into a GitHub-flavored markdown table. Reply with the table only.',
   },
   {
     id: 'proofread',
@@ -41,7 +42,8 @@ const AI_ACTIONS = [
   {
     id: 'reformat',
     label: 'Reformat',
-    system: 'Clean the markdown structure. Do not change meaning. Reply with the revised markdown only.',
+    system:
+      'Clean the markdown structure. Do not change meaning. Reply with the revised markdown only.',
   },
   {
     id: 'improve',

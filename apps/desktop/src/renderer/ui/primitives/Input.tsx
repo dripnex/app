@@ -14,10 +14,7 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    { size = 'md', invalid = false, mono = false, className, type = 'text', ...rest },
-    ref
-  ) => {
+  ({ size = 'md', invalid = false, mono = false, className, type = 'text', ...rest }, ref) => {
     const cls = [
       styles.input,
       styles[size],
@@ -28,7 +25,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       .filter(Boolean)
       .join(' ');
 
-    return <input ref={ref} type={type} className={cls} aria-invalid={invalid || undefined} {...rest} />;
+    return (
+      <input ref={ref} type={type} className={cls} aria-invalid={invalid || undefined} {...rest} />
+    );
   }
 );
 

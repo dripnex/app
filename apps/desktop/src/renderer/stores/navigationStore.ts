@@ -95,9 +95,8 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     set({ navigation: { kind: 'notebook', id }, statusFilter: null, tagFilter: null }),
   goToTag: name => {
     const { tagFilter, navigation } = get();
-    const next = tagFilter === name || (navigation.kind === 'tag' && navigation.name === name)
-      ? null
-      : name;
+    const next =
+      tagFilter === name || (navigation.kind === 'tag' && navigation.name === name) ? null : name;
     if (navigation.kind === 'tag') {
       set({
         navigation: { kind: 'global', filter: 'all' },

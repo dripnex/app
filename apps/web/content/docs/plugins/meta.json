@@ -1,4 +1,11 @@
 {
   "title": "Plugins",
-  "pages": ["getting-started", "publishing", "api-reference", "layout-zones", "examples", "tutorial"]
+  "pages": [
+    "getting-started",
+    "publishing",
+    "api-reference",
+    "layout-zones",
+    "examples",
+    "tutorial"
+  ]
 }

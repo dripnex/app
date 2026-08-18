@@ -148,7 +148,8 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
 
   // Error or auth-expired
   if (syncStatus === 'error' || syncStatus === 'auth-expired') {
-    const needsEncryption = encryptionReady === false || /encryption|passphrase/i.test(syncError ?? '');
+    const needsEncryption =
+      encryptionReady === false || /encryption|passphrase/i.test(syncError ?? '');
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
         <AlertCircle size={11} />

@@ -14,7 +14,9 @@ describe('noteListNavDirection', () => {
   });
 
   it('ignores modifiers and other keys', () => {
-    expect(noteListNavDirection({ key: 'j', metaKey: true, target: { tagName: 'DIV' } })).toBeNull();
+    expect(
+      noteListNavDirection({ key: 'j', metaKey: true, target: { tagName: 'DIV' } })
+    ).toBeNull();
     expect(noteListNavDirection(event('l'))).toBeNull();
   });
 

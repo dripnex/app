@@ -3,7 +3,10 @@ import { Lock, Unlock } from 'lucide-react';
 import { startCloudSyncIfReady, selectEmail, useAuthStore } from '../../../stores/authStore';
 import { downloadEmergencyKit, printEmergencyKit } from '../../../utils/emergencyKit';
 import { downloadOnePasswordCsv } from '../../../utils/onePasswordCsv';
-import { PassphraseCreateForm, seedGeneratedPassphrase } from '../../../components/sync/PassphraseCreateForm';
+import {
+  PassphraseCreateForm,
+  seedGeneratedPassphrase,
+} from '../../../components/sync/PassphraseCreateForm';
 import { SaveToOnePasswordButton } from '../../../components/sync/SaveToOnePasswordButton';
 import { formatRecoveryKey, scorePassphrase } from '../../../utils/passphrase';
 import { SettingGroup } from '../components/SettingGroup';
@@ -98,7 +101,9 @@ export function EncryptionSection() {
     try {
       const result = await window.dripnex.encryption.unlockWithPassphrase(passphrase);
       if (!result.success) {
-        setError(result.wrongPassphrase ? 'Incorrect passphrase' : (result.error ?? 'Unlock failed'));
+        setError(
+          result.wrongPassphrase ? 'Incorrect passphrase' : (result.error ?? 'Unlock failed')
+        );
         return;
       }
       await startCloudSyncIfReady();
@@ -285,7 +290,12 @@ export function EncryptionSection() {
             />
           </SettingRow>
           <SettingRow label="Unlock with recovery">
-            <Button variant="secondary" size="sm" loading={busy} onClick={() => void handleRecovery()}>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={busy}
+              onClick={() => void handleRecovery()}
+            >
               Use recovery key
             </Button>
           </SettingRow>

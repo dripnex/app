@@ -6,12 +6,7 @@ import { Activity, ArrowUpRight, Hash, Sparkles, X } from 'lucide-react';
 import { Button } from '../ui/primitives';
 import { extractExcerpt, useNote } from '../hooks/useNotes';
 import { useBacklinks, useOutgoingLinks } from '../hooks/useLinks';
-import {
-  kindFromTags,
-  kindMeta,
-  type EdgeKind,
-  type NoteKind,
-} from '../lib/knowledge';
+import { kindFromTags, kindMeta, type EdgeKind, type NoteKind } from '../lib/knowledge';
 import { KindDropdown } from './editor/KindDropdown';
 import styles from './GraphView.module.css';
 
@@ -62,7 +57,10 @@ export function GraphInspector({
   const excerpt = note ? extractExcerpt(note.content, 240) : '';
   const displayTags = (note?.tags ?? []).filter(tag => tag.toLowerCase() !== kind);
   const unresolved = outgoing.filter(link => !link.targetNoteId);
-  const relatedCount = relations.length + unresolved.length + backlinks.filter(link => !relations.some(rel => rel.id === link.noteId)).length;
+  const relatedCount =
+    relations.length +
+    unresolved.length +
+    backlinks.filter(link => !relations.some(rel => rel.id === link.noteId)).length;
 
   return (
     <aside className={styles.inspector} aria-label="Note details">
@@ -133,7 +131,10 @@ export function GraphInspector({
                 {relations.map(rel => (
                   <li key={`${rel.kind}-${rel.direction}-${rel.id}`}>
                     <button type="button" className={styles.relBtn} onClick={() => onFocus(rel.id)}>
-                      <span className={styles.relDot} style={{ background: kindMeta(rel.nodeKind).color }} />
+                      <span
+                        className={styles.relDot}
+                        style={{ background: kindMeta(rel.nodeKind).color }}
+                      />
                       <span className={styles.relVerb}>
                         {rel.direction === 'to' ? '→ relates to' : '← relates to'}
                       </span>

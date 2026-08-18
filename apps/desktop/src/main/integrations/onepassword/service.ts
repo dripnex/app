@@ -69,7 +69,9 @@ export function mapOnePasswordError(error: unknown): string {
   if (/cancel|denied|rejected|not authorized|authorization/.test(lower)) {
     return '1Password approval was cancelled.';
   }
-  if (/not running|couldn.?t connect|connection refused|no such file|desktop app|unlock/.test(lower)) {
+  if (
+    /not running|couldn.?t connect|connection refused|no such file|desktop app|unlock/.test(lower)
+  ) {
     return 'Open and unlock the 1Password app, then try again.';
   }
   if (/account/.test(lower) && /not found|unknown|invalid|no account/.test(lower)) {
@@ -108,14 +110,20 @@ export async function readStoredAccount(dataDir: string): Promise<string | null>
   try {
     const raw = await fs.readFile(accountPath(dataDir), 'utf8');
     const parsed = JSON.parse(raw) as Partial<StoredAccount>;
-    return typeof parsed.account === 'string' && parsed.account.trim() ? parsed.account.trim() : null;
+    return typeof parsed.account === 'string' && parsed.account.trim()
+      ? parsed.account.trim()
+      : null;
   } catch {
     return null;
   }
 }
 
 export async function writeStoredAccount(dataDir: string, account: string): Promise<void> {
-  await fs.writeFile(accountPath(dataDir), JSON.stringify({ account } satisfies StoredAccount), 'utf8');
+  await fs.writeFile(
+    accountPath(dataDir),
+    JSON.stringify({ account } satisfies StoredAccount),
+    'utf8'
+  );
 }
 
 async function collectVaults(listed: unknown): Promise<OnePasswordVault[]> {
@@ -159,7 +167,9 @@ export async function saveLoginItem(
 
   const discovered = await discoverOpAccounts();
   const account =
-    input.account?.trim() || (await readStoredAccount(dataDir)) || (discovered.length === 1 ? discovered[0] : null);
+    input.account?.trim() ||
+    (await readStoredAccount(dataDir)) ||
+    (discovered.length === 1 ? discovered[0] : null);
 
   if (!account) {
     return { success: false, needsAccount: true, accounts: discovered };
@@ -170,7 +180,9 @@ export async function saveLoginItem(
     const client = await sdk.createClient({
       auth: new sdk.DesktopAuth(account),
       integrationName: INTEGRATION_NAME,
-      integrationVersion: input.appVersion.startsWith('v') ? input.appVersion : `v${input.appVersion}`,
+      integrationVersion: input.appVersion.startsWith('v')
+        ? input.appVersion
+        : `v${input.appVersion}`,
     });
 
     const listed = await client.vaults.list({ decryptDetails: true });

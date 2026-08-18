@@ -252,9 +252,7 @@ export function SidebarBreadcrumb({
                     onClick={() => handleItemClick(seg.id)}
                     aria-current={isLast ? 'location' : undefined}
                   >
-                    {seg.id === 'inbox' ? (
-                      <Inbox size={13} aria-hidden="true" />
-                    ) : null}
+                    {seg.id === 'inbox' ? <Inbox size={13} aria-hidden="true" /> : null}
                     {seg.name}
                   </button>
                 </span>
@@ -266,7 +264,11 @@ export function SidebarBreadcrumb({
         {tagFilter && (
           <span className={sc('sidebar-breadcrumb-segment')}>
             {hasNotebookPath && (
-              <ChevronRight size={10} className={sc('sidebar-breadcrumb-separator')} aria-hidden="true" />
+              <ChevronRight
+                size={10}
+                className={sc('sidebar-breadcrumb-separator')}
+                aria-hidden="true"
+              />
             )}
             <span className={sc('sidebar-breadcrumb-tag')}>
               <span className={sc('sidebar-breadcrumb-tag-name')}>#{tagFilter}</span>

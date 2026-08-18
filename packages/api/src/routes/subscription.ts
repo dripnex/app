@@ -90,9 +90,7 @@ subscription.post('/webhook', async c => {
       const metadataUserId = session.metadata?.userId;
       if (email || metadataUserId) {
         let user = metadataUserId
-          ? (
-              await db.select().from(users).where(eq(users.id, metadataUserId)).limit(1)
-            )[0]
+          ? (await db.select().from(users).where(eq(users.id, metadataUserId)).limit(1))[0]
           : undefined;
         if (!user && email) {
           const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);

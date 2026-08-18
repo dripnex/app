@@ -15,14 +15,13 @@ export function isInsideMarkdownLink(lineText: string, offset: number): boolean 
 }
 
 export function sanitizeLinkTitle(title: string): string {
-  return title.replace(/[\r\n]+/g, ' ').replace(/]/g, '').trim();
+  return title
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/]/g, '')
+    .trim();
 }
 
-export function formatPastedUrl(
-  url: string,
-  format: UrlPasteFormat,
-  title?: string
-): string {
+export function formatPastedUrl(url: string, format: UrlPasteFormat, title?: string): string {
   const href = url.trim();
   if (format === 'plain') return href;
   if (format === 'angle') return `<${href}>`;
