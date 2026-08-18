@@ -14,7 +14,6 @@ Dripnex uses an **Open Core** model:
 | `packages/storage-core`   | Storage interfaces                |
 | `packages/storage-sqlite` | SQLite implementation             |
 | `packages/wikilinks`      | Wikilink parsing                  |
-| `packages/tasks`          | Task/checkbox parsing             |
 | `packages/commands`       | Command palette                   |
 | `packages/embeds`         | Image/embed handling              |
 | `packages/plugin-api`     | Plugin API + theme system         |

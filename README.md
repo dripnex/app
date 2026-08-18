@@ -31,7 +31,6 @@ pnpm dev
 | `@dripnex/storage-core`   | Storage interfaces             |
 | `@dripnex/storage-sqlite` | SQLite implementation          |
 | `@dripnex/wikilinks`      | Wikilink parsing               |
-| `@dripnex/tasks`          | Task/checkbox parsing          |
 | `@dripnex/commands`       | Command palette                |
 | `@dripnex/embeds`         | Image/embed handling           |
 | `@dripnex/plugin-api`     | Plugin API + theme system      |

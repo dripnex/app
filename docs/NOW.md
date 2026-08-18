@@ -73,7 +73,7 @@ Shipped this week:
 - Settings → Plugins → Connect: paste `owner/repo[@tag]`. No fake marketplace.
 - Official palettes: Parchment, Wave, Night. Themes are token layers; community themes are repos.
 - Note templates: Meeting, Decision, Daily, Weekly, Reading, Issue (notebook `templates`).
-- What’s New is authored (`apps/web/content/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`. See `docs/WHATS_NEW.md`.
+- What’s New is authored (`docs/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`. See `docs/WHATS_NEW.md`.
 
 CSS path (decided 2026-08-17):
 Keep CSS modules + tokens. Do not add Tailwind to desktop.
@@ -90,11 +90,6 @@ Keep CSS modules + tokens. Do not add Tailwind to desktop.
 ## Debt that still bites
 
 - You: apex DNS, passphrase, 1Password SDK, `DRIPNEX_AI_KEY`. Footer Retry is no-op until the CEK exists.
-- Magic-link origin and session wipe: #478 (deploy API after merge).
-- Sync metadata / cursors / soft-delete: #479.
-- Plugin zip-slip + host allowlist: #480.
-- `apps/web` leftover tree still on disk; it is out of the pnpm workspace.
-- MCP writes (if enabled) still mutate SQLite directly.
 - Vectors need Ollama (`nomic-embed-text`). Without it, retrieve is keyword-only.
 - `docs/FIX_PLAN.md` is a pointer. Do not treat it as an inventory.
 

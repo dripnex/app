@@ -20,7 +20,5 @@ reviews:
       instructions: "Main process code. Check IPC handler patterns and sync service consistency."
     - path: "packages/api/**"
       instructions: "Server-side API using Hono + Drizzle ORM on Turso. Schema managed via drizzle-kit push, not file migrations."
-    - path: "apps/web/**"
-      instructions: "Unified Next.js + Fumadocs app. Marketing pages under app/(marketing)/, docs under content/docs/. Uses Tailwind CSS 4 and @dripnex/product-config."
 chat:
   auto_reply: true

@@ -18,7 +18,6 @@ export default tseslint.config(
       '**/.source/**',
       '**/next-env.d.ts',
       'packages/ai-assistant/**',
-      'apps/web/**',
     ],
   },
 
