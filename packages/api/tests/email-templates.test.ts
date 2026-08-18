@@ -2,14 +2,14 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderMagicLinkEmail, renderWelcomeEmail } from '../src/emails/render.js';
 import { createEmailService } from '../src/services/email.js';
 
-const LINK = 'https://dripnex-web.pages.dev/auth/verify?token=abc&client=desktop';
+const LINK = 'https://dripnex-marketing.pages.dev/auth/verify?token=abc&client=desktop';
 
 describe('email templates', () => {
   it('renders a structured magic-link document with the verify URL', async () => {
     const { html, text } = await renderMagicLinkEmail(LINK);
 
     expect(html.toLowerCase()).toContain('<html');
-    expect(html).toContain('dripnex-web.pages.dev/auth/verify?token=abc');
+    expect(html).toContain('dripnex-marketing.pages.dev/auth/verify?token=abc');
     expect(html).toContain('&amp;client=desktop');
     expect(html).toContain('Sign in');
     expect(html).not.toContain('#2563eb');
@@ -57,7 +57,7 @@ describe('email service', () => {
     expect(init?.method).toBe('POST');
     const body = JSON.parse(String(init?.body)) as { html: string; text: string; to: string[] };
     expect(body.to).toEqual(['a@b.co']);
-    expect(body.html).toContain('dripnex-web.pages.dev/auth/verify?token=abc');
+    expect(body.html).toContain('dripnex-marketing.pages.dev/auth/verify?token=abc');
     expect(body.text).toContain(LINK);
   });
 });

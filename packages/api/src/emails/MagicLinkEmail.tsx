@@ -21,7 +21,7 @@ export function MagicLinkEmail({ magicLink }: MagicLinkEmailProps) {
 }
 
 MagicLinkEmail.PreviewProps = {
-  magicLink: 'https://dripnex-web.pages.dev/auth/verify?token=preview',
+  magicLink: 'https://dripnex-marketing.pages.dev/auth/verify?token=preview',
 } satisfies MagicLinkEmailProps;
 
 export default MagicLinkEmail;

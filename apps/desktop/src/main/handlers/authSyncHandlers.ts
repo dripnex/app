@@ -8,6 +8,8 @@
 import { shell } from 'electron';
 import { z } from 'zod';
 import { defineIpcHandler } from '../ipc/registry.js';
+import type { LocalIdentity } from '../services/localIdentity.js';
+import { resolveSession } from '../services/session.js';
 import type {
   ApiClient,
   EncryptionService,
@@ -15,7 +17,6 @@ import type {
   TokenStorage,
   BroadcastFn,
 } from './types.js';
-import type { LocalIdentity } from '../services/localIdentity.js';
 
 export interface AuthSyncHandlerDeps {
   apiClient: ApiClient;
@@ -119,21 +120,14 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
   defineIpcHandler({
     channel: 'auth:getSession',
     args: z.tuple([]),
-    handler: async () => {
-      try {
-        const hasTokens = await storage.hasTokens();
-        if (hasTokens) {
-          const user = await client.getCurrentUser();
-          return { user };
-        }
-        const local = await localIdentity.read();
-        return local ? { user: local } : null;
-      } catch {
-        await storage.clearTokens();
-        const local = await localIdentity.read();
-        return local ? { user: local } : null;
-      }
-    },
+    handler: async () =>
+      resolveSession({
+        hasTokens: () => storage.hasTokens(),
+        getCurrentUser: () => client.getCurrentUser(),
+        getAccessToken: () => storage.getAccessToken(),
+        clearTokens: () => storage.clearTokens(),
+        readLocal: () => localIdentity.read(),
+      }),
   });
 
   defineIpcHandler({
