@@ -43,9 +43,7 @@ export function extractTitle(content: string, fallback: string = 'Untitled'): st
 
 /** Extracts tags from markdown content */
 export function extractTags(content: string): Tag[] {
-  const searchable = content
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`\n]+`/g, ' ');
+  const searchable = content.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]+`/g, ' ');
   const tagPattern = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
   const tags = new Set<string>();
 

@@ -57,9 +57,7 @@ export function estimateMessageTokens(content: MessageContent): number {
     if (part.type === 'text') return sum + estimateTokens(part.text);
     if (part.type === 'image') return sum + 1000;
     if (part.type === 'tool_use') {
-      return (
-        sum + estimateTokens(part.name) + estimateTokens(JSON.stringify(part.input ?? {}))
-      );
+      return sum + estimateTokens(part.name) + estimateTokens(JSON.stringify(part.input ?? {}));
     }
     if (part.type === 'tool_result') return sum + estimateTokens(part.content);
     return sum;
@@ -127,10 +125,7 @@ function truncateToTokens(text: string, maxTokens: number): string {
 
 export function buildContext(sources: ContextSources, budget: ContextBudget): ContextBuildResult {
   const queryTokens = sources.query ? estimateTokens(sources.query) : 0;
-  const available = Math.max(
-    0,
-    budget.maxContextTokens - budget.maxResponseTokens - queryTokens
-  );
+  const available = Math.max(0, budget.maxContextTokens - budget.maxResponseTokens - queryTokens);
   let used = queryTokens;
   let truncated = false;
 

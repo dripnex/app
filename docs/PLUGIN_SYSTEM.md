@@ -357,11 +357,11 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 User files in the data directory — same idea as Inkdrop's `init.js` + `styles.css`:
 
-| File | Role |
-| ---- | ---- |
-| `init.js` | Runs on load. Free-form `dripnex.*` **or** a CJS `PluginManifest`. Open from Settings → Plugins. |
-| `styles.css` | Injected into every renderer window. Save to apply. |
-| `keybindings.json` | Command id → chord (or `null` to unbind). Save to apply. |
+| File               | Role                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `init.js`          | Runs on load. Free-form `dripnex.*` **or** a CJS `PluginManifest`. Open from Settings → Plugins. |
+| `styles.css`       | Injected into every renderer window. Save to apply.                                              |
+| `keybindings.json` | Command id → chord (or `null` to unbind). Save to apply.                                         |
 
 Free-form `init.js` is wrapped as plugin `user-init`. A full manifest export still works.
 
@@ -371,23 +371,23 @@ These files do **not** exist until the user clicks Open. Templates are written o
 
 Enable **Vim Mode** in Settings → Plugins. Same engine as Inkdrop (`@replit/codemirror-vim`) plus:
 
-| | |
-| ---- | ---- |
-| Ex | `:w` save, `:n` / `:next` next note, `:prev` previous, `:p` / `:preview`, `:side` split, `:cmd {id}` dispatch any command |
-| Options | relative line numbers, yank/delete → system clipboard |
-| Status | `NORMAL` / `INSERT` / `VISUAL` / `REPLACE` in the editor status bar |
-| Preview | `j` `k` `gg` `G` `Ctrl-d/u/f/b` when the preview is focused |
+|         |                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Ex      | `:w` save, `:n` / `:next` next note, `:prev` previous, `:p` / `:preview`, `:side` split, `:cmd {id}` dispatch any command |
+| Options | relative line numbers, yank/delete → system clipboard                                                                     |
+| Status  | `NORMAL` / `INSERT` / `VISUAL` / `REPLACE` in the editor status bar                                                       |
+| Preview | `j` `k` `gg` `G` `Ctrl-d/u/f/b` when the preview is focused                                                               |
 
 From `init.js` (after enabling the plugin):
 
 ```js
-const Vim = dripnex.vim
+const Vim = dripnex.vim;
 if (Vim) {
-  Vim.map('jj', '<Esc>', 'insert')
-  Vim.map('Y', 'y$')
+  Vim.map('jj', '<Esc>', 'insert');
+  Vim.map('Y', 'y$');
   Vim.defineEx('find', 'f', () => {
-    void dripnex.commands.dispatch('app:focus-search')
-  })
+    void dripnex.commands.dispatch('app:focus-search');
+  });
 }
 ```
 
@@ -421,11 +421,11 @@ Built-ins stay in `apps/desktop` until they deserve their own repo.
 
 ### What belongs in the app
 
-| Role | Plugins | Marketing? |
-| ---- | ------- | ---------- |
-| **core** | mermaid, math, tables, paste-as-link, AI | yes |
-| **optional** | vim, export | yes |
-| **proof** (API examples, hide from the site) | word-count, reading-time, typewriter, focus, active-line | no |
+| Role                                         | Plugins                                                  | Marketing? |
+| -------------------------------------------- | -------------------------------------------------------- | ---------- |
+| **core**                                     | mermaid, math, tables, paste-as-link, AI                 | yes        |
+| **optional**                                 | vim, export                                              | yes        |
+| **proof** (API examples, hide from the site) | word-count, reading-time, typewriter, focus, active-line | no         |
 
 Do not add more proof plugins to dripnex.app/plugins.
 

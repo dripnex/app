@@ -55,8 +55,18 @@ export default function Navbar() {
                 className="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary hover:text-text-primary"
                 aria-label="Open navigation menu"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                  />
                 </svg>
               </button>
             </SheetTrigger>
@@ -68,19 +78,21 @@ export default function Navbar() {
                 </SheetTitle>
               </SheetHeader>
               <ul className="mt-8 space-y-1">
-                {[...links, { label: 'Sign in', href: '/login' }, { label: 'Sign up', href: '/signup' }].map(
-                  link => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        onClick={() => setOpen(false)}
-                        className="block rounded-md px-3 py-3 text-sm text-text-secondary hover:bg-white/[0.04] hover:text-text-primary"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  )
-                )}
+                {[
+                  ...links,
+                  { label: 'Sign in', href: '/login' },
+                  { label: 'Sign up', href: '/signup' },
+                ].map(link => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      onClick={() => setOpen(false)}
+                      className="block rounded-md px-3 py-3 text-sm text-text-secondary hover:bg-white/[0.04] hover:text-text-primary"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </SheetContent>
           </Sheet>

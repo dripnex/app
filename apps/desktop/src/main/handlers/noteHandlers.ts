@@ -225,9 +225,7 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
     channel: 'notes:search',
     args: z.tuple([
       z.string().max(2048),
-      z
-        .union([z.number().int().positive().max(10000), ListNotesOptionsSchema])
-        .optional(),
+      z.union([z.number().int().positive().max(10000), ListNotesOptionsSchema]).optional(),
     ]),
     handler: async (query, limitOrOptions) => {
       if (typeof limitOrOptions === 'number' || limitOrOptions === undefined) {

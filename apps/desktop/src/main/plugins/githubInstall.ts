@@ -83,9 +83,12 @@ export async function resolveRegistryBundle(
   let lastError = 'Registry unreachable';
   for (const base of [...new Set(PLUGIN_REGISTRY_URLS)]) {
     try {
-      const res = await fetchImpl(`${base.replace(/\/$/, '')}/plugins/${encodeURIComponent(slug)}`, {
-        headers: { Accept: 'application/json', 'User-Agent': 'Dripnex' },
-      });
+      const res = await fetchImpl(
+        `${base.replace(/\/$/, '')}/plugins/${encodeURIComponent(slug)}`,
+        {
+          headers: { Accept: 'application/json', 'User-Agent': 'Dripnex' },
+        }
+      );
       if (res.status === 404) {
         lastError = `Package "${slug}" is not in the registry`;
         continue;

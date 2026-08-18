@@ -8,9 +8,7 @@ describe('extractHeadings', () => {
   });
 
   it('strips closing hashes', () => {
-    expect(extractHeadings('### Done ###')).toEqual([
-      { text: 'Done', level: 3, slug: 'done' },
-    ]);
+    expect(extractHeadings('### Done ###')).toEqual([{ text: 'Done', level: 3, slug: 'done' }]);
   });
 });
 

@@ -13,9 +13,7 @@ describe('scanMarkdown', () => {
     ].join('\n');
 
     const scan = scanMarkdown(md);
-    expect(scan.headings).toEqual([
-      { level: 1, text: 'Title', line: 1, slug: 'title' },
-    ]);
+    expect(scan.headings).toEqual([{ level: 1, text: 'Title', line: 1, slug: 'title' }]);
     expect(scan.tasks).toEqual({ total: 2, completed: 1 });
     expect(scan.embedTargets).toEqual(['shot.png']);
     expect(scan.embeds).toEqual([{ target: 'shot.png', display: 'Shot' }]);
@@ -57,13 +55,7 @@ describe('scanMarkdown', () => {
   });
 
   it('skips tilde fences and inline code', () => {
-    const md = [
-      '~~~',
-      '# Fake',
-      '[[No]]',
-      '~~~',
-      'See `[[inline]]` and ![[real.png]]',
-    ].join('\n');
+    const md = ['~~~', '# Fake', '[[No]]', '~~~', 'See `[[inline]]` and ![[real.png]]'].join('\n');
     const scan = scanMarkdown(md);
     expect(scan.headings).toEqual([]);
     expect(scan.wikilinks).toEqual([]);

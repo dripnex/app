@@ -73,8 +73,7 @@ export interface AiAPI {
     apiKey?: string;
     baseUrl?: string;
   }) => Promise<
-    | { ok: true; models: Array<{ id: string; displayName?: string }> }
-    | { ok: false; error: string }
+    { ok: true; models: Array<{ id: string; displayName?: string }> } | { ok: false; error: string }
   >;
 }
 

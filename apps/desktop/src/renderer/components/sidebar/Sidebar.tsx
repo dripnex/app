@@ -176,7 +176,9 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
                 <FileStack size={15} />
               </span>
               <span className={sc('sidebar-row-label')}>Note Templates</span>
-              {templateCount > 0 ? <span className={sc('sidebar-row-count')}>{templateCount}</span> : null}
+              {templateCount > 0 ? (
+                <span className={sc('sidebar-row-count')}>{templateCount}</span>
+              ) : null}
             </button>
           </div>
         )}

@@ -267,7 +267,9 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
       setError(null);
       const result = await window.dripnex.encryption.unlockWithPassphrase(passphrase);
       if (!result.success) {
-        setError(result.wrongPassphrase ? 'Incorrect passphrase' : (result.error ?? 'Unlock failed'));
+        setError(
+          result.wrongPassphrase ? 'Incorrect passphrase' : (result.error ?? 'Unlock failed')
+        );
         return;
       }
       await startCloudSyncIfReady();
@@ -334,9 +336,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
               }}
             />
           )}
-          {step === 'waiting-payment' && (
-            <WaitingPaymentStep onCancel={() => setStep('pricing')} />
-          )}
+          {step === 'waiting-payment' && <WaitingPaymentStep onCancel={() => setStep('pricing')} />}
           {step === 'email' && (
             <EmailStep
               email={email}

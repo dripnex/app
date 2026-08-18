@@ -49,9 +49,9 @@ describe('chunkMarkdown', () => {
     expect(joined).toContain('```ts');
     expect(joined).toContain('const z = x + y;');
     expect(joined).toContain('```');
-    expect(chunks.some(chunk => chunk.content.includes('```ts') && !chunk.content.includes('```'))).toBe(
-      false
-    );
+    expect(
+      chunks.some(chunk => chunk.content.includes('```ts') && !chunk.content.includes('```'))
+    ).toBe(false);
   });
 
   it('tracks the last heading as chunk metadata', () => {
@@ -71,9 +71,10 @@ describe('chunkMarkdown', () => {
   });
 
   it('assigns sequential indexes', () => {
-    const body = Array.from({ length: 40 }, (_, i) => `Paragraph number ${i} with extra words.`).join(
-      '\n\n'
-    );
+    const body = Array.from(
+      { length: 40 },
+      (_, i) => `Paragraph number ${i} with extra words.`
+    ).join('\n\n');
     const chunks = chunkMarkdown(body, { maxTokens: 30, overlapTokens: 4 });
     expect(chunks.map(chunk => chunk.index)).toEqual(chunks.map((_, i) => i));
     for (const chunk of chunks) {

@@ -63,7 +63,12 @@ export function PreviewFindBar({ matchCount }: PreviewFindBarProps) {
       >
         <ChevronDown size={14} />
       </button>
-      <button type="button" className={sc('preview-find-btn')} onClick={closePanel} aria-label="Close find">
+      <button
+        type="button"
+        className={sc('preview-find-btn')}
+        onClick={closePanel}
+        aria-label="Close find"
+      >
         <X size={14} />
       </button>
     </div>

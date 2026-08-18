@@ -29,9 +29,9 @@ export function isNoteListNavBlocked(target: unknown): boolean {
   if (typeof el.closest !== 'function') return false;
   return Boolean(
     el.closest('.cm-editor') ||
-      el.closest('.cm-search') ||
-      el.closest('[data-preview]') ||
-      el.closest('[role="dialog"]') ||
-      el.closest('.command-palette-overlay')
+    el.closest('.cm-search') ||
+    el.closest('[data-preview]') ||
+    el.closest('[role="dialog"]') ||
+    el.closest('.command-palette-overlay')
   );
 }

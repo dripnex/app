@@ -1,4 +1,8 @@
-import type { CompletionContext, CompletionResult, CompletionSource } from '@codemirror/autocomplete';
+import type {
+  CompletionContext,
+  CompletionResult,
+  CompletionSource,
+} from '@codemirror/autocomplete';
 import type { EditorView } from '@codemirror/view';
 import {
   filterFenceLanguages,

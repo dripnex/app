@@ -11,7 +11,12 @@ type VimWithGlobals = typeof Vim & {
   resetVimGlobalState_: () => void;
   getVimGlobalState_: () => {
     registerController: {
-      unnamedRegister: { toString(): string; linewise: boolean; blockwise: boolean; setText: (...a: unknown[]) => void };
+      unnamedRegister: {
+        toString(): string;
+        linewise: boolean;
+        blockwise: boolean;
+        setText: (...a: unknown[]) => void;
+      };
       registers: Record<string, unknown>;
       pushText: (
         registerName: string | null | undefined,

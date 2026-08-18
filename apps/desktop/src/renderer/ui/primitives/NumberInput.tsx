@@ -5,8 +5,10 @@
 import { type InputHTMLAttributes, forwardRef } from 'react';
 import { Input } from './Input';
 
-export interface NumberInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'type' | 'value' | 'onChange'> {
+export interface NumberInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'size' | 'type' | 'value' | 'onChange'
+> {
   value: number;
   onChange: (value: number) => void;
   size?: 'sm' | 'md';

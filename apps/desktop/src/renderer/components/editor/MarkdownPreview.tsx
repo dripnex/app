@@ -273,104 +273,109 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     return (
       <div className={sc('preview-shell')}>
         {findOpen ? <PreviewFindBar matchCount={findCount} /> : null}
-      <div ref={containerRef} className={sc('markdown-preview')} data-preview onClick={handleClick}>
-        <div className={sc('preview-metadata-header')}>
-          {hasProgress && (
-            <div className={sc('preview-meta-item')}>
-              <ListChecks size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
-              <div className={sc('preview-meta-content')}>
-                <span className={sc('preview-meta-label')}>PROGRESS</span>
-                <div className={sc('preview-meta-progress')}>
-                  <div className={sc('preview-progress-bar')}>
-                    <div
-                      className={sc('preview-progress-fill')}
-                      style={{ width: `${progressPercent}%` }}
-                    />
+        <div
+          ref={containerRef}
+          className={sc('markdown-preview')}
+          data-preview
+          onClick={handleClick}
+        >
+          <div className={sc('preview-metadata-header')}>
+            {hasProgress && (
+              <div className={sc('preview-meta-item')}>
+                <ListChecks size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+                <div className={sc('preview-meta-content')}>
+                  <span className={sc('preview-meta-label')}>PROGRESS</span>
+                  <div className={sc('preview-meta-progress')}>
+                    <div className={sc('preview-progress-bar')}>
+                      <div
+                        className={sc('preview-progress-fill')}
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <span className={sc('preview-progress-text')}>
+                      {tasks.completed} of {tasks.total} tasks
+                    </span>
                   </div>
-                  <span className={sc('preview-progress-text')}>
-                    {tasks.completed} of {tasks.total} tasks
-                  </span>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {createdAt && (
-            <div className={sc('preview-meta-item')}>
-              <Clock size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
-              <div className={sc('preview-meta-content')}>
-                <span className={sc('preview-meta-label')}>CREATED AT</span>
-                <span className={sc('preview-meta-value')}>{formatDateTime(createdAt)}</span>
+            {createdAt && (
+              <div className={sc('preview-meta-item')}>
+                <Clock size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+                <div className={sc('preview-meta-content')}>
+                  <span className={sc('preview-meta-label')}>CREATED AT</span>
+                  <span className={sc('preview-meta-value')}>{formatDateTime(createdAt)}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {updatedAt && (
-            <div className={sc('preview-meta-item')}>
-              <CalendarPlus size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
-              <div className={sc('preview-meta-content')}>
-                <span className={sc('preview-meta-label')}>UPDATED AT</span>
-                <span className={sc('preview-meta-value')}>{formatDateTime(updatedAt)}</span>
+            {updatedAt && (
+              <div className={sc('preview-meta-item')}>
+                <CalendarPlus size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+                <div className={sc('preview-meta-content')}>
+                  <span className={sc('preview-meta-label')}>UPDATED AT</span>
+                  <span className={sc('preview-meta-value')}>{formatDateTime(updatedAt)}</span>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <Markdown
-          remarkPlugins={
-            [
-              ...coreRemarkPlugins(),
-              ...pluginRemarkRegs.map(r => r.plugin),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ] as any[]
-          }
-          rehypePlugins={
-            [
-              rehypeRaw,
-              [rehypeSanitize, sanitizeSchema],
-              rehypeHighlight,
-              ...pluginRehypeRegs.map(r => r.plugin),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ] as any[]
-          }
-          components={
-            {
-              input: ({ type, checked, ...props }) => {
-                if (type === 'checkbox') {
-                  return <input type="checkbox" checked={checked} disabled {...props} />;
-                }
-                return <input type={type} {...props} />;
-              },
-              // Custom embed-image element bypasses rehype URL sanitization
-              'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
-                <img src={src} alt={alt} className={sc('embed', 'embed-image')} loading="lazy" />
-              ),
-              // Code block renderer delegation to plugins
-              code: ({ className, children, ...props }) => {
-                const match = /language-([\w+#.-]+)/.exec(className || '');
-                const lang = match?.[1];
-                if (lang) {
-                  const reg = pluginCodeBlockRegs.find(r => r.language === lang);
-                  if (reg) {
-                    const CodeRenderer = reg.component;
-                    const code = String(children).replace(/\n$/, '');
-                    return <CodeRenderer code={code} language={lang} />;
+          <Markdown
+            remarkPlugins={
+              [
+                ...coreRemarkPlugins(),
+                ...pluginRemarkRegs.map(r => r.plugin),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ] as any[]
+            }
+            rehypePlugins={
+              [
+                rehypeRaw,
+                [rehypeSanitize, sanitizeSchema],
+                rehypeHighlight,
+                ...pluginRehypeRegs.map(r => r.plugin),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ] as any[]
+            }
+            components={
+              {
+                input: ({ type, checked, ...props }) => {
+                  if (type === 'checkbox') {
+                    return <input type="checkbox" checked={checked} disabled {...props} />;
                   }
-                }
-                return (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-              // Plugin-registered preview components
-              ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
-            } as Record<string, React.ComponentType<unknown>>
-          }
-        >
-          {resolvedContent}
-        </Markdown>
-      </div>
+                  return <input type={type} {...props} />;
+                },
+                // Custom embed-image element bypasses rehype URL sanitization
+                'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
+                  <img src={src} alt={alt} className={sc('embed', 'embed-image')} loading="lazy" />
+                ),
+                // Code block renderer delegation to plugins
+                code: ({ className, children, ...props }) => {
+                  const match = /language-([\w+#.-]+)/.exec(className || '');
+                  const lang = match?.[1];
+                  if (lang) {
+                    const reg = pluginCodeBlockRegs.find(r => r.language === lang);
+                    if (reg) {
+                      const CodeRenderer = reg.component;
+                      const code = String(children).replace(/\n$/, '');
+                      return <CodeRenderer code={code} language={lang} />;
+                    }
+                  }
+                  return (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                // Plugin-registered preview components
+                ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
+              } as Record<string, React.ComponentType<unknown>>
+            }
+          >
+            {resolvedContent}
+          </Markdown>
+        </div>
       </div>
     );
   }

@@ -7,7 +7,11 @@ const DEFAULT_MODEL = 'nomic-embed-text';
 
 const KNOWN: Record<string, EmbeddingModelInfo> = {
   'nomic-embed-text': { id: 'nomic-embed-text', displayName: 'Nomic Embed', dimensions: 768 },
-  'mxbai-embed-large': { id: 'mxbai-embed-large', displayName: 'mxbai Embed Large', dimensions: 1024 },
+  'mxbai-embed-large': {
+    id: 'mxbai-embed-large',
+    displayName: 'mxbai Embed Large',
+    dimensions: 1024,
+  },
   'all-minilm': { id: 'all-minilm', displayName: 'all-MiniLM', dimensions: 384 },
 };
 

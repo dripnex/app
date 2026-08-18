@@ -15,7 +15,12 @@ const LOGOS: Record<Exclude<AiProviderId, 'dripnex'>, string> = {
 
 export function ProviderMark({ id, size = 36 }: { id: AiProviderId; size?: number }) {
   return (
-    <span className={styles.mark} data-id={id} style={{ width: size, height: size }} aria-hidden="true">
+    <span
+      className={styles.mark}
+      data-id={id}
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
       {id === 'dripnex' ? (
         <img className={styles.photo} src={dripnexMark} alt="" />
       ) : (

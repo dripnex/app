@@ -56,7 +56,7 @@ describe('loadInitScript', () => {
     expect(result!.id).toBe('user-init');
     expect(() =>
       result!.activate({
-        log: { info() {}, warn() {}, error() {} },
+        log: { debug() {}, info() {}, warn() {}, error() {} },
       } as never)
     ).toThrow('boom');
   });
@@ -101,7 +101,7 @@ describe('loadInitScript', () => {
       editor: {},
       app: {},
       data: {},
-      log: { info() {}, warn() {}, error() {} },
+      log: { debug() {}, info() {}, warn() {}, error() {} },
       config: {},
       layout: {},
       decorations: {},

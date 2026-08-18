@@ -13,7 +13,10 @@ function previewTarget(event: KeyboardEvent): HTMLElement | null {
   if (!preview) return null;
   if (event.target instanceof Node && preview.contains(event.target)) return preview;
   const active = document.activeElement;
-  if (active instanceof HTMLElement && (active.closest('.cm-editor') || active.closest('.cm-content'))) {
+  if (
+    active instanceof HTMLElement &&
+    (active.closest('.cm-editor') || active.closest('.cm-content'))
+  ) {
     return null;
   }
   if (document.querySelector('.cm-editor')) return null;

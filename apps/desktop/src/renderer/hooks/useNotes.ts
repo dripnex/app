@@ -47,9 +47,7 @@ export function useNotes(options?: ListOptions) {
 export function useSearchNotes(query: string, options?: number | ListOptions) {
   const scoped =
     typeof options === 'object' &&
-    (options.isDeleted === true ||
-      options.archived === 'archived' ||
-      Boolean(options.notebookId));
+    (options.isDeleted === true || options.archived === 'archived' || Boolean(options.notebookId));
 
   return useQuery({
     queryKey: noteKeys.search(query, options),

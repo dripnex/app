@@ -277,12 +277,15 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
     [focusedId, matchIds, neighborIds]
   );
 
-  const paintPointer = useCallback((node: GraphNode, color: string, ctx: CanvasRenderingContext2D) => {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(node.x ?? 0, node.y ?? 0, 11, 0, Math.PI * 2);
-    ctx.fill();
-  }, []);
+  const paintPointer = useCallback(
+    (node: GraphNode, color: string, ctx: CanvasRenderingContext2D) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(node.x ?? 0, node.y ?? 0, 11, 0, Math.PI * 2);
+      ctx.fill();
+    },
+    []
+  );
 
   const drawLink = useCallback(
     (link: GraphLink, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -290,9 +293,7 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
       const target = typeof link.target === 'object' ? link.target : null;
       if (!source || !target || source.x == null || target.x == null) return;
 
-      const hot =
-        Boolean(focusedId) &&
-        (source.id === focusedId || target.id === focusedId);
+      const hot = Boolean(focusedId) && (source.id === focusedId || target.id === focusedId);
       const muted = Boolean(focusedId) && !hot;
       const inferredEdge = link.kind === 'inferred';
 
@@ -371,7 +372,9 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
       const node = nodeById.get(noteId);
       const api = window.dripnex?.ai;
       setActivityState('running');
-      setActivity([{ id: 'retrieve', title: 'retrieve.notes', detail: 'Searching the local index…' }]);
+      setActivity([
+        { id: 'retrieve', title: 'retrieve.notes', detail: 'Searching the local index…' },
+      ]);
       try {
         const hits =
           api && typeof api.retrieve === 'function'

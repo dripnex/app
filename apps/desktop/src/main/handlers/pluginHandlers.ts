@@ -204,7 +204,9 @@ async function resolveConnectUrl(
   spec: Exclude<ReturnType<typeof parseConnectSpec>, { error: string }>
 ): Promise<{ url: string } | { error: string }> {
   if (spec.kind === 'registry') {
-    return resolveRegistryBundle(spec.slug, url => net.fetch(url));
+    return resolveRegistryBundle(spec.slug, input =>
+      net.fetch(typeof input === 'string' ? input : String(input))
+    );
   }
 
   if (spec.kind === 'url') {
@@ -226,7 +228,8 @@ async function resolveConnectUrl(
   };
   const urls = spec.tag
     ? uniqueReleaseTags(spec.tag).map(
-        t => `https://api.github.com/repos/${spec.owner}/${spec.repo}/releases/tags/${encodeURIComponent(t)}`
+        t =>
+          `https://api.github.com/repos/${spec.owner}/${spec.repo}/releases/tags/${encodeURIComponent(t)}`
       )
     : [`https://api.github.com/repos/${spec.owner}/${spec.repo}/releases/latest`];
 

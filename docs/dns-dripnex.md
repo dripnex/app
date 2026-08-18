@@ -18,11 +18,11 @@ leftover A/AAAA records in the Cloudflare zone.
 
 Zone: `dripnex.app`
 
-| Type | Name | Target | Proxy |
-| --- | --- | --- | --- |
-| CNAME | `@` | `dripnex-web.pages.dev` | Proxied |
-| CNAME | `www` | `dripnex-web.pages.dev` | Proxied |
-| CNAME | `api` | *(leave the Worker custom domain)* | Proxied |
+| Type  | Name  | Target                             | Proxy   |
+| ----- | ----- | ---------------------------------- | ------- |
+| CNAME | `@`   | `dripnex-web.pages.dev`            | Proxied |
+| CNAME | `www` | `dripnex-web.pages.dev`            | Proxied |
+| CNAME | `api` | _(leave the Worker custom domain)_ | Proxied |
 
 Delete any extra **A / AAAA / CNAME on `@` or `www`** that do not point
 at `dripnex-web.pages.dev`. Those are the GoDaddy parkweb origin.

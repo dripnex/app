@@ -132,8 +132,8 @@ export function GitHubCard() {
             </span>
           </div>
           <p className={styles.cardDesc}>
-            Connect, import one issue, or watch a repo. Pull writes notes to Inbox and
-            refreshes them from GitHub.
+            Connect, import one issue, or watch a repo. Pull writes notes to Inbox and refreshes
+            them from GitHub.
           </p>
         </div>
       </div>
@@ -217,7 +217,11 @@ export function GitHubCard() {
                     >
                       Pull
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => void removeWatcher(watcher.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void removeWatcher(watcher.id)}
+                    >
                       Remove
                     </Button>
                   </div>
@@ -229,8 +233,8 @@ export function GitHubCard() {
       ) : (
         <div className={styles.body}>
           <p className={styles.fieldHint}>
-            If you already use the GitHub CLI, Connect uses <code>gh auth token</code>. Otherwise paste
-            a classic token with <code>repo</code> scope.
+            If you already use the GitHub CLI, Connect uses <code>gh auth token</code>. Otherwise
+            paste a classic token with <code>repo</code> scope.
           </p>
           <Field label="Token (optional)" htmlFor="gh-token">
             <Input

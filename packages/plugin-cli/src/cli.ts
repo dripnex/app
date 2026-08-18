@@ -91,7 +91,9 @@ async function main() {
       console.log('  uninstall <id>       Remove an installed plugin');
       console.log('  link [path]          Symlink a local plugin for development');
       console.log('  pack [path]          Build a versioned .tar.gz');
-      console.log('  publish [path]       Pack, GitHub-release, and register on the Dripnex registry');
+      console.log(
+        '  publish [path]       Pack, GitHub-release, and register on the Dripnex registry'
+      );
       console.log('');
       console.log('Examples:');
       console.log('  dripnex-plugin init "My Plugin"');

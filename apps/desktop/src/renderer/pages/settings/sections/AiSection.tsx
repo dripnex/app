@@ -72,7 +72,8 @@ export function AiSection() {
 
   const registeredAiCommands = useAiCommands();
   const currentProvider = ai.provider;
-  const catalog = PROVIDER_CATALOG.find(item => item.id === currentProvider) ?? PROVIDER_CATALOG[0]!;
+  const catalog =
+    PROVIDER_CATALOG.find(item => item.id === currentProvider) ?? PROVIDER_CATALOG[0]!;
   const isConnected = connectStatus[currentProvider] === 'connected';
   const isConnecting = connectStatus[currentProvider] === 'connecting';
 
@@ -104,7 +105,8 @@ export function AiSection() {
       }
       setConnectStatus(status);
       const current = useSettingsStore.getState().settings.ai.provider;
-      const currentReady = current === 'dripnex' ? status.dripnex === 'connected' : status[current] === 'connected';
+      const currentReady =
+        current === 'dripnex' ? status.dripnex === 'connected' : status[current] === 'connected';
       if (status.dripnex === 'connected' && !currentReady) {
         const firstModel = FALLBACK_MODELS.dripnex[0]?.value;
         updateAi({
@@ -136,7 +138,10 @@ export function AiSection() {
   useEffect(() => {
     const api = window.dripnex?.ai;
     if (!api || typeof api.kbCatalog !== 'function') return;
-    void api.kbCatalog().then(setEmbedCatalog).catch(() => setEmbedCatalog([]));
+    void api
+      .kbCatalog()
+      .then(setEmbedCatalog)
+      .catch(() => setEmbedCatalog([]));
   }, []);
 
   const embedProvider = ai.embedProvider ?? 'ollama';
@@ -378,9 +383,9 @@ export function AiSection() {
     <div className={styles.section}>
       <h2 className={styles.title}>AI Assistant</h2>
       <p className={styles.lede}>
-        Dripnex AI is included with your account — no key. Other clouds still require a
-        one-time key until those providers open a public OAuth for apps. Keys stay in the
-        keychain. Ollama never leaves this machine.
+        Dripnex AI is included with your account — no key. Other clouds still require a one-time key
+        until those providers open a public OAuth for apps. Keys stay in the keychain. Ollama never
+        leaves this machine.
       </p>
 
       {PROVIDER_GROUPS.map(group => {
@@ -392,7 +397,8 @@ export function AiSection() {
             <div className={cardStyles.list}>
               {items.map(item => {
                 const active = item.id === currentProvider;
-                const status = connectStatus[item.id] ?? (item.id === 'dripnex' ? 'unavailable' : 'idle');
+                const status =
+                  connectStatus[item.id] ?? (item.id === 'dripnex' ? 'unavailable' : 'idle');
                 const connected = status === 'connected';
                 const unavailable = status === 'unavailable';
                 const badge = connected
@@ -508,8 +514,9 @@ export function AiSection() {
             onChange={value => {
               const provider = value === 'openai' ? 'openai' : 'ollama';
               const models = embedCatalog.find(item => item.id === provider)?.models ?? [];
-              const nextModel =
-                models.some(model => model.id === embedModel) ? embedModel : (models[0]?.id ?? embedModel);
+              const nextModel = models.some(model => model.id === embedModel)
+                ? embedModel
+                : (models[0]?.id ?? embedModel);
               void applyEmbed({ embedProvider: provider, embedModel: nextModel });
             }}
             options={
@@ -557,7 +564,11 @@ export function AiSection() {
 
       {isConnected ? (
         <SettingGroup title="Model">
-          <SettingRow label="Model" description={`Used when chatting with ${catalog.name}`} htmlFor="aiModel">
+          <SettingRow
+            label="Model"
+            description={`Used when chatting with ${catalog.name}`}
+            htmlFor="aiModel"
+          >
             <Select
               id="aiModel"
               value={ai.model}

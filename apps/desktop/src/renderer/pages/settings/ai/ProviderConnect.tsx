@@ -84,7 +84,9 @@ export function ProviderConnect({
         Continue with {item.name}
         <ExternalLink size={12} />
       </a>
-      <p className={styles.or}>Then paste the key once. Providers do not offer a public OAuth for apps yet.</p>
+      <p className={styles.or}>
+        Then paste the key once. Providers do not offer a public OAuth for apps yet.
+      </p>
       <Field
         label={
           <>
@@ -184,7 +186,12 @@ export function OllamaConnect({
             />
           </Field>
           <div className={styles.footer}>
-            <a className={styles.link} href="https://ollama.com/download" target="_blank" rel="noreferrer">
+            <a
+              className={styles.link}
+              href="https://ollama.com/download"
+              target="_blank"
+              rel="noreferrer"
+            >
               Install Ollama
               <ExternalLink size={11} />
             </a>

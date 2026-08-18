@@ -126,9 +126,7 @@ export function CommandPalette({ isOpen, onClose, onOpenNote }: CommandPalettePr
     return result;
   }, [filtered]);
 
-  type FlatItem =
-    | { type: 'note'; id: string; title: string }
-    | { type: 'command'; id: string };
+  type FlatItem = { type: 'note'; id: string; title: string } | { type: 'command'; id: string };
 
   const flatItems = useMemo((): FlatItem[] => {
     const notes: FlatItem[] = noteHits.map(note => ({
@@ -136,7 +134,9 @@ export function CommandPalette({ isOpen, onClose, onOpenNote }: CommandPalettePr
       id: note.id,
       title: note.title,
     }));
-    const cmds: FlatItem[] = groups.flatMap(g => g.commands.map(cmd => ({ type: 'command' as const, id: cmd.id })));
+    const cmds: FlatItem[] = groups.flatMap(g =>
+      g.commands.map(cmd => ({ type: 'command' as const, id: cmd.id }))
+    );
     return [...notes, ...cmds];
   }, [noteHits, groups]);
 
@@ -162,26 +162,29 @@ export function CommandPalette({ isOpen, onClose, onOpenNote }: CommandPalettePr
     if (!isOpen) return;
     const needle = query.trim();
     let cancelled = false;
-    const timer = window.setTimeout(() => {
-      const req = needle
-        ? window.dripnex.notes.search(needle, {
-            limit: 8,
-            isDeleted: false,
-            excludeNotebookIds: ['templates'],
-          })
-        : window.dripnex.notes.list({
-            limit: 8,
-            isDeleted: false,
-            excludeNotebookIds: ['templates'],
-            sortBy: 'updatedAt',
-            sortOrder: 'desc',
-          });
-      void req.then(notes => {
-        if (!cancelled) {
-          setNoteHits(notes.map(note => ({ id: note.id, title: note.title || 'Untitled' })));
-        }
-      });
-    }, needle ? 160 : 0);
+    const timer = window.setTimeout(
+      () => {
+        const req = needle
+          ? window.dripnex.notes.search(needle, {
+              limit: 8,
+              isDeleted: false,
+              excludeNotebookIds: ['templates'],
+            })
+          : window.dripnex.notes.list({
+              limit: 8,
+              isDeleted: false,
+              excludeNotebookIds: ['templates'],
+              sortBy: 'updatedAt',
+              sortOrder: 'desc',
+            });
+        void req.then(notes => {
+          if (!cancelled) {
+            setNoteHits(notes.map(note => ({ id: note.id, title: note.title || 'Untitled' })));
+          }
+        });
+      },
+      needle ? 160 : 0
+    );
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
@@ -290,7 +293,9 @@ export function CommandPalette({ isOpen, onClose, onOpenNote }: CommandPalettePr
             aria-expanded="true"
             aria-controls="command-palette-list"
             aria-activedescendant={
-              flatItems[selectedIndex] ? `cmd-${flatItems[selectedIndex].type}-${flatItems[selectedIndex].id}` : undefined
+              flatItems[selectedIndex]
+                ? `cmd-${flatItems[selectedIndex].type}-${flatItems[selectedIndex].id}`
+                : undefined
             }
           />
         </div>
@@ -305,70 +310,76 @@ export function CommandPalette({ isOpen, onClose, onOpenNote }: CommandPalettePr
             <div className={sc('command-palette-empty')}>No matches</div>
           ) : (
             <>
-            {noteHits.length > 0 ? (
-              <div className={sc('command-palette-group')}>
-                <div className={sc('command-palette-group-label')}>
-                  {query.trim() ? 'Notes' : 'Recent'}
+              {noteHits.length > 0 ? (
+                <div className={sc('command-palette-group')}>
+                  <div className={sc('command-palette-group-label')}>
+                    {query.trim() ? 'Notes' : 'Recent'}
+                  </div>
+                  {noteHits.map((note, noteIndex) => {
+                    const isActive = noteIndex === selectedIndex;
+                    return (
+                      <div
+                        key={note.id}
+                        id={`cmd-note-${note.id}`}
+                        className={sc(
+                          'command-palette-item',
+                          isActive && 'command-palette-item--active'
+                        )}
+                        role="option"
+                        aria-selected={isActive}
+                        data-active={isActive ? 'true' : undefined}
+                        onClick={() => openNote(note.id)}
+                        onMouseEnter={() => setSelectedIndex(noteIndex)}
+                      >
+                        <span className={sc('command-palette-item-icon')}>
+                          <FileCode size={14} />
+                        </span>
+                        <span className={sc('command-palette-item-name')}>{note.title}</span>
+                        <span className={sc('command-palette-item-category')}>Note</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                {noteHits.map((note, noteIndex) => {
-                  const isActive = noteIndex === selectedIndex;
+              ) : null}
+              {groups.map(group => {
+                const groupItems = group.commands.map(cmd => {
+                  const currentFlatIndex = flatIndex++;
+                  const isActive = currentFlatIndex === selectedIndex;
+                  const IconComponent = cmd.icon ? ICON_MAP[cmd.icon] : undefined;
+                  const kb = registry.getKeybinding(cmd.id);
+                  const kbLabel = formatKeybinding(kb);
+
                   return (
                     <div
-                      key={note.id}
-                      id={`cmd-note-${note.id}`}
-                      className={sc('command-palette-item', isActive && 'command-palette-item--active')}
+                      key={cmd.id}
+                      id={`cmd-command-${cmd.id}`}
+                      className={sc(
+                        'command-palette-item',
+                        isActive && 'command-palette-item--active'
+                      )}
                       role="option"
                       aria-selected={isActive}
                       data-active={isActive ? 'true' : undefined}
-                      onClick={() => openNote(note.id)}
-                      onMouseEnter={() => setSelectedIndex(noteIndex)}
+                      onClick={() => executeCommand(cmd.id)}
+                      onMouseEnter={() => setSelectedIndex(currentFlatIndex)}
                     >
                       <span className={sc('command-palette-item-icon')}>
-                        <FileCode size={14} />
+                        {IconComponent ? <IconComponent size={14} /> : null}
                       </span>
-                      <span className={sc('command-palette-item-name')}>{note.title}</span>
-                      <span className={sc('command-palette-item-category')}>Note</span>
+                      <span className={sc('command-palette-item-name')}>{cmd.name}</span>
+                      <span className={sc('command-palette-item-category')}>{group.label}</span>
+                      {kbLabel && <kbd className={sc('command-palette-item-kbd')}>{kbLabel}</kbd>}
                     </div>
                   );
-                })}
-              </div>
-            ) : null}
-            {groups.map(group => {
-              const groupItems = group.commands.map(cmd => {
-                const currentFlatIndex = flatIndex++;
-                const isActive = currentFlatIndex === selectedIndex;
-                const IconComponent = cmd.icon ? ICON_MAP[cmd.icon] : undefined;
-                const kb = registry.getKeybinding(cmd.id);
-                const kbLabel = formatKeybinding(kb);
+                });
 
                 return (
-                  <div
-                    key={cmd.id}
-                    id={`cmd-command-${cmd.id}`}
-                    className={sc('command-palette-item', isActive && 'command-palette-item--active')}
-                    role="option"
-                    aria-selected={isActive}
-                    data-active={isActive ? 'true' : undefined}
-                    onClick={() => executeCommand(cmd.id)}
-                    onMouseEnter={() => setSelectedIndex(currentFlatIndex)}
-                  >
-                    <span className={sc('command-palette-item-icon')}>
-                      {IconComponent ? <IconComponent size={14} /> : null}
-                    </span>
-                    <span className={sc('command-palette-item-name')}>{cmd.name}</span>
-                    <span className={sc('command-palette-item-category')}>{group.label}</span>
-                    {kbLabel && <kbd className={sc('command-palette-item-kbd')}>{kbLabel}</kbd>}
+                  <div key={group.category} className={sc('command-palette-group')}>
+                    <div className={sc('command-palette-group-label')}>{group.label}</div>
+                    {groupItems}
                   </div>
                 );
-              });
-
-              return (
-                <div key={group.category} className={sc('command-palette-group')}>
-                  <div className={sc('command-palette-group-label')}>{group.label}</div>
-                  {groupItems}
-                </div>
-              );
-            })}
+              })}
             </>
           )}
         </div>

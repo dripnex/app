@@ -183,11 +183,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
   async findByTitle(title: string): Promise<Note | null> {
     const needle = title.trim().toLowerCase();
     for (const note of this.notes.values()) {
-      if (
-        !note.isDeleted &&
-        !note.metadata.archivedAt &&
-        note.title.toLowerCase() === needle
-      ) {
+      if (!note.isDeleted && !note.metadata.archivedAt && note.title.toLowerCase() === needle) {
         return note;
       }
     }

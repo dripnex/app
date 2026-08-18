@@ -81,10 +81,7 @@ export function userDataRootCandidates(): string[] {
     const roaming = process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
     return [join(roaming, '@dripnex', 'desktop'), join(roaming, 'dripnex')];
   }
-  return [
-    join(home, '.config', '@dripnex', 'desktop'),
-    join(home, '.config', 'dripnex'),
-  ];
+  return [join(home, '.config', '@dripnex', 'desktop'), join(home, '.config', 'dripnex')];
 }
 
 /**

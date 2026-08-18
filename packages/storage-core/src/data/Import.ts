@@ -392,14 +392,8 @@ function convertWikilinks(content: string): string {
 function unquoteYaml(raw: string): string | boolean {
   if (raw === 'true') return true;
   if (raw === 'false') return false;
-  if (
-    (raw.startsWith('"') && raw.endsWith('"')) ||
-    (raw.startsWith("'") && raw.endsWith("'"))
-  ) {
-    return raw
-      .slice(1, -1)
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\');
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+    return raw.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
   }
   return raw;
 }

@@ -25,6 +25,7 @@ Updated: 2026-08-17. Version in tree: 0.15.2.
 ## Next
 
 Shipped:
+
 - Soft-delete Trash + Restore + Delete forever.
 - Query layer: SQL filters + `count`/`countScoped`.
 - Scoped FTS and template picker.
@@ -33,23 +34,26 @@ Shipped:
 - Emergency Kit + 1Password integration (`Settings → Integrations`).
 - Dev renderer waits for Vite (no `chrome-error` hop).
 
-You (not code):
-0. Apex DNS: delete parking A/AAAA so `dripnex.app` is Pages, not `/lander`.
+You (not code): 0. Apex DNS: delete parking A/AAAA so `dripnex.app` is Pages, not `/lander`.
+
 1. Create the encryption passphrase (Set up in the footer) so sync Retry works.
 2. 1Password: Settings → Developer → Integrate with 1Password SDKs, then Save to 1Password.
 
 Later:
+
 - Deploy the plugin registry migration (`0009_plugin_registry`) so publish writes to Turso.
 - Custom forum — Discourse later, reprint What’s New. Do not build one.
 - Mobile.
 - Web clipper, collaboration, RAG in the Worker.
 
 Shipped after 2026-08-17:
+
 - Mermaid viewport (pan / zoom / Expand). Dayjs + mermaid stay in Vite `optimizeDeps`.
 - Showcase notes in Inbox; Untitled drafts go to trash.
 - GitHub watchers: `owner/repo`, issue URL, or search. Pull writes / refreshes Inbox notes (`#github`).
 
 Shipped this week:
+
 - Settings for embed provider/model.
 - Ask Notes citations are numbered in context and clickable.
 - Graph is a knowledge map (kinds, inferred edges, inspector).

@@ -55,7 +55,9 @@ describe('extractEmbeds', () => {
   });
 
   it('ignores embeds inside fenced and inline code', () => {
-    const result = extractEmbeds('![[real.png]]\n```\n![[fake.png]]\n```\nand `![[also-fake.png]]`');
+    const result = extractEmbeds(
+      '![[real.png]]\n```\n![[fake.png]]\n```\nand `![[also-fake.png]]`'
+    );
     expect(result).toEqual([{ target: 'real.png' }]);
   });
 

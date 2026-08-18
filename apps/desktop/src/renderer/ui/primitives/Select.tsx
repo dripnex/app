@@ -12,7 +12,10 @@ export interface SelectOption {
   label: string;
 }
 
-export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'onChange'> {
+export interface SelectProps extends Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  'size' | 'onChange'
+> {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
@@ -22,25 +25,10 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   (
-    {
-      value,
-      onChange,
-      options,
-      size = 'md',
-      invalid = false,
-      disabled,
-      className,
-      id,
-      ...rest
-    },
+    { value, onChange, options, size = 'md', invalid = false, disabled, className, id, ...rest },
     ref
   ) => {
-    const cls = [
-      styles.select,
-      styles[size],
-      invalid ? styles.invalid : '',
-      className ?? '',
-    ]
+    const cls = [styles.select, styles[size], invalid ? styles.invalid : '', className ?? '']
       .filter(Boolean)
       .join(' ');
 

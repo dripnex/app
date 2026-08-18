@@ -320,9 +320,10 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     const byStatus = emptyByStatus();
     const statusRows = this.db
-      .prepare<{ status: string; count: number }>(
-        'SELECT status, COUNT(*) as count FROM notes GROUP BY status'
-      )
+      .prepare<{
+        status: string;
+        count: number;
+      }>('SELECT status, COUNT(*) as count FROM notes GROUP BY status')
       .all() as Array<{ status: string; count: number }>;
     for (const row of statusRows) {
       if (row.status in byStatus) {
@@ -557,12 +558,14 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   }
 
   /** Filter/paginate tags in SQL. Empty filter = all tags. */
-  listTags(query: {
-    filter?: string;
-    limit?: number;
-    offset?: number;
-    includeCount?: boolean;
-  } = {}): Array<{ name: string; color: string | null; count?: number }> {
+  listTags(
+    query: {
+      filter?: string;
+      limit?: number;
+      offset?: number;
+      includeCount?: boolean;
+    } = {}
+  ): Array<{ name: string; color: string | null; count?: number }> {
     const filter = query.filter?.trim().toLowerCase() ?? '';
     const offset = Math.max(0, query.offset ?? 0);
     const limit = query.limit === undefined ? -1 : Math.max(0, query.limit);

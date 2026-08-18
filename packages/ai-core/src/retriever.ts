@@ -110,7 +110,9 @@ export function createHybridRetriever(parts: {
       const fused = reciprocalRankFusion([keywordHits, semanticHits], { topK });
       const byId = new Map<string, RetrievedNote>();
       for (const hit of [...semanticHits, ...keywordHits]) byId.set(hit.id, hit);
-      return fused.map(item => byId.get(item.id)).filter((hit): hit is RetrievedNote => Boolean(hit));
+      return fused
+        .map(item => byId.get(item.id))
+        .filter((hit): hit is RetrievedNote => Boolean(hit));
     },
   };
 }
@@ -118,7 +120,12 @@ export function createHybridRetriever(parts: {
 /** Merge a primary query with an optional related query (current note title). */
 export async function retrieveWithRelated(
   retriever: Retriever,
-  input: { query: string; relatedQuery?: string | null; topK: number; excludeIds?: readonly string[] }
+  input: {
+    query: string;
+    relatedQuery?: string | null;
+    topK: number;
+    excludeIds?: readonly string[];
+  }
 ): Promise<RetrievedNote[]> {
   const exclude = [...(input.excludeIds ?? [])];
   const primary = await retriever.retrieve(input.query, { topK: input.topK, excludeIds: exclude });

@@ -89,7 +89,8 @@ export async function listMigrationStatus(
 ): Promise<{ applied: Array<{ id: string; appliedAt: string }>; pending: string[] }> {
   const client = openClient(env);
   await client.execute(TRACKING_TABLE);
-  const rows = (await client.execute('SELECT id, applied_at FROM schema_migrations ORDER BY id')).rows;
+  const rows = (await client.execute('SELECT id, applied_at FROM schema_migrations ORDER BY id'))
+    .rows;
   const applied = rows.map(row => ({
     id: String(row.id),
     appliedAt: String(row.applied_at),

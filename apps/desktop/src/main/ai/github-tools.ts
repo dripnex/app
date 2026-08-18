@@ -72,7 +72,11 @@ export function registerGitHubTools(
         const token = await requireToken();
         const parsed = parseIssueUrl(String(args.url ?? ''));
         if (!parsed) {
-          return { ok: false, content: 'Need a GitHub issue URL', error: 'Need a GitHub issue URL' };
+          return {
+            ok: false,
+            content: 'Need a GitHub issue URL',
+            error: 'Need a GitHub issue URL',
+          };
         }
         const issue = await githubRequest<{
           title: string;

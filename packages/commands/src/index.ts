@@ -46,4 +46,3 @@ export {
   sanitizeLinkTitle,
 } from './markdown/urlPaste.js';
 export type { UrlPasteFormat } from './markdown/urlPaste.js';
-

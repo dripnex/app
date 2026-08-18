@@ -14,7 +14,9 @@ function dripnex(): LooseDripnex | undefined {
   return window.dripnex as LooseDripnex | undefined;
 }
 
-export function getIntegration<K extends keyof IntegrationsAPI>(name: K): IntegrationsAPI[K] | null {
+export function getIntegration<K extends keyof IntegrationsAPI>(
+  name: K
+): IntegrationsAPI[K] | null {
   return dripnex()?.integrations?.[name] ?? null;
 }
 

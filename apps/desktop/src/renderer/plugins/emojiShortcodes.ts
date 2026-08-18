@@ -1,4 +1,8 @@
-import type { CompletionContext, CompletionResult, CompletionSource } from '@codemirror/autocomplete';
+import type {
+  CompletionContext,
+  CompletionResult,
+  CompletionSource,
+} from '@codemirror/autocomplete';
 
 /** Common GitHub-style shortcodes. Enough to type `:ta` and see taco / tada / taxi. */
 const SHORTCODES: Array<[name: string, emoji: string]> = [

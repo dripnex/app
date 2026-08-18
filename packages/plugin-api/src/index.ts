@@ -1,3 +1,5 @@
+export { createLogger } from '@dripnex/logger';
+
 // Types
 export type {
   EditorAPI,

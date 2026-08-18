@@ -6,8 +6,7 @@ import { resolve, join } from 'path';
 import { readManifest } from '../utils';
 import { packPlugin } from './pack';
 
-const REGISTRY_URL =
-  process.env.DRIPNEX_API_URL?.replace(/\/$/, '') || 'https://api.dripnex.app';
+const REGISTRY_URL = process.env.DRIPNEX_API_URL?.replace(/\/$/, '') || 'https://api.dripnex.app';
 
 interface PublishManifest {
   id: string;
@@ -110,7 +109,9 @@ export async function publishPlugin(source: string): Promise<void> {
   }
 
   const readmePath = join(sourcePath, 'README.md');
-  const readme = existsSync(readmePath) ? readFileSync(readmePath, 'utf8').slice(0, 80_000) : undefined;
+  const readme = existsSync(readmePath)
+    ? readFileSync(readmePath, 'utf8').slice(0, 80_000)
+    : undefined;
 
   const res = await fetch(`${REGISTRY_URL}/plugins`, {
     method: 'POST',

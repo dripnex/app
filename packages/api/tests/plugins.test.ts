@@ -67,7 +67,8 @@ describe('plugin registry', () => {
           name: 'Hello Notes',
           description: 'Says hello',
           version: '1.0.0',
-          bundleUrl: 'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz',
+          bundleUrl:
+            'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz',
           repositoryUrl: 'https://github.com/acme/hello-notes',
           tags: ['demo'],
         }),

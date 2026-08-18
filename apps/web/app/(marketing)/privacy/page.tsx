@@ -37,8 +37,7 @@ const sections = [
       'Payment information (processed by Stripe)',
       'Transaction records (refunds and support)',
     ],
-    footer:
-      'Stripe handles card data under their privacy policy. We do not see full card numbers.',
+    footer: 'Stripe handles card data under their privacy policy. We do not see full card numbers.',
   },
   {
     title: 'Optional end-to-end sync',

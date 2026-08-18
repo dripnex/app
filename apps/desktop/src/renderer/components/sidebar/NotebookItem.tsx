@@ -374,7 +374,11 @@ export const NotebookItem = memo(function NotebookItem({
         </span>
 
         {isGitEnabled && !isInbox && (
-          <span className={sc('notebook-item-git-badge')} aria-label="Git enabled" title="Git enabled">
+          <span
+            className={sc('notebook-item-git-badge')}
+            aria-label="Git enabled"
+            title="Git enabled"
+          >
             <GitBranch size={10} />
           </span>
         )}
@@ -405,7 +409,10 @@ export const NotebookItem = memo(function NotebookItem({
           <div className={sc('notebook-item-actions')}>
             <button
               type="button"
-              className={sc('notebook-item-action', isGitEnabled && 'notebook-item-action--git-enabled')}
+              className={sc(
+                'notebook-item-action',
+                isGitEnabled && 'notebook-item-action--git-enabled'
+              )}
               onClick={handleToggleGit}
               disabled={isGitLoading}
               aria-label={isGitEnabled ? 'Disable git' : 'Enable git'}

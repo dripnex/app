@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, KeyRound } from 'lucide-react';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
-import {
-  discoverOnePassword,
-  setOnePasswordAccount,
-} from '../../../integrations/onepassword';
+import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
 import { Button } from '../../../ui/primitives';
 import { GitHubCard } from './GitHubCard';
 import styles from './IntegrationsSection.module.css';
@@ -36,9 +33,21 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
 
   const linked = Boolean(stored);
   const badge =
-    status === 'checking' ? 'Checking' : status === 'stale' ? 'Restart Dripnex' : linked ? 'Connected' : 'Ready';
+    status === 'checking'
+      ? 'Checking'
+      : status === 'stale'
+        ? 'Restart Dripnex'
+        : linked
+          ? 'Connected'
+          : 'Ready';
   const badgeTone =
-    status === 'stale' ? 'warn' : status === 'ready' && linked ? 'ok' : status === 'ready' ? 'idle' : 'idle';
+    status === 'stale'
+      ? 'warn'
+      : status === 'ready' && linked
+        ? 'ok'
+        : status === 'ready'
+          ? 'idle'
+          : 'idle';
 
   const saveAccount = async (name: string) => {
     const trimmed = name.trim();
@@ -57,9 +66,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
     <div className={styles.page}>
       <header className={styles.header}>
         <h2 className={styles.title}>Integrations</h2>
-        <p className={styles.lede}>
-          Connect tools you already use. Secrets stay on this machine.
-        </p>
+        <p className={styles.lede}>Connect tools you already use. Secrets stay on this machine.</p>
       </header>
 
       <GitHubCard />
@@ -82,8 +89,8 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
 
         {status === 'stale' ? (
           <p className={styles.callout} data-tone="warn">
-            This window opened before the 1Password bridge loaded. Quit Dripnex completely and open it
-            again — Settings does not pick up preload changes on refresh.
+            This window opened before the 1Password bridge loaded. Quit Dripnex completely and open
+            it again — Settings does not pick up preload changes on refresh.
           </p>
         ) : null}
 
