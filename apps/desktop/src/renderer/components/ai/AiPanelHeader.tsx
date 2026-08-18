@@ -5,6 +5,7 @@ import { sc } from './sc';
 interface AiPanelHeaderProps {
   mode: AiPanelMode;
   contextCount: number;
+  matchHint?: string | null;
   lastAssistantExists: boolean;
   hasMessages: boolean;
   onToggleMode: () => void;
@@ -16,6 +17,7 @@ interface AiPanelHeaderProps {
 export function AiPanelHeader({
   mode,
   contextCount,
+  matchHint,
   lastAssistantExists,
   hasMessages,
   onToggleMode,
@@ -29,6 +31,14 @@ export function AiPanelHeader({
         <span className={sc('ai-panel-title')}>
           {mode === 'ask-notes' ? 'Ask Your Notes' : 'AI Assistant'}
         </span>
+        {matchHint ? (
+          <span
+            className={sc('ai-panel-mode-hint')}
+            title="No embeddings yet. Ask Notes matches words. Settings → AI."
+          >
+            {matchHint}
+          </span>
+        ) : null}
         {contextCount > 0 && (
           <span
             className={sc('ai-panel-context-badge')}

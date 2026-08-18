@@ -15,6 +15,7 @@ import { Button, NumberInput, Select } from '../../../ui/primitives';
 import { FALLBACK_MODELS, PROVIDER_CATALOG, type AiProviderId } from '../ai/providers';
 import { ProviderMark } from '../ai/ProviderMark';
 import { OllamaConnect, ProviderConnect } from '../ai/ProviderConnect';
+import { kbIndexDescription, kbStatusLabel } from '../../../components/ai/askNotesCopy';
 import styles from './Section.module.css';
 import cardStyles from './AiProviders.module.css';
 
@@ -491,16 +492,12 @@ export function AiSection() {
       })}
 
       <SettingGroup title="Knowledge base">
-        <SettingRow
-          label="Local index"
-          description="Passages stay on this machine. Vectors never leave it."
-        >
-          <div className={styles.statusBadge} data-tone={kb && kb.embedded > 0 ? 'ok' : undefined}>
-            {kb
-              ? `${kb.embedded} embedded${kb.pending > 0 ? ` · ${kb.pending} waiting` : ''}`
-              : window.dripnex?.ai
-                ? 'No passages indexed yet'
-                : 'Preload missing — restart Dripnex'}
+        <SettingRow label="Local index" description={kbIndexDescription(kb?.embedded ?? 0)}>
+          <div
+            className={styles.statusBadge}
+            data-tone={kb && kb.embedded > 0 ? 'ok' : kb ? 'warn' : undefined}
+          >
+            {kbStatusLabel(kb, !window.dripnex?.ai)}
           </div>
         </SettingRow>
         <SettingRow
