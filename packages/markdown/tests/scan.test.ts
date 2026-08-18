@@ -24,7 +24,7 @@ describe('scanMarkdown', () => {
     expect(scan.tags).toEqual([]);
   });
 
-  it('collects inline tags and skips fences, inline code, and headings', () => {
+  it('collects inline tags and skips fences and inline code', () => {
     const md = [
       '# Title #heading-tag',
       'See #Ship and #ship again',
@@ -37,7 +37,7 @@ describe('scanMarkdown', () => {
       '~~~',
       'and #Review',
     ].join('\n');
-    expect(scanMarkdown(md).tags).toEqual(['ship', 'review']);
+    expect(scanMarkdown(md).tags).toEqual(['heading-tag', 'ship', 'review']);
   });
 
   it('skips headings, tasks and links inside fenced code', () => {
