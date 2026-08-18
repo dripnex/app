@@ -39,9 +39,12 @@
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules .eslintcache",
     "knip": "knip",
+    "changeset": "changeset",
+    "plugin": "pnpm --filter @dripnex/plugin-cli cli --",
     "postinstall": "lefthook install"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^10.0.1",

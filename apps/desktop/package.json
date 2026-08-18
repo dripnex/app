@@ -64,6 +64,7 @@
     "@dripnex/commands": "workspace:*",
     "@dripnex/core": "workspace:*",
     "@dripnex/embeds": "workspace:*",
+    "@dripnex/markdown": "workspace:*",
     "@dripnex/licensing": "workspace:*",
     "@dripnex/plugin-api": "workspace:*",
     "@dripnex/product-config": "workspace:*",

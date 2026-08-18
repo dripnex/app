@@ -23,6 +23,7 @@
     "@codemirror/view": "^6.0.0"
   },
   "dependencies": {
+    "@dripnex/markdown": "workspace:*",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {

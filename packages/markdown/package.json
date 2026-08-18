@@ -1,8 +1,8 @@
 {
-  "name": "@dripnex/commands",
+  "name": "@dripnex/markdown",
   "version": "0.1.0",
   "private": true,
-  "description": "Markdown editing commands for Dripnex",
+  "description": "Shared fence-aware markdown scan",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -17,18 +17,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@dripnex/markdown": "workspace:*"
-  },
-  "peerDependencies": {
-    "@codemirror/commands": "^6.0.0",
-    "@codemirror/state": "^6.0.0",
-    "@codemirror/view": "^6.0.0"
-  },
   "devDependencies": {
-    "@codemirror/commands": "^6.10.3",
-    "@codemirror/state": "^6.6.0",
-    "@codemirror/view": "^6.43.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },
