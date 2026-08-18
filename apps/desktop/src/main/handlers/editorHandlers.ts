@@ -16,6 +16,7 @@ export async function fetchUrlTitle(url: string): Promise<{ title: string | null
     }
     const response = await net.fetch(url, {
       signal: AbortSignal.timeout(3000),
+      redirect: 'error',
       headers: { 'User-Agent': 'Dripnex/' + app.getVersion() },
     });
     const contentType = response.headers.get('content-type') || '';

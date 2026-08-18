@@ -10,6 +10,10 @@ describe('titleFromHtml', () => {
     expect(titleFromHtml('<title>A &amp; B\nC</title>')).toBe('A & B C');
   });
 
+  it('does not double-unescape stacked entities', () => {
+    expect(titleFromHtml('<title>&amp;lt;</title>')).toBe('&lt;');
+  });
+
   it('returns null when there is no title', () => {
     expect(titleFromHtml('<html><p>none</p></html>')).toBeNull();
   });

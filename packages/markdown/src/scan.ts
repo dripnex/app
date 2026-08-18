@@ -110,13 +110,15 @@ export function scanMarkdown(content: string): MarkdownScan {
       wikilinks.push(link);
     }
 
-    TAG.lastIndex = 0;
-    let tagMatch: RegExpExecArray | null;
-    while ((tagMatch = TAG.exec(searchable)) !== null) {
-      const name = tagMatch[1]?.toLowerCase();
-      if (!name || tagSeen.has(name)) continue;
-      tagSeen.add(name);
-      tags.push(name);
+    if (!atx) {
+      TAG.lastIndex = 0;
+      let tagMatch: RegExpExecArray | null;
+      while ((tagMatch = TAG.exec(searchable)) !== null) {
+        const name = tagMatch[1]?.toLowerCase();
+        if (!name || tagSeen.has(name)) continue;
+        tagSeen.add(name);
+        tags.push(name);
+      }
     }
   }
 

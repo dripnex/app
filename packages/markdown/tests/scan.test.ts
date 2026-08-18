@@ -26,7 +26,7 @@ describe('scanMarkdown', () => {
 
   it('collects inline tags and skips fences, inline code, and headings', () => {
     const md = [
-      '# Title',
+      '# Title #heading-tag',
       'See #Ship and #ship again',
       '```',
       '#fake',

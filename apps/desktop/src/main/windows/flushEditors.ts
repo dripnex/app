@@ -7,7 +7,7 @@ export async function flushOpenEditors(): Promise<void> {
   const windows = BrowserWindow.getAllWindows().filter(
     win => !win.isDestroyed() && !win.webContents.isDestroyed()
   );
-  await Promise.all(windows.map(flushWindow));
+  await Promise.allSettled(windows.map(flushWindow));
 }
 
 function flushWindow(win: BrowserWindow): Promise<void> {
@@ -23,6 +23,10 @@ function flushWindow(win: BrowserWindow): Promise<void> {
     };
     const timer = setTimeout(done, FLUSH_TIMEOUT_MS);
     ipcMain.on('editor:flushed', onFlush);
-    win.webContents.send('editor:flush', id);
+    try {
+      win.webContents.send('editor:flush', id);
+    } catch {
+      done();
+    }
   });
 }
