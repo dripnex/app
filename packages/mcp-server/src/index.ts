@@ -24,7 +24,7 @@ import { z } from 'zod';
 import {
   createNoteId,
   createNoteOperation,
-  softDeleteNote,
+  trashNoteOperation,
   updateNoteOperation,
 } from '@dripnex/core';
 import type { Database } from './db.js';
@@ -351,11 +351,10 @@ function createServer(db: Database, options: { dbPath?: string } = {}) {
         },
       },
       async ({ id }) => {
-        const existing = await notes.get(createNoteId(id));
-        if (!existing) {
+        const result = await trashNoteOperation({ id: createNoteId(id) }, notes);
+        if (!result.ok) {
           return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
         }
-        await notes.save(softDeleteNote(existing));
         afterWrite();
 
         return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };

@@ -6,6 +6,7 @@ import { createNoteOperation } from '../src/operations/createNote.js';
 import type { NoteRepository } from '../src/repositories/NoteRepository.js';
 import { updateNoteOperation } from '../src/operations/updateNote.js';
 import { deleteNoteOperation } from '../src/operations/deleteNote.js';
+import { trashNoteOperation } from '../src/operations/trashNote.js';
 import { getNoteOperation } from '../src/operations/getNote.js';
 import { archiveNoteOperation } from '../src/operations/archiveNote.js';
 import { restoreNoteOperation } from '../src/operations/restoreNote.js';
@@ -136,6 +137,23 @@ describe('Operations', () => {
       if (!result.ok) {
         expect(result.error.type).toBe('NOT_FOUND');
       }
+    });
+  });
+
+  describe('trashNoteOperation', () => {
+    it('soft-deletes the note', async () => {
+      await createNoteOperation({ content: '# Bin', id: 'trash-me' }, repository);
+      const result = await trashNoteOperation({ id: createNoteId('trash-me') }, repository);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.data.isDeleted).toBe(true);
+      expect(repository.size()).toBe(1);
+    });
+
+    it('fails when the note does not exist', async () => {
+      const result = await trashNoteOperation({ id: createNoteId('missing') }, repository);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.type).toBe('NOT_FOUND');
     });
   });
 
