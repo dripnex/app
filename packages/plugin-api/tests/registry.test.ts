@@ -128,6 +128,7 @@ describe('PluginRegistry', () => {
       expect(ctx).toHaveProperty('notifications');
       expect(ctx).toHaveProperty('contextMenu');
       expect(ctx).toHaveProperty('components');
+      expect(ctx).toHaveProperty('markdownRenderer');
     });
 
     it('exposes data listing methods on context.app', async () => {

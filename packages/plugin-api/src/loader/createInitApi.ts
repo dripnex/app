@@ -42,6 +42,7 @@ export interface InitApi {
   contextMenu: PluginContext['contextMenu'];
   preview: PluginContext['preview'];
   components: PluginContext['components'];
+  markdownRenderer: PluginContext['markdownRenderer'];
   registerCommand: PluginContext['registerCommand'];
   registerExtensions: PluginContext['registerExtensions'];
   registerAiCommand: PluginContext['registerAiCommand'];
@@ -80,6 +81,7 @@ export function createInitApi(ctx: PluginContext): InitApi {
     contextMenu: ctx.contextMenu,
     preview: ctx.preview,
     components: ctx.components,
+    markdownRenderer: ctx.markdownRenderer,
     registerCommand: ctx.registerCommand,
     registerExtensions: ctx.registerExtensions,
     registerAiCommand: ctx.registerAiCommand,

@@ -31,6 +31,7 @@ import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
 import { hostNotify } from '../loader/hostBridges';
 import { previewEventStore } from '../preview/previewEventStore';
 import { pluginComponents } from '../components/catalog.js';
+import { createMarkdownRenderer } from '../preview/createMarkdownRenderer.js';
 import {
   applyPluginPackageFiles,
   type PluginPackageFiles,
@@ -405,6 +406,7 @@ export class PluginRegistry {
       contextMenu,
       preview,
       components: pluginComponents,
+      markdownRenderer: createMarkdownRenderer(id),
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
           id: extId,
