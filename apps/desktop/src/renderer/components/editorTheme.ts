@@ -113,8 +113,18 @@ export const markdownHighlighting = HighlightStyle.define([
   { tag: tags.heading6, color: 'var(--cm-heading)', fontWeight: '600' },
 
   // Emphasis
-  { tag: tags.emphasis, fontStyle: 'italic', color: 'var(--cm-emphasis)' },
-  { tag: tags.strong, fontWeight: '700', color: 'var(--cm-strong)' },
+  {
+    tag: tags.emphasis,
+    fontStyle: 'italic',
+    color: 'var(--cm-emphasis)',
+    class: 'cm-em',
+  },
+  {
+    tag: tags.strong,
+    fontWeight: '700',
+    color: 'var(--cm-strong)',
+    class: 'cm-strong',
+  },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: 'var(--cm-strikethrough)' },
 
   // Code

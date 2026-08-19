@@ -72,6 +72,7 @@ import {
   knownTitlesFromResolution,
   type WikilinkTitleResolution,
 } from '../utils/isMissingWikilink';
+import { notebookStyleProps } from '../utils/notebookStyle';
 import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
 import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
 import { UrlPastePicker } from './editor/UrlPastePicker';
@@ -97,6 +98,7 @@ interface MarkdownEditorProps {
   onReady?: () => void;
   /** Current note ID (for excluding from wikilink autocomplete) */
   noteId?: string;
+  notebookId?: string | null;
   /** Callback to get resolved embed URL (for inline image preview) */
   getEmbedUrl?: (target: string) => string | null;
   /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
@@ -141,6 +143,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       placeholder = 'Start writing...',
       onReady,
       noteId,
+      notebookId,
       getEmbedUrl,
       onWikilinkClick,
       onWikilinkHover,
@@ -710,7 +713,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     return (
       <>
-        <div ref={containerRef} className={styles['markdown-editor']} />
+        <div
+          ref={containerRef}
+          className={`${styles['markdown-editor']} ${notebookStyleProps(notebookId).className}`}
+          data-notebook-id={notebookId || undefined}
+        />
         {urlPaste ? (
           <UrlPastePicker
             url={urlPaste.url}

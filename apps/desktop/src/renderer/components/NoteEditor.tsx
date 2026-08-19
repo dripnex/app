@@ -21,6 +21,7 @@ import { useResolvedWikilinkTargets } from '../hooks/useResolvedWikilinkTargets'
 import { useWikilinkPeek } from '../hooks/useWikilinkPeek';
 import { useNotebook } from '../hooks/useNotebooks';
 import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
+import { notebookStyleProps } from '../utils/notebookStyle';
 import { WikilinkPeek } from './editor/WikilinkPeek';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
@@ -465,7 +466,11 @@ export function NoteEditor({
   }
 
   return (
-    <main className={sc('note-editor')} aria-label="Note editor">
+    <main
+      className={`${sc('note-editor')} ${notebookStyleProps(note.notebookId).className}`}
+      data-notebook-id={note.notebookId || undefined}
+      aria-label="Note editor"
+    >
       <EditorChrome
         variant={chromeVariant}
         canBack={canBack}
@@ -571,6 +576,7 @@ export function NoteEditor({
                   onChange={handleChange}
                   onReady={onEditorReady}
                   noteId={note.id}
+                  notebookId={note.notebookId}
                   getEmbedUrl={getEmbedUrl}
                   onWikilinkClick={onWikilinkClick}
                   onWikilinkHover={(target, coords) =>
@@ -594,6 +600,7 @@ export function NoteEditor({
                 ref={previewRef}
                 content={note.content}
                 noteId={note.id}
+                notebookId={note.notebookId}
                 createdAt={note.createdAt}
                 updatedAt={note.updatedAt}
                 onReady={onPreviewReady}
