@@ -18,38 +18,55 @@ import {
 } from 'lucide-react';
 import { insertGithubAlert, type GithubAlertKind } from '@dripnex/commands';
 import { dispatchCommand, getEditorView } from '../../hooks/useCommandRegistry';
+import { requestInlineEdit } from '../../editor/inlineAi/request';
 import styles from './SelectionToolbar.module.css';
 
 const AI_ACTIONS = [
   {
     id: 'mermaid',
     label: 'Create a Mermaid diagram',
-    system:
-      'Convert the selection into a mermaid diagram. Reply with a mermaid fenced code block only.',
+    instruction: 'Convert the selection into a mermaid diagram.',
+    keepFence: true,
   },
   {
     id: 'table',
     label: 'Convert to Markdown table',
-    system:
-      'Convert the selection into a GitHub-flavored markdown table. Reply with the table only.',
+    instruction: 'Convert the selection into a GitHub-flavored markdown table.',
   },
   {
     id: 'proofread',
     label: 'Proofread',
-    system:
-      'Fix grammar and spelling. Keep the meaning and markdown. Reply with the revised text only.',
+    instruction: 'Fix grammar and spelling. Keep the meaning and markdown.',
   },
   {
     id: 'reformat',
     label: 'Reformat',
-    system:
-      'Clean the markdown structure. Do not change meaning. Reply with the revised markdown only.',
+    instruction: 'Clean the markdown structure. Do not change meaning.',
   },
   {
     id: 'improve',
     label: 'Improve writing',
-    system:
-      'Improve clarity and rhythm. Keep the author voice and markdown. Reply with the revised text only.',
+    instruction: 'Improve clarity and rhythm. Keep the author voice and markdown.',
+  },
+  {
+    id: 'summarize',
+    label: 'Summarize',
+    instruction: 'Condense the selection into a concise summary.',
+  },
+  {
+    id: 'bullets',
+    label: 'Convert to bullet list',
+    instruction: 'Rewrite the selection as a Markdown bulleted list.',
+  },
+  {
+    id: 'tasks',
+    label: 'Convert to task list',
+    instruction: 'Rewrite the selection as a Markdown task list (- [ ] items).',
+  },
+  {
+    id: 'headings',
+    label: 'Add headings',
+    instruction: 'Reorganize the selection with appropriate Markdown headings.',
   },
 ] as const;
 
@@ -72,6 +89,8 @@ export function SelectionToolbar() {
   const [aiOpen, setAiOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const aiOpenRef = useRef(false);
   aiOpenRef.current = aiOpen;
@@ -86,9 +105,8 @@ export function SelectionToolbar() {
     const interacting =
       aiOpenRef.current ||
       (barRef.current !== null && barRef.current.contains(document.activeElement));
-    if (from === to) {
+    if (from === to && !aiOpenRef.current) {
       setVisible(false);
-      setAiOpen(false);
       setAlertOpen(false);
       return;
     }
@@ -137,12 +155,47 @@ export function SelectionToolbar() {
     return () => document.removeEventListener('mousedown', onDown);
   }, [visible]);
 
-  const runAi = (system: string, instruction?: string) => {
-    window.dispatchEvent(
-      new CustomEvent('dripnex:ai:edit', {
-        detail: { system, instruction },
-      })
-    );
+  useEffect(() => {
+    const onOpen = () => {
+      aiOpenRef.current = true;
+      setAlertOpen(false);
+      setAiError(null);
+      setAiOpen(true);
+      requestAnimationFrame(update);
+    };
+    window.addEventListener('dripnex:ai:open-inline', onOpen);
+    return () => window.removeEventListener('dripnex:ai:open-inline', onOpen);
+  }, [update]);
+
+  const runAi = async (instruction: string, keepFence = false) => {
+    const view = getEditorView();
+    if (!view || aiBusy) return;
+    const { from, to } = view.state.selection.main;
+    setAiBusy(true);
+    setAiError(null);
+    const result = await requestInlineEdit({
+      content: view.state.doc.toString(),
+      from,
+      to,
+      title: '',
+      instruction,
+      keepFence,
+    });
+    setAiBusy(false);
+    if (!result.ok) {
+      setAiError(
+        result.reason === 'missing-key'
+          ? 'Set up AI in Settings → AI'
+          : 'Could not edit the selection'
+      );
+      return;
+    }
+    if (from > view.state.doc.length || to > view.state.doc.length) return;
+    view.dispatch({
+      changes: { from, to, insert: result.text },
+      selection: { anchor: from, head: from + result.text.length },
+    });
+    view.focus();
     setAiOpen(false);
     setAiPrompt('');
   };
@@ -304,30 +357,32 @@ export function SelectionToolbar() {
             className={styles.aiForm}
             onSubmit={event => {
               event.preventDefault();
-              if (!aiPrompt.trim()) return;
-              runAi(
-                'Follow the user instruction on the selected markdown. Reply with the result only.',
-                aiPrompt.trim()
-              );
+              if (!aiPrompt.trim() || aiBusy) return;
+              void runAi(aiPrompt.trim());
             }}
           >
             <input
               className={styles.aiInput}
               value={aiPrompt}
               onChange={event => setAiPrompt(event.target.value)}
-              placeholder="Edit with AI…"
+              placeholder={aiBusy ? 'Editing…' : 'Edit with AI…'}
+              disabled={aiBusy}
               autoFocus
             />
-            <button type="submit" className={styles.aiSend} aria-label="Run">
+            <button type="submit" className={styles.aiSend} aria-label="Run" disabled={aiBusy}>
               <ArrowUp size={14} />
             </button>
           </form>
+          {aiError ? <p className={styles.aiError}>{aiError}</p> : null}
           {AI_ACTIONS.map(action => (
             <button
               key={action.id}
               type="button"
               className={styles.aiItem}
-              onClick={() => runAi(action.system)}
+              disabled={aiBusy}
+              onClick={() =>
+                void runAi(action.instruction, 'keepFence' in action && action.keepFence)
+              }
             >
               {action.label}
             </button>

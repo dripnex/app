@@ -99,6 +99,20 @@
   color: var(--text-primary);
 }
 
+.aiItem:disabled,
+.aiSend:disabled,
+.aiInput:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.aiError {
+  margin: 0 0 6px;
+  padding: 0 8px;
+  color: var(--danger, #c44);
+  font-size: 12px;
+}
+
 .alertMark {
   font-size: 13px;
   font-weight: 700;

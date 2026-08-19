@@ -178,6 +178,15 @@ export const editorCommands: CommandDefinition[] = [
     showInPalette: true,
   },
   {
+    id: 'editor:edit-with-ai',
+    name: 'Edit with AI',
+    category: 'editor',
+    context: 'editor',
+    defaultKeybinding: { key: 'Enter', modifiers: ['Mod'] },
+    icon: 'PenLine',
+    showInPalette: true,
+  },
+  {
     id: 'editor:trigger-nes',
     name: 'Suggest Next Edit',
     category: 'editor',

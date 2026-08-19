@@ -28,6 +28,11 @@ import {
 import { followWikilinkAtCursor } from '../utils/followWikilinkAtCursor';
 import { acceptNes, dismissNes, triggerNes } from '../editor/nes/extension';
 
+function openInlineAi(): boolean {
+  window.dispatchEvent(new Event('dripnex:ai:open-inline'));
+  return true;
+}
+
 // --- Singleton registry ---
 export const registry = new CommandRegistry();
 
@@ -77,6 +82,7 @@ const editorExecutors: Record<string, (view: EditorView) => boolean | void> = {
   },
   'editor:undo': undoChange,
   'editor:redo': redoChange,
+  'editor:edit-with-ai': () => openInlineAi(),
   'editor:trigger-nes': triggerNes,
   'editor:accept-nes': acceptNes,
   'editor:dismiss-nes': dismissNes,
