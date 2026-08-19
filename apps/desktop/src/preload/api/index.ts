@@ -60,7 +60,7 @@ export type {
 } from './app';
 
 export { createLocalServerApi } from './localServer';
-export type { LocalServerAPI } from './localServer';
+export type { LocalServerAPI, LocalServerConnectionInfo } from './localServer';
 
 export { createIntegrationsApi } from './integrations';
 export type {

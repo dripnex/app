@@ -34,9 +34,10 @@ Requires Node ≥ 22.5.
 Read path (the product): `dripnex_search_notes`, `dripnex_read_note`,
 `dripnex_list_notes`, `dripnex_list_notebooks`, `dripnex_list_tags`.
 
-Writes (`create` / `update` / `trash`) are **off by default**. Set
-`DRIPNEX_MCP_WRITES=1` to enable them. After a write the server touches
-`dripnex.external-write` next to the DB so the desktop can refetch.
+Writes (`create` / `update` / `trash`) are **off by default**. Enable them
+in **Settings → Integrations → Allow writes** (writes `mcp.json` next to
+the DB). `DRIPNEX_MCP_WRITES=1` still overrides. After a write the server
+touches `dripnex.external-write` next to the DB so the desktop can refetch.
 
 If you pass a notebook name that does not exist, create fails instead of
 silently landing in Inbox. Titles use the first non-empty line (same rule

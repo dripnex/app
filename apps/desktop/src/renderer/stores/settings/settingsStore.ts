@@ -16,6 +16,7 @@ import {
   AiSettings,
   EditorSettings,
   BackupSettings,
+  IntegrationsSettings,
   DEFAULT_SETTINGS,
   DEFAULT_GENERAL,
   DEFAULT_UPDATES,
@@ -23,6 +24,7 @@ import {
   DEFAULT_AI,
   DEFAULT_EDITOR,
   DEFAULT_BACKUP,
+  DEFAULT_INTEGRATIONS,
   SETTINGS_VERSION,
 } from './schema';
 
@@ -43,6 +45,7 @@ interface SettingsStore {
   updateAi: (updates: Partial<AiSettings>) => void;
   updateEditor: (updates: Partial<EditorSettings>) => void;
   updateBackup: (updates: Partial<BackupSettings>) => void;
+  updateIntegrations: (updates: Partial<IntegrationsSettings>) => void;
 
   // Reset actions
   resetSection: (section: SettingsSection) => void;
@@ -131,6 +134,15 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
     };
   }
 
+  // Migration: v5 -> v6 (MCP / local HTTP in Integrations)
+  if (version < 6) {
+    mutable = {
+      ...mutable,
+      version: 6,
+      integrations: { ...DEFAULT_INTEGRATIONS, ...mutable.integrations },
+    };
+  }
+
   settings = mutable as SettingsSchema;
   return { settings };
 }
@@ -209,6 +221,18 @@ export const useSettingsStore = create<SettingsStore>()(
           },
         })),
 
+      updateIntegrations: updates =>
+        set(state => ({
+          settings: {
+            ...state.settings,
+            integrations: {
+              ...DEFAULT_INTEGRATIONS,
+              ...state.settings.integrations,
+              ...updates,
+            },
+          },
+        })),
+
       // Reset a specific section to defaults
       resetSection: section =>
         set(state => {
@@ -219,6 +243,7 @@ export const useSettingsStore = create<SettingsStore>()(
             ai: DEFAULT_AI,
             editor: DEFAULT_EDITOR,
             backup: DEFAULT_BACKUP,
+            integrations: DEFAULT_INTEGRATIONS,
           };
           return {
             settings: {
@@ -256,6 +281,7 @@ export const selectAi = (state: SettingsStore) => state.settings.ai;
 export const selectAiKeyHydrationError = (state: SettingsStore) => state.aiKeyHydrationError;
 export const selectEditor = (state: SettingsStore) => state.settings.editor;
 export const selectBackup = (state: SettingsStore) => state.settings.backup;
+export const selectIntegrations = (state: SettingsStore) => state.settings.integrations;
 
 // Individual editor settings selectors (for CodeMirror integration)
 export const selectFontSize = (state: SettingsStore) => state.settings.editor.fontSize;
@@ -369,6 +395,7 @@ if (typeof window !== 'undefined' && window.dripnex?.settings) {
       ai: { ...DEFAULT_AI, ...s.ai, apiKey: preservedApiKey },
       editor: { ...DEFAULT_EDITOR, ...s.editor },
       backup: { ...DEFAULT_BACKUP, ...s.backup },
+      integrations: { ...DEFAULT_INTEGRATIONS, ...s.integrations },
     };
 
     isRemoteUpdate = true;

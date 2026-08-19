@@ -22,4 +22,14 @@ describe('settingsStore persistence', () => {
     expect(partial.settings.ai.apiKey).toBe('');
     expect(JSON.stringify(partial)).not.toContain('sk-secret');
   });
+
+  it('defaults MCP off and keeps integrations through persist', () => {
+    expect(DEFAULT_SETTINGS.integrations).toEqual({
+      mcpEnabled: false,
+      mcpWrites: false,
+    });
+    const partial = partializeSettings(useSettingsStore.getState());
+    expect(partial.settings.integrations.mcpEnabled).toBe(false);
+    expect(partial.settings.integrations.mcpWrites).toBe(false);
+  });
 });

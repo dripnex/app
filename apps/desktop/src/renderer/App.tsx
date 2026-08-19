@@ -38,7 +38,6 @@ import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useOfficialThemes } from './hooks/useOfficialThemes';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useSyncStore } from './stores/syncStore';
-
 import { useDeepLinks } from './hooks/useDeepLinks';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useNoteActions } from './hooks/useNoteActions';
@@ -46,6 +45,7 @@ import { useAppCommands } from './hooks/useAppCommands';
 import { useEnsureNowBoard } from './hooks/useNowBoard';
 import { useRefreshOnWindowFocus } from './hooks/useRefreshOnWindowFocus';
 import { usePluginRuntime } from './hooks/usePluginRuntime';
+import { useMcpLocalPath } from './hooks/useMcpLocalPath';
 
 /**
  * Main Notes Application
@@ -56,6 +56,7 @@ function NotesApp() {
   useOfficialThemes();
   useEnsureNowBoard();
   useRefreshOnWindowFocus();
+  useMcpLocalPath();
   useThemeOverrides(); // Applies active theme tokens
   useCssVariables();
 

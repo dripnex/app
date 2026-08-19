@@ -13,7 +13,8 @@
  *   - dripnex_list_notebooks: List all notebooks
  *   - dripnex_list_tags: List tags with note counts
  *
- * Writes (create/update/trash) are off unless DRIPNEX_MCP_WRITES=1.
+ * Writes (create/update/trash) are off unless Settings → Integrations
+ * enables them (mcp.json next to the DB) or DRIPNEX_MCP_WRITES=1.
  * Writes go through @dripnex/core operations + NoteRepository.
  * The desktop refetches on focus / dripnex.external-write.
  */
@@ -31,6 +32,7 @@ import type { Database } from './db.js';
 import { openDb, resolveDbPath } from './db.js';
 import { markExternalWrite, packageDirFromModuleUrl, readPackageVersion } from './notes.js';
 import { NodeSqliteNoteRepository } from './sqliteRepo.js';
+import { writesDisabledMessage, writesEnabled } from './writes.js';
 
 function query(db: Database, sql: string, params: unknown[] = []): Record<string, unknown>[] {
   return db.prepare(sql).all(...(params as never[])) as Record<string, unknown>[];
@@ -52,10 +54,6 @@ function prepareFtsQuery(input: string): string {
   return terms.map(t => `"${t}"*`).join(' OR ');
 }
 
-function writesEnabled(): boolean {
-  return process.env.DRIPNEX_MCP_WRITES === '1';
-}
-
 function createServer(db: Database, options: { dbPath?: string } = {}) {
   const version = readPackageVersion(packageDirFromModuleUrl(import.meta.url));
   const server = new McpServer({
@@ -66,7 +64,11 @@ function createServer(db: Database, options: { dbPath?: string } = {}) {
   const afterWrite = () => {
     if (options.dbPath) markExternalWrite(options.dbPath);
   };
-  const allowWrites = writesEnabled();
+  const denyWrites = () => ({
+    content: [{ type: 'text' as const, text: writesDisabledMessage() }],
+    isError: true,
+  });
+  const allowWrites = () => writesEnabled(options.dbPath);
 
   // ── List notes ──────────────────────────────────────────────────────────
 
@@ -172,80 +174,82 @@ function createServer(db: Database, options: { dbPath?: string } = {}) {
     }
   );
 
-  if (allowWrites) {
-    // ── Create note ─────────────────────────────────────────────────────────
+  // ── Create note ─────────────────────────────────────────────────────────
 
-    server.registerTool(
-      'dripnex_create_note',
-      {
-        description: 'Create a new note in Dripnex. Content should be markdown.',
-        inputSchema: {
-          content: z.string().describe('Markdown content for the note'),
-          notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
-        },
+  server.registerTool(
+    'dripnex_create_note',
+    {
+      description: 'Create a new note in Dripnex. Content should be markdown.',
+      inputSchema: {
+        content: z.string().describe('Markdown content for the note'),
+        notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
       },
-      async ({ content, notebook }) => {
-        let notebookId: string | undefined;
-        if (notebook) {
-          const id = notes.findNotebookIdByName(notebook);
-          if (!id) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: `Notebook "${notebook}" not found. Note was not created.`,
-                },
-              ],
-              isError: true,
-            };
-          }
-          notebookId = id;
-        }
+    },
+    async ({ content, notebook }) => {
+      if (!allowWrites()) return denyWrites();
 
-        const result = await createNoteOperation({ content, notebookId }, notes);
-        if (!result.ok) {
+      let notebookId: string | undefined;
+      if (notebook) {
+        const id = notes.findNotebookIdByName(notebook);
+        if (!id) {
           return {
-            content: [{ type: 'text' as const, text: 'Failed to create note.' }],
+            content: [
+              {
+                type: 'text' as const,
+                text: `Notebook "${notebook}" not found. Note was not created.`,
+              },
+            ],
             isError: true,
           };
         }
-        afterWrite();
+        notebookId = id;
+      }
 
+      const result = await createNoteOperation({ content, notebookId }, notes);
+      if (!result.ok) {
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Note created: "${result.data.title}" (ID: ${result.data.id})`,
-            },
-          ],
+          content: [{ type: 'text' as const, text: 'Failed to create note.' }],
+          isError: true,
         };
       }
-    );
+      afterWrite();
 
-    // ── Update note ─────────────────────────────────────────────────────────
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Note created: "${result.data.title}" (ID: ${result.data.id})`,
+          },
+        ],
+      };
+    }
+  );
 
-    server.registerTool(
-      'dripnex_update_note',
-      {
-        description: 'Update an existing note. Replaces the full content.',
-        inputSchema: {
-          id: z.string().describe('Note ID'),
-          content: z.string().describe('New markdown content'),
-        },
+  // ── Update note ─────────────────────────────────────────────────────────
+
+  server.registerTool(
+    'dripnex_update_note',
+    {
+      description: 'Update an existing note. Replaces the full content.',
+      inputSchema: {
+        id: z.string().describe('Note ID'),
+        content: z.string().describe('New markdown content'),
       },
-      async ({ id, content }) => {
-        const result = await updateNoteOperation({ id: createNoteId(id), content }, notes);
-        if (!result.ok) {
-          return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
-        }
-        afterWrite();
+    },
+    async ({ id, content }) => {
+      if (!allowWrites()) return denyWrites();
 
-        return {
-          content: [{ type: 'text' as const, text: `Note updated: "${result.data.title}"` }],
-        };
+      const result = await updateNoteOperation({ id: createNoteId(id), content }, notes);
+      if (!result.ok) {
+        return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
       }
-    );
-  }
+      afterWrite();
+
+      return {
+        content: [{ type: 'text' as const, text: `Note updated: "${result.data.title}"` }],
+      };
+    }
+  );
 
   // ── Search notes (FTS5) ──────────────────────────────────────────────────
 
@@ -341,26 +345,26 @@ function createServer(db: Database, options: { dbPath?: string } = {}) {
     }
   );
 
-  if (allowWrites) {
-    server.registerTool(
-      'dripnex_trash_note',
-      {
-        description: 'Move a note to trash (soft delete).',
-        inputSchema: {
-          id: z.string().describe('Note ID'),
-        },
+  server.registerTool(
+    'dripnex_trash_note',
+    {
+      description: 'Move a note to trash (soft delete).',
+      inputSchema: {
+        id: z.string().describe('Note ID'),
       },
-      async ({ id }) => {
-        const result = await trashNoteOperation({ id: createNoteId(id) }, notes);
-        if (!result.ok) {
-          return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
-        }
-        afterWrite();
+    },
+    async ({ id }) => {
+      if (!allowWrites()) return denyWrites();
 
-        return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };
+      const result = await trashNoteOperation({ id: createNoteId(id) }, notes);
+      if (!result.ok) {
+        return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
       }
-    );
-  }
+      afterWrite();
+
+      return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };
+    }
+  );
 
   return server;
 }

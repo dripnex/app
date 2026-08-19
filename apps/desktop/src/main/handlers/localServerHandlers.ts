@@ -13,6 +13,8 @@ import {
   getOrCreateApiToken,
   type LocalServerHandlers,
 } from '../services/localServer.js';
+import { resolveMcpLaunch } from '../services/mcpLaunch.js';
+import { writeMcpWritesConfig } from '../services/mcpWrites.js';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, DataPaths } from './types.js';
 
@@ -179,6 +181,45 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
           apiToken = await getOrCreateApiToken(dataPaths.root);
         }
         return { ok: true, value: apiToken };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'localServer:connectionInfo',
+    args: z.tuple([]),
+    handler: async () => {
+      try {
+        if (!apiToken) {
+          apiToken = await getOrCreateApiToken(dataPaths.root);
+        }
+        const launch = resolveMcpLaunch();
+        const port = server.getPort();
+        return {
+          ok: true,
+          running: server.isRunning(),
+          port,
+          url: `http://127.0.0.1:${port}`,
+          token: apiToken,
+          dbPath: dataPaths.database,
+          mcpCommand: launch?.command ?? null,
+          mcpArgs: launch?.args ?? null,
+        };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'localServer:setWrites',
+    args: z.tuple([z.boolean()]),
+    handler: async writes => {
+      try {
+        await writeMcpWritesConfig(dataPaths.root, writes);
+        return { ok: true };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
