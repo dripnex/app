@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { LayoutZone } from '@dripnex/plugin-api';
 import { FileStack, Trash2 } from 'lucide-react';
-import { DEFAULT_TEMPLATES } from '../../data/defaultTemplates';
 import { useQueryClient } from '@tanstack/react-query';
+import { DEFAULT_TEMPLATES } from '../../data/defaultTemplates';
 import { useNoteMutations, useNotebookNotesCount } from '../../hooks/useNotes';
 import { notebookKeys, useNotebookMutations } from '../../hooks/useNotebooks';
 import {
@@ -15,6 +15,8 @@ import {
   useTagFilter,
   useScopedSidebarCounts,
   useNotebookContext,
+  useWorkspaceRootId,
+  useWorkspaceListAll,
 } from '../../hooks/useNavigation';
 import { EnableSyncModal } from '../sync';
 import { useSyncOnboarding } from '../../hooks/useSyncOnboarding';
@@ -49,6 +51,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
   const isNotebookContext = useIsNotebookContext();
   const selectedNotebookId = useSelectedNotebookId();
+  const workspaceRootId = useWorkspaceRootId();
+  const workspaceListAll = useWorkspaceListAll();
   const globalFilter = useGlobalFilter();
   const globalCounts = useGlobalCounts();
   const scoped = useScopedSidebarCounts();
@@ -64,7 +68,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     goToAllInCurrentContext,
     goToTrash,
     goToNotebook,
-    clearNavigation,
+    enterWorkspace,
+    exitWorkspace,
     setStatusFilter,
     setTagFilter,
   } = useNavigationActions();
@@ -106,8 +111,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
       if (have.has(template.title.toLowerCase())) continue;
       await createNote.mutateAsync({ content: template.content, notebookId: 'templates' });
     }
-    goToNotebook('templates');
-  }, [createNote, goToNotebook, queryClient]);
+    enterWorkspace('templates');
+  }, [createNote, enterWorkspace, queryClient]);
 
   const handleCreateNotebook = useCallback(
     async (name: string, parentId: string | null) => {
@@ -120,11 +125,72 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     [createNotebook, closeCreate]
   );
 
+  const inWorkspace = Boolean(workspaceRootId);
   const inTrash = globalFilter === 'trash';
-  const allNotesSelected = !inTrash && !statusFilter && !tagFilter;
-  const showChildNotebooks = isNotebookContext && notebookContext.childrenIds.length > 0;
-  const showNotebooks = !isNotebookContext || showChildNotebooks;
-  const showTrash = !isNotebookContext;
+  const allNotesSelected =
+    !inTrash &&
+    !statusFilter &&
+    !tagFilter &&
+    (workspaceListAll || (!inWorkspace && !isNotebookContext));
+  const showNotebooks = true;
+  const showTrash = !inWorkspace;
+
+  const handleSelectNotebook = useCallback(
+    (id: string) => {
+      if (!workspaceRootId) {
+        enterWorkspace(id);
+        return;
+      }
+      goToNotebook(id);
+    },
+    [workspaceRootId, enterWorkspace, goToNotebook]
+  );
+
+  const handleDeletedNotebook = useCallback(
+    (id: string) => {
+      if (workspaceRootId === id) {
+        exitWorkspace();
+        return;
+      }
+      if (selectedNotebookId === id) {
+        if (workspaceRootId) goToNotebook(workspaceRootId);
+        else goToAllInCurrentContext();
+      }
+    },
+    [workspaceRootId, selectedNotebookId, exitWorkspace, goToNotebook, goToAllInCurrentContext]
+  );
+
+  const handleBreadcrumbNavigate = useCallback(
+    (id: string | null) => {
+      if (!id) {
+        exitWorkspace();
+        return;
+      }
+      if (workspaceRootId && id === workspaceRootId) {
+        goToNotebook(id);
+        return;
+      }
+      enterWorkspace(id);
+    },
+    [workspaceRootId, enterWorkspace, exitWorkspace, goToNotebook]
+  );
+
+  useEffect(() => {
+    if (!inWorkspace) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        if (target.isContentEditable || target.closest('.cm-editor')) return;
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      }
+      event.preventDefault();
+      exitWorkspace();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inWorkspace, exitWorkspace]);
 
   const prevNotebookId = useRef<string | null>(selectedNotebookId);
   const [paneDirection, setPaneDirection] = useState<'in' | 'out'>('in');
@@ -151,13 +217,13 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
       <SidebarBreadcrumb
         selectedNotebookId={selectedNotebookId}
         tagFilter={tagFilter}
-        onNavigate={id => (id ? goToNotebook(id) : clearNavigation())}
+        onNavigate={handleBreadcrumbNavigate}
         onClearTagFilter={() => setTagFilter(null)}
       />
 
       <div
         className={sc('sidebar-content', 'sidebar-pane', `sidebar-pane--${paneDirection}`)}
-        key={selectedNotebookId ?? 'root'}
+        key={workspaceRootId ?? 'root'}
       >
         <SidebarQuickFilters
           allNotesCount={scoped.all}
@@ -196,8 +262,9 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           >
             <NotebookList
               selectedNotebookId={selectedNotebookId}
-              onSelectNotebook={goToNotebook}
-              filterParentId={isNotebookContext ? selectedNotebookId : undefined}
+              onSelectNotebook={handleSelectNotebook}
+              onDeletedNotebook={handleDeletedNotebook}
+              workspaceRootId={workspaceRootId}
               onRequestCreateChild={openCreateChild}
               nameFilter={notebookQuery}
             />

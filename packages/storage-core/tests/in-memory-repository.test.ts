@@ -127,6 +127,20 @@ describe('InMemoryNoteRepository', () => {
       const byNotebook = await repository.list({ notebookId: nbA, archived: 'all' });
       expect(byNotebook.map(n => n.id).sort()).toEqual(['a1', 'a2']);
 
+      const byNotebooks = await repository.list({
+        notebookIds: [nbA, nbB],
+        archived: 'all',
+        isDeleted: false,
+      });
+      expect(byNotebooks.map(n => n.id).sort()).toEqual(['a1', 'b1']);
+
+      const emptyIds = await repository.list({
+        notebookIds: [],
+        notebookId: nbA,
+        archived: 'all',
+      });
+      expect(emptyIds).toEqual([]);
+
       const excluded = await repository.list({ excludeNotebookIds: [nbA], archived: 'all' });
       expect(excluded.every(n => n.notebookId !== nbA)).toBe(true);
       expect(excluded.some(n => n.id === 'b1')).toBe(true);

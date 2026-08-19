@@ -11,15 +11,18 @@ import {
   selectSelectedTag,
   selectSortBy,
   selectSortOrder,
+  selectWorkspaceRootId,
+  selectWorkspaceListAll,
   type NavigationState,
   type StatusFilter,
   type TagFilter,
   type SortBy,
   type SortOrder,
 } from '../stores/navigationStore';
+import { listOptionsFromNav } from '../utils/listOptionsFromNav';
+import { collectNotebookSubtreeIds } from '../utils/notebookTree';
 import { useNotes, useNoteCounts, useScopedNoteCounts, withExcerpt } from './useNotes';
 import { useNotebookTree, getNotebookPath, getAncestorIds } from './useNotebooks';
-import { listOptionsFromNav } from '../utils/listOptionsFromNav';
 
 // ============================================================================
 // Note with Excerpt (for list display)
@@ -67,6 +70,10 @@ export const useSortBy = () => useNavigationStore(selectSortBy);
 /** Get current sort order */
 export const useSortOrder = () => useNavigationStore(selectSortOrder);
 
+export const useWorkspaceRootId = () => useNavigationStore(selectWorkspaceRootId);
+
+export const useWorkspaceListAll = () => useNavigationStore(selectWorkspaceListAll);
+
 // ============================================================================
 // Actions Hook (stable references)
 // ============================================================================
@@ -78,6 +85,8 @@ export function useNavigationActions() {
   const goToPinned = useNavigationStore(s => s.goToPinned);
   const goToTrash = useNavigationStore(s => s.goToTrash);
   const goToNotebook = useNavigationStore(s => s.goToNotebook);
+  const enterWorkspace = useNavigationStore(s => s.enterWorkspace);
+  const exitWorkspace = useNavigationStore(s => s.exitWorkspace);
   const goToTag = useNavigationStore(s => s.goToTag);
   const goToSearch = useNavigationStore(s => s.goToSearch);
   const clearNavigation = useNavigationStore(s => s.clearNavigation);
@@ -92,6 +101,8 @@ export function useNavigationActions() {
     goToPinned,
     goToTrash,
     goToNotebook,
+    enterWorkspace,
+    exitWorkspace,
     goToTag,
     goToSearch,
     clearNavigation,
@@ -111,16 +122,36 @@ export function useNavigationActions() {
  * Combines Zustand navigation with React Query data
  * Returns notes with excerpt for list display
  */
+export function useWorkspaceNotebookIds(): string[] | undefined {
+  const workspaceRootId = useWorkspaceRootId();
+  const { data: tree } = useNotebookTree();
+  return useMemo(() => {
+    if (!workspaceRootId) return undefined;
+    return collectNotebookSubtreeIds(tree ?? [], workspaceRootId);
+  }, [workspaceRootId, tree]);
+}
+
 export function useFilteredNotes(): NoteWithExcerpt[] {
   const navigation = useNavigation();
   const statusFilter = useStatusFilter();
   const tagFilter = useTagFilter();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
+  const workspaceListAll = useWorkspaceListAll();
+  const workspaceNotebookIds = useWorkspaceNotebookIds();
 
   const options = useMemo(
-    () => listOptionsFromNav({ navigation, statusFilter, tagFilter, sortBy, sortOrder }),
-    [navigation, statusFilter, tagFilter, sortBy, sortOrder]
+    () =>
+      listOptionsFromNav({
+        navigation,
+        statusFilter,
+        tagFilter,
+        sortBy,
+        sortOrder,
+        workspaceNotebookIds,
+        workspaceListAll,
+      }),
+    [navigation, statusFilter, tagFilter, sortBy, sortOrder, workspaceNotebookIds, workspaceListAll]
   );
   const { data: notes } = useNotes(options);
 
@@ -202,9 +233,18 @@ export function useDisplayedNotesCount(): number {
  */
 export function useContextNotes(): NoteSnapshot[] {
   const navigation = useNavigation();
+  const workspaceListAll = useWorkspaceListAll();
+  const workspaceNotebookIds = useWorkspaceNotebookIds();
   const options = useMemo(
-    () => listOptionsFromNav({ navigation, statusFilter: null, tagFilter: null }),
-    [navigation]
+    () =>
+      listOptionsFromNav({
+        navigation,
+        statusFilter: null,
+        tagFilter: null,
+        workspaceNotebookIds,
+        workspaceListAll,
+      }),
+    [navigation, workspaceNotebookIds, workspaceListAll]
   );
   const { data: notes } = useNotes(options);
   return notes ?? [];
@@ -212,9 +252,17 @@ export function useContextNotes(): NoteSnapshot[] {
 
 export function useScopedSidebarCounts() {
   const navigation = useNavigation();
+  const workspaceNotebookIds = useWorkspaceNotebookIds();
   const options = useMemo(
-    () => listOptionsFromNav({ navigation, statusFilter: null, tagFilter: null }),
-    [navigation]
+    () =>
+      listOptionsFromNav({
+        navigation,
+        statusFilter: null,
+        tagFilter: null,
+        workspaceNotebookIds,
+        scopeToWorkspaceTree: Boolean(workspaceNotebookIds?.length),
+      }),
+    [navigation, workspaceNotebookIds]
   );
   const { data } = useScopedNoteCounts(options);
 

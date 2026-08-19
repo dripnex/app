@@ -15,6 +15,8 @@ describe('navigationStore', () => {
     // Reset store to initial state before each test
     useNavigationStore.setState({
       navigation: { kind: 'global', filter: 'all' },
+      workspaceRootId: null,
+      workspaceListAll: false,
       statusFilter: null,
       tagFilter: null,
     });
@@ -94,6 +96,33 @@ describe('navigationStore', () => {
         kind: 'search',
         query: 'test query',
       });
+    });
+
+    it('enterWorkspace focuses a notebook tree and keeps it when selecting a child', () => {
+      useNavigationStore.getState().enterWorkspace('work');
+      useNavigationStore.getState().goToNotebook('api');
+      const state = useNavigationStore.getState();
+      expect(state.workspaceRootId).toBe('work');
+      expect(state.navigation).toEqual({ kind: 'notebook', id: 'api' });
+      expect(state.workspaceListAll).toBe(false);
+    });
+
+    it('goToAllInCurrentContext lists the whole workspace tree', () => {
+      useNavigationStore.getState().enterWorkspace('work');
+      useNavigationStore.getState().goToNotebook('api');
+      useNavigationStore.getState().goToAllInCurrentContext();
+      const state = useNavigationStore.getState();
+      expect(state.workspaceRootId).toBe('work');
+      expect(state.workspaceListAll).toBe(true);
+      expect(state.navigation).toEqual({ kind: 'notebook', id: 'work' });
+    });
+
+    it('exitWorkspace returns to all notes', () => {
+      useNavigationStore.getState().enterWorkspace('work');
+      useNavigationStore.getState().exitWorkspace();
+      const state = useNavigationStore.getState();
+      expect(state.workspaceRootId).toBeNull();
+      expect(state.navigation).toEqual({ kind: 'global', filter: 'all' });
     });
 
     it('clearNavigation resets to default (global/all)', () => {

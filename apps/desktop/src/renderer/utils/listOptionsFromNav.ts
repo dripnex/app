@@ -16,9 +16,13 @@ export function listOptionsFromNav(input: {
   tagFilter: TagFilter;
   sortBy?: SortBy;
   sortOrder?: SortOrder;
+  workspaceNotebookIds?: string[];
+  workspaceListAll?: boolean;
+  /** Sidebar counts: always the workspace tree when focused. */
+  scopeToWorkspaceTree?: boolean;
 }): ListOptions {
   const options: ListOptions = {
-    ...optionsForNavigation(input.navigation),
+    ...optionsForNavigation(input.navigation, input),
     limit: LIST_LIMIT,
   };
 
@@ -41,7 +45,14 @@ export function listOptionsFromNav(input: {
   return options;
 }
 
-function optionsForNavigation(navigation: NavigationState): ListOptions {
+function optionsForNavigation(
+  navigation: NavigationState,
+  input: {
+    workspaceNotebookIds?: string[];
+    workspaceListAll?: boolean;
+    scopeToWorkspaceTree?: boolean;
+  }
+): ListOptions {
   switch (navigation.kind) {
     case 'global':
       if (navigation.filter === 'pinned') {
@@ -60,12 +71,21 @@ function optionsForNavigation(navigation: NavigationState): ListOptions {
       }
       return globalAllOptions();
 
-    case 'notebook':
+    case 'notebook': {
+      const treeIds = input.workspaceNotebookIds;
+      if (treeIds && treeIds.length > 0 && (input.workspaceListAll || input.scopeToWorkspaceTree)) {
+        return {
+          notebookIds: treeIds,
+          archived: 'active',
+          isDeleted: false,
+        };
+      }
       return {
         notebookId: navigation.id,
         archived: 'active',
         isDeleted: false,
       };
+    }
 
     case 'tag':
       return {

@@ -74,6 +74,7 @@ Shipped this week:
 - Official palettes: Parchment, Wave, Night. Themes are token layers; community themes are repos.
 - Note templates: Meeting, Decision, Daily, Weekly, Reading, Issue (notebook `templates`).
 - What’s New is authored (`docs/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`. See `docs/WHATS_NEW.md`.
+- Workspace view: click a notebook to focus the sidebar on that tree. Escape or the breadcrumb home returns to All Notes.
 
 CSS path (decided 2026-08-17):
 Keep CSS modules + tokens. Do not add Tailwind to desktop.

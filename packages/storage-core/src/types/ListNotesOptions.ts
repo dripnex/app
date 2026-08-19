@@ -17,6 +17,11 @@ export interface ListNotesOptions {
   /** Filter by archived status. Defaults to 'active' (non-archived) */
   archived?: ArchivedFilter;
   notebookId?: string;
+  /**
+   * When set (including `[]`), matches any of these notebooks and ignores
+   * `notebookId`. An empty list matches nothing.
+   */
+  notebookIds?: string[];
   status?: NoteStatus;
   isPinned?: boolean;
   /** Undefined = do not filter by deleted state */

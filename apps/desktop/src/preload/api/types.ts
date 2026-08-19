@@ -57,6 +57,11 @@ export interface ListOptions {
   sortOrder?: 'asc' | 'desc';
   archived?: 'active' | 'archived' | 'all';
   notebookId?: string;
+  /**
+   * When set (including `[]`), matches any of these notebooks and ignores
+   * `notebookId`. An empty list matches nothing.
+   */
+  notebookIds?: string[];
   status?: NoteStatus;
   isPinned?: boolean;
   /** Undefined = do not filter by deleted state */
