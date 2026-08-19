@@ -20,6 +20,8 @@ export function listOptionsFromNav(input: {
   workspaceListAll?: boolean;
   /** Sidebar counts: always the workspace tree when focused. */
   scopeToWorkspaceTree?: boolean;
+  /** Selected notebook subtree when that notebook is collapsed. */
+  descendantNotebookIds?: string[];
 }): ListOptions {
   const options: ListOptions = {
     ...optionsForNavigation(input.navigation, input),
@@ -51,6 +53,7 @@ function optionsForNavigation(
     workspaceNotebookIds?: string[];
     workspaceListAll?: boolean;
     scopeToWorkspaceTree?: boolean;
+    descendantNotebookIds?: string[];
   }
 ): ListOptions {
   switch (navigation.kind) {
@@ -76,6 +79,14 @@ function optionsForNavigation(
       if (treeIds && treeIds.length > 0 && (input.workspaceListAll || input.scopeToWorkspaceTree)) {
         return {
           notebookIds: treeIds,
+          archived: 'active',
+          isDeleted: false,
+        };
+      }
+      const descendants = input.descendantNotebookIds;
+      if (descendants && descendants.length > 1) {
+        return {
+          notebookIds: descendants,
           archived: 'active',
           isDeleted: false,
         };
