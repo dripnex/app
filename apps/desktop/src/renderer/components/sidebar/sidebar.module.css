@@ -446,6 +446,11 @@
   text-align: left;
 }
 
+.sidebar-row:focus,
+.sidebar-row:focus-visible {
+  outline: none;
+}
+
 .sidebar-row.selected {
   background: color-mix(in srgb, var(--text-primary) 10%, transparent);
   color: var(--text-primary);
@@ -672,6 +677,11 @@
   transition: background var(--transition-fast);
 }
 
+.notebook-item-row:focus,
+.notebook-item-row:focus-visible {
+  outline: none;
+}
+
 .notebook-item-row.selected {
   background: color-mix(in srgb, var(--text-primary) 10%, transparent);
 }
@@ -796,7 +806,7 @@
   align-items: center;
   margin-left: auto;
   padding: 1px 7px;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 999px;
   background: var(--bg-elevated);
   color: var(--text-secondary);
