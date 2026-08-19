@@ -442,10 +442,8 @@ export class SyncService {
     // or unlock their sync passphrase first.
     if (!this.encryptionService.isReady()) {
       this.emitStatus({
-        type: 'sync-error',
-        error: 'Encryption not ready. Set up a passphrase in Settings.',
-        isNetworkError: false,
-        consecutiveFailures: this.state.consecutiveFailures,
+        type: 'needs-setup',
+        error: 'Set up a passphrase to sync.',
       });
       return {
         success: false,
@@ -809,10 +807,8 @@ export class SyncService {
       try {
         if (!this.encryptionService.isReady()) {
           this.emitStatus({
-            type: 'sync-error',
-            error: 'Encryption not ready. Set up a passphrase to sync.',
-            isNetworkError: false,
-            consecutiveFailures: this.state.consecutiveFailures,
+            type: 'needs-setup',
+            error: 'Set up a passphrase to sync.',
           });
         } else {
           await this.syncNow();

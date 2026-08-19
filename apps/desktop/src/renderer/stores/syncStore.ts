@@ -4,10 +4,10 @@ import { create } from 'zustand';
 // Types
 // ============================================================================
 
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline' | 'auth-expired';
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline' | 'auth-expired' | 'needs-setup';
 
 export interface SyncStatusEvent {
-  type: 'sync-start' | 'sync-success' | 'sync-error' | 'auth-expired';
+  type: 'sync-start' | 'sync-success' | 'sync-error' | 'needs-setup' | 'auth-expired';
   error?: string;
   isNetworkError?: boolean;
   consecutiveFailures?: number;
@@ -117,6 +117,9 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
           errorMessage = 'Connection timeout. Please try again.';
         } else if (msg.includes('unauthorized') || msg.includes('401')) {
           errorMessage = 'Session expired. Please sign in again.';
+        } else if (msg.includes('encryption') || msg.includes('passphrase')) {
+          errorMessage = error.message;
+          status = 'needs-setup';
         } else if (msg.includes('forbidden') || msg.includes('403')) {
           errorMessage = 'Sync requires Pro subscription.';
         } else if (msg.includes('rate limit') || msg.includes('429')) {
@@ -272,6 +275,13 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
           void get().refreshPendingCount();
           break;
         }
+
+        case 'needs-setup':
+          set({
+            status: 'needs-setup',
+            error: event.error ?? 'Set up a passphrase to sync.',
+          });
+          break;
 
         case 'auth-expired':
           set({
