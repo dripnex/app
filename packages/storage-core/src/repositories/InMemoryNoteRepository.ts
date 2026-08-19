@@ -292,7 +292,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
     const archived = options.archived ?? 'active';
     notes = this.filterByArchived(notes, archived);
 
-    if (options.notebookIds && options.notebookIds.length > 0) {
+    if (options.notebookIds !== undefined) {
       const allowed = new Set(options.notebookIds);
       notes = notes.filter(n => allowed.has(n.notebookId));
     } else if (options.notebookId !== undefined) {

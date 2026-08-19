@@ -8,6 +8,7 @@ import { sc } from './sc';
 interface NotebookListProps {
   readonly selectedNotebookId: string | null;
   readonly onSelectNotebook: (id: string) => void;
+  readonly onDeletedNotebook?: (id: string) => void;
   readonly filterParentId?: string | null;
   /** Show this notebook and its descendants as the forest root. */
   readonly workspaceRootId?: string | null;
@@ -51,6 +52,7 @@ function NotebookListError({ message }: { message: string }) {
 export function NotebookList({
   selectedNotebookId,
   onSelectNotebook,
+  onDeletedNotebook,
   filterParentId,
   workspaceRootId,
   onRequestCreateChild,
@@ -123,11 +125,9 @@ export function NotebookList({
   const handleDelete = useCallback(
     async (id: string) => {
       await deleteNotebook.mutateAsync(id);
-      if (selectedNotebookId === id) {
-        onSelectNotebook('inbox');
-      }
+      onDeletedNotebook?.(id);
     },
-    [deleteNotebook, selectedNotebookId, onSelectNotebook]
+    [deleteNotebook, onDeletedNotebook]
   );
 
   const handleMove = useCallback(

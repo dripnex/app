@@ -57,7 +57,10 @@ export interface ListOptions {
   sortOrder?: 'asc' | 'desc';
   archived?: 'active' | 'archived' | 'all';
   notebookId?: string;
-  /** When set, matches any of these notebooks. Overrides `notebookId`. */
+  /**
+   * When set (including `[]`), matches any of these notebooks and ignores
+   * `notebookId`. An empty list matches nothing.
+   */
   notebookIds?: string[];
   status?: NoteStatus;
   isPinned?: boolean;

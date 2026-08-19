@@ -65,10 +65,14 @@ export function noteFilterSql(
 
   parts.push(archivedConditionSql(archived, 'n'));
 
-  if (options.notebookIds && options.notebookIds.length > 0) {
-    const placeholders = options.notebookIds.map(() => '?').join(', ');
-    parts.push(`AND n.notebook_id IN (${placeholders})`);
-    params.push(...options.notebookIds);
+  if (options.notebookIds !== undefined) {
+    if (options.notebookIds.length === 0) {
+      parts.push('AND 0');
+    } else {
+      const placeholders = options.notebookIds.map(() => '?').join(', ');
+      parts.push(`AND n.notebook_id IN (${placeholders})`);
+      params.push(...options.notebookIds);
+    }
   } else if (options.notebookId !== undefined) {
     parts.push('AND n.notebook_id = ?');
     params.push(options.notebookId);

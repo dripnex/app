@@ -146,6 +146,20 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     [workspaceRootId, enterWorkspace, goToNotebook]
   );
 
+  const handleDeletedNotebook = useCallback(
+    (id: string) => {
+      if (workspaceRootId === id) {
+        exitWorkspace();
+        return;
+      }
+      if (selectedNotebookId === id) {
+        if (workspaceRootId) goToNotebook(workspaceRootId);
+        else goToAllInCurrentContext();
+      }
+    },
+    [workspaceRootId, selectedNotebookId, exitWorkspace, goToNotebook, goToAllInCurrentContext]
+  );
+
   const handleBreadcrumbNavigate = useCallback(
     (id: string | null) => {
       if (!id) {
@@ -249,6 +263,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
             <NotebookList
               selectedNotebookId={selectedNotebookId}
               onSelectNotebook={handleSelectNotebook}
+              onDeletedNotebook={handleDeletedNotebook}
               workspaceRootId={workspaceRootId}
               onRequestCreateChild={openCreateChild}
               nameFilter={notebookQuery}
