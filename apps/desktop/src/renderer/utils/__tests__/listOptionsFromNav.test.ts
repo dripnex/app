@@ -98,6 +98,22 @@ describe('listOptionsFromNav', () => {
       });
     });
 
+    it('includes descendant notebooks when the selected parent is collapsed', () => {
+      expect(
+        listOptionsFromNav({
+          navigation: { kind: 'notebook', id: 'work' },
+          statusFilter: null,
+          tagFilter: null,
+          descendantNotebookIds: ['work', 'api', 'web'],
+        })
+      ).toEqual({
+        notebookIds: ['work', 'api', 'web'],
+        archived: 'active',
+        isDeleted: false,
+        limit: 10000,
+      });
+    });
+
     it('scopes sidebar counts to the workspace tree', () => {
       expect(
         listOptionsFromNav({

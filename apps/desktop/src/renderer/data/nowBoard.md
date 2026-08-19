@@ -75,6 +75,7 @@ Shipped this week:
 - Note templates: Meeting, Decision, Daily, Weekly, Reading, Issue (notebook `templates`).
 - What’s New is authored (`docs/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`.
 - Workspace view: click a notebook to focus the sidebar on that tree. Escape or the breadcrumb home returns to All Notes.
+- Collapsed notebooks list notes from their descendants; expanded ones stay direct-only.
 
 CSS path (decided 2026-08-17):
 Keep CSS modules + tokens. Do not add Tailwind to desktop.

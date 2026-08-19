@@ -11,6 +11,7 @@ import {
   GripVertical,
 } from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
+import { useNotebookExpandStore } from '../../stores/notebookExpandStore';
 import { CommitHistory } from '../git/CommitHistory';
 import { sc } from './sc';
 
@@ -62,7 +63,9 @@ export const NotebookItem = memo(function NotebookItem({
   onReorder,
   siblingIds,
 }: NotebookItemProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const isExpanded = useNotebookExpandStore(s => !s.collapsedIds.includes(node.notebook.id));
+  const toggleExpanded = useNotebookExpandStore(s => s.toggle);
+  const expandNotebook = useNotebookExpandStore(s => s.expand);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(node.notebook.name);
   const [isGitEnabled, setIsGitEnabled] = useState(false);
@@ -103,10 +106,13 @@ export const NotebookItem = memo(function NotebookItem({
     [node.notebook.id, onSelect]
   );
 
-  const handleToggle = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(prev => !prev);
-  }, []);
+  const handleToggle = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleExpanded(node.notebook.id);
+    },
+    [node.notebook.id, toggleExpanded]
+  );
 
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -287,7 +293,7 @@ export const NotebookItem = memo(function NotebookItem({
       if (pos === 'inside') {
         // Move dragged notebook into this one as a child
         onMove?.(draggedId, node.notebook.id);
-        setIsExpanded(true);
+        expandNotebook(node.notebook.id);
       } else if (pos === 'above' || pos === 'below') {
         const fromSameParent =
           (draggedParentId === 'root' ? null : draggedParentId) === thisParentId;
@@ -313,6 +319,7 @@ export const NotebookItem = memo(function NotebookItem({
       onMove,
       onReorder,
       siblingIds,
+      expandNotebook,
     ]
   );
 

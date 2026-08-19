@@ -20,7 +20,8 @@ import {
   type SortOrder,
 } from '../stores/navigationStore';
 import { listOptionsFromNav } from '../utils/listOptionsFromNav';
-import { collectNotebookSubtreeIds } from '../utils/notebookTree';
+import { collectNotebookSubtreeIds, findNotebookNode } from '../utils/notebookTree';
+import { useNotebookExpandStore } from '../stores/notebookExpandStore';
 import { useNotes, useNoteCounts, useScopedNoteCounts, withExcerpt } from './useNotes';
 import { useNotebookTree, getNotebookPath, getAncestorIds } from './useNotebooks';
 
@@ -139,6 +140,15 @@ export function useFilteredNotes(): NoteWithExcerpt[] {
   const sortOrder = useSortOrder();
   const workspaceListAll = useWorkspaceListAll();
   const workspaceNotebookIds = useWorkspaceNotebookIds();
+  const collapsedIds = useNotebookExpandStore(s => s.collapsedIds);
+  const { data: tree } = useNotebookTree();
+  const descendantNotebookIds = useMemo(() => {
+    if (navigation.kind !== 'notebook') return undefined;
+    if (!collapsedIds.includes(navigation.id)) return undefined;
+    const node = findNotebookNode(tree ?? [], navigation.id);
+    if (!node || node.children.length === 0) return undefined;
+    return collectNotebookSubtreeIds(tree ?? [], navigation.id);
+  }, [navigation, collapsedIds, tree]);
 
   const options = useMemo(
     () =>
@@ -150,8 +160,18 @@ export function useFilteredNotes(): NoteWithExcerpt[] {
         sortOrder,
         workspaceNotebookIds,
         workspaceListAll,
+        descendantNotebookIds,
       }),
-    [navigation, statusFilter, tagFilter, sortBy, sortOrder, workspaceNotebookIds, workspaceListAll]
+    [
+      navigation,
+      statusFilter,
+      tagFilter,
+      sortBy,
+      sortOrder,
+      workspaceNotebookIds,
+      workspaceListAll,
+      descendantNotebookIds,
+    ]
   );
   const { data: notes } = useNotes(options);
 
