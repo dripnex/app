@@ -84,6 +84,9 @@ export type { PluginMetadata } from './preview/safePluginWrapper';
 export { cssVariableStore } from './theme/cssVariableStore';
 export type { CssVariableRegistration } from './theme/cssVariableStore';
 export { useCssVariables } from './theme/useCssVariables';
+export { pluginStyleStore } from './theme/pluginStyleStore';
+export type { PluginStyleSheet } from './theme/pluginStyleStore';
+export { usePluginStyles } from './theme/usePluginStyles';
 export { useThemeOverrides } from './theme/useThemeOverrides';
 export { themeRegistryStore } from './theme/themeRegistryStore';
 export {

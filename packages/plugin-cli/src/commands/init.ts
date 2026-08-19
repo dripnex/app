@@ -7,6 +7,7 @@ import { tsconfigTemplate } from '../templates/tsconfig';
 import { packageJsonTemplate } from '../templates/package.json';
 import { keymapsTemplate } from '../templates/keymaps.default.json';
 import { menusTemplate } from '../templates/menus.main.json';
+import { stylesTemplate } from '../templates/styles.index.css';
 
 /**
  * Convert a name like "My Cool Plugin" to "my-cool-plugin" (kebab-case)
@@ -35,6 +36,7 @@ export interface InitOptions {
  *   tsconfig.json
  *   keymaps/default.json
  *   menus/main.json
+ *   styles/index.css
  *   src/
  *     index.ts
  * ```
@@ -55,6 +57,7 @@ export async function initPlugin(options: InitOptions): Promise<string> {
   await mkdir(join(targetDir, 'src'), { recursive: true });
   await mkdir(join(targetDir, 'keymaps'), { recursive: true });
   await mkdir(join(targetDir, 'menus'), { recursive: true });
+  await mkdir(join(targetDir, 'styles'), { recursive: true });
 
   await Promise.all([
     writeFile(join(targetDir, 'manifest.json'), manifestTemplate(id, options.name)),
@@ -63,6 +66,7 @@ export async function initPlugin(options: InitOptions): Promise<string> {
     writeFile(join(targetDir, 'src', 'index.ts'), indexTemplate(id, options.name)),
     writeFile(join(targetDir, 'keymaps', 'default.json'), keymapsTemplate(id)),
     writeFile(join(targetDir, 'menus', 'main.json'), menusTemplate(id)),
+    writeFile(join(targetDir, 'styles', 'index.css'), stylesTemplate()),
   ]);
 
   return targetDir;

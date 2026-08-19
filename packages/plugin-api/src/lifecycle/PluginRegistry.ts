@@ -24,6 +24,7 @@ import { previewComponentStore } from '../preview/previewComponentStore';
 import { codeBlockStore } from '../preview/codeBlockStore';
 import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
+import { pluginStyleStore } from '../theme/pluginStyleStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
 import { aiCommandStore } from '../ai/aiCommandStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
@@ -531,6 +532,7 @@ export class PluginRegistry {
       previewComponentStore.getState().unregisterAll(id);
       codeBlockStore.getState().unregisterAll(id);
       cssVariableStore.getState().unregisterAll(id);
+      pluginStyleStore.getState().unregisterAll(id);
       themeRegistryStore.getState().unregisterAll(id);
       aiCommandStore.getState().unregisterAll(id);
       pluginMenuStore.getState().removeAll(id);
@@ -579,6 +581,7 @@ export class PluginRegistry {
 
     // Cleanup theme stores
     cssVariableStore.getState().unregisterAll(id);
+    pluginStyleStore.getState().unregisterAll(id);
     themeRegistryStore.getState().unregisterAll(id);
 
     // Cleanup AI command registrations

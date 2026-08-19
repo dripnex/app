@@ -6,6 +6,7 @@ import { remarkPluginStore } from '../src/preview/remarkPluginStore';
 import { rehypePluginStore } from '../src/preview/rehypePluginStore';
 import { previewComponentStore } from '../src/preview/previewComponentStore';
 import { codeBlockStore } from '../src/preview/codeBlockStore';
+import { pluginStyleStore } from '../src/theme/pluginStyleStore';
 
 function makeManifest(overrides: Partial<PluginManifest> = {}): PluginManifest {
   return {
@@ -700,6 +701,24 @@ describe('PluginRegistry', () => {
       expect(rehypePluginStore.getState().registrations).toHaveLength(0);
       expect(previewComponentStore.getState().registrations).toHaveLength(0);
       expect(codeBlockStore.getState().registrations).toHaveLength(0);
+    });
+
+    it('deactivate removes package styles', async () => {
+      registry.load(makeManifest());
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        undefined,
+        undefined,
+        undefined,
+        { keymaps: [], menus: [], styles: ['.hello { color: red; }'] }
+      );
+
+      expect(pluginStyleStore.getState().sheets).toHaveLength(1);
+      registry.deactivate('test-plugin');
+      expect(pluginStyleStore.getState().sheets).toHaveLength(0);
     });
   });
 

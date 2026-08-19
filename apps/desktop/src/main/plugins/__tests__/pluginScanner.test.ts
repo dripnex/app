@@ -11,10 +11,11 @@ afterEach(async () => {
 });
 
 describe('scanPlugins', () => {
-  it('loads keymaps and menus json from the plugin package', async () => {
+  it('loads keymaps, menus, and styles from the plugin package', async () => {
     const dir = join(ROOT, 'hello');
     await mkdir(join(dir, 'keymaps'), { recursive: true });
     await mkdir(join(dir, 'menus'), { recursive: true });
+    await mkdir(join(dir, 'styles'), { recursive: true });
     await writeFile(
       join(dir, 'manifest.json'),
       JSON.stringify({
@@ -30,11 +31,13 @@ describe('scanPlugins', () => {
       join(dir, 'menus', 'main.json'),
       '{ "menu": [{ "label": "Hello", "command": "say-hello" }] }'
     );
+    await writeFile(join(dir, 'styles', 'index.css'), '.hello { color: red; }');
 
     const scanned = await scanPlugins(ROOT);
     expect(scanned).toHaveLength(1);
     expect(scanned[0]?.id).toBe('hello');
     expect(scanned[0]?.keymaps[0]).toContain('say-hello');
     expect(scanned[0]?.menus[0]).toContain('"label": "Hello"');
+    expect(scanned[0]?.styles[0]).toContain('.hello { color: red; }');
   });
 });

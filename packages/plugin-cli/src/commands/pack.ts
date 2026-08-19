@@ -30,6 +30,7 @@ export function packPlugin(source: string): string {
   else members.push(main);
   if (existsSync(join(sourcePath, 'keymaps'))) members.push('keymaps');
   if (existsSync(join(sourcePath, 'menus'))) members.push('menus');
+  if (existsSync(join(sourcePath, 'styles'))) members.push('styles');
 
   execFileSync('tar', ['-czf', dest, '-C', sourcePath, ...members], { stdio: 'inherit' });
 

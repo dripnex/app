@@ -21,6 +21,7 @@ export interface ScannedPlugin {
   path: string;
   keymaps: string[];
   menus: string[];
+  styles: string[];
 }
 
 interface PluginManifestJson {
@@ -59,9 +60,10 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
 
       const entryPath = join(pluginDir, manifest.main);
       const code = await readFile(entryPath, 'utf-8');
-      const [keymaps, menus] = await Promise.all([
+      const [keymaps, menus, styles] = await Promise.all([
         readJsonDir(join(pluginDir, 'keymaps')),
         readJsonDir(join(pluginDir, 'menus')),
+        readCssDir(join(pluginDir, 'styles')),
       ]);
 
       results.push({
@@ -74,6 +76,7 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
         path: pluginDir,
         keymaps,
         menus,
+        styles,
       });
     } catch {
       // Skip directories that don't have a valid manifest or entry file
@@ -84,6 +87,14 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
 }
 
 async function readJsonDir(dir: string): Promise<string[]> {
+  return readDirByExt(dir, '.json');
+}
+
+async function readCssDir(dir: string): Promise<string[]> {
+  return readDirByExt(dir, '.css');
+}
+
+async function readDirByExt(dir: string, ext: string): Promise<string[]> {
   let names: string[];
   try {
     names = await readdir(dir);
@@ -93,7 +104,7 @@ async function readJsonDir(dir: string): Promise<string[]> {
 
   const files: string[] = [];
   for (const name of names.sort()) {
-    if (!name.endsWith('.json')) continue;
+    if (!name.endsWith(ext)) continue;
     try {
       files.push(await readFile(join(dir, name), 'utf-8'));
     } catch {

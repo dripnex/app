@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useCssVariables, useThemeOverrides } from '@dripnex/plugin-api';
+import { useCssVariables, usePluginStyles, useThemeOverrides } from '@dripnex/plugin-api';
 import { scanMarkdown } from '@dripnex/markdown';
 import type { NoteSnapshot } from '../preload/index';
 import { UpdateBanner } from './components/UpdateBanner';
@@ -72,6 +72,7 @@ function NotesApp() {
   useMcpLocalPath();
   useThemeOverrides(); // Applies active theme tokens
   useCssVariables();
+  usePluginStyles();
 
   // First-run onboarding
   const [showWelcome, setShowWelcome] = useState(

@@ -34,7 +34,7 @@ interface PluginRuntimeState {
   errors: PluginLoadError[];
   /** Load timing per plugin */
   timings: PluginLoadTiming[];
-  /** Declarative keymaps/menus from each scanned plugin package */
+  /** Declarative keymaps/menus/styles from each scanned plugin package */
   packageFiles: Record<string, PluginPackageFiles>;
   /** Current lifecycle status */
   status: RuntimeStatus;
@@ -97,6 +97,7 @@ async function executeScan(generation: number): Promise<{
       packageFiles[sp.id] = {
         keymaps: sp.keymaps ?? [],
         menus: sp.menus ?? [],
+        styles: sp.styles ?? [],
       };
 
       if (manifest) {
