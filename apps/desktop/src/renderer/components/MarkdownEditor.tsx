@@ -67,6 +67,10 @@ import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
 import { setEditorView } from '../hooks/useCommandRegistry';
 import { emojiShortcodeCompletions } from '../plugins/emojiShortcodes';
+import {
+  knownTitlesFromResolution,
+  type WikilinkTitleResolution,
+} from '../utils/isMissingWikilink';
 import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
 import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
 import { UrlPastePicker } from './editor/UrlPastePicker';
@@ -96,8 +100,7 @@ interface MarkdownEditorProps {
   getEmbedUrl?: (target: string) => string | null;
   /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
   onWikilinkClick?: (target: string, anchor?: string) => void;
-  /** Lowercase titles that resolve. Null while lookup is in flight. */
-  knownWikilinkTitles?: ReadonlySet<string> | null;
+  knownWikilinkTitles?: WikilinkTitleResolution;
 }
 
 /** Imperative handle exposed via ref */
@@ -137,7 +140,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       noteId,
       getEmbedUrl,
       onWikilinkClick,
-      knownWikilinkTitles = null,
+      knownWikilinkTitles = { status: 'pending' },
     },
     ref
   ) {
@@ -687,7 +690,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       if (!view) return;
       view.dispatch({
         effects: wikilinkHighlightCompartment.reconfigure(
-          createWikilinkHighlighter(knownWikilinkTitles)
+          createWikilinkHighlighter(knownTitlesFromResolution(knownWikilinkTitles))
         ),
       });
     }, [knownWikilinkTitles]);

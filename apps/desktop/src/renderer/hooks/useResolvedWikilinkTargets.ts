@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { extractWikilinkTargets } from '@dripnex/wikilinks';
+import type { WikilinkTitleResolution } from '../utils/isMissingWikilink';
 
-/** Lowercase titles from this note's wikilinks that already exist. Null while loading. */
-export function useResolvedWikilinkTargets(content: string): Set<string> | null {
+export type { WikilinkTitleResolution };
+
+/** Lowercase titles from this note's wikilinks that already exist. */
+export function useResolvedWikilinkTargets(content: string): WikilinkTitleResolution {
   const key = useMemo(
     () =>
       extractWikilinkTargets(content)
@@ -11,28 +14,34 @@ export function useResolvedWikilinkTargets(content: string): Set<string> | null 
         .join('\n'),
     [content]
   );
-  const [known, setKnown] = useState<Set<string> | null>(null);
+  const [resolution, setResolution] = useState<WikilinkTitleResolution>({ status: 'pending' });
 
   useEffect(() => {
     if (!key) {
-      setKnown(new Set());
+      setResolution({ status: 'ready', titles: new Set() });
       return;
     }
-    setKnown(null);
+    setResolution({ status: 'pending' });
     let cancelled = false;
     const titles = key.split('\n');
     const timer = window.setTimeout(() => {
       void (async () => {
-        const found = new Set<string>();
-        await Promise.all(
+        const results = await Promise.allSettled(
           titles.map(async title => {
             const notes = await window.dripnex.notes.search(title, 8);
-            if (notes.some(note => note.title.toLowerCase() === title)) {
-              found.add(title);
-            }
+            return notes.some(note => note.title.toLowerCase() === title) ? title : null;
           })
         );
-        if (!cancelled) setKnown(found);
+        if (cancelled) return;
+        if (results.some(result => result.status === 'rejected')) {
+          setResolution({ status: 'error' });
+          return;
+        }
+        const found = new Set<string>();
+        for (const result of results) {
+          if (result.status === 'fulfilled' && result.value) found.add(result.value);
+        }
+        setResolution({ status: 'ready', titles: found });
       })();
     }, 200);
     return () => {
@@ -41,5 +50,5 @@ export function useResolvedWikilinkTargets(content: string): Set<string> | null 
     };
   }, [key]);
 
-  return known;
+  return resolution;
 }

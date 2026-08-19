@@ -29,6 +29,8 @@ const wikilinkTheme = EditorView.baseTheme({
 export function createWikilinkHighlighter(
   knownTitles: ReadonlySet<string> | null = null
 ): Extension {
+  const known =
+    knownTitles == null ? null : new Set([...knownTitles].map(title => title.toLowerCase()));
   const highlighter = ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -49,8 +51,7 @@ export function createWikilinkHighlighter(
         const text = view.state.sliceDoc(from, to);
         for (const span of findWikilinkSpans(text)) {
           const target = span.ref.target;
-          const missing =
-            knownTitles != null && Boolean(target) && !knownTitles.has(target.toLowerCase());
+          const missing = known != null && Boolean(target) && !known.has(target.toLowerCase());
           builder.add(from + span.start, from + span.end, missing ? missingMark : wikilinkMark);
         }
         return builder.finish();

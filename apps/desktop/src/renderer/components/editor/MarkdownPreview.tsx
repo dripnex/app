@@ -28,7 +28,7 @@ import { applyPreviewFind, unwrapPreviewFindMarks } from '../../utils/previewFin
 import { scrollBehavior } from '../../utils/motion';
 import { cssm } from '../../lib/cssm';
 import { emitLocalDeepLink } from '../../utils/parseDripnexUrl';
-import { isMissingWikilink } from '../../utils/isMissingWikilink';
+import { isMissingWikilink, type WikilinkTitleResolution } from '../../utils/isMissingWikilink';
 import { PreviewFindBar } from './PreviewFindBar';
 import { FenceBlock } from './FenceBlock';
 import styles from './MarkdownPreview.module.css';
@@ -47,8 +47,7 @@ interface MarkdownPreviewProps {
   readonly updatedAt?: string;
   readonly onReady?: () => void;
   readonly onWikilinkClick?: (target: string, anchor?: string) => void;
-  /** Lowercase titles that resolve. Null while lookup is in flight. */
-  readonly knownWikilinkTitles?: ReadonlySet<string> | null;
+  readonly knownWikilinkTitles?: WikilinkTitleResolution;
   readonly onEmbedClick?: (target: string, url: string) => void;
   /** Optional pre-resolved embeds from parent (for sharing with editor) */
   readonly resolvedEmbeds?: Record<string, string | null>;
@@ -75,7 +74,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       updatedAt,
       onReady,
       onWikilinkClick,
-      knownWikilinkTitles = null,
+      knownWikilinkTitles = { status: 'pending' },
       onEmbedClick,
       resolvedEmbeds: resolvedEmbedsProp,
       onCheckboxToggle,
