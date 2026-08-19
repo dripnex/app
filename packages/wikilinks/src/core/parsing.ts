@@ -28,5 +28,7 @@ export function extractWikilinks(content: string): WikilinkRef[] {
  * @returns Array of unique target strings
  */
 export function extractWikilinkTargets(content: string): string[] {
-  return extractWikilinks(content).map(link => link.target);
+  return extractWikilinks(content)
+    .map(link => link.target)
+    .filter(Boolean);
 }

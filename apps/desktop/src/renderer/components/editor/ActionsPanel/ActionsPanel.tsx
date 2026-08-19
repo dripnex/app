@@ -22,6 +22,7 @@ import {
   Undo2,
   Redo2,
 } from 'lucide-react';
+import { headingToSlug } from '@dripnex/markdown';
 import type { ToolbarVisibility } from '../FormattingToolbar';
 import type { ShareInfo } from '../../../stores/shareStore';
 import { dispatchCommand } from '../../../hooks/useCommandRegistry';
@@ -46,6 +47,8 @@ interface ActionsPanelProps {
   readonly onCopyShareLink?: () => void;
   /** Hidden formatting groups from toolbar overflow */
   readonly hiddenFormatting?: ToolbarVisibility;
+  /** Current heading, used as a hash on Copy note link */
+  readonly heading?: string | null;
 }
 
 /**
@@ -79,6 +82,7 @@ export const ActionsPanel = memo(function ActionsPanel({
   onUnshare,
   onCopyShareLink,
   hiddenFormatting,
+  heading,
 }: ActionsPanelProps) {
   // Handle ESC key to close
   useEffect(() => {
@@ -105,14 +109,15 @@ export const ActionsPanel = memo(function ActionsPanel({
 
   // Copy note link to clipboard
   const handleCopyLink = useCallback(async () => {
-    const noteLink = `dripnex://note/${encodeURIComponent(noteId)}`;
+    const hash = heading ? `#${encodeURIComponent(headingToSlug(heading))}` : '';
+    const noteLink = `dripnex://note/${encodeURIComponent(noteId)}${hash}`;
     try {
       await navigator.clipboard.writeText(noteLink);
       onClose();
     } catch (error) {
       console.error('Failed to copy note link:', error);
     }
-  }, [noteId, onClose]);
+  }, [noteId, heading, onClose]);
 
   // Handle duplicate
   const handleDuplicate = useCallback(() => {

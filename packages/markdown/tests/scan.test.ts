@@ -24,6 +24,11 @@ describe('scanMarkdown', () => {
     expect(scan.tags).toEqual([]);
   });
 
+  it('collects same-note heading wikilinks', () => {
+    expect(scanMarkdown('Jump [[#Setup]]').wikilinks).toEqual([{ target: '', anchor: 'Setup' }]);
+    expect(scanMarkdown('[[]] [[  ]] [[Valid]]').wikilinks).toEqual([{ target: 'Valid' }]);
+  });
+
   it('collects inline tags and skips fences and inline code', () => {
     const md = [
       '# Title #heading-tag',

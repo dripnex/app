@@ -19,7 +19,7 @@ import type { Root, Text, Parent } from 'mdast';
 // Pattern: [[target]] or [[target#anchor]] or [[target|display]] or [[target#anchor|display]]
 // Negative lookbehind (?<!!) excludes embed syntax ![[...]]
 // Groups: [1]=target, [2]=anchor (optional), [3]=display (optional)
-const WIKILINK_PATTERN = /(?<!!)\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
+const WIKILINK_PATTERN = /(?<!!)\[\[([^\]|#]*)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
 
 /**
  * Text node with hast data for rendering as span.
@@ -58,7 +58,12 @@ export function remarkWikilink() {
         // Wikilink as text node with hast data
         const target = match[1]!.trim();
         const anchor = match[2]?.trim();
-        const display = match[3]?.trim() || (anchor ? `${target}#${anchor}` : target);
+        if (!target && !anchor) {
+          lastIndex = match.index + match[0].length;
+          continue;
+        }
+        const display =
+          match[3]?.trim() || (anchor ? (target ? `${target}#${anchor}` : `#${anchor}`) : target);
 
         const hProperties: Record<string, string> = {
           className: 'wikilink',
