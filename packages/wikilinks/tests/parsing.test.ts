@@ -132,4 +132,22 @@ describe('parseWikilinkAt', () => {
     expect(parseWikilinkAt(line, 0)).toBeNull();
     expect(parseWikilinkAt('Jump [[#Setup]]', 8)).toEqual({ target: '', anchor: 'Setup' });
   });
+
+  it('includes the opening and closing brackets', () => {
+    const line = '[[Note]]';
+    expect(parseWikilinkAt(line, 0)).toEqual({ target: 'Note' });
+    expect(parseWikilinkAt(line, line.length)).toEqual({ target: 'Note' });
+  });
+
+  it('picks the span that contains the cursor', () => {
+    const line = '[[A]] then [[B#H|x]]';
+    expect(parseWikilinkAt(line, 2)).toEqual({ target: 'A' });
+    expect(parseWikilinkAt(line, 12)).toEqual({ target: 'B', anchor: 'H', display: 'x' });
+  });
+
+  it('rejects empty and incomplete tokens', () => {
+    expect(parseWikilinkAt('[[]]', 1)).toBeNull();
+    expect(parseWikilinkAt('[[#]]', 1)).toBeNull();
+    expect(parseWikilinkAt('[[Note', 2)).toBeNull();
+  });
 });
