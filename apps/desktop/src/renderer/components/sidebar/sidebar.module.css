@@ -393,7 +393,7 @@
   align-items: center;
   justify-content: flex-end;
   padding: 8px 8px 0 72px;
-  height: 36px;
+  height: 44px;
   -webkit-app-region: drag;
   flex-shrink: 0;
 }
@@ -667,9 +667,11 @@
 }
 
 .notebook-item-row {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-height: 32px;
   padding: 6px 8px;
   margin: 0;
   border-radius: 8px;
@@ -696,20 +698,27 @@
   opacity: 1;
 }
 
-/* Drag handle — hidden by default, shown on hover */
+.notebook-item-lead {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .notebook-item-drag-handle {
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
+  width: 12px;
   height: 16px;
-  flex-shrink: 0;
   color: var(--text-muted);
   opacity: 0;
   cursor: grab;
   transition: opacity var(--transition-fast);
-  margin-left: -2px;
-  margin-right: -2px;
 }
 
 .notebook-item-row:hover .notebook-item-drag-handle {
@@ -749,12 +758,17 @@
 }
 
 .notebook-item-toggle {
-  width: 16px;
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: 12px;
   height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--bg-surface);
   border: none;
   color: var(--text-muted);
   cursor: pointer;
@@ -765,13 +779,12 @@
   color: var(--text-primary);
 }
 
-.notebook-item-spacer {
-  width: 16px;
-}
-
 .notebook-item-icon {
-  font-size: 12px;
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   color: var(--text-muted);
 }
 
@@ -781,8 +794,9 @@
 
 .notebook-item-name {
   flex: 1;
-  font-size: var(--text-base);
-  color: var(--text-secondary);
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -790,14 +804,6 @@
 
 .notebook-item-row.selected .notebook-item-name {
   color: var(--text-primary);
-}
-
-.notebook-item-count {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  background: var(--bg-surface);
-  padding: 1px 5px;
-  border-radius: var(--radius-lg);
 }
 
 .notebook-item-detail,
@@ -1010,7 +1016,7 @@
 .tags-list {
   list-style: none;
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
 }
 
 .tags-list li {
@@ -1042,7 +1048,7 @@
 }
 
 .tags-list-item {
-  padding-left: 10px;
+  /* same padding as .sidebar-row */
 }
 
 .tags-list-item-dot {

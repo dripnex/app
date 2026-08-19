@@ -359,37 +359,35 @@ export const NotebookItem = memo(function NotebookItem({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Drag handle — only visible on hover, enables dragging */}
-        {!isInbox && !isEditing && (
-          <span
-            className={sc('notebook-item-drag-handle')}
-            aria-hidden="true"
-            onMouseEnter={() => setCanDrag(true)}
-            onMouseLeave={() => setCanDrag(false)}
-          >
-            <GripVertical size={12} />
+        <span
+          className={sc('notebook-item-lead')}
+          onMouseEnter={() => {
+            if (!isInbox && !isEditing) setCanDrag(true);
+          }}
+          onMouseLeave={() => setCanDrag(false)}
+        >
+          {!isInbox && !isEditing ? (
+            <span className={sc('notebook-item-drag-handle')} aria-hidden="true">
+              <GripVertical size={12} />
+            </span>
+          ) : null}
+          {hasChildren ? (
+            <button
+              type="button"
+              className={sc('notebook-item-toggle')}
+              onClick={handleToggle}
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? (
+                <ChevronDown size={12} aria-hidden="true" />
+              ) : (
+                <ChevronRight size={12} aria-hidden="true" />
+              )}
+            </button>
+          ) : null}
+          <span className={sc('notebook-item-icon')} aria-hidden="true">
+            {isInbox ? <Inbox size={15} /> : <Folder size={15} />}
           </span>
-        )}
-
-        {hasChildren ? (
-          <button
-            type="button"
-            className={sc('notebook-item-toggle')}
-            onClick={handleToggle}
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? (
-              <ChevronDown size={14} aria-hidden="true" />
-            ) : (
-              <ChevronRight size={14} aria-hidden="true" />
-            )}
-          </button>
-        ) : (
-          <span className={sc('notebook-item-spacer')} aria-hidden="true" />
-        )}
-
-        <span className={sc('notebook-item-icon')} aria-hidden="true">
-          {isInbox ? <Inbox size={14} /> : <Folder size={14} />}
         </span>
 
         {isGitEnabled && !isInbox && (
@@ -419,7 +417,7 @@ export const NotebookItem = memo(function NotebookItem({
         )}
 
         {noteCount !== undefined && noteCount > 0 && (
-          <span className={sc('notebook-item-count')} aria-label={`${noteCount} notes`}>
+          <span className={sc('sidebar-row-count')} aria-label={`${noteCount} notes`}>
             {noteCount}
           </span>
         )}
