@@ -84,6 +84,8 @@ export interface AiSettings {
 
 /** Local integrations (MCP / local HTTP). */
 export interface IntegrationsSettings {
+  /** Start the local HTTP API (notes/books/tags) on loopback. */
+  httpApiEnabled: boolean;
   /** Start the local HTTP API and show MCP connection snippets. */
   mcpEnabled: boolean;
   /** Allow MCP create/update/trash. Written to mcp.json next to the DB. */
@@ -211,6 +213,7 @@ export const DEFAULT_BACKUP: BackupSettings = {
 };
 
 export const DEFAULT_INTEGRATIONS: IntegrationsSettings = {
+  httpApiEnabled: false,
   mcpEnabled: false,
   mcpWrites: false,
 };

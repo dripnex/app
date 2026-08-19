@@ -1,53 +1,73 @@
 import { BrowserWindow } from 'electron';
 import { getLogger } from '../logger.js';
+import { parseDripnexUrl, type DripnexDeepLink } from './deepLink.js';
 
-let pendingAuthToken: string | null = null;
+export { parseDripnexUrl } from './deepLink.js';
+export type { DripnexDeepLink } from './deepLink.js';
+
+let pending: DripnexDeepLink | null = null;
 
 export function parseAuthVerifyToken(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname === 'auth' && parsed.pathname === '/verify') {
-      return parsed.searchParams.get('token');
-    }
-  } catch {
-    return null;
-  }
-  return null;
+  const parsed = parseDripnexUrl(url);
+  return parsed?.kind === 'auth-verify' ? parsed.token : null;
 }
 
 export function queueAuthToken(token: string): void {
-  pendingAuthToken = token;
+  pending = { kind: 'auth-verify', token };
+}
+
+export function queueDeepLink(link: DripnexDeepLink): void {
+  pending = link;
 }
 
 export function takePendingAuthToken(): string | null {
-  const token = pendingAuthToken;
-  pendingAuthToken = null;
+  if (pending?.kind !== 'auth-verify') return null;
+  const token = pending.token;
+  pending = null;
   return token;
 }
 
-export function deliverAuthToken(token: string): void {
-  const mainWin = BrowserWindow.getAllWindows().find(
+function targetWindow(): BrowserWindow | undefined {
+  return BrowserWindow.getAllWindows().find(
     win =>
       !win.isDestroyed() && !win.webContents.isDestroyed() && win.webContents.isLoading() === false
   );
+}
+
+function sendDeepLink(win: BrowserWindow, link: DripnexDeepLink): void {
+  if (link.kind === 'auth-verify') {
+    win.webContents.send('auth:verify-token', link.token);
+  }
+  win.webContents.send('app:deep-link', link);
+  win.show();
+  win.focus();
+}
+
+export function deliverAuthToken(token: string): void {
+  deliverDeepLink({ kind: 'auth-verify', token });
+}
+
+export function deliverDeepLink(link: DripnexDeepLink): void {
+  const mainWin = targetWindow();
   if (mainWin && !mainWin.webContents.isDestroyed()) {
-    mainWin.webContents.send('auth:verify-token', token);
-    mainWin.show();
-    mainWin.focus();
+    sendDeepLink(mainWin, link);
     return;
   }
-  queueAuthToken(token);
+  queueDeepLink(link);
+}
+
+export function deliverDripnexUrl(url: string): boolean {
+  const parsed = parseDripnexUrl(url);
+  if (!parsed) return false;
+  deliverDeepLink(parsed);
+  return true;
 }
 
 export function flushPendingAuthToken(win: BrowserWindow): void {
-  const token = takePendingAuthToken();
-  if (!token) return;
-  if (win.isDestroyed() || win.webContents.isDestroyed()) {
-    queueAuthToken(token);
-    return;
-  }
-  getLogger().info('Delivering queued auth token to renderer');
-  win.webContents.send('auth:verify-token', token);
-  win.show();
-  win.focus();
+  if (!pending) return;
+  if (win.isDestroyed() || win.webContents.isDestroyed()) return;
+  getLogger().info({ kind: pending.kind }, 'Delivering queued deep link to renderer');
+  const link = pending;
+  pending = null;
+  sendDeepLink(win, link);
 }

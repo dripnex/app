@@ -61,11 +61,12 @@ import {
 import { embedInlinePreview } from '@dripnex/embeds/codemirror';
 import { pluginExtensionCompartment, editorPluginStore } from '@dripnex/plugin-api';
 import { htmlToGfmMarkdown } from '../utils/htmlToMarkdown';
+import { scrollBehavior } from '../utils/motion';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
 import { setEditorView } from '../hooks/useCommandRegistry';
-import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
 import { emojiShortcodeCompletions } from '../plugins/emojiShortcodes';
+import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
 import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
 import { UrlPastePicker } from './editor/UrlPastePicker';
 import styles from './MarkdownEditor.module.css';
@@ -117,6 +118,7 @@ export interface MarkdownEditorHandle {
   onScroll: (callback: (fraction: number) => void) => () => void;
   canScroll: () => boolean;
   jumpToLine: (line: number) => void;
+  getVisibleLine: () => number;
 }
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
@@ -254,9 +256,21 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         const pos = view.state.doc.line(n).from;
         view.dispatch({
           selection: EditorSelection.cursor(pos),
-          effects: EditorView.scrollIntoView(pos, { y: 'start', yMargin: 48 }),
         });
+        const coords = view.coordsAtPos(pos);
+        const scroller = view.scrollDOM;
+        if (coords) {
+          const scrollerRect = scroller.getBoundingClientRect();
+          const top = scroller.scrollTop + (coords.top - scrollerRect.top) - 48;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: scrollBehavior() });
+        }
         view.focus();
+      },
+      getVisibleLine: () => {
+        const view = viewRef.current;
+        if (!view) return 1;
+        const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop + 48);
+        return view.state.doc.lineAt(block.from).number;
       },
     }));
 

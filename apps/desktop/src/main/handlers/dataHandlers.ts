@@ -29,7 +29,21 @@ import {
   type NoteStatus,
 } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
+import { htmlToPdfBuffer, printHtml } from '../services/printNote.js';
 import type { SQLiteNoteRepository, Database } from './types.js';
+
+function safeExportName(suggestedName: string): string {
+  let safeName =
+    suggestedName
+      .normalize('NFC')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[/\\:*?"<>|\x00-\x1f.]/g, '')
+      .substring(0, 80)
+      .trim() || 'note';
+  const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
+  if (WINDOWS_RESERVED.test(safeName)) safeName = `_${safeName}`;
+  return safeName;
+}
 
 export interface DataHandlerDeps {
   dataPaths: DataPaths;
@@ -164,6 +178,8 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
         updatedAt: note.metadata.updatedAt,
         tags: [...note.metadata.tags],
         wordCount: note.metadata.wordCount,
+        taskCount: note.metadata.taskCount,
+        checkedTaskCount: note.metadata.checkedTaskCount,
         archivedAt: note.metadata.archivedAt,
         notebookId: note.notebookId,
         isArchived: note.metadata.archivedAt !== null,
@@ -190,15 +206,7 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
     channel: 'data:exportNote',
     args: z.tuple([z.string().max(1024 * 1024), z.string().max(512)]),
     handler: async (content, suggestedName) => {
-      let safeName =
-        suggestedName
-          .normalize('NFC')
-          // eslint-disable-next-line no-control-regex
-          .replace(/[/\\:*?"<>|\x00-\x1f.]/g, '')
-          .substring(0, 80)
-          .trim() || 'note';
-      const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
-      if (WINDOWS_RESERVED.test(safeName)) safeName = `_${safeName}`;
+      const safeName = safeExportName(suggestedName);
       const { filePath, canceled } = await dialog.showSaveDialog({
         title: 'Export Note',
         defaultPath: join(app.getPath('documents'), `${safeName}.md`),
@@ -220,6 +228,55 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
         };
       }
     },
+  });
+
+  defineIpcHandler({
+    channel: 'data:exportFile',
+    args: z.tuple([
+      z.string().max(5 * 1024 * 1024),
+      z.string().max(512),
+      z.enum(['md', 'html', 'pdf']),
+    ]),
+    handler: async (content, suggestedName, kind) => {
+      const safeName = safeExportName(suggestedName);
+      const filters =
+        kind === 'pdf'
+          ? [{ name: 'PDF', extensions: ['pdf'] }]
+          : kind === 'html'
+            ? [{ name: 'HTML', extensions: ['html'] }]
+            : [{ name: 'Markdown', extensions: ['md'] }];
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Export Note',
+        defaultPath: join(app.getPath('documents'), `${safeName}.${kind}`),
+        buttonLabel: 'Export',
+        filters,
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Export cancelled' };
+      }
+
+      try {
+        if (kind === 'pdf') {
+          const pdf = await htmlToPdfBuffer(content);
+          await writeFile(filePath, pdf);
+        } else {
+          await writeFile(filePath, content, 'utf-8');
+        }
+        return { success: true, path: filePath };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to write file',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'note:printHtml',
+    args: z.tuple([z.string().max(5 * 1024 * 1024)]),
+    handler: html => printHtml(html),
   });
 
   defineIpcHandler({

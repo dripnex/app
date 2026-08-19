@@ -67,6 +67,14 @@ export { rehypePluginStore } from './preview/rehypePluginStore';
 export type { RehypePluginRegistration } from './preview/rehypePluginStore';
 export { codeBlockStore } from './preview/codeBlockStore';
 export type { CodeBlockRegistration, CodeBlockRendererProps } from './preview/codeBlockStore';
+export { previewEventStore, emitPreviewEvent } from './preview/previewEventStore';
+export type {
+  PreviewEventName,
+  PreviewEventDetail,
+  PreviewEventHandler,
+  PreviewLinkClickDetail,
+  PreviewCheckboxChangeDetail,
+} from './preview/previewEventStore';
 export { safePluginWrapper } from './preview/safePluginWrapper';
 export type { PluginMetadata } from './preview/safePluginWrapper';
 
@@ -95,6 +103,8 @@ export type { ManifestError, ConfigValidationResult } from './validation';
 // Loader
 export { pluginMenuStore } from './menu/pluginMenuStore';
 export type { PluginMenuItem } from './menu/pluginMenuStore';
+export { pluginContextMenuStore } from './menu/pluginContextMenuStore';
+export type { PluginContextMenuItem, PluginContextMenuTarget } from './menu/pluginContextMenuStore';
 
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
 export { loadInitScript } from './loader/loadInitScript';
@@ -103,13 +113,37 @@ export type { InitApi } from './loader/createInitApi';
 export {
   setHostCommandDispatch,
   dispatchHostCommand,
+  setHostNotify,
+  hostNotify,
   setHostVim,
   getHostVim,
 } from './loader/hostBridges';
 
 // Lifecycle
 export { PluginRegistry } from './lifecycle/PluginRegistry';
-export type { RegisterCommandFn, ConfigBridge } from './lifecycle/PluginRegistry';
+export type {
+  RegisterCommandFn,
+  ConfigBridge,
+  SetDefaultKeybindingFn,
+} from './lifecycle/PluginRegistry';
+export { parsePluginKeymap, qualifyPluginCommandId } from './packageFiles/parsePluginKeymap';
+export type {
+  PluginKeymapBinding,
+  ParsePluginKeymapResult,
+} from './packageFiles/parsePluginKeymap';
+export { parsePluginMenus } from './packageFiles/parsePluginMenus';
+export type {
+  PluginPackageMenuItem,
+  PluginPackageContextMenuItem,
+  ParsePluginMenusResult,
+} from './packageFiles/parsePluginMenus';
+export { applyPluginPackageFiles } from './packageFiles/applyPluginPackageFiles';
+export type {
+  PluginPackageFiles,
+  ApplyPackageFilesResult,
+} from './packageFiles/applyPluginPackageFiles';
+export { parsePluginChord } from './packageFiles/chords';
+export type { PluginChord } from './packageFiles/chords';
 export { applyPluginConfig } from './lifecycle/configRuntime';
 export { PluginHost } from './lifecycle/PluginHost';
 export { sortPlugins } from './lifecycle/sortPlugins';

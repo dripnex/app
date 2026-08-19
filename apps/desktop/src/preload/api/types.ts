@@ -29,6 +29,7 @@ export interface NotebookSnapshot {
   order: number;
   createdAt: string;
   updatedAt: string;
+  icon: string | null;
 }
 
 /** Notebook with metadata (note/child counts) */
@@ -275,6 +276,8 @@ export interface ScannedPlugin {
   configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
   path: string;
+  keymaps: string[];
+  menus: string[];
 }
 
 /** Plugin registry state row */

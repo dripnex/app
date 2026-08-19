@@ -8,6 +8,7 @@ import { sc } from './sc';
 interface NotebookListProps {
   readonly selectedNotebookId: string | null;
   readonly onSelectNotebook: (id: string) => void;
+  readonly onEnterWorkspace?: (id: string) => void;
   readonly onDeletedNotebook?: (id: string) => void;
   readonly filterParentId?: string | null;
   /** Show this notebook and its descendants as the forest root. */
@@ -52,6 +53,7 @@ function NotebookListError({ message }: { message: string }) {
 export function NotebookList({
   selectedNotebookId,
   onSelectNotebook,
+  onEnterWorkspace,
   onDeletedNotebook,
   filterParentId,
   workspaceRootId,
@@ -59,7 +61,8 @@ export function NotebookList({
   nameFilter = '',
 }: NotebookListProps) {
   const { data: tree, isLoading, error } = useNotebookTree();
-  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks } = useNotebookMutations();
+  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks, setNotebookIcon } =
+    useNotebookMutations();
 
   // Calculate ancestor IDs for breadcrumb-style highlighting
   const ancestorIds = useMemo(
@@ -122,6 +125,13 @@ export function NotebookList({
     [renameNotebook]
   );
 
+  const handleSetIcon = useCallback(
+    async (id: string, icon: string | null) => {
+      await setNotebookIcon.mutateAsync({ id, icon });
+    },
+    [setNotebookIcon]
+  );
+
   const handleDelete = useCallback(
     async (id: string) => {
       await deleteNotebook.mutateAsync(id);
@@ -172,9 +182,11 @@ export function NotebookList({
             ancestorIds={ancestorIds}
             selectedNotebookId={selectedNotebookId}
             onSelect={onSelectNotebook}
+            onEnterWorkspace={onEnterWorkspace}
             onRename={handleRename}
             onDelete={handleDelete}
             onCreateChild={onRequestCreateChild}
+            onSetIcon={handleSetIcon}
             onMove={handleMove}
             onReorder={handleReorder}
             siblingIds={rootSiblingIds}

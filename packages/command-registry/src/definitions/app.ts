@@ -2,6 +2,14 @@ import type { CommandDefinition } from '../types';
 
 export const appCommands: CommandDefinition[] = [
   {
+    id: 'app:open-note',
+    name: 'Open Note',
+    category: 'note',
+    context: 'app',
+    icon: 'FileText',
+    showInPalette: false,
+  },
+  {
     id: 'app:new-note',
     name: 'New Note',
     category: 'note',
@@ -87,6 +95,40 @@ export const appCommands: CommandDefinition[] = [
     context: 'app',
     defaultKeybinding: { key: 's', modifiers: ['Mod'] },
     icon: 'Save',
+    showInPalette: true,
+  },
+  {
+    id: 'app:note-back',
+    name: 'Back',
+    category: 'navigation',
+    context: 'app',
+    defaultKeybinding: { key: '[', modifiers: ['Mod'] },
+    icon: 'ArrowLeft',
+    showInPalette: true,
+  },
+  {
+    id: 'app:note-forward',
+    name: 'Forward',
+    category: 'navigation',
+    context: 'app',
+    defaultKeybinding: { key: ']', modifiers: ['Mod'] },
+    icon: 'ArrowRight',
+    showInPalette: true,
+  },
+  {
+    id: 'app:toggle-zen',
+    name: 'Toggle Distraction Free Mode',
+    category: 'view',
+    context: 'app',
+    icon: 'Maximize2',
+    showInPalette: true,
+  },
+  {
+    id: 'app:open-in-window',
+    name: 'Open in New Window',
+    category: 'note',
+    context: 'app',
+    icon: 'SquareArrowOutUpRight',
     showInPalette: true,
   },
   {

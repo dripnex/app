@@ -11,6 +11,7 @@ export interface EditorAPI {
   getSelection(): { from: number; to: number };
   replaceRange(from: number, to: number, text: string): void;
   insertAtCursor(text: string): void;
+  setSelection(from: number, to?: number): void;
   getWordCount(): number;
   getCharCount(): number;
   getLineCount(): number;
@@ -44,6 +45,7 @@ export interface NotebookInfo {
   id: string;
   name: string;
   parentId: string | null;
+  icon?: string | null;
 }
 
 /** Read-only app operations for plugins */
@@ -155,7 +157,7 @@ export interface PluginContext {
   registerExtensions(id: string, extensions: Extension[]): () => void;
   registerCommand(
     options: PluginCommandOptions,
-    execute: () => boolean | void | Promise<boolean | void>
+    execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>
   ): () => void;
   /** Register a remark (mdast) plugin for the markdown preview pipeline */
   registerRemarkPlugin(id: string, plugin: unknown, options?: PluginHookOptions): () => void;
@@ -194,6 +196,37 @@ export interface PluginContext {
   clipboard: {
     readText(): Promise<string>;
     writeText(text: string): Promise<void>;
+  };
+  notifications: {
+    addSuccess(message: string): void;
+    addInfo(message: string): void;
+    addWarning(message: string): void;
+    addError(message: string): void;
+  };
+  contextMenu: {
+    add(
+      target: 'note-list-item' | 'notebook-item' | 'tag-item' | 'editor',
+      item: {
+        label: string;
+        command?: string;
+        click?: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
+      }
+    ): () => void;
+  };
+  /**
+   * Preview DOM events (Inkdrop `inkdrop.components.preview.on`).
+   * Return `false` from a handler to prevent the default action.
+   */
+  preview: {
+    on(
+      event: 'a:click' | 'checkbox:change',
+      handler: (detail: {
+        href?: string;
+        text?: string;
+        index?: number;
+        checked?: boolean;
+      }) => boolean | void
+    ): () => void;
   };
   /** Register a complete theme with validated tokens */
   registerTheme(theme: {

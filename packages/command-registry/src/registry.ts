@@ -4,6 +4,7 @@ import type {
   KeyBindingOverride,
   CommandCategory,
   CommandContext,
+  CommandPayload,
 } from './types';
 
 type Listener = () => void;
@@ -67,13 +68,13 @@ export class CommandRegistry {
   }
 
   /** Execute a command by id. Returns false if not found, disabled, or thrown. */
-  async dispatch(id: string): Promise<boolean> {
+  async dispatch(id: string, payload?: CommandPayload): Promise<boolean> {
     const cmd = this.commands.get(id);
     if (!cmd) return false;
     if (cmd.enabled === false) return false;
 
     try {
-      const result = await cmd.execute();
+      const result = await cmd.execute(payload);
       return result !== false;
     } catch {
       return false;
@@ -112,6 +113,19 @@ export class CommandRegistry {
   setKeybindingOverride(override: KeyBindingOverride): void {
     this.overrides.set(override.commandId, override.keybinding);
     this.notify();
+  }
+
+  /**
+   * Patch a command's default chord (plugin package keymaps).
+   * User overrides still win. Returns false if the command is not registered.
+   */
+  setDefaultKeybinding(id: string, keybinding: KeyBinding): boolean {
+    const cmd = this.commands.get(id);
+    if (!cmd) return false;
+    this.commands.set(id, { ...cmd, defaultKeybinding: keybinding });
+    this.invalidateSnapshot();
+    this.notify();
+    return true;
   }
 
   /** Replace every user override. Empty list clears the keymap. */

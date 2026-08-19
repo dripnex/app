@@ -12,6 +12,7 @@ function node(id: string, children: NotebookTreeNode[] = []): NotebookTreeNode {
       order: 0,
       createdAt: '',
       updatedAt: '',
+      icon: null,
     },
     children,
   };

@@ -8,16 +8,18 @@ import {
   editorPluginStore,
   pluginMenuStore,
   setHostCommandDispatch,
+  setHostNotify,
   applyPluginConfig,
 } from '@dripnex/plugin-api';
 import type { EditorAPIWithEvents, AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
-import type { RegisteredCommand } from '@dripnex/command-registry';
+import type { KeyModifier, RegisteredCommand } from '@dripnex/command-registry';
 import { useStore } from 'zustand';
 import type { NoteSnapshot } from '../../preload/index';
-import { getEditorView, registry as commandRegistry } from './useCommandRegistry';
 import { builtInPlugins } from '../plugins';
 import { pluginRuntimeStore, type PluginLoadError } from '../stores/pluginRuntimeStore';
 import { useToast } from '../components/Toast';
+import { toast } from '../ui/primitives';
+import { getEditorView, registry as commandRegistry } from './useCommandRegistry';
 
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
   const { showToast } = useToast();
@@ -233,12 +235,68 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
         async getGraphData() {
           return window.dripnex.links.getGraph();
         },
+        async createNote(input) {
+          const result = await window.dripnex.notes.create(input);
+          if (!result.ok) throw new Error('Failed to create note');
+          return {
+            id: result.data.id,
+            title: result.data.title,
+            content: result.data.content,
+          };
+        },
+        async updateNote(id, content) {
+          const result = await window.dripnex.notes.update({ id, content });
+          if (!result.ok) return null;
+          return {
+            id: result.data.id,
+            title: result.data.title,
+            content: result.data.content,
+          };
+        },
+        async trashNote(id) {
+          const result = await window.dripnex.notes.softDelete(id);
+          return result.ok;
+        },
+        async createNotebook(input) {
+          const nb = await window.dripnex.notebooks.create({
+            name: input.name,
+            parentId: input.parentId ?? undefined,
+          });
+          return { id: nb.id, name: nb.name, parentId: nb.parentId, icon: nb.icon };
+        },
+        async updateNotebook(id, patch) {
+          let nb = await window.dripnex.notebooks.get(id);
+          if (!nb) return null;
+          if (patch.name !== undefined) {
+            nb = await window.dripnex.notebooks.rename(id, patch.name);
+          }
+          if (patch.icon !== undefined) {
+            nb = await window.dripnex.notebooks.setIcon(id, patch.icon);
+          }
+          if (patch.parentId !== undefined) {
+            nb = await window.dripnex.notebooks.move(id, patch.parentId);
+          }
+          return { id: nb.id, name: nb.name, parentId: nb.parentId, icon: nb.icon };
+        },
+        async deleteNotebook(id) {
+          const result = await window.dripnex.notebooks.delete(id);
+          return result.success;
+        },
+        async setTagColor(name, color) {
+          const result = await window.dripnex.notes.setTagColor(name, color);
+          return result.ok;
+        },
+        async renameTag(oldName, newName) {
+          const result = await window.dripnex.notes.renameTag(oldName, newName);
+          return result.ok;
+        },
       }),
     []
   );
 
   const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
   const pluginErrors = useStore(pluginRuntimeStore, s => s.errors);
+  const packageFiles = useStore(pluginRuntimeStore, s => s.packageFiles);
   const [builtInEnabledMap, setBuiltInEnabledMap] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => {
@@ -304,9 +362,24 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
     []
   );
 
+  const setDefaultKeybinding = useCallback(
+    (commandId: string, keybinding: { key: string; modifiers: readonly string[] }) =>
+      commandRegistry.setDefaultKeybinding(commandId, {
+        key: keybinding.key,
+        modifiers: keybinding.modifiers.filter(
+          (m): m is KeyModifier => m === 'Mod' || m === 'Shift' || m === 'Alt' || m === 'Ctrl'
+        ),
+      }),
+    []
+  );
+
   useEffect(() => {
-    setHostCommandDispatch(id => commandRegistry.dispatch(id));
-    return () => setHostCommandDispatch(null);
+    setHostCommandDispatch((id, payload) => commandRegistry.dispatch(id, payload));
+    setHostNotify((type, message) => toast[type](message));
+    return () => {
+      setHostCommandDispatch(null);
+      setHostNotify(null);
+    };
   }, []);
 
   useEffect(() => {
@@ -350,6 +423,8 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
         registerCommand={registerPluginCommand}
         configBridge={configBridge}
         getView={getEditorView}
+        packageFiles={packageFiles}
+        setDefaultKeybinding={setDefaultKeybinding}
       />
       <PluginErrorNotifier errors={pluginErrors} />
     </>

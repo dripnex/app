@@ -22,6 +22,8 @@ import { tagSyncTracking } from './016_tag_sync_tracking.js';
 import { syncHistory } from './017_sync_history.js';
 import { ftsIncludeDeleted } from './018_fts_include_deleted.js';
 import { embeddings } from './019_embeddings.js';
+import { notebookIcons } from './020_notebook_icons.js';
+import { noteTasks } from './021_note_tasks.js';
 
 /** Fail fast if two files share a version (the runner keys on version). */
 export function assertMigrationVersionsUnique(migrations: Migration[]): void {
@@ -55,6 +57,8 @@ export const allMigrations: Migration[] = [
   syncHistory,
   ftsIncludeDeleted,
   embeddings,
+  notebookIcons,
+  noteTasks,
 ];
 
 assertMigrationVersionsUnique(allMigrations);
@@ -79,4 +83,6 @@ export {
   syncHistory,
   ftsIncludeDeleted,
   embeddings,
+  notebookIcons,
+  noteTasks,
 };

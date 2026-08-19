@@ -75,7 +75,7 @@ import { registerNavigationGuards } from './network/navigation.js';
 import { broadcastToWindows } from './windows/broadcast.js';
 import { flushOpenEditors } from './windows/flushEditors.js';
 import { resolveDockIconPath } from './windows/icons.js';
-import { deliverAuthToken, parseAuthVerifyToken, queueAuthToken } from './windows/authDeepLink.js';
+import { deliverDripnexUrl, queueDeepLink, parseDripnexUrl } from './windows/authDeepLink.js';
 import {
   createMainWindow,
   registerQuickCaptureShortcut,
@@ -300,6 +300,7 @@ app
     registerWindowHandlers();
     registerLocalServerHandlers({
       noteRepository: noteRepository!,
+      notebookRepository: notebookRepository!,
       dataPaths,
       noteToSnapshot,
     });
@@ -639,19 +640,15 @@ app.on('open-url', (event, url) => {
   event.preventDefault();
   const log = getLogger();
   log.info({ url }, 'Deep link received');
-  const token = parseAuthVerifyToken(url);
-  if (token) {
-    log.info('Auth verification token received via deep link');
-    deliverAuthToken(token);
-    return;
+  if (!deliverDripnexUrl(url)) {
+    log.warn({ url }, 'Unknown deep link format');
   }
-  log.warn({ url }, 'Unknown deep link format');
 });
 
 const startupDeepLink = process.argv.find(arg => arg.startsWith('dripnex://'));
 if (startupDeepLink) {
-  const token = parseAuthVerifyToken(startupDeepLink);
-  if (token) queueAuthToken(token);
+  const parsed = parseDripnexUrl(startupDeepLink);
+  if (parsed) queueDeepLink(parsed);
 }
 
 app.on('second-instance', (_event, commandLine) => {
@@ -660,10 +657,8 @@ app.on('second-instance', (_event, commandLine) => {
 
   if (deepLinkUrl) {
     log.info({ url: deepLinkUrl }, 'Deep link received via second-instance (Windows/Linux)');
-    const token = parseAuthVerifyToken(deepLinkUrl);
-    if (token) {
-      log.info('Auth verification token received via second-instance');
-      deliverAuthToken(token);
+    if (!deliverDripnexUrl(deepLinkUrl)) {
+      log.warn({ url: deepLinkUrl }, 'Unknown deep link format');
     }
   }
 

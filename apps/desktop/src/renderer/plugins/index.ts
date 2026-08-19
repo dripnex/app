@@ -18,6 +18,7 @@ import { mermaidPlugin } from './mermaid';
 import { mathPlugin } from './math';
 import { vimModePlugin } from './vimMode';
 import { pasteAsLinkPlugin } from './pasteAsLink';
+import { motionPlugin } from './motion';
 
 export {
   wordCountPlugin,
@@ -32,6 +33,7 @@ export {
   mathPlugin,
   vimModePlugin,
   pasteAsLinkPlugin,
+  motionPlugin,
 };
 
 /** All built-in plugin manifests. */
@@ -48,4 +50,5 @@ export const builtInPlugins: PluginManifest[] = [
   mathPlugin,
   vimModePlugin,
   pasteAsLinkPlugin,
+  motionPlugin,
 ];

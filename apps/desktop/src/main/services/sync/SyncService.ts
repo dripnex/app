@@ -15,6 +15,7 @@ import {
   createNotebook,
   createTag,
   createTimestamp,
+  extractTasks,
 } from '@dripnex/core';
 import type { LocalNotePush } from '@dripnex/sync-core';
 import type {
@@ -964,6 +965,7 @@ export class SyncService {
 
           this.noteRepository.markAsSynced(noteId);
         } else {
+          const tasks = extractTasks(payload.content);
           await this.noteRepository.save({
             id: noteId,
             notebookId: createNotebookId(payload.notebookId),
@@ -978,6 +980,8 @@ export class SyncService {
               updatedAt: createTimestamp(new Date(change.createdAt)),
               tags: payload.tags.map(createTag),
               wordCount: payload.content.split(/\s+/).length,
+              taskCount: tasks.total,
+              checkedTaskCount: tasks.completed,
               archivedAt: null,
             },
           });

@@ -1,18 +1,24 @@
 import { useState, useCallback, useRef, memo, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ChevronDown,
   ChevronRight,
-  Inbox,
-  Folder,
   Plus,
-  X,
   GitBranch,
   History,
   GripVertical,
+  Trash2,
+  Smile,
 } from 'lucide-react';
+import { useStore } from 'zustand';
+import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { dispatchCommand } from '../../hooks/useCommandRegistry';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { useNotebookExpandStore } from '../../stores/notebookExpandStore';
+import { useWorkspaceRootId } from '../../hooks/useNavigation';
 import { CommitHistory } from '../git/CommitHistory';
+import { NotebookIconPicker, type IconPickerAnchor } from './NotebookIconPicker';
+import { notebookLucideIcon } from './notebookIcons';
 import { sc } from './sc';
 
 type DropPosition = 'above' | 'inside' | 'below' | null;
@@ -26,9 +32,11 @@ interface NotebookItemProps {
   readonly ancestorIds: Set<string>;
   readonly selectedNotebookId: string | null;
   readonly onSelect: (id: string) => void;
+  readonly onEnterWorkspace?: (id: string) => void;
   readonly onRename: (id: string, name: string) => void;
   readonly onDelete: (id: string) => void;
   readonly onCreateChild: (parentId: string) => void;
+  readonly onSetIcon: (id: string, icon: string | null) => void;
   readonly onMove?: (id: string, newParentId: string | null) => void;
   readonly onReorder?: (parentId: string | null, orderedIds: string[]) => void;
   readonly siblingIds?: string[];
@@ -56,13 +64,16 @@ export const NotebookItem = memo(function NotebookItem({
   ancestorIds,
   selectedNotebookId,
   onSelect,
+  onEnterWorkspace,
   onRename,
   onDelete,
   onCreateChild,
+  onSetIcon,
   onMove,
   onReorder,
   siblingIds,
 }: NotebookItemProps) {
+  const workspaceRootId = useWorkspaceRootId();
   const isExpanded = useNotebookExpandStore(s => !s.collapsedIds.includes(node.notebook.id));
   const toggleExpanded = useNotebookExpandStore(s => s.toggle);
   const expandNotebook = useNotebookExpandStore(s => s.expand);
@@ -71,6 +82,8 @@ export const NotebookItem = memo(function NotebookItem({
   const [isGitEnabled, setIsGitEnabled] = useState(false);
   const [isGitLoading, setIsGitLoading] = useState(false);
   const [showCommitHistory, setShowCommitHistory] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [iconPicker, setIconPicker] = useState<IconPickerAnchor | null>(null);
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [canDrag, setCanDrag] = useState(false);
@@ -79,6 +92,13 @@ export const NotebookItem = memo(function NotebookItem({
   const hasChildren = node.children.length > 0;
   const isInbox = node.notebook.id === 'inbox';
   const canHaveChildren = depth < 2; // Max 3 levels (0, 1, 2)
+  const Icon = notebookLucideIcon(
+    node.notebook.icon,
+    isInbox ? 'inbox' : node.notebook.id === 'templates' ? 'file-stack' : 'folder'
+  );
+  const pluginMenuItems = useStore(pluginContextMenuStore, state => state.items).filter(
+    item => item.target === 'notebook-item'
+  );
 
   // Memoize descendant IDs for circular reference prevention
   const descendantIds = useMemo(() => collectDescendantIds(node), [node]);
@@ -104,6 +124,14 @@ export const NotebookItem = memo(function NotebookItem({
       onSelect(node.notebook.id);
     },
     [node.notebook.id, onSelect]
+  );
+
+  const handleDetail = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onEnterWorkspace?.(node.notebook.id);
+    },
+    [node.notebook.id, onEnterWorkspace]
   );
 
   const handleToggle = useCallback(
@@ -147,51 +175,54 @@ export const NotebookItem = memo(function NotebookItem({
     [node.notebook.name]
   );
 
-  const handleAddChild = useCallback(
+  const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
+      if (isInbox) return;
+      e.preventDefault();
       e.stopPropagation();
-      onCreateChild(node.notebook.id);
+      setMenu({ x: e.clientX, y: e.clientY });
     },
-    [node.notebook.id, onCreateChild]
+    [isInbox]
   );
 
-  const handleDelete = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (confirm(`Delete "${node.notebook.name}"? Notes will move to Inbox.`)) {
-        onDelete(node.notebook.id);
-      }
-    },
-    [node.notebook.id, node.notebook.name, onDelete]
-  );
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    window.addEventListener('mousedown', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
 
-  const handleToggleGit = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setIsGitLoading(true);
-      try {
-        if (isGitEnabled) {
-          await window.dripnex.notebooks.disableGit(node.notebook.id);
-          setIsGitEnabled(false);
-        } else {
-          const result = await window.dripnex.git.init(node.notebook.id);
-          if (result.success) {
-            await window.dripnex.notebooks.enableGit(node.notebook.id);
-            setIsGitEnabled(true);
-          }
+  const handleToggleGit = useCallback(async () => {
+    setMenu(null);
+    setIsGitLoading(true);
+    try {
+      if (isGitEnabled) {
+        await window.dripnex.notebooks.disableGit(node.notebook.id);
+        setIsGitEnabled(false);
+      } else {
+        const result = await window.dripnex.git.init(node.notebook.id);
+        if (result.success) {
+          await window.dripnex.notebooks.enableGit(node.notebook.id);
+          setIsGitEnabled(true);
         }
-      } catch (error) {
-        console.error('Failed to toggle git:', error);
-        alert(`Failed to ${isGitEnabled ? 'disable' : 'enable'} git: ${error}`);
-      } finally {
-        setIsGitLoading(false);
       }
-    },
-    [node.notebook.id, isGitEnabled]
-  );
+    } catch (error) {
+      console.error('Failed to toggle git:', error);
+      alert(`Failed to ${isGitEnabled ? 'disable' : 'enable'} git: ${error}`);
+    } finally {
+      setIsGitLoading(false);
+    }
+  }, [node.notebook.id, isGitEnabled]);
 
-  const handleShowHistory = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleShowHistory = useCallback(() => {
+    setMenu(null);
     setShowCommitHistory(true);
   }, []);
 
@@ -334,9 +365,10 @@ export const NotebookItem = memo(function NotebookItem({
           dropPosition && `drop-${dropPosition}`,
           isDragging && 'dragging'
         )}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
         role="button"
         tabIndex={0}
         aria-selected={isSelected}
@@ -347,37 +379,37 @@ export const NotebookItem = memo(function NotebookItem({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Drag handle — only visible on hover, enables dragging */}
-        {!isInbox && !isEditing && (
-          <span
-            className={sc('notebook-item-drag-handle')}
-            aria-hidden="true"
-            onMouseEnter={() => setCanDrag(true)}
-            onMouseLeave={() => setCanDrag(false)}
-          >
-            <GripVertical size={12} />
+        <span
+          className={sc('notebook-item-lead')}
+          onMouseEnter={() => {
+            if (!isInbox && !isEditing) setCanDrag(true);
+          }}
+          onMouseLeave={() => setCanDrag(false)}
+        >
+          {!isInbox && !isEditing ? (
+            <span className={sc('notebook-item-drag-handle')} aria-hidden="true">
+              <GripVertical size={12} />
+            </span>
+          ) : null}
+          {hasChildren ? (
+            <button
+              type="button"
+              className={sc('notebook-item-toggle')}
+              onClick={handleToggle}
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            >
+              {isExpanded ? (
+                <ChevronDown size={12} aria-hidden="true" />
+              ) : (
+                <ChevronRight size={12} aria-hidden="true" />
+              )}
+            </button>
+          ) : (
+            <span className={sc('notebook-item-toggle-slot')} aria-hidden="true" />
+          )}
+          <span className={sc('notebook-item-icon')} aria-hidden="true">
+            <Icon size={15} />
           </span>
-        )}
-
-        {hasChildren ? (
-          <button
-            type="button"
-            className={sc('notebook-item-toggle')}
-            onClick={handleToggle}
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? (
-              <ChevronDown size={14} aria-hidden="true" />
-            ) : (
-              <ChevronRight size={14} aria-hidden="true" />
-            )}
-          </button>
-        ) : (
-          <span className={sc('notebook-item-spacer')} aria-hidden="true" />
-        )}
-
-        <span className={sc('notebook-item-icon')} aria-hidden="true">
-          {isInbox ? <Inbox size={14} /> : <Folder size={14} />}
         </span>
 
         {isGitEnabled && !isInbox && (
@@ -407,57 +439,26 @@ export const NotebookItem = memo(function NotebookItem({
         )}
 
         {noteCount !== undefined && noteCount > 0 && (
-          <span className={sc('notebook-item-count')} aria-label={`${noteCount} notes`}>
+          <span className={sc('sidebar-row-count')} aria-label={`${noteCount} notes`}>
             {noteCount}
           </span>
         )}
 
-        {!isInbox && (
-          <div className={sc('notebook-item-actions')}>
-            <button
-              type="button"
-              className={sc(
-                'notebook-item-action',
-                isGitEnabled && 'notebook-item-action--git-enabled'
-              )}
-              onClick={handleToggleGit}
-              disabled={isGitLoading}
-              aria-label={isGitEnabled ? 'Disable git' : 'Enable git'}
-              title={isGitEnabled ? 'Disable git version control' : 'Enable git version control'}
-            >
-              <GitBranch size={12} aria-hidden="true" style={{ opacity: isGitLoading ? 0.5 : 1 }} />
-            </button>
-            {isGitEnabled && (
-              <button
-                type="button"
-                className={sc('notebook-item-action')}
-                onClick={handleShowHistory}
-                aria-label="View commit history"
-                title="View commit history"
-              >
-                <History size={12} aria-hidden="true" />
-              </button>
-            )}
-            {canHaveChildren && (
-              <button
-                type="button"
-                className={sc('notebook-item-action')}
-                onClick={handleAddChild}
-                aria-label="Add sub-notebook"
-              >
-                <Plus size={12} aria-hidden="true" />
-              </button>
-            )}
-            <button
-              type="button"
-              className={sc('notebook-item-action', 'notebook-item-action--delete')}
-              onClick={handleDelete}
-              aria-label="Delete notebook"
-            >
-              <X size={12} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+        {onEnterWorkspace && workspaceRootId !== node.notebook.id ? (
+          <button
+            type="button"
+            className={sc('notebook-item-detail')}
+            onClick={handleDetail}
+            title="Switch to workspace view"
+          >
+            Detail
+            <ChevronRight
+              size={10}
+              className={sc('notebook-item-detail-chevron')}
+              aria-hidden="true"
+            />
+          </button>
+        ) : null}
       </div>
 
       {hasChildren && isExpanded && (
@@ -472,9 +473,11 @@ export const NotebookItem = memo(function NotebookItem({
               ancestorIds={ancestorIds}
               selectedNotebookId={selectedNotebookId}
               onSelect={onSelect}
+              onEnterWorkspace={onEnterWorkspace}
               onRename={onRename}
               onDelete={onDelete}
               onCreateChild={onCreateChild}
+              onSetIcon={onSetIcon}
               onMove={onMove}
               onReorder={onReorder}
               siblingIds={node.children.map(c => c.notebook.id)}
@@ -483,6 +486,96 @@ export const NotebookItem = memo(function NotebookItem({
         </ul>
       )}
 
+      {menu
+        ? createPortal(
+            <div
+              className={sc('notebook-menu')}
+              style={{ top: menu.y, left: menu.x }}
+              role="menu"
+              onMouseDown={event => event.stopPropagation()}
+            >
+              {canHaveChildren ? (
+                <button
+                  type="button"
+                  className={sc('notebook-menu-item')}
+                  onClick={() => {
+                    setMenu(null);
+                    onCreateChild(node.notebook.id);
+                  }}
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  New sub-notebook
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={sc('notebook-menu-item')}
+                onClick={() => {
+                  if (!menu) return;
+                  setIconPicker({
+                    top: menu.y,
+                    left: menu.x,
+                    bottom: menu.y + 8,
+                    right: menu.x + 8,
+                  });
+                  setMenu(null);
+                }}
+              >
+                <Smile size={14} aria-hidden="true" />
+                Change icon
+              </button>
+              <button
+                type="button"
+                className={sc('notebook-menu-item')}
+                onClick={() => void handleToggleGit()}
+                disabled={isGitLoading}
+              >
+                <GitBranch size={14} aria-hidden="true" />
+                {isGitEnabled ? 'Disable Git' : 'Enable Git'}
+              </button>
+              {isGitEnabled ? (
+                <button
+                  type="button"
+                  className={sc('notebook-menu-item')}
+                  onClick={handleShowHistory}
+                >
+                  <History size={14} aria-hidden="true" />
+                  Commit history
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={sc('notebook-menu-item', 'notebook-menu-item--danger')}
+                onClick={() => {
+                  setMenu(null);
+                  if (confirm(`Delete "${node.notebook.name}"? Notes will move to Inbox.`)) {
+                    onDelete(node.notebook.id);
+                  }
+                }}
+              >
+                <Trash2 size={14} aria-hidden="true" />
+                Delete
+              </button>
+              {pluginMenuItems.length > 0
+                ? pluginMenuItems.map(item => (
+                    <button
+                      key={item.commandId}
+                      type="button"
+                      className={sc('notebook-menu-item')}
+                      onClick={() => {
+                        setMenu(null);
+                        void dispatchCommand(item.commandId, { notebookId: node.notebook.id });
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))
+                : null}
+            </div>,
+            document.body
+          )
+        : null}
+
       {showCommitHistory && (
         <CommitHistory
           notebookId={node.notebook.id}
@@ -490,6 +583,18 @@ export const NotebookItem = memo(function NotebookItem({
           onClose={() => setShowCommitHistory(false)}
         />
       )}
+
+      {iconPicker ? (
+        <NotebookIconPicker
+          current={node.notebook.icon}
+          anchor={iconPicker}
+          onSelect={icon => {
+            onSetIcon(node.notebook.id, icon);
+            setIconPicker(null);
+          }}
+          onClose={() => setIconPicker(null)}
+        />
+      ) : null}
     </li>
   );
 });

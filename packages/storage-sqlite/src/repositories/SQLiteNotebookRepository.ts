@@ -12,7 +12,6 @@ import {
   type NotebookId,
   type Timestamp,
   createNotebookId,
-  createNotebook,
   buildNotebookTree,
   INBOX_NOTEBOOK_ID,
 } from '@dripnex/core';
@@ -30,6 +29,7 @@ interface NotebookRow {
   git_enabled: number;
   git_auto_commit: number;
   git_initialized_at: string | null;
+  icon: string | null;
 }
 
 /** Row with metadata counts */
@@ -46,7 +46,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   async get(id: NotebookId): Promise<Notebook | null> {
     const stmt = this.db.prepare<NotebookRow>(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
-             git_enabled, git_auto_commit, git_initialized_at
+             git_enabled, git_auto_commit, git_initialized_at, icon
       FROM notebooks
       WHERE id = ?
     `);
@@ -60,14 +60,15 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   /** Save a notebook (insert or update) */
   async save(notebook: Notebook): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO notebooks (id, name, parent_id, depth, "order", created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO notebooks (id, name, parent_id, depth, "order", created_at, updated_at, icon)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         parent_id = excluded.parent_id,
         depth = excluded.depth,
         "order" = excluded."order",
-        updated_at = excluded.updated_at
+        updated_at = excluded.updated_at,
+        icon = excluded.icon
     `);
 
     stmt.run(
@@ -77,7 +78,8 @@ export class SQLiteNotebookRepository implements NotebookRepository {
       notebook.depth,
       notebook.order,
       notebook.createdAt,
-      notebook.updatedAt
+      notebook.updatedAt,
+      notebook.icon
     );
   }
 
@@ -106,7 +108,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   async getAll(): Promise<Notebook[]> {
     const stmt = this.db.prepare<NotebookRow>(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
-             git_enabled, git_auto_commit, git_initialized_at
+             git_enabled, git_auto_commit, git_initialized_at, icon
       FROM notebooks
       ORDER BY depth, "order"
     `);
@@ -119,7 +121,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   async getChildren(parentId: NotebookId | null): Promise<Notebook[]> {
     const stmt = this.db.prepare<NotebookRow>(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
-             git_enabled, git_auto_commit, git_initialized_at
+             git_enabled, git_auto_commit, git_initialized_at, icon
       FROM notebooks
       WHERE parent_id ${parentId === null ? 'IS NULL' : '= ?'}
       ORDER BY "order"
@@ -134,7 +136,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
     const stmt = this.db.prepare<NotebookMetadataRow>(`
       SELECT
         nb.id, nb.name, nb.parent_id, nb.depth, nb."order", nb.created_at, nb.updated_at,
-        nb.git_enabled, nb.git_auto_commit, nb.git_initialized_at,
+        nb.git_enabled, nb.git_auto_commit, nb.git_initialized_at, nb.icon,
         (SELECT COUNT(*) FROM notes WHERE notebook_id = nb.id AND archived_at IS NULL) as note_count,
         (SELECT COUNT(*) FROM notebooks WHERE parent_id = nb.id) as child_count
       FROM notebooks nb
@@ -295,7 +297,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   getGitEnabledNotebooks(): Notebook[] {
     const stmt = this.db.prepare<NotebookRow>(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
-             git_enabled, git_auto_commit, git_initialized_at
+             git_enabled, git_auto_commit, git_initialized_at, icon
       FROM notebooks
       WHERE git_enabled = 1
       ORDER BY name ASC
@@ -318,7 +320,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   }> {
     const stmt = this.db.prepare(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
-             git_enabled, git_auto_commit, git_initialized_at,
+             git_enabled, git_auto_commit, git_initialized_at, icon,
              local_version
       FROM notebooks
       WHERE needs_sync = 1
@@ -401,7 +403,7 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   validateForSync(notebookId: NotebookId): { valid: boolean; error?: string } {
     const stmt = this.db.prepare(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
-             git_enabled, git_auto_commit, git_initialized_at
+             git_enabled, git_auto_commit, git_initialized_at, icon
       FROM notebooks WHERE id = ?
     `);
     const row = stmt.get(notebookId) as NotebookRow | undefined;
@@ -417,13 +419,15 @@ export class SQLiteNotebookRepository implements NotebookRepository {
   // Private helpers
 
   private rowToNotebook(row: NotebookRow): Notebook {
-    return createNotebook({
+    return {
       id: createNotebookId(row.id),
       name: row.name,
       parentId: row.parent_id ? createNotebookId(row.parent_id) : null,
-      parentDepth: row.depth > 0 ? row.depth - 1 : undefined,
+      depth: row.depth,
       order: row.order,
       createdAt: row.created_at as Timestamp,
-    });
+      updatedAt: row.updated_at as Timestamp,
+      icon: row.icon ?? null,
+    };
   }
 }

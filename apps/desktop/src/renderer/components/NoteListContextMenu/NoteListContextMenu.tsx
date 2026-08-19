@@ -10,6 +10,9 @@ import {
   PinOff,
   FileStack,
 } from 'lucide-react';
+import { useStore } from 'zustand';
+import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { dispatchCommand } from '../../hooks/useCommandRegistry';
 import styles from './NoteListContextMenu.module.css';
 
 export interface NoteListContextMenuProps {
@@ -153,6 +156,9 @@ export function NoteListContextMenu({
   }, [noteId, onCreateFromTemplate, onClose]);
 
   const isTemplate = currentNotebookId === 'templates';
+  const pluginItems = useStore(pluginContextMenuStore, state => state.items).filter(
+    item => item.target === 'note-list-item'
+  );
 
   return createPortal(
     <div
@@ -221,6 +227,24 @@ export function NoteListContextMenu({
             <span className={styles.label}>Move to Trash</span>
             <span className={styles.shortcut}>⌘⌫</span>
           </button>
+          {pluginItems.length > 0 ? (
+            <>
+              <div className={styles.divider} />
+              {pluginItems.map(item => (
+                <button
+                  key={item.commandId}
+                  type="button"
+                  className={styles.item}
+                  onClick={() => {
+                    void dispatchCommand(item.commandId, { noteId });
+                    onClose();
+                  }}
+                >
+                  <span className={styles.label}>{item.label}</span>
+                </button>
+              ))}
+            </>
+          ) : null}
         </>
       )}
     </div>,

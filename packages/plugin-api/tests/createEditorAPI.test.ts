@@ -77,6 +77,11 @@ describe('createEditorAPI', () => {
       expect(() => api.replaceRange(0, 1, 'x')).not.toThrow();
     });
 
+    it('setSelection is no-op when no view', () => {
+      const api = createEditorAPI(() => null);
+      expect(() => api.setSelection(0, 1)).not.toThrow();
+    });
+
     it('insertAtCursor is no-op when no view', () => {
       const api = createEditorAPI(() => null);
       expect(() => api.insertAtCursor('x')).not.toThrow();

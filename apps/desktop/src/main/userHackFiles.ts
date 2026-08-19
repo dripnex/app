@@ -45,11 +45,20 @@ export const STYLES_CSS_TEMPLATE = `/* Dripnex user stylesheet
  * Accent:    --accent  --accent-muted
  * Borders:   --border  --border-subtle
  *
- * Example:
+ * Motion (no JS library). Durations:
+ *   --transition-fast  --transition-normal  --transition-slow
+ * Settings → Plugins → Motion scales those. Or override here:
  *
  * :root {
  *   --accent: #f59e0b;
+ *   --transition-normal: 280ms cubic-bezier(0.22, 1, 0.36, 1);
  * }
+ *
+ * @keyframes dripnex-fade {
+ *   from { opacity: 0; }
+ *   to { opacity: 1; }
+ * }
+ * .app__sidebar { animation: dripnex-fade 200ms ease; }
  *
  * .note-list-item[data-selected="true"] {
  *   background: color-mix(in srgb, var(--accent) 18%, transparent);

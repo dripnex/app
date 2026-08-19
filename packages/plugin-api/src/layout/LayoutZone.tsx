@@ -7,6 +7,8 @@ interface LayoutZoneProps {
   name: LayoutZoneName;
   className?: string;
   wrapper?: ComponentType<{ entry: ZoneEntry; children: ReactNode }>;
+  /** Host-provided props merged into each plugin component's `meta`. */
+  meta?: Record<string, unknown>;
 }
 
 function getSnapshot(name: LayoutZoneName): () => ZoneEntry[] {
@@ -43,7 +45,7 @@ function getOrCreateSnapshot(name: LayoutZoneName): () => ZoneEntry[] {
  * <LayoutZone name="sidebar-section" wrapper={SidebarSectionWrapper} />
  * ```
  */
-export function LayoutZone({ name, className, wrapper: Wrapper }: LayoutZoneProps) {
+export function LayoutZone({ name, className, wrapper: Wrapper, meta: hostMeta }: LayoutZoneProps) {
   const subscribe = layoutStore.subscribe;
   const snapshot = getOrCreateSnapshot(name);
   const entries = useSyncExternalStore(subscribe, snapshot, snapshot);
@@ -54,9 +56,10 @@ export function LayoutZone({ name, className, wrapper: Wrapper }: LayoutZoneProp
     <div className={className} data-layout-zone={name}>
       {entries.map(entry => {
         const { component: Component, meta, id, pluginId } = entry;
+        const merged = hostMeta ? { ...meta, ...hostMeta } : meta;
         const rendered = (
           <PluginErrorBoundary key={id} pluginId={pluginId}>
-            <Component meta={meta} />
+            <Component meta={merged} />
           </PluginErrorBoundary>
         );
 

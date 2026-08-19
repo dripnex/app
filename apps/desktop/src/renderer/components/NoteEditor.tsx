@@ -1,6 +1,8 @@
 import { useRef, useCallback, useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { FileText, MoreVertical, Link2, Hash } from 'lucide-react';
 import { LayoutZone } from '@dripnex/plugin-api';
+import { toggleNthGfmTask, type MarkdownHeading } from '@dripnex/markdown';
+import { getEditorView } from '../hooks/useCommandRegistry';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import {
@@ -14,23 +16,22 @@ import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
 import { useNotebook } from '../hooks/useNotebooks';
+import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
-import type { MarkdownHeading } from '@dripnex/markdown';
 import { ImageLightbox } from './ImageLightbox';
 import { BacklinksPanel } from './editor/BacklinksPanel';
 import { RevisionHistoryPanel } from './editor/RevisionHistoryPanel';
 import {
   ActionsPanel,
+  EditorChrome,
   EditorHeader,
-  EditorViewToggle,
   OutlinePanel,
   SelectionToolbar,
   MarkdownPreview,
 } from './editor';
 import { TitleInput } from './TitleInput';
 import { useToast } from './Toast';
-import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
 import { sc } from './noteEditorSc';
 
 // Lazy load the markdown editor for better initial load performance
@@ -63,6 +64,14 @@ interface NoteEditorProps {
   onNavigateToNote?: (noteId: string) => void;
   /** Called when note is updated (e.g., tags changed) */
   onNoteUpdate?: (note: NoteSnapshot) => void;
+  canBack?: boolean;
+  canForward?: boolean;
+  distractionFree?: boolean;
+  onBack?: () => void;
+  onForward?: () => void;
+  onToggleZen?: () => void;
+  onOpenWindow?: () => void;
+  chromeVariant?: 'main' | 'window';
 }
 
 export function NoteEditor({
@@ -80,6 +89,14 @@ export function NoteEditor({
   onWikilinkClick,
   onNavigateToNote,
   onNoteUpdate,
+  canBack = false,
+  canForward = false,
+  distractionFree = false,
+  onBack,
+  onForward,
+  onToggleZen,
+  onOpenWindow,
+  chromeVariant = 'main',
 }: NoteEditorProps) {
   const { showToast } = useToast();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -227,8 +244,13 @@ export function NoteEditor({
   const showPreview = viewMode === 'preview' || viewMode === 'split';
   const isSplitMode = viewMode === 'split';
 
+  const [outlineActiveLine, setOutlineActiveLine] = useState<number | null>(null);
+  const [outlineActiveText, setOutlineActiveText] = useState<string | null>(null);
+
   const handleOutlineJump = useCallback(
     (heading: MarkdownHeading) => {
+      setOutlineActiveLine(heading.line);
+      setOutlineActiveText(heading.text);
       if (showEditor) {
         editorRef.current?.jumpToLine(heading.line);
       } else {
@@ -237,6 +259,51 @@ export function NoteEditor({
     },
     [showEditor]
   );
+
+  useEffect(() => {
+    if (!outlineOpen || !note) return;
+    let unsub: (() => void) | undefined;
+    let interval: number | undefined;
+
+    const attach = (): boolean => {
+      if (showEditor && editorRef.current) {
+        const editor = editorRef.current;
+        const sync = () => {
+          setOutlineActiveLine(editor.getVisibleLine());
+          setOutlineActiveText(null);
+        };
+        unsub = editor.onScroll(sync);
+        sync();
+        return true;
+      }
+      if (!showEditor && previewRef.current) {
+        const preview = previewRef.current;
+        const sync = () => {
+          setOutlineActiveLine(null);
+          setOutlineActiveText(preview.getVisibleHeading());
+        };
+        unsub = preview.onScroll(sync);
+        sync();
+        return true;
+      }
+      return false;
+    };
+
+    if (!attach()) {
+      let tries = 0;
+      interval = window.setInterval(() => {
+        tries += 1;
+        if (attach() || tries > 20) {
+          if (interval) window.clearInterval(interval);
+        }
+      }, 50);
+    }
+
+    return () => {
+      if (interval) window.clearInterval(interval);
+      unsub?.();
+    };
+  }, [outlineOpen, showEditor, note?.id, viewMode]);
 
   // Scroll sync for split mode (see useScrollSync for architecture docs)
   const { masterRef, handleEditorReady, handlePreviewReady } = useScrollSync({
@@ -259,6 +326,28 @@ export function NoteEditor({
       }, 500);
     },
     [onUpdate]
+  );
+
+  const handlePreviewCheckbox = useCallback(
+    (index: number) => {
+      if (!note) return;
+      const current =
+        useEditorBufferStore.getState().noteId === note.id
+          ? useEditorBufferStore.getState().liveContent
+          : note.content;
+      const next = toggleNthGfmTask(current, index);
+      if (next == null || next === current) return;
+      const view = getEditorView();
+      if (view) {
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: next },
+        });
+        return;
+      }
+      useEditorBufferStore.getState().updateBuffer(next);
+      handleChange(next);
+    },
+    [note, handleChange]
   );
 
   // Cleanup debounce timer on unmount to prevent stale mutations
@@ -342,19 +431,18 @@ export function NoteEditor({
 
   return (
     <main className={sc('note-editor')} aria-label="Note editor">
-      {/* Title row with actions buttons */}
-      <header className={sc('note-editor-header')}>
-        <TitleInput value={note.title} onChange={handleTitleChange} onEnter={handleTitleEnter} />
-        <div className={sc('note-editor-header-mid')}>
-          {saveStatus && (
-            <span
-              className={sc('save-indicator', showSaved && 'save-indicator--fade')}
-              aria-live="polite"
-            >
-              {saveStatus}
-            </span>
-          )}
-          <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
+      <EditorChrome
+        variant={chromeVariant}
+        canBack={canBack}
+        canForward={canForward}
+        distractionFree={distractionFree}
+        viewMode={viewMode}
+        onBack={() => onBack?.()}
+        onForward={() => onForward?.()}
+        onToggleZen={() => onToggleZen?.()}
+        onOpenWindow={() => onOpenWindow?.()}
+        onModeChange={setViewMode}
+        outlineButton={
           <div className={sc('editor-view-toggle')} role="group" aria-label="Outline">
             <button
               type="button"
@@ -367,39 +455,52 @@ export function NoteEditor({
               <Hash size={16} />
             </button>
           </div>
-        </div>
-        <div className={sc('note-editor-header-actions')}>
-          {onUseTemplate ? (
+        }
+        actions={
+          <>
+            {saveStatus ? (
+              <span
+                className={sc('save-indicator', showSaved && 'save-indicator--fade')}
+                aria-live="polite"
+              >
+                {saveStatus}
+              </span>
+            ) : null}
+            {onUseTemplate ? (
+              <button
+                type="button"
+                className={sc('note-editor-use-template')}
+                onClick={onUseTemplate}
+                title="Create a new note from this template"
+              >
+                Use template
+              </button>
+            ) : null}
             <button
               type="button"
-              className={sc('note-editor-use-template')}
-              onClick={onUseTemplate}
-              title="Create a new note from this template"
+              className={sc('note-editor-actions-btn', backlinksCount > 0 && 'has-badge')}
+              onClick={() => setBacklinksOpen(true)}
+              title={`Backlinks${backlinksCount > 0 ? ` (${backlinksCount})` : ''}`}
+              aria-label="Open backlinks panel"
             >
-              Use template
+              <Link2 size={18} />
+              {backlinksCount > 0 && <span className={sc('badge')}>{backlinksCount}</span>}
             </button>
-          ) : null}
-          <button
-            type="button"
-            className={sc('note-editor-actions-btn', backlinksCount > 0 && 'has-badge')}
-            onClick={() => setBacklinksOpen(true)}
-            title={`Backlinks${backlinksCount > 0 ? ` (${backlinksCount})` : ''}`}
-            aria-label="Open backlinks panel"
-          >
-            <Link2 size={18} />
-            {backlinksCount > 0 && <span className={sc('badge')}>{backlinksCount}</span>}
-          </button>
-          <button
-            type="button"
-            className={sc('note-editor-actions-btn')}
-            onClick={() => setActionsOpen(true)}
-            title="More actions"
-            aria-label="Open actions panel"
-          >
-            <MoreVertical size={18} />
-          </button>
-          <LayoutZone name="editor-header-actions" />
-        </div>
+            <button
+              type="button"
+              className={sc('note-editor-actions-btn')}
+              onClick={() => setActionsOpen(true)}
+              title="More actions"
+              aria-label="Open actions panel"
+            >
+              <MoreVertical size={18} />
+            </button>
+            <LayoutZone name="editor-header-actions" />
+          </>
+        }
+      />
+      <header className={sc('note-editor-header')}>
+        <TitleInput value={note.title} onChange={handleTitleChange} onEnter={handleTitleEnter} />
       </header>
       {/* Metadata row: Notebook, Status, Tags */}
       {onMoveToNotebook && onStatusChange && (
@@ -447,6 +548,7 @@ export function NoteEditor({
                 masterRef.current = 'preview';
               }}
             >
+              <LayoutZone name="preview-toolbar" />
               <MarkdownPreview
                 ref={previewRef}
                 content={note.content}
@@ -457,14 +559,22 @@ export function NoteEditor({
                 onWikilinkClick={onWikilinkClick}
                 onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
                 resolvedEmbeds={resolvedEmbeds}
+                onCheckboxToggle={handlePreviewCheckbox}
               />
             </div>
           )}
         </div>
         {outlineOpen ? (
-          <OutlinePanel content={liveContent ?? note.content} onJump={handleOutlineJump} />
+          <OutlinePanel
+            content={liveContent ?? note.content}
+            onJump={handleOutlineJump}
+            activeLine={outlineActiveLine}
+            activeText={outlineActiveText}
+          />
         ) : null}
       </div>
+
+      <LayoutZone name="editor-footer" />
 
       {/* Plugin Status Bar */}
       <LayoutZone name="editor-status-bar" className={sc('note-editor-status-bar')} />

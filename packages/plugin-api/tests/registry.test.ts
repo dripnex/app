@@ -23,6 +23,7 @@ function makeEditorAPI(): EditorAPI {
     getSelection: () => ({ from: 0, to: 0 }),
     replaceRange: () => {},
     insertAtCursor: () => {},
+    setSelection: () => {},
     getWordCount: () => 0,
     getCharCount: () => 0,
     getLineCount: () => 0,
@@ -124,6 +125,8 @@ describe('PluginRegistry', () => {
       expect(ctx).toHaveProperty('config');
       expect(ctx).toHaveProperty('log');
       expect(ctx).toHaveProperty('app');
+      expect(ctx).toHaveProperty('notifications');
+      expect(ctx).toHaveProperty('contextMenu');
     });
 
     it('exposes data listing methods on context.app', async () => {
@@ -307,6 +310,39 @@ describe('PluginRegistry', () => {
       registry.deactivate('test-plugin');
 
       expect(unregister).toHaveBeenCalledOnce();
+    });
+
+    it('applies package keymaps and menus after activate', async () => {
+      const registerCommandFn: RegisterCommandFn = vi.fn().mockReturnValue(() => {});
+      const setDefaultKeybinding = vi.fn().mockReturnValue(true);
+
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerCommand({ id: 'say-hello', name: 'Say Hello' }, () => true);
+          },
+        })
+      );
+
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn,
+        undefined,
+        undefined,
+        {
+          keymaps: ['{ "say-hello": "Mod+Shift+H" }'],
+          menus: ['{ "menu": [{ "label": "Hello", "command": "say-hello" }] }'],
+        },
+        setDefaultKeybinding
+      );
+
+      expect(setDefaultKeybinding).toHaveBeenCalledWith('plugin:test-plugin:say-hello', {
+        key: 'h',
+        modifiers: ['Mod', 'Shift'],
+      });
     });
   });
 

@@ -28,6 +28,8 @@ export function packPlugin(source: string): string {
   const members = ['manifest.json'];
   if (existsSync(join(sourcePath, 'dist'))) members.push('dist');
   else members.push(main);
+  if (existsSync(join(sourcePath, 'keymaps'))) members.push('keymaps');
+  if (existsSync(join(sourcePath, 'menus'))) members.push('menus');
 
   execFileSync('tar', ['-czf', dest, '-C', sourcePath, ...members], { stdio: 'inherit' });
 

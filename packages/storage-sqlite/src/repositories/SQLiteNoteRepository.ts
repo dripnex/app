@@ -143,7 +143,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count,
+             task_count, checked_task_count, archived_at,
              is_pinned, is_deleted, status
       FROM notes
       WHERE id = ?
@@ -161,15 +162,18 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     this.db.transaction(() => {
       // Upsert note
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count,
+                           task_count, checked_task_count, archived_at,
                            is_pinned, is_deleted, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           notebook_id = excluded.notebook_id,
           content = excluded.content,
           title = excluded.title,
           updated_at = excluded.updated_at,
           word_count = excluded.word_count,
+          task_count = excluded.task_count,
+          checked_task_count = excluded.checked_task_count,
           archived_at = excluded.archived_at,
           is_pinned = excluded.is_pinned,
           is_deleted = excluded.is_deleted,
@@ -184,6 +188,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         note.metadata.createdAt,
         note.metadata.updatedAt,
         note.metadata.wordCount,
+        note.metadata.taskCount,
+        note.metadata.checkedTaskCount,
         note.metadata.archivedAt,
         note.isPinned ? 1 : 0,
         note.isDeleted ? 1 : 0,
@@ -216,7 +222,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const filter = noteFilterSql(options);
 
     const sql = `
-      SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at,
+      SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count,
+             n.task_count, n.checked_task_count, n.archived_at,
              n.is_pinned, n.is_deleted, n.status
       FROM notes n
       WHERE 1=1 ${filter.sql}
@@ -258,7 +265,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
     const stmt = this.db.prepare<NoteRow>(`
       SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
-             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status
+             n.word_count, n.task_count, n.checked_task_count, n.archived_at,
+             n.is_pinned, n.is_deleted, n.status
       FROM notes_fts
       JOIN notes n ON n.id = notes_fts.id
       WHERE notes_fts MATCH ? ${filter.sql}
@@ -437,7 +445,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     const row = this.db
       .prepare<NoteRow>(
         `
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count,
+             task_count, checked_task_count, archived_at,
              is_pinned, is_deleted, status
       FROM notes
       WHERE title = ? COLLATE NOCASE AND archived_at IS NULL AND is_deleted = 0
@@ -612,10 +621,13 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
    */
   setTagColor(tagName: string, color: string | null): void {
     const normalized = tagName.trim().toLowerCase();
-    const stmt = this.db.prepare(`
-      UPDATE tags SET color = ? WHERE name = ?
-    `);
-    stmt.run(color, normalized);
+    if (!normalized) return;
+    this.db
+      .prepare(
+        `INSERT INTO tags (name, color) VALUES (?, ?)
+         ON CONFLICT(name) DO UPDATE SET color = excluded.color`
+      )
+      .run(normalized, color);
   }
 
   /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { headingToSlug, scanMarkdown } from '../src/scan.js';
+import { headingToSlug, scanMarkdown, toggleNthGfmTask } from '../src/scan.js';
 
 describe('scanMarkdown', () => {
   it('collects headings, tasks, embeds and wikilinks in one walk', () => {
@@ -82,6 +82,15 @@ describe('scanMarkdown', () => {
   it('dedupes embed targets case-insensitively', () => {
     const scan = scanMarkdown('![[a.png]] ![[A.PNG]] ![[b.png]]');
     expect(scan.embedTargets).toEqual(['a.png', 'b.png']);
+  });
+});
+
+describe('toggleNthGfmTask', () => {
+  it('toggles the Nth task and skips fences', () => {
+    const md = ['# Title', '- [ ] a', '```', '- [ ] fake', '```', '- [x] b'].join('\n');
+    expect(toggleNthGfmTask(md, 0)).toContain('- [x] a');
+    expect(toggleNthGfmTask(md, 1)).toContain('- [ ] b');
+    expect(toggleNthGfmTask(md, 2)).toBeNull();
   });
 });
 

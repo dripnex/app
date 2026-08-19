@@ -17,7 +17,8 @@ describe('hostBridges', () => {
 
     expect(api.vim).toEqual({ map: expect.any(Function) });
     await expect(api.commands.dispatch('app:next-note')).resolves.toBe(true);
-    expect(seen).toEqual(['app:next-note']);
+    await expect(api.commands.dispatch('app:open-note', { noteId: 'n1' })).resolves.toBe(true);
+    expect(seen).toEqual(['app:next-note', 'app:open-note']);
 
     setHostCommandDispatch(null);
     setHostVim(null);

@@ -7,8 +7,29 @@ import type {
 } from './types.js';
 
 const FENCE = /^(\s{0,3})(`{3,}|~{3,})/;
-const ATX = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/;
 const TASK = /^[ \t]*[-*]\s+\[(.)\]/;
+
+function matchAtx(line: string): { level: HeadingLevel; text: string } | null {
+  if (line[0] !== '#') return null;
+  let i = 0;
+  while (i < line.length && line[i] === '#' && i < 6) i += 1;
+  if (i === 0 || i > 6) return null;
+  const after = line[i];
+  if (after !== ' ' && after !== '\t') return null;
+  let start = i + 1;
+  while (start < line.length && (line[start] === ' ' || line[start] === '\t')) start += 1;
+  let end = line.length;
+  while (end > start && (line[end - 1] === ' ' || line[end - 1] === '\t')) end -= 1;
+  let hashes = end;
+  while (hashes > start && line[hashes - 1] === '#') hashes -= 1;
+  if (hashes < end && hashes > start && (line[hashes - 1] === ' ' || line[hashes - 1] === '\t')) {
+    end = hashes;
+    while (end > start && (line[end - 1] === ' ' || line[end - 1] === '\t')) end -= 1;
+  }
+  const text = line.slice(start, end);
+  if (!text) return null;
+  return { level: i as HeadingLevel, text };
+}
 const EMBED = /!\[\[([^[\]|]{1,200})(?:\|([^\]]{1,200}))?\]\]/g;
 const WIKI = /\[\[([^[\]|#]{1,200})(?:#([^[\]|]{1,200}))?(?:\|([^\]]{1,200}))?\]\]/g;
 const TAG = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
@@ -62,13 +83,9 @@ export function scanMarkdown(content: string): MarkdownScan {
     }
     if (fence) continue;
 
-    const atx = line.match(ATX);
+    const atx = matchAtx(line);
     if (atx) {
-      const text = (atx[2] ?? '').trim();
-      if (text) {
-        const level = (atx[1] ?? '#').length as HeadingLevel;
-        headings.push({ level, text, line: i + 1, slug: headingToSlug(text) });
-      }
+      headings.push({ ...atx, line: i + 1, slug: headingToSlug(atx.text) });
     }
 
     const task = line.match(TASK);
@@ -128,4 +145,46 @@ export function scanMarkdown(content: string): MarkdownScan {
     tasks: { total: tasksTotal, completed: tasksDone },
     tags,
   };
+}
+
+/**
+ * Toggle the Nth GFM task (`- [ ]` / `- [x]`) outside fences.
+ * Returns null when `index` is out of range.
+ */
+export function toggleNthGfmTask(content: string, index: number): string | null {
+  if (index < 0 || !Number.isInteger(index)) return null;
+
+  const lines = content.split(/\r?\n/);
+  let fence: string | null = null;
+  let seen = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? '';
+    const fenceMatch = line.match(FENCE);
+    if (fenceMatch) {
+      const marker = fenceMatch[2] ?? '';
+      if (!fence) {
+        fence = marker;
+        continue;
+      }
+      if (marker[0] === fence[0] && marker.length >= fence.length) {
+        fence = null;
+      }
+      continue;
+    }
+    if (fence) continue;
+
+    const task = line.match(TASK);
+    if (!task) continue;
+    if (seen !== index) {
+      seen += 1;
+      continue;
+    }
+    const mark = task[1] ?? ' ';
+    const next = mark === 'x' || mark === 'X' ? ' ' : 'x';
+    lines[i] = line.replace(/\[.\]/, `[${next}]`);
+    return lines.join('\n');
+  }
+
+  return null;
 }

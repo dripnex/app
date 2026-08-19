@@ -28,13 +28,14 @@
   width: 100%;
   text-align: left;
   border: none;
+  border-left: 2px solid transparent;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
   font-size: 12px;
   line-height: 1.35;
   padding: 4px 8px;
-  border-radius: 5px;
+  border-radius: 0;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -44,6 +45,12 @@
 .outline-item:hover {
   color: var(--text-primary);
   background: var(--bg-hover);
+}
+
+.outline-item-active {
+  color: var(--text-primary);
+  background: var(--accent-muted);
+  border-left-color: var(--accent);
 }
 
 .outline-item--l2 { padding-left: 16px; }

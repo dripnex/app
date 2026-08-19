@@ -10,7 +10,7 @@
  */
 
 import { createStore } from 'zustand/vanilla';
-import type { PluginManifest } from '@dripnex/plugin-api';
+import type { PluginManifest, PluginPackageFiles } from '@dripnex/plugin-api';
 import { loadPluginFromSource, loadInitScript } from '@dripnex/plugin-api';
 
 export interface PluginLoadError {
@@ -34,6 +34,8 @@ interface PluginRuntimeState {
   errors: PluginLoadError[];
   /** Load timing per plugin */
   timings: PluginLoadTiming[];
+  /** Declarative keymaps/menus from each scanned plugin package */
+  packageFiles: Record<string, PluginPackageFiles>;
   /** Current lifecycle status */
   status: RuntimeStatus;
 }
@@ -65,6 +67,7 @@ async function executeScan(generation: number): Promise<{
   plugins: PluginManifest[];
   errors: PluginLoadError[];
   timings: PluginLoadTiming[];
+  packageFiles: Record<string, PluginPackageFiles>;
 } | null> {
   try {
     const [scanned, stateList, initCode] = await Promise.all([
@@ -80,6 +83,7 @@ async function executeScan(generation: number): Promise<{
     const plugins: PluginManifest[] = [];
     const errors: PluginLoadError[] = [];
     const timings: PluginLoadTiming[] = [];
+    const packageFiles: Record<string, PluginPackageFiles> = {};
 
     for (const sp of scanned) {
       const enabled = stateMap.get(sp.id) ?? true;
@@ -90,6 +94,10 @@ async function executeScan(generation: number): Promise<{
       const elapsed = performance.now() - start;
 
       timings.push({ pluginId: sp.id, pluginName: sp.name, loadTimeMs: elapsed });
+      packageFiles[sp.id] = {
+        keymaps: sp.keymaps ?? [],
+        menus: sp.menus ?? [],
+      };
 
       if (manifest) {
         plugins.push(manifest);
@@ -127,7 +135,7 @@ async function executeScan(generation: number): Promise<{
     // Race check again after CPU-bound eval loop
     if (scanGeneration !== generation) return null;
 
-    return { plugins, errors, timings };
+    return { plugins, errors, timings, packageFiles };
   } catch (error) {
     console.error('[pluginRuntime] scan failed:', error);
     return null;
@@ -138,6 +146,7 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
   plugins: [],
   errors: [],
   timings: [],
+  packageFiles: {},
   status: 'idle',
 
   async init() {
@@ -150,6 +159,7 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
         plugins: result.plugins,
         errors: result.errors,
         timings: result.timings,
+        packageFiles: result.packageFiles,
         status: 'ready',
       });
     } else if (scanGeneration === gen) {
@@ -166,6 +176,7 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
         plugins: result.plugins,
         errors: result.errors,
         timings: result.timings,
+        packageFiles: result.packageFiles,
         status: 'ready',
       });
     } else if (scanGeneration === gen) {

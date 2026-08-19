@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { LayoutZone, useThemeOverrides } from '@dripnex/plugin-api';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
 import { useOfficialThemes } from '../../hooks/useOfficialThemes';
-import { useThemeOverrides } from '@dripnex/plugin-api';
 import { Toaster } from '../../ui/primitives';
 import styles from './SettingsApp.module.css';
 import { SettingsSidebar } from './components/SettingsSidebar';
@@ -68,7 +68,10 @@ export function SettingsApp() {
   return (
     <div className={styles.container}>
       <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-      <main className={styles.content}>{renderSection()}</main>
+      <main className={styles.content}>
+        {renderSection()}
+        <LayoutZone name="settings-section" />
+      </main>
       <Toaster />
     </div>
   );

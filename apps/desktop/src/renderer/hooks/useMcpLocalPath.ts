@@ -37,6 +37,7 @@ function useSettingsHydrated(): boolean {
  */
 export function useMcpLocalPath(): void {
   const hydrated = useSettingsHydrated();
+  const httpEnabled = useSettingsStore(s => s.settings.integrations?.httpApiEnabled ?? false);
   const enabled = useSettingsStore(s => s.settings.integrations?.mcpEnabled ?? false);
   const writes = useSettingsStore(s => s.settings.integrations?.mcpWrites ?? false);
 
@@ -49,12 +50,12 @@ export function useMcpLocalPath(): void {
     void (async () => {
       const result = await api.setWrites(writes);
       if (cancelled || !result.ok) return;
-      if (enabled) await api.start();
+      if (httpEnabled || enabled) await api.start();
       else await api.stop();
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [hydrated, enabled, writes]);
+  }, [hydrated, httpEnabled, enabled, writes]);
 }

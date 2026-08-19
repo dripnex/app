@@ -14,6 +14,10 @@ describe('parseChord', () => {
     expect(parseChord('Ctrl+N')).toEqual({ key: 'n', modifiers: ['Mod'] });
   });
 
+  it('parses Inkdrop hyphen chords', () => {
+    expect(parseChord('ctrl-shift-k')).toEqual({ key: 'k', modifiers: ['Mod', 'Shift'] });
+  });
+
   it('returns null for garbage', () => {
     expect(parseChord('')).toBeNull();
     expect(parseChord('Super+N')).toBeNull();

@@ -71,6 +71,11 @@ body {
 .app__notelist {
   flex-shrink: 0;
   overflow: hidden;
+  transition: width var(--transition-normal);
+}
+
+.app__notelist[data-collapsed='true'] {
+  pointer-events: none;
 }
 
 .app__editor {

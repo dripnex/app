@@ -105,7 +105,7 @@ export const ActionsPanel = memo(function ActionsPanel({
 
   // Copy note link to clipboard
   const handleCopyLink = useCallback(async () => {
-    const noteLink = `dripnex://note/${noteId}`;
+    const noteLink = `dripnex://note/${encodeURIComponent(noteId)}`;
     try {
       await navigator.clipboard.writeText(noteLink);
       onClose();

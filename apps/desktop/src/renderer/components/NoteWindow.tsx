@@ -151,6 +151,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
         onUpdate={handleUpdate}
         onTitleUpdate={handleTitleUpdate}
         onStatusChange={handleStatusChange}
+        chromeVariant="window"
       />
     </div>
   );

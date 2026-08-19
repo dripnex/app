@@ -1,10 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-
 import { useTags, noteKeys } from '../../hooks/useNotes';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
-import { ColorPickerModal } from '../ColorPicker';
-import { fallbackTagColor } from '../../ui/tokens/palette';
+import { ColorPickerModal, type ColorPickerAnchor } from '../ColorPicker';
 import { TagsContextMenu } from './TagsContextMenu';
 import { sc } from './sc';
 
@@ -42,8 +40,10 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
   const getColor = useTagColorsStore(state => state.getColor);
   const setColor = useTagColorsStore(state => state.setColor);
 
-  // Color picker state
-  const [colorPickerTag, setColorPickerTag] = useState<string | null>(null);
+  const [colorPicker, setColorPicker] = useState<{
+    tag: string;
+    anchor: ColorPickerAnchor;
+  } | null>(null);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -55,13 +55,26 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
 
   const handleColorDotClick = useCallback((e: React.MouseEvent, tag: string) => {
     e.stopPropagation();
-    setColorPickerTag(prev => (prev === tag ? null : tag));
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setColorPicker(prev =>
+      prev?.tag === tag
+        ? null
+        : {
+            tag,
+            anchor: {
+              top: rect.top,
+              left: rect.left,
+              bottom: rect.bottom,
+              right: rect.right,
+            },
+          }
+    );
   }, []);
 
   const handleColorSelect = useCallback(
     async (tag: string, color: string | null) => {
       await setColor(tag, color);
-      setColorPickerTag(null);
+      setColorPicker(null);
     },
     [setColor]
   );
@@ -70,7 +83,7 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ tag, x: e.clientX, y: e.clientY });
-    setColorPickerTag(null); // Close any open color picker
+    setColorPicker(null);
   }, []);
 
   const handleDeleteTag = useCallback(
@@ -137,7 +150,7 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
     <>
       <ul className={sc('tags-list')} role="listbox" aria-label="Tags">
         {visibleTags.map(tag => {
-          const color = getColor(tag) ?? fallbackTagColor(tag);
+          const color = getColor(tag);
           const count = counts?.[tag];
 
           return (
@@ -154,12 +167,16 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
                 onClick={() => handleTagClick(tag)}
               >
                 <span
-                  className={sc('tags-list-item-dot')}
-                  style={{ backgroundColor: color }}
+                  className={sc('tags-list-item-color-btn')}
                   onClick={e => handleColorDotClick(e, tag)}
-                  role="presentation"
-                />
-                <span className={sc('tags-list-item-name')}>{tag}</span>
+                  aria-label={color ? `Change color for ${tag}` : `Set color for ${tag}`}
+                >
+                  <span
+                    className={sc('tags-list-item-dot', !color && 'tags-list-item-dot-empty')}
+                    style={color ? { backgroundColor: color } : undefined}
+                  />
+                </span>
+                <span className={sc('sidebar-row-label')}>{tag}</span>
                 {count !== undefined && (
                   <span className={sc('sidebar-row-count')} aria-label={`${count} notes`}>
                     {count}
@@ -172,13 +189,14 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
       </ul>
 
       {/* Context menu component */}
-      {colorPickerTag ? (
+      {colorPicker ? (
         <ColorPickerModal
-          title={`Color · ${colorPickerTag}`}
-          currentColor={getColor(colorPickerTag) ?? fallbackTagColor(colorPickerTag)}
-          onSelect={c => handleColorSelect(colorPickerTag, c)}
-          onClear={() => handleColorSelect(colorPickerTag, null)}
-          onClose={() => setColorPickerTag(null)}
+          title={`Color · ${colorPicker.tag}`}
+          currentColor={getColor(colorPicker.tag)}
+          anchor={colorPicker.anchor}
+          onSelect={c => handleColorSelect(colorPicker.tag, c)}
+          onClear={() => handleColorSelect(colorPicker.tag, null)}
+          onClose={() => setColorPicker(null)}
         />
       ) : null}
 
