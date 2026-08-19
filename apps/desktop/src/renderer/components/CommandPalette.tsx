@@ -64,6 +64,8 @@ interface CommandPaletteProps {
   onOpenNote?: (id: string) => void;
   onJumpNotebook?: (id: string) => void;
   onJumpTag?: (name: string) => void;
+  headings?: ReadonlyArray<{ text: string }>;
+  onJumpHeading?: (text: string) => void;
 }
 
 interface NoteHit {
@@ -123,6 +125,8 @@ export function CommandPalette({
   onOpenNote,
   onJumpNotebook,
   onJumpTag,
+  headings = [],
+  onJumpHeading,
 }: CommandPaletteProps) {
   const commands = useCommandRegistry();
   const { data: notebooks = [] } = useNotebooks();
@@ -167,10 +171,16 @@ export function CommandPalette({
     return filterByQuery(tags, query, tag => String(tag));
   }, [mode, tags, query]);
 
+  const headingHits = useMemo(() => {
+    if (mode !== 'headings') return [];
+    return filterByQuery(headings, query, heading => heading.text);
+  }, [mode, headings, query]);
+
   type FlatItem =
     | { type: 'note'; id: string; title: string }
     | { type: 'notebook'; id: string; title: string }
     | { type: 'tag'; id: string; title: string }
+    | { type: 'heading'; id: string; title: string }
     | { type: 'command'; id: string };
 
   const flatItems = useMemo((): FlatItem[] => {
@@ -187,8 +197,15 @@ export function CommandPalette({
     if (mode === 'tags') {
       return tagHits.map(tag => ({ type: 'tag', id: String(tag), title: String(tag) }));
     }
+    if (mode === 'headings') {
+      return headingHits.map((heading, index) => ({
+        type: 'heading' as const,
+        id: `${index}:${heading.text}`,
+        title: heading.text,
+      }));
+    }
     return groups.flatMap(g => g.commands.map(cmd => ({ type: 'command' as const, id: cmd.id })));
-  }, [mode, noteHits, notebookHits, tagHits, notebooks, groups]);
+  }, [mode, noteHits, notebookHits, tagHits, headingHits, notebooks, groups]);
 
   useEffect(() => {
     if (isOpen) {
@@ -281,9 +298,14 @@ export function CommandPalette({
         onJumpTag?.(item.id);
         return;
       }
+      if (item.type === 'heading') {
+        finish();
+        onJumpHeading?.(item.title);
+        return;
+      }
       executeCommand(item.id);
     },
-    [executeCommand, finish, onOpenNote, onJumpNotebook, onJumpTag]
+    [executeCommand, finish, onOpenNote, onJumpNotebook, onJumpTag, onJumpHeading]
   );
 
   const handleKeyDown = useCallback(
@@ -325,7 +347,9 @@ export function CommandPalette({
         ? 'Notebooks'
         : mode === 'tags'
           ? 'Tags'
-          : null;
+          : mode === 'headings'
+            ? 'Headings'
+            : null;
 
   return createPortal(
     <div
@@ -421,9 +445,19 @@ export function CommandPalette({
               {flatItems.map((item, index) => {
                 const isActive = index === selectedIndex;
                 const Icon =
-                  item.type === 'notebook' ? BookMarked : item.type === 'tag' ? Hash : FileCode;
+                  item.type === 'notebook'
+                    ? BookMarked
+                    : item.type === 'tag' || item.type === 'heading'
+                      ? Hash
+                      : FileCode;
                 const category =
-                  item.type === 'notebook' ? 'Notebook' : item.type === 'tag' ? 'Tag' : 'Note';
+                  item.type === 'notebook'
+                    ? 'Notebook'
+                    : item.type === 'tag'
+                      ? 'Tag'
+                      : item.type === 'heading'
+                        ? 'Heading'
+                        : 'Note';
                 return (
                   <div
                     key={`${item.type}-${item.id}`}

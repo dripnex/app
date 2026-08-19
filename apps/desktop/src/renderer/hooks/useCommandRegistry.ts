@@ -25,6 +25,7 @@ import {
   undoChange,
   redoChange,
 } from '@dripnex/commands';
+import { followWikilinkAtCursor } from '../utils/followWikilinkAtCursor';
 
 // --- Singleton registry ---
 export const registry = new CommandRegistry();
@@ -41,7 +42,8 @@ export function getEditorView(): EditorView | null {
 }
 
 // --- Register editor commands with execute implementations ---
-const editorExecutors: Record<string, (view: EditorView) => void> = {
+const editorExecutors: Record<string, (view: EditorView) => boolean | void> = {
+  'editor:follow-link': followWikilinkAtCursor,
   'editor:toggle-bold': toggleBold,
   'editor:toggle-italic': toggleItalic,
   'editor:toggle-strikethrough': toggleStrikethrough,
@@ -84,8 +86,7 @@ for (const def of editorCommands) {
       execute: () => {
         const view = getEditorView();
         if (!view) return false;
-        executor(view);
-        return true;
+        return executor(view) !== false;
       },
     });
   }

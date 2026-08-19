@@ -10,6 +10,7 @@ import {
   resolveTemplate,
 } from '@dripnex/ai-core';
 import { openSearchPanel } from '@codemirror/search';
+import { scanMarkdown } from '@dripnex/markdown';
 import type { AiInitialCommand } from '../components/ai/AiPanel';
 import { useHeadingJumpStore } from '../stores/headingJumpStore';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
@@ -17,6 +18,8 @@ import { usePreviewFindStore } from '../stores/previewFindStore';
 import type { NoteSnapshot } from '../../preload/index';
 import type { PaletteMode } from '../utils/paletteQuery';
 import { neighborId } from '../utils/neighborId';
+import { formatWikilink } from '../utils/formatWikilink';
+import { headingIndexAtOrBefore } from '../utils/outlineActive';
 import { useRegisterAiCommands } from './useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './useRegisterPluginAiCommands';
 import { useCommandKeybindings } from './useCommandKeybindings';
@@ -149,6 +152,21 @@ export function useAppCommands({
     onQuickOpen: () => openPalette('notes'),
     onJumpNotebook: () => openPalette('notebooks'),
     onJumpTag: () => openPalette('tags'),
+    onJumpHeading: () => openPalette('headings'),
+    onCopyWikilink: useCallback(() => {
+      const title = selectedNote?.title ?? '';
+      const view = getEditorView();
+      let heading: string | undefined;
+      if (view) {
+        const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+        const headings = scanMarkdown(view.state.doc.toString()).headings;
+        const index = headingIndexAtOrBefore(headings, line);
+        heading = index >= 0 ? headings[index]?.text : undefined;
+      }
+      const link = formatWikilink(title, heading);
+      if (link === '[[]]') return;
+      void navigator.clipboard.writeText(link);
+    }, [selectedNote?.title]),
     onOpenNowBoard: useCallback(() => {
       void (async () => {
         const result = await ensureNowBoard();

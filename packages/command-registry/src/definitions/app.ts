@@ -194,6 +194,23 @@ export const appCommands: CommandDefinition[] = [
     showInPalette: true,
   },
   {
+    id: 'app:jump-heading',
+    name: 'Jump to Heading',
+    category: 'navigation',
+    context: 'app',
+    defaultKeybinding: { key: 'h', modifiers: ['Mod', 'Shift'] },
+    icon: 'Hash',
+    showInPalette: true,
+  },
+  {
+    id: 'app:copy-wikilink',
+    name: 'Copy Wikilink',
+    category: 'note',
+    context: 'app',
+    icon: 'Link',
+    showInPalette: true,
+  },
+  {
     id: 'app:open-now-board',
     name: 'Open Living Board',
     category: 'navigation',

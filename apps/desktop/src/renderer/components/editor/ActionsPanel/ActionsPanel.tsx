@@ -23,6 +23,7 @@ import {
   Redo2,
 } from 'lucide-react';
 import { headingToSlug } from '@dripnex/markdown';
+import { formatWikilink } from '../../../utils/formatWikilink';
 import type { ToolbarVisibility } from '../FormattingToolbar';
 import type { ShareInfo } from '../../../stores/shareStore';
 import { dispatchCommand } from '../../../hooks/useCommandRegistry';
@@ -118,6 +119,17 @@ export const ActionsPanel = memo(function ActionsPanel({
       console.error('Failed to copy note link:', error);
     }
   }, [noteId, heading, onClose]);
+
+  const handleCopyWikilink = useCallback(async () => {
+    const link = formatWikilink(noteTitle ?? '', heading);
+    if (link === '[[]]') return;
+    try {
+      await navigator.clipboard.writeText(link);
+      onClose();
+    } catch (error) {
+      console.error('Failed to copy wikilink:', error);
+    }
+  }, [noteTitle, heading, onClose]);
 
   // Handle duplicate
   const handleDuplicate = useCallback(() => {
@@ -366,6 +378,13 @@ export const ActionsPanel = memo(function ActionsPanel({
                 <Link2 size={16} />
               </span>
               Copy Note Link
+            </button>
+
+            <button type="button" className={styles.item} onClick={handleCopyWikilink}>
+              <span className={styles.icon}>
+                <Link2 size={16} />
+              </span>
+              Copy Wikilink
             </button>
 
             <button type="button" className={styles.item} onClick={handlePin} disabled={!onPin}>
