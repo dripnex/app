@@ -46,6 +46,7 @@ import { useEnsureNowBoard } from './hooks/useNowBoard';
 import { useRefreshOnWindowFocus } from './hooks/useRefreshOnWindowFocus';
 import { usePluginRuntime } from './hooks/usePluginRuntime';
 import { useMcpLocalPath } from './hooks/useMcpLocalPath';
+import type { PaletteMode } from './utils/paletteQuery';
 
 /**
  * Main Notes Application
@@ -96,7 +97,7 @@ function NotesApp() {
   const tagFilter = useTagFilter();
   const sortBy = useSortBy();
   const sortOrder = useSortOrder();
-  const { goToTag, setSort } = useNavigationActions();
+  const { goToTag, setSort, enterWorkspace, setTagFilter } = useNavigationActions();
 
   // Load tag colors on mount (once)
   useEffect(() => {
@@ -130,7 +131,19 @@ function NotesApp() {
   const { appAPI, dataAPI, pluginSlot } = usePluginRuntime(selectedNoteRef);
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [paletteMode, setPaletteMode] = useState<PaletteMode | null>(null);
+  const isCommandPaletteOpen = paletteMode !== null;
+  const openPalette = useCallback((mode: PaletteMode) => {
+    setPaletteMode(prev => (prev === mode ? null : mode));
+  }, []);
+  const setIsCommandPaletteOpen = useCallback((open: boolean | ((prev: boolean) => boolean)) => {
+    setPaletteMode(prev => {
+      const isOpen = prev !== null;
+      const next = typeof open === 'function' ? open(isOpen) : open;
+      if (!next) return null;
+      return prev ?? 'commands';
+    });
+  }, []);
 
   const { data: notebooks } = useNotebooks();
   const parsedSearch = useMemo(() => parseNoteSearch(debouncedSearch), [debouncedSearch]);
@@ -273,6 +286,7 @@ function NotesApp() {
     selectedNote,
     isCommandPaletteOpen,
     setIsCommandPaletteOpen,
+    openPalette,
     isGraphOpen,
     setIsGraphOpen,
     searchQuery,
@@ -469,8 +483,15 @@ function NotesApp() {
 
           <CommandPalette
             isOpen={isCommandPaletteOpen}
+            mode={paletteMode ?? 'commands'}
             onClose={closeCommandPalette}
             onOpenNote={id => void handleSelectNote(id)}
+            onJumpNotebook={id => {
+              enterWorkspace(id);
+            }}
+            onJumpTag={name => {
+              setTagFilter(name);
+            }}
           />
           <Toaster />
         </div>

@@ -17,6 +17,9 @@ interface AppCommandHandlers {
   onToggleGraph: () => void;
   onOpenSettings: () => void;
   onCommandPalette: () => void;
+  onQuickOpen: () => void;
+  onJumpNotebook: () => void;
+  onJumpTag: () => void;
   onOpenNowBoard: () => void;
   onOpenInitScript: () => void;
   onOpenUserStyles: () => void;
@@ -48,6 +51,9 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
       'app:toggle-graph': () => handlersRef.current.onToggleGraph(),
       'app:open-settings': () => handlersRef.current.onOpenSettings(),
       'app:command-palette': () => handlersRef.current.onCommandPalette(),
+      'app:quick-open': () => handlersRef.current.onQuickOpen(),
+      'app:jump-notebook': () => handlersRef.current.onJumpNotebook(),
+      'app:jump-tag': () => handlersRef.current.onJumpTag(),
       'app:open-now-board': () => handlersRef.current.onOpenNowBoard(),
       'app:open-init-script': () => handlersRef.current.onOpenInitScript(),
       'app:open-user-styles': () => handlersRef.current.onOpenUserStyles(),
