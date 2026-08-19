@@ -1,4 +1,5 @@
 import type { Extension } from '@codemirror/state';
+import type { EditorView } from '@codemirror/view';
 import type { ComponentType } from 'react';
 import type { LayoutManager } from './layout/types';
 import type { EditorDecorationAPI } from './editor/decorationAPI';
@@ -20,6 +21,8 @@ export interface EditorAPI {
   onDocChanged(callback: (content: string) => void): () => void;
   onSelectionChanged(callback: (sel: { from: number; to: number }) => void): () => void;
   focus(): void;
+  /** Live CodeMirror 6 view, or null if the editor is not mounted. */
+  getView(): EditorView | null;
 }
 
 /** Slim note info exposed to plugins (read-only) */

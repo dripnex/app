@@ -91,5 +91,18 @@ describe('createEditorAPI', () => {
       const api = createEditorAPI(() => null);
       expect(() => api.focus()).not.toThrow();
     });
+
+    it('getView returns null when no view', () => {
+      const api = createEditorAPI(() => null);
+      expect(api.getView()).toBeNull();
+    });
+  });
+
+  describe('getView', () => {
+    it('returns the live view', () => {
+      const view = { state: { doc: { toString: () => 'hi', lines: 1 } } } as never;
+      const api = createEditorAPI(() => view);
+      expect(api.getView()).toBe(view);
+    });
   });
 });

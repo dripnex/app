@@ -26,6 +26,7 @@ dripnex.menu.add({
 // UI: dripnex.components.Dialog / Modal / Button
 // ctx.layout.addComponent('modal', { id: 'hello', component: Hello })
 // Markdown: dripnex.markdownRenderer.remarkPlugins.push(yourPlugin)
+// Editor view (CM6): dripnex.editor.getView() / dripnex.getActiveEditor().cm
 
 // Vim (enable the Vim plugin first). Same surface as Inkdrop:
 // const Vim = dripnex.vim
