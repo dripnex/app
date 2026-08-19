@@ -5,6 +5,7 @@
  * to the renderer (settings UI).
  */
 
+import { dirname } from 'path';
 import { app } from 'electron';
 import { z } from 'zod';
 import { createNoteId, createNoteOperation, updateNoteOperation } from '@dripnex/core';
@@ -218,7 +219,9 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
     args: z.tuple([z.boolean()]),
     handler: async writes => {
       try {
-        await writeMcpWritesConfig(dataPaths.root, writes);
+        const override = process.env.DRIPNEX_DB_PATH;
+        const dir = override ? dirname(override) : dataPaths.root;
+        await writeMcpWritesConfig(dir, writes);
         return { ok: true };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };

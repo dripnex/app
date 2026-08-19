@@ -10,6 +10,9 @@ import {
 import type { LocalServerConnectionInfo } from '../../../../preload/api/localServer';
 import styles from './IntegrationsSection.module.css';
 
+const START_POLL_MS = 750;
+const MAX_START_POLLS = 20;
+
 async function copyText(value: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(value);
@@ -47,7 +50,16 @@ export function McpCard() {
 
   useEffect(() => {
     if (!ready || !integrations.mcpEnabled || info?.running) return;
-    const id = window.setInterval(() => void refresh(), 300);
+    let attempts = 0;
+    const id = window.setInterval(() => {
+      attempts += 1;
+      if (attempts > MAX_START_POLLS) {
+        window.clearInterval(id);
+        setError('The local MCP server did not start.');
+        return;
+      }
+      void refresh();
+    }, START_POLL_MS);
     return () => window.clearInterval(id);
   }, [ready, refresh, integrations.mcpEnabled, info?.running]);
 
@@ -73,7 +85,7 @@ export function McpCard() {
 
   const enabled = integrations.mcpEnabled;
   const badge = !ready ? 'Restart Dripnex' : enabled ? (info?.running ? 'On' : 'Starting') : 'Off';
-  const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : enabled ? 'idle' : 'idle';
+  const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
   return (
     <article className={styles.card} data-tone={badgeTone}>

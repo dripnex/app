@@ -16,6 +16,7 @@ const launch = {
 describe('mcpSnippets', () => {
   it('quotes only values that need a shell quote', () => {
     expect(shellQuote('/tmp/dripnex.db')).toBe('/tmp/dripnex.db');
+    expect(shellQuote('/Users/me/My Notes/dripnex.db')).toBe("'/Users/me/My Notes/dripnex.db'");
     expect(shellQuote('/Users/Tomás/Library/dripnex.db')).toBe("'/Users/Tomás/Library/dripnex.db'");
     expect(shellQuote("it's")).toBe(`'it'\\''s'`);
   });

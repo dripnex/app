@@ -43,15 +43,18 @@ export function useMcpLocalPath(): void {
   useEffect(() => {
     if (!hydrated) return;
     const api = window.dripnex?.localServer;
-    if (!api) return;
-    if (enabled) void api.start();
-    else void api.stop();
-  }, [hydrated, enabled]);
+    if (!api?.setWrites) return;
 
-  useEffect(() => {
-    if (!hydrated) return;
-    const setWrites = window.dripnex?.localServer?.setWrites;
-    if (!setWrites) return;
-    void setWrites(writes);
-  }, [hydrated, writes]);
+    let cancelled = false;
+    void (async () => {
+      const result = await api.setWrites(writes);
+      if (cancelled || !result.ok) return;
+      if (enabled) await api.start();
+      else await api.stop();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, enabled, writes]);
 }
