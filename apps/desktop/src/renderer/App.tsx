@@ -80,15 +80,6 @@ function NotesApp() {
     startResizeNotelist,
   } = useResizableLayout();
 
-  useEffect(() => {
-    const setVisibility = window.dripnex.windows.setButtonVisibility;
-    if (typeof setVisibility !== 'function') return;
-    void setVisibility(!sidebarCollapsed);
-    return () => {
-      void setVisibility(true);
-    };
-  }, [sidebarCollapsed]);
-
   // Navigation state from Zustand
   const navigation = useNavigation();
   const filteredNotes = useFilteredNotes();
