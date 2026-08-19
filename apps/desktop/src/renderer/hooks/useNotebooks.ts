@@ -78,6 +78,17 @@ export function useNotebookMutations() {
     },
   });
 
+  const setNotebookIcon = useMutation({
+    mutationFn: async ({ id, icon }: { id: string; icon: string | null }) => {
+      return window.dripnex.notebooks.setIcon(id, icon);
+    },
+    onSuccess: data => {
+      queryClient.setQueryData(notebookKeys.detail(data.id), data);
+      void queryClient.invalidateQueries({ queryKey: notebookKeys.tree() });
+      void queryClient.invalidateQueries({ queryKey: notebookKeys.lists() });
+    },
+  });
+
   const moveNotebook = useMutation({
     mutationFn: async ({ id, newParentId }: { id: string; newParentId: string | null }) => {
       return window.dripnex.notebooks.move(id, newParentId);
@@ -112,6 +123,7 @@ export function useNotebookMutations() {
   return {
     createNotebook,
     renameNotebook,
+    setNotebookIcon,
     moveNotebook,
     deleteNotebook,
     reorderNotebooks,

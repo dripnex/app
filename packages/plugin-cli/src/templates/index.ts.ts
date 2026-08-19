@@ -13,17 +13,17 @@ module.exports = {
   activate(context) {
     context.log.info('${name} activated');
 
-    const removeMenu = context.menu.add({
-      label: 'Say Hello',
-      click: () => {
+    const removeCommand = context.registerCommand(
+      { id: 'say-hello', name: 'Say Hello' },
+      () => {
         context.log.info('Hello from ${name}!');
         return true;
-      },
-    });
+      }
+    );
 
     return {
       dispose() {
-        removeMenu();
+        removeCommand();
       },
     };
   },

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   extractTitle,
   extractTags,
+  extractTasks,
   countWords,
   isPlaceholderTitle,
 } from '../src/domain/metadata.js';
@@ -48,6 +49,15 @@ describe('Metadata', () => {
       const longTitle = 'A'.repeat(200);
       const content = longTitle + '\n\nContent.';
       expect(extractTitle(content).length).toBeLessThanOrEqual(100);
+    });
+  });
+
+  describe('extractTasks', () => {
+    it('counts GFM tasks outside fences', () => {
+      const content = ['# Title', '- [x] done', '- [ ] todo', '```', '- [ ] fake', '```'].join(
+        '\n'
+      );
+      expect(extractTasks(content)).toEqual({ total: 2, completed: 1 });
     });
   });
 

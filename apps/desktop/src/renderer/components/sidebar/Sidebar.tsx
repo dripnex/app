@@ -355,6 +355,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
         )}
       </div>
 
+      <LayoutZone name="sidebar-footer" />
       <SidebarFooter appVersion={appVersion} onEnableSyncClick={() => setIsSyncModalOpen(true)} />
 
       {isCreateNotebookOpen && (

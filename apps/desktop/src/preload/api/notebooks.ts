@@ -9,6 +9,7 @@ export interface NotebooksAPI {
   create: (input: { name: string; parentId?: string }) => Promise<NotebookSnapshot>;
   ensureTemplates: () => Promise<NotebookSnapshot>;
   rename: (id: string, name: string) => Promise<NotebookSnapshot>;
+  setIcon: (id: string, icon: string | null) => Promise<NotebookSnapshot>;
   move: (id: string, newParentId: string | null) => Promise<NotebookSnapshot>;
   delete: (id: string) => Promise<{ success: boolean }>;
   reorder: (parentId: string | null, orderedIds: string[]) => Promise<{ success: boolean }>;
@@ -46,6 +47,7 @@ export function createNotebooksApi(): NotebooksAPI {
     create: input => ipcRenderer.invoke('notebooks:create', input),
     ensureTemplates: () => ipcRenderer.invoke('notebooks:ensureTemplates'),
     rename: (id, name) => ipcRenderer.invoke('notebooks:rename', id, name),
+    setIcon: (id, icon) => ipcRenderer.invoke('notebooks:setIcon', id, icon),
     move: (id, newParentId) => ipcRenderer.invoke('notebooks:move', id, newParentId),
     delete: id => ipcRenderer.invoke('notebooks:delete', id),
     reorder: (parentId, orderedIds) =>

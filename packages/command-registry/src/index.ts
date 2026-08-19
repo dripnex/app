@@ -6,6 +6,7 @@ export type {
   CommandDefinition,
   RegisteredCommand,
   KeyBindingOverride,
+  CommandPayload,
 } from './types';
 
 export {

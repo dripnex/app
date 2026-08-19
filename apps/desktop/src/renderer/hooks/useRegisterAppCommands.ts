@@ -3,6 +3,7 @@ import { appCommands } from '@dripnex/command-registry/definitions';
 import { registry } from './useCommandRegistry';
 
 interface AppCommandHandlers {
+  onOpenNote: (noteId: string) => void;
   onNewNote: () => void;
   onDuplicateNote: () => void;
   onFocusSearch: () => void;
@@ -40,7 +41,11 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
   handlersRef.current = handlers;
 
   useEffect(() => {
-    const executors: Record<string, () => void> = {
+    const executors: Record<string, (payload?: Record<string, unknown>) => void> = {
+      'app:open-note': payload => {
+        const noteId = typeof payload?.noteId === 'string' ? payload.noteId : null;
+        if (noteId) handlersRef.current.onOpenNote(noteId);
+      },
       'app:new-note': () => handlersRef.current.onNewNote(),
       'app:duplicate-note': () => handlersRef.current.onDuplicateNote(),
       'app:focus-search': () => handlersRef.current.onFocusSearch(),
@@ -76,8 +81,8 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
       if (executor) {
         const unregister = registry.register({
           ...def,
-          execute: () => {
-            executor();
+          execute: payload => {
+            executor(payload);
             return true;
           },
         });

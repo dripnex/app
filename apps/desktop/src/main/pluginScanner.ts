@@ -19,6 +19,8 @@ export interface ScannedPlugin {
   configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
   path: string;
+  keymaps: string[];
+  menus: string[];
 }
 
 interface PluginManifestJson {
@@ -57,6 +59,10 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
 
       const entryPath = join(pluginDir, manifest.main);
       const code = await readFile(entryPath, 'utf-8');
+      const [keymaps, menus] = await Promise.all([
+        readJsonDir(join(pluginDir, 'keymaps')),
+        readJsonDir(join(pluginDir, 'menus')),
+      ]);
 
       results.push({
         id: manifest.id,
@@ -66,6 +72,8 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
         configSchema: manifest.configSchema,
         code,
         path: pluginDir,
+        keymaps,
+        menus,
       });
     } catch {
       // Skip directories that don't have a valid manifest or entry file
@@ -73,4 +81,24 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
   }
 
   return results;
+}
+
+async function readJsonDir(dir: string): Promise<string[]> {
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return [];
+  }
+
+  const files: string[] = [];
+  for (const name of names.sort()) {
+    if (!name.endsWith('.json')) continue;
+    try {
+      files.push(await readFile(join(dir, name), 'utf-8'));
+    } catch {
+      // skip unreadable members
+    }
+  }
+  return files;
 }

@@ -74,6 +74,22 @@ describe('CommandRegistry', () => {
     expect(await reg.dispatch('foo')).toBe(false);
   });
 
+  it('passes a payload to execute', async () => {
+    const reg = new CommandRegistry();
+    let seen: unknown;
+    reg.register(
+      makeCommand({
+        id: 'foo',
+        execute: payload => {
+          seen = payload;
+          return true;
+        },
+      })
+    );
+    await expect(reg.dispatch('foo', { noteId: 'n1' })).resolves.toBe(true);
+    expect(seen).toEqual({ noteId: 'n1' });
+  });
+
   it('filters by category', () => {
     const reg = new CommandRegistry();
     reg.register(makeCommand({ id: 'a', category: 'editor' }));
@@ -111,6 +127,29 @@ describe('CommandRegistry', () => {
 
     const found = reg.findByKeybinding({ key: 'b', modifiers: ['Mod'] }, 'editor');
     expect(found?.id).toBe('bold');
+  });
+
+  it('patches default keybindings without beating user overrides', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'plugin:hello:say',
+        defaultKeybinding: { key: 'h', modifiers: ['Mod'] },
+      })
+    );
+    expect(
+      reg.setDefaultKeybinding('plugin:hello:say', { key: 'k', modifiers: ['Mod', 'Shift'] })
+    ).toBe(true);
+    expect(reg.getKeybinding('plugin:hello:say')).toEqual({
+      key: 'k',
+      modifiers: ['Mod', 'Shift'],
+    });
+    reg.setKeybindingOverride({
+      commandId: 'plugin:hello:say',
+      keybinding: { key: 'j', modifiers: ['Mod'] },
+    });
+    expect(reg.getKeybinding('plugin:hello:say')).toEqual({ key: 'j', modifiers: ['Mod'] });
+    expect(reg.setDefaultKeybinding('missing', { key: 'x', modifiers: [] })).toBe(false);
   });
 
   it('respects keybinding overrides', () => {

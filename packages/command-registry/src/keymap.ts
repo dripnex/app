@@ -16,8 +16,7 @@ const MOD_ALIASES = new Set([
  * Cmd / Ctrl / CommandOrControl all become Mod (matches the live key handler).
  */
 export function parseChord(raw: string): KeyBinding | null {
-  const parts = raw
-    .split('+')
+  const parts = (raw.includes('+') ? raw.split('+') : raw.split('-'))
     .map(part => part.trim())
     .filter(Boolean);
   const key = parts.pop();

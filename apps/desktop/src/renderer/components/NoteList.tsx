@@ -32,6 +32,13 @@ import styles from './NoteList.module.css';
 
 const sc = cssm(styles);
 
+const STATUS_LABEL: Record<NoteStatus, string> = {
+  active: 'Active',
+  on_hold: 'On Hold',
+  completed: 'Completed',
+  dropped: 'Dropped',
+};
+
 interface NoteListProps {
   notes: NoteWithExcerpt[];
   selectedId: string | null;
@@ -251,6 +258,10 @@ export function NoteList({
     return 'All Notes';
   };
 
+  const selectedIndex = selectedId ? notes.findIndex(n => n.id === selectedId) : -1;
+  const listPosition =
+    selectedIndex >= 0 ? `${selectedIndex + 1} of ${notes.length}` : `${notes.length}`;
+
   return (
     <nav className={sc('note-list')} aria-label="Notes navigation" data-note-list>
       {/* Header Toolbar */}
@@ -265,6 +276,7 @@ export function NoteList({
           </IconButton>
         ) : null}
         <span className={sc('header-title')}>{getHeaderTitle()}</span>
+        <LayoutZone name="note-list-header" />
         {onCreateFromTemplate && selectedNotebookId !== 'templates' ? (
           <IconButton label="New from template" onClick={() => setTemplatePickerOpen(true)}>
             <FileStack size={16} aria-hidden="true" />
@@ -359,8 +371,10 @@ export function NoteList({
         />
       )}
 
-      {/* Plugin Note List Footer */}
-      <LayoutZone name="note-list-footer" />
+      <div className={sc('note-list-status')}>
+        {notes.length > 0 ? <span className={sc('note-list-count')}>{listPosition}</span> : null}
+        <LayoutZone name="note-list-footer" />
+      </div>
 
       {/* Notebook picker modal */}
       {notebookPicker && (
@@ -402,6 +416,10 @@ function NoteListItem({
   const getColor = useTagColorsStore(state => state.getColor);
   const isShared = useShareStore(selectIsShared(note.id));
   const kind = kindMeta(kindFromTags(note.tags, note.status));
+  const tasks = {
+    total: note.taskCount ?? 0,
+    completed: note.checkedTaskCount ?? 0,
+  };
   const [showUnpinEffect, setShowUnpinEffect] = useState(false);
   const prevPinnedRef = useRef(note.isPinned);
 
@@ -441,6 +459,16 @@ function NoteListItem({
       </div>
       <div className={sc('note-list-item-meta')}>
         <span className={sc('timestamp')}>{formatRelativeTime(note.updatedAt)}</span>
+        {note.status !== 'active' ? (
+          <span className={sc('status-chip', `status-chip--${note.status}`)}>
+            {STATUS_LABEL[note.status]}
+          </span>
+        ) : null}
+        {tasks.total > 0 ? (
+          <span className={sc('task-progress')}>
+            {tasks.completed} of {tasks.total}
+          </span>
+        ) : null}
         {note.tags.length > 0 && (
           <span className={sc('tags')}>
             {note.tags.slice(0, 2).map(tag => {
@@ -468,6 +496,10 @@ function NoteListItem({
             })}
           </span>
         )}
+        <LayoutZone
+          name="note-list-item-suffix"
+          meta={{ noteId: note.id, title: note.title, notebookId: note.notebookId }}
+        />
       </div>
       {note.excerpt && <div className={sc('note-list-item-preview')}>{note.excerpt}</div>}
     </li>

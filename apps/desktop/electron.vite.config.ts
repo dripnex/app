@@ -97,6 +97,10 @@ export default defineConfig({
     resolve: {
       alias: [
         { find: '@', replacement: resolve(__dirname, 'src/renderer') },
+        {
+          find: '@dripnex/tables',
+          replacement: resolve(__dirname, '../../packages/tables/src/index.ts'),
+        },
         // highlight@1.2.3 nests common@1.5.0; language/markdown nest 1.5.2.
         // Two NodeProp identities → HighlightStyle.style(undefined) →
         // "tags is not iterable". Pin every import to the desktop copy.

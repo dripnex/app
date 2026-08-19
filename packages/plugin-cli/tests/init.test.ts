@@ -26,6 +26,8 @@ describe('initPlugin', () => {
     expect(existsSync(join(dir, 'package.json'))).toBe(true);
     expect(existsSync(join(dir, 'tsconfig.json'))).toBe(true);
     expect(existsSync(join(dir, 'src', 'index.ts'))).toBe(true);
+    expect(existsSync(join(dir, 'keymaps', 'default.json'))).toBe(true);
+    expect(existsSync(join(dir, 'menus', 'main.json'))).toBe(true);
   });
 
   it('generates valid manifest.json', async () => {
@@ -53,7 +55,18 @@ describe('initPlugin', () => {
     expect(index).toContain("id: 'demo'");
     expect(index).toContain("name: 'Demo'");
     expect(index).toContain('module.exports');
-    expect(index).toContain('context.menu.add');
+    expect(index).toContain("id: 'say-hello'");
+    expect(index).toContain('context.registerCommand');
+  });
+
+  it('scaffolds package keymaps and menus', async () => {
+    const dir = await initPlugin({ name: 'Demo', dir: testDir('demo-files') });
+    const keymap = JSON.parse(await readFile(join(dir, 'keymaps', 'default.json'), 'utf-8'));
+    const menus = JSON.parse(await readFile(join(dir, 'menus', 'main.json'), 'utf-8'));
+
+    expect(keymap['say-hello']).toBe('Mod+Shift+H');
+    expect(menus.menu[0]).toEqual({ label: 'Say Hello', command: 'say-hello' });
+    expect(menus['context-menu']['note-list-item'][0].command).toBe('say-hello');
   });
 
   it('throws if directory already exists', async () => {

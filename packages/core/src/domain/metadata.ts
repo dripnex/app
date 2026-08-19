@@ -24,6 +24,12 @@ export interface NoteMetadata {
   /** Word count of the content */
   readonly wordCount: number;
 
+  /** GFM task items in the body */
+  readonly taskCount: number;
+
+  /** Checked GFM task items in the body */
+  readonly checkedTaskCount: number;
+
   /** Archive timestamp (null if not archived) */
   readonly archivedAt: Timestamp | null;
 }
@@ -59,4 +65,9 @@ export function countWords(content: string): number {
 
   const words = text.split(/\s+/).filter(word => word.length > 0);
   return words.length;
+}
+
+/** GFM task totals — same fence-aware walk as tags. */
+export function extractTasks(content: string): { total: number; completed: number } {
+  return scanMarkdown(parseNoteFrontmatter(content).body).tasks;
 }

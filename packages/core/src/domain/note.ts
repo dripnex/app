@@ -15,6 +15,7 @@ import {
 import {
   extractTitle,
   extractTags,
+  extractTasks,
   countWords,
   isPlaceholderTitle,
   type NoteMetadata,
@@ -81,12 +82,15 @@ export function createNote(options: CreateNoteOptions): Note {
   // Title is structural: use provided title or extract from content
   const title = options.title ?? extractTitle(options.content);
 
+  const tasks = extractTasks(options.content);
   const metadata: NoteMetadata = {
     title, // Keep in sync for backwards compatibility
     createdAt: options.createdAt ?? now,
     updatedAt: now,
     tags: extractTags(options.content),
     wordCount: countWords(options.content),
+    taskCount: tasks.total,
+    checkedTaskCount: tasks.completed,
     archivedAt: null,
   };
 
@@ -109,12 +113,15 @@ export function updateNoteContent(note: Note, newContent: string): Note {
   const title =
     isPlaceholderTitle(note.title) && !isPlaceholderTitle(extracted) ? extracted : note.title;
 
+  const tasks = extractTasks(newContent);
   const metadata: NoteMetadata = {
     title,
     createdAt: note.metadata.createdAt,
     updatedAt: now,
     tags: extractTags(newContent),
     wordCount: countWords(newContent),
+    taskCount: tasks.total,
+    checkedTaskCount: tasks.completed,
     archivedAt: note.metadata.archivedAt,
   };
 

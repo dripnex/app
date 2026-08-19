@@ -10,6 +10,12 @@ export interface DataAPI {
     content: string,
     suggestedName: string
   ) => Promise<{ success: boolean; path?: string; error?: string }>;
+  exportFile: (
+    content: string,
+    suggestedName: string,
+    kind: 'md' | 'html' | 'pdf'
+  ) => Promise<{ success: boolean; path?: string; error?: string }>;
+  printHtml: (html: string) => Promise<{ success: boolean; error?: string }>;
   import: () => Promise<ImportResult>;
   paths: () => Promise<DataPaths>;
   openFolder: () => Promise<{ success: boolean }>;
@@ -23,6 +29,9 @@ export function createDataApi(): DataAPI {
     export: () => ipcRenderer.invoke('data:export'),
     exportNote: (content: string, suggestedName: string) =>
       ipcRenderer.invoke('data:exportNote', content, suggestedName),
+    exportFile: (content, suggestedName, kind) =>
+      ipcRenderer.invoke('data:exportFile', content, suggestedName, kind),
+    printHtml: html => ipcRenderer.invoke('note:printHtml', html),
     import: () => ipcRenderer.invoke('data:import'),
     paths: () => ipcRenderer.invoke('data:paths'),
     openFolder: () => ipcRenderer.invoke('data:openFolder'),

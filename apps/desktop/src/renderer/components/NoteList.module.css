@@ -29,6 +29,13 @@
   -webkit-app-region: drag;
 }
 
+.note-list-header :global([data-layout-zone]) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
 .header-title {
   flex: 1;
   min-width: 0;
@@ -297,6 +304,49 @@
 .note-list-item-meta .timestamp {
   color: var(--accent);
   opacity: 0.8;
+}
+
+.status-chip {
+  font-size: 10px;
+  line-height: 1.3;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.status-chip--on_hold {
+  color: var(--status-on-hold);
+}
+
+.status-chip--completed {
+  color: var(--status-completed);
+}
+
+.status-chip--dropped {
+  color: var(--status-dropped);
+}
+
+.task-progress {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.note-list-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-subtle);
+  min-height: 28px;
+}
+
+.note-list-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Tag Badges (pill style, no #) */

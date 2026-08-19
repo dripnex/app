@@ -3,18 +3,22 @@ import { createPortal } from 'react-dom';
 import {
   ChevronDown,
   ChevronRight,
-  Inbox,
-  Folder,
   Plus,
   GitBranch,
   History,
   GripVertical,
   Trash2,
+  Smile,
 } from 'lucide-react';
+import { useStore } from 'zustand';
+import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { dispatchCommand } from '../../hooks/useCommandRegistry';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { useNotebookExpandStore } from '../../stores/notebookExpandStore';
 import { useWorkspaceRootId } from '../../hooks/useNavigation';
 import { CommitHistory } from '../git/CommitHistory';
+import { NotebookIconPicker, type IconPickerAnchor } from './NotebookIconPicker';
+import { notebookLucideIcon } from './notebookIcons';
 import { sc } from './sc';
 
 type DropPosition = 'above' | 'inside' | 'below' | null;
@@ -32,6 +36,7 @@ interface NotebookItemProps {
   readonly onRename: (id: string, name: string) => void;
   readonly onDelete: (id: string) => void;
   readonly onCreateChild: (parentId: string) => void;
+  readonly onSetIcon: (id: string, icon: string | null) => void;
   readonly onMove?: (id: string, newParentId: string | null) => void;
   readonly onReorder?: (parentId: string | null, orderedIds: string[]) => void;
   readonly siblingIds?: string[];
@@ -63,6 +68,7 @@ export const NotebookItem = memo(function NotebookItem({
   onRename,
   onDelete,
   onCreateChild,
+  onSetIcon,
   onMove,
   onReorder,
   siblingIds,
@@ -77,6 +83,7 @@ export const NotebookItem = memo(function NotebookItem({
   const [isGitLoading, setIsGitLoading] = useState(false);
   const [showCommitHistory, setShowCommitHistory] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [iconPicker, setIconPicker] = useState<IconPickerAnchor | null>(null);
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [canDrag, setCanDrag] = useState(false);
@@ -85,6 +92,13 @@ export const NotebookItem = memo(function NotebookItem({
   const hasChildren = node.children.length > 0;
   const isInbox = node.notebook.id === 'inbox';
   const canHaveChildren = depth < 2; // Max 3 levels (0, 1, 2)
+  const Icon = notebookLucideIcon(
+    node.notebook.icon,
+    isInbox ? 'inbox' : node.notebook.id === 'templates' ? 'file-stack' : 'folder'
+  );
+  const pluginMenuItems = useStore(pluginContextMenuStore, state => state.items).filter(
+    item => item.target === 'notebook-item'
+  );
 
   // Memoize descendant IDs for circular reference prevention
   const descendantIds = useMemo(() => collectDescendantIds(node), [node]);
@@ -394,7 +408,7 @@ export const NotebookItem = memo(function NotebookItem({
             <span className={sc('notebook-item-toggle-slot')} aria-hidden="true" />
           )}
           <span className={sc('notebook-item-icon')} aria-hidden="true">
-            {isInbox ? <Inbox size={15} /> : <Folder size={15} />}
+            <Icon size={15} />
           </span>
         </span>
 
@@ -463,6 +477,7 @@ export const NotebookItem = memo(function NotebookItem({
               onRename={onRename}
               onDelete={onDelete}
               onCreateChild={onCreateChild}
+              onSetIcon={onSetIcon}
               onMove={onMove}
               onReorder={onReorder}
               siblingIds={node.children.map(c => c.notebook.id)}
@@ -495,6 +510,23 @@ export const NotebookItem = memo(function NotebookItem({
               <button
                 type="button"
                 className={sc('notebook-menu-item')}
+                onClick={() => {
+                  if (!menu) return;
+                  setIconPicker({
+                    top: menu.y,
+                    left: menu.x,
+                    bottom: menu.y + 8,
+                    right: menu.x + 8,
+                  });
+                  setMenu(null);
+                }}
+              >
+                <Smile size={14} aria-hidden="true" />
+                Change icon
+              </button>
+              <button
+                type="button"
+                className={sc('notebook-menu-item')}
                 onClick={() => void handleToggleGit()}
                 disabled={isGitLoading}
               >
@@ -524,6 +556,21 @@ export const NotebookItem = memo(function NotebookItem({
                 <Trash2 size={14} aria-hidden="true" />
                 Delete
               </button>
+              {pluginMenuItems.length > 0
+                ? pluginMenuItems.map(item => (
+                    <button
+                      key={item.commandId}
+                      type="button"
+                      className={sc('notebook-menu-item')}
+                      onClick={() => {
+                        setMenu(null);
+                        void dispatchCommand(item.commandId, { notebookId: node.notebook.id });
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))
+                : null}
             </div>,
             document.body
           )
@@ -536,6 +583,18 @@ export const NotebookItem = memo(function NotebookItem({
           onClose={() => setShowCommitHistory(false)}
         />
       )}
+
+      {iconPicker ? (
+        <NotebookIconPicker
+          current={node.notebook.icon}
+          anchor={iconPicker}
+          onSelect={icon => {
+            onSetIcon(node.notebook.id, icon);
+            setIconPicker(null);
+          }}
+          onClose={() => setIconPicker(null)}
+        />
+      ) : null}
     </li>
   );
 });

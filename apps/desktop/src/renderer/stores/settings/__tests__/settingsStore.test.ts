@@ -25,6 +25,7 @@ describe('settingsStore persistence', () => {
 
   it('defaults MCP off and keeps integrations through persist', () => {
     expect(DEFAULT_SETTINGS.integrations).toEqual({
+      httpApiEnabled: false,
       mcpEnabled: false,
       mcpWrites: false,
     });

@@ -27,6 +27,14 @@ import { cssVariableStore } from '../theme/cssVariableStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
 import { aiCommandStore } from '../ai/aiCommandStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
+import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
+import { hostNotify } from '../loader/hostBridges';
+import { previewEventStore } from '../preview/previewEventStore';
+import {
+  applyPluginPackageFiles,
+  type PluginPackageFiles,
+} from '../packageFiles/applyPluginPackageFiles';
+import type { PluginKeymapBinding } from '../packageFiles/parsePluginKeymap';
 import {
   applyPluginConfig,
   clearPluginConfig,
@@ -50,7 +58,7 @@ export interface RegisterCommandFn {
     icon?: string;
     showInPalette?: boolean;
     enabled?: boolean;
-    execute: () => boolean | void | Promise<boolean | void>;
+    execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
   }): () => void;
 }
 
@@ -59,6 +67,11 @@ export interface ConfigBridge {
   getAll: (pluginId: string) => Promise<Record<string, unknown>>;
   set: (pluginId: string, key: string, value: unknown) => Promise<void>;
 }
+
+export type SetDefaultKeybindingFn = (
+  commandId: string,
+  keybinding: PluginKeymapBinding['keybinding']
+) => boolean;
 
 interface PluginEntry {
   manifest: PluginManifest;
@@ -111,7 +124,9 @@ export class PluginRegistry {
     dataAPI: DataAPI,
     registerCommandFn?: RegisterCommandFn,
     configBridge?: ConfigBridge,
-    getView?: () => EditorView | null
+    getView?: () => EditorView | null,
+    packageFiles?: PluginPackageFiles,
+    setDefaultKeybinding?: SetDefaultKeybindingFn
   ): Promise<void> {
     const entry = this.plugins.get(id);
     if (!entry) {
@@ -133,7 +148,7 @@ export class PluginRegistry {
     // Build registerCommand wrapper with auto-prefix + defaults
     const registerCommand = (
       options: PluginCommandOptions,
-      execute: () => boolean | void | Promise<boolean | void>
+      execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>
     ): (() => void) => {
       if (!registerCommandFn) {
         console.warn(`[${id}] registerCommand not available (no host bridge)`);
@@ -316,7 +331,68 @@ export class PluginRegistry {
       },
     };
 
+    const notifications = {
+      addSuccess(message: string) {
+        hostNotify('success', message);
+      },
+      addInfo(message: string) {
+        hostNotify('info', message);
+      },
+      addWarning(message: string) {
+        hostNotify('warning', message);
+      },
+      addError(message: string) {
+        hostNotify('error', message);
+      },
+    };
+
+    const contextMenu = {
+      add(
+        target: 'note-list-item' | 'notebook-item' | 'tag-item' | 'editor',
+        item: {
+          label: string;
+          command?: string;
+          click?: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
+        }
+      ): () => void {
+        const localId =
+          item.command ?? `ctx-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
+        if (item.click) {
+          registerCommand(
+            {
+              id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
+              name: item.label,
+              showInPalette: false,
+            },
+            item.click
+          );
+        }
+        pluginContextMenuStore.getState().add({
+          pluginId: id,
+          target,
+          label: item.label,
+          commandId,
+        });
+        return () => pluginContextMenuStore.getState().remove(commandId);
+      },
+    };
+
     const clipboard = createClipboardApi();
+
+    const preview = {
+      on(
+        event: 'a:click' | 'checkbox:change',
+        handler: (detail: {
+          href?: string;
+          text?: string;
+          index?: number;
+          checked?: boolean;
+        }) => boolean | void
+      ): () => void {
+        return previewEventStore.getState().on(id, event, handler);
+      },
+    };
 
     const context: PluginContext = {
       layout: createLayoutManager(id),
@@ -324,6 +400,9 @@ export class PluginRegistry {
       decorations: decoResult?.api ?? noopDecorations,
       menu,
       clipboard,
+      notifications,
+      contextMenu,
+      preview,
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
           id: extId,
@@ -428,6 +507,12 @@ export class PluginRegistry {
       const disposable = entry.manifest.activate(context);
       entry.state = 'active';
       entry.disposable = disposable ?? undefined;
+      if (packageFiles) {
+        const applied = applyPluginPackageFiles(id, packageFiles, { setDefaultKeybinding });
+        for (const err of applied.errors) {
+          console.warn(`[plugin:${id}] ${err}`);
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[plugin:${id}] activate() threw:`, error);
@@ -445,6 +530,8 @@ export class PluginRegistry {
       themeRegistryStore.getState().unregisterAll(id);
       aiCommandStore.getState().unregisterAll(id);
       pluginMenuStore.getState().removeAll(id);
+      pluginContextMenuStore.getState().removeAll(id);
+      previewEventStore.getState().removeAll(id);
       const layoutManager = createLayoutManager(id);
       layoutManager.removeAllForPlugin(id);
       for (const unregister of entry.commandUnregisters) {
@@ -493,6 +580,8 @@ export class PluginRegistry {
     // Cleanup AI command registrations
     aiCommandStore.getState().unregisterAll(id);
     pluginMenuStore.getState().removeAll(id);
+    pluginContextMenuStore.getState().removeAll(id);
+    previewEventStore.getState().removeAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {

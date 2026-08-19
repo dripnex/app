@@ -2,6 +2,14 @@ import type { CommandDefinition } from '../types';
 
 export const appCommands: CommandDefinition[] = [
   {
+    id: 'app:open-note',
+    name: 'Open Note',
+    category: 'note',
+    context: 'app',
+    icon: 'FileText',
+    showInPalette: false,
+  },
+  {
     id: 'app:new-note',
     name: 'New Note',
     category: 'note',

@@ -36,6 +36,9 @@ export interface Notebook {
 
   /** When last modified */
   readonly updatedAt: Timestamp;
+
+  /** Lucide icon id for the sidebar (`folder`, `globe`, …). Null = default. */
+  readonly icon: string | null;
 }
 
 /** Extended notebook with computed counts */
@@ -75,6 +78,9 @@ export interface CreateNotebookOptions {
 
   /** Optional creation timestamp */
   createdAt?: Timestamp;
+
+  /** Optional sidebar icon */
+  icon?: string | null;
 }
 
 /** Creates a new Notebook */
@@ -91,6 +97,7 @@ export function createNotebook(options: CreateNotebookOptions): Notebook {
     order: options.order ?? 0,
     createdAt: options.createdAt ?? now,
     updatedAt: now,
+    icon: options.icon ?? null,
   };
 }
 
@@ -105,6 +112,7 @@ export function createTemplatesNotebook(): Notebook {
     order: 1,
     createdAt: now,
     updatedAt: now,
+    icon: 'file-stack',
   };
 }
 
@@ -120,6 +128,7 @@ export function createInboxNotebook(): Notebook {
     order: 0, // Always first
     createdAt: now,
     updatedAt: now,
+    icon: 'inbox',
   };
 }
 
@@ -167,6 +176,17 @@ export function moveNotebook(
       depth: newDepth,
       updatedAt: createTimestamp(),
     },
+  };
+}
+
+/** Sets or clears the sidebar icon. */
+export function setNotebookIcon(notebook: Notebook, icon: string | null): Notebook {
+  const next = icon?.trim() || null;
+  if (notebook.icon === next) return notebook;
+  return {
+    ...notebook,
+    icon: next,
+    updatedAt: createTimestamp(),
   };
 }
 

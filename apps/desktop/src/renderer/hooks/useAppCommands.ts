@@ -85,6 +85,15 @@ export function useAppCommands({
 
   // Register app commands (new note, duplicate, search, etc.)
   useRegisterAppCommands({
+    onOpenNote: useCallback(
+      (noteId: string) => {
+        void (async () => {
+          const result = await window.dripnex.notes.get(noteId);
+          if (result.ok) setSelectedNote(result.data);
+        })();
+      },
+      [setSelectedNote]
+    ),
     onNewNote: handleNewNote,
     onDuplicateNote: useCallback(() => {
       if (selectedNote) void handleDuplicateNote(selectedNote.id);

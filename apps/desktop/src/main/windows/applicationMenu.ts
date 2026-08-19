@@ -80,6 +80,48 @@ function buildTemplate(): MenuItemConstructorOptions[] {
   const template: MenuItemConstructorOptions[] = [
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
     { role: 'fileMenu' },
+    {
+      label: 'Note',
+      submenu: [
+        {
+          label: 'Export as Markdown…',
+          click: (_item, browserWindow) => {
+            invokeIn(
+              targetWindow(browserWindow) ?? undefined,
+              'plugin:dripnex-export-markdown:export-file'
+            );
+          },
+        },
+        {
+          label: 'Export as HTML…',
+          click: (_item, browserWindow) => {
+            invokeIn(
+              targetWindow(browserWindow) ?? undefined,
+              'plugin:dripnex-export-markdown:export-html'
+            );
+          },
+        },
+        {
+          label: 'Export as PDF…',
+          click: (_item, browserWindow) => {
+            invokeIn(
+              targetWindow(browserWindow) ?? undefined,
+              'plugin:dripnex-export-markdown:export-pdf'
+            );
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Print…',
+          click: (_item, browserWindow) => {
+            invokeIn(
+              targetWindow(browserWindow) ?? undefined,
+              'plugin:dripnex-export-markdown:print'
+            );
+          },
+        },
+      ],
+    },
     { role: 'editMenu' },
     { role: 'viewMenu' },
     { label: 'Plugins', submenu: pluginsSubmenu },

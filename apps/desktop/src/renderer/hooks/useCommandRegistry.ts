@@ -106,9 +106,9 @@ export function useCommandRegistry(): RegisteredCommand[] {
 
 export { _formatKeybinding as formatKeybinding };
 
-/** Dispatch a command by id */
-export function dispatchCommand(id: string): Promise<boolean> {
-  return registry.dispatch(id);
+/** Dispatch a command by id, optionally with a payload. */
+export function dispatchCommand(id: string, payload?: Record<string, unknown>): Promise<boolean> {
+  return registry.dispatch(id, payload);
 }
 
 /** Get effective keybinding for display */

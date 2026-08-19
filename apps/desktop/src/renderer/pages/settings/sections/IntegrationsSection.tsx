@@ -4,6 +4,7 @@ import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
 import { Button } from '../../../ui/primitives';
 import { GitHubCard } from './GitHubCard';
+import { LocalHttpCard } from './LocalHttpCard';
 import { McpCard } from './McpCard';
 import styles from './IntegrationsSection.module.css';
 
@@ -69,6 +70,8 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
         <h2 className={styles.title}>Integrations</h2>
         <p className={styles.lede}>Connect tools you already use. Secrets stay on this machine.</p>
       </header>
+
+      <LocalHttpCard />
 
       <McpCard />
 

@@ -129,3 +129,45 @@ export function scanMarkdown(content: string): MarkdownScan {
     tags,
   };
 }
+
+/**
+ * Toggle the Nth GFM task (`- [ ]` / `- [x]`) outside fences.
+ * Returns null when `index` is out of range.
+ */
+export function toggleNthGfmTask(content: string, index: number): string | null {
+  if (index < 0 || !Number.isInteger(index)) return null;
+
+  const lines = content.split(/\r?\n/);
+  let fence: string | null = null;
+  let seen = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? '';
+    const fenceMatch = line.match(FENCE);
+    if (fenceMatch) {
+      const marker = fenceMatch[2] ?? '';
+      if (!fence) {
+        fence = marker;
+        continue;
+      }
+      if (marker[0] === fence[0] && marker.length >= fence.length) {
+        fence = null;
+      }
+      continue;
+    }
+    if (fence) continue;
+
+    const task = line.match(TASK);
+    if (!task) continue;
+    if (seen !== index) {
+      seen += 1;
+      continue;
+    }
+    const mark = task[1] ?? ' ';
+    const next = mark === 'x' || mark === 'X' ? ' ' : 'x';
+    lines[i] = line.replace(/\[.\]/, `[${next}]`);
+    return lines.join('\n');
+  }
+
+  return null;
+}

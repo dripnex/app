@@ -22,6 +22,8 @@ export interface NoteSnapshot {
   readonly updatedAt: string;
   readonly tags: string[];
   readonly wordCount: number;
+  readonly taskCount: number;
+  readonly checkedTaskCount: number;
   readonly archivedAt: string | null;
   readonly isArchived: boolean;
   readonly isPinned: boolean;
@@ -40,6 +42,8 @@ export function toSnapshot(note: Note): NoteSnapshot {
     updatedAt: note.metadata.updatedAt,
     tags: [...note.metadata.tags],
     wordCount: note.metadata.wordCount,
+    taskCount: note.metadata.taskCount,
+    checkedTaskCount: note.metadata.checkedTaskCount,
     archivedAt: note.metadata.archivedAt,
     isArchived: note.metadata.archivedAt !== null,
     isPinned: note.isPinned,
@@ -57,6 +61,8 @@ export interface NoteSummary {
   readonly updatedAt: string;
   readonly tags: string[];
   readonly wordCount: number;
+  readonly taskCount: number;
+  readonly checkedTaskCount: number;
   /** First ~200 chars of content for preview */
   readonly excerpt: string;
   readonly archivedAt: string | null;
@@ -81,6 +87,8 @@ export function toSummary(note: Note, excerptLength: number = 200): NoteSummary 
     updatedAt: note.metadata.updatedAt,
     tags: [...note.metadata.tags],
     wordCount: note.metadata.wordCount,
+    taskCount: note.metadata.taskCount,
+    checkedTaskCount: note.metadata.checkedTaskCount,
     excerpt: excerpt + (note.content.length > excerptLength ? '...' : ''),
     archivedAt: note.metadata.archivedAt,
     isArchived: note.metadata.archivedAt !== null,

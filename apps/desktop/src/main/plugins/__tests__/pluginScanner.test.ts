@@ -1,0 +1,40 @@
+import { mkdir, writeFile, rm } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { describe, it, expect, afterEach } from 'vitest';
+import { scanPlugins } from '../../pluginScanner';
+
+const ROOT = join(tmpdir(), `dripnex-scan-${Date.now()}`);
+
+afterEach(async () => {
+  await rm(ROOT, { recursive: true, force: true });
+});
+
+describe('scanPlugins', () => {
+  it('loads keymaps and menus json from the plugin package', async () => {
+    const dir = join(ROOT, 'hello');
+    await mkdir(join(dir, 'keymaps'), { recursive: true });
+    await mkdir(join(dir, 'menus'), { recursive: true });
+    await writeFile(
+      join(dir, 'manifest.json'),
+      JSON.stringify({
+        id: 'hello',
+        name: 'Hello',
+        version: '1.0.0',
+        main: 'index.js',
+      })
+    );
+    await writeFile(join(dir, 'index.js'), 'module.exports = { id: "hello", activate() {} }');
+    await writeFile(join(dir, 'keymaps', 'default.json'), '{ "say-hello": "Mod+H" }');
+    await writeFile(
+      join(dir, 'menus', 'main.json'),
+      '{ "menu": [{ "label": "Hello", "command": "say-hello" }] }'
+    );
+
+    const scanned = await scanPlugins(ROOT);
+    expect(scanned).toHaveLength(1);
+    expect(scanned[0]?.id).toBe('hello');
+    expect(scanned[0]?.keymaps[0]).toContain('say-hello');
+    expect(scanned[0]?.menus[0]).toContain('"label": "Hello"');
+  });
+});

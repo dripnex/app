@@ -30,8 +30,11 @@ export interface CommandDefinition {
   showInPalette?: boolean;
 }
 
+/** Optional args for `dispatch(id, payload)` — Inkdrop `commands.dispatch(el, name, detail)`. */
+export type CommandPayload = Record<string, unknown>;
+
 export interface RegisteredCommand extends CommandDefinition {
-  execute: () => boolean | void | Promise<boolean | void>;
+  execute: (payload?: CommandPayload) => boolean | void | Promise<boolean | void>;
 }
 
 export interface KeyBindingOverride {

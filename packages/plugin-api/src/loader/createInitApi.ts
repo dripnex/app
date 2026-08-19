@@ -4,7 +4,9 @@ import { dispatchHostCommand, getHostVim } from './hostBridges';
 
 export const USER_INIT_ID = 'user-init';
 
-type CommandExecute = () => boolean | void | Promise<boolean | void>;
+type CommandExecute = (
+  payload?: Record<string, unknown>
+) => boolean | void | Promise<boolean | void>;
 
 /**
  * Inkdrop-style surface for init.js.
@@ -27,7 +29,7 @@ export interface InitApi {
       execute: CommandExecute,
       options?: Omit<PluginCommandOptions, 'id' | 'name'>
     ): () => void;
-    dispatch(id: string): Promise<boolean>;
+    dispatch(id: string, payload?: Record<string, unknown>): Promise<boolean>;
   };
   /**
    * `@replit/codemirror-vim` `Vim` object when the Vim plugin is loaded.
@@ -36,6 +38,9 @@ export interface InitApi {
   vim: unknown;
   menu: PluginContext['menu'];
   clipboard: PluginContext['clipboard'];
+  notifications: PluginContext['notifications'];
+  contextMenu: PluginContext['contextMenu'];
+  preview: PluginContext['preview'];
   registerCommand: PluginContext['registerCommand'];
   registerExtensions: PluginContext['registerExtensions'];
   registerAiCommand: PluginContext['registerAiCommand'];
@@ -61,8 +66,8 @@ export function createInitApi(ctx: PluginContext): InitApi {
       add(id, name, execute, options) {
         return ctx.registerCommand({ id, name, ...options }, execute);
       },
-      dispatch(id) {
-        return dispatchHostCommand(id);
+      dispatch(id, payload) {
+        return dispatchHostCommand(id, payload);
       },
     },
     get vim() {
@@ -70,6 +75,9 @@ export function createInitApi(ctx: PluginContext): InitApi {
     },
     menu: ctx.menu,
     clipboard: ctx.clipboard,
+    notifications: ctx.notifications,
+    contextMenu: ctx.contextMenu,
+    preview: ctx.preview,
     registerCommand: ctx.registerCommand,
     registerExtensions: ctx.registerExtensions,
     registerAiCommand: ctx.registerAiCommand,

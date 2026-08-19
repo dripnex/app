@@ -18,13 +18,16 @@ import {
   rehypePluginStore,
   previewComponentStore,
   codeBlockStore,
+  emitPreviewEvent,
 } from '@dripnex/plugin-api';
 import { coreRemarkPlugins } from '../../lib/coreRemarkPlugins';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
 import { usePreviewFindStore } from '../../stores/previewFindStore';
 import { applyPreviewFind, unwrapPreviewFindMarks } from '../../utils/previewFind';
+import { scrollBehavior } from '../../utils/motion';
 import { cssm } from '../../lib/cssm';
+import { emitLocalDeepLink } from '../../utils/parseDripnexUrl';
 import { PreviewFindBar } from './PreviewFindBar';
 import { FenceBlock } from './FenceBlock';
 import styles from './MarkdownPreview.module.css';
@@ -46,6 +49,8 @@ interface MarkdownPreviewProps {
   readonly onEmbedClick?: (target: string, url: string) => void;
   /** Optional pre-resolved embeds from parent (for sharing with editor) */
   readonly resolvedEmbeds?: Record<string, string | null>;
+  /** Toggle the Nth GFM task when a preview checkbox is clicked */
+  readonly onCheckboxToggle?: (index: number, checked: boolean) => void;
 }
 
 /** Imperative handle for scroll sync */
@@ -55,6 +60,7 @@ export interface MarkdownPreviewHandle {
   onScroll: (callback: (fraction: number) => void) => () => void;
   canScroll: () => boolean;
   jumpToHeading: (text: string) => void;
+  getVisibleHeading: () => string | null;
 }
 
 export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
@@ -68,6 +74,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       onWikilinkClick,
       onEmbedClick,
       resolvedEmbeds: resolvedEmbedsProp,
+      onCheckboxToggle,
     },
     ref
   ) {
@@ -191,9 +198,10 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       return result;
     }, [content, resolvedEmbeds, scan.embedTargets]);
 
-    // Click handler for wikilinks and embeds
     const handleClick = (e: React.MouseEvent) => {
-      const wikilinkEl = (e.target as HTMLElement).closest('.wikilink');
+      const target = e.target as HTMLElement;
+
+      const wikilinkEl = target.closest('.wikilink');
       if (wikilinkEl) {
         const noteTitle = wikilinkEl.getAttribute('data-target');
         const anchor = wikilinkEl.getAttribute('data-anchor') ?? undefined;
@@ -204,14 +212,40 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         return;
       }
 
-      const imgEl = e.target as HTMLElement;
-      if (imgEl.tagName === 'IMG') {
-        const src = imgEl.getAttribute('src');
+      const anchorEl = target.closest('a');
+      if (anchorEl) {
+        const href = anchorEl.getAttribute('href') ?? '';
+        const allowed = emitPreviewEvent('a:click', {
+          href,
+          text: (anchorEl.textContent ?? '').trim(),
+        });
+        if (!allowed || href.startsWith('dripnex://')) {
+          e.preventDefault();
+        }
+        if (href.startsWith('dripnex://')) emitLocalDeepLink(href);
+        return;
+      }
+
+      if (target.tagName === 'IMG') {
+        const src = target.getAttribute('src');
         if (src?.startsWith('asset://') && onEmbedClick) {
           e.preventDefault();
           onEmbedClick(src, src);
         }
       }
+    };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const box = e.target;
+      const root = containerRef.current;
+      if (!root) return;
+      const boxes = root.querySelectorAll('input[type="checkbox"]');
+      const index = Array.prototype.indexOf.call(boxes, box);
+      if (index < 0) return;
+      const checked = box.checked;
+      const allowed = emitPreviewEvent('checkbox:change', { index, checked });
+      if (!allowed) return;
+      onCheckboxToggle?.(index, checked);
     };
 
     useEffect(() => {
@@ -252,7 +286,20 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         if (!el) return;
         const headings = el.querySelectorAll('h1,h2,h3,h4,h5,h6');
         const target = Array.from(headings).find(h => (h.textContent ?? '').trim() === text);
-        target?.scrollIntoView({ block: 'start' });
+        target?.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+      },
+      getVisibleHeading: () => {
+        const el = containerRef.current;
+        if (!el) return null;
+        const headings = Array.from(el.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+        if (headings.length === 0) return null;
+        const top = el.getBoundingClientRect().top + 12;
+        let current = headings[0] ?? null;
+        for (const heading of headings) {
+          if (heading.getBoundingClientRect().top <= top + 24) current = heading;
+          else break;
+        }
+        return current?.textContent?.trim() ?? null;
       },
     }));
 
@@ -279,6 +326,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
           className={sc('markdown-preview')}
           data-preview
           onClick={handleClick}
+          onChange={handleCheckboxChange}
         >
           <div className={sc('preview-metadata-header')}>
             {hasProgress && (
@@ -322,61 +370,75 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
             )}
           </div>
 
-          <Markdown
-            remarkPlugins={
-              [
-                ...coreRemarkPlugins(),
-                ...pluginRemarkRegs.map(r => r.plugin),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ] as any[]
-            }
-            rehypePlugins={
-              [
-                rehypeRaw,
-                [rehypeSanitize, sanitizeSchema],
-                rehypeHighlight,
-                ...pluginRehypeRegs.map(r => r.plugin),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ] as any[]
-            }
-            components={
-              {
-                pre: ({ children }) => <FenceBlock>{children}</FenceBlock>,
-                input: ({ type, checked, ...props }) => {
-                  if (type === 'checkbox') {
-                    return <input type="checkbox" checked={checked} disabled {...props} />;
-                  }
-                  return <input type={type} {...props} />;
-                },
-                // Custom embed-image element bypasses rehype URL sanitization
-                'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
-                  <img src={src} alt={alt} className={sc('embed', 'embed-image')} loading="lazy" />
-                ),
-                // Code block renderer delegation to plugins
-                code: ({ className, children, ...props }) => {
-                  const match = /language-([\w+#.-]+)/.exec(className || '');
-                  const lang = match?.[1];
-                  if (lang) {
-                    const reg = pluginCodeBlockRegs.find(r => r.language === lang);
-                    if (reg) {
-                      const CodeRenderer = reg.component;
-                      const code = String(children).replace(/\n$/, '');
-                      return <CodeRenderer code={code} language={lang} />;
+          <div data-preview-body>
+            <Markdown
+              remarkPlugins={
+                [
+                  ...coreRemarkPlugins(),
+                  ...pluginRemarkRegs.map(r => r.plugin),
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ] as any[]
+              }
+              rehypePlugins={
+                [
+                  rehypeRaw,
+                  [rehypeSanitize, sanitizeSchema],
+                  rehypeHighlight,
+                  ...pluginRehypeRegs.map(r => r.plugin),
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ] as any[]
+              }
+              components={
+                {
+                  pre: ({ children }) => <FenceBlock>{children}</FenceBlock>,
+                  input: ({ type, checked, ...props }) => {
+                    if (type === 'checkbox') {
+                      return (
+                        <input
+                          type="checkbox"
+                          checked={Boolean(checked)}
+                          onChange={handleCheckboxChange}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      );
                     }
-                  }
-                  return (
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-                // Plugin-registered preview components
-                ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
-              } as Record<string, React.ComponentType<unknown>>
-            }
-          >
-            {resolvedContent}
-          </Markdown>
+                    return <input type={type} {...props} />;
+                  },
+                  // Custom embed-image element bypasses rehype URL sanitization
+                  'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
+                    <img
+                      src={src}
+                      alt={alt}
+                      className={sc('embed', 'embed-image')}
+                      loading="lazy"
+                    />
+                  ),
+                  // Code block renderer delegation to plugins
+                  code: ({ className, children, ...props }) => {
+                    const match = /language-([\w+#.-]+)/.exec(className || '');
+                    const lang = match?.[1];
+                    if (lang) {
+                      const reg = pluginCodeBlockRegs.find(r => r.language === lang);
+                      if (reg) {
+                        const CodeRenderer = reg.component;
+                        const code = String(children).replace(/\n$/, '');
+                        return <CodeRenderer code={code} language={lang} />;
+                      }
+                    }
+                    return (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    );
+                  },
+                  // Plugin-registered preview components
+                  ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
+                } as Record<string, React.ComponentType<unknown>>
+              }
+            >
+              {resolvedContent}
+            </Markdown>
+          </div>
         </div>
       </div>
     );

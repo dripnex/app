@@ -144,9 +144,27 @@ function NotesApp() {
   const selectedNoteRef = useRef<NoteSnapshot | null>(null);
   selectedNoteRef.current = selectedNote;
   const [noteHistory, setNoteHistory] = useState(emptyNoteHistory);
+  const noteHistoryRef = useRef(noteHistory);
+  noteHistoryRef.current = noteHistory;
+  const historyNavGen = useRef(0);
   const setSelectedNoteAndVisit = useCallback((note: NoteSnapshot | null) => {
     setSelectedNote(note);
     if (note) setNoteHistory(prev => visitNote(prev, note.id));
+  }, []);
+  const goNoteHistory = useCallback(async (direction: 'back' | 'forward') => {
+    const gen = ++historyNavGen.current;
+    const current = noteHistoryRef.current;
+    const { state, id } = direction === 'back' ? historyBack(current) : historyForward(current);
+    if (!id) return;
+    try {
+      const result = await window.dripnex.notes.get(id);
+      if (gen !== historyNavGen.current) return;
+      if (!result.ok) return;
+      setNoteHistory(state);
+      setSelectedNote(result.data);
+    } catch {
+      // Keep the cursor if the note cannot be loaded.
+    }
   }, []);
   const { appAPI, dataAPI, pluginSlot } = usePluginRuntime(selectedNoteRef);
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
@@ -315,20 +333,10 @@ function NotesApp() {
     displayedNotes,
     onSelectNote: handleSelectNote,
     onNoteBack: () => {
-      const { state, id } = historyBack(noteHistory);
-      if (!id) return;
-      setNoteHistory(state);
-      void window.dripnex.notes.get(id).then(result => {
-        if (result.ok) setSelectedNote(result.data);
-      });
+      void goNoteHistory('back');
     },
     onNoteForward: () => {
-      const { state, id } = historyForward(noteHistory);
-      if (!id) return;
-      setNoteHistory(state);
-      void window.dripnex.notes.get(id).then(result => {
-        if (result.ok) setSelectedNote(result.data);
-      });
+      void goNoteHistory('forward');
     },
     onToggleZen: toggleDistractionFree,
     onOpenInWindow: () => {
@@ -515,20 +523,10 @@ function NotesApp() {
                   canForward={canGoForward(noteHistory)}
                   distractionFree={distractionFree}
                   onBack={() => {
-                    const { state, id } = historyBack(noteHistory);
-                    if (!id) return;
-                    setNoteHistory(state);
-                    void window.dripnex.notes.get(id).then(result => {
-                      if (result.ok) setSelectedNote(result.data);
-                    });
+                    void goNoteHistory('back');
                   }}
                   onForward={() => {
-                    const { state, id } = historyForward(noteHistory);
-                    if (!id) return;
-                    setNoteHistory(state);
-                    void window.dripnex.notes.get(id).then(result => {
-                      if (result.ok) setSelectedNote(result.data);
-                    });
+                    void goNoteHistory('forward');
                   }}
                   onToggleZen={toggleDistractionFree}
                   onOpenWindow={() => {

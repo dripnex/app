@@ -280,7 +280,7 @@
   border: 1.5px solid var(--border);
   border-radius: 3px;
   background: transparent;
-  cursor: default;
+  cursor: pointer;
   position: relative;
   vertical-align: middle;
 }
@@ -315,6 +315,52 @@
 
 .markdown-preview blockquote p:last-child {
   margin-bottom: 0;
+}
+
+.markdown-preview blockquote.markdown-alert {
+  font-style: normal;
+  border-left-width: 4px;
+}
+
+.markdown-preview .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 0.4em;
+  font-weight: 650;
+  font-style: normal;
+  color: var(--alert-color, var(--text-primary));
+  letter-spacing: 0.02em;
+}
+
+.markdown-preview .markdown-alert-note {
+  --alert-color: #4493f8;
+  border-left-color: var(--alert-color);
+  background: color-mix(in srgb, var(--alert-color) 10%, var(--bg-elevated));
+}
+
+.markdown-preview .markdown-alert-tip {
+  --alert-color: #3fb950;
+  border-left-color: var(--alert-color);
+  background: color-mix(in srgb, var(--alert-color) 10%, var(--bg-elevated));
+}
+
+.markdown-preview .markdown-alert-important {
+  --alert-color: #ab7df8;
+  border-left-color: var(--alert-color);
+  background: color-mix(in srgb, var(--alert-color) 10%, var(--bg-elevated));
+}
+
+.markdown-preview .markdown-alert-warning {
+  --alert-color: #d29922;
+  border-left-color: var(--alert-color);
+  background: color-mix(in srgb, var(--alert-color) 10%, var(--bg-elevated));
+}
+
+.markdown-preview .markdown-alert-caution {
+  --alert-color: #f85149;
+  border-left-color: var(--alert-color);
+  background: color-mix(in srgb, var(--alert-color) 10%, var(--bg-elevated));
 }
 
 /* Code */

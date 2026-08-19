@@ -61,7 +61,8 @@ export function NotebookList({
   nameFilter = '',
 }: NotebookListProps) {
   const { data: tree, isLoading, error } = useNotebookTree();
-  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks } = useNotebookMutations();
+  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks, setNotebookIcon } =
+    useNotebookMutations();
 
   // Calculate ancestor IDs for breadcrumb-style highlighting
   const ancestorIds = useMemo(
@@ -124,6 +125,13 @@ export function NotebookList({
     [renameNotebook]
   );
 
+  const handleSetIcon = useCallback(
+    async (id: string, icon: string | null) => {
+      await setNotebookIcon.mutateAsync({ id, icon });
+    },
+    [setNotebookIcon]
+  );
+
   const handleDelete = useCallback(
     async (id: string) => {
       await deleteNotebook.mutateAsync(id);
@@ -178,6 +186,7 @@ export function NotebookList({
             onRename={handleRename}
             onDelete={handleDelete}
             onCreateChild={onRequestCreateChild}
+            onSetIcon={handleSetIcon}
             onMove={handleMove}
             onReorder={handleReorder}
             siblingIds={rootSiblingIds}
