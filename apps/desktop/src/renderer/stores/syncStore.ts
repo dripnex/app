@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { hasNewConflict, mergeConflicts } from '../utils/conflictCopy';
 
 // ============================================================================
 // Types
@@ -13,6 +14,7 @@ export interface SyncStatusEvent {
   consecutiveFailures?: number;
   changesApplied?: number;
   changesPushed?: number;
+  conflicts?: Conflict[];
 }
 
 export interface Conflict {
@@ -22,6 +24,7 @@ export interface Conflict {
   localVersion: number;
   remoteVersion: number;
   timestamp: string;
+  localCopyId?: string;
 }
 
 // ============================================================================
@@ -45,10 +48,14 @@ interface SyncState {
   consecutiveFailures: number;
   /** Number of local changes waiting to be pushed */
   pendingCount: number;
+  /** User hid the conflict screen until the next new conflict */
+  conflictScreenDismissed: boolean;
 
   // Actions
   syncNow: () => Promise<void>;
   resolveConflict: (noteId: string, resolution: 'local' | 'remote') => Promise<void>;
+  dismissConflictScreen: () => void;
+  openConflictScreen: () => void;
   clearError: () => void;
   setEnabled: (enabled: boolean) => void;
   updateLastSyncAt: (timestamp: number) => void;
@@ -73,6 +80,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   isEnabled: false,
   consecutiveFailures: 0,
   pendingCount: 0,
+  conflictScreenDismissed: false,
 
   // Actions
 
@@ -97,13 +105,16 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       // Get updated status from server
       const statusResult = await window.dripnex.sync.status();
 
-      // Update state with results
-      set({
+      const incoming = syncResult.conflicts || [];
+      set(state => ({
         status: 'idle',
         cursor: statusResult.cursor || 0,
-        conflicts: syncResult.conflicts || [],
+        conflicts: mergeConflicts(state.conflicts, incoming),
+        conflictScreenDismissed: hasNewConflict(state.conflicts, incoming)
+          ? false
+          : state.conflictScreenDismissed,
         lastSyncAt: Date.now(),
-      });
+      }));
     } catch (error) {
       let errorMessage = 'Sync failed';
       let status: SyncStatus = 'error';
@@ -169,6 +180,10 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       throw error;
     }
   },
+
+  dismissConflictScreen: () => set({ conflictScreenDismissed: true }),
+
+  openConflictScreen: () => set({ conflictScreenDismissed: false }),
 
   /**
    * Clear error message
@@ -253,16 +268,22 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
           set({ status: 'syncing', error: null });
           break;
 
-        case 'sync-success':
-          set({
+        case 'sync-success': {
+          const incoming = event.conflicts ?? [];
+          set(state => ({
             status: 'idle',
             error: null,
             consecutiveFailures: 0,
             lastSyncAt: Date.now(),
-          });
+            conflicts: mergeConflicts(state.conflicts, incoming),
+            conflictScreenDismissed: hasNewConflict(state.conflicts, incoming)
+              ? false
+              : state.conflictScreenDismissed,
+          }));
           // Refresh pending count after successful sync
           void get().refreshPendingCount();
           break;
+        }
 
         case 'sync-error': {
           const isNetwork = event.isNetworkError ?? false;
@@ -309,5 +330,6 @@ export const selectError = (state: SyncState) => state.error;
 export const selectIsEnabled = (state: SyncState) => state.isEnabled;
 export const selectIsSyncing = (state: SyncState) => state.status === 'syncing';
 export const selectHasConflicts = (state: SyncState) => state.conflicts.length > 0;
+export const selectConflictScreenDismissed = (state: SyncState) => state.conflictScreenDismissed;
 export const selectConsecutiveFailures = (state: SyncState) => state.consecutiveFailures;
 export const selectPendingCount = (state: SyncState) => state.pendingCount;

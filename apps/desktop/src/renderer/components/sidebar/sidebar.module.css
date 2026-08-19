@@ -1178,6 +1178,10 @@
   color: var(--danger);
 }
 
+.sidebar-footer-progress--conflict {
+  color: #f59e0b;
+}
+
 .sidebar-footer-progress--offline {
   color: var(--text-muted);
 }
