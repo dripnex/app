@@ -85,6 +85,19 @@ describe('initPlugin', () => {
     );
   });
 
+  it('scaffolds a theme package without JS', async () => {
+    const dir = await initPlugin({ name: 'Paper', dir: testDir('paper'), type: 'theme' });
+    const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf-8'));
+    const theme = JSON.parse(await readFile(join(dir, 'theme.json'), 'utf-8'));
+
+    expect(manifest.id).toBe('paper');
+    expect(manifest.main).toBeUndefined();
+    expect(theme.colorScheme).toBe('light');
+    expect(theme.tokens['--bg-base']).toBeTruthy();
+    expect(existsSync(join(dir, 'styles', 'index.css'))).toBe(true);
+    expect(existsSync(join(dir, 'src'))).toBe(false);
+  });
+
   it('converts name to kebab-case id', async () => {
     const dir = await initPlugin({ name: 'My  Cool  Plugin!', dir: testDir('kebab') });
     const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf-8'));

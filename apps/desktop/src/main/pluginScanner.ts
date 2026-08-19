@@ -22,6 +22,7 @@ export interface ScannedPlugin {
   keymaps: string[];
   menus: string[];
   styles: string[];
+  themes: string[];
 }
 
 interface PluginManifestJson {
@@ -29,7 +30,7 @@ interface PluginManifestJson {
   name: string;
   version: string;
   description?: string;
-  main: string;
+  main?: string;
   configSchema?: Record<string, PluginConfigSchemaField>;
 }
 
@@ -54,17 +55,25 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
       const manifestRaw = await readFile(manifestPath, 'utf-8');
       const manifest: PluginManifestJson = JSON.parse(manifestRaw);
 
-      if (!manifest.id || !manifest.name || !manifest.version || !manifest.main) {
+      if (!manifest.id || !manifest.name || !manifest.version) {
         continue;
       }
 
-      const entryPath = join(pluginDir, manifest.main);
-      const code = await readFile(entryPath, 'utf-8');
-      const [keymaps, menus, styles] = await Promise.all([
+      const [keymaps, menus, styles, themes] = await Promise.all([
         readJsonDir(join(pluginDir, 'keymaps')),
         readJsonDir(join(pluginDir, 'menus')),
         readCssDir(join(pluginDir, 'styles')),
+        readThemeFiles(pluginDir),
       ]);
+
+      if (!manifest.main && themes.length === 0) {
+        continue;
+      }
+
+      let code = '';
+      if (manifest.main) {
+        code = await readFile(join(pluginDir, manifest.main), 'utf-8');
+      }
 
       results.push({
         id: manifest.id,
@@ -77,6 +86,7 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
         keymaps,
         menus,
         styles,
+        themes,
       });
     } catch {
       // Skip directories that don't have a valid manifest or entry file
@@ -92,6 +102,17 @@ async function readJsonDir(dir: string): Promise<string[]> {
 
 async function readCssDir(dir: string): Promise<string[]> {
   return readDirByExt(dir, '.css');
+}
+
+async function readThemeFiles(pluginDir: string): Promise<string[]> {
+  const files: string[] = [];
+  try {
+    files.push(await readFile(join(pluginDir, 'theme.json'), 'utf-8'));
+  } catch {
+    // optional
+  }
+  files.push(...(await readJsonDir(join(pluginDir, 'themes'))));
+  return files;
 }
 
 async function readDirByExt(dir: string, ext: string): Promise<string[]> {

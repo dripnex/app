@@ -1,13 +1,16 @@
 import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
 import { pluginStyleStore } from '../theme/pluginStyleStore';
+import { themeRegistryStore } from '../theme/themeRegistryStore';
 import { parsePluginKeymap, type PluginKeymapBinding } from './parsePluginKeymap';
 import { parsePluginMenus } from './parsePluginMenus';
+import { parsePluginTheme } from './parsePluginTheme';
 
 export interface PluginPackageFiles {
   keymaps: string[];
   menus: string[];
   styles?: string[];
+  themes?: string[];
 }
 
 export interface ApplyPackageFilesOptions {
@@ -22,11 +25,12 @@ export interface ApplyPackageFilesResult {
   contextMenuCount: number;
   keymapCount: number;
   styleCount: number;
+  themeCount: number;
   errors: string[];
 }
 
 /**
- * Apply declarative keymaps/*.json, menus/*.json, and styles/*.css after activate().
+ * Apply declarative keymaps, menus, styles, and theme.json after activate().
  * Only binds chords on commands the plugin already registered (`plugin:<id>:`).
  */
 export function applyPluginPackageFiles(
@@ -39,6 +43,7 @@ export function applyPluginPackageFiles(
   let contextMenuCount = 0;
   let keymapCount = 0;
   let styleCount = 0;
+  let themeCount = 0;
 
   for (const [index, source] of files.menus.entries()) {
     const parsed = parsePluginMenus(source, pluginId);
@@ -92,5 +97,19 @@ export function applyPluginPackageFiles(
     styleCount = styles.map(css => css.trim()).filter(Boolean).length;
   }
 
-  return { menuCount, contextMenuCount, keymapCount, styleCount, errors };
+  for (const [index, source] of (files.themes ?? []).entries()) {
+    const parsed = parsePluginTheme(source, pluginId);
+    for (const err of parsed.errors) {
+      errors.push(`themes[${index}]: ${err}`);
+    }
+    if (!parsed.theme) continue;
+    const ok = themeRegistryStore.getState().register({ ...parsed.theme, pluginId });
+    if (!ok) {
+      errors.push(`themes[${index}]: rejected "${parsed.theme.id}"`);
+      continue;
+    }
+    themeCount += 1;
+  }
+
+  return { menuCount, contextMenuCount, keymapCount, styleCount, themeCount, errors };
 }

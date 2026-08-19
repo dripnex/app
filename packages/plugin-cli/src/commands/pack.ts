@@ -17,20 +17,29 @@ export function packPlugin(source: string): string {
     process.exit(1);
   }
 
-  const main = manifest.main ?? 'dist/index.js';
-  if (!existsSync(join(sourcePath, main))) {
+  const hasTheme = existsSync(join(sourcePath, 'theme.json'));
+  const main = manifest.main ?? (hasTheme ? undefined : 'dist/index.js');
+  if (main && !existsSync(join(sourcePath, main))) {
     console.error(`Error: ${main} is missing. Build the plugin first.`);
+    process.exit(1);
+  }
+  if (!main && !hasTheme) {
+    console.error('Error: manifest.json needs main, or the package needs theme.json.');
     process.exit(1);
   }
 
   const archive = `${manifest.id}-${manifest.version}.tar.gz`;
   const dest = join(process.cwd(), archive);
   const members = ['manifest.json'];
-  if (existsSync(join(sourcePath, 'dist'))) members.push('dist');
-  else members.push(main);
+  if (main) {
+    if (existsSync(join(sourcePath, 'dist'))) members.push('dist');
+    else members.push(main);
+  }
   if (existsSync(join(sourcePath, 'keymaps'))) members.push('keymaps');
   if (existsSync(join(sourcePath, 'menus'))) members.push('menus');
   if (existsSync(join(sourcePath, 'styles'))) members.push('styles');
+  if (hasTheme) members.push('theme.json');
+  if (existsSync(join(sourcePath, 'themes'))) members.push('themes');
 
   execFileSync('tar', ['-czf', dest, '-C', sourcePath, ...members], { stdio: 'inherit' });
 

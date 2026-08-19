@@ -8,6 +8,7 @@ import { packageJsonTemplate } from '../templates/package.json';
 import { keymapsTemplate } from '../templates/keymaps.default.json';
 import { menusTemplate } from '../templates/menus.main.json';
 import { stylesTemplate } from '../templates/styles.index.css';
+import { themeJsonTemplate, themeManifestTemplate } from '../templates/theme.json';
 
 /**
  * Convert a name like "My Cool Plugin" to "my-cool-plugin" (kebab-case)
@@ -23,6 +24,7 @@ function toKebabCase(input: string): string {
 export interface InitOptions {
   name: string;
   dir?: string;
+  type?: 'plugin' | 'theme';
 }
 
 /**
@@ -52,6 +54,16 @@ export async function initPlugin(options: InitOptions): Promise<string> {
 
   if (existsSync(targetDir)) {
     throw new Error(`Directory already exists: ${targetDir}`);
+  }
+
+  if (options.type === 'theme') {
+    await mkdir(join(targetDir, 'styles'), { recursive: true });
+    await Promise.all([
+      writeFile(join(targetDir, 'manifest.json'), themeManifestTemplate(id, options.name)),
+      writeFile(join(targetDir, 'theme.json'), themeJsonTemplate(id, options.name)),
+      writeFile(join(targetDir, 'styles', 'index.css'), stylesTemplate()),
+    ]);
+    return targetDir;
   }
 
   await mkdir(join(targetDir, 'src'), { recursive: true });

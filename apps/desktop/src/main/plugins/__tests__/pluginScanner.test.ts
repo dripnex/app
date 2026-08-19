@@ -40,4 +40,28 @@ describe('scanPlugins', () => {
     expect(scanned[0]?.menus[0]).toContain('"label": "Hello"');
     expect(scanned[0]?.styles[0]).toContain('.hello { color: red; }');
   });
+
+  it('loads a theme-only package without main', async () => {
+    const dir = join(ROOT, 'paper');
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      join(dir, 'manifest.json'),
+      JSON.stringify({ id: 'paper', name: 'Paper', version: '1.0.0' })
+    );
+    await writeFile(
+      join(dir, 'theme.json'),
+      JSON.stringify({
+        id: 'paper',
+        name: 'Paper',
+        colorScheme: 'light',
+        tokens: { '--bg-base': '#fff' },
+      })
+    );
+
+    const scanned = await scanPlugins(ROOT);
+    expect(scanned).toHaveLength(1);
+    expect(scanned[0]?.id).toBe('paper');
+    expect(scanned[0]?.code).toBe('');
+    expect(scanned[0]?.themes[0]).toContain('colorScheme');
+  });
 });
