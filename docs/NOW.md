@@ -76,6 +76,7 @@ Shipped this week:
 - What’s New is authored (`docs/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`. See `docs/WHATS_NEW.md`.
 - Workspace view: click a notebook to focus the sidebar on that tree. Escape or the breadcrumb home returns to All Notes.
 - Collapsed notebooks list notes from their descendants; expanded ones stay direct-only.
+- Default notebook (Settings → General) is used for ⌘N from All Notes.
 
 CSS path (decided 2026-08-17):
 Keep CSS modules + tokens. Do not add Tailwind to desktop.

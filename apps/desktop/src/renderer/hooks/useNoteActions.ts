@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
+import { useSettingsStore } from '../stores/settings';
 import { useNoteMutations } from './useNotes';
 import { useSyncLinks } from './useLinks';
 import { useNavigationActions, useStatusFilter, useGlobalFilter } from './useNavigation';
@@ -44,15 +45,22 @@ export function useNoteActions({
   const { goToAllNotes, goToNotebook } = useNavigationActions();
   const statusFilter = useStatusFilter();
   const globalFilter = useGlobalFilter();
+  const defaultNotebookId = useSettingsStore(s => s.settings.general.defaultNotebookId);
 
   // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
     if (globalFilter === 'trash') {
       goToAllNotes();
     }
+    const notebookId =
+      globalFilter === 'trash'
+        ? 'inbox'
+        : selectedNotebookId && selectedNotebookId !== 'templates'
+          ? selectedNotebookId
+          : defaultNotebookId || 'inbox';
     const newNote = await createNote.mutateAsync({
       content: '# Untitled\n\n',
-      notebookId: globalFilter === 'trash' ? 'inbox' : (selectedNotebookId ?? undefined),
+      notebookId,
     });
     setSelectedNote(newNote);
     clearSearch();
@@ -61,6 +69,7 @@ export function useNoteActions({
   }, [
     createNote,
     selectedNotebookId,
+    defaultNotebookId,
     globalFilter,
     goToAllNotes,
     clearSearch,
@@ -235,7 +244,9 @@ export function useNoteActions({
       const result = await window.dripnex.notes.get(templateNoteId);
       if (!result.ok) return;
       const destinationNotebookId =
-        selectedNotebookId && selectedNotebookId !== 'templates' ? selectedNotebookId : 'inbox';
+        selectedNotebookId && selectedNotebookId !== 'templates'
+          ? selectedNotebookId
+          : defaultNotebookId || 'inbox';
       const newNote = await createNote.mutateAsync({
         content: result.data.content,
         notebookId: destinationNotebookId,
@@ -246,7 +257,16 @@ export function useNoteActions({
       appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
       dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
     },
-    [createNote, selectedNotebookId, goToNotebook, setSelectedNote, clearSearch, appAPI, dataAPI]
+    [
+      createNote,
+      selectedNotebookId,
+      defaultNotebookId,
+      goToNotebook,
+      setSelectedNote,
+      clearSearch,
+      appAPI,
+      dataAPI,
+    ]
   );
 
   // Duplicate note
