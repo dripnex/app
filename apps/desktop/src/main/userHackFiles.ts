@@ -63,6 +63,20 @@ export const STYLES_CSS_TEMPLATE = `/* Dripnex user stylesheet
  * .note-list-item[data-selected="true"] {
  *   background: color-mix(in srgb, var(--accent) 18%, transparent);
  * }
+ *
+ * Per-notebook text annotations (Inkdrop). Right-click a notebook →
+ * Copy style selector. GFM stays **bold** / _italic_; only this book
+ * restyles them. Preview uses strong/em; the editor uses .cm-strong/.cm-em.
+ *
+ * [data-notebook-id="inbox"] strong,
+ * [data-notebook-id="inbox"] em,
+ * [data-notebook-id="inbox"] .cm-strong,
+ * [data-notebook-id="inbox"] .cm-em {
+ *   font-size: 1.05em;
+ *   text-decoration: underline;
+ *   text-underline-position: under;
+ *   background: color-mix(in srgb, var(--warning, #fbbf24) 18%, transparent);
+ * }
  */
 `;
 

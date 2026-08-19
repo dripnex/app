@@ -9,9 +9,11 @@ import {
   GripVertical,
   Trash2,
   Smile,
+  Copy,
 } from 'lucide-react';
 import { useStore } from 'zustand';
 import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { notebookStyleSelector } from '../../utils/notebookStyle';
 import { dispatchCommand } from '../../hooks/useCommandRegistry';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { useNotebookExpandStore } from '../../stores/notebookExpandStore';
@@ -523,6 +525,17 @@ export const NotebookItem = memo(function NotebookItem({
               >
                 <Smile size={14} aria-hidden="true" />
                 Change icon
+              </button>
+              <button
+                type="button"
+                className={sc('notebook-menu-item')}
+                onClick={() => {
+                  void navigator.clipboard.writeText(notebookStyleSelector(node.notebook.id));
+                  setMenu(null);
+                }}
+              >
+                <Copy size={14} aria-hidden="true" />
+                Copy style selector
               </button>
               <button
                 type="button"

@@ -29,6 +29,7 @@ import { scrollBehavior } from '../../utils/motion';
 import { cssm } from '../../lib/cssm';
 import { emitLocalDeepLink } from '../../utils/parseDripnexUrl';
 import { isMissingWikilink, type WikilinkTitleResolution } from '../../utils/isMissingWikilink';
+import { notebookStyleProps } from '../../utils/notebookStyle';
 import { PreviewFindBar } from './PreviewFindBar';
 import { FenceBlock } from './FenceBlock';
 import styles from './MarkdownPreview.module.css';
@@ -43,6 +44,7 @@ function escapeRegex(str: string): string {
 interface MarkdownPreviewProps {
   readonly content: string;
   readonly noteId: string;
+  readonly notebookId?: string | null;
   readonly createdAt?: string;
   readonly updatedAt?: string;
   readonly onReady?: () => void;
@@ -72,6 +74,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     {
       content: contentProp,
       noteId,
+      notebookId,
       createdAt,
       updatedAt,
       onReady,
@@ -355,8 +358,9 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         {findOpen ? <PreviewFindBar matchCount={findCount} /> : null}
         <div
           ref={containerRef}
-          className={sc('markdown-preview')}
+          className={`${sc('markdown-preview')} ${notebookStyleProps(notebookId).className}`}
           data-preview
+          data-notebook-id={notebookId || undefined}
           onClick={handleClick}
           onMouseOver={handleWikilinkHover}
           onMouseOut={handleWikilinkHoverEnd}
