@@ -28,7 +28,10 @@ export function useDeepLinks() {
         return;
       }
       if (link.kind === 'note') {
-        void dispatchCommand('app:open-note', { noteId: link.noteId });
+        void dispatchCommand('app:open-note', {
+          noteId: link.noteId,
+          ...(link.heading ? { heading: link.heading } : {}),
+        });
         return;
       }
       if (link.kind === 'notebook') {

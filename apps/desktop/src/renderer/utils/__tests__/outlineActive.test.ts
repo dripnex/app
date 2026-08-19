@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { headingIndexAtOrBefore, headingIndexByText } from '../outlineActive';
+import { findHeadingForAnchor, headingIndexAtOrBefore, headingIndexByText } from '../outlineActive';
 
 const headings = [
   { line: 1, text: 'Intro' },
@@ -25,5 +25,16 @@ describe('headingIndexByText', () => {
     expect(headingIndexByText(headings, 'Setup')).toBe(1);
     expect(headingIndexByText(headings, null)).toBe(-1);
     expect(headingIndexByText(headings, 'Missing')).toBe(-1);
+  });
+});
+
+describe('findHeadingForAnchor', () => {
+  const md = '# Title\n\n## Setup\n\nHi\n\n## Hello World\n';
+
+  it('matches slug and raw text', () => {
+    expect(findHeadingForAnchor(md, 'setup')?.text).toBe('Setup');
+    expect(findHeadingForAnchor(md, 'Hello World')?.text).toBe('Hello World');
+    expect(findHeadingForAnchor(md, '#hello-world')?.line).toBe(7);
+    expect(findHeadingForAnchor(md, 'nope')).toBeNull();
   });
 });

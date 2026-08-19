@@ -3,7 +3,7 @@ import { appCommands } from '@dripnex/command-registry/definitions';
 import { registry } from './useCommandRegistry';
 
 interface AppCommandHandlers {
-  onOpenNote: (noteId: string) => void;
+  onOpenNote: (noteId: string, heading?: string) => void;
   onNewNote: () => void;
   onDuplicateNote: () => void;
   onFocusSearch: () => void;
@@ -44,7 +44,8 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
     const executors: Record<string, (payload?: Record<string, unknown>) => void> = {
       'app:open-note': payload => {
         const noteId = typeof payload?.noteId === 'string' ? payload.noteId : null;
-        if (noteId) handlersRef.current.onOpenNote(noteId);
+        const heading = typeof payload?.heading === 'string' ? payload.heading : undefined;
+        if (noteId) handlersRef.current.onOpenNote(noteId, heading);
       },
       'app:new-note': () => handlersRef.current.onNewNote(),
       'app:duplicate-note': () => handlersRef.current.onDuplicateNote(),

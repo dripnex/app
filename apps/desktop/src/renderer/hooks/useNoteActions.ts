@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
+import { useHeadingJumpStore } from '../stores/headingJumpStore';
 import { useSettingsStore } from '../stores/settings';
 import { useNoteMutations } from './useNotes';
 import { useSyncLinks } from './useLinks';
@@ -112,16 +113,18 @@ export function useNoteActions({
 
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
-    async (title: string) => {
-      const notes = await window.dripnex.notes.search(title);
-      if (notes.length > 0) {
-        const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
-        if (match) {
-          void handleSelectNote(match.id);
-        }
+    async (title: string, anchor?: string) => {
+      if (anchor && selectedNote && selectedNote.title.toLowerCase() === title.toLowerCase()) {
+        useHeadingJumpStore.getState().request(selectedNote.id, anchor);
+        return;
       }
+      const notes = await window.dripnex.notes.search(title);
+      const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
+      if (!match) return;
+      if (anchor) useHeadingJumpStore.getState().request(match.id, anchor);
+      void handleSelectNote(match.id);
     },
-    [handleSelectNote]
+    [handleSelectNote, selectedNote]
   );
 
   // Update note content
