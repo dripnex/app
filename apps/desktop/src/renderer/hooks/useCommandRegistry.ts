@@ -26,6 +26,7 @@ import {
   redoChange,
 } from '@dripnex/commands';
 import { followWikilinkAtCursor } from '../utils/followWikilinkAtCursor';
+import { acceptNes, dismissNes, triggerNes } from '../editor/nes/extension';
 
 // --- Singleton registry ---
 export const registry = new CommandRegistry();
@@ -76,6 +77,9 @@ const editorExecutors: Record<string, (view: EditorView) => boolean | void> = {
   },
   'editor:undo': undoChange,
   'editor:redo': redoChange,
+  'editor:trigger-nes': triggerNes,
+  'editor:accept-nes': acceptNes,
+  'editor:dismiss-nes': dismissNes,
 };
 
 for (const def of editorCommands) {

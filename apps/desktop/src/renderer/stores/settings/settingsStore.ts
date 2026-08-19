@@ -143,6 +143,19 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
     };
   }
 
+  // Migration: v6 -> v7 (next-edit suggestions)
+  if (version < 7) {
+    mutable = {
+      ...mutable,
+      version: 7,
+      ai: {
+        ...DEFAULT_AI,
+        ...mutable.ai,
+        nesMode: mutable.ai?.nesMode ?? DEFAULT_AI.nesMode,
+      },
+    };
+  }
+
   settings = mutable as SettingsSchema;
   return { settings };
 }

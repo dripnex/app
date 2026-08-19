@@ -69,6 +69,11 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
     '.cm-line': {
       padding: '0 4px',
     },
+    '.cm-nes-ghost': {
+      opacity: '0.45',
+      pointerEvents: 'none',
+      color: 'var(--text-muted)',
+    },
     '&.cm-focused .cm-matchingBracket': {
       backgroundColor: 'var(--cm-bracket-match)',
       outline: 'none',

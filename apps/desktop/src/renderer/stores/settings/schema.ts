@@ -16,7 +16,7 @@ import { DEFAULT_MODEL } from '@dripnex/ai-core';
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 6;
+export const SETTINGS_VERSION = 7;
 
 // ============================================================================
 // Section Types
@@ -80,6 +80,11 @@ export interface AiSettings {
   embedProvider: 'ollama' | 'openai';
   /** Embedding model id (must match the provider) */
   embedModel: string;
+  /**
+   * Next-edit suggestions (Inkdrop NES).
+   * Manual = Alt+\\, automatic = after idle, disabled = off.
+   */
+  nesMode: 'manual' | 'automatic' | 'disabled';
 }
 
 /** Local integrations (MCP / local HTTP). */
@@ -153,8 +158,12 @@ export interface SettingsSchemaV6 extends Omit<SettingsSchemaV5, 'version'> {
   integrations: IntegrationsSettings;
 }
 
+export interface SettingsSchemaV7 extends Omit<SettingsSchemaV6, 'version'> {
+  version: 7;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV6;
+export type SettingsSchema = SettingsSchemaV7;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -190,6 +199,7 @@ export const DEFAULT_AI: AiSettings = {
   baseUrl: '',
   embedProvider: 'ollama',
   embedModel: 'nomic-embed-text',
+  nesMode: 'manual',
 };
 
 export const DEFAULT_EDITOR: EditorSettings = {
@@ -220,7 +230,7 @@ export const DEFAULT_INTEGRATIONS: IntegrationsSettings = {
 
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 6,
+  version: 7,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,

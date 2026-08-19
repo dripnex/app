@@ -491,6 +491,31 @@ export function AiSection() {
         );
       })}
 
+      <SettingGroup title="Next edit suggestions">
+        <SettingRow
+          label="Trigger"
+          description="Ghost text at the cursor from your AI provider. Tab accepts, Escape dismisses. Alt+\ asks on demand."
+          htmlFor="nesMode"
+        >
+          <Select
+            id="nesMode"
+            value={ai.nesMode ?? 'manual'}
+            onChange={value => {
+              const nesMode =
+                value === 'automatic' || value === 'disabled' || value === 'manual'
+                  ? value
+                  : 'manual';
+              updateAi({ nesMode });
+            }}
+            options={[
+              { value: 'manual', label: 'Manual (Alt+\\)' },
+              { value: 'automatic', label: 'Automatic (on idle)' },
+              { value: 'disabled', label: 'Disabled' },
+            ]}
+          />
+        </SettingRow>
+      </SettingGroup>
+
       <SettingGroup title="Knowledge base">
         <SettingRow label="Local index" description={kbIndexDescription(kb?.embedded ?? 0)}>
           <div

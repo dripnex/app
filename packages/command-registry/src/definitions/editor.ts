@@ -177,4 +177,27 @@ export const editorCommands: CommandDefinition[] = [
     icon: 'Redo2',
     showInPalette: true,
   },
+  {
+    id: 'editor:trigger-nes',
+    name: 'Suggest Next Edit',
+    category: 'editor',
+    context: 'editor',
+    defaultKeybinding: { key: '\\', modifiers: ['Alt'] },
+    icon: 'Sparkles',
+    showInPalette: true,
+  },
+  {
+    id: 'editor:accept-nes',
+    name: 'Accept Next Edit',
+    category: 'editor',
+    context: 'editor',
+    showInPalette: false,
+  },
+  {
+    id: 'editor:dismiss-nes',
+    name: 'Dismiss Next Edit',
+    category: 'editor',
+    context: 'editor',
+    showInPalette: false,
+  },
 ];
