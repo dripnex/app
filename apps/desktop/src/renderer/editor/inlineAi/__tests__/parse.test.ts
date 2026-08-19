@@ -35,13 +35,21 @@ describe('extractInlineReplacement', () => {
   });
 
   it('unwraps a single markdown fence', () => {
-    expect(extractInlineReplacement('```markdown\nHello\n```', false)).toBe('Hello');
+    expect(extractInlineReplacement('```markdown\nHello\n```', false)).toBe('Hello\n');
   });
 
   it('keeps a fence when asked', () => {
     expect(extractInlineReplacement('```mermaid\ngraph TD\n```', true)).toBe(
       '```mermaid\ngraph TD\n```'
     );
+  });
+
+  it('preserves indented list items', () => {
+    expect(extractInlineReplacement('  - child', false)).toBe('  - child');
+  });
+
+  it('preserves indented code inside a wrapping fence', () => {
+    expect(extractInlineReplacement('```\n    code\n```', false)).toBe('    code\n');
   });
 
   it('rejects empty output', () => {

@@ -52,13 +52,13 @@ export function buildInlineEditPrompt(ctx: InlineEditContext): string {
 
 /** Strip a single wrapping fence. Linear scan — no regex. */
 export function extractInlineReplacement(raw: string, keepFence: boolean): string | null {
+  if (!raw.trim()) return null;
+  if (keepFence) return raw;
   const text = raw.trim();
-  if (!text) return null;
-  if (keepFence) return text;
-  if (!text.startsWith('```')) return text;
+  if (!text.startsWith('```')) return raw;
   const firstNl = text.indexOf('\n');
   if (firstNl === -1) return text;
   if (!text.endsWith('```')) return text;
-  const inner = text.slice(firstNl + 1, text.length - 3).trim();
+  const inner = text.slice(firstNl + 1, text.length - 3);
   return inner || text;
 }

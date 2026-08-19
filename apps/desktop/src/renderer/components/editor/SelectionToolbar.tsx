@@ -171,10 +171,11 @@ export function SelectionToolbar() {
     const view = getEditorView();
     if (!view || aiBusy) return;
     const { from, to } = view.state.selection.main;
+    const initialContent = view.state.doc.toString();
     setAiBusy(true);
     setAiError(null);
     const result = await requestInlineEdit({
-      content: view.state.doc.toString(),
+      content: initialContent,
       from,
       to,
       title: '',
@@ -188,6 +189,10 @@ export function SelectionToolbar() {
           ? 'Set up AI in Settings → AI'
           : 'Could not edit the selection'
       );
+      return;
+    }
+    if (view.state.doc.toString() !== initialContent) {
+      setAiError('Note changed — try again');
       return;
     }
     if (from > view.state.doc.length || to > view.state.doc.length) return;
