@@ -398,26 +398,6 @@
   flex-shrink: 0;
 }
 
-.sidebar-settings-btn {
-  -webkit-app-region: no-drag;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all var(--transition-fast);
-}
-
-.sidebar-settings-btn:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
 /* New Note Button */
 .sidebar-new-note-btn {
   width: 100%;

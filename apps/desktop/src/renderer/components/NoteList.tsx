@@ -21,6 +21,8 @@ import { useShareStore, selectIsShared } from '../stores/shareStore';
 import { kindFromTags, kindMeta } from '../lib/knowledge';
 import { cssm } from '../lib/cssm';
 import { dispatchCommand } from '../hooks/useCommandRegistry';
+import { IconButton } from '../ui/primitives';
+import { needsTrafficLightInset } from '../utils/trafficLights';
 import { noteListNavDirection } from '../utils/noteListKeys';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
@@ -252,39 +254,28 @@ export function NoteList({
   return (
     <nav className={sc('note-list')} aria-label="Notes navigation" data-note-list>
       {/* Header Toolbar */}
-      <div className={sc('note-list-header')}>
+      <div
+        className={sc('note-list-header')}
+        data-traffic-inset={sidebarCollapsed && needsTrafficLightInset() ? 'true' : undefined}
+      >
         {onToggleSidebar ? (
-          <button
-            type="button"
-            className={sc('header-btn')}
+          <IconButton
+            label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+            pressed={!sidebarCollapsed}
             onClick={onToggleSidebar}
-            aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-            aria-pressed={!sidebarCollapsed}
-            title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
           >
             <PanelLeft size={16} aria-hidden="true" />
-          </button>
+          </IconButton>
         ) : null}
         <span className={sc('header-title')}>{getHeaderTitle()}</span>
         {onCreateFromTemplate && selectedNotebookId !== 'templates' ? (
-          <button
-            type="button"
-            className={sc('header-btn')}
-            onClick={() => setTemplatePickerOpen(true)}
-            aria-label="New note from template"
-            title="New from template"
-          >
+          <IconButton label="New from template" onClick={() => setTemplatePickerOpen(true)}>
             <FileStack size={16} aria-hidden="true" />
-          </button>
+          </IconButton>
         ) : null}
-        <button
-          type="button"
-          className={sc('header-btn')}
-          onClick={onNewNote}
-          aria-label="Create new note"
-        >
+        <IconButton label="Create new note" onClick={onNewNote}>
           <SquarePen size={16} aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Search bar with icon + filter toggle */}

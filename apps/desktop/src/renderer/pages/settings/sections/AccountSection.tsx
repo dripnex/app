@@ -13,8 +13,6 @@ import {
   Sparkles,
   CreditCard,
   ExternalLink,
-  ChevronDown,
-  ChevronRight,
 } from 'lucide-react';
 import { getProductConfig } from '@dripnex/product-config';
 import {
@@ -33,6 +31,7 @@ import {
 import { useLicense } from '../../../contexts/LicenseContext';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingDisclosure } from '../components/SettingDisclosure';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
 import { ConflictResolver } from '../../../components/sync/ConflictResolver';
 import { Button } from '../../../ui/primitives';
@@ -290,20 +289,15 @@ export function AccountSection() {
               </div>
             )}
 
-            <button
-              type="button"
-              className={styles.historyToggle}
-              onClick={() => setShowHistory(!showHistory)}
+            <SettingDisclosure
+              label="Sync History"
+              open={showHistory}
+              onToggle={() => setShowHistory(!showHistory)}
             >
-              {showHistory ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <span>Sync History</span>
-            </button>
-
-            {showHistory && (
-              <div className={styles.syncHistoryTable}>
-                {syncHistory.length === 0 ? (
-                  <div className={styles.placeholder}>No sync history yet</div>
-                ) : (
+              {syncHistory.length === 0 ? (
+                <p className={styles.historyEmpty}>No sync history yet</p>
+              ) : (
+                <div className={styles.syncHistoryTable}>
                   <table className={styles.historyTable}>
                     <thead>
                       <tr>
@@ -336,9 +330,9 @@ export function AccountSection() {
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </SettingDisclosure>
           </SettingGroup>
 
           <DevicesSection />

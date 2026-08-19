@@ -32,6 +32,7 @@ Shipped:
 - MCP writes off unless `DRIPNEX_MCP_WRITES=1`.
 - Command palette Quick Open.
 - Sync conflicts: one screen, keep this device / keep other / open both.
+- Chrome: IconButton, sidebar collapse animates, Sync History stays inside the card.
 - Emergency Kit + 1Password integration (`Settings → Integrations`).
 - Dev renderer waits for Vite (no `chrome-error` hop).
 

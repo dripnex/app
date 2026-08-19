@@ -28,24 +28,8 @@
   -webkit-app-region: drag;
 }
 
-.header-btn {
-  -webkit-app-region: no-drag;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
-}
-
-.header-btn:hover {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
+.note-list-header[data-traffic-inset='true'] {
+  padding-left: 72px;
 }
 
 .header-title {

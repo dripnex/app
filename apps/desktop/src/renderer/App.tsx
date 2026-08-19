@@ -369,18 +369,22 @@ function NotesApp() {
         <div className="app">
           <UpdateBanner />
           <div className="app__layout">
+            <aside
+              className="app__sidebar"
+              data-collapsed={sidebarCollapsed ? 'true' : 'false'}
+              style={{ width: sidebarWidth }}
+              aria-hidden={sidebarCollapsed}
+              inert={sidebarCollapsed || undefined}
+            >
+              <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
+            </aside>
             {!sidebarCollapsed ? (
-              <>
-                <aside className="app__sidebar" style={{ width: sidebarWidth }}>
-                  <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
-                </aside>
-                <div
-                  className="resize-handle"
-                  onMouseDown={startResizeSidebar}
-                  role="separator"
-                  aria-orientation="vertical"
-                />
-              </>
+              <div
+                className="resize-handle"
+                onMouseDown={startResizeSidebar}
+                role="separator"
+                aria-orientation="vertical"
+              />
             ) : null}
 
             <section className="app__notelist" style={{ width: notelistWidth }}>
