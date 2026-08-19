@@ -18,8 +18,10 @@ import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
 import { useResolvedWikilinkTargets } from '../hooks/useResolvedWikilinkTargets';
+import { useWikilinkPeek } from '../hooks/useWikilinkPeek';
 import { useNotebook } from '../hooks/useNotebooks';
 import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
+import { WikilinkPeek } from './editor/WikilinkPeek';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import { ImageLightbox } from './ImageLightbox';
@@ -231,6 +233,7 @@ export function NoteEditor({
   // Embed resolution (extracted to hook)
   const liveContent = useEditorBufferStore(selectContentForNote(note?.id ?? null));
   const knownWikilinkTitles = useResolvedWikilinkTargets(liveContent ?? note?.content ?? '');
+  const wikilinkPeek = useWikilinkPeek();
 
   const { resolvedEmbeds, getEmbedUrl } = useEmbedResolver({
     noteId: note?.id ?? null,
@@ -570,6 +573,10 @@ export function NoteEditor({
                   noteId={note.id}
                   getEmbedUrl={getEmbedUrl}
                   onWikilinkClick={onWikilinkClick}
+                  onWikilinkHover={(target, coords) =>
+                    wikilinkPeek.request(target, coords.x, coords.y)
+                  }
+                  onWikilinkHoverEnd={wikilinkPeek.leave}
                   knownWikilinkTitles={knownWikilinkTitles}
                 />
               </Suspense>
@@ -591,6 +598,10 @@ export function NoteEditor({
                 updatedAt={note.updatedAt}
                 onReady={onPreviewReady}
                 onWikilinkClick={onWikilinkClick}
+                onWikilinkHover={(target, coords) =>
+                  wikilinkPeek.request(target, coords.x, coords.y)
+                }
+                onWikilinkHoverEnd={wikilinkPeek.leave}
                 knownWikilinkTitles={knownWikilinkTitles}
                 onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
                 resolvedEmbeds={resolvedEmbeds}
@@ -653,6 +664,20 @@ export function NoteEditor({
         onClose={() => setRevisionHistoryOpen(false)}
         notebookId={note.notebookId}
       />
+
+      {wikilinkPeek.peek ? (
+        <WikilinkPeek
+          target={wikilinkPeek.peek.target}
+          x={wikilinkPeek.peek.x}
+          y={wikilinkPeek.peek.y}
+          onOpen={title => {
+            onWikilinkClick?.(title);
+            wikilinkPeek.close();
+          }}
+          onHold={wikilinkPeek.hold}
+          onLeave={wikilinkPeek.leave}
+        />
+      ) : null}
 
       {/* Image Lightbox */}
       {lightbox && (
