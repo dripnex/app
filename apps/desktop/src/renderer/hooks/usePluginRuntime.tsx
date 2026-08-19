@@ -275,16 +275,23 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
         async updateNotebook(id, patch) {
           let nb = await window.dripnex.notebooks.get(id);
           if (!nb) return null;
-          if (patch.name !== undefined) {
-            nb = await window.dripnex.notebooks.rename(id, patch.name);
+          let dirty = false;
+          try {
+            if (patch.name !== undefined) {
+              nb = await window.dripnex.notebooks.rename(id, patch.name);
+              dirty = true;
+            }
+            if (patch.icon !== undefined) {
+              nb = await window.dripnex.notebooks.setIcon(id, patch.icon);
+              dirty = true;
+            }
+            if (patch.parentId !== undefined) {
+              nb = await window.dripnex.notebooks.move(id, patch.parentId);
+              dirty = true;
+            }
+          } finally {
+            if (dirty) void queryClient.invalidateQueries({ queryKey: notebookKeys.all });
           }
-          if (patch.icon !== undefined) {
-            nb = await window.dripnex.notebooks.setIcon(id, patch.icon);
-          }
-          if (patch.parentId !== undefined) {
-            nb = await window.dripnex.notebooks.move(id, patch.parentId);
-          }
-          void queryClient.invalidateQueries({ queryKey: notebookKeys.all });
           return { id: nb.id, name: nb.name, parentId: nb.parentId, icon: nb.icon };
         },
         async deleteNotebook(id) {
