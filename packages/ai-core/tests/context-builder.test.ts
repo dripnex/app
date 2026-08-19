@@ -66,6 +66,24 @@ describe('buildContext', () => {
     expect(result.system).toContain('Some content here');
   });
 
+  it('surfaces instruction: from the current note', () => {
+    const result = buildContext(
+      {
+        systemPrompt,
+        currentNote: {
+          id: '1',
+          title: 'Meeting',
+          content: '---\ninstruction: Capture attendees and next actions.\n---\n# Meeting\n',
+        },
+        history: [],
+        relevantNotes: [],
+      },
+      { maxContextTokens: 10000, maxResponseTokens: 100 }
+    );
+    expect(result.system).toContain('Template instruction for the current note:');
+    expect(result.system).toContain('Capture attendees and next actions.');
+  });
+
   it('includes conversation history newest-first priority', () => {
     const history: ChatMessage[] = [
       { role: 'user', content: 'first message' },

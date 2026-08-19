@@ -4,6 +4,7 @@
  */
 
 import { scanMarkdown } from '@dripnex/markdown';
+import { parseNoteFrontmatter } from './frontmatter.js';
 import { createTag, type Tag, type Timestamp } from './types.js';
 
 /** Metadata derived from a note's content */
@@ -33,8 +34,9 @@ export function isPlaceholderTitle(title: string): boolean {
 
 /** Extracts the title from markdown content */
 export function extractTitle(content: string, fallback: string = 'Untitled'): string {
-  // Only the first non-empty line. A heading later in the note is body, not title.
-  const firstLine = content.split(/\r?\n/).find(line => line.trim().length > 0);
+  // Only the first non-empty line of the body. Frontmatter is not the title.
+  const body = parseNoteFrontmatter(content).body;
+  const firstLine = body.split(/\r?\n/).find(line => line.trim().length > 0);
   if (!firstLine) return fallback;
 
   const heading = firstLine.match(/^#{1,6}\s+(.+)$/);
@@ -44,13 +46,13 @@ export function extractTitle(content: string, fallback: string = 'Untitled'): st
 
 /** Extracts tags from markdown content */
 export function extractTags(content: string): Tag[] {
-  return scanMarkdown(content).tags.map(createTag);
+  return scanMarkdown(parseNoteFrontmatter(content).body).tags.map(createTag);
 }
 
 /** Counts words in content */
 export function countWords(content: string): number {
-  const text = content
-    .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+  const text = parseNoteFrontmatter(content)
+    .body.replace(/```[\s\S]*?```/g, '') // Remove code blocks
     .replace(/`[^`]+`/g, '') // Remove inline code
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Extract link text
     .replace(/[#*_~`]/g, ''); // Remove markdown chars

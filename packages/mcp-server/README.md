@@ -32,7 +32,12 @@ Requires Node ≥ 22.5.
 ## Tools
 
 Read path (the product): `dripnex_search_notes`, `dripnex_read_note`,
-`dripnex_list_notes`, `dripnex_list_notebooks`, `dripnex_list_tags`.
+`dripnex_list_notes`, `dripnex_list_notebooks`, `dripnex_list_tags`,
+`dripnex_list_templates`.
+
+`dripnex_create_note` accepts `template` (title in the Templates notebook).
+That copies the template, including `instruction:` frontmatter. Pass `content`
+too to keep the instruction and replace the body.
 
 Writes (`create` / `update` / `trash`) are **off by default**. Enable them
 in **Settings → Integrations → Allow writes** (writes `mcp.json` next to

@@ -3,10 +3,20 @@ export interface DefaultTemplate {
   content: string;
 }
 
+function withInstruction(instruction: string, body: string): string {
+  const indented = instruction
+    .split('\n')
+    .map(line => `  ${line}`)
+    .join('\n');
+  return `---\ninstruction: |\n${indented}\n---\n${body}`;
+}
+
 export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: 'Meeting',
-    content: `# Meeting
+    content: withInstruction(
+      'Capture attendees, decisions, and next actions. Prefer bullets. Do not invent attendees.',
+      `# Meeting
 
 **Date:**
 **Attendees:**
@@ -22,11 +32,14 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
 ## Actions
 
 - [ ]
-`,
+`
+    ),
   },
   {
     title: 'Decision',
-    content: `# Decision
+    content: withInstruction(
+      'State the decision, options considered, and consequences. Keep status honest.',
+      `# Decision
 
 **Status:** proposed
 **Date:**
@@ -38,11 +51,14 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
 ## Decision
 
 ## Consequences
-`,
+`
+    ),
   },
   {
     title: 'Daily',
-    content: `# Daily
+    content: withInstruction(
+      'List what you will do today. Keep it short. Do not rewrite the past.',
+      `# Daily
 
 **Date:**
 
@@ -52,11 +68,14 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
 
 ## Notes
 
-`,
+`
+    ),
   },
   {
     title: 'Weekly',
-    content: `# Weekly
+    content: withInstruction(
+      'What shipped, what is still open, what next week is for. No status theater.',
+      `# Weekly
 
 **Week of:**
 
@@ -71,11 +90,14 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
 ## Next week
 
 - [ ]
-`,
+`
+    ),
   },
   {
     title: 'Reading',
-    content: `# Reading
+    content: withInstruction(
+      'What it is about, the quotes that matter, and why you kept it.',
+      `# Reading
 
 **Source:**
 **Date:**
@@ -88,11 +110,14 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
 
 ## Why it matters
 
-`,
+`
+    ),
   },
   {
     title: 'Feasibility spike',
-    content: `# Feasibility spike
+    content: withInstruction(
+      'Time-boxed. Answer the question, say what you tried, then go or no-go.',
+      `# Feasibility spike
 
 Time-boxed look at whether something is worth building.
 
@@ -110,11 +135,14 @@ Time-boxed look at whether something is worth building.
 
 ## Go / no-go
 
-`,
+`
+    ),
   },
   {
     title: 'Options comparison',
-    content: `# Options comparison
+    content: withInstruction(
+      'Compare real options. End with one recommendation.',
+      `# Options comparison
 
 ## Problem
 
@@ -127,11 +155,14 @@ Time-boxed look at whether something is worth building.
 
 ## Recommendation
 
-`,
+`
+    ),
   },
   {
     title: 'Codebase exploration',
-    content: `# Codebase exploration
+    content: withInstruction(
+      'What you expected, what you found, entry points, open questions.',
+      `# Codebase exploration
 
 ## Area
 
@@ -148,11 +179,14 @@ Time-boxed look at whether something is worth building.
 ## Open questions
 
 - [ ]
-`,
+`
+    ),
   },
   {
     title: 'Crash',
-    content: `# Crash
+    content: withInstruction(
+      'Summary, repro, stack, environment. Do not paste secrets.',
+      `# Crash
 
 For triaging a crash or unhandled exception.
 
@@ -184,11 +218,14 @@ paste here
 - Does it reproduce consistently?
 - Did it start after a dependency bump, OS update, or commit?
 - Does the stack point at our code or a native/dependency module?
-`,
+`
+    ),
   },
   {
     title: 'Bug fix',
-    content: `# Bug fix
+    content: withInstruction(
+      'What is broken, expected, repro, fix, how we will know.',
+      `# Bug fix
 
 ## What's broken
 
@@ -202,11 +239,14 @@ paste here
 
 ## How we'll know it's fixed
 
-`,
+`
+    ),
   },
   {
     title: 'Data integrity',
-    content: `# Data integrity
+    content: withInstruction(
+      'What looks wrong, who is affected, the write path, recovery steps.',
+      `# Data integrity
 
 ## What looks wrong
 
@@ -217,11 +257,14 @@ paste here
 ## Recovery
 
 - [ ]
-`,
+`
+    ),
   },
   {
     title: 'Security',
-    content: `# Security
+    content: withInstruction(
+      'Report, impact, attack path, mitigation. No credentials in the note.',
+      `# Security
 
 ## Report
 
@@ -236,11 +279,14 @@ paste here
 ## Follow-up
 
 - [ ]
-`,
+`
+    ),
   },
   {
     title: 'Race condition',
-    content: `# Race condition
+    content: withInstruction(
+      'Symptom, shared state, timing, repro, fix.',
+      `# Race condition
 
 ## Symptom
 
@@ -253,11 +299,14 @@ paste here
 1.
 
 ## Fix
-`,
+`
+    ),
   },
   {
     title: 'Design',
-    content: `# Design
+    content: withInstruction(
+      'Problem, constraints, proposal, alternatives, risks.',
+      `# Design
 
 ## Problem
 
@@ -268,11 +317,14 @@ paste here
 ## Alternatives
 
 ## Risks
-`,
+`
+    ),
   },
   {
     title: 'Postmortem',
-    content: `# Postmortem
+    content: withInstruction(
+      'What happened, impact, timeline, root cause, actions. No blame.',
+      `# Postmortem
 
 **Date:**
 **Severity:**
@@ -290,11 +342,14 @@ paste here
 ## Action items
 
 - [ ]
-`,
+`
+    ),
   },
   {
     title: 'PR review',
-    content: `# PR review
+    content: withInstruction(
+      'What you checked, notes, verdict. Be specific about risk.',
+      `# PR review
 
 **PR:**
 **Author:**
@@ -312,6 +367,7 @@ paste here
 
 ## Verdict
 
-`,
+`
+    ),
   },
 ];
