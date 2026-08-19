@@ -19,7 +19,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-app-region: no-drag;
-  padding: 4px 4px 12px;
+  padding: 4px 0 12px;
 }
 
 .sidebar-content::-webkit-scrollbar {
@@ -446,10 +446,6 @@
   text-align: left;
 }
 
-.sidebar-row:hover {
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-}
-
 .sidebar-row.selected {
   background: color-mix(in srgb, var(--text-primary) 10%, transparent);
   color: var(--text-primary);
@@ -674,10 +670,6 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background var(--transition-fast);
-}
-
-.notebook-item-row:hover {
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .notebook-item-row.selected {

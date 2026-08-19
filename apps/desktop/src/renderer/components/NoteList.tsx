@@ -3,6 +3,7 @@ import {
   Sparkles,
   Archive,
   Search,
+  Filter,
   X,
   SquarePen,
   FileStack,
@@ -277,14 +278,14 @@ export function NoteList({
       {/* Search bar with icon + filter toggle */}
       <div className={sc('note-list-search')}>
         <div className={sc('search-input-wrapper')}>
-          <Search size={14} className={sc('search-icon')} aria-hidden="true" />
+          <Filter size={14} className={sc('search-icon')} aria-hidden="true" />
           <label htmlFor="note-search" className="visually-hidden">
-            Search notes
+            Filter notes
           </label>
           <input
             id="note-search"
             type="search"
-            placeholder="Search"
+            placeholder="Filter"
             value={searchQuery}
             onChange={handleSearchChange}
             className={sc('search-input')}
@@ -294,7 +295,7 @@ export function NoteList({
             <button
               className={sc('search-clear')}
               onClick={clearSearch}
-              aria-label="Clear search"
+              aria-label="Clear filter"
               type="button"
             >
               <X size={14} />
