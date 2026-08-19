@@ -74,3 +74,20 @@ export function findHeadingByAnchor(content: string, anchor: string): Heading | 
       h.slug.includes(headingToSlug(normalizedAnchor))
   );
 }
+
+/** Split `[[` inner text into note title + heading query. */
+export function splitWikilinkQuery(inner: string): { title: string; heading: string } | null {
+  const hash = inner.lastIndexOf('#');
+  if (hash < 0) return null;
+  return { title: inner.slice(0, hash).trim(), heading: inner.slice(hash + 1) };
+}
+
+/** Filter headings by text or slug substring. */
+export function filterHeadings(headings: readonly Heading[], query: string): Heading[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...headings];
+  const slug = headingToSlug(q);
+  return headings.filter(
+    heading => heading.text.toLowerCase().includes(q) || heading.slug.includes(slug)
+  );
+}

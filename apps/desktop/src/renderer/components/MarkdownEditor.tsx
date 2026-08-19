@@ -166,6 +166,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               new CustomEvent('dripnex:create-linked-note', { detail: { title } })
             );
           },
+          getNoteContent: async id => {
+            const result = await window.dripnex.notes.get(id);
+            return result.ok ? result.data.content : null;
+          },
         }),
       []
     );

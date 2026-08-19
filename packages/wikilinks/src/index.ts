@@ -26,6 +26,8 @@ export {
   extractHeadingTexts,
   headingToSlug,
   findHeadingByAnchor,
+  splitWikilinkQuery,
+  filterHeadings,
 } from './core/headings.js';
 
 // Adapters (for advanced use only)
