@@ -438,7 +438,7 @@
   padding: 6px 8px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--text-primary);
   font-size: 13px;
   line-height: 1.2;
@@ -674,7 +674,7 @@
   min-height: 32px;
   padding: 6px 8px;
   margin: 0;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   transition: background var(--transition-fast);
 }
@@ -700,8 +700,9 @@
 
 .notebook-item-lead {
   position: relative;
-  width: 16px;
-  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
 }
 
@@ -757,22 +758,24 @@
   outline-offset: -1px;
 }
 
-.notebook-item-toggle {
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
+.notebook-item-toggle,
+.notebook-item-toggle-slot {
   width: 12px;
   height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-surface);
+  flex-shrink: 0;
+  background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
   padding: 0;
+}
+
+.notebook-item-toggle-slot {
+  cursor: default;
+  pointer-events: none;
 }
 
 .notebook-item-toggle:hover {
@@ -1044,7 +1047,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .tags-list-item {

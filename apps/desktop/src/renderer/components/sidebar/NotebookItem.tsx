@@ -346,7 +346,7 @@ export const NotebookItem = memo(function NotebookItem({
           dropPosition && `drop-${dropPosition}`,
           isDragging && 'dragging'
         )}
-        style={depth > 0 ? { paddingLeft: `${depth * 14 + 8}px` } : undefined}
+        style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         role="button"
@@ -384,7 +384,9 @@ export const NotebookItem = memo(function NotebookItem({
                 <ChevronRight size={12} aria-hidden="true" />
               )}
             </button>
-          ) : null}
+          ) : (
+            <span className={sc('notebook-item-toggle-slot')} aria-hidden="true" />
+          )}
           <span className={sc('notebook-item-icon')} aria-hidden="true">
             {isInbox ? <Inbox size={15} /> : <Folder size={15} />}
           </span>
