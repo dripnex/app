@@ -5,6 +5,7 @@ import type { EditorDecorationAPI } from './editor/decorationAPI';
 import type { CodeBlockRendererProps } from './preview/codeBlockStore';
 import type { DataAPI } from './data/createDataAPI';
 import type { PluginComponents } from './components/catalog';
+import type { MarkdownRenderer } from './preview/createMarkdownRenderer';
 
 /** Controlled subset of editor operations for plugins */
 export interface EditorAPI {
@@ -248,6 +249,11 @@ export interface PluginContext {
   app: AppAPI;
   /** Rich data query API for notes, notebooks, tags, links, and graph */
   data: DataAPI;
+  /**
+   * Inkdrop `markdownRenderer`: remark/rehype arrays, React element map,
+   * fenced-code map, and preview events.
+   */
+  markdownRenderer: MarkdownRenderer;
 }
 
 export interface PluginManifest {

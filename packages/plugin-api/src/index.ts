@@ -61,6 +61,8 @@ export { DataAccessError } from './data/dataTypes';
 // Preview
 export { previewComponentStore } from './preview/previewComponentStore';
 export type { PreviewComponentRegistration } from './preview/previewComponentStore';
+export { createMarkdownRenderer } from './preview/createMarkdownRenderer';
+export type { MarkdownRenderer } from './preview/createMarkdownRenderer';
 export { remarkPluginStore } from './preview/remarkPluginStore';
 export type { RemarkPluginRegistration } from './preview/remarkPluginStore';
 export { rehypePluginStore } from './preview/rehypePluginStore';
