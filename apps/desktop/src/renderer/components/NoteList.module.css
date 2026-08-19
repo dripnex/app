@@ -28,10 +28,6 @@
   -webkit-app-region: drag;
 }
 
-.note-list-header[data-traffic-inset='true'] {
-  padding-left: 72px;
-}
-
 .header-title {
   flex: 1;
   min-width: 0;
