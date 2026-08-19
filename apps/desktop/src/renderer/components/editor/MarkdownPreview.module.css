@@ -210,13 +210,19 @@
 .markdown-preview :global(.wikilink) {
   display: inline; /* Force inline in all contexts (blockquotes, etc) */
   color: var(--accent);
-  border-bottom: 1px solid rgba(94, 234, 212, 0.3);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   cursor: pointer;
   border-radius: 2px;
 }
 
 .markdown-preview :global(.wikilink):hover {
-  background: rgba(94, 234, 212, 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.markdown-preview :global(.wikilink--missing) {
+  color: var(--text-secondary);
+  border-bottom-style: dashed;
+  border-bottom-color: color-mix(in srgb, var(--text-secondary) 40%, transparent);
 }
 
 /* Strong and emphasis */

@@ -17,6 +17,7 @@ import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
+import { useResolvedWikilinkTargets } from '../hooks/useResolvedWikilinkTargets';
 import { useNotebook } from '../hooks/useNotebooks';
 import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
@@ -229,6 +230,7 @@ export function NoteEditor({
 
   // Embed resolution (extracted to hook)
   const liveContent = useEditorBufferStore(selectContentForNote(note?.id ?? null));
+  const knownWikilinkTitles = useResolvedWikilinkTargets(liveContent ?? note?.content ?? '');
 
   const { resolvedEmbeds, getEmbedUrl } = useEmbedResolver({
     noteId: note?.id ?? null,
@@ -568,6 +570,7 @@ export function NoteEditor({
                   noteId={note.id}
                   getEmbedUrl={getEmbedUrl}
                   onWikilinkClick={onWikilinkClick}
+                  knownWikilinkTitles={knownWikilinkTitles}
                 />
               </Suspense>
             </div>
@@ -588,6 +591,7 @@ export function NoteEditor({
                 updatedAt={note.updatedAt}
                 onReady={onPreviewReady}
                 onWikilinkClick={onWikilinkClick}
+                knownWikilinkTitles={knownWikilinkTitles}
                 onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
                 resolvedEmbeds={resolvedEmbeds}
                 onCheckboxToggle={handlePreviewCheckbox}

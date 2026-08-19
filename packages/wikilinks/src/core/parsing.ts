@@ -33,20 +33,33 @@ export function extractWikilinkTargets(content: string): string[] {
     .filter(Boolean);
 }
 
-/** Wikilink whose `[[...]]` span contains `index` (inclusive). Linear, no regex. */
-export function parseWikilinkAt(text: string, index: number): WikilinkRef | null {
-  if (index < 0 || index > text.length) return null;
+export interface WikilinkSpan {
+  start: number;
+  end: number;
+  ref: WikilinkRef;
+}
+
+/** Every valid `[[...]]` span in `text`. Linear, no regex. */
+export function findWikilinkSpans(text: string): WikilinkSpan[] {
+  const spans: WikilinkSpan[] = [];
   let i = 0;
   while (i < text.length) {
     const open = text.indexOf('[[', i);
-    if (open === -1) return null;
+    if (open === -1) break;
     const close = text.indexOf(']]', open + 2);
-    if (close === -1) return null;
-    const end = close + 2;
-    if (index >= open && index <= end) {
-      return parseWikilinkInner(text.slice(open + 2, close));
-    }
+    if (close === -1) break;
+    const ref = parseWikilinkInner(text.slice(open + 2, close));
+    if (ref) spans.push({ start: open, end: close + 2, ref });
     i = open + 2;
+  }
+  return spans;
+}
+
+/** Wikilink whose `[[...]]` span contains `index` (inclusive). */
+export function parseWikilinkAt(text: string, index: number): WikilinkRef | null {
+  if (index < 0 || index > text.length) return null;
+  for (const span of findWikilinkSpans(text)) {
+    if (index >= span.start && index <= span.end) return span.ref;
   }
   return null;
 }
