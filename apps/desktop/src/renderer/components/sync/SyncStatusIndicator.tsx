@@ -23,6 +23,7 @@ export function SyncStatusIndicator() {
   const hasConflicts = useSyncStore(selectHasConflicts);
   const conflicts = useSyncStore(selectConflicts);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const openConflictScreen = useSyncStore(state => state.openConflictScreen);
   const [showTooltip, setShowTooltip] = useState(false);
 
   const getStatusInfo = () => {
@@ -38,7 +39,7 @@ export function SyncStatusIndicator() {
     if (hasConflicts && status !== 'syncing') {
       return {
         icon: <AlertTriangle size={14} />,
-        label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — resolve in Settings`,
+        label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — Review`,
         className: styles.statusWarning,
       };
     }
@@ -96,6 +97,18 @@ export function SyncStatusIndicator() {
   return (
     <div
       className={`${styles.container} ${className}`}
+      role={hasConflicts ? 'button' : undefined}
+      tabIndex={hasConflicts ? 0 : undefined}
+      onClick={() => {
+        if (hasConflicts) openConflictScreen();
+      }}
+      onKeyDown={event => {
+        if (!hasConflicts) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openConflictScreen();
+        }
+      }}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >

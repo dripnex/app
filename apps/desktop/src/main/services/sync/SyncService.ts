@@ -610,6 +610,7 @@ export class SyncService {
         type: 'sync-success',
         changesApplied: totalApplied,
         changesPushed: totalPushed,
+        conflicts: pullResult.conflicts,
       });
 
       return {

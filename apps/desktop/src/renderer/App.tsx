@@ -8,6 +8,7 @@ import { NoteWindow } from './components/NoteWindow';
 import { Sidebar } from './components/sidebar';
 import { GraphView } from './components/GraphView';
 import { CommandPalette } from './components/CommandPalette';
+import { ConflictResolver } from './components/sync/ConflictResolver';
 import { AiPanel } from './components/ai/AiPanel';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider } from './components/Toast';
@@ -493,6 +494,7 @@ function NotesApp() {
               setTagFilter(name);
             }}
           />
+          <ConflictResolver variant="modal" />
           <Toaster />
         </div>
       </LicenseProvider>

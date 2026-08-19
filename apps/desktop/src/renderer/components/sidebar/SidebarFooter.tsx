@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
-import { Cloud, CloudOff, RefreshCw, AlertCircle, Check } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, AlertCircle, AlertTriangle, Check } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import {
   useSyncStore,
@@ -8,6 +8,7 @@ import {
   selectConsecutiveFailures,
   selectPendingCount,
   selectError,
+  selectConflicts,
 } from '../../stores/syncStore';
 import { syncFooterAction, syncFooterErrorLabel } from '../../utils/syncFooterCopy';
 import { sc } from './sc';
@@ -53,6 +54,8 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   const syncError = useSyncStore(selectError);
   const syncNow = useSyncStore(state => state.syncNow);
   const refreshPendingCount = useSyncStore(state => state.refreshPendingCount);
+  const conflicts = useSyncStore(selectConflicts);
+  const openConflictScreen = useSyncStore(state => state.openConflictScreen);
 
   // Force re-render every 60s so relative time text stays fresh
   const [, forceUpdate] = useState(0);
@@ -128,6 +131,25 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--syncing')}>
         <RefreshCw size={11} className={sc('sidebar-footer-sync-spinning')} />
         <span>Syncing...</span>
+      </div>
+    );
+  }
+
+  if (conflicts.length > 0) {
+    const n = conflicts.length;
+    return (
+      <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--conflict')}>
+        <AlertTriangle size={11} />
+        <span>
+          {n} conflict{n === 1 ? '' : 's'}
+        </span>
+        <button
+          type="button"
+          className={sc('sidebar-footer-progress-retry')}
+          onClick={() => openConflictScreen()}
+        >
+          Review
+        </button>
       </div>
     );
   }

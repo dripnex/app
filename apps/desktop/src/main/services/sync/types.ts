@@ -31,7 +31,12 @@ export interface SyncState {
 
 export type SyncStatusEvent =
   | { type: 'sync-start' }
-  | { type: 'sync-success'; changesApplied: number; changesPushed: number }
+  | {
+      type: 'sync-success';
+      changesApplied: number;
+      changesPushed: number;
+      conflicts?: SyncConflict[];
+    }
   | { type: 'sync-error'; error: string; isNetworkError: boolean; consecutiveFailures: number }
   | { type: 'needs-setup'; error: string }
   | { type: 'auth-expired' };
