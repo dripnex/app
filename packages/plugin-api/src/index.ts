@@ -150,4 +150,13 @@ export { sortPlugins } from './lifecycle/sortPlugins';
 export type { SortResult } from './lifecycle/sortPlugins';
 
 // API Version
+export { pluginComponents } from './components/catalog';
+export type { PluginComponents } from './components/catalog';
+export { Button } from './components/Button';
+export type { PluginButtonProps } from './components/Button';
+export { Modal } from './components/Modal';
+export type { PluginModalProps } from './components/Modal';
+export { Dialog } from './components/Dialog';
+export type { PluginDialogProps } from './components/Dialog';
+
 export { PLUGIN_API_VERSION } from './apiVersion';

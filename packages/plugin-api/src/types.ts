@@ -4,6 +4,7 @@ import type { LayoutManager } from './layout/types';
 import type { EditorDecorationAPI } from './editor/decorationAPI';
 import type { CodeBlockRendererProps } from './preview/codeBlockStore';
 import type { DataAPI } from './data/createDataAPI';
+import type { PluginComponents } from './components/catalog';
 
 /** Controlled subset of editor operations for plugins */
 export interface EditorAPI {
@@ -213,6 +214,11 @@ export interface PluginContext {
       }
     ): () => void;
   };
+  /**
+   * Stock React UI: Button, Modal, Dialog (Inkdrop Component Manager).
+   * Mount overlays with `layout.addComponent('modal', …)`.
+   */
+  components: PluginComponents;
   /**
    * Preview DOM events (Inkdrop `inkdrop.components.preview.on`).
    * Return `false` from a handler to prevent the default action.

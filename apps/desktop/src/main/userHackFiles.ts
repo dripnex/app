@@ -23,6 +23,9 @@ dripnex.menu.add({
   },
 });
 
+// UI: dripnex.components.Dialog / Modal / Button
+// ctx.layout.addComponent('modal', { id: 'hello', component: Hello })
+
 // Vim (enable the Vim plugin first). Same surface as Inkdrop:
 // const Vim = dripnex.vim
 // if (Vim) {
