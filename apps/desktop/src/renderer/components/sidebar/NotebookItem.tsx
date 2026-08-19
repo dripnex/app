@@ -1,14 +1,15 @@
 import { useState, useCallback, useRef, memo, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ChevronDown,
   ChevronRight,
   Inbox,
   Folder,
   Plus,
-  X,
   GitBranch,
   History,
   GripVertical,
+  Trash2,
 } from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { useNotebookExpandStore } from '../../stores/notebookExpandStore';
@@ -75,6 +76,7 @@ export const NotebookItem = memo(function NotebookItem({
   const [isGitEnabled, setIsGitEnabled] = useState(false);
   const [isGitLoading, setIsGitLoading] = useState(false);
   const [showCommitHistory, setShowCommitHistory] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [dropPosition, setDropPosition] = useState<DropPosition>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [canDrag, setCanDrag] = useState(false);
@@ -159,51 +161,54 @@ export const NotebookItem = memo(function NotebookItem({
     [node.notebook.name]
   );
 
-  const handleAddChild = useCallback(
+  const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
+      if (isInbox) return;
+      e.preventDefault();
       e.stopPropagation();
-      onCreateChild(node.notebook.id);
+      setMenu({ x: e.clientX, y: e.clientY });
     },
-    [node.notebook.id, onCreateChild]
+    [isInbox]
   );
 
-  const handleDelete = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (confirm(`Delete "${node.notebook.name}"? Notes will move to Inbox.`)) {
-        onDelete(node.notebook.id);
-      }
-    },
-    [node.notebook.id, node.notebook.name, onDelete]
-  );
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    window.addEventListener('mousedown', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
 
-  const handleToggleGit = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setIsGitLoading(true);
-      try {
-        if (isGitEnabled) {
-          await window.dripnex.notebooks.disableGit(node.notebook.id);
-          setIsGitEnabled(false);
-        } else {
-          const result = await window.dripnex.git.init(node.notebook.id);
-          if (result.success) {
-            await window.dripnex.notebooks.enableGit(node.notebook.id);
-            setIsGitEnabled(true);
-          }
+  const handleToggleGit = useCallback(async () => {
+    setMenu(null);
+    setIsGitLoading(true);
+    try {
+      if (isGitEnabled) {
+        await window.dripnex.notebooks.disableGit(node.notebook.id);
+        setIsGitEnabled(false);
+      } else {
+        const result = await window.dripnex.git.init(node.notebook.id);
+        if (result.success) {
+          await window.dripnex.notebooks.enableGit(node.notebook.id);
+          setIsGitEnabled(true);
         }
-      } catch (error) {
-        console.error('Failed to toggle git:', error);
-        alert(`Failed to ${isGitEnabled ? 'disable' : 'enable'} git: ${error}`);
-      } finally {
-        setIsGitLoading(false);
       }
-    },
-    [node.notebook.id, isGitEnabled]
-  );
+    } catch (error) {
+      console.error('Failed to toggle git:', error);
+      alert(`Failed to ${isGitEnabled ? 'disable' : 'enable'} git: ${error}`);
+    } finally {
+      setIsGitLoading(false);
+    }
+  }, [node.notebook.id, isGitEnabled]);
 
-  const handleShowHistory = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleShowHistory = useCallback(() => {
+    setMenu(null);
     setShowCommitHistory(true);
   }, []);
 
@@ -349,6 +354,7 @@ export const NotebookItem = memo(function NotebookItem({
         style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
         role="button"
         tabIndex={0}
         aria-selected={isSelected}
@@ -439,53 +445,6 @@ export const NotebookItem = memo(function NotebookItem({
             />
           </button>
         ) : null}
-
-        {!isInbox && (
-          <div className={sc('notebook-item-actions')}>
-            <button
-              type="button"
-              className={sc(
-                'notebook-item-action',
-                isGitEnabled && 'notebook-item-action--git-enabled'
-              )}
-              onClick={handleToggleGit}
-              disabled={isGitLoading}
-              aria-label={isGitEnabled ? 'Disable git' : 'Enable git'}
-              title={isGitEnabled ? 'Disable git version control' : 'Enable git version control'}
-            >
-              <GitBranch size={12} aria-hidden="true" style={{ opacity: isGitLoading ? 0.5 : 1 }} />
-            </button>
-            {isGitEnabled && (
-              <button
-                type="button"
-                className={sc('notebook-item-action')}
-                onClick={handleShowHistory}
-                aria-label="View commit history"
-                title="View commit history"
-              >
-                <History size={12} aria-hidden="true" />
-              </button>
-            )}
-            {canHaveChildren && (
-              <button
-                type="button"
-                className={sc('notebook-item-action')}
-                onClick={handleAddChild}
-                aria-label="Add sub-notebook"
-              >
-                <Plus size={12} aria-hidden="true" />
-              </button>
-            )}
-            <button
-              type="button"
-              className={sc('notebook-item-action', 'notebook-item-action--delete')}
-              onClick={handleDelete}
-              aria-label="Delete notebook"
-            >
-              <X size={12} aria-hidden="true" />
-            </button>
-          </div>
-        )}
       </div>
 
       {hasChildren && isExpanded && (
@@ -511,6 +470,64 @@ export const NotebookItem = memo(function NotebookItem({
           ))}
         </ul>
       )}
+
+      {menu
+        ? createPortal(
+            <div
+              className={sc('notebook-menu')}
+              style={{ top: menu.y, left: menu.x }}
+              role="menu"
+              onMouseDown={event => event.stopPropagation()}
+            >
+              {canHaveChildren ? (
+                <button
+                  type="button"
+                  className={sc('notebook-menu-item')}
+                  onClick={() => {
+                    setMenu(null);
+                    onCreateChild(node.notebook.id);
+                  }}
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  New sub-notebook
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={sc('notebook-menu-item')}
+                onClick={() => void handleToggleGit()}
+                disabled={isGitLoading}
+              >
+                <GitBranch size={14} aria-hidden="true" />
+                {isGitEnabled ? 'Disable Git' : 'Enable Git'}
+              </button>
+              {isGitEnabled ? (
+                <button
+                  type="button"
+                  className={sc('notebook-menu-item')}
+                  onClick={handleShowHistory}
+                >
+                  <History size={14} aria-hidden="true" />
+                  Commit history
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className={sc('notebook-menu-item', 'notebook-menu-item--danger')}
+                onClick={() => {
+                  setMenu(null);
+                  if (confirm(`Delete "${node.notebook.name}"? Notes will move to Inbox.`)) {
+                    onDelete(node.notebook.id);
+                  }
+                }}
+              >
+                <Trash2 size={14} aria-hidden="true" />
+                Delete
+              </button>
+            </div>,
+            document.body
+          )
+        : null}
 
       {showCommitHistory && (
         <CommitHistory
