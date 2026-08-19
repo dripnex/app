@@ -17,7 +17,7 @@ export type { WikilinkNote, WikilinkResolver } from './core/contracts.js';
 export type { WikilinkRef } from './core/types.js';
 
 // Core - parsing (pure, no deps)
-export { extractWikilinks, extractWikilinkTargets } from './core/parsing.js';
+export { extractWikilinks, extractWikilinkTargets, parseWikilinkAt } from './core/parsing.js';
 
 // Core - headings (for [[Note#Heading]] support)
 export type { Heading } from './core/headings.js';
@@ -38,6 +38,7 @@ export {
   currentNoteIdField,
 } from './adapters/codemirror/autocomplete.js';
 export { wikilinkExtension } from './adapters/codemirror/highlight.js';
+export { wikilinkClickHandler } from './adapters/codemirror/click.js';
 export { remarkWikilink } from './adapters/remark/remark-wikilink.js';
 
 // Factory function - RECOMMENDED ENTRY POINT
