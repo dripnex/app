@@ -278,6 +278,7 @@ export interface ScannedPlugin {
   path: string;
   keymaps: string[];
   menus: string[];
+  styles: string[];
 }
 
 /** Plugin registry state row */

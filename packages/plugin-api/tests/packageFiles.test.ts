@@ -5,6 +5,7 @@ import { parsePluginMenus } from '../src/packageFiles/parsePluginMenus';
 import { applyPluginPackageFiles } from '../src/packageFiles/applyPluginPackageFiles';
 import { pluginMenuStore } from '../src/menu/pluginMenuStore';
 import { pluginContextMenuStore } from '../src/menu/pluginContextMenuStore';
+import { pluginStyleStore } from '../src/theme/pluginStyleStore';
 
 describe('parsePluginChord', () => {
   it('parses plus and hyphen chords', () => {
@@ -88,6 +89,7 @@ describe('applyPluginPackageFiles', () => {
   beforeEach(() => {
     pluginMenuStore.getState().removeAll('hello');
     pluginContextMenuStore.getState().removeAll('hello');
+    pluginStyleStore.getState().unregisterAll('hello');
   });
 
   it('adds menus and binds plugin commands only', () => {
@@ -121,9 +123,26 @@ describe('applyPluginPackageFiles', () => {
     expect(result.menuCount).toBe(1);
     expect(result.contextMenuCount).toBe(1);
     expect(result.keymapCount).toBe(1);
+    expect(result.styleCount).toBe(0);
     expect(bound).toEqual(['plugin:hello:say-hello']);
     expect(result.errors.some(e => e.includes('app:new-note'))).toBe(true);
     expect(pluginMenuStore.getState().items).toHaveLength(1);
     expect(pluginContextMenuStore.getState().items[0]?.target).toBe('note-list-item');
+  });
+
+  it('registers package stylesheets', () => {
+    const result = applyPluginPackageFiles('hello', {
+      menus: [],
+      keymaps: [],
+      styles: ['.hello { color: red; }', '  ', '.hello button { opacity: 0.8; }'],
+    });
+
+    expect(result.styleCount).toBe(2);
+    expect(pluginStyleStore.getState().sheets).toEqual([
+      {
+        pluginId: 'hello',
+        sources: ['.hello { color: red; }', '.hello button { opacity: 0.8; }'],
+      },
+    ]);
   });
 });

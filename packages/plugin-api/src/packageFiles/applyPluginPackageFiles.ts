@@ -1,11 +1,13 @@
 import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
+import { pluginStyleStore } from '../theme/pluginStyleStore';
 import { parsePluginKeymap, type PluginKeymapBinding } from './parsePluginKeymap';
 import { parsePluginMenus } from './parsePluginMenus';
 
 export interface PluginPackageFiles {
   keymaps: string[];
   menus: string[];
+  styles?: string[];
 }
 
 export interface ApplyPackageFilesOptions {
@@ -19,11 +21,12 @@ export interface ApplyPackageFilesResult {
   menuCount: number;
   contextMenuCount: number;
   keymapCount: number;
+  styleCount: number;
   errors: string[];
 }
 
 /**
- * Apply declarative keymaps/*.json and menus/*.json after activate().
+ * Apply declarative keymaps/*.json, menus/*.json, and styles/*.css after activate().
  * Only binds chords on commands the plugin already registered (`plugin:<id>:`).
  */
 export function applyPluginPackageFiles(
@@ -35,6 +38,7 @@ export function applyPluginPackageFiles(
   let menuCount = 0;
   let contextMenuCount = 0;
   let keymapCount = 0;
+  let styleCount = 0;
 
   for (const [index, source] of files.menus.entries()) {
     const parsed = parsePluginMenus(source, pluginId);
@@ -82,5 +86,11 @@ export function applyPluginPackageFiles(
     }
   }
 
-  return { menuCount, contextMenuCount, keymapCount, errors };
+  const styles = files.styles ?? [];
+  if (styles.length > 0) {
+    pluginStyleStore.getState().register(pluginId, styles);
+    styleCount = styles.map(css => css.trim()).filter(Boolean).length;
+  }
+
+  return { menuCount, contextMenuCount, keymapCount, styleCount, errors };
 }
