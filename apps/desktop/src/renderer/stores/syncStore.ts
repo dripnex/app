@@ -24,6 +24,7 @@ export interface Conflict {
   localVersion: number;
   remoteVersion: number;
   timestamp: string;
+  localCopyId?: string;
 }
 
 // ============================================================================

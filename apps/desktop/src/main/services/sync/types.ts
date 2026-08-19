@@ -9,6 +9,8 @@ export interface SyncConflict {
   localVersion: number;
   remoteVersion: number;
   timestamp: string;
+  /** Disk backup of the local body created before pull overwrote the note. */
+  localCopyId?: string;
 }
 
 export interface SyncResult {

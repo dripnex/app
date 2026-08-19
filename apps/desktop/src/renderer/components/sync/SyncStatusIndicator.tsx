@@ -99,6 +99,7 @@ export function SyncStatusIndicator() {
       className={`${styles.container} ${className}`}
       role={hasConflicts ? 'button' : undefined}
       tabIndex={hasConflicts ? 0 : undefined}
+      aria-label={hasConflicts ? label : undefined}
       onClick={() => {
         if (hasConflicts) openConflictScreen();
       }}

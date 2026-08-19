@@ -41,6 +41,30 @@ describe('openBothConflict', () => {
     expect(api.openNote).toHaveBeenNthCalledWith(2, 'note-remote', 'Meeting (remote)');
   });
 
+  it('does not resolve when renaming the copy fails', async () => {
+    const api = deps({
+      updateTitle: vi.fn(async () => ({ ok: false })),
+    });
+
+    await expect(openBothConflict(conflict, api)).rejects.toThrow(
+      'Could not rename the other version.'
+    );
+    expect(api.resolveLocal).not.toHaveBeenCalled();
+  });
+
+  it('creates the copy without a notebook when the note lookup fails', async () => {
+    const api = deps({
+      getNote: vi.fn(async () => ({ ok: false as const })),
+    });
+
+    await openBothConflict(conflict, api);
+
+    expect(api.createNote).toHaveBeenCalledWith({
+      content: conflict.remoteContent,
+      notebookId: undefined,
+    });
+  });
+
   it('does not resolve when the copy cannot be created', async () => {
     const api = deps({
       createNote: vi.fn(async () => ({ ok: false as const })),

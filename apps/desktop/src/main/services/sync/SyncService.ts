@@ -34,6 +34,7 @@ import type {
 import { MAX_BACKOFF_MS, isNetworkError, isAuthError } from './helpers.js';
 import { parseSyncedNote, serializeSyncedNote } from './envelope.js';
 import type { SyncCursorStore } from './cursorStore.js';
+import { chosenConflictContent, needsLocalRestore } from './resolveNoteConflict.js';
 
 // ============================================================================
 // SyncService Class
@@ -51,6 +52,7 @@ export class SyncService {
   private abortController: AbortController | null = null;
   private statusListener: SyncStatusListener | null = null;
   private cursorStore: SyncCursorStore | null = null;
+  private pendingConflicts = new Map<string, SyncConflict>();
 
   constructor(
     apiClient: ApiClient,
@@ -715,16 +717,53 @@ export class SyncService {
       throw new Error(`Note ${noteId} not found`);
     }
 
+    const pending = this.pendingConflicts.get(noteId);
+    const id = createNoteId(noteId);
+    const copy = pending?.localCopyId
+      ? await this.noteRepository.get(createNoteId(pending.localCopyId))
+      : null;
+
     if (resolution === 'local') {
-      // Keep local version, mark for push to server
-      this.noteRepository.resetSyncTracking(createNoteId(noteId));
-      console.warn(`Conflict resolved: keeping local version for ${noteId}, marked for sync`);
+      const localContent = copy?.content ?? pending?.localContent;
+      if (localContent != null && needsLocalRestore(note.content, localContent)) {
+        const title = this.extractTitle(localContent);
+        await this.noteRepository.save({
+          ...(copy ?? note),
+          id,
+          content: localContent,
+          title,
+          metadata: {
+            ...(copy ?? note).metadata,
+            title,
+            updatedAt: createTimestamp(new Date()),
+          },
+        });
+      }
+      this.noteRepository.resetSyncTracking(id);
+    } else if (pending) {
+      const remoteContent = chosenConflictContent('remote', pending);
+      if (note.content !== remoteContent) {
+        const title = this.extractTitle(remoteContent);
+        await this.noteRepository.save({
+          ...note,
+          content: remoteContent,
+          title,
+          metadata: {
+            ...note.metadata,
+            title,
+            updatedAt: createTimestamp(new Date()),
+          },
+        });
+      }
+      this.noteRepository.markAsSynced(id);
     } else {
-      // Keep remote version (already applied during pull)
-      // Just mark as synced to clear the conflict state
-      this.noteRepository.markAsSynced(createNoteId(noteId));
-      console.warn(`Conflict resolved: keeping remote version for ${noteId}`);
+      this.noteRepository.markAsSynced(id);
     }
+
+    if (copy) {
+      await this.noteRepository.delete(copy.id);
+    }
+    this.pendingConflicts.delete(noteId);
   }
 
   /**
@@ -882,21 +921,23 @@ export class SyncService {
             hasLocalEdits && change.deviceId !== this.apiClient['deviceInfo'].deviceId;
 
           if (isConflict) {
-            // Store conflict for user resolution
-            conflicts.push({
+            const localCopyId = `${change.noteId}-conflict-${Date.now()}`;
+            const conflict: SyncConflict = {
               noteId: change.noteId,
               localContent: existingNote.content,
               remoteContent: payload.content,
               localVersion: change.version - 1, // Estimate
               remoteVersion: change.version,
               timestamp: new Date().toISOString(),
-            });
+              localCopyId,
+            };
+            conflicts.push(conflict);
+            this.pendingConflicts.set(change.noteId, conflict);
 
-            // Create a conflict copy
             const conflictTitle = `${existingNote.title} (Conflict ${new Date().toLocaleString()})`;
             await this.noteRepository.save({
               ...existingNote,
-              id: createNoteId(`${change.noteId}-conflict-${Date.now()}`),
+              id: createNoteId(localCopyId),
               title: conflictTitle,
               metadata: {
                 ...existingNote.metadata,

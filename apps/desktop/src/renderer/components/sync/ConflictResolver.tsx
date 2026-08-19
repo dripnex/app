@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, Columns2, GitCompare, X } from 'lucide-react';
 import { diffLines, type Change } from 'diff';
 import { useQueryClient } from '@tanstack/react-query';
@@ -46,6 +46,7 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
   const dismissed = useSyncStore(state => state.conflictScreenDismissed);
   const dismissConflictScreen = useSyncStore(state => state.dismissConflictScreen);
   const queryClient = useQueryClient();
+  const dialogRef = useRef<HTMLElement>(null);
   const [view, setView] = useState<'side-by-side' | 'unified'>('side-by-side');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,11 +102,41 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
 
   useEffect(() => {
     if (variant !== 'modal' || !conflict || dismissed) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusables = () => {
+      const root = dialogRef.current;
+      if (!root) return [];
+      return [
+        ...root.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        ),
+      ];
+    };
+    focusables()[0]?.focus();
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') dismissConflictScreen();
+      if (event.key === 'Escape') {
+        dismissConflictScreen();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusables();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      previous?.focus();
+    };
   }, [conflict, dismissed, dismissConflictScreen, variant]);
 
   if (!conflict) return null;
@@ -113,19 +144,21 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
 
   const title = conflictNoteTitle(conflict.localContent);
   const queue = conflictQueueLabel(0, conflicts.length);
+  const titleId = `conflict-title-${variant}-${conflict.noteId}`;
   const screen = (
     <section
+      ref={dialogRef}
       className={variant === 'modal' ? styles.dialog : styles.inline}
       role="dialog"
       aria-modal={variant === 'modal' ? true : undefined}
-      aria-labelledby="conflict-title"
+      aria-labelledby={titleId}
     >
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <AlertTriangle size={18} className={styles.warningIcon} aria-hidden="true" />
           <div>
             <p className={styles.queue}>{queue}</p>
-            <h2 id="conflict-title" className={styles.title}>
+            <h2 id={titleId} className={styles.title}>
               {title}
             </h2>
           </div>

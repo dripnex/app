@@ -12,7 +12,7 @@ export interface OpenBothDeps {
     content: string;
     notebookId?: string;
   }) => Promise<{ ok: true; data: OpenBothNote } | { ok: false }>;
-  updateTitle: (input: { id: string; title: string }) => Promise<unknown>;
+  updateTitle: (input: { id: string; title: string }) => Promise<{ ok: boolean }>;
   openNote: (id: string, title: string) => Promise<unknown>;
   resolveLocal: (noteId: string) => Promise<void>;
 }
@@ -36,7 +36,10 @@ export async function openBothConflict(
     throw new Error('Could not save the other version as a new note.');
   }
 
-  await deps.updateTitle({ id: created.data.id, title: copyTitle });
+  const renamed = await deps.updateTitle({ id: created.data.id, title: copyTitle });
+  if (!renamed.ok) {
+    throw new Error('Could not rename the other version.');
+  }
   await deps.resolveLocal(conflict.noteId);
   await deps.openNote(conflict.noteId, localTitle);
   await deps.openNote(created.data.id, copyTitle);

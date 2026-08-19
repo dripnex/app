@@ -14,6 +14,7 @@
 .inline {
   width: min(920px, 100%);
   max-height: min(82vh, 760px);
+  overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -177,7 +178,7 @@
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .divider {
@@ -259,6 +260,12 @@
 @media (max-width: 720px) {
   .versions {
     grid-template-columns: 1fr;
+  }
+
+  .content,
+  .diffContent {
+    min-height: 96px;
+    max-height: 200px;
   }
 
   .divider {

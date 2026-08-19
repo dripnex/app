@@ -44,7 +44,7 @@ describe('conflictQueueLabel', () => {
 describe('mergeConflicts', () => {
   it('keeps unresolved when incoming is empty', () => {
     const existing = [{ noteId: 'a' }];
-    expect(mergeConflicts(existing, [])).toEqual(existing);
+    expect(mergeConflicts(existing, [])).toBe(existing);
   });
 
   it('adds new ids and replaces the same id', () => {
