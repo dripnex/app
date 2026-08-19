@@ -6,11 +6,11 @@ function event(key: string, target: unknown = { tagName: 'DIV' }) {
 }
 
 describe('noteListNavDirection', () => {
-  it('maps j/k and arrows', () => {
-    expect(noteListNavDirection(event('j'))).toBe(1);
+  it('maps arrows; j/k belong to the note-list keymap', () => {
     expect(noteListNavDirection(event('ArrowDown'))).toBe(1);
-    expect(noteListNavDirection(event('k'))).toBe(-1);
     expect(noteListNavDirection(event('ArrowUp'))).toBe(-1);
+    expect(noteListNavDirection(event('j'))).toBeNull();
+    expect(noteListNavDirection(event('k'))).toBeNull();
   });
 
   it('ignores modifiers and other keys', () => {

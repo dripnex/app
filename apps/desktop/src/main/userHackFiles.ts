@@ -59,8 +59,12 @@ export const STYLES_CSS_TEMPLATE = `/* Dripnex user stylesheet
 
 export const KEYBINDINGS_TEMPLATE = `{
   // command id → chord. null unbinds the default.
+  // Contexts: editor (CodeMirror), note-list (j/k next/prev note), app, global.
+  // note-list chords do not fire when the editor is focused.
   // Save this file to apply. Open from Plugins → Open Keymap.
 
+  // "app:next-note": "j",
+  // "app:prev-note": "k",
   // "app:toggle-graph": "Mod+Shift+G",
   // "app:new-note": null,
   // "plugin:dripnex-paste-as-link:menu-paste-as-link": "Mod+Shift+L"
