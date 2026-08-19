@@ -1,4 +1,5 @@
 // packages/ai-core/src/context-builder.ts
+import { noteInstruction } from '@dripnex/core';
 import type { ChatMessage, MessageContent } from './types.js';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -83,6 +84,7 @@ Guidelines:
 - Answer based on the content found in the user's notes
 - If the notes do not contain enough information, say so clearly
 - Cite sources with the bracket numbers from the Source [n] labels (e.g. [1], [2]). Do not invent numbers.
+- If the current note has a Template instruction, follow it when drafting or filing work
 - Format responses in markdown
 - Be concise and helpful
 - Never fabricate information not present in the provided notes`;
@@ -132,6 +134,13 @@ export function buildContext(sources: ContextSources, budget: ContextBudget): Co
   // 1. System prompt (always fits)
   let system = sources.systemPrompt;
   used += estimateTokens(system);
+
+  const instruction = sources.currentNote ? noteInstruction(sources.currentNote.content) : null;
+  if (instruction) {
+    const block = `\n\nTemplate instruction for the current note:\n${instruction}\nFollow this when drafting or filing work in this note.`;
+    system += block;
+    used += estimateTokens(block);
+  }
 
   // 2. Current note (high priority, truncate if huge)
   if (sources.currentNote) {

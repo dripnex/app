@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FileStack } from 'lucide-react';
+import { noteInstruction } from '@dripnex/core';
 import type { NoteSnapshot } from '../../../preload/index';
 import { useNotes } from '../../hooks/useNotes';
 import styles from '../NotebookPicker/NotebookPicker.module.css';
@@ -26,7 +27,10 @@ export function TemplatePicker({ onSelect, onClose }: TemplatePickerProps) {
   const filtered = useMemo(() => {
     if (!search.trim()) return templates;
     const term = search.toLowerCase();
-    return templates.filter(note => note.title.toLowerCase().includes(term));
+    return templates.filter(note => {
+      const instruction = noteInstruction(note.content) ?? '';
+      return note.title.toLowerCase().includes(term) || instruction.toLowerCase().includes(term);
+    });
   }, [templates, search]);
 
   useEffect(() => {
@@ -74,14 +78,20 @@ export function TemplatePicker({ onSelect, onClose }: TemplatePickerProps) {
           ) : filtered.length === 0 ? (
             <li className={styles.empty}>No templates yet</li>
           ) : (
-            filtered.map(note => (
-              <li key={note.id}>
-                <button type="button" className={styles.item} onClick={() => handleSelect(note)}>
-                  <FileStack size={14} />
-                  <span>{note.title || 'Untitled'}</span>
-                </button>
-              </li>
-            ))
+            filtered.map(note => {
+              const instruction = noteInstruction(note.content);
+              return (
+                <li key={note.id}>
+                  <button type="button" className={styles.item} onClick={() => handleSelect(note)}>
+                    <FileStack size={14} />
+                    <span className={styles.itemCopy}>
+                      <span>{note.title || 'Untitled'}</span>
+                      {instruction ? <span className={styles.itemHint}>{instruction}</span> : null}
+                    </span>
+                  </button>
+                </li>
+              );
+            })
           )}
         </ul>
       </div>
