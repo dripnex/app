@@ -1,6 +1,24 @@
 import type { ParsedTable, TableAlignment, TableRange } from './types.js';
 
-const TABLE_SEP_RE = /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+function isSepCell(cell: string): boolean {
+  const trimmed = cell.trim();
+  if (trimmed.length < 3) return false;
+  let i = 0;
+  if (trimmed[i] === ':') i += 1;
+  let dashes = 0;
+  while (i < trimmed.length && trimmed[i] === '-') {
+    dashes += 1;
+    i += 1;
+  }
+  if (trimmed[i] === ':') i += 1;
+  return dashes >= 3 && i === trimmed.length;
+}
+
+export function isTableSeparator(line: string): boolean {
+  if (!line.includes('-')) return false;
+  const cells = splitRow(line);
+  return cells.length > 0 && cells.every(isSepCell);
+}
 
 export function parseAlignment(cell: string): TableAlignment {
   const trimmed = cell.trim();
@@ -24,7 +42,7 @@ export function parseGfmTable(text: string, from: number): ParsedTable | null {
   const headerLine = lines[0];
   const sepLine = lines[1];
   if (!headerLine || !sepLine) return null;
-  if (!TABLE_SEP_RE.test(sepLine)) return null;
+  if (!isTableSeparator(sepLine)) return null;
 
   const headers = splitRow(headerLine);
   const sepCells = splitRow(sepLine);
@@ -54,7 +72,7 @@ export function findTableRanges(docText: string): TableRange[] {
   while (i < lines.length) {
     const currentLine = lines[i]!;
     const nextLine = lines[i + 1];
-    if (nextLine !== undefined && currentLine.trim().includes('|') && TABLE_SEP_RE.test(nextLine)) {
+    if (nextLine !== undefined && currentLine.trim().includes('|') && isTableSeparator(nextLine)) {
       const startLine = i;
       i += 2;
       while (i < lines.length && lines[i]!.trim().includes('|')) {
