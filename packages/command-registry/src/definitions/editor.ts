@@ -151,6 +151,15 @@ export const editorCommands: CommandDefinition[] = [
     showInPalette: true,
   },
   {
+    id: 'editor:follow-link',
+    name: 'Follow Link',
+    category: 'editor',
+    context: 'editor',
+    defaultKeybinding: { key: 'Enter', modifiers: ['Mod', 'Shift'] },
+    icon: 'Link',
+    showInPalette: true,
+  },
+  {
     id: 'editor:undo',
     name: 'Undo',
     category: 'editor:history',

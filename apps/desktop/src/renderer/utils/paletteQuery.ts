@@ -1,10 +1,11 @@
-export type PaletteMode = 'commands' | 'notes' | 'notebooks' | 'tags';
+export type PaletteMode = 'commands' | 'notes' | 'notebooks' | 'tags' | 'headings';
 
 export const PALETTE_MODE_COMMANDS = new Set([
   'app:command-palette',
   'app:quick-open',
   'app:jump-notebook',
   'app:jump-tag',
+  'app:jump-heading',
 ]);
 
 export function filterByQuery<T>(
@@ -43,6 +44,8 @@ export function palettePlaceholder(mode: PaletteMode): string {
       return 'Jump to a notebook…';
     case 'tags':
       return 'Jump to a tag…';
+    case 'headings':
+      return 'Jump to a heading…';
   }
 }
 
@@ -56,5 +59,7 @@ export function paletteAriaLabel(mode: PaletteMode): string {
       return 'Jump to Notebook';
     case 'tags':
       return 'Jump to Tag';
+    case 'headings':
+      return 'Jump to Heading';
   }
 }

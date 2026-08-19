@@ -29,5 +29,6 @@ describe('palettePlaceholder', () => {
     expect(palettePlaceholder('notes')).toContain('note');
     expect(palettePlaceholder('notebooks')).toContain('notebook');
     expect(palettePlaceholder('tags')).toContain('tag');
+    expect(palettePlaceholder('headings')).toContain('heading');
   });
 });

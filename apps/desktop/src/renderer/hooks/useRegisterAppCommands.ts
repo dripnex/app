@@ -21,6 +21,8 @@ interface AppCommandHandlers {
   onQuickOpen: () => void;
   onJumpNotebook: () => void;
   onJumpTag: () => void;
+  onJumpHeading: () => void;
+  onCopyWikilink: () => void;
   onOpenNowBoard: () => void;
   onOpenInitScript: () => void;
   onOpenUserStyles: () => void;
@@ -64,6 +66,8 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
       'app:quick-open': () => handlersRef.current.onQuickOpen(),
       'app:jump-notebook': () => handlersRef.current.onJumpNotebook(),
       'app:jump-tag': () => handlersRef.current.onJumpTag(),
+      'app:jump-heading': () => handlersRef.current.onJumpHeading(),
+      'app:copy-wikilink': () => handlersRef.current.onCopyWikilink(),
       'app:open-now-board': () => handlersRef.current.onOpenNowBoard(),
       'app:open-init-script': () => handlersRef.current.onOpenInitScript(),
       'app:open-user-styles': () => handlersRef.current.onOpenUserStyles(),

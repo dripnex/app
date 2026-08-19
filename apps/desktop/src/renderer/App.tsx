@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCssVariables, useThemeOverrides } from '@dripnex/plugin-api';
+import { scanMarkdown } from '@dripnex/markdown';
 import type { NoteSnapshot } from '../preload/index';
 import { UpdateBanner } from './components/UpdateBanner';
 import { NoteList } from './components/NoteList';
@@ -56,6 +57,8 @@ import { useRefreshOnWindowFocus } from './hooks/useRefreshOnWindowFocus';
 import { usePluginRuntime } from './hooks/usePluginRuntime';
 import { useMcpLocalPath } from './hooks/useMcpLocalPath';
 import type { PaletteMode } from './utils/paletteQuery';
+import { useEditorBufferStore, selectContentForNote } from './stores/editorBufferStore';
+import { useHeadingJumpStore } from './stores/headingJumpStore';
 
 /**
  * Main Notes Application
@@ -141,6 +144,11 @@ function NotesApp() {
 
   // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
+  const liveNoteContent = useEditorBufferStore(selectContentForNote(selectedNote?.id ?? null));
+  const paletteHeadings = useMemo(
+    () => scanMarkdown(liveNoteContent ?? selectedNote?.content ?? '').headings,
+    [liveNoteContent, selectedNote?.content]
+  );
   const selectedNoteRef = useRef<NoteSnapshot | null>(null);
   selectedNoteRef.current = selectedNote;
   const [noteHistory, setNoteHistory] = useState(emptyNoteHistory);
@@ -303,6 +311,15 @@ function NotesApp() {
     window.addEventListener('dripnex:create-linked-note', onCreate);
     return () => window.removeEventListener('dripnex:create-linked-note', onCreate);
   }, [handleCreateLinkedNote]);
+
+  useEffect(() => {
+    const onFollow = (event: Event) => {
+      const detail = (event as CustomEvent<{ target?: string; anchor?: string }>).detail;
+      void handleWikilinkClick(detail?.target ?? '', detail?.anchor);
+    };
+    window.addEventListener('dripnex:follow-wikilink', onFollow);
+    return () => window.removeEventListener('dripnex:follow-wikilink', onFollow);
+  }, [handleWikilinkClick]);
 
   // Flush pending saves before window close
   useAutoSave(handleUpdateNote);
@@ -570,6 +587,11 @@ function NotesApp() {
             }}
             onJumpTag={name => {
               setTagFilter(name);
+            }}
+            headings={paletteHeadings}
+            onJumpHeading={text => {
+              if (!selectedNote) return;
+              useHeadingJumpStore.getState().request(selectedNote.id, text);
             }}
           />
           <ConflictResolver variant="modal" />
