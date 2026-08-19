@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode, type RefObject } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { EditorView } from '@codemirror/view';
 import {
   PluginHost,
@@ -20,6 +21,8 @@ import { pluginRuntimeStore, type PluginLoadError } from '../stores/pluginRuntim
 import { useToast } from '../components/Toast';
 import { toast } from '../ui/primitives';
 import { getEditorView, registry as commandRegistry } from './useCommandRegistry';
+import { notebookKeys } from './useNotebooks';
+import { noteKeys } from './useNotes';
 
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
   const { showToast } = useToast();
@@ -39,6 +42,7 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
   dataAPI: DataAPIWithEvents;
   pluginSlot: ReactNode;
 } {
+  const queryClient = useQueryClient();
   const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
 
   const appAPI = useMemo<AppAPIWithEvents>(
@@ -238,6 +242,7 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
         async createNote(input) {
           const result = await window.dripnex.notes.create(input);
           if (!result.ok) throw new Error('Failed to create note');
+          void queryClient.invalidateQueries({ queryKey: noteKeys.all });
           return {
             id: result.data.id,
             title: result.data.title,
@@ -247,6 +252,7 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
         async updateNote(id, content) {
           const result = await window.dripnex.notes.update({ id, content });
           if (!result.ok) return null;
+          void queryClient.invalidateQueries({ queryKey: noteKeys.all });
           return {
             id: result.data.id,
             title: result.data.title,
@@ -255,6 +261,7 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
         },
         async trashNote(id) {
           const result = await window.dripnex.notes.softDelete(id);
+          if (result.ok) void queryClient.invalidateQueries({ queryKey: noteKeys.all });
           return result.ok;
         },
         async createNotebook(input) {
@@ -262,6 +269,7 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
             name: input.name,
             parentId: input.parentId ?? undefined,
           });
+          void queryClient.invalidateQueries({ queryKey: notebookKeys.all });
           return { id: nb.id, name: nb.name, parentId: nb.parentId, icon: nb.icon };
         },
         async updateNotebook(id, patch) {
@@ -276,22 +284,29 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
           if (patch.parentId !== undefined) {
             nb = await window.dripnex.notebooks.move(id, patch.parentId);
           }
+          void queryClient.invalidateQueries({ queryKey: notebookKeys.all });
           return { id: nb.id, name: nb.name, parentId: nb.parentId, icon: nb.icon };
         },
         async deleteNotebook(id) {
           const result = await window.dripnex.notebooks.delete(id);
+          if (result.success) void queryClient.invalidateQueries({ queryKey: notebookKeys.all });
           return result.success;
         },
         async setTagColor(name, color) {
           const result = await window.dripnex.notes.setTagColor(name, color);
+          if (result.ok) void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
           return result.ok;
         },
         async renameTag(oldName, newName) {
           const result = await window.dripnex.notes.renameTag(oldName, newName);
+          if (result.ok) {
+            void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+            void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+          }
           return result.ok;
         },
       }),
-    []
+    [queryClient]
   );
 
   const discoveredPlugins = useStore(pluginRuntimeStore, s => s.plugins);
