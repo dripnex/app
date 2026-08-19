@@ -55,6 +55,7 @@ import {
 import {
   createWikilinkHighlighter,
   wikilinkClickHandler,
+  wikilinkHoverHandler,
   createWikilinkAutocomplete,
   setCurrentNoteId,
   currentNoteIdField,
@@ -100,6 +101,8 @@ interface MarkdownEditorProps {
   getEmbedUrl?: (target: string) => string | null;
   /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
   onWikilinkClick?: (target: string, anchor?: string) => void;
+  onWikilinkHover?: (target: string, coords: { x: number; y: number }) => void;
+  onWikilinkHoverEnd?: () => void;
   knownWikilinkTitles?: WikilinkTitleResolution;
 }
 
@@ -140,6 +143,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       noteId,
       getEmbedUrl,
       onWikilinkClick,
+      onWikilinkHover,
+      onWikilinkHoverEnd,
       knownWikilinkTitles = { status: 'pending' },
     },
     ref
@@ -150,6 +155,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const noteIdRef = useRef(noteId);
     const getEmbedUrlRef = useRef(getEmbedUrl);
     const onWikilinkClickRef = useRef(onWikilinkClick);
+    const onWikilinkHoverRef = useRef(onWikilinkHover);
+    const onWikilinkHoverEndRef = useRef(onWikilinkHoverEnd);
     const [urlPaste, setUrlPaste] = useState<{
       url: string;
       from: number;
@@ -302,6 +309,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     noteIdRef.current = noteId;
     getEmbedUrlRef.current = getEmbedUrl;
     onWikilinkClickRef.current = onWikilinkClick;
+    onWikilinkHoverRef.current = onWikilinkHover;
+    onWikilinkHoverEndRef.current = onWikilinkHoverEnd;
 
     // Create extensions with configurable settings via compartments
     const createExtensions = useCallback((): Extension[] => {
@@ -406,6 +415,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         wikilinkClickHandler((target, anchor) => {
           onWikilinkClickRef.current?.(target, anchor);
         }),
+        wikilinkHoverHandler(
+          (target, coords) => onWikilinkHoverRef.current?.(target, coords),
+          () => onWikilinkHoverEndRef.current?.()
+        ),
 
         // Wikilink autocomplete (triggers on [[)
         wikilinkAutocomplete,

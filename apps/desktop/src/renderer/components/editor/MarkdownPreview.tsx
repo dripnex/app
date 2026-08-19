@@ -47,6 +47,8 @@ interface MarkdownPreviewProps {
   readonly updatedAt?: string;
   readonly onReady?: () => void;
   readonly onWikilinkClick?: (target: string, anchor?: string) => void;
+  readonly onWikilinkHover?: (target: string, coords: { x: number; y: number }) => void;
+  readonly onWikilinkHoverEnd?: () => void;
   readonly knownWikilinkTitles?: WikilinkTitleResolution;
   readonly onEmbedClick?: (target: string, url: string) => void;
   /** Optional pre-resolved embeds from parent (for sharing with editor) */
@@ -74,6 +76,8 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       updatedAt,
       onReady,
       onWikilinkClick,
+      onWikilinkHover,
+      onWikilinkHoverEnd,
       knownWikilinkTitles = { status: 'pending' },
       onEmbedClick,
       resolvedEmbeds: resolvedEmbedsProp,
@@ -238,6 +242,22 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       }
     };
 
+    const handleWikilinkHover = (e: React.MouseEvent) => {
+      const el = (e.target as HTMLElement).closest('.wikilink');
+      const title = el?.getAttribute('data-target')?.trim() ?? '';
+      if (!title) {
+        onWikilinkHoverEnd?.();
+        return;
+      }
+      onWikilinkHover?.(title, { x: e.clientX, y: e.clientY });
+    };
+
+    const handleWikilinkHoverEnd = (e: React.MouseEvent) => {
+      const from = (e.target as HTMLElement).closest('.wikilink');
+      const to = (e.relatedTarget as HTMLElement | null)?.closest?.('.wikilink');
+      if (from && from !== to) onWikilinkHoverEnd?.();
+    };
+
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const box = e.target;
       const root = containerRef.current;
@@ -338,6 +358,8 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
           className={sc('markdown-preview')}
           data-preview
           onClick={handleClick}
+          onMouseOver={handleWikilinkHover}
+          onMouseOut={handleWikilinkHoverEnd}
           onChange={handleCheckboxChange}
         >
           <div className={sc('preview-metadata-header')}>

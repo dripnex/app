@@ -45,6 +45,7 @@ export {
 } from './adapters/codemirror/autocomplete.js';
 export { wikilinkExtension, createWikilinkHighlighter } from './adapters/codemirror/highlight.js';
 export { wikilinkClickHandler } from './adapters/codemirror/click.js';
+export { wikilinkHoverHandler } from './adapters/codemirror/hover.js';
 export { remarkWikilink } from './adapters/remark/remark-wikilink.js';
 
 // Factory function - RECOMMENDED ENTRY POINT
