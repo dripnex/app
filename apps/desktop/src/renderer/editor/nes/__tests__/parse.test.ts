@@ -5,7 +5,7 @@ describe('nesLineContext', () => {
   it('splits the cursor line and windows surrounding text', () => {
     const content = 'alpha\nHello |\nomega';
     const cursor = content.indexOf('|');
-    const doc = content.replace('|', '');
+    const doc = content.slice(0, cursor) + content.slice(cursor + 1);
     const ctx = nesLineContext(doc, cursor, 'Note');
     expect(ctx).toEqual({
       prefix: 'Hello ',

@@ -130,15 +130,18 @@ export function triggerNes(view: EditorView): boolean {
 
 async function requestSuggestion(view: EditorView, options: NesExtensionOptions): Promise<void> {
   const cursor = view.state.selection.main.head;
+  const doc = view.state.doc.toString();
   const generation = nextGeneration(view);
   const insertion = await options.complete({
     title: options.getTitle(),
-    content: view.state.doc.toString(),
+    content: doc,
     cursor,
   });
   if (generations.get(view) !== generation) return;
   if (!view.dom.isConnected) return;
-  if (!insertion || view.state.selection.main.head !== cursor) return;
+  if (!insertion) return;
+  if (view.state.doc.toString() !== doc) return;
+  if (view.state.selection.main.head !== cursor) return;
   view.dispatch({
     effects: setNesEffect.of({ text: insertion, pos: cursor }),
   });
@@ -165,6 +168,9 @@ export function createNesExtension(options: NesExtensionOptions): Extension {
       ])
     ),
     EditorView.updateListener.of(update => {
+      if (update.docChanged || update.selectionSet) {
+        nextGeneration(update.view);
+      }
       if (!update.docChanged) return;
       if (update.transactions.some(tr => tr.annotation(nesAccepted))) return;
       clearIdle();
