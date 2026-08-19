@@ -78,7 +78,12 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
   -webkit-app-region: no-drag;
+}
+
+.note-editor-chrome-drag {
+  display: none;
 }
 
 .note-editor-header {

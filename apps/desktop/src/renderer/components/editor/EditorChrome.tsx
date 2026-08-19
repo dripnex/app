@@ -6,6 +6,7 @@ import { sc } from '../noteEditorSc';
 import { EditorViewToggle } from './EditorViewToggle';
 
 interface EditorChromeProps {
+  variant?: 'main' | 'window';
   canBack: boolean;
   canForward: boolean;
   distractionFree: boolean;
@@ -20,6 +21,7 @@ interface EditorChromeProps {
 }
 
 export function EditorChrome({
+  variant = 'main',
   canBack,
   canForward,
   distractionFree,
@@ -33,28 +35,34 @@ export function EditorChrome({
   actions,
 }: EditorChromeProps) {
   return (
-    <div className={sc('note-editor-chrome')}>
+    <div className={sc('note-editor-chrome')} data-variant={variant}>
       <div className={sc('note-editor-chrome-left')}>
-        <IconButton label="Open in new window" onClick={onOpenWindow}>
-          <SquareArrowOutUpRight size={16} aria-hidden="true" />
-        </IconButton>
-        <IconButton
-          label={distractionFree ? 'Exit Distraction Free Mode' : 'Enter Distraction Free Mode'}
-          pressed={distractionFree}
-          onClick={onToggleZen}
-        >
-          {distractionFree ? (
-            <Minimize2 size={16} aria-hidden="true" />
-          ) : (
-            <Maximize2 size={16} aria-hidden="true" />
-          )}
-        </IconButton>
-        <IconButton label="Back" disabled={!canBack} onClick={onBack}>
-          <ArrowLeft size={16} aria-hidden="true" />
-        </IconButton>
-        <IconButton label="Forward" disabled={!canForward} onClick={onForward}>
-          <ArrowRight size={16} aria-hidden="true" />
-        </IconButton>
+        {variant === 'main' ? (
+          <>
+            <IconButton label="Open in new window" onClick={onOpenWindow}>
+              <SquareArrowOutUpRight size={16} aria-hidden="true" />
+            </IconButton>
+            <IconButton
+              label={distractionFree ? 'Exit Distraction Free Mode' : 'Enter Distraction Free Mode'}
+              pressed={distractionFree}
+              onClick={onToggleZen}
+            >
+              {distractionFree ? (
+                <Minimize2 size={16} aria-hidden="true" />
+              ) : (
+                <Maximize2 size={16} aria-hidden="true" />
+              )}
+            </IconButton>
+            <IconButton label="Back" disabled={!canBack} onClick={onBack}>
+              <ArrowLeft size={16} aria-hidden="true" />
+            </IconButton>
+            <IconButton label="Forward" disabled={!canForward} onClick={onForward}>
+              <ArrowRight size={16} aria-hidden="true" />
+            </IconButton>
+          </>
+        ) : (
+          <span className={sc('note-editor-chrome-drag')} aria-hidden="true" />
+        )}
       </div>
       <div className={sc('note-editor-header-mid')}>
         <EditorViewToggle mode={viewMode} onModeChange={onModeChange} />

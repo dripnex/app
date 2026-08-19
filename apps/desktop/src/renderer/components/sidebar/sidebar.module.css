@@ -12,6 +12,8 @@
   padding-top: 0;
   -webkit-app-region: drag;
   overflow: hidden;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
 }
 
 .sidebar-content {
@@ -392,7 +394,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 8px 8px 0 72px;
+  padding: 8px 8px 0 64px;
   height: 36px;
   -webkit-app-region: drag;
   flex-shrink: 0;
@@ -464,6 +466,21 @@
   justify-content: center;
   flex-shrink: 0;
   color: var(--text-secondary);
+}
+
+.sidebar-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .sidebar-row.selected .sidebar-row-icon {
@@ -788,6 +805,34 @@
   background: var(--bg-surface);
   padding: 1px 5px;
   border-radius: var(--radius-lg);
+}
+
+.notebook-item-detail,
+.sidebar-row-detail {
+  display: none;
+  align-items: center;
+  margin-left: auto;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.notebook-item-row:hover .notebook-item-detail,
+.sidebar-row:hover .sidebar-row-detail {
+  display: inline-flex;
+}
+
+.notebook-item-detail:hover,
+.sidebar-row-detail:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
 .notebook-item-actions {

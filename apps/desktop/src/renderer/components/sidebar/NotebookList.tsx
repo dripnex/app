@@ -8,6 +8,7 @@ import { sc } from './sc';
 interface NotebookListProps {
   readonly selectedNotebookId: string | null;
   readonly onSelectNotebook: (id: string) => void;
+  readonly onEnterWorkspace?: (id: string) => void;
   readonly onDeletedNotebook?: (id: string) => void;
   readonly filterParentId?: string | null;
   /** Show this notebook and its descendants as the forest root. */
@@ -52,6 +53,7 @@ function NotebookListError({ message }: { message: string }) {
 export function NotebookList({
   selectedNotebookId,
   onSelectNotebook,
+  onEnterWorkspace,
   onDeletedNotebook,
   filterParentId,
   workspaceRootId,
@@ -172,6 +174,7 @@ export function NotebookList({
             ancestorIds={ancestorIds}
             selectedNotebookId={selectedNotebookId}
             onSelect={onSelectNotebook}
+            onEnterWorkspace={onEnterWorkspace}
             onRename={handleRename}
             onDelete={handleDelete}
             onCreateChild={onRequestCreateChild}

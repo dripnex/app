@@ -70,6 +70,7 @@ interface NoteEditorProps {
   onForward?: () => void;
   onToggleZen?: () => void;
   onOpenWindow?: () => void;
+  chromeVariant?: 'main' | 'window';
 }
 
 export function NoteEditor({
@@ -94,6 +95,7 @@ export function NoteEditor({
   onForward,
   onToggleZen,
   onOpenWindow,
+  chromeVariant = 'main',
 }: NoteEditorProps) {
   const { showToast } = useToast();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -357,6 +359,7 @@ export function NoteEditor({
   return (
     <main className={sc('note-editor')} aria-label="Note editor">
       <EditorChrome
+        variant={chromeVariant}
         canBack={canBack}
         canForward={canForward}
         distractionFree={distractionFree}

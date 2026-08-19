@@ -61,10 +61,13 @@ body {
 .app__sidebar {
   flex-shrink: 0;
   overflow: hidden;
-  transition: width var(--transition-normal);
+  padding: 8px 4px 8px 8px;
+  background: transparent;
+  transition: width var(--transition-normal), padding var(--transition-normal);
 }
 
 .app__sidebar[data-collapsed='true'] {
+  padding: 8px 0;
   pointer-events: none;
 }
 

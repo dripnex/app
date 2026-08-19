@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { NotebookTreeNode } from '../../../preload/index';
 import { useNotebookExpandStore } from '../../stores/notebookExpandStore';
+import { useWorkspaceRootId } from '../../hooks/useNavigation';
 import { CommitHistory } from '../git/CommitHistory';
 import { sc } from './sc';
 
@@ -26,6 +27,7 @@ interface NotebookItemProps {
   readonly ancestorIds: Set<string>;
   readonly selectedNotebookId: string | null;
   readonly onSelect: (id: string) => void;
+  readonly onEnterWorkspace?: (id: string) => void;
   readonly onRename: (id: string, name: string) => void;
   readonly onDelete: (id: string) => void;
   readonly onCreateChild: (parentId: string) => void;
@@ -56,6 +58,7 @@ export const NotebookItem = memo(function NotebookItem({
   ancestorIds,
   selectedNotebookId,
   onSelect,
+  onEnterWorkspace,
   onRename,
   onDelete,
   onCreateChild,
@@ -63,6 +66,7 @@ export const NotebookItem = memo(function NotebookItem({
   onReorder,
   siblingIds,
 }: NotebookItemProps) {
+  const workspaceRootId = useWorkspaceRootId();
   const isExpanded = useNotebookExpandStore(s => !s.collapsedIds.includes(node.notebook.id));
   const toggleExpanded = useNotebookExpandStore(s => s.toggle);
   const expandNotebook = useNotebookExpandStore(s => s.expand);
@@ -104,6 +108,14 @@ export const NotebookItem = memo(function NotebookItem({
       onSelect(node.notebook.id);
     },
     [node.notebook.id, onSelect]
+  );
+
+  const handleDetail = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onEnterWorkspace?.(node.notebook.id);
+    },
+    [node.notebook.id, onEnterWorkspace]
   );
 
   const handleToggle = useCallback(
@@ -412,6 +424,17 @@ export const NotebookItem = memo(function NotebookItem({
           </span>
         )}
 
+        {onEnterWorkspace && workspaceRootId !== node.notebook.id ? (
+          <button
+            type="button"
+            className={sc('notebook-item-detail')}
+            onClick={handleDetail}
+            title="Switch to workspace view"
+          >
+            Detail
+          </button>
+        ) : null}
+
         {!isInbox && (
           <div className={sc('notebook-item-actions')}>
             <button
@@ -472,6 +495,7 @@ export const NotebookItem = memo(function NotebookItem({
               ancestorIds={ancestorIds}
               selectedNotebookId={selectedNotebookId}
               onSelect={onSelect}
+              onEnterWorkspace={onEnterWorkspace}
               onRename={onRename}
               onDelete={onDelete}
               onCreateChild={onCreateChild}

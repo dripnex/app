@@ -34,6 +34,7 @@ Shipped:
 - Sync conflicts: one screen, keep this device / keep other / open both.
 - Chrome: IconButton, sidebar collapse animates, Sync History stays inside the card.
 - Editor chrome: back/forward, distraction-free, open in window.
+- Sidebar is a rounded card. Detail opens workspace. Motion plugin scales CSS tokens.
 - Emergency Kit + 1Password integration (`Settings → Integrations`).
 - Dev renderer waits for Vite (no `chrome-error` hop).
 

@@ -111,8 +111,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
       if (have.has(template.title.toLowerCase())) continue;
       await createNote.mutateAsync({ content: template.content, notebookId: 'templates' });
     }
-    enterWorkspace('templates');
-  }, [createNote, enterWorkspace, queryClient]);
+    goToNotebook('templates');
+  }, [createNote, goToNotebook, queryClient]);
 
   const handleCreateNotebook = useCallback(
     async (name: string, parentId: string | null) => {
@@ -137,13 +137,16 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
   const handleSelectNotebook = useCallback(
     (id: string) => {
-      if (!workspaceRootId) {
-        enterWorkspace(id);
-        return;
-      }
       goToNotebook(id);
     },
-    [workspaceRootId, enterWorkspace, goToNotebook]
+    [goToNotebook]
+  );
+
+  const handleEnterWorkspace = useCallback(
+    (id: string) => {
+      enterWorkspace(id);
+    },
+    [enterWorkspace]
   );
 
   const handleDeletedNotebook = useCallback(
@@ -233,19 +236,29 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
         {!isNotebookContext && (
           <div className={sc('sidebar-templates')}>
-            <button
-              type="button"
-              className={sc('sidebar-row', selectedNotebookId === 'templates' && 'selected')}
-              onClick={() => void openTemplates()}
-            >
-              <span className={sc('sidebar-row-icon')} aria-hidden="true">
-                <FileStack size={15} />
-              </span>
-              <span className={sc('sidebar-row-label')}>Note Templates</span>
-              {templateCount > 0 ? (
-                <span className={sc('sidebar-row-count')}>{templateCount}</span>
-              ) : null}
-            </button>
+            <div className={sc('sidebar-row', selectedNotebookId === 'templates' && 'selected')}>
+              <button
+                type="button"
+                className={sc('sidebar-row-main')}
+                onClick={() => void openTemplates()}
+              >
+                <span className={sc('sidebar-row-icon')} aria-hidden="true">
+                  <FileStack size={15} />
+                </span>
+                <span className={sc('sidebar-row-label')}>Note Templates</span>
+                {templateCount > 0 ? (
+                  <span className={sc('sidebar-row-count')}>{templateCount}</span>
+                ) : null}
+              </button>
+              <button
+                type="button"
+                className={sc('sidebar-row-detail')}
+                onClick={() => enterWorkspace('templates')}
+                title="Switch to workspace view"
+              >
+                Detail
+              </button>
+            </div>
           </div>
         )}
 
@@ -263,6 +276,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
             <NotebookList
               selectedNotebookId={selectedNotebookId}
               onSelectNotebook={handleSelectNotebook}
+              onEnterWorkspace={handleEnterWorkspace}
               onDeletedNotebook={handleDeletedNotebook}
               workspaceRootId={workspaceRootId}
               onRequestCreateChild={openCreateChild}
