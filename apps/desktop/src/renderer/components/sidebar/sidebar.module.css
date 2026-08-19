@@ -805,6 +805,10 @@
   letter-spacing: 0.02em;
   cursor: pointer;
   -webkit-app-region: no-drag;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .notebook-item-row:hover .notebook-item-detail,
@@ -814,8 +818,9 @@
 
 .notebook-item-detail:hover,
 .sidebar-row-detail:hover {
-  color: var(--text-primary);
-  border-color: var(--border-strong);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-base);
 }
 
 .notebook-item-actions {
