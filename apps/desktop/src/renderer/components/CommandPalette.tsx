@@ -33,6 +33,7 @@ import {
   Maximize2,
   SquareArrowOutUpRight,
   Sparkles,
+  PenLine,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CommandCategory } from '@dripnex/command-registry';
@@ -107,6 +108,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Maximize2,
   SquareArrowOutUpRight,
   Sparkles,
+  PenLine,
 };
 
 const CATEGORY_ORDER: { category: CommandCategory; label: string }[] = [
