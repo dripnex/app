@@ -16,7 +16,7 @@ import { DEFAULT_MODEL } from '@dripnex/ai-core';
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 5;
+export const SETTINGS_VERSION = 6;
 
 // ============================================================================
 // Section Types
@@ -82,6 +82,14 @@ export interface AiSettings {
   embedModel: string;
 }
 
+/** Local integrations (MCP / local HTTP). */
+export interface IntegrationsSettings {
+  /** Start the local HTTP API and show MCP connection snippets. */
+  mcpEnabled: boolean;
+  /** Allow MCP create/update/trash. Written to mcp.json next to the DB. */
+  mcpWrites: boolean;
+}
+
 /** Editor settings for CodeMirror */
 export interface EditorSettings {
   /** Font size in pixels */
@@ -138,8 +146,13 @@ export interface SettingsSchemaV5 extends Omit<SettingsSchemaV4, 'version'> {
   version: 5;
 }
 
+export interface SettingsSchemaV6 extends Omit<SettingsSchemaV5, 'version'> {
+  version: 6;
+  integrations: IntegrationsSettings;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV5;
+export type SettingsSchema = SettingsSchemaV6;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -197,13 +210,19 @@ export const DEFAULT_BACKUP: BackupSettings = {
   lastBackupAt: null,
 };
 
+export const DEFAULT_INTEGRATIONS: IntegrationsSettings = {
+  mcpEnabled: false,
+  mcpWrites: false,
+};
+
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 5,
+  version: 6,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,
   ai: DEFAULT_AI,
   editor: DEFAULT_EDITOR,
   backup: DEFAULT_BACKUP,
+  integrations: DEFAULT_INTEGRATIONS,
 };
