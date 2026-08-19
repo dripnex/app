@@ -357,11 +357,11 @@ Fase inicial: **trusted plugins only**. No sandbox.
 
 User files in the data directory — same idea as Inkdrop's `init.js` + `styles.css`:
 
-| File               | Role                                                                                             |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| `init.js`          | Runs on load. Free-form `dripnex.*` **or** a CJS `PluginManifest`. Open from Settings → Plugins. |
-| `styles.css`       | Injected into every renderer window. Save to apply.                                              |
-| `keybindings.json` | Command id → chord (or `null` to unbind). Save to apply.                                         |
+| File               | Role                                                                                                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init.js`          | Runs on load. Free-form `dripnex.*` **or** a CJS `PluginManifest`. Open from Settings → Plugins.                                                                                   |
+| `styles.css`       | Injected into every renderer window. Save to apply.                                                                                                                                |
+| `keybindings.json` | Command id → chord (or `null` to unbind). Contexts: `editor`, `note-list`, `app`, `global`. `j`/`k` are `note-list` (next/prev note) and do not fire in the editor. Save to apply. |
 
 Free-form `init.js` is wrapped as plugin `user-init`. A full manifest export still works.
 

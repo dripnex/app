@@ -84,6 +84,21 @@ describe('CommandRegistry', () => {
     expect(reg.getByCategory('app')).toHaveLength(1);
   });
 
+  it('keeps note-list j/k out of the editor context', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'app:next-note',
+        context: 'note-list',
+        defaultKeybinding: { key: 'j', modifiers: [] },
+      })
+    );
+    expect(reg.findByKeybinding({ key: 'j', modifiers: [] }, 'note-list')?.id).toBe(
+      'app:next-note'
+    );
+    expect(reg.findByKeybinding({ key: 'j', modifiers: [] }, 'editor')).toBeUndefined();
+  });
+
   it('finds command by keybinding', () => {
     const reg = new CommandRegistry();
     reg.register(

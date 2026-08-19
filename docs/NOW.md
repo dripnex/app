@@ -65,7 +65,7 @@ Shipped this week:
 - Built-in **Paste as Link** (selection + clipboard URL, Mod+Shift+K).
 - First launch writes `init.js` (Insert Date, Mod+Shift+D) and `styles.css`.
 - Command palette + Plugins menu: Open Init Script, Open User Stylesheet, Open Keymap, Reload Plugins.
-- `keybindings.json` overrides command chords (save to apply).
+- `keybindings.json` overrides command chords (save to apply). Contexts: editor, note-list (`j`/`k`), app, global.
 - Slash commands, fence languages, GitHub alerts, `<mark>` highlight.
 - Outline panel (`#` in the header, `Toggle Outline` in the palette).
 - Paste a URL: wrap the selection, or pick Title / Link / `<url>`.

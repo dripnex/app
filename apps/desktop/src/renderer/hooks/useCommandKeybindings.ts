@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { KeyModifier, KeyBinding } from '@dripnex/command-registry';
+import { resolveCommandContext } from '../utils/commandContext';
 import { registry, getEditorView } from './useCommandRegistry';
 
 /**
@@ -16,20 +17,6 @@ function eventToKeybinding(e: KeyboardEvent): KeyBinding | null {
   if (['Meta', 'Control', 'Shift', 'Alt'].includes(e.key)) return null;
 
   return { key: e.key.toLowerCase(), modifiers };
-}
-
-/**
- * Determine current context based on active element.
- */
-function getCurrentContext(): 'editor' | 'app' {
-  const active = document.activeElement;
-  if (!active) return 'app';
-
-  // Check if focus is inside a CodeMirror editor
-  const cmEditor = active.closest('.cm-editor');
-  if (cmEditor) return 'editor';
-
-  return 'app';
 }
 
 /**
@@ -54,6 +41,7 @@ interface UseCommandKeybindingsOptions {
  * Replaces useKeyboardShortcuts.
  *
  * - Editor commands only fire when CodeMirror is focused
+ * - note-list commands (j/k) only fire when the editor is not focused
  * - App commands skip form inputs (except when coming from CM editor)
  * - Global commands fire everywhere
  */
@@ -66,10 +54,10 @@ export function useCommandKeybindings(options?: UseCommandKeybindingsOptions): v
         return;
       }
 
+      const context = resolveCommandContext(e.target);
       const kb = eventToKeybinding(e);
-      if (!kb || kb.modifiers.length === 0) return; // Only handle modified shortcuts
-
-      const context = getCurrentContext();
+      if (!kb) return;
+      if (kb.modifiers.length === 0 && context !== 'note-list') return;
 
       // Try context-specific command first
       let command = registry.findByKeybinding(kb, context);

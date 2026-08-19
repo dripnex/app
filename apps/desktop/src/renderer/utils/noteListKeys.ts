@@ -1,4 +1,4 @@
-/** Keys that move the note list. Stops at inputs, the editor, preview, and overlays. */
+/** Arrow keys that move the note list. j/k live on the note-list keymap. */
 export function noteListNavDirection(event: {
   key: string;
   metaKey?: boolean;
@@ -8,8 +8,8 @@ export function noteListNavDirection(event: {
 }): 1 | -1 | null {
   if (event.metaKey || event.ctrlKey || event.altKey) return null;
   if (isNoteListNavBlocked(event.target)) return null;
-  if (event.key === 'j' || event.key === 'ArrowDown') return 1;
-  if (event.key === 'k' || event.key === 'ArrowUp') return -1;
+  if (event.key === 'ArrowDown') return 1;
+  if (event.key === 'ArrowUp') return -1;
   return null;
 }
 
