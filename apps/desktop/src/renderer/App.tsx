@@ -39,6 +39,14 @@ import { useAppearanceSettings } from './hooks/useAppearanceSettings';
 import { useOfficialThemes } from './hooks/useOfficialThemes';
 import { useResizableLayout } from './hooks/useResizableLayout';
 import { useSyncStore } from './stores/syncStore';
+import {
+  canGoBack,
+  canGoForward,
+  emptyNoteHistory,
+  historyBack,
+  historyForward,
+  visitNote,
+} from './utils/noteHistory';
 import { useDeepLinks } from './hooks/useDeepLinks';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useNoteActions } from './hooks/useNoteActions';
@@ -75,20 +83,25 @@ function NotesApp() {
     sidebarWidth,
     notelistWidth,
     sidebarCollapsed,
+    distractionFree,
     toggleSidebar,
+    toggleDistractionFree,
     startResizeSidebar,
     startResizeNotelist,
   } = useResizableLayout();
 
+  const hideSidebar = sidebarCollapsed || distractionFree;
+  const hideNoteList = distractionFree;
+
   useEffect(() => {
     const setVisibility = window.dripnex.windows.setButtonVisibility;
     if (typeof setVisibility !== 'function') return;
-    // Collapse hides the native traffic lights so the note-list can sit at x=0.
-    void setVisibility(!sidebarCollapsed);
+    // Hide native traffic lights when the first column is gone.
+    void setVisibility(!hideSidebar);
     return () => {
       void setVisibility(true);
     };
-  }, [sidebarCollapsed]);
+  }, [hideSidebar]);
 
   // Navigation state from Zustand
   const navigation = useNavigation();
@@ -130,6 +143,11 @@ function NotesApp() {
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
   const selectedNoteRef = useRef<NoteSnapshot | null>(null);
   selectedNoteRef.current = selectedNote;
+  const [noteHistory, setNoteHistory] = useState(emptyNoteHistory);
+  const setSelectedNoteAndVisit = useCallback((note: NoteSnapshot | null) => {
+    setSelectedNote(note);
+    if (note) setNoteHistory(prev => visitNote(prev, note.id));
+  }, []);
   const { appAPI, dataAPI, pluginSlot } = usePluginRuntime(selectedNoteRef);
   const { searchQuery, debouncedSearch, handleSearch, clearSearch } = useDebouncedSearch(300);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
@@ -251,7 +269,7 @@ function NotesApp() {
     handleStatusChange,
   } = useNoteActions({
     selectedNote,
-    setSelectedNote,
+    setSelectedNote: setSelectedNoteAndVisit,
     selectedNotebookId,
     clearSearch,
     appAPI,
@@ -293,9 +311,31 @@ function NotesApp() {
     setIsGraphOpen,
     searchQuery,
     clearSearch,
-    setSelectedNote,
+    setSelectedNote: setSelectedNoteAndVisit,
     displayedNotes,
     onSelectNote: handleSelectNote,
+    onNoteBack: () => {
+      const { state, id } = historyBack(noteHistory);
+      if (!id) return;
+      setNoteHistory(state);
+      void window.dripnex.notes.get(id).then(result => {
+        if (result.ok) setSelectedNote(result.data);
+      });
+    },
+    onNoteForward: () => {
+      const { state, id } = historyForward(noteHistory);
+      if (!id) return;
+      setNoteHistory(state);
+      void window.dripnex.notes.get(id).then(result => {
+        if (result.ok) setSelectedNote(result.data);
+      });
+    },
+    onToggleZen: toggleDistractionFree,
+    onOpenInWindow: () => {
+      const note = selectedNoteRef.current;
+      if (!note) return;
+      void window.dripnex.windows.openNote(note.id, note.title || 'Note');
+    },
   });
 
   // Determine selected quick filter for NoteList header
@@ -372,14 +412,14 @@ function NotesApp() {
           <div className="app__layout">
             <aside
               className="app__sidebar"
-              data-collapsed={sidebarCollapsed ? 'true' : 'false'}
+              data-collapsed={hideSidebar ? 'true' : 'false'}
               style={{ width: sidebarWidth }}
-              aria-hidden={sidebarCollapsed}
-              inert={sidebarCollapsed || undefined}
+              aria-hidden={hideSidebar}
+              inert={hideSidebar || undefined}
             >
               <Sidebar onOpenGraph={() => setIsGraphOpen(true)} />
             </aside>
-            {!sidebarCollapsed ? (
+            {!hideSidebar ? (
               <div
                 className="resize-handle"
                 onMouseDown={startResizeSidebar}
@@ -388,7 +428,13 @@ function NotesApp() {
               />
             ) : null}
 
-            <section className="app__notelist" style={{ width: notelistWidth }}>
+            <section
+              className="app__notelist"
+              data-collapsed={hideNoteList ? 'true' : 'false'}
+              style={{ width: notelistWidth }}
+              aria-hidden={hideNoteList}
+              inert={hideNoteList || undefined}
+            >
               <NoteList
                 notes={displayedNotes}
                 selectedId={selectedNote?.id ?? null}
@@ -416,12 +462,14 @@ function NotesApp() {
                 isLoading={isLoading}
               />
             </section>
-            <div
-              className="resize-handle"
-              onMouseDown={startResizeNotelist}
-              role="separator"
-              aria-orientation="vertical"
-            />
+            {!hideNoteList ? (
+              <div
+                className="resize-handle"
+                onMouseDown={startResizeNotelist}
+                role="separator"
+                aria-orientation="vertical"
+              />
+            ) : null}
 
             <main className="app__editor">
               {isGraphOpen ? (
@@ -463,6 +511,33 @@ function NotesApp() {
                   onWikilinkClick={handleWikilinkClick}
                   onNavigateToNote={handleSelectNote}
                   onNoteUpdate={setSelectedNote}
+                  canBack={canGoBack(noteHistory)}
+                  canForward={canGoForward(noteHistory)}
+                  distractionFree={distractionFree}
+                  onBack={() => {
+                    const { state, id } = historyBack(noteHistory);
+                    if (!id) return;
+                    setNoteHistory(state);
+                    void window.dripnex.notes.get(id).then(result => {
+                      if (result.ok) setSelectedNote(result.data);
+                    });
+                  }}
+                  onForward={() => {
+                    const { state, id } = historyForward(noteHistory);
+                    if (!id) return;
+                    setNoteHistory(state);
+                    void window.dripnex.notes.get(id).then(result => {
+                      if (result.ok) setSelectedNote(result.data);
+                    });
+                  }}
+                  onToggleZen={toggleDistractionFree}
+                  onOpenWindow={() => {
+                    if (!selectedNote) return;
+                    void window.dripnex.windows.openNote(
+                      selectedNote.id,
+                      selectedNote.title || 'Note'
+                    );
+                  }}
                 />
               )}
             </main>

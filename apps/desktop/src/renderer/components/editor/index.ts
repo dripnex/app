@@ -1,6 +1,7 @@
 export { ActionsPanel } from './ActionsPanel';
 export { EditorHeader } from './EditorHeader';
 export { EditorViewToggle } from './EditorViewToggle';
+export { EditorChrome } from './EditorChrome';
 export { OutlinePanel } from './OutlinePanel';
 export { UrlPastePicker } from './UrlPastePicker';
 export { FormattingToolbar } from './FormattingToolbar';

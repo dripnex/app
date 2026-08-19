@@ -38,6 +38,10 @@ interface UseAppCommandsOptions {
   setSelectedNote: (note: NoteSnapshot | null) => void;
   displayedNotes: ReadonlyArray<{ id: string }>;
   onSelectNote: (id: string) => void;
+  onNoteBack: () => void;
+  onNoteForward: () => void;
+  onToggleZen: () => void;
+  onOpenInWindow: () => void;
 }
 
 export function useAppCommands({
@@ -54,6 +58,10 @@ export function useAppCommands({
   setSelectedNote,
   displayedNotes,
   onSelectNote,
+  onNoteBack,
+  onNoteForward,
+  onToggleZen,
+  onOpenInWindow,
 }: UseAppCommandsOptions) {
   const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
   const togglePreview = useEditorPreferencesStore(state => state.togglePreview);
@@ -150,6 +158,10 @@ export function useAppCommands({
     onReloadPlugins: useCallback(() => {
       window.dripnex.plugins.requestReload();
     }, []),
+    onNoteBack,
+    onNoteForward,
+    onToggleZen,
+    onOpenInWindow,
   });
 
   // AI panel toggle/modes

@@ -25,6 +25,10 @@ interface AppCommandHandlers {
   onOpenUserStyles: () => void;
   onOpenKeymap: () => void;
   onReloadPlugins: () => void;
+  onNoteBack: () => void;
+  onNoteForward: () => void;
+  onToggleZen: () => void;
+  onOpenInWindow: () => void;
 }
 
 /**
@@ -59,6 +63,10 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
       'app:open-user-styles': () => handlersRef.current.onOpenUserStyles(),
       'app:open-keymap': () => handlersRef.current.onOpenKeymap(),
       'app:reload-plugins': () => handlersRef.current.onReloadPlugins(),
+      'app:note-back': () => handlersRef.current.onNoteBack(),
+      'app:note-forward': () => handlersRef.current.onNoteForward(),
+      'app:toggle-zen': () => handlersRef.current.onToggleZen(),
+      'app:open-in-window': () => handlersRef.current.onOpenInWindow(),
     };
 
     const unregisters: Array<() => void> = [];

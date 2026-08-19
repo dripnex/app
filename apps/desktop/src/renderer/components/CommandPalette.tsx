@@ -28,6 +28,10 @@ import {
   RefreshCw,
   Hash,
   BookMarked,
+  ArrowLeft,
+  ArrowRight,
+  Maximize2,
+  SquareArrowOutUpRight,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CommandCategory } from '@dripnex/command-registry';
@@ -95,6 +99,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   RefreshCw,
   Hash,
   BookMarked,
+  ArrowLeft,
+  ArrowRight,
+  Maximize2,
+  SquareArrowOutUpRight,
 };
 
 const CATEGORY_ORDER: { category: CommandCategory; label: string }[] = [
