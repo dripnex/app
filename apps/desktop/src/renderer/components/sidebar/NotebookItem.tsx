@@ -432,6 +432,11 @@ export const NotebookItem = memo(function NotebookItem({
             title="Switch to workspace view"
           >
             Detail
+            <ChevronRight
+              size={10}
+              className={sc('notebook-item-detail-chevron')}
+              aria-hidden="true"
+            />
           </button>
         ) : null}
 

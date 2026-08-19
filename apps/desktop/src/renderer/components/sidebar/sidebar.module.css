@@ -805,7 +805,8 @@
   display: none;
   align-items: center;
   margin-left: auto;
-  padding: 1px 7px;
+  gap: 2px;
+  padding: 1px 5px 1px 7px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: var(--bg-elevated);
@@ -821,6 +822,12 @@
     border-color var(--transition-fast);
 }
 
+.notebook-item-detail-chevron,
+.sidebar-row-detail-chevron {
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
 .notebook-item-row:hover .notebook-item-detail,
 .sidebar-row:hover .sidebar-row-detail {
   display: inline-flex;
@@ -831,6 +838,11 @@
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg-base);
+}
+
+.notebook-item-detail:hover .notebook-item-detail-chevron,
+.sidebar-row-detail:hover .sidebar-row-detail-chevron {
+  transform: translateX(2px);
 }
 
 .notebook-item-actions {

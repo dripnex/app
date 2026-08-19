@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { LayoutZone } from '@dripnex/plugin-api';
-import { FileStack, Trash2 } from 'lucide-react';
+import { ChevronRight, FileStack, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { DEFAULT_TEMPLATES } from '../../data/defaultTemplates';
 import { useNoteMutations, useNotebookNotesCount } from '../../hooks/useNotes';
@@ -257,6 +257,11 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
                 title="Switch to workspace view"
               >
                 Detail
+                <ChevronRight
+                  size={10}
+                  className={sc('sidebar-row-detail-chevron')}
+                  aria-hidden="true"
+                />
               </button>
             </div>
           </div>
