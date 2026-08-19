@@ -90,7 +90,7 @@ async function executeScan(generation: number): Promise<{
       if (!enabled) continue;
 
       const start = performance.now();
-      const manifest = sp.code
+      const manifest = sp.hasMain
         ? loadPluginFromSource(sp.code, sp.id)
         : createThemeOnlyManifest(sp.id, sp.name, sp.version);
       const elapsed = performance.now() - start;

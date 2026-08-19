@@ -275,6 +275,7 @@ export interface ScannedPlugin {
   description?: string;
   configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
+  hasMain: boolean;
   path: string;
   keymaps: string[];
   menus: string[];

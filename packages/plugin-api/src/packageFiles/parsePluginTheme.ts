@@ -35,7 +35,13 @@ export function parsePluginTheme(source: string, pluginId: string): ParsePluginT
     return { theme: null, errors };
   }
 
-  const tokens = validateThemeTokens(raw.tokens as Record<string, string>, id);
+  const rawTokens = raw.tokens as Record<string, unknown>;
+  if (Object.values(rawTokens).some(value => typeof value !== 'string')) {
+    errors.push('tokens must map CSS variables to string values');
+    return { theme: null, errors };
+  }
+
+  const tokens = validateThemeTokens(rawTokens as Record<string, string>, id);
   if (Object.keys(tokens).length === 0) {
     errors.push('no valid theme tokens');
     return { theme: null, errors };

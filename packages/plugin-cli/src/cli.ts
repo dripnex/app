@@ -16,6 +16,7 @@
  */
 
 import { initPlugin } from './commands/init';
+import { parseInitArgs } from './parseInitArgs';
 import { listPlugins } from './commands/list';
 import { installPlugin } from './commands/install';
 import { uninstallPlugin } from './commands/uninstall';
@@ -29,15 +30,15 @@ const command = args[0];
 async function main() {
   switch (command) {
     case 'init': {
-      const { name, type } = parseInitArgs(args.slice(1));
-      if (!name) {
-        console.error('Usage: dripnex-plugin init <name> [--type plugin|theme]');
-        console.error('Example: dripnex-plugin init "My Plugin"');
-        console.error('Example: dripnex-plugin init "Paper" --type theme');
-        process.exit(1);
-      }
-
       try {
+        const { name, type } = parseInitArgs(args.slice(1));
+        if (!name) {
+          console.error('Usage: dripnex-plugin init <name> [--type plugin|theme]');
+          console.error('Example: dripnex-plugin init "My Plugin"');
+          console.error('Example: dripnex-plugin init "Paper" --type theme');
+          process.exit(1);
+        }
+
         const dir = await initPlugin({ name, type });
         console.log(`${type === 'theme' ? 'Theme' : 'Plugin'} scaffolded at: ${dir}`);
         console.log('');
@@ -120,24 +121,6 @@ async function main() {
       console.error('Run "dripnex-plugin --help" for usage');
       process.exit(1);
   }
-}
-
-function parseInitArgs(rest: string[]): { name: string; type: 'plugin' | 'theme' } {
-  let type: 'plugin' | 'theme' = 'plugin';
-  const nameParts: string[] = [];
-  for (let i = 0; i < rest.length; i += 1) {
-    const part = rest[i];
-    if (part === '--type') {
-      const next = rest[i + 1];
-      if (next === 'theme' || next === 'plugin') {
-        type = next;
-        i += 1;
-      }
-      continue;
-    }
-    if (part) nameParts.push(part);
-  }
-  return { name: nameParts.join(' ').trim(), type };
 }
 
 main().catch(error => {

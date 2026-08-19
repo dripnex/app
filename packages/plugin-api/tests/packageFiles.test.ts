@@ -175,4 +175,13 @@ describe('parsePluginTheme', () => {
     expect(parsed.theme).toBeNull();
     expect(parsed.errors.some(e => e.includes('colorScheme'))).toBe(true);
   });
+
+  it('rejects non-string token values', () => {
+    const parsed = parsePluginTheme(
+      JSON.stringify({ colorScheme: 'dark', tokens: { '--bg-base': 0 } }),
+      'hello'
+    );
+    expect(parsed.theme).toBeNull();
+    expect(parsed.errors.some(e => e.includes('string'))).toBe(true);
+  });
 });

@@ -18,6 +18,8 @@ export interface ScannedPlugin {
   description?: string;
   configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
+  /** True when manifest.json declared `main`, even if the file is empty. */
+  hasMain: boolean;
   path: string;
   keymaps: string[];
   menus: string[];
@@ -70,6 +72,7 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
         continue;
       }
 
+      const hasMain = Boolean(manifest.main);
       let code = '';
       if (manifest.main) {
         code = await readFile(join(pluginDir, manifest.main), 'utf-8');
@@ -82,6 +85,7 @@ export async function scanPlugins(pluginsDir: string): Promise<ScannedPlugin[]> 
         description: manifest.description,
         configSchema: manifest.configSchema,
         code,
+        hasMain,
         path: pluginDir,
         keymaps,
         menus,
