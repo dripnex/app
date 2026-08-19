@@ -9,11 +9,12 @@ import {
   TWEET_USER_TEMPLATE,
   resolveTemplate,
 } from '@dripnex/ai-core';
-import type { AiInitialCommand } from '../components/ai/AiPanel';
 import { openSearchPanel } from '@codemirror/search';
+import type { AiInitialCommand } from '../components/ai/AiPanel';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { usePreviewFindStore } from '../stores/previewFindStore';
 import type { NoteSnapshot } from '../../preload/index';
+import type { PaletteMode } from '../utils/paletteQuery';
 import { neighborId } from '../utils/neighborId';
 import { useRegisterAiCommands } from './useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './useRegisterPluginAiCommands';
@@ -29,6 +30,7 @@ interface UseAppCommandsOptions {
   selectedNote: NoteSnapshot | null;
   isCommandPaletteOpen: boolean;
   setIsCommandPaletteOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
+  openPalette: (mode: PaletteMode) => void;
   isGraphOpen: boolean;
   setIsGraphOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   searchQuery: string;
@@ -44,6 +46,7 @@ export function useAppCommands({
   selectedNote,
   isCommandPaletteOpen,
   setIsCommandPaletteOpen,
+  openPalette,
   isGraphOpen,
   setIsGraphOpen,
   searchQuery,
@@ -122,7 +125,10 @@ export function useAppCommands({
     onToggleOutline: toggleOutline,
     onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), [setIsGraphOpen]),
     onOpenSettings: useCallback(() => window.dripnex.windows.openSettings(), []),
-    onCommandPalette: toggleCommandPalette,
+    onCommandPalette: () => openPalette('commands'),
+    onQuickOpen: () => openPalette('notes'),
+    onJumpNotebook: () => openPalette('notebooks'),
+    onJumpTag: () => openPalette('tags'),
     onOpenNowBoard: useCallback(() => {
       void (async () => {
         const result = await ensureNowBoard();
