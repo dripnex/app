@@ -346,7 +346,7 @@ export const NotebookItem = memo(function NotebookItem({
           dropPosition && `drop-${dropPosition}`,
           isDragging && 'dragging'
         )}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        style={depth > 0 ? { paddingLeft: `${depth * 14 + 8}px` } : undefined}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         role="button"
