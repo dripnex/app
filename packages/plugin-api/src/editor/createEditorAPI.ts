@@ -93,6 +93,8 @@ export function createEditorAPI(getView: () => EditorView | null): EditorAPIWith
       getView()?.focus();
     },
 
+    getView,
+
     _notifyDocChanged(content) {
       for (const cb of docChangedListeners) {
         cb(content);

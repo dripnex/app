@@ -52,7 +52,10 @@ export interface InitApi {
   registerRehypePlugin: PluginContext['registerRehypePlugin'];
   registerPreviewComponent: PluginContext['registerPreviewComponent'];
   registerCodeBlockRenderer: PluginContext['registerCodeBlockRenderer'];
-  getActiveEditor(): { editor: PluginContext['editor'] };
+  getActiveEditor(): {
+    editor: PluginContext['editor'];
+    cm: ReturnType<PluginContext['editor']['getView']>;
+  };
 }
 
 export function createInitApi(ctx: PluginContext): InitApi {
@@ -92,7 +95,7 @@ export function createInitApi(ctx: PluginContext): InitApi {
     registerPreviewComponent: ctx.registerPreviewComponent,
     registerCodeBlockRenderer: ctx.registerCodeBlockRenderer,
     getActiveEditor() {
-      return { editor: ctx.editor };
+      return { editor: ctx.editor, cm: ctx.editor.getView() };
     },
   };
 }

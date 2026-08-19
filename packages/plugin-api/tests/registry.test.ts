@@ -30,6 +30,7 @@ function makeEditorAPI(): EditorAPI {
     onDocChanged: () => () => {},
     onSelectionChanged: () => () => {},
     focus: () => {},
+    getView: () => null,
   };
 }
 
