@@ -12,5 +12,12 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "../preload/index.ts", "../preload/api/**/*.ts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    "../preload/index.ts",
+    "../preload/api/**/*.ts",
+    "../shared/**/*.ts"
+  ]
 }

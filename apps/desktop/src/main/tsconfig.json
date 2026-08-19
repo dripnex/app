@@ -4,9 +4,9 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "../../out/main",
-    "rootDir": ".",
+    "rootDir": "..",
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts"]
+  "include": ["./**/*.ts", "../shared/**/*.ts"]
 }
