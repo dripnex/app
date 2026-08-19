@@ -81,6 +81,35 @@ describe('listOptionsFromNav', () => {
       });
     });
 
+    it('lists the workspace tree when All Notes is selected inside a workspace', () => {
+      expect(
+        listOptionsFromNav({
+          navigation: { kind: 'notebook', id: 'work' },
+          statusFilter: null,
+          tagFilter: null,
+          workspaceNotebookIds: ['work', 'api'],
+          workspaceListAll: true,
+        })
+      ).toEqual({
+        notebookIds: ['work', 'api'],
+        archived: 'active',
+        isDeleted: false,
+        limit: 10000,
+      });
+    });
+
+    it('scopes sidebar counts to the workspace tree', () => {
+      expect(
+        listOptionsFromNav({
+          navigation: { kind: 'notebook', id: 'api' },
+          statusFilter: null,
+          tagFilter: null,
+          workspaceNotebookIds: ['work', 'api'],
+          scopeToWorkspaceTree: true,
+        }).notebookIds
+      ).toEqual(['work', 'api']);
+    });
+
     it('maps tag kind to tag name, active, not deleted', () => {
       expect(
         listOptionsFromNav({

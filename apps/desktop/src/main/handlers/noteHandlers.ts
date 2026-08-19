@@ -50,6 +50,7 @@ const ListNotesOptionsSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
   archived: z.enum(['active', 'archived', 'all']).optional(),
   notebookId: IdSchema.optional(),
+  notebookIds: z.array(IdSchema).max(256).optional(),
   status: StatusSchema.optional(),
   isPinned: z.boolean().optional(),
   isDeleted: z.boolean().optional(),

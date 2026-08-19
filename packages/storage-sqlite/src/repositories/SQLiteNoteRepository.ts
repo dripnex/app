@@ -65,7 +65,11 @@ export function noteFilterSql(
 
   parts.push(archivedConditionSql(archived, 'n'));
 
-  if (options.notebookId !== undefined) {
+  if (options.notebookIds && options.notebookIds.length > 0) {
+    const placeholders = options.notebookIds.map(() => '?').join(', ');
+    parts.push(`AND n.notebook_id IN (${placeholders})`);
+    params.push(...options.notebookIds);
+  } else if (options.notebookId !== undefined) {
     parts.push('AND n.notebook_id = ?');
     params.push(options.notebookId);
   }

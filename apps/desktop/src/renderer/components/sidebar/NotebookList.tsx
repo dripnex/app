@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNotebookTree, useNotebookMutations, getAncestorIds } from '../../hooks/useNotebooks';
 import type { NotebookTreeNode } from '../../../preload/index';
+import { findNotebookNode } from '../../utils/notebookTree';
 import { NotebookItem } from './NotebookItem';
 import { sc } from './sc';
 
@@ -8,6 +9,8 @@ interface NotebookListProps {
   readonly selectedNotebookId: string | null;
   readonly onSelectNotebook: (id: string) => void;
   readonly filterParentId?: string | null;
+  /** Show this notebook and its descendants as the forest root. */
+  readonly workspaceRootId?: string | null;
   /** Request to create a child notebook */
   readonly onRequestCreateChild: (parentId: string) => void;
   readonly nameFilter?: string;
@@ -49,6 +52,7 @@ export function NotebookList({
   selectedNotebookId,
   onSelectNotebook,
   filterParentId,
+  workspaceRootId,
   onRequestCreateChild,
   nameFilter = '',
 }: NotebookListProps) {
@@ -63,7 +67,12 @@ export function NotebookList({
 
   // Filter tree to show only children of filterParentId when in contextual mode
   const displayedTree = useMemo(() => {
-    if (!filterParentId || !tree) return tree ?? [];
+    if (!tree) return [];
+    if (workspaceRootId) {
+      const root = findNotebookNode(tree, workspaceRootId);
+      return root ? [root] : [];
+    }
+    if (!filterParentId) return tree;
 
     function findChildren(nodes: NotebookTreeNode[]): NotebookTreeNode[] {
       for (const node of nodes) {
@@ -76,7 +85,7 @@ export function NotebookList({
       return [];
     }
     return findChildren(tree);
-  }, [tree, filterParentId]);
+  }, [tree, filterParentId, workspaceRootId]);
 
   const filteredTree = useMemo(() => {
     const q = nameFilter.trim().toLowerCase();

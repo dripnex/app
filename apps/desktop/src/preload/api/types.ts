@@ -57,6 +57,8 @@ export interface ListOptions {
   sortOrder?: 'asc' | 'desc';
   archived?: 'active' | 'archived' | 'all';
   notebookId?: string;
+  /** When set, matches any of these notebooks. Overrides `notebookId`. */
+  notebookIds?: string[];
   status?: NoteStatus;
   isPinned?: boolean;
   /** Undefined = do not filter by deleted state */
