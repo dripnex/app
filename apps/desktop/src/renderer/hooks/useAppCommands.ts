@@ -11,6 +11,7 @@ import {
 } from '@dripnex/ai-core';
 import { openSearchPanel } from '@codemirror/search';
 import type { AiInitialCommand } from '../components/ai/AiPanel';
+import { useHeadingJumpStore } from '../stores/headingJumpStore';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { usePreviewFindStore } from '../stores/previewFindStore';
 import type { NoteSnapshot } from '../../preload/index';
@@ -86,10 +87,12 @@ export function useAppCommands({
   // Register app commands (new note, duplicate, search, etc.)
   useRegisterAppCommands({
     onOpenNote: useCallback(
-      (noteId: string) => {
+      (noteId: string, heading?: string) => {
         void (async () => {
           const result = await window.dripnex.notes.get(noteId);
-          if (result.ok) setSelectedNote(result.data);
+          if (!result.ok) return;
+          if (heading) useHeadingJumpStore.getState().request(noteId, heading);
+          setSelectedNote(result.data);
         })();
       },
       [setSelectedNote]

@@ -10,7 +10,9 @@ import {
   selectIsDirty,
   selectContentForNote,
 } from '../stores/editorBufferStore';
+import { useHeadingJumpStore } from '../stores/headingJumpStore';
 import { useShareStore, selectShareInfo } from '../stores/shareStore';
+import { findHeadingForAnchor } from '../utils/outlineActive';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
@@ -60,7 +62,7 @@ interface NoteEditorProps {
   onRestoreDeleted?: () => void;
   onPermanentDelete?: () => void;
   onPin?: () => void;
-  onWikilinkClick?: (target: string) => void;
+  onWikilinkClick?: (target: string, anchor?: string) => void;
   onNavigateToNote?: (noteId: string) => void;
   /** Called when note is updated (e.g., tags changed) */
   onNoteUpdate?: (note: NoteSnapshot) => void;
@@ -260,6 +262,24 @@ export function NoteEditor({
     [showEditor]
   );
 
+  const pendingJumpNoteId = useHeadingJumpStore(s => s.noteId);
+  const pendingJumpHeading = useHeadingJumpStore(s => s.heading);
+
+  const tryHeadingJump = useCallback(() => {
+    if (!note) return;
+    const pending = useHeadingJumpStore.getState();
+    if (pending.noteId !== note.id || !pending.heading) return;
+    const target = showEditor ? editorRef.current : previewRef.current;
+    if (!target) return;
+    const match = findHeadingForAnchor(note.content, pending.heading);
+    useHeadingJumpStore.getState().consume(note.id);
+    if (match) handleOutlineJump(match);
+  }, [note, showEditor, handleOutlineJump]);
+
+  useEffect(() => {
+    tryHeadingJump();
+  }, [note?.id, pendingJumpNoteId, pendingJumpHeading, tryHeadingJump]);
+
   useEffect(() => {
     if (!outlineOpen || !note) return;
     let unsub: (() => void) | undefined;
@@ -311,6 +331,16 @@ export function NoteEditor({
     editorRef,
     previewRef,
   });
+
+  const onEditorReady = useCallback(() => {
+    handleEditorReady();
+    tryHeadingJump();
+  }, [handleEditorReady, tryHeadingJump]);
+
+  const onPreviewReady = useCallback(() => {
+    handlePreviewReady();
+    tryHeadingJump();
+  }, [handlePreviewReady, tryHeadingJump]);
 
   // Handle content change with debounce
   const handleChange = useCallback(
@@ -534,7 +564,7 @@ export function NoteEditor({
                   key={note.id}
                   initialContent={note.content}
                   onChange={handleChange}
-                  onReady={handleEditorReady}
+                  onReady={onEditorReady}
                   noteId={note.id}
                   getEmbedUrl={getEmbedUrl}
                 />
@@ -555,7 +585,7 @@ export function NoteEditor({
                 noteId={note.id}
                 createdAt={note.createdAt}
                 updatedAt={note.updatedAt}
-                onReady={handlePreviewReady}
+                onReady={onPreviewReady}
                 onWikilinkClick={onWikilinkClick}
                 onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
                 resolvedEmbeds={resolvedEmbeds}
