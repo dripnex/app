@@ -114,10 +114,15 @@ export function useNoteActions({
   // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
     async (title: string, anchor?: string) => {
-      if (anchor && selectedNote && selectedNote.title.toLowerCase() === title.toLowerCase()) {
+      if (
+        anchor &&
+        selectedNote &&
+        (!title.trim() || selectedNote.title.toLowerCase() === title.toLowerCase())
+      ) {
         useHeadingJumpStore.getState().request(selectedNote.id, anchor);
         return;
       }
+      if (!title.trim()) return;
       const notes = await window.dripnex.notes.search(title);
       const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
       if (!match) return;

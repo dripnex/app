@@ -78,6 +78,11 @@ describe('extractWikilinks', () => {
     expect(result).toEqual([{ target: 'Valid' }]);
   });
 
+  it('extracts same-note heading links', () => {
+    expect(extractWikilinks('Jump [[#Setup]]')).toEqual([{ target: '', anchor: 'Setup' }]);
+    expect(extractWikilinkTargets('Jump [[#Setup]] and [[Note A]]')).toEqual(['Note A']);
+  });
+
   it('handles consecutive wikilinks without space', () => {
     const result = extractWikilinks('[[A]][[B]][[C]]');
     expect(result).toEqual([{ target: 'A' }, { target: 'B' }, { target: 'C' }]);

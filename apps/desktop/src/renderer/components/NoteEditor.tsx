@@ -631,6 +631,7 @@ export function NoteEditor({
         onUnshare={handleUnshare}
         onCopyShareLink={handleCopyShareLink}
         hiddenFormatting={toolbarVisibility}
+        heading={outlineActiveText}
       />
 
       {/* Backlinks Panel */}

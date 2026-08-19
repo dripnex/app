@@ -31,7 +31,7 @@ function matchAtx(line: string): { level: HeadingLevel; text: string } | null {
   return { level: i as HeadingLevel, text };
 }
 const EMBED = /!\[\[([^[\]|]{1,200})(?:\|([^\]]{1,200}))?\]\]/g;
-const WIKI = /\[\[([^[\]|#]{1,200})(?:#([^[\]|]{1,200}))?(?:\|([^\]]{1,200}))?\]\]/g;
+const WIKI = /\[\[([^[\]|#]{0,200})(?:#([^[\]|]{1,200}))?(?:\|([^\]]{1,200}))?\]\]/g;
 const TAG = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 
 export function headingToSlug(heading: string): string {
@@ -114,9 +114,9 @@ export function scanMarkdown(content: string): MarkdownScan {
     while ((wikiMatch = WIKI.exec(searchable)) !== null) {
       const index = wikiMatch.index ?? 0;
       if (index > 0 && searchable[index - 1] === '!') continue;
-      const target = wikiMatch[1]?.trim();
-      if (!target) continue;
+      const target = wikiMatch[1]?.trim() ?? '';
       const anchor = wikiMatch[2]?.trim();
+      if (!target && !anchor) continue;
       const display = wikiMatch[3]?.trim();
       const key = `${target.toLowerCase()}#${anchor?.toLowerCase() ?? ''}`;
       if (wikiSeen.has(key)) continue;
