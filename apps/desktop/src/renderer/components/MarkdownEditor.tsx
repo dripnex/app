@@ -66,6 +66,7 @@ import { htmlToGfmMarkdown } from '../utils/htmlToMarkdown';
 import { scrollBehavior } from '../utils/motion';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
+import { createNesExtension, requestNesCompletion } from '../editor/nes';
 import { setEditorView } from '../hooks/useCommandRegistry';
 import { emojiShortcodeCompletions } from '../plugins/emojiShortcodes';
 import {
@@ -98,6 +99,7 @@ interface MarkdownEditorProps {
   onReady?: () => void;
   /** Current note ID (for excluding from wikilink autocomplete) */
   noteId?: string;
+  noteTitle?: string;
   notebookId?: string | null;
   /** Callback to get resolved embed URL (for inline image preview) */
   getEmbedUrl?: (target: string) => string | null;
@@ -143,6 +145,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       placeholder = 'Start writing...',
       onReady,
       noteId,
+      noteTitle,
       notebookId,
       getEmbedUrl,
       onWikilinkClick,
@@ -156,6 +159,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
     const noteIdRef = useRef(noteId);
+    const noteTitleRef = useRef(noteTitle ?? '');
     const getEmbedUrlRef = useRef(getEmbedUrl);
     const onWikilinkClickRef = useRef(onWikilinkClick);
     const onWikilinkHoverRef = useRef(onWikilinkHover);
@@ -310,6 +314,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     // Keep refs updated
     onChangeRef.current = onChange;
     noteIdRef.current = noteId;
+    noteTitleRef.current = noteTitle ?? '';
     getEmbedUrlRef.current = getEmbedUrl;
     onWikilinkClickRef.current = onWikilinkClick;
     onWikilinkHoverRef.current = onWikilinkHover;
@@ -434,6 +439,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Plugin extensions compartment (reconfigured dynamically)
         pluginExtensionCompartment.of([]),
+
+        createNesExtension({
+          getMode: () => useSettingsStore.getState().settings.ai.nesMode ?? 'manual',
+          getTitle: () => noteTitleRef.current,
+          complete: requestNesCompletion,
+        }),
 
         // Update listener
         EditorView.updateListener.of(update => {

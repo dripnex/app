@@ -20,6 +20,7 @@ import type { PaletteMode } from '../utils/paletteQuery';
 import { neighborId } from '../utils/neighborId';
 import { formatWikilink } from '../utils/formatWikilink';
 import { headingIndexAtOrBefore } from '../utils/outlineActive';
+import { dismissNes } from '../editor/nes/extension';
 import { useRegisterAiCommands } from './useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './useRegisterPluginAiCommands';
 import { useCommandKeybindings } from './useCommandKeybindings';
@@ -303,9 +304,12 @@ export function useAppCommands({
   // Global keyboard handler (routes through CommandRegistry)
   useCommandKeybindings({
     onEscape: useCallback(() => {
-      // Cascading escape: command palette -> AI panel -> graph -> search -> deselect note
+      // Cascading escape: palette -> NES ghost -> AI panel -> graph -> search -> deselect
+      const view = getEditorView();
       if (isCommandPaletteOpen) {
         setIsCommandPaletteOpen(false);
+      } else if (view && dismissNes(view)) {
+        return;
       } else if (isAiPanelOpen) {
         setIsAiPanelOpen(false);
       } else if (isGraphOpen) {

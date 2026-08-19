@@ -576,6 +576,7 @@ export function NoteEditor({
                   onChange={handleChange}
                   onReady={onEditorReady}
                   noteId={note.id}
+                  noteTitle={note.title}
                   notebookId={note.notebookId}
                   getEmbedUrl={getEmbedUrl}
                   onWikilinkClick={onWikilinkClick}

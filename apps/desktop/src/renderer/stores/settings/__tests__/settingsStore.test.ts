@@ -33,4 +33,9 @@ describe('settingsStore persistence', () => {
     expect(partial.settings.integrations.mcpEnabled).toBe(false);
     expect(partial.settings.integrations.mcpWrites).toBe(false);
   });
+
+  it('defaults next-edit suggestions to manual', () => {
+    expect(DEFAULT_SETTINGS.ai.nesMode).toBe('manual');
+    expect(DEFAULT_SETTINGS.version).toBe(7);
+  });
 });
