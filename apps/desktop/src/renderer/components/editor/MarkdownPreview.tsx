@@ -13,19 +13,20 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
 import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
 import { scanMarkdown } from '@dripnex/markdown';
-import { coreRemarkPlugins } from '../../lib/coreRemarkPlugins';
 import {
   remarkPluginStore,
   rehypePluginStore,
   previewComponentStore,
   codeBlockStore,
 } from '@dripnex/plugin-api';
+import { coreRemarkPlugins } from '../../lib/coreRemarkPlugins';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
 import { usePreviewFindStore } from '../../stores/previewFindStore';
 import { applyPreviewFind, unwrapPreviewFindMarks } from '../../utils/previewFind';
-import { PreviewFindBar } from './PreviewFindBar';
 import { cssm } from '../../lib/cssm';
+import { PreviewFindBar } from './PreviewFindBar';
+import { FenceBlock } from './FenceBlock';
 import styles from './MarkdownPreview.module.css';
 
 const sc = cssm(styles);
@@ -340,6 +341,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
             }
             components={
               {
+                pre: ({ children }) => <FenceBlock>{children}</FenceBlock>,
                 input: ({ type, checked, ...props }) => {
                   if (type === 'checkbox') {
                     return <input type="checkbox" checked={checked} disabled {...props} />;
