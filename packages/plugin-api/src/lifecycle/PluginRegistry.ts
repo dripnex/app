@@ -30,6 +30,7 @@ import { pluginMenuStore } from '../menu/pluginMenuStore';
 import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
 import { hostNotify } from '../loader/hostBridges';
 import { previewEventStore } from '../preview/previewEventStore';
+import { pluginComponents } from '../components/catalog.js';
 import {
   applyPluginPackageFiles,
   type PluginPackageFiles,
@@ -403,6 +404,7 @@ export class PluginRegistry {
       notifications,
       contextMenu,
       preview,
+      components: pluginComponents,
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
           id: extId,
