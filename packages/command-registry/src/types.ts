@@ -16,7 +16,7 @@ export type CommandCategory =
   | 'plugin'
   | 'ai';
 
-export type CommandContext = 'editor' | 'app' | 'global';
+export type CommandContext = 'editor' | 'note-list' | 'app' | 'global';
 
 export interface CommandDefinition {
   id: string;

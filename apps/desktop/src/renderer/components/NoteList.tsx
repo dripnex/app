@@ -18,14 +18,14 @@ import type { NoteStatus } from '../../preload/index';
 import { formatRelativeTime } from '../utils/date';
 import { useTagColorsStore } from '../stores/tagColorsStore';
 import { useShareStore, selectIsShared } from '../stores/shareStore';
-import type { QuickFilterType } from './sidebar';
-import { NoteListContextMenu } from './NoteListContextMenu';
-import { NotebookPicker } from './NotebookPicker';
-import { TemplatePicker } from './TemplatePicker/TemplatePicker';
 import { kindFromTags, kindMeta } from '../lib/knowledge';
 import { cssm } from '../lib/cssm';
 import { dispatchCommand } from '../hooks/useCommandRegistry';
 import { noteListNavDirection } from '../utils/noteListKeys';
+import type { QuickFilterType } from './sidebar';
+import { NoteListContextMenu } from './NoteListContextMenu';
+import { NotebookPicker } from './NotebookPicker';
+import { TemplatePicker } from './TemplatePicker/TemplatePicker';
 import styles from './NoteList.module.css';
 
 const sc = cssm(styles);
@@ -250,7 +250,7 @@ export function NoteList({
   };
 
   return (
-    <nav className={sc('note-list')} aria-label="Notes navigation">
+    <nav className={sc('note-list')} aria-label="Notes navigation" data-note-list>
       {/* Header Toolbar */}
       <div className={sc('note-list-header')}>
         {onToggleSidebar ? (
