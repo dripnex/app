@@ -14,6 +14,7 @@ import {
 import type { EditorView } from '@codemirror/view';
 import { StateField, StateEffect, type Extension } from '@codemirror/state';
 import type { WikilinkNote } from '../../core/contracts.js';
+import { extractHeadings, filterHeadings, splitWikilinkQuery } from '../../core/headings.js';
 
 /** Configuration for the autocomplete extension */
 interface WikilinkAutocompleteConfig {
@@ -25,6 +26,8 @@ interface WikilinkAutocompleteConfig {
   extraSources?: CompletionSource[];
   /** Create a note from the typed title. Link is inserted first. */
   createNote?: (title: string) => void | Promise<void>;
+  /** Load a note's markdown so `[[Title#` can complete headings. */
+  getNoteContent?: (id: string) => Promise<string | null>;
 }
 
 /** Offer "Create …" when the query is non-empty and not an exact title. */
@@ -59,7 +62,7 @@ export const currentNoteIdField = StateField.define<string | null>({
  * @returns CodeMirror extension array
  */
 export function createWikilinkAutocomplete(config: WikilinkAutocompleteConfig): Extension {
-  const { searchNotes, listNotes, extraSources = [], createNote } = config;
+  const { searchNotes, listNotes, extraSources = [], createNote, getNoteContent } = config;
 
   /**
    * Check if position is inside a fenced code block or inline code.
@@ -95,6 +98,38 @@ export function createWikilinkAutocomplete(config: WikilinkAutocompleteConfig): 
 
     // Extract query (text after [[)
     const query = match.text.slice(2);
+    const headingQuery = splitWikilinkQuery(query);
+    if (headingQuery) {
+      let content: string | null = null;
+      if (!headingQuery.title) {
+        content = context.state.doc.toString();
+      } else if (getNoteContent) {
+        const notes = await searchNotes(headingQuery.title);
+        const hit = notes.find(n => n.title.toLowerCase() === headingQuery.title.toLowerCase());
+        if (hit) content = await getNoteContent(hit.id);
+      }
+      if (content == null) return null;
+      const headings = filterHeadings(extractHeadings(content), headingQuery.heading);
+      if (headings.length === 0) return null;
+      const titlePrefix = headingQuery.title;
+      return {
+        from: match.from,
+        options: headings.slice(0, 14).map(heading => ({
+          label: heading.text,
+          detail: '#'.repeat(heading.level),
+          apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
+            const text = titlePrefix
+              ? `[[${titlePrefix}#${heading.text}]]`
+              : `[[#${heading.text}]]`;
+            view.dispatch({
+              changes: { from, to, insert: text },
+              selection: { anchor: from + text.length },
+            });
+          },
+        })),
+        filter: false,
+      };
+    }
 
     // Get currentNoteId from state to exclude from suggestions
     const currentNoteId = context.state.field(currentNoteIdField, false);
