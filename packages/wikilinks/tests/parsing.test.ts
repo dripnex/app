@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractWikilinks, extractWikilinkTargets } from '../src/core/parsing.js';
+import { extractWikilinks, extractWikilinkTargets, parseWikilinkAt } from '../src/core/parsing.js';
 
 describe('extractWikilinks', () => {
   it('extracts simple [[target]] wikilink', () => {
@@ -118,5 +118,36 @@ describe('extractWikilinkTargets', () => {
   it('deduplicates targets', () => {
     const result = extractWikilinkTargets('[[Note]] and [[Note]] again');
     expect(result).toEqual(['Note']);
+  });
+});
+
+describe('parseWikilinkAt', () => {
+  it('finds target, heading, and alias at a cursor', () => {
+    const line = 'See [[Note A#Setup|here]] now';
+    expect(parseWikilinkAt(line, 6)).toEqual({
+      target: 'Note A',
+      anchor: 'Setup',
+      display: 'here',
+    });
+    expect(parseWikilinkAt(line, 0)).toBeNull();
+    expect(parseWikilinkAt('Jump [[#Setup]]', 8)).toEqual({ target: '', anchor: 'Setup' });
+  });
+
+  it('includes the opening and closing brackets', () => {
+    const line = '[[Note]]';
+    expect(parseWikilinkAt(line, 0)).toEqual({ target: 'Note' });
+    expect(parseWikilinkAt(line, line.length)).toEqual({ target: 'Note' });
+  });
+
+  it('picks the span that contains the cursor', () => {
+    const line = '[[A]] then [[B#H|x]]';
+    expect(parseWikilinkAt(line, 2)).toEqual({ target: 'A' });
+    expect(parseWikilinkAt(line, 12)).toEqual({ target: 'B', anchor: 'H', display: 'x' });
+  });
+
+  it('rejects empty and incomplete tokens', () => {
+    expect(parseWikilinkAt('[[]]', 1)).toBeNull();
+    expect(parseWikilinkAt('[[#]]', 1)).toBeNull();
+    expect(parseWikilinkAt('[[Note', 2)).toBeNull();
   });
 });

@@ -19,6 +19,7 @@ const wikilinkTheme = EditorView.baseTheme({
     color: '#5eead4',
     borderBottom: '1px solid rgba(94, 234, 212, 0.3)',
     borderRadius: '2px',
+    cursor: 'pointer',
   },
 });
 
