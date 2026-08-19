@@ -20,7 +20,7 @@ export function GeneralSection() {
 
   // Build notebook options for dropdown
   const notebookOptions = [
-    { value: '', label: 'No default (ask each time)' },
+    { value: '', label: 'Inbox' },
     ...notebooks.map(nb => ({
       value: nb.id,
       label: nb.name,
