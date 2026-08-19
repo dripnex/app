@@ -28,6 +28,7 @@ import { applyPreviewFind, unwrapPreviewFindMarks } from '../../utils/previewFin
 import { scrollBehavior } from '../../utils/motion';
 import { cssm } from '../../lib/cssm';
 import { emitLocalDeepLink } from '../../utils/parseDripnexUrl';
+import { isMissingWikilink } from '../../utils/isMissingWikilink';
 import { PreviewFindBar } from './PreviewFindBar';
 import { FenceBlock } from './FenceBlock';
 import styles from './MarkdownPreview.module.css';
@@ -46,6 +47,8 @@ interface MarkdownPreviewProps {
   readonly updatedAt?: string;
   readonly onReady?: () => void;
   readonly onWikilinkClick?: (target: string, anchor?: string) => void;
+  /** Lowercase titles that resolve. Null while lookup is in flight. */
+  readonly knownWikilinkTitles?: ReadonlySet<string> | null;
   readonly onEmbedClick?: (target: string, url: string) => void;
   /** Optional pre-resolved embeds from parent (for sharing with editor) */
   readonly resolvedEmbeds?: Record<string, string | null>;
@@ -72,6 +75,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       updatedAt,
       onReady,
       onWikilinkClick,
+      knownWikilinkTitles = null,
       onEmbedClick,
       resolvedEmbeds: resolvedEmbedsProp,
       onCheckboxToggle,
@@ -203,9 +207,9 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
       const wikilinkEl = target.closest('.wikilink');
       if (wikilinkEl) {
-        const noteTitle = wikilinkEl.getAttribute('data-target');
+        const noteTitle = wikilinkEl.getAttribute('data-target') ?? '';
         const anchor = wikilinkEl.getAttribute('data-anchor') ?? undefined;
-        if (noteTitle && onWikilinkClick) {
+        if (onWikilinkClick && (noteTitle || anchor)) {
           e.preventDefault();
           onWikilinkClick(noteTitle, anchor);
         }
@@ -313,6 +317,15 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       }
       setFindCount(applyPreviewFind(el, findQuery, findIndex));
     }, [content, findOpen, findQuery, findIndex]);
+
+    useEffect(() => {
+      const root = containerRef.current;
+      if (!root) return;
+      for (const el of root.querySelectorAll('.wikilink')) {
+        const target = el.getAttribute('data-target') ?? '';
+        el.classList.toggle('wikilink--missing', isMissingWikilink(target, knownWikilinkTitles));
+      }
+    }, [resolvedContent, knownWikilinkTitles]);
 
     const tasks = scan.tasks;
     const hasProgress = tasks.total > 0;

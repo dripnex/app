@@ -53,7 +53,7 @@ import {
   wrapSelectionWithUrl,
 } from '@dripnex/commands';
 import {
-  wikilinkExtension,
+  createWikilinkHighlighter,
   wikilinkClickHandler,
   createWikilinkAutocomplete,
   setCurrentNoteId,
@@ -80,6 +80,7 @@ const themeCompartment = new Compartment();
 const tabSizeCompartment = new Compartment();
 const scrollPastEndCompartment = new Compartment();
 const spellCheckCompartment = new Compartment();
+const wikilinkHighlightCompartment = new Compartment();
 
 // createEditorTheme, markdownHighlighting, and SCROLL_PAST_END_PADDING
 // live in editorTheme.ts.
@@ -95,6 +96,8 @@ interface MarkdownEditorProps {
   getEmbedUrl?: (target: string) => string | null;
   /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
   onWikilinkClick?: (target: string, anchor?: string) => void;
+  /** Lowercase titles that resolve. Null while lookup is in flight. */
+  knownWikilinkTitles?: ReadonlySet<string> | null;
 }
 
 /** Imperative handle exposed via ref */
@@ -134,6 +137,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       noteId,
       getEmbedUrl,
       onWikilinkClick,
+      knownWikilinkTitles = null,
     },
     ref
   ) {
@@ -395,7 +399,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         syntaxHighlighting(markdownHighlighting),
 
         // Wikilink [[note]] highlighting
-        wikilinkExtension,
+        wikilinkHighlightCompartment.of(createWikilinkHighlighter(null)),
         wikilinkClickHandler((target, anchor) => {
           onWikilinkClickRef.current?.(target, anchor);
         }),
@@ -677,6 +681,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         ],
       });
     }, [editorSettings]);
+
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+      view.dispatch({
+        effects: wikilinkHighlightCompartment.reconfigure(
+          createWikilinkHighlighter(knownWikilinkTitles)
+        ),
+      });
+    }, [knownWikilinkTitles]);
 
     return (
       <>
