@@ -284,7 +284,7 @@ export function NoteList({
           <input
             id="note-search"
             type="search"
-            placeholder="Search or tag:work status:active notebook:inbox"
+            placeholder="Search"
             value={searchQuery}
             onChange={handleSearchChange}
             className={sc('search-input')}
@@ -306,9 +306,6 @@ export function NoteList({
             {isLoading ? 'Searching...' : `${notes.length} results`}
           </span>
         )}
-        <p className={sc('search-hint')}>
-          tag:work · status:active · notebook:inbox · is:pinned · is:trash
-        </p>
       </div>
 
       {/* Note list content */}
