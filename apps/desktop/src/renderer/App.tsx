@@ -83,6 +83,7 @@ function NotesApp() {
   useEffect(() => {
     const setVisibility = window.dripnex.windows.setButtonVisibility;
     if (typeof setVisibility !== 'function') return;
+    // Collapse hides the native traffic lights so the note-list can sit at x=0.
     void setVisibility(!sidebarCollapsed);
     return () => {
       void setVisibility(true);
