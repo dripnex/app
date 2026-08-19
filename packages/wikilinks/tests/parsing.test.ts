@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractWikilinks, extractWikilinkTargets } from '../src/core/parsing.js';
+import { extractWikilinks, extractWikilinkTargets, parseWikilinkAt } from '../src/core/parsing.js';
 
 describe('extractWikilinks', () => {
   it('extracts simple [[target]] wikilink', () => {
@@ -118,5 +118,18 @@ describe('extractWikilinkTargets', () => {
   it('deduplicates targets', () => {
     const result = extractWikilinkTargets('[[Note]] and [[Note]] again');
     expect(result).toEqual(['Note']);
+  });
+});
+
+describe('parseWikilinkAt', () => {
+  it('finds target, heading, and alias at a cursor', () => {
+    const line = 'See [[Note A#Setup|here]] now';
+    expect(parseWikilinkAt(line, 6)).toEqual({
+      target: 'Note A',
+      anchor: 'Setup',
+      display: 'here',
+    });
+    expect(parseWikilinkAt(line, 0)).toBeNull();
+    expect(parseWikilinkAt('Jump [[#Setup]]', 8)).toEqual({ target: '', anchor: 'Setup' });
   });
 });

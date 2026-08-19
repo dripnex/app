@@ -54,6 +54,7 @@ import {
 } from '@dripnex/commands';
 import {
   wikilinkExtension,
+  wikilinkClickHandler,
   createWikilinkAutocomplete,
   setCurrentNoteId,
   currentNoteIdField,
@@ -92,6 +93,8 @@ interface MarkdownEditorProps {
   noteId?: string;
   /** Callback to get resolved embed URL (for inline image preview) */
   getEmbedUrl?: (target: string) => string | null;
+  /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
+  onWikilinkClick?: (target: string, anchor?: string) => void;
 }
 
 /** Imperative handle exposed via ref */
@@ -123,7 +126,15 @@ export interface MarkdownEditorHandle {
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
-    { initialContent, onChange, placeholder = 'Start writing...', onReady, noteId, getEmbedUrl },
+    {
+      initialContent,
+      onChange,
+      placeholder = 'Start writing...',
+      onReady,
+      noteId,
+      getEmbedUrl,
+      onWikilinkClick,
+    },
     ref
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -131,6 +142,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const onChangeRef = useRef(onChange);
     const noteIdRef = useRef(noteId);
     const getEmbedUrlRef = useRef(getEmbedUrl);
+    const onWikilinkClickRef = useRef(onWikilinkClick);
     const [urlPaste, setUrlPaste] = useState<{
       url: string;
       from: number;
@@ -282,6 +294,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     onChangeRef.current = onChange;
     noteIdRef.current = noteId;
     getEmbedUrlRef.current = getEmbedUrl;
+    onWikilinkClickRef.current = onWikilinkClick;
 
     // Create extensions with configurable settings via compartments
     const createExtensions = useCallback((): Extension[] => {
@@ -383,6 +396,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Wikilink [[note]] highlighting
         wikilinkExtension,
+        wikilinkClickHandler((target, anchor) => {
+          onWikilinkClickRef.current?.(target, anchor);
+        }),
 
         // Wikilink autocomplete (triggers on [[)
         wikilinkAutocomplete,

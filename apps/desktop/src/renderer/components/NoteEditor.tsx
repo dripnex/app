@@ -567,6 +567,7 @@ export function NoteEditor({
                   onReady={onEditorReady}
                   noteId={note.id}
                   getEmbedUrl={getEmbedUrl}
+                  onWikilinkClick={onWikilinkClick}
                 />
               </Suspense>
             </div>
