@@ -344,6 +344,63 @@
   line-height: 1.6;
 }
 
+.fence {
+  margin: 1em 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.fenceChip {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown-preview .fence pre {
+  margin: 0;
+  padding: 8px 0 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow-x: auto;
+}
+
+.fenceLine {
+  display: flex;
+  align-items: flex-start;
+  min-height: 1.6em;
+}
+
+.fenceGutter {
+  flex: 0 0 3.2em;
+  padding: 0 10px 0 8px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  line-height: 1.6;
+  text-align: right;
+  user-select: none;
+  opacity: 0.65;
+}
+
+.fenceSrc {
+  flex: 1;
+  min-width: 0;
+  padding-right: 16px;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  line-height: 1.6;
+  white-space: pre;
+}
+
 /* Tables (GFM) */
 .markdown-preview :global(.table-wrapper) {
   overflow-x: auto;
