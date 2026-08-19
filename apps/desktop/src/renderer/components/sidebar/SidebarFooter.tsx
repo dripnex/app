@@ -9,6 +9,7 @@ import {
   selectPendingCount,
   selectError,
 } from '../../stores/syncStore';
+import { syncFooterAction, syncFooterErrorLabel } from '../../utils/syncFooterCopy';
 import { sc } from './sc';
 
 interface SidebarFooterProps {
@@ -100,14 +101,25 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
     };
   }, [syncStatus]);
 
+  const footerAction = syncFooterAction({
+    encryptionReady,
+    status: syncStatus,
+    error: syncError,
+    consecutiveFailures,
+  });
+
   const handleRetry = useCallback(async () => {
     const ready = await window.dripnex.encryption.isReady();
     setEncryptionReady(ready.ready);
-    if (!ready.ready && onSetupEncryption) {
-      onSetupEncryption();
+    if (!ready.ready) {
+      onSetupEncryption?.();
       return;
     }
-    void syncNow();
+    try {
+      await syncNow();
+    } catch {
+      // Status is already on the store.
+    }
   }, [onSetupEncryption, syncNow]);
 
   // Syncing
@@ -130,11 +142,11 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
     );
   }
 
-  if (encryptionReady === false && onSetupEncryption) {
+  if (footerAction === 'setup' && onSetupEncryption) {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
         <AlertCircle size={11} />
-        <span>Set up encryption</span>
+        <span title={syncError ?? undefined}>Set up encryption</span>
         <button
           type="button"
           className={sc('sidebar-footer-progress-retry')}
@@ -147,28 +159,36 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   }
 
   // Error or auth-expired
-  if (syncStatus === 'error' || syncStatus === 'auth-expired') {
-    const needsEncryption =
-      encryptionReady === false || /encryption|passphrase/i.test(syncError ?? '');
+  if (syncStatus === 'error' || syncStatus === 'auth-expired' || syncStatus === 'needs-setup') {
+    const action = syncFooterAction({
+      encryptionReady,
+      status: syncStatus,
+      error: syncError,
+      consecutiveFailures,
+    });
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
         <AlertCircle size={11} />
         <span title={syncError ?? undefined}>
-          {syncStatus === 'auth-expired'
-            ? 'Session expired'
-            : needsEncryption
-              ? 'Set up encryption'
-              : (syncError ?? 'Sync error')}
+          {syncFooterErrorLabel({
+            encryptionReady,
+            status: syncStatus,
+            error: syncError,
+            consecutiveFailures,
+          })}
         </span>
-        {syncStatus === 'error' && (
+        {action ? (
           <button
             type="button"
             className={sc('sidebar-footer-progress-retry')}
-            onClick={() => void handleRetry()}
+            onClick={() => {
+              if (action === 'setup') onSetupEncryption?.();
+              else void handleRetry();
+            }}
           >
-            {needsEncryption ? 'Set up' : 'Retry'}
+            {action === 'setup' ? 'Set up' : 'Retry'}
           </button>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -195,13 +215,28 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
 
   // Idle with many consecutive failures (no error state yet)
   if (consecutiveFailures >= 2) {
+    const action = syncFooterAction({
+      encryptionReady,
+      status: syncStatus,
+      error: syncError,
+      consecutiveFailures,
+    });
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
         <AlertCircle size={11} />
-        <span>Sync unstable</span>
-        <button type="button" className={sc('sidebar-footer-progress-retry')} onClick={handleRetry}>
-          Retry
-        </button>
+        <span>{action === 'setup' ? 'Set up encryption' : 'Sync unstable'}</span>
+        {action ? (
+          <button
+            type="button"
+            className={sc('sidebar-footer-progress-retry')}
+            onClick={() => {
+              if (action === 'setup') onSetupEncryption?.();
+              else void handleRetry();
+            }}
+          >
+            {action === 'setup' ? 'Set up' : 'Retry'}
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -234,6 +269,7 @@ export const SidebarFooter = memo(function SidebarFooter({
         return <RefreshCw size={12} className={sc('sidebar-footer-sync-spinning')} />;
       case 'error':
       case 'auth-expired':
+      case 'needs-setup':
         return <AlertCircle size={12} />;
       case 'offline':
         return <CloudOff size={12} />;
@@ -250,6 +286,8 @@ export const SidebarFooter = memo(function SidebarFooter({
         return 'Syncing...';
       case 'error':
         return 'Sync failed';
+      case 'needs-setup':
+        return 'Set up encryption to sync';
       case 'auth-expired':
         return 'Session expired. Please sign in again.';
       case 'offline':
