@@ -53,7 +53,7 @@ import {
   wrapSelectionWithUrl,
 } from '@dripnex/commands';
 import {
-  wikilinkExtension,
+  createWikilinkHighlighter,
   wikilinkClickHandler,
   createWikilinkAutocomplete,
   setCurrentNoteId,
@@ -67,6 +67,10 @@ import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
 import { setEditorView } from '../hooks/useCommandRegistry';
 import { emojiShortcodeCompletions } from '../plugins/emojiShortcodes';
+import {
+  knownTitlesFromResolution,
+  type WikilinkTitleResolution,
+} from '../utils/isMissingWikilink';
 import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
 import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
 import { UrlPastePicker } from './editor/UrlPastePicker';
@@ -80,6 +84,7 @@ const themeCompartment = new Compartment();
 const tabSizeCompartment = new Compartment();
 const scrollPastEndCompartment = new Compartment();
 const spellCheckCompartment = new Compartment();
+const wikilinkHighlightCompartment = new Compartment();
 
 // createEditorTheme, markdownHighlighting, and SCROLL_PAST_END_PADDING
 // live in editorTheme.ts.
@@ -95,6 +100,7 @@ interface MarkdownEditorProps {
   getEmbedUrl?: (target: string) => string | null;
   /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
   onWikilinkClick?: (target: string, anchor?: string) => void;
+  knownWikilinkTitles?: WikilinkTitleResolution;
 }
 
 /** Imperative handle exposed via ref */
@@ -134,6 +140,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       noteId,
       getEmbedUrl,
       onWikilinkClick,
+      knownWikilinkTitles = { status: 'pending' },
     },
     ref
   ) {
@@ -395,7 +402,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         syntaxHighlighting(markdownHighlighting),
 
         // Wikilink [[note]] highlighting
-        wikilinkExtension,
+        wikilinkHighlightCompartment.of(createWikilinkHighlighter(null)),
         wikilinkClickHandler((target, anchor) => {
           onWikilinkClickRef.current?.(target, anchor);
         }),
@@ -677,6 +684,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         ],
       });
     }, [editorSettings]);
+
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+      view.dispatch({
+        effects: wikilinkHighlightCompartment.reconfigure(
+          createWikilinkHighlighter(knownTitlesFromResolution(knownWikilinkTitles))
+        ),
+      });
+    }, [knownWikilinkTitles]);
 
     return (
       <>

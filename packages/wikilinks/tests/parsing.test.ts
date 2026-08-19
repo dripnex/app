@@ -6,7 +6,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractWikilinks, extractWikilinkTargets, parseWikilinkAt } from '../src/core/parsing.js';
+import {
+  extractWikilinks,
+  extractWikilinkTargets,
+  findWikilinkSpans,
+  parseWikilinkAt,
+} from '../src/core/parsing.js';
 
 describe('extractWikilinks', () => {
   it('extracts simple [[target]] wikilink', () => {
@@ -149,5 +154,15 @@ describe('parseWikilinkAt', () => {
     expect(parseWikilinkAt('[[]]', 1)).toBeNull();
     expect(parseWikilinkAt('[[#]]', 1)).toBeNull();
     expect(parseWikilinkAt('[[Note', 2)).toBeNull();
+  });
+});
+
+describe('findWikilinkSpans', () => {
+  it('returns start/end and the parsed ref', () => {
+    const text = 'See [[A#H|x]] and [[#Setup]]';
+    expect(findWikilinkSpans(text)).toEqual([
+      { start: 4, end: 13, ref: { target: 'A', anchor: 'H', display: 'x' } },
+      { start: 18, end: 28, ref: { target: '', anchor: 'Setup' } },
+    ]);
   });
 });
