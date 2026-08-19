@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useHeadingJumpStore } from '../stores/headingJumpStore';
+import { resolveWikilinkClick } from '../utils/resolveWikilinkClick';
 import { useSettingsStore } from '../stores/settings';
 import { useNoteMutations } from './useNotes';
 import { useSyncLinks } from './useLinks';
@@ -111,25 +112,31 @@ export function useNoteActions({
     [createNote, selectedNotebookId, setSelectedNote, clearSearch, appAPI, dataAPI]
   );
 
-  // Handle wikilink click - best-effort navigation by title
   const handleWikilinkClick = useCallback(
     async (title: string, anchor?: string) => {
-      if (
-        anchor &&
-        selectedNote &&
-        (!title.trim() || selectedNote.title.toLowerCase() === title.toLowerCase())
-      ) {
-        useHeadingJumpStore.getState().request(selectedNote.id, anchor);
+      const query = title.trim();
+      const notes = query ? await window.dripnex.notes.search(query) : [];
+      const match = notes.find(n => n.title.toLowerCase() === query.toLowerCase());
+      const action = resolveWikilinkClick({
+        title,
+        heading: anchor,
+        currentNote: selectedNote,
+        match,
+      });
+      if (action.kind === 'heading') {
+        useHeadingJumpStore.getState().request(action.noteId, action.heading);
         return;
       }
-      if (!title.trim()) return;
-      const notes = await window.dripnex.notes.search(title);
-      const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
-      if (!match) return;
-      if (anchor) useHeadingJumpStore.getState().request(match.id, anchor);
-      void handleSelectNote(match.id);
+      if (action.kind === 'create') {
+        await handleCreateLinkedNote(action.title);
+        return;
+      }
+      if (action.kind === 'open') {
+        if (action.heading) useHeadingJumpStore.getState().request(action.noteId, action.heading);
+        void handleSelectNote(action.noteId);
+      }
     },
-    [handleSelectNote, selectedNote]
+    [handleCreateLinkedNote, handleSelectNote, selectedNote]
   );
 
   // Update note content
