@@ -1,13 +1,25 @@
 name: Build & Publish
 
+# Starts after Release succeeds (workflow_run — GITHUB_TOKEN cannot fire
+# a sibling workflow via tag push). Dispatch is the retry path.
+
 on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build, e.g. v0.16.0'
+        required: true
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
+  actions: read
 
 env:
   NODE_VERSION: '22'
@@ -15,7 +27,48 @@ env:
   ELECTRON_BUILDER_CACHE: ~/.cache/electron-builder
 
 jobs:
+  meta:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - name: Resolve tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          DISPATCH_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            tag="$DISPATCH_TAG"
+          elif [ "$EVENT" = "push" ]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            if ! gh run download "$RUN_ID" --name release-version --dir /tmp/release-version --repo "$GITHUB_REPOSITORY"; then
+              echo "Release did not cut a version (no artefact). Nothing to build."
+              echo "tag=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            tag=$(cat /tmp/release-version/version.txt)
+          fi
+          if [ -z "$tag" ]; then
+            echo "::error::Could not resolve a release tag."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Building $tag"
+
   build:
+    needs: meta
+    if: needs.meta.result == 'success' && needs.meta.outputs.tag != ''
     strategy:
       fail-fast: false
       matrix:
@@ -36,7 +89,7 @@ jobs:
       - name: Checkout tag
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.meta.outputs.tag }}
           fetch-depth: 0
 
       - name: Setup pnpm
@@ -84,7 +137,7 @@ jobs:
         if: matrix.platform == 'mac'
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -96,14 +149,14 @@ jobs:
         if: matrix.platform == 'win'
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm dist:win --publish always
 
       - name: Build distributables (Linux)
         if: matrix.platform == 'linux'
         working-directory: apps/desktop
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm dist:linux --publish always
 
       - name: Upload artifacts (backup)
@@ -126,23 +179,25 @@ jobs:
           retention-days: 30
 
   publish:
-    needs: build
+    needs: [meta, build]
+    if: needs.meta.result == 'success' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Publish GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          TAG_NAME: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.meta.outputs.tag }}
         run: gh release edit "$TAG_NAME" --draft=false --repo "$GITHUB_REPOSITORY"
 
   sync-develop:
-    needs: publish
+    needs: [meta, publish]
+    if: needs.publish.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Create sync PR
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          TAG_NAME: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.meta.outputs.tag }}
         run: |
           set -euo pipefail
           if ! pr_count="$(gh pr list --base develop --head main --repo "$GITHUB_REPOSITORY" --json number --jq 'length')"; then
@@ -154,7 +209,7 @@ jobs:
               --base develop \
               --head main \
               --title "chore: sync release $TAG_NAME back to develop" \
-              --body "Auto sync of release commit and changelog." \
+              --body "Auto sync of release commit and changelog from $TAG_NAME." \
               --repo "$GITHUB_REPOSITORY"
           else
             echo "Sync PR already open; nothing to create."

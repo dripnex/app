@@ -180,8 +180,7 @@
     "publish": {
       "provider": "github",
       "owner": "dripnex",
-      "repo": "readide",
-      "private": true
+      "repo": "readide"
     }
   }
 }

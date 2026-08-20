@@ -1,5 +1,8 @@
 # What's New — how Dripnex talks about releases
 
+Ship process: [`docs/RELEASE.md`](./RELEASE.md). This file is only the
+human story that goes on the site and in the GitHub Release body.
+
 Inkdrop v6 is a **story**, not a commit dump. Ours has been the opposite:
 promotion PRs titled `feat(release): cut v0.15.x` collapse every real change
 into one line. `CHANGELOG.md` and dripnex.app/changelog then repeat that line.

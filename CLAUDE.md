@@ -132,18 +132,11 @@ main          ← Production releases (semantic-release runs here)
 5. `gh pr create --base develop --head fix/description-here`
 6. After merge: `git checkout develop && git pull && git branch -d fix/description-here`
 
-**NEVER do:** `git commit` on develop, `git push origin develop`, `gh pr create --base main --head develop` (unless releasing)
+**NEVER do:** `git commit` on develop, `git push origin develop`. The only PR onto `main` is a promotion: `chore(release): promote X.Y.Z`, **merge commit, never squash**.
 
 ### Release Process (Automated)
 
-1. PR from `develop` to `main` — CI validates
-2. Click **"Run workflow"** on the **Release** action (`workflow_dispatch`)
-3. semantic-release analyzes commits, bumps version, creates tag + draft GitHub Release
-4. Tag push triggers Build workflow — builds mac/win/linux in parallel
-5. All builds succeed → Release is undrafted → electron-updater picks it up
-6. Auto-PR syncs main back to develop
-
-**Manual steps: 2** (merge PR + click Release)
+See [`docs/RELEASE.md`](docs/RELEASE.md). Merge the promotion PR. Release + Build run on their own. No PAT. No **Run workflow**.
 
 ### Rollback
 
