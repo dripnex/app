@@ -29,7 +29,6 @@ export const Icon = forwardRef<MorphHandle, IconProps>(function Icon(
       style={style}
       spring="snappy"
       reducedMotion="user"
-      absoluteStrokeWidth
     />
   );
 });
