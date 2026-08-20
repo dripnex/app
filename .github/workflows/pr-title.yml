@@ -3,13 +3,10 @@ name: PR title
 # Runs commitlint against the PR title as a standalone status check.
 #
 # Why standalone (and not a step inside ci.yml `lint`):
-# - The repo enforces squash merges (see GitHub Settings > Pull Requests).
-#   On squash, the PR title becomes the commit message on develop/main.
-# - semantic-release then analyses that message with the type-enum from
-#   commitlint.config.js to decide whether to cut a release. If the type
-#   isn't recognised (e.g. PR #245's "release: audit..."), semantic-release
-#   silently exits with "no release". This is the trap that blew up
-#   v0.15.0.
+# - Feature PRs squash-merge: the PR title becomes the commit on develop.
+# - Promotion PRs (develop → main) use a merge commit so feat history lives.
+# - semantic-release reads conventional types. A title like
+#   "release: audit..." (PR #245) is why v0.15.0 silently cut nothing.
 # - Pulling the check into its own workflow gives it a clear, stable
 #   status-check name so branch protection on develop and main can require
 #   it independently of the broader CI lint job.
