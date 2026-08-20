@@ -129,6 +129,7 @@ describe('PluginRegistry', () => {
       expect(ctx).toHaveProperty('config');
       expect(ctx).toHaveProperty('log');
       expect(ctx).toHaveProperty('app');
+      expect(ctx).toHaveProperty('store');
       expect(ctx).toHaveProperty('notifications');
       expect(ctx).toHaveProperty('contextMenu');
       expect(ctx).toHaveProperty('components');

@@ -105,11 +105,13 @@ Use these for margins, padding, and gaps:
 
 ```css
 --accent: #5eead4; /* Primary accent (customizable) */
---accent-primary: var(--accent); /* Same as accent */
+--accent-primary: var(--accent); /* Core chrome token — palettes own it */
 --accent-muted: rgba(94, 234, 212, 0.15); /* Subtle backgrounds */
 --accent-strong: #2dd4bf; /* Darker variant */
 --accent-hover: (computed); /* Hover state (auto-computed) */
 ```
+
+`--accent-primary` is in `CORE_THEME_TOKENS`. Palettes that only set `--accent` get `--accent-primary` copied at register time. User accent in Settings overlays both. See `docs/state.md`.
 
 **Example:**
 

@@ -391,6 +391,26 @@ if (Vim) {
 }
 ```
 
+### Read-only store (`dripnex.store`)
+
+Inkdrop plugins call `inkdrop.store.getState()`. Dripnex exposes the same
+_shape of access_ without Redux: a cloned snapshot of Query + Zustand.
+
+```js
+const { editingNote, notes, navigation } = dripnex.store.getState();
+
+const unsub = dripnex.store.subscribe(() => {
+  const { editingNote: next } = dripnex.store.getState();
+  dripnex.log.debug(next.id, next.isDirty);
+});
+```
+
+- `notes.items` is the **visible list**, not every note in the library.
+- There is **no** `store.dispatch`. Use `dripnex.commands.dispatch`, `editor`, or `data`.
+- `settings` is appearance only (no API keys).
+
+State map, query keys, and CSS token owners: [`docs/state.md`](./state.md).
+
 ### CLI (`dripnex-plugin`)
 
 Same data dir as the desktop (`@dripnex/desktop`, overridable with `DRIPNEX_DATA_DIR`):

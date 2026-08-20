@@ -47,6 +47,7 @@
 
   /* ── Accent ───────────────────────────────────────────────────────────────── */
   --accent: #5eead4;
+  --accent-primary: var(--accent);
   --accent-hover: #2dd4bf;
   --accent-muted: rgba(94, 234, 212, 0.15);
   --accent-subtle: rgba(94, 234, 212, 0.1);
@@ -185,8 +186,7 @@
   --text-tertiary: var(--text-faint);
   --text-normal: var(--text-primary);
 
-  /* Accent aliases */
-  --accent-primary: var(--accent);
+  /* Accent aliases. --accent-primary is a core chrome token defined above. */
   --accent-strong: var(--accent-hover);
 
   /* Border aliases */
@@ -235,6 +235,7 @@
   --text-faint: rgba(58, 56, 52, 0.4);
 
   --accent: #0d8a80;
+  --accent-primary: var(--accent);
   --accent-hover: #0b736b;
   --accent-muted: rgba(13, 138, 128, 0.16);
   --accent-subtle: rgba(13, 138, 128, 0.1);

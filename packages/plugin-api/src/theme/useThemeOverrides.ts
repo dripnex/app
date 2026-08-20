@@ -40,11 +40,6 @@ export function useThemeOverrides(): void {
         root.style.setProperty(prop, value);
         applied.add(prop);
       }
-      const accent = theme.tokens['--accent'];
-      if (accent && !theme.tokens['--accent-primary']) {
-        root.style.setProperty('--accent-primary', accent);
-        applied.add('--accent-primary');
-      }
     } else {
       root.removeAttribute('data-theme');
       root.removeAttribute('data-frosted');

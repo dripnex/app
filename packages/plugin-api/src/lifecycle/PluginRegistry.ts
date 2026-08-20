@@ -31,6 +31,7 @@ import { aiCommandStore } from '../ai/aiCommandStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
 import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
 import { dispatchHostCommand, getHostVim, hostNotify, setHostVim } from '../loader/hostBridges';
+import { getHostStore } from '../store/appStore';
 import { previewEventStore } from '../preview/previewEventStore';
 import { pluginComponents } from '../components/catalog.js';
 import { createMarkdownRenderer } from '../preview/createMarkdownRenderer.js';
@@ -517,6 +518,7 @@ export class PluginRegistry {
       config,
       log: createLogger(id),
       app: trackedApp,
+      store: getHostStore(),
       data: trackedData,
     };
 

@@ -23,6 +23,7 @@ import { toast } from '../ui/primitives';
 import { getEditorView, registry as commandRegistry } from './useCommandRegistry';
 import { notebookKeys } from './useNotebooks';
 import { noteKeys } from './useNotes';
+import { usePluginStoreBridge } from './usePluginStoreBridge';
 
 function PluginErrorNotifier({ errors }: { errors: PluginLoadError[] }) {
   const { showToast } = useToast();
@@ -43,6 +44,7 @@ export function usePluginRuntime(selectedNoteRef: RefObject<NoteSnapshot | null>
   pluginSlot: ReactNode;
 } {
   const queryClient = useQueryClient();
+  usePluginStoreBridge(selectedNoteRef);
   const editorAPI = useMemo<EditorAPIWithEvents>(() => createEditorAPI(getEditorView), []);
 
   const appAPI = useMemo<AppAPIWithEvents>(

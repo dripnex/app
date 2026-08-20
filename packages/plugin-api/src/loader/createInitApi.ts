@@ -1,5 +1,6 @@
 import type { PluginContext } from '../types';
 import type { PluginCommandOptions } from '../types';
+import { getHostStore } from '../store/appStore';
 import { dispatchHostCommand, getHostVim } from './hostBridges';
 
 export const USER_INIT_ID = 'user-init';
@@ -22,6 +23,8 @@ export interface InitApi {
   config: PluginContext['config'];
   layout: PluginContext['layout'];
   decorations: PluginContext['decorations'];
+  /** Read-only projection. No dispatch — use `commands.dispatch`. */
+  store: PluginContext['store'];
   commands: {
     add(
       id: string,
@@ -78,6 +81,9 @@ export function createInitApi(ctx: PluginContext): InitApi {
     },
     get vim() {
       return getHostVim();
+    },
+    get store() {
+      return getHostStore();
     },
     menu: ctx.menu,
     clipboard: ctx.clipboard,

@@ -4,6 +4,8 @@ export { createLogger } from '@dripnex/logger';
 export type {
   EditorAPI,
   AppAPI,
+  AppStore,
+  AppStoreSnapshot,
   NoteInfo,
   NoteSummaryInfo,
   NotebookInfo,
@@ -128,6 +130,12 @@ export {
   setHostThemeActive,
   hostSetActiveTheme,
 } from './loader/hostBridges';
+export {
+  EMPTY_STORE_SNAPSHOT,
+  getHostStore,
+  notifyHostStoreChanged,
+  setHostStoreSnapshot,
+} from './store/appStore';
 
 // Lifecycle
 export { PluginRegistry } from './lifecycle/PluginRegistry';
