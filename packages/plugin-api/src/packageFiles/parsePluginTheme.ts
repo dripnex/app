@@ -58,6 +58,7 @@ export function parsePluginTheme(source: string, pluginId: string): ParsePluginT
   };
   if (typeof raw.description === 'string') theme.description = raw.description;
   if (typeof raw.author === 'string') theme.author = raw.author;
+  if (raw.frosted === true) theme.frosted = true;
   return { theme, errors };
 }
 

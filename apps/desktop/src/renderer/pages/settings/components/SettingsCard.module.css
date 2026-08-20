@@ -9,6 +9,11 @@
   background: var(--bg-elevated);
 }
 
+:global(html[data-theme='dripnex-glass']) .card {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
 .card[data-tone='ok'] {
   border-color: color-mix(in srgb, var(--success) 28%, var(--border-subtle));
 }

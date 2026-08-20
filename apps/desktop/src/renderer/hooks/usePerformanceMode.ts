@@ -1,55 +1,39 @@
 import { useEffect } from 'react';
 import { usePerformanceStore, type PerfMode } from '../stores/performanceStore';
+import { useSettingsStore, selectAppearance } from '../stores/settings';
 
 /**
- * Hook to initialize and sync performance mode.
- *
- * Responsibilities:
- * 1. Calculate baseMode on boot (once)
- * 2. Sync store.mode → document.documentElement.dataset.perf
- *
- * Heuristics (simple and robust):
- * - prefers-reduced-motion: reduce → 'low'
- * - navigator.hardwareConcurrency <= 4 → 'low'
- * - macOS (navigator.platform includes 'Mac') → 'high'
- * - else → 'medium' (Windows/Linux)
- *
- * Call this hook once in App.tsx.
+ * Heuristics when Appearance → Performance is Auto:
+ * reduced-motion or ≤4 cores → low; macOS → high; else medium.
+ */
+export function detectPerfMode(): PerfMode {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'low';
+  if (navigator.hardwareConcurrency <= 4) return 'low';
+  if (navigator.platform.includes('Mac')) return 'high';
+  return 'medium';
+}
+
+/**
+ * Sync glass blur to every window. The chosen mode is persisted in settings
+ * so the Settings window and the main window stay in agreement.
  */
 export function usePerformanceMode(): void {
   const mode = usePerformanceStore(state => state.mode);
   const setMode = usePerformanceStore(state => state.setMode);
   const setBaseMode = usePerformanceStore(state => state.setBaseMode);
+  const saved = useSettingsStore(selectAppearance)?.performanceMode ?? 'auto';
 
-  // A) Single source of truth: store.mode → dataset.perf
   useEffect(() => {
     document.documentElement.dataset.perf = mode;
-  }, [mode]);
+    // Explicit Low turns off native vibrancy. Auto never does — Reduce Motion
+    // used to map Auto → Low and paint the window solid by accident.
+    void window.dripnex?.windows?.setFrosted?.(saved !== 'low');
+  }, [mode, saved]);
 
-  // B) Boot: calculate baseMode once
   useEffect(() => {
-    const calculateBaseMode = (): PerfMode => {
-      // prefers-reduced-motion → low
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        return 'low';
-      }
-
-      // Low hardware concurrency → low
-      if (navigator.hardwareConcurrency <= 4) {
-        return 'low';
-      }
-
-      // macOS → high
-      if (navigator.platform.includes('Mac')) {
-        return 'high';
-      }
-
-      // Windows/Linux → medium
-      return 'medium';
-    };
-
-    const baseMode = calculateBaseMode();
-    setBaseMode(baseMode);
-    setMode(baseMode); // This triggers the first useEffect above
-  }, []); // Empty deps = only on boot
+    const auto = detectPerfMode();
+    setBaseMode(auto);
+    const next = saved === 'high' || saved === 'medium' || saved === 'low' ? saved : auto;
+    setMode(next);
+  }, [saved, setBaseMode, setMode]);
 }

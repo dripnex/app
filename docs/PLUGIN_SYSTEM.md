@@ -367,9 +367,9 @@ Free-form `init.js` is wrapped as plugin `user-init`. A full manifest export sti
 
 These files do **not** exist until the user clicks Open. Templates are written on first open.
 
-### Vim (built-in, Inkdrop-shaped)
+### Vim (community plugin)
 
-Enable **Vim Mode** in Settings → Plugins. Same engine as Inkdrop (`@replit/codemirror-vim`) plus:
+Vim is **not** built-in. Install `dripnex/plugin-vim` (or `dripnex-plugin link` a local checkout) and enable **Vim Mode** in Settings → Plugins. Same engine as Inkdrop (`@replit/codemirror-vim`) plus:
 
 |         |                                                                                                                           |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -390,6 +390,26 @@ if (Vim) {
   });
 }
 ```
+
+### Read-only store (`dripnex.store`)
+
+Inkdrop plugins call `inkdrop.store.getState()`. Dripnex exposes the same
+_shape of access_ without Redux: a cloned snapshot of Query + Zustand.
+
+```js
+const { editingNote, notes, navigation } = dripnex.store.getState();
+
+const unsub = dripnex.store.subscribe(() => {
+  const { editingNote: next } = dripnex.store.getState();
+  dripnex.log.debug(next.id, next.isDirty);
+});
+```
+
+- `notes.items` is the **visible list**, not every note in the library.
+- There is **no** `store.dispatch`. Use `dripnex.commands.dispatch`, `editor`, or `data`.
+- `settings` is appearance only (no API keys).
+
+State map, query keys, and CSS token owners: [`docs/state.md`](./state.md).
 
 ### CLI (`dripnex-plugin`)
 
@@ -424,7 +444,8 @@ Built-ins stay in `apps/desktop` until they deserve their own repo.
 | Role                                         | Plugins                                                  | Marketing? |
 | -------------------------------------------- | -------------------------------------------------------- | ---------- |
 | **core**                                     | mermaid, math, tables, paste-as-link, AI                 | yes        |
-| **optional**                                 | vim, export                                              | yes        |
+| **optional**                                 | export                                                   | yes        |
+| **community**                                | vim (`dripnex/plugin-vim`)                               | yes        |
 | **proof** (API examples, hide from the site) | word-count, reading-time, typewriter, focus, active-line | no         |
 
 Do not add more proof plugins to dripnex.app/plugins.

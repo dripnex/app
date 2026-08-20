@@ -5,13 +5,15 @@
  */
 
 import { themeRegistryStore } from '@dripnex/plugin-api';
+import { useSyncExternalStore } from 'react';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
+import { detectPerfMode } from '../../../hooks/usePerformanceMode';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { SettingSelect } from '../components/SettingSelect';
 import { ACCENT_SWATCHES } from '../../../ui/tokens/palette';
-import { ColorPicker, type ColorOption } from '../components/controls';
+import { ColorPicker, RangeInput, type ColorOption } from '../components/controls';
 import { SettingsPage } from '../components/SettingsPage';
 
 const themeOptions = [
@@ -30,7 +32,8 @@ const zoomOptions = [
 ];
 
 const performanceModeOptions = [
-  { value: 'high', label: 'High (Full effects)' },
+  { value: 'auto', label: 'Auto' },
+  { value: 'high', label: 'High (Full blur)' },
   { value: 'medium', label: 'Medium (Reduced blur)' },
   { value: 'low', label: 'Low (No blur)' },
 ];
@@ -43,24 +46,41 @@ const accentColorOptions: ColorOption[] = ACCENT_SWATCHES.map(swatch => ({
 export function AppearanceSection() {
   const appearance = useSettingsStore(selectAppearance);
   const updateAppearance = useSettingsStore(s => s.updateAppearance);
-  const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
+  const { setMode: setPerfMode } = usePerformanceStore();
+  const perfMode = appearance.performanceMode || 'auto';
+  const frostTransparency = appearance.frostTransparency ?? 40;
+  const frosted = Boolean(
+    useSyncExternalStore(
+      themeRegistryStore.subscribe,
+      () => themeRegistryStore.getState().getActiveTheme()?.frosted
+    )
+  );
 
   const theme = appearance.theme || 'dark';
   const zoomLevel = appearance.zoomLevel || '1.0';
   const accentColor = appearance.accentColor || '#5eead4';
+  const accentOptions: ColorOption[] = accentColorOptions.some(
+    option => option.value.toLowerCase() === accentColor.toLowerCase()
+  )
+    ? accentColorOptions
+    : [{ value: accentColor, label: 'Theme' }, ...accentColorOptions];
 
   const handleThemeChange = (value: string) => {
     themeRegistryStore.getState().setActive(null);
     updateAppearance({
       theme: value as 'dark' | 'light' | 'system',
       activeThemeId: null,
-      accentColor: value === 'light' ? '#0f766e' : '#5eead4',
+      accentColor: value === 'light' ? '#0d8a80' : '#5eead4',
     });
   };
 
   const handlePerfModeChange = (value: string) => {
-    setPerfMode(value as 'high' | 'medium' | 'low');
-    document.documentElement.dataset.perf = value;
+    const performanceMode =
+      value === 'high' || value === 'medium' || value === 'low' || value === 'auto'
+        ? value
+        : 'auto';
+    updateAppearance({ performanceMode });
+    setPerfMode(performanceMode === 'auto' ? detectPerfMode() : performanceMode);
   };
 
   return (
@@ -86,7 +106,7 @@ export function AppearanceSection() {
             id="accentColor"
             value={accentColor}
             onChange={value => updateAppearance({ accentColor: value })}
-            colors={accentColorOptions}
+            colors={accentOptions}
           />
         </SettingRow>
       </SettingGroup>
@@ -102,12 +122,33 @@ export function AppearanceSection() {
         />
         <SettingSelect
           label="Performance Mode"
-          description="Adjust visual effects based on your hardware"
+          description="Low turns off window frost and menu blur"
           htmlFor="performanceMode"
           value={perfMode}
           onChange={handlePerfModeChange}
           options={performanceModeOptions}
         />
+        <SettingRow
+          label="Transparency"
+          description={
+            !frosted
+              ? 'Pick a frosted palette under Themes to use this'
+              : perfMode === 'low'
+                ? 'Turn Performance off Low to see the desktop'
+                : 'How much desktop shows through Glass, Midnight, Ember, and Ion'
+          }
+          htmlFor="frostTransparency"
+        >
+          <RangeInput
+            id="frostTransparency"
+            value={frostTransparency}
+            onChange={value => updateAppearance({ frostTransparency: value })}
+            min={0}
+            max={100}
+            step={5}
+            disabled={!frosted || perfMode === 'low'}
+          />
+        </SettingRow>
       </SettingGroup>
     </SettingsPage>
   );

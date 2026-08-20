@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
-import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
+import { computeHoverColor, hexToRgb, scaleCssAlpha, withCssAlpha } from '../utils/colorUtils';
 
 /**
  * Persisted IPC isDark value from the main process nativeTheme.
@@ -9,9 +10,70 @@ import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
  */
 let nativeIsDark: boolean | undefined;
 
-/**
- * Apply appearance settings to the DOM.
- */
+/** Keep --accent-primary in lockstep. A lot of chrome reads that, not --accent. */
+const LEGACY_LIGHT_ACCENT = '#0f766e';
+const LIGHT_ACCENT = '#0d8a80';
+
+function resolveAccent(accentColor: string): string {
+  return accentColor.toLowerCase() === LEGACY_LIGHT_ACCENT ? LIGHT_ACCENT : accentColor;
+}
+
+function applyAccent(accentColor: string): void {
+  const color = resolveAccent(accentColor);
+  const root = document.documentElement.style;
+  root.setProperty('--accent', color);
+  root.setProperty('--accent-primary', color);
+
+  const hoverColor = computeHoverColor(color);
+  root.setProperty('--accent-hover', hoverColor);
+
+  const rgb = hexToRgb(color);
+  if (rgb) {
+    root.setProperty(
+      '--accent-muted',
+      `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, 0.18)`
+    );
+  }
+}
+
+const FROST_SURFACE_TOKENS = [
+  '--bg-base',
+  '--bg-surface',
+  '--bg-elevated',
+  '--bg-inset',
+  '--glass-bg',
+] as const;
+
+function clampPercent(value: number): number {
+  if (Number.isNaN(value)) return 40;
+  return Math.min(100, Math.max(0, value));
+}
+
+/** Push frosted surfaces toward the desktop. 0 = palette default, 100 = very clear. */
+function applyFrostTransparency(percent: number, noBlur: boolean): void {
+  const root = document.documentElement;
+  const theme = themeRegistryStore.getState().getActiveTheme();
+  if (!theme?.frosted) {
+    root.style.removeProperty('--frost-transparency');
+    return;
+  }
+  if (noBlur) {
+    root.style.setProperty('--frost-transparency', '0');
+    for (const token of FROST_SURFACE_TOKENS) {
+      const source = theme.tokens[token];
+      if (source) root.style.setProperty(token, withCssAlpha(source, 0.96));
+    }
+    return;
+  }
+  const amount = clampPercent(percent);
+  root.style.setProperty('--frost-transparency', String(amount));
+  const keep = 1 - (amount / 100) * 0.82;
+  for (const token of FROST_SURFACE_TOKENS) {
+    const source = theme.tokens[token];
+    if (source) root.style.setProperty(token, scaleCssAlpha(source, keep));
+  }
+}
+
 function applyAppearance(
   theme: string,
   accentColor: string,
@@ -33,19 +95,7 @@ function applyAppearance(
   document.documentElement.setAttribute('data-color-scheme', resolved);
   document.documentElement.style.colorScheme = resolved;
 
-  document.documentElement.style.setProperty('--accent', accentColor);
-  document.documentElement.style.setProperty('--accent-primary', accentColor);
-
-  const hoverColor = computeHoverColor(accentColor);
-  document.documentElement.style.setProperty('--accent-hover', hoverColor);
-
-  const rgb = hexToRgb(accentColor);
-  if (rgb) {
-    document.documentElement.style.setProperty(
-      '--accent-muted',
-      `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, 0.15)`
-    );
-  }
+  applyAccent(accentColor);
 
   document.body.style.zoom = zoomLevel;
 }
@@ -66,6 +116,12 @@ export function useAppearanceSettings(): void {
   const accentColor = appearance?.accentColor || '#5eead4';
   const zoomLevel = appearance?.zoomLevel || '1.0';
   const paletteActive = Boolean(appearance?.activeThemeId);
+  const frostTransparency = appearance?.frostTransparency ?? 40;
+  const noBlur = appearance?.performanceMode === 'low';
+  const registryThemeId = useSyncExternalStore(
+    themeRegistryStore.subscribe,
+    () => themeRegistryStore.getState().activeThemeId
+  );
 
   // Keep a ref to current values so the IPC callback can access them
   const currentRef = useRef({ theme, accentColor, zoomLevel });
@@ -75,11 +131,17 @@ export function useAppearanceSettings(): void {
     document.body.style.zoom = zoomLevel;
   }, [zoomLevel]);
 
-  // A named palette owns color-scheme and accent. Base only paints Default.
+  // Named palettes own color-scheme via useThemeOverrides. Accent always
+  // follows the store (theme pick writes the palette accent; the picker
+  // can override). Must run after theme tokens so --accent-primary is live.
   useEffect(() => {
-    if (paletteActive) return;
+    if (paletteActive) {
+      applyAccent(accentColor);
+      applyFrostTransparency(frostTransparency, noBlur);
+      return;
+    }
     applyAppearance(theme, accentColor, zoomLevel);
-  }, [theme, accentColor, zoomLevel, paletteActive]);
+  }, [theme, accentColor, zoomLevel, paletteActive, frostTransparency, noBlur, registryThemeId]);
 
   // Sync nativeTheme source in main process
   useEffect(() => {

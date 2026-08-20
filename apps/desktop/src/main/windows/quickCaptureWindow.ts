@@ -3,6 +3,7 @@ import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
 import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
 import { forgetClosable, trackClosable } from './closable.js';
+import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
 let quickCaptureWindow: BrowserWindow | null = null;
 
@@ -30,7 +31,7 @@ export function createQuickCaptureWindow(): BrowserWindow {
     skipTaskbar: true,
     show: false,
     icon: resolveAppIconPath(),
-    backgroundColor: '#0a0b0d',
+    ...frostedWindowOptions(),
     webPreferences: {
       preload: rendererPreloadPath(),
       nodeIntegration: false,
@@ -38,6 +39,8 @@ export function createQuickCaptureWindow(): BrowserWindow {
       sandbox: false,
     },
   });
+
+  wireFrosted(quickCaptureWindow);
 
   const quickCaptureId = quickCaptureWindow.webContents.id;
   trackClosable(quickCaptureId);

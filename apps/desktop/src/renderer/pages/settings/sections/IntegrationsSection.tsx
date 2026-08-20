@@ -3,7 +3,7 @@ import { ExternalLink, KeyRound } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
-import { Button } from '../../../ui/primitives';
+import { Button, Field, Input } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsPage } from '../components/SettingsPage';
 import { GitHubCard } from './GitHubCard';
@@ -103,13 +103,13 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
 
         {status === 'ready' ? (
           <div className={styles.body}>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Account</span>
-              <span className={styles.fieldHint}>
-                The name at the top of the 1Password sidebar. Remembered after the first save.
-              </span>
-              <input
-                className={styles.input}
+            <Field
+              label="Account"
+              htmlFor="op-account"
+              hint="The name at the top of the 1Password sidebar. Remembered after the first save."
+            >
+              <Input
+                id="op-account"
                 value={draft}
                 onChange={event => {
                   setDraft(event.target.value);
@@ -118,19 +118,20 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
                 placeholder="e.g. my.1password.com"
                 autoComplete="off"
               />
-            </label>
+            </Field>
             {accounts.length > 1 ? (
               <div className={styles.chips}>
                 {accounts.map(name => (
-                  <button
+                  <Button
                     key={name}
-                    type="button"
+                    variant="ghost"
+                    size="sm"
                     className={styles.chip}
-                    data-active={name === stored || name === draft}
+                    data-active={name === stored || name === draft ? 'true' : undefined}
                     onClick={() => void saveAccount(name)}
                   >
                     {name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             ) : null}

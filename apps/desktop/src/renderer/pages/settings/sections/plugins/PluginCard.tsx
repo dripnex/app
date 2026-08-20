@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ChevronDown, Trash2 } from 'lucide';
 import { Icon } from '../../../../ui/icons/Icon';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
+import { Button } from '../../../../ui/primitives';
 import { RangeInput } from '../../components/controls';
 import { SettingNumber } from '../../components/SettingNumber';
 import { SettingSelect } from '../../components/SettingSelect';
@@ -62,14 +63,9 @@ export function PluginCard({
           {description && <p className={styles.pluginDescription}>{description}</p>}
         </div>
         {!isBuiltIn && onUninstall ? (
-          <button
-            type="button"
-            className={styles.pluginUninstallButton}
-            onClick={onUninstall}
-            title="Uninstall plugin"
-          >
+          <Button variant="ghost" size="sm" onClick={onUninstall} aria-label="Uninstall plugin">
             <Icon icon={Trash2} size={14} />
-          </button>
+          </Button>
         ) : null}
       </div>
       <SettingToggle
@@ -83,14 +79,15 @@ export function PluginCard({
 
       {hasConfig && (
         <>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             className={`${styles.pluginConfigToggle} ${configOpen ? styles.pluginConfigToggleOpen : ''}`}
             onClick={() => setConfigOpen(prev => !prev)}
           >
             <Icon icon={ChevronDown} size={14} />
-            <span>Settings</span>
-          </button>
+            Settings
+          </Button>
 
           {configOpen && (
             <div className={styles.pluginConfigPanel}>

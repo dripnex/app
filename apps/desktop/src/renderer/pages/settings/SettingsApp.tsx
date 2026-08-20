@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LayoutZone, useThemeOverrides } from '@dripnex/plugin-api';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
+import { usePerformanceMode } from '../../hooks/usePerformanceMode';
 import { useOfficialThemes } from '../../hooks/useOfficialThemes';
 import { Toaster } from '../../ui/primitives';
 import styles from './SettingsApp.module.css';
@@ -37,9 +38,10 @@ export type SettingsSection =
   | 'about';
 
 export function SettingsApp() {
-  useAppearanceSettings();
+  usePerformanceMode();
   useOfficialThemes();
   useThemeOverrides();
+  useAppearanceSettings();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   const renderSection = () => {

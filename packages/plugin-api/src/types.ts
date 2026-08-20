@@ -53,6 +53,57 @@ export interface NotebookInfo {
   icon?: string | null;
 }
 
+/**
+ * Read-only projection of app state for plugins and init.js.
+ * Desktop pushes this via `setHostStoreSnapshot`. No `dispatch`.
+ */
+export interface AppStoreSnapshot {
+  editingNote: {
+    id: string | null;
+    content: string;
+    isDirty: boolean;
+  };
+  /**
+   * Visible list in this window, not the full library.
+   * Use `app.listNotes()` / `data.getNotes()` for queries.
+   */
+  notes: {
+    items: NoteSummaryInfo[];
+    current: NoteInfo | null;
+  };
+  navigation:
+    | { kind: 'global'; filter: 'all' | 'pinned' | 'trash' }
+    | { kind: 'notebook'; id: string }
+    | { kind: 'tag'; name: string }
+    | { kind: 'search'; query: string };
+  view: {
+    workspaceRootId: string | null;
+    workspaceListAll: boolean;
+    statusFilter: string | null;
+    tagFilter: string | null;
+    sortBy: 'title' | 'createdAt' | 'updatedAt';
+    sortOrder: 'asc' | 'desc';
+  };
+  /** Appearance only. Never includes API keys or other secrets. */
+  settings: {
+    theme: 'dark' | 'light' | 'system';
+    accentColor: string;
+    activeThemeId: string | null;
+    performanceMode: 'auto' | 'high' | 'medium' | 'low';
+    frostTransparency: number;
+    zoomLevel: string;
+  };
+  theme: {
+    activeThemeId: string | null;
+    frosted: boolean;
+  };
+}
+
+export interface AppStore {
+  getState(): AppStoreSnapshot;
+  subscribe(listener: () => void): () => void;
+}
+
 /** Read-only app operations for plugins */
 export interface AppAPI {
   // Core (Phase 1)
@@ -164,6 +215,13 @@ export interface PluginContext {
     options: PluginCommandOptions,
     execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>
   ): () => void;
+  /** Dispatch a host or plugin command by id (`app:save-note`, `plugin:…`). */
+  dispatchCommand(id: string, payload?: Record<string, unknown>): Promise<boolean>;
+  /**
+   * Publish a Vim API for `dripnex.vim` in init.js.
+   * Call at module load (not only activate) so init.js can map keys.
+   */
+  registerVim(api: unknown): () => void;
   /** Register a remark (mdast) plugin for the markdown preview pipeline */
   registerRemarkPlugin(id: string, plugin: unknown, options?: PluginHookOptions): () => void;
   /** Register a rehype (hast) plugin for the markdown preview pipeline */
@@ -267,6 +325,11 @@ export interface PluginContext {
   config: PluginConfigAPI;
   log: PluginLogger;
   app: AppAPI;
+  /**
+   * Read-only app state (`getState` / `subscribe`). No `dispatch`.
+   * Mutate through `dispatchCommand`, `editor`, or `data`.
+   */
+  store: AppStore;
   /** Rich data query API for notes, notebooks, tags, links, and graph */
   data: DataAPI;
   /**

@@ -35,8 +35,9 @@ export function PluginInspector() {
 
   return (
     <div className={styles.inspectorPanel}>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         className={styles.inspectorToggle}
         onClick={() => setOpen(prev => !prev)}
         aria-expanded={open}
@@ -57,7 +58,7 @@ export function PluginInspector() {
             {errors.length}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div id="plugin-inspector-panel" role="region" className={styles.inspectorContent}>

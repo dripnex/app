@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
 import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
-import { frostedWindowOptions } from './vibrancy.js';
+import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
 export function createNoteWindow(noteId: string, noteTitle: string): BrowserWindow {
   const noteWindow = new BrowserWindow({
@@ -24,12 +24,11 @@ export function createNoteWindow(noteId: string, noteTitle: string): BrowserWind
     },
   });
 
+  wireFrosted(noteWindow);
+
   noteWindow.on('ready-to-show', () => {
     if (noteWindow.isDestroyed()) return;
     noteWindow.show();
-    if (process.env.NODE_ENV === 'development') {
-      noteWindow.webContents.openDevTools();
-    }
   });
 
   const query = `?noteWindow=${encodeURIComponent(noteId)}`;

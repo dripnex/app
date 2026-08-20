@@ -47,6 +47,7 @@
 
   /* ── Accent ───────────────────────────────────────────────────────────────── */
   --accent: #5eead4;
+  --accent-primary: var(--accent);
   --accent-hover: #2dd4bf;
   --accent-muted: rgba(94, 234, 212, 0.15);
   --accent-subtle: rgba(94, 234, 212, 0.1);
@@ -121,8 +122,29 @@
   --chrome-header-padding: 8px 10px;
   --chrome-traffic-inset: 72px;
 
-  /* ── Editor list marks (Inkdrop --md-list-mark-*) ─────────────────────────── */
+  /* ── Editor (CodeMirror). Always alias so light/dark never fall through to black. */
+  --cm-text: var(--text-primary);
+  --cm-cursor: var(--accent);
+  --cm-selection: var(--accent-muted);
+  --cm-active-line: var(--bg-hover);
+  --cm-gutter-border: var(--border-subtle);
+  --cm-gutter-text: var(--text-faint);
+  --cm-heading: var(--text-primary);
+  --cm-emphasis: var(--text-primary);
+  --cm-strong: var(--text-primary);
+  --cm-strikethrough: var(--text-muted);
+  --cm-link: var(--accent);
+  --cm-quote: var(--text-secondary);
+  --cm-quote-border: var(--border);
+  --cm-meta: var(--text-muted);
+  --cm-code-bg: var(--bg-inset);
+  --cm-tooltip-bg: var(--glass-bg-menu);
+  --cm-tooltip-border: var(--glass-border-menu);
+  --cm-tooltip-text: var(--text-primary);
+  --cm-bracket-match: var(--accent-muted);
   --cm-list: var(--accent);
+
+  /* ── Editor list marks (Inkdrop --md-list-mark-*) ─────────────────────────── */
   --md-list-mark-color: var(--accent);
   --md-list-mark-2-color: #60a5fa;
   --md-list-mark-3-color: #c4b5fd;
@@ -164,8 +186,7 @@
   --text-tertiary: var(--text-faint);
   --text-normal: var(--text-primary);
 
-  /* Accent aliases */
-  --accent-primary: var(--accent);
+  /* Accent aliases. --accent-primary is a core chrome token defined above. */
   --accent-strong: var(--accent-hover);
 
   /* Border aliases */
@@ -208,10 +229,16 @@
   --border-strong: rgba(28, 27, 25, 0.18);
   --border-hover: rgba(28, 27, 25, 0.2);
 
-  --text-primary: #161513;
-  --text-secondary: rgba(22, 21, 19, 0.74);
-  --text-muted: rgba(22, 21, 19, 0.52);
-  --text-faint: rgba(22, 21, 19, 0.36);
+  --text-primary: #3a3834;
+  --text-secondary: rgba(58, 56, 52, 0.78);
+  --text-muted: rgba(58, 56, 52, 0.56);
+  --text-faint: rgba(58, 56, 52, 0.4);
+
+  --accent: #0d8a80;
+  --accent-primary: var(--accent);
+  --accent-hover: #0b736b;
+  --accent-muted: rgba(13, 138, 128, 0.16);
+  --accent-subtle: rgba(13, 138, 128, 0.1);
 
   --status-active: var(--accent);
   --status-on-hold: #d97706;
@@ -219,6 +246,7 @@
   --status-dropped: #e11d48;
 
   --cm-list: var(--accent);
+  --cm-link: var(--accent);
   --md-list-mark-color: var(--accent);
   --md-list-mark-2-color: #2563eb;
   --md-list-mark-3-color: #7c3aed;

@@ -4,6 +4,8 @@ export { createLogger } from '@dripnex/logger';
 export type {
   EditorAPI,
   AppAPI,
+  AppStore,
+  AppStoreSnapshot,
   NoteInfo,
   NoteSummaryInfo,
   NotebookInfo,
@@ -114,6 +116,7 @@ export { pluginContextMenuStore } from './menu/pluginContextMenuStore';
 export type { PluginContextMenuItem, PluginContextMenuTarget } from './menu/pluginContextMenuStore';
 
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
+export type { LoadPluginOptions } from './loader/loadPluginFromSource';
 export { loadInitScript } from './loader/loadInitScript';
 export { createInitApi, USER_INIT_ID } from './loader/createInitApi';
 export type { InitApi } from './loader/createInitApi';
@@ -127,6 +130,12 @@ export {
   setHostThemeActive,
   hostSetActiveTheme,
 } from './loader/hostBridges';
+export {
+  EMPTY_STORE_SNAPSHOT,
+  getHostStore,
+  notifyHostStoreChanged,
+  setHostStoreSnapshot,
+} from './store/appStore';
 
 // Lifecycle
 export { PluginRegistry } from './lifecycle/PluginRegistry';

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, saveSecretToOnePassword } from '../../../integrations/onepassword';
-import type { ProviderCatalogItem } from './providers';
+import { Button } from '../../../ui/primitives';
 import styles from '../../../components/sync/SaveToOnePasswordButton.module.css';
+import type { ProviderCatalogItem } from './providers';
 
 interface SaveProviderKeyProps {
   item: ProviderCatalogItem;
@@ -79,15 +80,15 @@ export function SaveProviderKey({ item, apiKey }: SaveProviderKeyProps) {
 
   return (
     <div className={styles.wrap}>
-      <button
-        type="button"
-        className={styles.link}
+      <Button
+        variant="ghost"
+        size="sm"
         disabled={busy || !apiKey.trim()}
         onClick={() => void save(account)}
       >
         <OnePasswordMark size={14} />
         {caption}
-      </button>
+      </Button>
       {needsAccount || (available && accounts.length > 1 && !account) ? (
         <div className={styles.account}>
           <input
@@ -101,17 +102,17 @@ export function SaveProviderKey({ item, apiKey }: SaveProviderKeyProps) {
           {accounts.length > 0 ? (
             <div className={styles.chips}>
               {accounts.map(name => (
-                <button
+                <Button
                   key={name}
-                  type="button"
-                  className={styles.chip}
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setAccount(name);
                     void save(name);
                   }}
                 >
                   {name}
-                </button>
+                </Button>
               ))}
             </div>
           ) : null}

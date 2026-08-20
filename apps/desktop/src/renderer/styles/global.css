@@ -14,6 +14,7 @@
 html, body, #root {
   height: 100%;
   overflow: hidden;
+  background: transparent;
 }
 
 body {
@@ -21,9 +22,28 @@ body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
-  background-color: var(--bg-base);
+  background-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Frosted palettes: no extra wash on html/body so NSVisualEffectView shows. */
+html[data-frosted='true'],
+html[data-frosted='true'] body,
+html[data-frosted='true'] #root {
+  background: transparent;
+  background-color: transparent;
+}
+
+html[data-frosted='true'] .app {
+  position: relative;
+  background:
+    radial-gradient(
+      900px 420px at 0% -8%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 58%
+    ),
+    transparent;
 }
 
 /* ===== PERFORMANCE MODES (blur only — colors stay on the theme) ===== */
@@ -41,6 +61,17 @@ body {
   --glass-blur: 0px;
   --glass-saturate: 100%;
   --glass-bg: var(--glass-bg-fallback);
+}
+
+:root[data-perf='low'][data-frosted='true'],
+:root[data-perf='low'][data-frosted='true'] body,
+:root[data-perf='low'][data-frosted='true'] #root {
+  background: var(--bg-base);
+  background-color: var(--bg-base);
+}
+
+:root[data-perf='low'][data-frosted='true'] .app {
+  background: var(--bg-base);
 }
 
 /* App layout */
@@ -62,8 +93,7 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   transition: width var(--transition-normal);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: transparent;
 }
 
 .app__sidebar[data-collapsed='true'] {
@@ -74,8 +104,7 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   transition: width var(--transition-normal);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: transparent;
 }
 
 .app__notelist[data-collapsed='true'] {

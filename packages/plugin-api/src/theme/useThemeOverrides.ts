@@ -3,7 +3,7 @@
  * useThemeOverrides Hook
  *
  * Applies active theme tokens from ThemeRegistry to document.documentElement.
- * Call once in app root, AFTER useAppearanceSettings.
+ * Call once in app root. Appearance may overlay --accent after this.
  */
 
 import { useEffect, useSyncExternalStore } from 'react';
@@ -33,6 +33,8 @@ export function useThemeOverrides(): void {
       root.setAttribute('data-theme', theme.id);
       root.setAttribute('data-color-scheme', theme.colorScheme);
       root.style.colorScheme = theme.colorScheme;
+      if (theme.frosted) root.setAttribute('data-frosted', 'true');
+      else root.removeAttribute('data-frosted');
 
       for (const [prop, value] of Object.entries(theme.tokens)) {
         root.style.setProperty(prop, value);
@@ -40,13 +42,14 @@ export function useThemeOverrides(): void {
       }
     } else {
       root.removeAttribute('data-theme');
+      root.removeAttribute('data-frosted');
     }
 
     return () => {
-      // Remove applied properties so base tokens take over
       for (const prop of applied) {
         root.style.removeProperty(prop);
       }
+      root.removeAttribute('data-frosted');
     };
   }, [activeThemeId, themes]);
 }

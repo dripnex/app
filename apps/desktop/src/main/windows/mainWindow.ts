@@ -4,7 +4,7 @@ import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
 import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
 import { flushPendingAuthToken } from './authDeepLink.js';
-import { frostedWindowOptions } from './vibrancy.js';
+import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
 export function createMainWindow(): BrowserWindow {
   const windowState = loadWindowState();
@@ -28,6 +28,8 @@ export function createMainWindow(): BrowserWindow {
       sandbox: false,
     },
   });
+
+  wireFrosted(mainWindow);
 
   if (windowState.isMaximized) {
     mainWindow.maximize();
@@ -79,11 +81,7 @@ export function createMainWindow(): BrowserWindow {
 
   const devBase = rendererDevBase();
   if (devBase) {
-    mainWindow.webContents.once('did-finish-load', () => {
-      if (mainWindow.isDestroyed()) return;
-      if (mainWindow.webContents.getURL().startsWith('chrome-error:')) return;
-      mainWindow.webContents.openDevTools();
-    });
+    // Docked DevTools paints the page opaque and kills vibrancy.
     void loadDevRenderer(mainWindow, devBase);
   } else {
     void mainWindow.loadFile(rendererHtmlPath());

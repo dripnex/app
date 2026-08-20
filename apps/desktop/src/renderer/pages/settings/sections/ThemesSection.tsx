@@ -30,7 +30,7 @@ export function ThemesSection() {
       themeRegistryStore.getState().setActive(null);
       updateAppearance({
         activeThemeId: null,
-        accentColor: theme === 'light' ? '#0f766e' : '#5eead4',
+        accentColor: theme === 'light' ? '#0d8a80' : '#5eead4',
       });
       return;
     }
@@ -57,8 +57,8 @@ export function ThemesSection() {
             '--bg-base': theme === 'light' ? '#f3f2ee' : '#0a0b0d',
             '--bg-surface': theme === 'light' ? '#e7e5df' : '#16171a',
             '--bg-elevated': theme === 'light' ? '#fffcf7' : '#1e2024',
-            '--text-primary': theme === 'light' ? '#161513' : '#f4f4f5',
-            '--text-muted': theme === 'light' ? 'rgba(22,21,19,0.45)' : 'rgba(255,255,255,0.35)',
+            '--text-primary': theme === 'light' ? '#3a3834' : '#f4f4f5',
+            '--text-muted': theme === 'light' ? 'rgba(58,56,52,0.5)' : 'rgba(255,255,255,0.35)',
             '--accent': accentColor,
             '--border': theme === 'light' ? 'rgba(22,21,19,0.12)' : 'rgba(255,255,255,0.08)',
           }}

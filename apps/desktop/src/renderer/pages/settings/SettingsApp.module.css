@@ -12,7 +12,11 @@
   padding: var(--chrome-header-height) var(--space-8) var(--space-10);
   overflow-y: auto;
   overflow-x: hidden;
-  background: var(--bg-base);
+  background: transparent;
+}
+
+:global(html[data-frosted='true']) .container {
+  background: transparent;
 }
 
 /* Thin scrollbar */

@@ -65,12 +65,12 @@ import { useHeadingJumpStore } from './stores/headingJumpStore';
  */
 function NotesApp() {
   usePerformanceMode();
-  useAppearanceSettings();
   useOfficialThemes();
   useEnsureNowBoard();
   useRefreshOnWindowFocus();
   useMcpLocalPath();
-  useThemeOverrides(); // Applies active theme tokens
+  useThemeOverrides();
+  useAppearanceSettings();
   useCssVariables();
   usePluginStyles();
 

@@ -7,9 +7,30 @@
 import { useSettingsStore, selectEditor } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingNumber } from '../components/SettingNumber';
-import { SettingText } from '../components/SettingText';
+import { SettingSelect } from '../components/SettingSelect';
 import { SettingToggle } from '../components/SettingToggle';
 import { SettingsPage } from '../components/SettingsPage';
+
+const FONT_SIZE_OPTIONS = [12, 13, 14, 15, 16, 18, 20, 22, 24].map(size => ({
+  value: String(size),
+  label: `${size} px`,
+}));
+
+const FONT_FAMILY_OPTIONS = [
+  {
+    value: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    label: 'System Mono',
+  },
+  { value: "'SF Mono', ui-monospace, monospace", label: 'SF Mono' },
+  { value: "Menlo, Monaco, 'Courier New', monospace", label: 'Menlo' },
+  { value: "'JetBrains Mono', ui-monospace, monospace", label: 'JetBrains Mono' },
+  { value: "'Fira Code', ui-monospace, monospace", label: 'Fira Code' },
+  { value: "'IBM Plex Mono', ui-monospace, monospace", label: 'IBM Plex Mono' },
+  { value: "'Source Code Pro', ui-monospace, monospace", label: 'Source Code Pro' },
+  { value: "'Cascadia Code', Consolas, ui-monospace, monospace", label: 'Cascadia Code' },
+  { value: 'ui-sans-serif, system-ui, -apple-system, sans-serif', label: 'System Sans' },
+  { value: 'Inter, ui-sans-serif, system-ui, sans-serif', label: 'Inter' },
+];
 
 export function EditorSection() {
   const editor = useSettingsStore(selectEditor);
@@ -71,23 +92,32 @@ export function EditorSection() {
 
       {/* Text Appearance Group */}
       <SettingGroup title="Text Appearance">
-        <SettingNumber
+        <SettingSelect
           label="Font Size"
-          description="Size of editor text in pixels"
+          description="Size of editor text"
           htmlFor="fontSize"
-          value={editor.fontSize}
-          onChange={value => updateEditor({ fontSize: value })}
-          min={10}
-          max={32}
-          step={1}
+          value={String(editor.fontSize)}
+          onChange={value => updateEditor({ fontSize: Number(value) })}
+          options={
+            FONT_SIZE_OPTIONS.some(option => option.value === String(editor.fontSize))
+              ? FONT_SIZE_OPTIONS
+              : [
+                  { value: String(editor.fontSize), label: `${editor.fontSize} px` },
+                  ...FONT_SIZE_OPTIONS,
+                ]
+          }
         />
-        <SettingText
+        <SettingSelect
           label="Font Family"
-          description="Font family for editor text"
+          description="Typeface for the source editor"
           htmlFor="fontFamily"
           value={editor.fontFamily}
           onChange={value => updateEditor({ fontFamily: value })}
-          placeholder="ui-monospace, monospace"
+          options={
+            FONT_FAMILY_OPTIONS.some(option => option.value === editor.fontFamily)
+              ? FONT_FAMILY_OPTIONS
+              : [{ value: editor.fontFamily, label: 'Current' }, ...FONT_FAMILY_OPTIONS]
+          }
         />
         <SettingNumber
           label="Line Height"

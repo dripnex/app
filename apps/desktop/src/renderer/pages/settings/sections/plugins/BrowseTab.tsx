@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { toast } from '../../../../ui/primitives';
+import { Button, toast } from '../../../../ui/primitives';
 import { SettingsCard } from '../../components/SettingsCard';
 import { COMMUNITY_CATALOG } from './communityCatalog';
 import styles from './Plugins.module.css';
@@ -150,14 +150,14 @@ export function BrowseTab() {
                   {isInstalled ? (
                     <span className={styles.pluginMarketplaceIncluded}>Installed</span>
                   ) : (
-                    <button
-                      type="button"
-                      className={styles.pluginMarketplaceInstallBtn}
+                    <Button
+                      variant="primary"
+                      size="sm"
                       disabled={busyId !== null}
                       onClick={() => void install(plugin.slug, plugin.slug)}
                     >
                       {busy ? 'Installing…' : 'Install'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -187,13 +187,14 @@ export function BrowseTab() {
           aria-label="Package name or repository"
           disabled={busyId !== null}
         />
-        <button
+        <Button
           type="submit"
-          className={styles.pluginConnectBtn}
+          variant="primary"
+          size="sm"
           disabled={busyId !== null || !spec.trim()}
         >
           Install
-        </button>
+        </Button>
       </form>
 
       {error ? (

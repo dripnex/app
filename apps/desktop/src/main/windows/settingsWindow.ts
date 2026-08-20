@@ -3,6 +3,7 @@ import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
 import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
 import { forgetClosable, trackClosable } from './closable.js';
+import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
 let settingsWindow: BrowserWindow | null = null;
 
@@ -21,7 +22,7 @@ export function createSettingsWindow(): BrowserWindow {
     icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
-    backgroundColor: '#0a0b0d',
+    ...frostedWindowOptions(),
     title: 'Settings',
     webPreferences: {
       preload: rendererPreloadPath(),
@@ -30,6 +31,8 @@ export function createSettingsWindow(): BrowserWindow {
       sandbox: false,
     },
   });
+
+  wireFrosted(settingsWindow);
 
   const settingsId = settingsWindow.webContents.id;
   trackClosable(settingsId);

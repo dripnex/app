@@ -6,6 +6,8 @@
   flex-direction: column;
   flex-shrink: 0;
   -webkit-app-region: drag;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 .header {

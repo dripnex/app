@@ -156,6 +156,33 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
     };
   }
 
+  // Migration: v7 -> v8 (persisted glass / blur mode)
+  if (version < 8) {
+    mutable = {
+      ...mutable,
+      version: 8,
+      appearance: {
+        ...DEFAULT_APPEARANCE,
+        ...mutable.appearance,
+        performanceMode: mutable.appearance?.performanceMode ?? DEFAULT_APPEARANCE.performanceMode,
+      },
+    };
+  }
+
+  // Migration: v8 -> v9 (frosted palette transparency)
+  if (version < 9) {
+    mutable = {
+      ...mutable,
+      version: 9,
+      appearance: {
+        ...DEFAULT_APPEARANCE,
+        ...mutable.appearance,
+        frostTransparency:
+          mutable.appearance?.frostTransparency ?? DEFAULT_APPEARANCE.frostTransparency,
+      },
+    };
+  }
+
   settings = mutable as SettingsSchema;
   return { settings };
 }

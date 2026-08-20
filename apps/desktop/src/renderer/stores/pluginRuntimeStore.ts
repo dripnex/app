@@ -12,6 +12,7 @@
 import { createStore } from 'zustand/vanilla';
 import type { PluginManifest, PluginPackageFiles } from '@dripnex/plugin-api';
 import { loadPluginFromSource, loadInitScript, createThemeOnlyManifest } from '@dripnex/plugin-api';
+import { createPluginRequire } from '../plugins/pluginRequire';
 
 export interface PluginLoadError {
   pluginId: string;
@@ -80,6 +81,7 @@ async function executeScan(generation: number): Promise<{
     if (scanGeneration !== generation) return null;
 
     const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+    const pluginRequire = createPluginRequire();
     const plugins: PluginManifest[] = [];
     const errors: PluginLoadError[] = [];
     const timings: PluginLoadTiming[] = [];
@@ -91,7 +93,7 @@ async function executeScan(generation: number): Promise<{
 
       const start = performance.now();
       const manifest = sp.hasMain
-        ? loadPluginFromSource(sp.code, sp.id)
+        ? loadPluginFromSource(sp.code, sp.id, { require: pluginRequire })
         : createThemeOnlyManifest(sp.id, sp.name, sp.version);
       const elapsed = performance.now() - start;
 

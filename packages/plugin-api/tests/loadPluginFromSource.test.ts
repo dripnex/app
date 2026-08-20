@@ -67,6 +67,28 @@ describe('loadPluginFromSource', () => {
     expect(result!.id).toBe('shorthand');
   });
 
+  it('injects host require', () => {
+    const code = `
+      const r = require('react');
+      module.exports = {
+        id: 'uses-require',
+        name: 'Uses Require',
+        version: '1.0.0',
+        activate() {},
+        _react: r,
+      };
+    `;
+    const react = { useState: () => {} };
+    const result = loadPluginFromSource(code, 'uses-require', {
+      require: (id: string) => {
+        if (id === 'react') return react;
+        throw new Error(id);
+      },
+    });
+    expect(result).not.toBeNull();
+    expect((result as { _react?: unknown })._react).toBe(react);
+  });
+
   it('preserves optional fields', () => {
     const code = `
       module.exports = {

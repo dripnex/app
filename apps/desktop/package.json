@@ -44,7 +44,6 @@
     "@lezer/highlight": "^1.2.3",
     "@lobehub/icons-static-svg": "^1.94.0",
     "@paper-design/shaders-react": "^0.0.80",
-    "@replit/codemirror-vim": "^6.4.0",
     "@sentry/electron": "^7.13.0",
     "@tanstack/react-query": "^5.101.0",
     "better-sqlite3": "^12.10.0",
