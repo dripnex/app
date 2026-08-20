@@ -4,7 +4,7 @@ Living board. Seeded as note `dripnex-now` so MCP agents can search `NOW`.
 
 #now #roadmap #debt
 
-Updated: 2026-08-18. Version in tree: 0.15.2.
+Updated: 2026-08-20. Version in tree: 0.15.2. 0.16.0 story is drafted.
 
 ## Now (true today)
 
@@ -81,6 +81,10 @@ Shipped this week:
 - Workspace view: click a notebook to focus the sidebar on that tree. Escape or the breadcrumb home returns to All Notes.
 - Collapsed notebooks list notes from their descendants; expanded ones stay direct-only.
 - Default notebook (Settings → General) is used for ⌘N from All Notes.
+- Editor: Tab list indent, Enter continues lists, line commands, checked-task strike, link tooltips, fence Copy.
+- Palette: `>` `b ` `t ` `#` prefixes + fuzzy.
+- Settings → Themes (incl. Glass + vibrancy). Plugins nest Install / Updates. Keybindings page.
+- Readable line length (Settings → Editor, off by default).
 
 CSS path (decided 2026-08-17):
 Keep CSS modules + tokens. Do not add Tailwind to desktop.
