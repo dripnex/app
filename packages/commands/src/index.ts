@@ -25,6 +25,26 @@ export {
 } from './markdown/commands.js';
 export type { GithubAlertKind } from './markdown/commands.js';
 
+export { continueMarkup, continueMarkupKeymap } from './markdown/continueMarkup.js';
+export {
+  joinLines,
+  sortLines,
+  reverseSortLines,
+  sortLinesInsensitive,
+  reverseSortLinesInsensitive,
+  insertLineBefore,
+  upcaseAtCursor,
+  downcaseAtCursor,
+  findUnder,
+  findUnderPrevious,
+  skipAndSelectNextOccurrence,
+  splitSelectionByLine,
+  scrollLineUp,
+  scrollLineDown,
+  showInCenter,
+  editorLineKeymap,
+} from './markdown/lineCommands.js';
+
 export {
   SLASH_ITEMS,
   FENCE_LANGUAGES,
