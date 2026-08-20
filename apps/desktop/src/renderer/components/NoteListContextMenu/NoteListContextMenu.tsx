@@ -1,17 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  FolderOpen,
-  Copy,
-  Archive,
-  ArchiveRestore,
-  Trash2,
-  Pin,
-  PinOff,
-  FileStack,
-} from 'lucide-react';
+import { FolderOpen, Copy, Archive, ArchiveRestore, Trash2, Pin, PinOff, FileStack } from 'lucide';
 import { useStore } from 'zustand';
 import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { Icon } from '../../ui/icons/Icon';
 import { dispatchCommand } from '../../hooks/useCommandRegistry';
 import styles from './NoteListContextMenu.module.css';
 
@@ -173,11 +165,11 @@ export function NoteListContextMenu({
       {isDeleted ? (
         <>
           <button type="button" className={styles.item} onClick={handleRestoreDeleted}>
-            <ArchiveRestore size={14} />
+            <Icon icon={ArchiveRestore} size={14} />
             <span className={styles.label}>Restore</span>
           </button>
           <button type="button" className={styles.itemDanger} onClick={handlePermanentDelete}>
-            <Trash2 size={14} />
+            <Icon icon={Trash2} size={14} />
             <span className={styles.label}>Delete forever</span>
           </button>
         </>
@@ -186,7 +178,7 @@ export function NoteListContextMenu({
           {isTemplate && onCreateFromTemplate ? (
             <>
               <button type="button" className={styles.item} onClick={handleCreateFromTemplate}>
-                <FileStack size={14} />
+                <Icon icon={FileStack} size={14} />
                 <span className={styles.label}>New note from template</span>
               </button>
               <div className={styles.divider} />
@@ -195,20 +187,20 @@ export function NoteListContextMenu({
 
           {/* Move to Notebook */}
           <button type="button" className={styles.item} onClick={handleOpenPicker}>
-            <FolderOpen size={14} />
+            <Icon icon={FolderOpen} size={14} />
             <span className={styles.label}>Move to Notebook</span>
             <span className={styles.shortcut}>M</span>
           </button>
 
           {/* Pin / Unpin */}
           <button type="button" className={styles.item} onClick={handlePin}>
-            {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+            {isPinned ? <Icon icon={PinOff} size={14} /> : <Icon icon={Pin} size={14} />}
             <span className={styles.label}>{isPinned ? 'Unpin' : 'Pin'}</span>
           </button>
 
           {/* Duplicate */}
           <button type="button" className={styles.item} onClick={handleDuplicate}>
-            <Copy size={14} />
+            <Icon icon={Copy} size={14} />
             <span className={styles.label}>Duplicate</span>
             <span className={styles.shortcut}>⌘D</span>
           </button>
@@ -217,13 +209,17 @@ export function NoteListContextMenu({
 
           {/* Archive / Restore */}
           <button type="button" className={styles.item} onClick={handleArchive}>
-            {isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+            {isArchived ? (
+              <Icon icon={ArchiveRestore} size={14} />
+            ) : (
+              <Icon icon={Archive} size={14} />
+            )}
             <span className={styles.label}>{isArchived ? 'Restore' : 'Archive'}</span>
           </button>
 
           {/* Soft-delete */}
           <button type="button" className={styles.item} onClick={handleDelete}>
-            <Trash2 size={14} />
+            <Icon icon={Trash2} size={14} />
             <span className={styles.label}>Move to Trash</span>
             <span className={styles.shortcut}>⌘⌫</span>
           </button>

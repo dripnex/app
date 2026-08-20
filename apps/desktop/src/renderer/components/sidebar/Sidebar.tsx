@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { LayoutZone } from '@dripnex/plugin-api';
-import { ChevronRight, FileStack, Trash2 } from 'lucide-react';
+import { ChevronRight, FileStack, Trash2 } from 'lucide';
 import { useQueryClient } from '@tanstack/react-query';
+import { Icon } from '../../ui/icons/Icon';
 import { DEFAULT_TEMPLATES } from '../../data/defaultTemplates';
 import { useNoteMutations, useNotebookNotesCount } from '../../hooks/useNotes';
 import { notebookKeys, useNotebookMutations } from '../../hooks/useNotebooks';
@@ -243,7 +244,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
                 onClick={() => void openTemplates()}
               >
                 <span className={sc('sidebar-row-icon')} aria-hidden="true">
-                  <FileStack size={15} />
+                  <Icon icon={FileStack} size={15} />
                 </span>
                 <span className={sc('sidebar-row-label')}>Note Templates</span>
                 {templateCount > 0 ? (
@@ -257,7 +258,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
                 title="Switch to workspace view"
               >
                 Detail
-                <ChevronRight
+                <Icon
+                  icon={ChevronRight}
                   size={10}
                   className={sc('sidebar-row-detail-chevron')}
                   aria-hidden="true"
@@ -324,7 +326,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
             aria-pressed={globalFilter === 'trash'}
           >
             <span className={sc('sidebar-row-icon')} aria-hidden="true">
-              <Trash2 size={15} />
+              <Icon icon={Trash2} size={15} />
             </span>
             <span className={sc('sidebar-row-label')}>Trash</span>
             <span className={sc('sidebar-row-count')}>{globalCounts.deleted}</span>

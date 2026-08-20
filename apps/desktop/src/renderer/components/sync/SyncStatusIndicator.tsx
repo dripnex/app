@@ -6,7 +6,8 @@
  */
 
 import { useState } from 'react';
-import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, AlertTriangle } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import {
   useSyncStore,
   selectStatus,
@@ -29,7 +30,7 @@ export function SyncStatusIndicator() {
   const getStatusInfo = () => {
     if (!isAuthenticated) {
       return {
-        icon: <CloudOff size={14} />,
+        icon: <Icon icon={CloudOff} size={14} />,
         label: 'Not signed in',
         className: styles.statusMuted,
       };
@@ -38,7 +39,7 @@ export function SyncStatusIndicator() {
     // Conflicts take priority over idle state
     if (hasConflicts && status !== 'syncing') {
       return {
-        icon: <AlertTriangle size={14} />,
+        icon: <Icon icon={AlertTriangle} size={14} />,
         label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — Review`,
         className: styles.statusWarning,
       };
@@ -47,31 +48,31 @@ export function SyncStatusIndicator() {
     switch (status) {
       case 'syncing':
         return {
-          icon: <RefreshCw size={14} className={styles.spinning} />,
+          icon: <Icon icon={RefreshCw} size={14} className={styles.spinning} />,
           label: 'Syncing...',
           className: styles.statusSyncing,
         };
       case 'idle':
         return {
-          icon: <CheckCircle size={14} />,
+          icon: <Icon icon={CheckCircle} size={14} />,
           label: lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync',
           className: styles.statusSuccess,
         };
       case 'error':
         return {
-          icon: <AlertCircle size={14} />,
+          icon: <Icon icon={AlertCircle} size={14} />,
           label: 'Sync failed',
           className: styles.statusError,
         };
       case 'offline':
         return {
-          icon: <CloudOff size={14} />,
+          icon: <Icon icon={CloudOff} size={14} />,
           label: 'Offline',
           className: styles.statusMuted,
         };
       default:
         return {
-          icon: <Cloud size={14} />,
+          icon: <Icon icon={Cloud} size={14} />,
           label: 'Unknown',
           className: styles.statusMuted,
         };

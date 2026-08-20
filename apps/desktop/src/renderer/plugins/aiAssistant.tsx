@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide';
 import type { PluginManifest } from '@dripnex/plugin-api';
 import { DEFAULT_MODEL } from '@dripnex/ai-core';
+import { Icon } from '../ui/icons/Icon';
 import { sc as noteEditorSc } from '../components/noteEditorSc';
 
 /**
@@ -28,7 +29,7 @@ function AiToggleButton() {
       title="AI Assistant (⌘K)"
       aria-label="Toggle AI Assistant"
     >
-      <Sparkles size={18} />
+      <Icon icon={Sparkles} size={18} />
     </button>
   );
 }

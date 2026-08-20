@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { startCloudSyncIfReady, selectEmail, useAuthStore } from '../../../stores/authStore';
 import { downloadEmergencyKit, printEmergencyKit } from '../../../utils/emergencyKit';
 import { downloadOnePasswordCsv } from '../../../utils/onePasswordCsv';
@@ -179,7 +180,7 @@ export function EncryptionSection() {
       <SettingGroup title="Status">
         <SettingRow label="This device" description={stateLabel}>
           <div className={styles.statusBadge} data-tone={status.ready ? 'ok' : 'warn'}>
-            {status.ready ? <Unlock size={14} /> : <Lock size={14} />}
+            <Icon icon={status.ready ? Unlock : Lock} size={14} />
             <span>{status.ready ? 'Ready' : 'Locked'}</span>
           </div>
         </SettingRow>
@@ -273,7 +274,7 @@ export function EncryptionSection() {
             <Button
               variant="primary"
               size="sm"
-              icon={<Unlock size={14} />}
+              icon={<Icon icon={Unlock} size={14} />}
               loading={busy}
               onClick={() => void handleUnlock()}
             >

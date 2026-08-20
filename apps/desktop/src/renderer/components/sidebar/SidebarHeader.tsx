@@ -1,4 +1,5 @@
-import { Network, Settings } from 'lucide-react';
+import { Network, Settings } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { IconButton } from '../../ui/primitives';
 import { SyncStatusIndicator } from '../sync/SyncStatusIndicator';
 import { sc } from './sc';
@@ -14,11 +15,11 @@ export function SidebarHeader({ onSettingsClick, onOpenGraph }: SidebarHeaderPro
       <SyncStatusIndicator />
       {onOpenGraph ? (
         <IconButton label="Open graph" onClick={onOpenGraph}>
-          <Network size={16} aria-hidden="true" />
+          <Icon icon={Network} size={16} aria-hidden="true" />
         </IconButton>
       ) : null}
       <IconButton label="Settings" onClick={onSettingsClick}>
-        <Settings size={16} aria-hidden="true" />
+        <Icon icon={Settings} size={16} aria-hidden="true" />
       </IconButton>
     </div>
   );

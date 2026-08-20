@@ -5,7 +5,8 @@
  */
 
 import { useCallback } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectGeneral } from '../../../stores/settings';
 import { useNotebooks } from '../../../hooks/useNotebooks';
 import { SettingGroup } from '../components/SettingGroup';
@@ -79,7 +80,7 @@ export function GeneralSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<FolderOpen size={14} />}
+            icon={<Icon icon={FolderOpen} size={14} />}
             onClick={handleOpenDataFolder}
           >
             Open Folder

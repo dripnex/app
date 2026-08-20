@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Download, Upload, Archive, FolderOpen } from 'lucide-react';
+import { Download, Upload, Archive, FolderOpen } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectBackup } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
@@ -96,7 +97,7 @@ export function BackupSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             loading={isExporting}
             onClick={handleExport}
           >
@@ -113,7 +114,7 @@ export function BackupSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Upload size={14} />}
+            icon={<Icon icon={Upload} size={14} />}
             loading={isImporting}
             onClick={handleImport}
           >
@@ -127,7 +128,7 @@ export function BackupSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Archive size={14} />}
+            icon={<Icon icon={Archive} size={14} />}
             loading={isBackingUp}
             onClick={handleBackup}
           >
@@ -139,7 +140,7 @@ export function BackupSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<FolderOpen size={14} />}
+            icon={<Icon icon={FolderOpen} size={14} />}
             onClick={handleOpenDataFolder}
           >
             Open Folder

@@ -1,9 +1,10 @@
-import { Cloud, Mail, CheckCircle, RefreshCw, Sparkles } from 'lucide-react';
-import { PassphraseCreateForm } from './PassphraseCreateForm';
-import { SaveToOnePasswordButton } from './SaveToOnePasswordButton';
+import { Cloud, Mail, CheckCircle, RefreshCw, Sparkles } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { downloadEmergencyKit, printEmergencyKit } from '../../utils/emergencyKit';
 import { downloadOnePasswordCsv } from '../../utils/onePasswordCsv';
 import { formatRecoveryKey } from '../../utils/passphrase';
+import { SaveToOnePasswordButton } from './SaveToOnePasswordButton';
+import { PassphraseCreateForm } from './PassphraseCreateForm';
 import styles from './LoginModal.module.css';
 
 interface Pricing {
@@ -15,7 +16,7 @@ export function ValuePropStep({ onStart }: { onStart: () => void }) {
   return (
     <>
       <div className={styles.iconWrapper}>
-        <Cloud size={36} />
+        <Icon icon={Cloud} size={36} />
       </div>
       <h2 id="sync-modal-title" className={styles.title}>
         Sync across devices
@@ -53,7 +54,7 @@ export function PricingStep({
   return (
     <>
       <div className={styles.iconWrapper}>
-        <Sparkles size={36} />
+        <Icon icon={Sparkles} size={36} />
       </div>
       <h2 id="sync-modal-title" className={styles.title}>
         Upgrade to Pro
@@ -111,7 +112,7 @@ export function EmailStep({
   return (
     <>
       <div className={styles.iconWrapper}>
-        <Mail size={36} />
+        <Icon icon={Mail} size={36} />
       </div>
       <h2 className={styles.title}>Sign in or create account</h2>
       <p className={styles.subtitle}>
@@ -165,7 +166,7 @@ export function SentStep({
 }) {
   return (
     <div className={styles.sent}>
-      <CheckCircle size={48} className={styles.checkIcon} />
+      <Icon icon={CheckCircle} size={48} className={styles.checkIcon} />
       <h3>Check your email</h3>
       <p>
         We sent a magic link to <strong>{email}</strong>
@@ -179,7 +180,7 @@ export function SentStep({
           <span className={styles.resendTimer}>Resend in {resendTimer}s</span>
         ) : (
           <button type="button" className={styles.linkButton} onClick={onResend}>
-            <RefreshCw size={12} />
+            <Icon icon={RefreshCw} size={12} />
             Resend magic link
           </button>
         )}
@@ -400,7 +401,7 @@ export function RecoveryKeyStep({
 export function SuccessStep({ onClose }: { onClose: () => void }) {
   return (
     <div className={styles.sent}>
-      <CheckCircle size={48} className={styles.successIcon} />
+      <Icon icon={CheckCircle} size={48} className={styles.successIcon} />
       <h3>You're syncing!</h3>
       <p>Your notes will now sync across all your devices.</p>
       <button type="button" className={styles.button} onClick={onClose}>

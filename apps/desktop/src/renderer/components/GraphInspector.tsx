@@ -2,7 +2,8 @@
  * Knowledge inspector — select a node, read it, walk relationships.
  */
 
-import { Activity, ArrowUpRight, Hash, Sparkles, X } from 'lucide-react';
+import { Activity, ArrowUpRight, Hash, Sparkles, X } from 'lucide';
+import { Icon } from '../ui/icons/Icon';
 import { Button } from '../ui/primitives';
 import { extractExcerpt, useNote } from '../hooks/useNotes';
 import { useBacklinks, useOutgoingLinks } from '../hooks/useLinks';
@@ -68,7 +69,7 @@ export function GraphInspector({
         {!noteId ? (
           <div className={styles.inspectorEmpty}>
             <div className={styles.emptyIcon}>
-              <Hash size={18} />
+              <Icon icon={Hash} size={18} />
             </div>
             <p className={styles.inspectorEmptyTitle}>Select a node</p>
             <p className={styles.inspectorEmptyHint}>
@@ -91,7 +92,7 @@ export function GraphInspector({
                 title="Deselect"
                 aria-label="Deselect note"
               >
-                <X size={14} />
+                <Icon icon={X} size={14} />
               </button>
             </header>
 
@@ -113,7 +114,7 @@ export function GraphInspector({
               className={styles.askBtn}
               variant="primary"
               size="md"
-              icon={<Sparkles size={13} />}
+              icon={<Icon icon={Sparkles} size={13} />}
               onClick={() => onAsk(note.id)}
             >
               Ask Dripnex
@@ -145,7 +146,7 @@ export function GraphInspector({
                             inferred {Math.round(rel.score * 100)}%
                           </span>
                         ) : null}
-                        <ArrowUpRight size={12} />
+                        <Icon icon={ArrowUpRight} size={12} />
                       </span>
                     </button>
                   </li>
@@ -170,7 +171,7 @@ export function GraphInspector({
       <section className={styles.activity} aria-label="Ask activity">
         <div className={styles.activityHead}>
           <span className={styles.activityTitle}>
-            <Activity size={13} />
+            <Icon icon={Activity} size={13} />
             Activity
           </span>
           <span className={`${styles.idle} ${activityState === 'running' ? styles.idleLive : ''}`}>
@@ -185,7 +186,7 @@ export function GraphInspector({
           activity.map(event => (
             <div key={event.id} className={styles.event}>
               <div className={styles.eventHead}>
-                <Sparkles size={11} />
+                <Icon icon={Sparkles} size={11} />
                 <code>{event.title}</code>
               </div>
               <p className={styles.eventBody}>{event.detail}</p>

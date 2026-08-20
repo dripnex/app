@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import type { NoteStatus } from '../../../preload/index';
 import { useDropdownPosition } from '../../hooks/useDropdownPosition';
 import { StatusGlyph } from '../sidebar/StatusGlyph';
@@ -74,7 +75,7 @@ export const StatusDropdown = memo(function StatusDropdown({
           <StatusGlyph status={status} />
         </span>
         <span>{currentConfig.label}</span>
-        <ChevronDown size={12} className={sc('chevron-icon')} />
+        <Icon icon={ChevronDown} size={12} className={sc('chevron-icon')} />
       </button>
 
       {isOpen && (
@@ -106,7 +107,7 @@ export const StatusDropdown = memo(function StatusDropdown({
                 <span className={sc('item-label')}>{config.label}</span>
                 {s === status && (
                   <span className={sc('item-check')}>
-                    <Check size={14} />
+                    <Icon icon={Check} size={14} />
                   </span>
                 )}
               </button>

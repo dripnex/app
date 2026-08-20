@@ -1,5 +1,6 @@
 import { memo, useState, useCallback, useRef, useMemo, type KeyboardEvent } from 'react';
-import { Tag, X } from 'lucide-react';
+import { Tag, X } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
 import { useTags } from '../../hooks/useNotes';
 import { sc } from './sc';
@@ -182,7 +183,12 @@ export const TagsInput = memo(function TagsInput({
   if (tags.length === 0 && !isInputVisible) {
     return (
       <div className={sc('tags-display')} onClick={showInput} role="button" tabIndex={0}>
-        <Tag size={14} className={sc('dropdown-icon')} style={{ color: 'var(--text-faint)' }} />
+        <Icon
+          icon={Tag}
+          size={14}
+          className={sc('dropdown-icon')}
+          style={{ color: 'var(--text-faint)' }}
+        />
         <span className={sc('tags-display-empty')}>Add Tags</span>
       </div>
     );
@@ -190,7 +196,12 @@ export const TagsInput = memo(function TagsInput({
 
   return (
     <div className={sc('tags-display', 'tags-display--editable')}>
-      <Tag size={14} className={sc('dropdown-icon')} style={{ color: 'var(--text-muted)' }} />
+      <Icon
+        icon={Tag}
+        size={14}
+        className={sc('dropdown-icon')}
+        style={{ color: 'var(--text-muted)' }}
+      />
       <div className={sc('tags-display-chips')}>
         {tags.map(tag => {
           const color = getColor(tag);
@@ -219,7 +230,7 @@ export const TagsInput = memo(function TagsInput({
                   }}
                   aria-label={`Remove tag ${tag}`}
                 >
-                  <X size={12} />
+                  <Icon icon={X} size={12} />
                 </button>
               )}
             </span>

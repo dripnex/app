@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Check, Columns2, GitCompare, X } from 'lucide-react';
+import { AlertTriangle, Check, Columns2, GitCompare, X } from 'lucide';
 import { diffLines, type Change } from 'diff';
 import { useQueryClient } from '@tanstack/react-query';
+import { Icon } from '../../ui/icons/Icon';
 import { noteKeys } from '../../hooks/useNotes';
 import { useSyncStore, selectConflicts, type Conflict } from '../../stores/syncStore';
 import { conflictNoteTitle, conflictQueueLabel } from '../../utils/conflictCopy';
@@ -155,7 +156,7 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
     >
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <AlertTriangle size={18} className={styles.warningIcon} aria-hidden="true" />
+          <Icon icon={AlertTriangle} size={18} className={styles.warningIcon} aria-hidden="true" />
           <div>
             <p className={styles.queue}>{queue}</p>
             <h2 id={titleId} className={styles.title}>
@@ -187,7 +188,7 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
           className={view === 'side-by-side' ? styles.toggleActive : styles.toggleButton}
           onClick={() => setView('side-by-side')}
         >
-          <Columns2 size={14} aria-hidden="true" />
+          <Icon icon={Columns2} size={14} aria-hidden="true" />
           Side by side
         </button>
         <button
@@ -197,7 +198,7 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
           className={view === 'unified' ? styles.toggleActive : styles.toggleButton}
           onClick={() => setView('unified')}
         >
-          <GitCompare size={14} aria-hidden="true" />
+          <Icon icon={GitCompare} size={14} aria-hidden="true" />
           Unified
         </button>
       </div>
@@ -214,7 +215,7 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
             <pre className={styles.content}>{conflict.localContent}</pre>
           </article>
           <div className={styles.divider} aria-hidden="true">
-            <X size={14} />
+            <Icon icon={X} size={14} />
           </div>
           <article className={styles.version}>
             <div className={styles.versionHeader}>
@@ -235,7 +236,7 @@ export function ConflictResolver({ variant = 'inline' }: ConflictResolverProps) 
           onClick={() => void handleResolve(conflict.noteId, 'local')}
           disabled={busy}
         >
-          <Check size={14} aria-hidden="true" />
+          <Icon icon={Check} size={14} aria-hidden="true" />
           Keep this device
         </button>
         <button

@@ -3,7 +3,8 @@
  */
 
 import { useState } from 'react';
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronDown, Trash2 } from 'lucide';
+import { Icon } from '../../../../ui/icons/Icon';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
 import { Input, NumberInput, Select, Toggle } from '../../../../ui/primitives';
 import { RangeInput } from '../../components/controls';
@@ -69,7 +70,7 @@ export function PluginCard({
               onClick={onUninstall}
               title="Uninstall plugin"
             >
-              <Trash2 size={14} />
+              <Icon icon={Trash2} size={14} />
             </button>
           )}
         </div>
@@ -82,7 +83,7 @@ export function PluginCard({
             className={`${styles.pluginConfigToggle} ${configOpen ? styles.pluginConfigToggleOpen : ''}`}
             onClick={() => setConfigOpen(prev => !prev)}
           >
-            <ChevronDown size={14} />
+            <Icon icon={ChevronDown} size={14} />
             <span>Settings</span>
           </button>
 

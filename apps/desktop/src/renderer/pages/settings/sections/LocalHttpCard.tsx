@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Check, Copy, Eye, EyeOff, Server } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, Server } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { Button, Field, Toggle } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
@@ -78,7 +79,7 @@ export function LocalHttpCard() {
     <SettingsCard tone={badgeTone}>
       <div className={styles.cardTop}>
         <span className={styles.brandMark} aria-hidden="true">
-          <Server size={18} />
+          <Icon icon={Server} size={18} />
         </span>
         <div className={styles.cardCopy}>
           <div className={styles.cardNameRow}>
@@ -115,7 +116,13 @@ export function LocalHttpCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                icon={copied === 'url' ? <Check size={14} /> : <Copy size={14} />}
+                icon={
+                  copied === 'url' ? (
+                    <Icon icon={Check} size={14} />
+                  ) : (
+                    <Icon icon={Copy} size={14} />
+                  )
+                }
                 onClick={() => void copy('url', info.url)}
               >
                 {copied === 'url' ? 'Copied' : 'Copy'}
@@ -131,7 +138,7 @@ export function LocalHttpCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                icon={showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                icon={showToken ? <Icon icon={EyeOff} size={14} /> : <Icon icon={Eye} size={14} />}
                 onClick={() => setShowToken(v => !v)}
               >
                 {showToken ? 'Hide' : 'Show'}
@@ -139,7 +146,13 @@ export function LocalHttpCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                icon={copied === 'token' ? <Check size={14} /> : <Copy size={14} />}
+                icon={
+                  copied === 'token' ? (
+                    <Icon icon={Check} size={14} />
+                  ) : (
+                    <Icon icon={Copy} size={14} />
+                  )
+                }
                 onClick={() => void copy('token', info.token)}
               >
                 {copied === 'token' ? 'Copied' : 'Copy'}

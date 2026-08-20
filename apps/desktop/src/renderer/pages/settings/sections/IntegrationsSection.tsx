@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, KeyRound } from 'lucide-react';
+import { ExternalLink, KeyRound } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
 import { Button } from '../../../ui/primitives';
@@ -145,7 +146,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
               <Button
                 variant="primary"
                 size="sm"
-                icon={<KeyRound size={14} />}
+                icon={<Icon icon={KeyRound} size={14} />}
                 onClick={() => onOpenEncryption?.()}
               >
                 Save passphrase
@@ -172,7 +173,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
           rel="noreferrer"
         >
           1Password SDK docs
-          <ExternalLink size={12} />
+          <Icon icon={ExternalLink} size={12} />
         </a>
       </SettingsCard>
     </SettingsPage>

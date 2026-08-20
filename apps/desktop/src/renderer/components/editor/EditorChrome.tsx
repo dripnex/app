@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Maximize2, Minimize2, SquareArrowOutUpRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Maximize2, Minimize2, SquareArrowOutUpRight } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import type { EditorViewMode } from '../../stores/editorPreferencesStore';
 import { IconButton } from '../../ui/primitives';
 import { sc } from '../noteEditorSc';
@@ -40,7 +41,7 @@ export function EditorChrome({
         {variant === 'main' ? (
           <>
             <IconButton label="Open in new window" onClick={onOpenWindow}>
-              <SquareArrowOutUpRight size={16} aria-hidden="true" />
+              <Icon icon={SquareArrowOutUpRight} size={16} aria-hidden="true" />
             </IconButton>
             <IconButton
               label={distractionFree ? 'Exit Distraction Free Mode' : 'Enter Distraction Free Mode'}
@@ -48,16 +49,16 @@ export function EditorChrome({
               onClick={onToggleZen}
             >
               {distractionFree ? (
-                <Minimize2 size={16} aria-hidden="true" />
+                <Icon icon={Minimize2} size={16} aria-hidden="true" />
               ) : (
-                <Maximize2 size={16} aria-hidden="true" />
+                <Icon icon={Maximize2} size={16} aria-hidden="true" />
               )}
             </IconButton>
             <IconButton label="Back" disabled={!canBack} onClick={onBack}>
-              <ArrowLeft size={16} aria-hidden="true" />
+              <Icon icon={ArrowLeft} size={16} aria-hidden="true" />
             </IconButton>
             <IconButton label="Forward" disabled={!canForward} onClick={onForward}>
-              <ArrowRight size={16} aria-hidden="true" />
+              <Icon icon={ArrowRight} size={16} aria-hidden="true" />
             </IconButton>
           </>
         ) : (

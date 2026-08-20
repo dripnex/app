@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw, Upload } from 'lucide-react';
+import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw, Upload } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { Button, Input } from '../../ui/primitives';
 import styles from './CommitHistory.module.css';
 
@@ -139,7 +140,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <GitCommit size={20} />
+            <Icon icon={GitCommit} size={20} />
             <div>
               <h2 className={styles.title}>Commit History</h2>
               <p className={styles.subtitle}>{notebookName}</p>
@@ -169,7 +170,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
           <Button
             variant="primary"
             size="sm"
-            icon={<Upload size={13} />}
+            icon={<Icon icon={Upload} size={13} />}
             loading={remoteBusy}
             onClick={() => void pushRemote()}
           >
@@ -195,7 +196,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
 
           {!isLoading && !error && commits.length === 0 && (
             <div className={styles.empty}>
-              <GitCommit size={48} />
+              <Icon icon={GitCommit} size={48} />
               <p>No commits yet</p>
               <span>Changes will appear here once you enable auto-commit or manually commit</span>
             </div>
@@ -212,17 +213,21 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
                         className={styles.expandBtn}
                         aria-label={isExpanded ? 'Collapse' : 'Expand'}
                       >
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {isExpanded ? (
+                          <Icon icon={ChevronDown} size={16} />
+                        ) : (
+                          <Icon icon={ChevronRight} size={16} />
+                        )}
                       </button>
                       <div className={styles.commitMain}>
                         <p className={styles.commitMessage}>{commit.message}</p>
                         <div className={styles.commitMeta}>
                           <span className={styles.commitAuthor}>
-                            <User size={12} />
+                            <Icon icon={User} size={12} />
                             {commit.author.name}
                           </span>
                           <span className={styles.commitTime}>
-                            <Clock size={12} />
+                            <Icon icon={Clock} size={12} />
                             {formatRelativeTime(commit.author.timestamp)}
                           </span>
                         </div>
@@ -252,7 +257,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
                             className={styles.revertBtn}
                             onClick={() => handleCheckout(commit.oid, commit.message)}
                           >
-                            <RotateCcw size={14} />
+                            <Icon icon={RotateCcw} size={14} />
                             Revert to this commit
                           </button>
                         </div>

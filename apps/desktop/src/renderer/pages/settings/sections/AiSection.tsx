@@ -3,11 +3,12 @@
  */
 
 import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
-import { CheckCircle, XCircle, Upload, Download, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Upload, Download, RefreshCw } from 'lucide';
 import { aiCommandStore } from '@dripnex/plugin-api';
 import type { AiCommandRegistration } from '@dripnex/plugin-api';
 import { validateAiCommandPreset, serializePreset } from '@dripnex/ai-core';
 import type { AiCommandPreset } from '@dripnex/ai-core';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectAi, selectAiKeyHydrationError } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingNumber } from '../components/SettingNumber';
@@ -561,7 +562,7 @@ export function AiSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<RefreshCw size={14} />}
+            icon={<Icon icon={RefreshCw} size={14} />}
             disabled={typeof window.dripnex.ai.kbReindex !== 'function'}
             onClick={() => {
               void window.dripnex.ai.kbReindex?.().then(() => refreshKb());
@@ -604,7 +605,7 @@ export function AiSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Upload size={14} />}
+            icon={<Icon icon={Upload} size={14} />}
             onClick={() => void handleImportPreset()}
           >
             Import
@@ -614,7 +615,7 @@ export function AiSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             onClick={() => void handleExportPreset()}
             disabled={registeredAiCommands.length === 0}
           >
@@ -624,7 +625,7 @@ export function AiSection() {
         {presetMessage?.type === 'success' && (
           <div className={styles.successMessage}>
             <span className={styles.aiMessageIcon}>
-              <CheckCircle size={14} />
+              <Icon icon={CheckCircle} size={14} />
               {presetMessage.text}
             </span>
           </div>
@@ -632,7 +633,7 @@ export function AiSection() {
         {presetMessage?.type === 'error' && (
           <div className={styles.errorMessage}>
             <span className={styles.aiMessageIcon}>
-              <XCircle size={14} />
+              <Icon icon={XCircle} size={14} />
               {presetMessage.text}
             </span>
           </div>

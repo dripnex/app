@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { List } from 'lucide-react';
+import { List } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { sc } from './sc';
 
 export type QuickFilterType = 'all' | 'pinned' | 'trash';
@@ -51,7 +52,7 @@ export const SidebarQuickFilters = memo(function SidebarQuickFilters({
   return (
     <nav className={sc('sidebar-quick-filters')} aria-label="Quick filters">
       <QuickFilterItem
-        icon={<List size={15} />}
+        icon={<Icon icon={List} size={15} />}
         label="All Notes"
         count={allNotesCount}
         isSelected={allNotesSelected}

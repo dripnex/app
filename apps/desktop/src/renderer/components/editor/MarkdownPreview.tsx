@@ -11,7 +11,7 @@ import Markdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
-import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
+import { Clock, CalendarPlus, ListChecks } from 'lucide';
 import { scanMarkdown } from '@dripnex/markdown';
 import {
   remarkPluginStore,
@@ -20,6 +20,7 @@ import {
   codeBlockStore,
   emitPreviewEvent,
 } from '@dripnex/plugin-api';
+import { Icon } from '../../ui/icons/Icon';
 import { coreRemarkPlugins } from '../../lib/coreRemarkPlugins';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
@@ -369,7 +370,12 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
           <div className={sc('preview-metadata-header')}>
             {hasProgress && (
               <div className={sc('preview-meta-item')}>
-                <ListChecks size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+                <Icon
+                  icon={ListChecks}
+                  size={12}
+                  className={sc('preview-meta-icon')}
+                  aria-hidden="true"
+                />
                 <div className={sc('preview-meta-content')}>
                   <span className={sc('preview-meta-label')}>PROGRESS</span>
                   <div className={sc('preview-meta-progress')}>
@@ -389,7 +395,12 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
             {createdAt && (
               <div className={sc('preview-meta-item')}>
-                <Clock size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+                <Icon
+                  icon={Clock}
+                  size={12}
+                  className={sc('preview-meta-icon')}
+                  aria-hidden="true"
+                />
                 <div className={sc('preview-meta-content')}>
                   <span className={sc('preview-meta-label')}>CREATED AT</span>
                   <span className={sc('preview-meta-value')}>{formatDateTime(createdAt)}</span>
@@ -399,7 +410,12 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
 
             {updatedAt && (
               <div className={sc('preview-meta-item')}>
-                <CalendarPlus size={12} className={sc('preview-meta-icon')} aria-hidden="true" />
+                <Icon
+                  icon={CalendarPlus}
+                  size={12}
+                  className={sc('preview-meta-icon')}
+                  aria-hidden="true"
+                />
                 <div className={sc('preview-meta-content')}>
                   <span className={sc('preview-meta-label')}>UPDATED AT</span>
                   <span className={sc('preview-meta-value')}>{formatDateTime(updatedAt)}</span>

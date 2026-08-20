@@ -14,7 +14,8 @@ import {
   Minus,
   Undo2,
   Redo2,
-} from 'lucide-react';
+} from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { useToolbarOverflow, type ToolbarVisibility } from '../../hooks/useToolbarOverflow';
 import {
   dispatchCommand,
@@ -81,7 +82,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title={`Heading (H2)${fmtKey('editor:insert-heading')}`}
               aria-label="Insert heading"
             >
-              <Heading2 size={18} />
+              <Icon icon={Heading2} size={18} />
             </button>
             <button
               type="button"
@@ -90,7 +91,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title={`Bold${fmtKey('editor:toggle-bold')}`}
               aria-label="Toggle bold"
             >
-              <Bold size={18} />
+              <Icon icon={Bold} size={18} />
             </button>
             <button
               type="button"
@@ -99,7 +100,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title={`Italic${fmtKey('editor:toggle-italic')}`}
               aria-label="Toggle italic"
             >
-              <Italic size={18} />
+              <Icon icon={Italic} size={18} />
             </button>
             <button
               type="button"
@@ -108,7 +109,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Strikethrough"
               aria-label="Toggle strikethrough"
             >
-              <Strikethrough size={18} />
+              <Icon icon={Strikethrough} size={18} />
             </button>
             <button
               type="button"
@@ -117,7 +118,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title={`Inline Code${fmtKey('editor:toggle-inline-code')}`}
               aria-label="Toggle inline code"
             >
-              <Code size={18} />
+              <Icon icon={Code} size={18} />
             </button>
             <button
               type="button"
@@ -126,7 +127,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title={`Link${fmtKey('editor:insert-link')}`}
               aria-label="Insert link"
             >
-              <Link size={18} />
+              <Icon icon={Link} size={18} />
             </button>
           </div>
           {visibility.lists && <div className={sc('formatting-toolbar-divider')} />}
@@ -144,7 +145,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Bullet List"
               aria-label="Insert bullet list"
             >
-              <List size={18} />
+              <Icon icon={List} size={18} />
             </button>
             <button
               type="button"
@@ -153,7 +154,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Numbered List"
               aria-label="Insert numbered list"
             >
-              <ListOrdered size={18} />
+              <Icon icon={ListOrdered} size={18} />
             </button>
             <button
               type="button"
@@ -162,7 +163,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Checkbox"
               aria-label="Insert checkbox"
             >
-              <CheckSquare size={18} />
+              <Icon icon={CheckSquare} size={18} />
             </button>
           </div>
           {visibility.blocks && <div className={sc('formatting-toolbar-divider')} />}
@@ -180,7 +181,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Quote"
               aria-label="Insert quote"
             >
-              <Quote size={18} />
+              <Icon icon={Quote} size={18} />
             </button>
             <button
               type="button"
@@ -189,7 +190,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Code Block"
               aria-label="Insert code block"
             >
-              <FileCode size={18} />
+              <Icon icon={FileCode} size={18} />
             </button>
             <button
               type="button"
@@ -198,7 +199,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
               title="Horizontal Rule"
               aria-label="Insert horizontal rule"
             >
-              <Minus size={18} />
+              <Icon icon={Minus} size={18} />
             </button>
           </div>
           {visibility.history && <div className={sc('formatting-toolbar-divider')} />}
@@ -215,7 +216,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             title={`Undo${fmtKey('editor:undo')}`}
             aria-label="Undo"
           >
-            <Undo2 size={18} />
+            <Icon icon={Undo2} size={18} />
           </button>
           <button
             type="button"
@@ -224,7 +225,7 @@ export const FormattingToolbar = memo(function FormattingToolbar({
             title={`Redo${fmtKey('editor:redo')}`}
             aria-label="Redo"
           >
-            <Redo2 size={18} />
+            <Icon icon={Redo2} size={18} />
           </button>
         </div>
       )}

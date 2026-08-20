@@ -6,8 +6,9 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RefreshCw, FolderOpen, Download, Search, FileCode, Palette, Keyboard } from 'lucide-react';
+import { RefreshCw, FolderOpen, Download, Search, FileCode, Palette, Keyboard } from 'lucide';
 import { validateConfigValue } from '@dripnex/plugin-api';
+import { Icon } from '../../../../ui/icons/Icon';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
 import { builtInPlugins } from '../../../../plugins';
 import { Button, toast } from '../../../../ui/primitives';
@@ -291,7 +292,7 @@ export function PluginsSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<FileCode size={14} />}
+            icon={<Icon icon={FileCode} size={14} />}
             onClick={() => void handleOpenUserFile('init')}
           >
             Open init.js
@@ -304,7 +305,7 @@ export function PluginsSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Palette size={14} />}
+            icon={<Icon icon={Palette} size={14} />}
             onClick={() => void handleOpenUserFile('styles')}
           >
             Open styles.css
@@ -317,7 +318,7 @@ export function PluginsSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Keyboard size={14} />}
+            icon={<Icon icon={Keyboard} size={14} />}
             onClick={() => void handleOpenUserFile('keymap')}
           >
             Open keybindings.json
@@ -347,7 +348,7 @@ export function PluginsSection() {
         <>
           {/* Search */}
           <div className={styles.pluginSearchWrapper}>
-            <Search size={14} className={styles.pluginSearchIcon} />
+            <Icon icon={Search} size={14} className={styles.pluginSearchIcon} />
             <input
               type="text"
               className={styles.pluginSearchInput}
@@ -394,7 +395,7 @@ export function PluginsSection() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      icon={<FolderOpen size={14} />}
+                      icon={<Icon icon={FolderOpen} size={14} />}
                       onClick={handleOpenFolder}
                     >
                       Open Plugins Folder
@@ -433,7 +434,7 @@ export function PluginsSection() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Download size={14} />}
+                icon={<Icon icon={Download} size={14} />}
                 onClick={handleInstall}
               >
                 Install from File
@@ -441,7 +442,7 @@ export function PluginsSection() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<RefreshCw size={14} />}
+                icon={<Icon icon={RefreshCw} size={14} />}
                 loading={isReloading}
                 onClick={handleReload}
               >
@@ -451,7 +452,7 @@ export function PluginsSection() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  icon={<FolderOpen size={14} />}
+                  icon={<Icon icon={FolderOpen} size={14} />}
                   onClick={handleOpenFolder}
                 >
                   Open Plugins Folder

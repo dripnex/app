@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { Folder, Inbox, ChevronDown, Check } from 'lucide-react';
+import { Folder, Inbox, ChevronDown, Check } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { useNotebookList } from '../../hooks/useNotebooks';
 import { useDropdownPosition } from '../../hooks/useDropdownPosition';
 import { sc } from './sc';
@@ -64,10 +65,10 @@ export const NotebookSelector = memo(function NotebookSelector({
         aria-label={`Notebook: ${displayName}`}
       >
         <span className={sc('dropdown-icon')}>
-          {isInbox ? <Inbox size={14} /> : <Folder size={14} />}
+          {isInbox ? <Icon icon={Inbox} size={14} /> : <Icon icon={Folder} size={14} />}
         </span>
         <span>{displayName}</span>
-        <ChevronDown size={12} className={sc('chevron-icon')} />
+        <Icon icon={ChevronDown} size={12} className={sc('chevron-icon')} />
       </button>
 
       {isOpen && (
@@ -96,12 +97,16 @@ export const NotebookSelector = memo(function NotebookSelector({
               onClick={() => handleSelect(notebook.id)}
             >
               <span className={sc('item-icon')}>
-                {notebook.id === 'inbox' ? <Inbox size={14} /> : <Folder size={14} />}
+                {notebook.id === 'inbox' ? (
+                  <Icon icon={Inbox} size={14} />
+                ) : (
+                  <Icon icon={Folder} size={14} />
+                )}
               </span>
               <span className={sc('item-label')}>{notebook.name}</span>
               {notebook.id === notebookId && (
                 <span className={sc('item-check')}>
-                  <Check size={14} />
+                  <Icon icon={Check} size={14} />
                 </span>
               )}
             </button>

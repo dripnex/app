@@ -25,6 +25,9 @@ export type { FieldProps } from './Field';
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
 
+export { Icon } from '../icons/Icon';
+export type { IconProps, IconInput, MorphHandle } from '../icons/Icon';
+
 export { Toaster } from './Toast';
 export { useToastStore, toast } from './toastStore';
 export type { ToastItem, ToastType } from './toastStore';

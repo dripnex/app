@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Download, RotateCcw } from 'lucide-react';
+import { Download, RotateCcw } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
@@ -132,7 +133,7 @@ export function UpdatesSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             onClick={handleCheckForUpdates}
           >
             Check Now
@@ -149,7 +150,7 @@ export function UpdatesSection() {
           <Button
             variant="primary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             onClick={handleStartDownload}
           >
             Download v{state.version}
@@ -166,7 +167,7 @@ export function UpdatesSection() {
           <Button
             variant="primary"
             size="sm"
-            icon={<RotateCcw size={14} />}
+            icon={<Icon icon={RotateCcw} size={14} />}
             onClick={handleInstall}
           >
             Restart to Update
@@ -183,7 +184,7 @@ export function UpdatesSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<RotateCcw size={14} />}
+            icon={<Icon icon={RotateCcw} size={14} />}
             onClick={handleRetry}
           >
             Try Again

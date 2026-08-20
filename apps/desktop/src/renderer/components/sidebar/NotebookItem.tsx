@@ -10,9 +10,10 @@ import {
   Trash2,
   Smile,
   Copy,
-} from 'lucide-react';
+} from 'lucide';
 import { useStore } from 'zustand';
 import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { Icon } from '../../ui/icons/Icon';
 import { notebookStyleSelector } from '../../utils/notebookStyle';
 import { dispatchCommand } from '../../hooks/useCommandRegistry';
 import type { NotebookTreeNode } from '../../../preload/index';
@@ -94,7 +95,7 @@ export const NotebookItem = memo(function NotebookItem({
   const hasChildren = node.children.length > 0;
   const isInbox = node.notebook.id === 'inbox';
   const canHaveChildren = depth < 2; // Max 3 levels (0, 1, 2)
-  const Icon = notebookLucideIcon(
+  const notebookIcon = notebookLucideIcon(
     node.notebook.icon,
     isInbox ? 'inbox' : node.notebook.id === 'templates' ? 'file-stack' : 'folder'
   );
@@ -390,7 +391,7 @@ export const NotebookItem = memo(function NotebookItem({
         >
           {!isInbox && !isEditing ? (
             <span className={sc('notebook-item-drag-handle')} aria-hidden="true">
-              <GripVertical size={12} />
+              <Icon icon={GripVertical} size={12} />
             </span>
           ) : null}
           {hasChildren ? (
@@ -400,17 +401,13 @@ export const NotebookItem = memo(function NotebookItem({
               onClick={handleToggle}
               aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
-              {isExpanded ? (
-                <ChevronDown size={12} aria-hidden="true" />
-              ) : (
-                <ChevronRight size={12} aria-hidden="true" />
-              )}
+              <Icon icon={isExpanded ? ChevronDown : ChevronRight} size={12} />
             </button>
           ) : (
             <span className={sc('notebook-item-toggle-slot')} aria-hidden="true" />
           )}
           <span className={sc('notebook-item-icon')} aria-hidden="true">
-            <Icon size={15} />
+            <Icon icon={notebookIcon} size={15} />
           </span>
         </span>
 
@@ -420,7 +417,7 @@ export const NotebookItem = memo(function NotebookItem({
             aria-label="Git enabled"
             title="Git enabled"
           >
-            <GitBranch size={10} />
+            <Icon icon={GitBranch} size={10} />
           </span>
         )}
 
@@ -454,7 +451,8 @@ export const NotebookItem = memo(function NotebookItem({
             title="Switch to workspace view"
           >
             Detail
-            <ChevronRight
+            <Icon
+              icon={ChevronRight}
               size={10}
               className={sc('notebook-item-detail-chevron')}
               aria-hidden="true"
@@ -505,7 +503,7 @@ export const NotebookItem = memo(function NotebookItem({
                     onCreateChild(node.notebook.id);
                   }}
                 >
-                  <Plus size={14} aria-hidden="true" />
+                  <Icon icon={Plus} size={14} aria-hidden="true" />
                   New sub-notebook
                 </button>
               ) : null}
@@ -523,7 +521,7 @@ export const NotebookItem = memo(function NotebookItem({
                   setMenu(null);
                 }}
               >
-                <Smile size={14} aria-hidden="true" />
+                <Icon icon={Smile} size={14} aria-hidden="true" />
                 Change icon
               </button>
               <button
@@ -534,7 +532,7 @@ export const NotebookItem = memo(function NotebookItem({
                   setMenu(null);
                 }}
               >
-                <Copy size={14} aria-hidden="true" />
+                <Icon icon={Copy} size={14} aria-hidden="true" />
                 Copy style selector
               </button>
               <button
@@ -543,7 +541,7 @@ export const NotebookItem = memo(function NotebookItem({
                 onClick={() => void handleToggleGit()}
                 disabled={isGitLoading}
               >
-                <GitBranch size={14} aria-hidden="true" />
+                <Icon icon={GitBranch} size={14} aria-hidden="true" />
                 {isGitEnabled ? 'Disable Git' : 'Enable Git'}
               </button>
               {isGitEnabled ? (
@@ -552,7 +550,7 @@ export const NotebookItem = memo(function NotebookItem({
                   className={sc('notebook-menu-item')}
                   onClick={handleShowHistory}
                 >
-                  <History size={14} aria-hidden="true" />
+                  <Icon icon={History} size={14} aria-hidden="true" />
                   Commit history
                 </button>
               ) : null}
@@ -566,7 +564,7 @@ export const NotebookItem = memo(function NotebookItem({
                   }
                 }}
               >
-                <Trash2 size={14} aria-hidden="true" />
+                <Icon icon={Trash2} size={14} aria-hidden="true" />
                 Delete
               </button>
               {pluginMenuItems.length > 0

@@ -13,8 +13,9 @@ import {
   Sparkles,
   CreditCard,
   ExternalLink,
-} from 'lucide-react';
+} from 'lucide';
 import { getProductConfig } from '@dripnex/product-config';
+import { Icon } from '../../../ui/icons/Icon';
 import {
   useAuthStore,
   selectUser,
@@ -238,7 +239,7 @@ export function AccountSection() {
           <>
             <SettingRow label="Signed in as" description={user.email}>
               <div className={styles.statusBadge} data-tone="ok">
-                <UserIcon size={14} />
+                <Icon icon={UserIcon} size={14} />
                 <span>Active</span>
               </div>
             </SettingRow>
@@ -247,7 +248,7 @@ export function AccountSection() {
               <Button
                 variant="danger"
                 size="sm"
-                icon={<LogOut size={14} />}
+                icon={<Icon icon={LogOut} size={14} />}
                 onClick={handleSignOut}
                 disabled={isLoading}
               >
@@ -260,7 +261,12 @@ export function AccountSection() {
             label="Sign in"
             description="Sign in to enable sync and access your notes from any device"
           >
-            <Button variant="primary" size="sm" icon={<LogIn size={14} />} onClick={handleSignIn}>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Icon icon={LogIn} size={14} />}
+              onClick={handleSignIn}
+            >
               Sign In
             </Button>
           </SettingRow>
@@ -274,7 +280,7 @@ export function AccountSection() {
               <Button
                 variant="primary"
                 size="sm"
-                icon={<RefreshCw size={14} />}
+                icon={<Icon icon={RefreshCw} size={14} />}
                 loading={isSyncing || syncStatus === 'syncing'}
                 onClick={handleSync}
               >
@@ -341,7 +347,7 @@ export function AccountSection() {
           <SettingGroup title="Subscription">
             <SettingRow label="Plan" description={`Current status: ${getLicenseStatusText()}`}>
               <div className={styles.statusBadge} data-tone={isProActive ? 'ok' : undefined}>
-                <CreditCard size={14} />
+                <Icon icon={CreditCard} size={14} />
                 <span>{getLicenseStatusText()}</span>
               </div>
             </SettingRow>
@@ -354,7 +360,7 @@ export function AccountSection() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  icon={<ExternalLink size={14} />}
+                  icon={<Icon icon={ExternalLink} size={14} />}
                   loading={isManaging}
                   onClick={handleManageSubscription}
                 >
@@ -372,7 +378,7 @@ export function AccountSection() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    icon={<Sparkles size={14} />}
+                    icon={<Icon icon={Sparkles} size={14} />}
                     onClick={() => handleUpgrade('monthly')}
                     disabled={isUpgrading}
                   >
@@ -381,7 +387,7 @@ export function AccountSection() {
                   <Button
                     variant="primary"
                     size="sm"
-                    icon={<Sparkles size={14} />}
+                    icon={<Icon icon={Sparkles} size={14} />}
                     onClick={() => handleUpgrade('annual')}
                     disabled={isUpgrading}
                   >

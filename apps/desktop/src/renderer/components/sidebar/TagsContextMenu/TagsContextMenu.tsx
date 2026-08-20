@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Palette, Trash2, Pencil } from 'lucide-react';
+import { Palette, Trash2, Pencil } from 'lucide';
 import { useStore } from 'zustand';
 import { pluginContextMenuStore } from '@dripnex/plugin-api';
+import { Icon } from '../../../ui/icons/Icon';
 import { ColorPicker, TAG_COLORS } from '../../ColorPicker';
 import { dispatchCommand } from '../../../hooks/useCommandRegistry';
 import styles from './TagsContextMenu.module.css';
@@ -140,7 +141,7 @@ export function TagsContextMenu({
           {/* Rename option */}
           {onRename && (
             <button type="button" className={styles.item} onClick={() => setIsRenaming(true)}>
-              <Pencil size={14} />
+              <Icon icon={Pencil} size={14} />
               <span>Rename</span>
             </button>
           )}
@@ -151,7 +152,7 @@ export function TagsContextMenu({
             className={styles.item}
             onMouseEnter={() => setShowColorSubmenu(true)}
           >
-            <Palette size={14} />
+            <Icon icon={Palette} size={14} />
             <span>Set color</span>
             <span className={styles.arrow}>›</span>
           </button>
@@ -171,7 +172,7 @@ export function TagsContextMenu({
 
           {/* Delete option */}
           <button type="button" className={styles.itemDanger} onClick={handleDelete}>
-            <Trash2 size={14} />
+            <Icon icon={Trash2} size={14} />
             <span>Delete tag</span>
           </button>
           {pluginItems.length > 0 ? (

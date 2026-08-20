@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useEffect, useRef, FormEvent } from 'react';
-import { Mail, CheckCircle, AlertCircle, X, RefreshCw } from 'lucide-react';
+import { Mail, CheckCircle, AlertCircle, X, RefreshCw } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { useAuthStore, selectIsAuthenticated, selectError } from '../../stores/authStore';
 import styles from './MagicLinkFlow.module.css';
 
@@ -122,7 +123,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
     <div className={styles.overlay} onClick={handleCancel}>
       <div className={styles.dialog} onClick={e => e.stopPropagation()}>
         <button type="button" className={styles.closeButton} onClick={handleCancel}>
-          <X size={20} />
+          <Icon icon={X} size={20} />
         </button>
 
         <div className={styles.content}>
@@ -130,7 +131,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
           {step === 'email' && (
             <>
               <div className={styles.header}>
-                <Mail size={32} className={styles.icon} />
+                <Icon icon={Mail} size={32} className={styles.icon} />
                 <h2 className={styles.title}>Sign in to Dripnex</h2>
                 <p className={styles.description}>
                   Enter your email to receive a magic link for secure, passwordless sign-in.
@@ -163,7 +164,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
           {step === 'sent' && (
             <>
               <div className={styles.header}>
-                <CheckCircle size={32} className={styles.successIcon} />
+                <Icon icon={CheckCircle} size={32} className={styles.successIcon} />
                 <h2 className={styles.title}>Check your email</h2>
                 <p className={styles.description}>
                   We sent a magic link to <strong>{email}</strong>. Click the link in the email to
@@ -181,7 +182,11 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
                   disabled={resendCooldown > 0 || isResending}
                 >
                   <span className={styles.resendContent}>
-                    <RefreshCw size={16} className={isResending ? styles.spinnerInline : ''} />
+                    <Icon
+                      icon={RefreshCw}
+                      size={16}
+                      className={isResending ? styles.spinnerInline : ''}
+                    />
                     {isResending
                       ? 'Resending...'
                       : resendCooldown > 0
@@ -211,7 +216,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
           {step === 'success' && (
             <>
               <div className={styles.header}>
-                <CheckCircle size={32} className={styles.successIcon} />
+                <Icon icon={CheckCircle} size={32} className={styles.successIcon} />
                 <h2 className={styles.title}>Welcome back!</h2>
                 <p className={styles.description}>You've successfully signed in.</p>
               </div>
@@ -222,7 +227,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
           {step === 'error' && (
             <>
               <div className={styles.header}>
-                <AlertCircle size={32} className={styles.errorIcon} />
+                <Icon icon={AlertCircle} size={32} className={styles.errorIcon} />
                 <h2 className={styles.title}>Sign in failed</h2>
                 <p className={styles.description}>{error || authError || 'Something went wrong'}</p>
               </div>

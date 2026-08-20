@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { Icon } from '../../ui/icons/Icon';
 import { NOTEBOOK_ICON_IDS, notebookLucideIcon } from './notebookIcons';
 import { sc } from './sc';
 
@@ -57,7 +58,6 @@ export function NotebookIconPicker({
         <p className={sc('notebook-icon-title')}>Icon</p>
         <div className={sc('notebook-icon-grid')}>
           {NOTEBOOK_ICON_IDS.map(id => {
-            const Icon = notebookLucideIcon(id);
             return (
               <button
                 key={id}
@@ -67,7 +67,7 @@ export function NotebookIconPicker({
                 aria-label={id}
                 title={id}
               >
-                <Icon size={15} strokeWidth={2} />
+                <Icon icon={notebookLucideIcon(id)} size={15} strokeWidth={2} />
               </button>
             );
           })}

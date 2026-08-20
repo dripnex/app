@@ -1,4 +1,3 @@
-import type { LucideIcon } from 'lucide-react';
 import {
   Archive,
   Book,
@@ -51,7 +50,8 @@ import {
   Wifi,
   Wrench,
   Zap,
-} from 'lucide-react';
+} from 'lucide';
+import type { IconInput } from '../../ui/icons/Icon';
 
 export const NOTEBOOK_ICON_IDS = [
   'folder',
@@ -109,7 +109,7 @@ export const NOTEBOOK_ICON_IDS = [
 
 export type NotebookIconId = (typeof NOTEBOOK_ICON_IDS)[number];
 
-const ICONS: Record<NotebookIconId, LucideIcon> = {
+const ICONS: Record<NotebookIconId, IconInput> = {
   folder: Folder,
   inbox: Inbox,
   'file-text': FileText,
@@ -170,7 +170,7 @@ export function isNotebookIconId(value: string | null | undefined): value is Not
 export function notebookLucideIcon(
   icon: string | null | undefined,
   fallback: 'inbox' | 'folder' | 'file-stack' = 'folder'
-): LucideIcon {
+): IconInput {
   if (isNotebookIconId(icon)) return ICONS[icon];
   return ICONS[fallback];
 }
