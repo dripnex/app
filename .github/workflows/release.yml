@@ -50,12 +50,12 @@ jobs:
         run: |
           set -o pipefail
           npx semantic-release --dry-run 2>&1 | tee /tmp/sr-dry.log
-          if grep -qE "There are no relevant changes" /tmp/sr-dry.log; then
+          if grep -qE '\[semantic-release\].*There are no relevant changes, so no new version is released' /tmp/sr-dry.log; then
             echo "No release to cut from this push."
             echo "released=false" >> "$GITHUB_ENV"
             exit 0
           fi
-          if ! grep -qE "next release version is" /tmp/sr-dry.log; then
+          if ! grep -qE '\[semantic-release\].*The next release version is [0-9]+\.[0-9]+\.[0-9]+' /tmp/sr-dry.log; then
             echo "::error::semantic-release dry-run did not announce a next release version."
             exit 1
           fi
