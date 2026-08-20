@@ -238,6 +238,23 @@ export interface PluginContext {
       }) => boolean | void
     ): () => void;
   };
+  /** List, read, and activate registered palettes (official + community). */
+  themes: {
+    list(): Array<{
+      id: string;
+      name: string;
+      colorScheme: 'dark' | 'light';
+      description?: string;
+    }>;
+    getActive(): {
+      id: string;
+      name: string;
+      colorScheme: 'dark' | 'light';
+      description?: string;
+    } | null;
+    setActive(id: string | null): boolean;
+    onDidChange(callback: (id: string | null) => void): () => void;
+  };
   /** Register a complete theme with validated tokens */
   registerTheme(theme: {
     id: string;

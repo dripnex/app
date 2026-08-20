@@ -26,6 +26,7 @@ import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
 import { pluginStyleStore } from '../theme/pluginStyleStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
+import { createThemesApi } from '../theme/createThemesApi';
 import { aiCommandStore } from '../ai/aiCommandStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
 import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
@@ -492,6 +493,7 @@ export class PluginRegistry {
         cssVariableStore.getState().register({ id: regId, pluginId: id, variables });
         return () => cssVariableStore.getState().unregister(regId);
       },
+      themes: createThemesApi(),
       registerTheme: (theme): (() => void) => {
         const success = themeRegistryStore.getState().register({
           ...theme,
