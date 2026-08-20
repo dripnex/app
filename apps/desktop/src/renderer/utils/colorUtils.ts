@@ -174,3 +174,16 @@ export function scaleCssAlpha(color: string, keep: number): string {
   if (hex) return `rgba(${hex.r}, ${hex.g}, ${hex.b}, ${k.toFixed(3)})`;
   return color;
 }
+
+/** Replace a CSS color's alpha. Used when Performance is Low (no blur). */
+export function withCssAlpha(color: string, alpha: number): string {
+  const a = Number(Math.min(1, Math.max(0, alpha)).toFixed(3));
+  const trimmed = color.trim();
+  const rgba = /^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*[\d.]+\s*\)$/i.exec(trimmed);
+  if (rgba) return `rgba(${rgba[1]}, ${rgba[2]}, ${rgba[3]}, ${a})`;
+  const rgb = /^rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i.exec(trimmed);
+  if (rgb) return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${a})`;
+  const hex = hexToRgb(trimmed);
+  if (hex) return `rgba(${hex.r}, ${hex.g}, ${hex.b}, ${a})`;
+  return color;
+}

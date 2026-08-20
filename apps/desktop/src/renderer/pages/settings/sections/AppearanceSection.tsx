@@ -122,7 +122,7 @@ export function AppearanceSection() {
         />
         <SettingSelect
           label="Performance Mode"
-          description="Adjust visual effects based on your hardware"
+          description="Low turns off window frost and menu blur"
           htmlFor="performanceMode"
           value={perfMode}
           onChange={handlePerfModeChange}
@@ -131,9 +131,11 @@ export function AppearanceSection() {
         <SettingRow
           label="Transparency"
           description={
-            frosted
-              ? 'How much desktop shows through Glass, Midnight, Ember, and Ion'
-              : 'Pick a frosted palette under Themes to use this'
+            !frosted
+              ? 'Pick a frosted palette under Themes to use this'
+              : perfMode === 'low'
+                ? 'Turn Performance off Low to see the desktop'
+                : 'How much desktop shows through Glass, Midnight, Ember, and Ion'
           }
           htmlFor="frostTransparency"
         >
@@ -144,7 +146,7 @@ export function AppearanceSection() {
             min={0}
             max={100}
             step={5}
-            disabled={!frosted}
+            disabled={!frosted || perfMode === 'low'}
           />
         </SettingRow>
       </SettingGroup>

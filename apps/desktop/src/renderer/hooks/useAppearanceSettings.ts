@@ -1,7 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
-import { computeHoverColor, hexToRgb, scaleCssAlpha } from '../utils/colorUtils';
+import { computeHoverColor, hexToRgb, scaleCssAlpha, withCssAlpha } from '../utils/colorUtils';
 
 /**
  * Persisted IPC isDark value from the main process nativeTheme.
@@ -50,11 +50,19 @@ function clampPercent(value: number): number {
 }
 
 /** Push frosted surfaces toward the desktop. 0 = palette default, 100 = very clear. */
-function applyFrostTransparency(percent: number): void {
+function applyFrostTransparency(percent: number, noBlur: boolean): void {
   const root = document.documentElement;
   const theme = themeRegistryStore.getState().getActiveTheme();
   if (!theme?.frosted) {
     root.style.removeProperty('--frost-transparency');
+    return;
+  }
+  if (noBlur) {
+    root.style.setProperty('--frost-transparency', '0');
+    for (const token of FROST_SURFACE_TOKENS) {
+      const source = theme.tokens[token];
+      if (source) root.style.setProperty(token, withCssAlpha(source, 0.96));
+    }
     return;
   }
   const amount = clampPercent(percent);
@@ -109,6 +117,7 @@ export function useAppearanceSettings(): void {
   const zoomLevel = appearance?.zoomLevel || '1.0';
   const paletteActive = Boolean(appearance?.activeThemeId);
   const frostTransparency = appearance?.frostTransparency ?? 40;
+  const noBlur = appearance?.performanceMode === 'low';
   const registryThemeId = useSyncExternalStore(
     themeRegistryStore.subscribe,
     () => themeRegistryStore.getState().activeThemeId
@@ -128,11 +137,11 @@ export function useAppearanceSettings(): void {
   useEffect(() => {
     if (paletteActive) {
       applyAccent(accentColor);
-      applyFrostTransparency(frostTransparency);
+      applyFrostTransparency(frostTransparency, noBlur);
       return;
     }
     applyAppearance(theme, accentColor, zoomLevel);
-  }, [theme, accentColor, zoomLevel, paletteActive, frostTransparency, registryThemeId]);
+  }, [theme, accentColor, zoomLevel, paletteActive, frostTransparency, noBlur, registryThemeId]);
 
   // Sync nativeTheme source in main process
   useEffect(() => {

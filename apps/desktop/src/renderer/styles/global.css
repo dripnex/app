@@ -63,6 +63,17 @@ html[data-frosted='true'] .app {
   --glass-bg: var(--glass-bg-fallback);
 }
 
+:root[data-perf='low'][data-frosted='true'],
+:root[data-perf='low'][data-frosted='true'] body,
+:root[data-perf='low'][data-frosted='true'] #root {
+  background: var(--bg-base);
+  background-color: var(--bg-base);
+}
+
+:root[data-perf='low'][data-frosted='true'] .app {
+  background: var(--bg-base);
+}
+
 /* App layout */
 .app {
   display: flex;

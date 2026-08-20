@@ -25,11 +25,10 @@ export function usePerformanceMode(): void {
 
   useEffect(() => {
     document.documentElement.dataset.perf = mode;
-    // Material is granted at window construction. Never turn it off from
-    // Auto/Low — that painted the view opaque. CSS tokens hide it on solid
-    // palettes; frosted palettes are translucent.
-    void window.dripnex?.windows?.setFrosted?.(true);
-  }, [mode]);
+    // Explicit Low turns off native vibrancy. Auto never does — Reduce Motion
+    // used to map Auto → Low and paint the window solid by accident.
+    void window.dripnex?.windows?.setFrosted?.(saved !== 'low');
+  }, [mode, saved]);
 
   useEffect(() => {
     const auto = detectPerfMode();
