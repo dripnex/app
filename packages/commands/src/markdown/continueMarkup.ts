@@ -137,7 +137,9 @@ function renumberFollowing(
 /** Continue the list/quote on Enter. Returns false so a plain newline can run. */
 export function continueMarkup(view: EditorView): boolean {
   const { state } = view;
-  if (state.selection.ranges.some(range => !range.empty)) return false;
+  if (state.selection.ranges.length !== 1 || state.selection.ranges.some(range => !range.empty)) {
+    return false;
+  }
   const pos = state.selection.main.head;
   const doc = state.doc.toString();
   if (lineIsInFence(doc, pos)) return false;

@@ -45,7 +45,7 @@ function indexOfFrom(haystack: string, needle: string, from: number, reverse: bo
     if (hit !== -1) return hit;
     return haystack.indexOf(needle);
   }
-  const before = haystack.lastIndexOf(needle, Math.max(0, from - 1));
+  const before = from > 0 ? haystack.lastIndexOf(needle, from - 1) : -1;
   if (before !== -1) return before;
   return haystack.lastIndexOf(needle);
 }
@@ -98,7 +98,10 @@ export function splitSelectionByLine(view: EditorView): boolean {
   const ranges = [];
   for (const range of state.selection.ranges) {
     const fromLine = state.doc.lineAt(range.from);
-    const toLine = state.doc.lineAt(range.to);
+    let toLine = state.doc.lineAt(range.to);
+    if (!range.empty && toLine.from === range.to) {
+      toLine = state.doc.line(toLine.number - 1);
+    }
     for (let n = fromLine.number; n <= toLine.number; n++) {
       const line = state.doc.line(n);
       const from = n === fromLine.number ? range.from : line.from;

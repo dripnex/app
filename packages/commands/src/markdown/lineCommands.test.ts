@@ -10,6 +10,7 @@ import {
   upcaseAtCursor,
   downcaseAtCursor,
   findUnder,
+  findUnderPrevious,
   skipAndSelectNextOccurrence,
   splitSelectionByLine,
   wordRangeAt,
@@ -121,6 +122,13 @@ describe('findUnder', () => {
     expect(findUnder(t.view)).toBe(true);
     expect(t.selection().from).toBe(0);
   });
+
+  it('wraps backward from the first occurrence to the last', () => {
+    const t = fakeView('foo bar foo', { from: 0, to: 3 });
+    expect(findUnderPrevious(t.view)).toBe(true);
+    expect(t.selection().from).toBe(8);
+    expect(t.selection().to).toBe(11);
+  });
 });
 
 describe('skipAndSelectNextOccurrence', () => {
@@ -137,5 +145,11 @@ describe('splitSelectionByLine', () => {
     const t = fakeView('a\nb\nc', { from: 0, to: 5 });
     expect(splitSelectionByLine(t.view)).toBe(true);
     expect(t.view.state.selection.ranges).toHaveLength(3);
+  });
+
+  it('does not add a caret on a line that is only the selection end', () => {
+    const t = fakeView('a\nb\nc', { from: 0, to: 4 });
+    expect(splitSelectionByLine(t.view)).toBe(true);
+    expect(t.view.state.selection.ranges).toHaveLength(2);
   });
 });
