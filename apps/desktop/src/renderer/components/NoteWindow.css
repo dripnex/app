@@ -47,7 +47,7 @@
 
 .note-window .note-editor-chrome {
   -webkit-app-region: drag;
-  padding-left: 72px;
+  padding-left: var(--chrome-traffic-inset);
 }
 
 .note-window .note-editor-chrome-left,
