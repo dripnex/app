@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { LayoutZone } from '@dripnex/plugin-api';
-import { ChevronRight, FileStack, Trash2 } from 'lucide';
+import { ChevronRight, FileStack, Trash, Trash2 } from 'lucide';
 import { useQueryClient } from '@tanstack/react-query';
 import { Icon } from '../../ui/icons/Icon';
 import { DEFAULT_TEMPLATES } from '../../data/defaultTemplates';
@@ -135,6 +135,18 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     (workspaceListAll || (!inWorkspace && !isNotebookContext));
   const showNotebooks = true;
   const showTrash = !inWorkspace;
+  const [binOpen, setBinOpen] = useState(false);
+  const prevDeleted = useRef(globalCounts.deleted);
+  useEffect(() => {
+    const next = globalCounts.deleted;
+    if (next > prevDeleted.current) {
+      setBinOpen(true);
+      const id = window.setTimeout(() => setBinOpen(false), 520);
+      prevDeleted.current = next;
+      return () => window.clearTimeout(id);
+    }
+    prevDeleted.current = next;
+  }, [globalCounts.deleted]);
 
   const handleSelectNotebook = useCallback(
     (id: string) => {
@@ -326,7 +338,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
             aria-pressed={globalFilter === 'trash'}
           >
             <span className={sc('sidebar-row-icon')} aria-hidden="true">
-              <Icon icon={Trash2} size={15} />
+              <Icon icon={binOpen ? Trash : Trash2} hoverIcon={Trash} size={15} />
             </span>
             <span className={sc('sidebar-row-label')}>Trash</span>
             <span className={sc('sidebar-row-count')}>{globalCounts.deleted}</span>
