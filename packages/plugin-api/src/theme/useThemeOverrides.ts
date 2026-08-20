@@ -3,7 +3,7 @@
  * useThemeOverrides Hook
  *
  * Applies active theme tokens from ThemeRegistry to document.documentElement.
- * Call once in app root, AFTER useAppearanceSettings.
+ * Call once in app root. Appearance may overlay --accent after this.
  */
 
 import { useEffect, useSyncExternalStore } from 'react';
@@ -39,6 +39,11 @@ export function useThemeOverrides(): void {
       for (const [prop, value] of Object.entries(theme.tokens)) {
         root.style.setProperty(prop, value);
         applied.add(prop);
+      }
+      const accent = theme.tokens['--accent'];
+      if (accent && !theme.tokens['--accent-primary']) {
+        root.style.setProperty('--accent-primary', accent);
+        applied.add('--accent-primary');
       }
     } else {
       root.removeAttribute('data-theme');

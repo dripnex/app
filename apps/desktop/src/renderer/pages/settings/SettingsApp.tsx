@@ -38,10 +38,10 @@ export type SettingsSection =
   | 'about';
 
 export function SettingsApp() {
-  useAppearanceSettings();
   usePerformanceMode();
   useOfficialThemes();
   useThemeOverrides();
+  useAppearanceSettings();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   const renderSection = () => {

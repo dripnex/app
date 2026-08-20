@@ -42,6 +42,11 @@ export function useOfficialThemes(): void {
       const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
       if (exists) {
         themeRegistryStore.getState().setActive(savedThemeId);
+        const palette = themeRegistryStore.getState().getActiveTheme();
+        const paletteAccent = palette?.tokens['--accent'];
+        if (paletteAccent && appearance?.accentColor === '#5eead4') {
+          useSettingsStore.getState().updateAppearance({ accentColor: paletteAccent });
+        }
       }
     }
   }, [appearance?.activeThemeId, registeredThemeCount]);

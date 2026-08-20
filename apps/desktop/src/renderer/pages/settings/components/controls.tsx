@@ -161,7 +161,7 @@ export function ColorPicker({ id, value, onChange, colors, disabled }: ColorPick
         <button
           key={color.value}
           type="button"
-          className={`${styles.colorSwatch} ${value === color.value ? styles.colorSwatchActive : ''}`}
+          className={`${styles.colorSwatch} ${value.toLowerCase() === color.value.toLowerCase() ? styles.colorSwatchActive : ''}`}
           style={{ backgroundColor: color.value }}
           onClick={() => !disabled && onChange(color.value)}
           disabled={disabled}

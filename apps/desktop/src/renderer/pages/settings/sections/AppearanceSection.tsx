@@ -51,6 +51,11 @@ export function AppearanceSection() {
   const theme = appearance.theme || 'dark';
   const zoomLevel = appearance.zoomLevel || '1.0';
   const accentColor = appearance.accentColor || '#5eead4';
+  const accentOptions: ColorOption[] = accentColorOptions.some(
+    option => option.value.toLowerCase() === accentColor.toLowerCase()
+  )
+    ? accentColorOptions
+    : [{ value: accentColor, label: 'Theme' }, ...accentColorOptions];
 
   const handleThemeChange = (value: string) => {
     themeRegistryStore.getState().setActive(null);
@@ -93,7 +98,7 @@ export function AppearanceSection() {
             id="accentColor"
             value={accentColor}
             onChange={value => updateAppearance({ accentColor: value })}
-            colors={accentColorOptions}
+            colors={accentOptions}
           />
         </SettingRow>
       </SettingGroup>

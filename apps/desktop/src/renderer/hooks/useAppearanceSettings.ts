@@ -9,9 +9,24 @@ import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
  */
 let nativeIsDark: boolean | undefined;
 
-/**
- * Apply appearance settings to the DOM.
- */
+/** Keep --accent-primary in lockstep. A lot of chrome reads that, not --accent. */
+function applyAccent(accentColor: string): void {
+  const root = document.documentElement.style;
+  root.setProperty('--accent', accentColor);
+  root.setProperty('--accent-primary', accentColor);
+
+  const hoverColor = computeHoverColor(accentColor);
+  root.setProperty('--accent-hover', hoverColor);
+
+  const rgb = hexToRgb(accentColor);
+  if (rgb) {
+    root.setProperty(
+      '--accent-muted',
+      `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, 0.18)`
+    );
+  }
+}
+
 function applyAppearance(
   theme: string,
   accentColor: string,
@@ -33,19 +48,7 @@ function applyAppearance(
   document.documentElement.setAttribute('data-color-scheme', resolved);
   document.documentElement.style.colorScheme = resolved;
 
-  document.documentElement.style.setProperty('--accent', accentColor);
-  document.documentElement.style.setProperty('--accent-primary', accentColor);
-
-  const hoverColor = computeHoverColor(accentColor);
-  document.documentElement.style.setProperty('--accent-hover', hoverColor);
-
-  const rgb = hexToRgb(accentColor);
-  if (rgb) {
-    document.documentElement.style.setProperty(
-      '--accent-muted',
-      `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, 0.15)`
-    );
-  }
+  applyAccent(accentColor);
 
   document.body.style.zoom = zoomLevel;
 }
@@ -75,9 +78,14 @@ export function useAppearanceSettings(): void {
     document.body.style.zoom = zoomLevel;
   }, [zoomLevel]);
 
-  // A named palette owns color-scheme and accent. Base only paints Default.
+  // Named palettes own color-scheme via useThemeOverrides. Accent always
+  // follows the store (theme pick writes the palette accent; the picker
+  // can override). Must run after theme tokens so --accent-primary is live.
   useEffect(() => {
-    if (paletteActive) return;
+    if (paletteActive) {
+      applyAccent(accentColor);
+      return;
+    }
     applyAppearance(theme, accentColor, zoomLevel);
   }, [theme, accentColor, zoomLevel, paletteActive]);
 
