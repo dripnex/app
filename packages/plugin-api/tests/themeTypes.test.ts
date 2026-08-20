@@ -14,6 +14,8 @@ describe('isValidThemeToken', () => {
     expect(isValidThemeToken('--preview-heading-color')).toBe(true);
     expect(isValidThemeToken('--ui-sidebar-bg')).toBe(true);
     expect(isValidThemeToken('--cm-heading')).toBe(true);
+    expect(isValidThemeToken('--md-list-mark-2-color')).toBe(true);
+    expect(isValidThemeToken('--mde-preview-list-marker-3-color')).toBe(true);
   });
 
   it('rejects unknown tokens', () => {

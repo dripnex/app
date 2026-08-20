@@ -70,6 +70,15 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
     '.cm-line': {
       padding: '0 4px',
     },
+    '.md-list-mark': {
+      color: 'var(--md-list-mark-color, var(--cm-list))',
+    },
+    '.md-list-mark-2': {
+      color: 'var(--md-list-mark-2-color)',
+    },
+    '.md-list-mark-3': {
+      color: 'var(--md-list-mark-3-color)',
+    },
     '.cm-nes-ghost': {
       opacity: '0.45',
       pointerEvents: 'none',
@@ -181,8 +190,7 @@ export const markdownHighlighting = HighlightStyle.define([
   { tag: tags.link, color: 'var(--cm-link)', textDecoration: 'underline' },
   { tag: tags.url, color: 'var(--cm-link)' },
 
-  // Lists
-  { tag: tags.list, color: 'var(--cm-list)' },
+  // Lists — marker color comes from listMarkDecorations (.md-list-mark*)
 
   // Quotes
   {

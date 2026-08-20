@@ -121,6 +121,15 @@
   --chrome-header-padding: 8px 10px;
   --chrome-traffic-inset: 72px;
 
+  /* ── Editor list marks (Inkdrop --md-list-mark-*) ─────────────────────────── */
+  --cm-list: var(--accent);
+  --md-list-mark-color: var(--accent);
+  --md-list-mark-2-color: #60a5fa;
+  --md-list-mark-3-color: #c4b5fd;
+  --mde-preview-list-marker-color: var(--text-primary);
+  --mde-preview-list-marker-2-color: var(--text-primary);
+  --mde-preview-list-marker-3-color: var(--text-primary);
+
   /* ── Radii ────────────────────────────────────────────────────────────────── */
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -208,6 +217,14 @@
   --status-on-hold: #d97706;
   --status-completed: #16a34a;
   --status-dropped: #e11d48;
+
+  --cm-list: var(--accent);
+  --md-list-mark-color: var(--accent);
+  --md-list-mark-2-color: #2563eb;
+  --md-list-mark-3-color: #7c3aed;
+  --mde-preview-list-marker-color: var(--text-primary);
+  --mde-preview-list-marker-2-color: var(--text-primary);
+  --mde-preview-list-marker-3-color: var(--text-primary);
 
   --glass-bg: rgba(247, 246, 243, 0.88);
   --glass-bg-fallback: rgba(247, 246, 243, 0.96);
