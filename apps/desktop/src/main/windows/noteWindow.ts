@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
 import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
+import { frostedWindowOptions } from './vibrancy.js';
 
 export function createNoteWindow(noteId: string, noteTitle: string): BrowserWindow {
   const noteWindow = new BrowserWindow({
@@ -13,7 +14,7 @@ export function createNoteWindow(noteId: string, noteTitle: string): BrowserWind
     icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
-    backgroundColor: '#0a0b0d',
+    ...frostedWindowOptions(),
     title: noteTitle || 'Note',
     webPreferences: {
       preload: rendererPreloadPath(),

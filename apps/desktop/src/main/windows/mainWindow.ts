@@ -4,6 +4,7 @@ import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
 import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
 import { flushPendingAuthToken } from './authDeepLink.js';
+import { frostedWindowOptions } from './vibrancy.js';
 
 export function createMainWindow(): BrowserWindow {
   const windowState = loadWindowState();
@@ -19,7 +20,7 @@ export function createMainWindow(): BrowserWindow {
     icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
-    backgroundColor: '#0a0b0d',
+    ...frostedWindowOptions(),
     webPreferences: {
       preload: rendererPreloadPath(),
       nodeIntegration: false,
