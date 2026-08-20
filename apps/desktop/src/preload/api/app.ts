@@ -50,6 +50,7 @@ export interface WindowsAPI {
   openQuickCapture: () => Promise<{ ok: boolean }>;
   closeSelf: () => Promise<{ ok: boolean }>;
   setButtonVisibility: (visible: boolean) => Promise<{ ok: boolean }>;
+  setFrosted: (frosted: boolean) => Promise<{ ok: boolean }>;
 }
 
 export interface ShareAPI {
@@ -119,6 +120,7 @@ export function createWindowsApi(): WindowsAPI {
     openQuickCapture: () => ipcRenderer.invoke('window:openQuickCapture'),
     closeSelf: () => ipcRenderer.invoke('window:closeSelf'),
     setButtonVisibility: visible => ipcRenderer.invoke('window:setButtonVisibility', visible),
+    setFrosted: frosted => ipcRenderer.invoke('window:setFrosted', frosted),
   };
 }
 

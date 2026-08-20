@@ -16,7 +16,7 @@ import {
   Paintbrush,
 } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
-import { toast } from '../../../ui/primitives';
+import { Button, toast } from '../../../ui/primitives';
 import { useSettingsStore } from '../../../stores/settings';
 import { versionNewer } from '../sections/plugins/version';
 import type { SettingsSection } from '../SettingsApp';
@@ -194,10 +194,10 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
         />
       </nav>
       <div className={styles.footer}>
-        <button className={styles.resetButton} onClick={handleResetAll}>
+        <Button variant="ghost" size="sm" className={styles.resetButton} onClick={handleResetAll}>
           <Icon icon={RotateCcw} size={16} className={styles.icon} />
-          <span>Reset to Defaults</span>
-        </button>
+          Reset to Defaults
+        </Button>
       </div>
     </aside>
   );

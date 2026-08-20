@@ -16,7 +16,7 @@ import { DEFAULT_MODEL } from '@dripnex/ai-core';
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 7;
+export const SETTINGS_VERSION = 8;
 
 // ============================================================================
 // Section Types
@@ -52,6 +52,8 @@ export interface AppearanceSettings {
   acrylicBackground: boolean;
   /** Active plugin theme ID (null = use base dark/light) */
   activeThemeId: string | null;
+  /** Glass blur. Auto follows hardware / reduced-motion. */
+  performanceMode: 'auto' | 'high' | 'medium' | 'low';
 }
 
 /** Backup settings */
@@ -164,8 +166,12 @@ export interface SettingsSchemaV7 extends Omit<SettingsSchemaV6, 'version'> {
   version: 7;
 }
 
+export interface SettingsSchemaV8 extends Omit<SettingsSchemaV7, 'version'> {
+  version: 8;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV7;
+export type SettingsSchema = SettingsSchemaV8;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -191,6 +197,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   zoomLevel: '1.0',
   acrylicBackground: false,
   activeThemeId: null,
+  performanceMode: 'auto',
 };
 
 export const DEFAULT_AI: AiSettings = {
@@ -233,7 +240,7 @@ export const DEFAULT_INTEGRATIONS: IntegrationsSettings = {
 
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 7,
+  version: SETTINGS_VERSION,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,

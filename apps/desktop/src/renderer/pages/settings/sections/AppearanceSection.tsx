@@ -6,6 +6,7 @@
 
 import { themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
+import { detectPerfMode } from '../../../hooks/usePerformanceMode';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
@@ -30,7 +31,8 @@ const zoomOptions = [
 ];
 
 const performanceModeOptions = [
-  { value: 'high', label: 'High (Full effects)' },
+  { value: 'auto', label: 'Auto' },
+  { value: 'high', label: 'High (Full blur)' },
   { value: 'medium', label: 'Medium (Reduced blur)' },
   { value: 'low', label: 'Low (No blur)' },
 ];
@@ -43,7 +45,8 @@ const accentColorOptions: ColorOption[] = ACCENT_SWATCHES.map(swatch => ({
 export function AppearanceSection() {
   const appearance = useSettingsStore(selectAppearance);
   const updateAppearance = useSettingsStore(s => s.updateAppearance);
-  const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
+  const { setMode: setPerfMode } = usePerformanceStore();
+  const perfMode = appearance.performanceMode || 'auto';
 
   const theme = appearance.theme || 'dark';
   const zoomLevel = appearance.zoomLevel || '1.0';
@@ -59,8 +62,12 @@ export function AppearanceSection() {
   };
 
   const handlePerfModeChange = (value: string) => {
-    setPerfMode(value as 'high' | 'medium' | 'low');
-    document.documentElement.dataset.perf = value;
+    const performanceMode =
+      value === 'high' || value === 'medium' || value === 'low' || value === 'auto'
+        ? value
+        : 'auto';
+    updateAppearance({ performanceMode });
+    setPerfMode(performanceMode === 'auto' ? detectPerfMode() : performanceMode);
   };
 
   return (

@@ -66,12 +66,12 @@ export function ProviderConnect({
             </div>
           </div>
           <div className={styles.savedActions}>
-            <button type="button" className={styles.textBtn} onClick={() => setReplacing(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setReplacing(true)}>
               Replace
-            </button>
-            <button type="button" className={styles.textBtn} onClick={onDisconnect}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onDisconnect}>
               Remove
-            </button>
+            </Button>
           </div>
         </div>
         <SaveProviderKey item={item} apiKey={storedKey || value} />
@@ -123,9 +123,9 @@ export function ProviderConnect({
       <div className={styles.footer}>
         <div className={styles.footerActions}>
           {replacing ? (
-            <button type="button" className={styles.textBtn} onClick={() => setReplacing(false)}>
+            <Button variant="ghost" size="sm" onClick={() => setReplacing(false)}>
               Cancel
-            </button>
+            </Button>
           ) : null}
           <Button
             variant="primary"

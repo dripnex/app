@@ -31,6 +31,21 @@ export function registerWindowHandlers(): void {
     return { ok: true };
   });
 
+  ipcMain.handle('window:setFrosted', (_event, frosted: unknown) => {
+    const on = frosted === true;
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (win.isDestroyed() || win.getTitle() === 'Settings') continue;
+      if (process.platform === 'darwin') {
+        win.setVibrancy(on ? 'under-window' : null);
+        win.setBackgroundColor(on ? '#00000000' : '#0a0b0d');
+      } else if (process.platform === 'win32') {
+        win.setBackgroundMaterial(on ? 'acrylic' : 'none');
+        win.setBackgroundColor(on ? '#00000000' : '#0a0b0d');
+      }
+    }
+    return { ok: true };
+  });
+
   ipcMain.handle('window:closeSelf', async event => {
     const senderId = event.sender.id;
     if (!isClosable(senderId)) {

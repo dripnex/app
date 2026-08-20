@@ -17,6 +17,10 @@
   background: var(--bg-active);
 }
 
+.flush:hover {
+  background: transparent;
+}
+
 .info,
 .labelContainer {
   flex: 1 1 220px;

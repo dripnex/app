@@ -156,6 +156,19 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
     };
   }
 
+  // Migration: v7 -> v8 (persisted glass / blur mode)
+  if (version < 8) {
+    mutable = {
+      ...mutable,
+      version: 8,
+      appearance: {
+        ...DEFAULT_APPEARANCE,
+        ...mutable.appearance,
+        performanceMode: mutable.appearance?.performanceMode ?? DEFAULT_APPEARANCE.performanceMode,
+      },
+    };
+  }
+
   settings = mutable as SettingsSchema;
   return { settings };
 }
