@@ -121,6 +121,8 @@ export interface EditorSettings {
   indentWithTabs: boolean;
   /** Enable spell check in editor */
   spellCheck: boolean;
+  /** Cap editor and preview width so lines stay readable */
+  readableLineLength: boolean;
 }
 
 // ============================================================================
@@ -214,6 +216,7 @@ export const DEFAULT_EDITOR: EditorSettings = {
   tabSize: 2,
   indentWithTabs: false,
   spellCheck: true,
+  readableLineLength: false,
 };
 
 export const DEFAULT_BACKUP: BackupSettings = {

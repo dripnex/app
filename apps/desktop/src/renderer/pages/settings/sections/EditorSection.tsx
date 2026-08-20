@@ -33,6 +33,13 @@ export function EditorSection() {
           onChange={checked => updateEditor({ highlightActiveLine: checked })}
         />
         <SettingToggle
+          label="Readable Line Length"
+          description="Limit the editor and preview to a comfortable column width"
+          htmlFor="readableLineLength"
+          checked={editor.readableLineLength}
+          onChange={checked => updateEditor({ readableLineLength: checked })}
+        />
+        <SettingToggle
           label="Line Wrapping"
           description="Wrap long lines instead of horizontal scrolling"
           htmlFor="lineWrapping"

@@ -742,7 +742,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       <>
         <div
           ref={containerRef}
-          className={`${styles['markdown-editor']} ${notebookStyleProps(notebookId).className}`}
+          className={`${styles['markdown-editor']} ${editorSettings.readableLineLength ? styles.readable : ''} ${notebookStyleProps(notebookId).className}`}
           data-notebook-id={notebookId || undefined}
         />
         {urlPaste ? (
