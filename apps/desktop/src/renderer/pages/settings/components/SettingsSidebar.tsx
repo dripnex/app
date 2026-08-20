@@ -66,9 +66,8 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
         })}
       </nav>
       <div className={styles.footer}>
-        <div className={styles.separator} />
         <button className={styles.resetButton} onClick={handleResetAll}>
-          <RotateCcw size={14} className={styles.icon} />
+          <RotateCcw size={16} className={styles.icon} />
           <span>Reset to Defaults</span>
         </button>
       </div>
