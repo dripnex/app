@@ -5,20 +5,11 @@
   padding: var(--space-3) var(--space-4);
   gap: var(--space-2) var(--space-4);
   flex-wrap: wrap;
-  transition: background var(--transition-fast);
 }
 
 .flush {
   padding-left: 0;
   padding-right: 0;
-}
-
-.row:hover {
-  background: var(--bg-active);
-}
-
-.flush:hover {
-  background: transparent;
 }
 
 .info,

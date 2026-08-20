@@ -14,6 +14,7 @@
 html, body, #root {
   height: 100%;
   overflow: hidden;
+  background: transparent;
 }
 
 body {
@@ -24,6 +25,16 @@ body {
   background-color: var(--bg-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass: let macOS vibrancy / Windows acrylic show through the chrome.
+   Named-theme tokens stay translucent; this only stops html/body from painting
+   an extra opaque wash on top of the window material. */
+html[data-theme='dripnex-glass'],
+html[data-theme='dripnex-glass'] body,
+html[data-theme='dripnex-glass'] #root {
+  background: transparent;
+  background-color: transparent;
 }
 
 /* ===== PERFORMANCE MODES (blur only — colors stay on the theme) ===== */
@@ -62,8 +73,7 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   transition: width var(--transition-normal);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: transparent;
 }
 
 .app__sidebar[data-collapsed='true'] {
@@ -74,8 +84,7 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   transition: width var(--transition-normal);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: transparent;
 }
 
 .app__notelist[data-collapsed='true'] {

@@ -5,6 +5,7 @@ import { createMainWindow } from './mainWindow.js';
 import { createNoteWindow } from './noteWindow.js';
 import { createQuickCaptureWindow } from './quickCaptureWindow.js';
 import { createSettingsWindow } from './settingsWindow.js';
+import { applyFrosted } from './vibrancy.js';
 
 export function registerWindowHandlers(): void {
   ipcMain.handle('window:openNote', async (_event, noteId: string, noteTitle: string) => {
@@ -34,14 +35,8 @@ export function registerWindowHandlers(): void {
   ipcMain.handle('window:setFrosted', (_event, frosted: unknown) => {
     const on = frosted === true;
     for (const win of BrowserWindow.getAllWindows()) {
-      if (win.isDestroyed() || win.getTitle() === 'Settings') continue;
-      if (process.platform === 'darwin') {
-        win.setVibrancy(on ? 'under-window' : null);
-        win.setBackgroundColor(on ? '#00000000' : '#0a0b0d');
-      } else if (process.platform === 'win32') {
-        win.setBackgroundMaterial(on ? 'acrylic' : 'none');
-        win.setBackgroundColor(on ? '#00000000' : '#0a0b0d');
-      }
+      if (win.isDestroyed()) continue;
+      applyFrosted(win, on);
     }
     return { ok: true };
   });
