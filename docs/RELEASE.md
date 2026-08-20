@@ -53,7 +53,7 @@ gh workflow run "Build & Publish" -f tag=v0.16.0
 
 | What we did                        | What actually happened                                    |
 | ---------------------------------- | --------------------------------------------------------- |
-| PAT `GH_TOKEN` as `tomymaritano`   | 403 on `dripnex/readide`. Tokens expire. Bots do not.     |
+| PAT `GH_TOKEN` as `tomymaritano`   | 403. Tokens expire. Bots do not.                          |
 | **Run workflow** by hand           | Easy to forget. 0.16.0 sat on `main` with no tag.         |
 | Squash the promotion PR            | All `feat` commits vanish. No minor bump.                 |
 | Title `feat(release): cut v0.15.x` | One fake Feature. The real changelog is a single line.    |
