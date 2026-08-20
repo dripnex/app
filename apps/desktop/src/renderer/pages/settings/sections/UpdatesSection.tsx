@@ -9,7 +9,8 @@ import { Download, RotateCcw } from 'lucide-react';
 import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Button, Toggle } from '../../../ui/primitives';
+import { SettingToggle } from '../components/SettingToggle';
+import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 type UpdateState =
@@ -229,17 +230,13 @@ export function UpdatesSection() {
       <h2 className={styles.title}>Updates</h2>
 
       <SettingGroup title="Automatic Updates">
-        <SettingRow
+        <SettingToggle
           label="Check for updates automatically"
           description="Check for new versions when the app starts"
           htmlFor="autoCheck"
-        >
-          <Toggle
-            id="autoCheck"
-            checked={updates.autoCheck}
-            onChange={checked => updateUpdates({ autoCheck: checked })}
-          />
-        </SettingRow>
+          checked={updates.autoCheck}
+          onChange={checked => updateUpdates({ autoCheck: checked })}
+        />
       </SettingGroup>
 
       <SettingGroup title="Manual Check">

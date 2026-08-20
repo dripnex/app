@@ -7,7 +7,8 @@
 import { useSettingsStore, selectEditor } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Input, NumberInput, Toggle } from '../../../ui/primitives';
+import { SettingToggle } from '../components/SettingToggle';
+import { Input, NumberInput } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
 export function EditorSection() {
@@ -20,77 +21,48 @@ export function EditorSection() {
 
       {/* Interface Group */}
       <SettingGroup title="Interface">
-        <SettingRow
+        <SettingToggle
           label="Line Numbers"
           description="Show line numbers to the left of the editor"
           htmlFor="lineNumbers"
-        >
-          <Toggle
-            id="lineNumbers"
-            checked={editor.lineNumbers}
-            onChange={checked => updateEditor({ lineNumbers: checked })}
-          />
-        </SettingRow>
-
-        <SettingRow
+          checked={editor.lineNumbers}
+          onChange={checked => updateEditor({ lineNumbers: checked })}
+        />
+        <SettingToggle
           label="Highlight Active Line"
           description="Highlight the current cursor line"
           htmlFor="highlightActiveLine"
-        >
-          <Toggle
-            id="highlightActiveLine"
-            checked={editor.highlightActiveLine}
-            onChange={checked => updateEditor({ highlightActiveLine: checked })}
-          />
-        </SettingRow>
-
-        <SettingRow
+          checked={editor.highlightActiveLine}
+          onChange={checked => updateEditor({ highlightActiveLine: checked })}
+        />
+        <SettingToggle
           label="Line Wrapping"
           description="Wrap long lines instead of horizontal scrolling"
           htmlFor="lineWrapping"
-        >
-          <Toggle
-            id="lineWrapping"
-            checked={editor.lineWrapping}
-            onChange={checked => updateEditor({ lineWrapping: checked })}
-          />
-        </SettingRow>
-
-        <SettingRow
+          checked={editor.lineWrapping}
+          onChange={checked => updateEditor({ lineWrapping: checked })}
+        />
+        <SettingToggle
           label="Inline Image Widgets"
           description="Show image previews directly in the editor"
           htmlFor="inlineImages"
-        >
-          <Toggle
-            id="inlineImages"
-            checked={editor.inlineImages}
-            onChange={checked => updateEditor({ inlineImages: checked })}
-          />
-        </SettingRow>
-
-        <SettingRow
+          checked={editor.inlineImages}
+          onChange={checked => updateEditor({ inlineImages: checked })}
+        />
+        <SettingToggle
           label="Scroll Past End"
           description="Allow scrolling past the end of the document"
           htmlFor="scrollPastEnd"
-        >
-          <Toggle
-            id="scrollPastEnd"
-            checked={editor.scrollPastEnd}
-            onChange={checked => updateEditor({ scrollPastEnd: checked })}
-          />
-        </SettingRow>
-
-        <SettingRow
+          checked={editor.scrollPastEnd}
+          onChange={checked => updateEditor({ scrollPastEnd: checked })}
+        />
+        <SettingToggle
           label="Spell Check"
           description="Check spelling while typing"
           htmlFor="spellCheck"
-        >
-          <Toggle
-            id="spellCheck"
-            checked={editor.spellCheck}
-            onChange={checked => updateEditor({ spellCheck: checked })}
-          />
-        </SettingRow>
+          checked={editor.spellCheck}
+          onChange={checked => updateEditor({ spellCheck: checked })}
+        />
       </SettingGroup>
 
       {/* Text Appearance Group */}
@@ -148,17 +120,13 @@ export function EditorSection() {
           />
         </SettingRow>
 
-        <SettingRow
+        <SettingToggle
           label="Indent with Tabs"
           description="Use tabs instead of spaces for indentation"
           htmlFor="indentWithTabs"
-        >
-          <Toggle
-            id="indentWithTabs"
-            checked={editor.indentWithTabs}
-            onChange={checked => updateEditor({ indentWithTabs: checked })}
-          />
-        </SettingRow>
+          checked={editor.indentWithTabs}
+          onChange={checked => updateEditor({ indentWithTabs: checked })}
+        />
       </SettingGroup>
     </div>
   );
