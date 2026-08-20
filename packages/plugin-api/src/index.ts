@@ -114,6 +114,7 @@ export { pluginContextMenuStore } from './menu/pluginContextMenuStore';
 export type { PluginContextMenuItem, PluginContextMenuTarget } from './menu/pluginContextMenuStore';
 
 export { loadPluginFromSource } from './loader/loadPluginFromSource';
+export type { LoadPluginOptions } from './loader/loadPluginFromSource';
 export { loadInitScript } from './loader/loadInitScript';
 export { createInitApi, USER_INIT_ID } from './loader/createInitApi';
 export type { InitApi } from './loader/createInitApi';

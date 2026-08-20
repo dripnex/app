@@ -119,6 +119,8 @@ describe('PluginRegistry', () => {
       expect(ctx).toHaveProperty('editor');
       expect(ctx).toHaveProperty('registerExtensions');
       expect(ctx).toHaveProperty('registerCommand');
+      expect(ctx).toHaveProperty('dispatchCommand');
+      expect(ctx).toHaveProperty('registerVim');
       expect(ctx).toHaveProperty('registerRemarkPlugin');
       expect(ctx).toHaveProperty('registerRehypePlugin');
       expect(ctx).toHaveProperty('registerPreviewComponent');

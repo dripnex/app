@@ -16,7 +16,6 @@ import { readingTimePlugin } from './readingTime';
 import { exportMarkdownPlugin } from './exportMarkdown';
 import { mermaidPlugin } from './mermaid';
 import { mathPlugin } from './math';
-import { vimModePlugin } from './vimMode';
 import { pasteAsLinkPlugin } from './pasteAsLink';
 import { motionPlugin } from './motion';
 
@@ -31,7 +30,6 @@ export {
   exportMarkdownPlugin,
   mermaidPlugin,
   mathPlugin,
-  vimModePlugin,
   pasteAsLinkPlugin,
   motionPlugin,
 };
@@ -48,7 +46,6 @@ export const builtInPlugins: PluginManifest[] = [
   exportMarkdownPlugin,
   mermaidPlugin,
   mathPlugin,
-  vimModePlugin,
   pasteAsLinkPlugin,
   motionPlugin,
 ];

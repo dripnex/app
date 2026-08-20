@@ -1,6 +1,11 @@
 import type { PluginManifest } from '../types';
 import { assertValidManifest } from '../validation';
 
+export interface LoadPluginOptions {
+  /** Host `require` shim (react, @codemirror/*, @dripnex/plugin-api, …). */
+  require?: (id: string) => unknown;
+}
+
 /**
  * Evaluate a CommonJS plugin source string in the renderer.
  *
@@ -11,12 +16,21 @@ import { assertValidManifest } from '../validation';
  *
  * Returns a validated PluginManifest or null on failure.
  */
-export function loadPluginFromSource(code: string, expectedId: string): PluginManifest | null {
+export function loadPluginFromSource(
+  code: string,
+  expectedId: string,
+  options?: LoadPluginOptions
+): PluginManifest | null {
   try {
     const module = { exports: {} as Record<string, unknown> };
+    const requireFn =
+      options?.require ??
+      ((id: string) => {
+        throw new Error(`Cannot require '${id}' in a Dripnex plugin. Bundle it.`);
+      });
 
-    const fn = new Function('module', 'exports', code);
-    fn(module, module.exports);
+    const fn = new Function('module', 'exports', 'require', code);
+    fn(module, module.exports, requireFn);
 
     const manifest = module.exports;
 

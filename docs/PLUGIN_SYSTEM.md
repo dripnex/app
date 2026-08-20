@@ -367,9 +367,9 @@ Free-form `init.js` is wrapped as plugin `user-init`. A full manifest export sti
 
 These files do **not** exist until the user clicks Open. Templates are written on first open.
 
-### Vim (built-in, Inkdrop-shaped)
+### Vim (community plugin)
 
-Enable **Vim Mode** in Settings → Plugins. Same engine as Inkdrop (`@replit/codemirror-vim`) plus:
+Vim is **not** built-in. Install `dripnex/plugin-vim` (or `dripnex-plugin link` a local checkout) and enable **Vim Mode** in Settings → Plugins. Same engine as Inkdrop (`@replit/codemirror-vim`) plus:
 
 |         |                                                                                                                           |
 | ------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -424,7 +424,8 @@ Built-ins stay in `apps/desktop` until they deserve their own repo.
 | Role                                         | Plugins                                                  | Marketing? |
 | -------------------------------------------- | -------------------------------------------------------- | ---------- |
 | **core**                                     | mermaid, math, tables, paste-as-link, AI                 | yes        |
-| **optional**                                 | vim, export                                              | yes        |
+| **optional**                                 | export                                                   | yes        |
+| **community**                                | vim (`dripnex/plugin-vim`)                               | yes        |
 | **proof** (API examples, hide from the site) | word-count, reading-time, typewriter, focus, active-line | no         |
 
 Do not add more proof plugins to dripnex.app/plugins.

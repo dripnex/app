@@ -164,6 +164,13 @@ export interface PluginContext {
     options: PluginCommandOptions,
     execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>
   ): () => void;
+  /** Dispatch a host or plugin command by id (`app:save-note`, `plugin:…`). */
+  dispatchCommand(id: string, payload?: Record<string, unknown>): Promise<boolean>;
+  /**
+   * Publish a Vim API for `dripnex.vim` in init.js.
+   * Call at module load (not only activate) so init.js can map keys.
+   */
+  registerVim(api: unknown): () => void;
   /** Register a remark (mdast) plugin for the markdown preview pipeline */
   registerRemarkPlugin(id: string, plugin: unknown, options?: PluginHookOptions): () => void;
   /** Register a rehype (hast) plugin for the markdown preview pipeline */

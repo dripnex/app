@@ -30,7 +30,7 @@ import { createThemesApi } from '../theme/createThemesApi';
 import { aiCommandStore } from '../ai/aiCommandStore';
 import { pluginMenuStore } from '../menu/pluginMenuStore';
 import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
-import { hostNotify } from '../loader/hostBridges';
+import { dispatchHostCommand, getHostVim, hostNotify, setHostVim } from '../loader/hostBridges';
 import { previewEventStore } from '../preview/previewEventStore';
 import { pluginComponents } from '../components/catalog.js';
 import { createMarkdownRenderer } from '../preview/createMarkdownRenderer.js';
@@ -82,6 +82,7 @@ interface PluginEntry {
   state: PluginState;
   disposable?: PluginDisposable;
   commandUnregisters: Array<() => void>;
+  vimApi?: unknown;
   /** Event unsubscribers tracked by the auto-cleanup wrapper */
   eventUnsubscribers: Array<() => void>;
   /** Number of times activate() has thrown */
@@ -418,6 +419,15 @@ export class PluginRegistry {
         return () => editorPluginStore.getState().unregister(extId);
       },
       registerCommand,
+      dispatchCommand: (commandId, payload) => dispatchHostCommand(commandId, payload),
+      registerVim: (api: unknown) => {
+        setHostVim(api);
+        entry.vimApi = api;
+        return () => {
+          if (getHostVim() === api) setHostVim(null);
+          if (entry.vimApi === api) delete entry.vimApi;
+        };
+      },
       registerRemarkPlugin: (
         regId: string,
         plugin: unknown,
@@ -560,6 +570,11 @@ export class PluginRegistry {
     } catch (error) {
       console.error(`[plugin:${id}] dispose() threw:`, error);
     }
+
+    if (entry.vimApi && getHostVim() === entry.vimApi) {
+      setHostVim(null);
+    }
+    delete entry.vimApi;
 
     // Call deactivate lifecycle (guarded)
     try {

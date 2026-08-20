@@ -22,4 +22,12 @@ export const COMMUNITY_CATALOG: CatalogPlugin[] = [
     author: 'Dripnex',
     repository: 'dripnex/plugin-stamp',
   },
+  {
+    id: 'dripnex-vim-mode',
+    name: 'Vim Mode',
+    description: 'Vim keybindings, Ex commands, relative line numbers, and clipboard yank.',
+    version: '1.2.0',
+    author: 'Dripnex',
+    repository: 'dripnex/plugin-vim',
+  },
 ];

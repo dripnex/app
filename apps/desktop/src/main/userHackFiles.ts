@@ -29,7 +29,7 @@ dripnex.menu.add({
 // Editor view (CM6): dripnex.editor.getView() / dripnex.getActiveEditor().cm
 // Palettes: dripnex.themes.list() / getActive() / setActive('dripnex-parchment')
 
-// Vim (enable the Vim plugin first). Same surface as Inkdrop:
+// Vim (install dripnex/plugin-vim, then enable it). Same surface as Inkdrop:
 // const Vim = dripnex.vim
 // if (Vim) {
 //   Vim.map('jj', '<Esc>', 'insert')
