@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["eslint.config.js"],
+      "entry": ["eslint.config.js", "scripts/*.mjs"],
       "ignoreDependencies": [
         "@changesets/cli",
         "@semantic-release/changelog",
