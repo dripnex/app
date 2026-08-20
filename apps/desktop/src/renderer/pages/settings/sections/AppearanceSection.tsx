@@ -10,8 +10,8 @@ import { useSettingsStore, selectAppearance } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingSelect } from '../components/SettingSelect';
 import { ACCENT_SWATCHES } from '../../../ui/tokens/palette';
-import { Select } from '../../../ui/primitives';
 import { ColorPicker, type ColorOption } from '../components/controls';
 import { SettingsPage } from '../components/SettingsPage';
 import themeStyles from './AppearanceThemes.module.css';
@@ -133,14 +133,14 @@ export function AppearanceSection() {
       </div>
 
       <SettingGroup title="Palette">
-        <SettingRow
+        <SettingSelect
           label="Base"
           description="Default only. Picking Dark / Light / System leaves the named palette."
           htmlFor="theme"
-        >
-          <Select id="theme" value={theme} onChange={handleThemeChange} options={themeOptions} />
-        </SettingRow>
-
+          value={theme}
+          onChange={handleThemeChange}
+          options={themeOptions}
+        />
         <SettingRow
           label="Accent"
           description="Overrides the palette accent if you want a different one"
@@ -156,27 +156,22 @@ export function AppearanceSection() {
       </SettingGroup>
 
       <SettingGroup title="Display">
-        <SettingRow label="Zoom Level" description="Adjust the interface size" htmlFor="zoomLevel">
-          <Select
-            id="zoomLevel"
-            value={zoomLevel}
-            onChange={handleZoomChange}
-            options={zoomOptions}
-          />
-        </SettingRow>
-
-        <SettingRow
+        <SettingSelect
+          label="Zoom Level"
+          description="Adjust the interface size"
+          htmlFor="zoomLevel"
+          value={zoomLevel}
+          onChange={handleZoomChange}
+          options={zoomOptions}
+        />
+        <SettingSelect
           label="Performance Mode"
           description="Adjust visual effects based on your hardware"
           htmlFor="performanceMode"
-        >
-          <Select
-            id="performanceMode"
-            value={perfMode}
-            onChange={handlePerfModeChange}
-            options={performanceModeOptions}
-          />
-        </SettingRow>
+          value={perfMode}
+          onChange={handlePerfModeChange}
+          options={performanceModeOptions}
+        />
       </SettingGroup>
     </SettingsPage>
   );

@@ -10,9 +10,10 @@ import { useSettingsStore, selectGeneral } from '../../../stores/settings';
 import { useNotebooks } from '../../../hooks/useNotebooks';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingSelect } from '../components/SettingSelect';
 import { SettingToggle } from '../components/SettingToggle';
 import { SettingsPage } from '../components/SettingsPage';
-import { Button, Select } from '../../../ui/primitives';
+import { Button } from '../../../ui/primitives';
 
 export function GeneralSection() {
   const general = useSettingsStore(selectGeneral);
@@ -40,18 +41,14 @@ export function GeneralSection() {
   return (
     <SettingsPage title="General">
       <SettingGroup title="Notes">
-        <SettingRow
+        <SettingSelect
           label="Default Notebook"
           description="New notes will be created in this notebook"
           htmlFor="defaultNotebook"
-        >
-          <Select
-            id="defaultNotebook"
-            value={general.defaultNotebookId || ''}
-            onChange={value => updateGeneral({ defaultNotebookId: value || '' })}
-            options={notebookOptions}
-          />
-        </SettingRow>
+          value={general.defaultNotebookId || ''}
+          onChange={value => updateGeneral({ defaultNotebookId: value || '' })}
+          options={notebookOptions}
+        />
       </SettingGroup>
 
       <SettingGroup title="Window">

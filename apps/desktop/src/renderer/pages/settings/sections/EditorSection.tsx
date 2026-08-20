@@ -6,10 +6,10 @@
 
 import { useSettingsStore, selectEditor } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
-import { SettingRow } from '../components/SettingRow';
+import { SettingNumber } from '../components/SettingNumber';
+import { SettingText } from '../components/SettingText';
 import { SettingToggle } from '../components/SettingToggle';
 import { SettingsPage } from '../components/SettingsPage';
-import { Input, NumberInput } from '../../../ui/primitives';
 
 export function EditorSection() {
   const editor = useSettingsStore(selectEditor);
@@ -64,58 +64,47 @@ export function EditorSection() {
 
       {/* Text Appearance Group */}
       <SettingGroup title="Text Appearance">
-        <SettingRow
+        <SettingNumber
           label="Font Size"
           description="Size of editor text in pixels"
           htmlFor="fontSize"
-        >
-          <NumberInput
-            id="fontSize"
-            value={editor.fontSize}
-            onChange={value => updateEditor({ fontSize: value })}
-            min={10}
-            max={32}
-            step={1}
-          />
-        </SettingRow>
-
-        <SettingRow
+          value={editor.fontSize}
+          onChange={value => updateEditor({ fontSize: value })}
+          min={10}
+          max={32}
+          step={1}
+        />
+        <SettingText
           label="Font Family"
           description="Font family for editor text"
           htmlFor="fontFamily"
-        >
-          <Input
-            id="fontFamily"
-            value={editor.fontFamily}
-            onChange={event => updateEditor({ fontFamily: event.target.value })}
-            placeholder="ui-monospace, monospace"
-          />
-        </SettingRow>
-
-        <SettingRow label="Line Height" description="Line height multiplier" htmlFor="lineHeight">
-          <NumberInput
-            id="lineHeight"
-            value={editor.lineHeight}
-            onChange={value => updateEditor({ lineHeight: value })}
-            min={1}
-            max={3}
-            step={0.1}
-          />
-        </SettingRow>
+          value={editor.fontFamily}
+          onChange={value => updateEditor({ fontFamily: value })}
+          placeholder="ui-monospace, monospace"
+        />
+        <SettingNumber
+          label="Line Height"
+          description="Line height multiplier"
+          htmlFor="lineHeight"
+          value={editor.lineHeight}
+          onChange={value => updateEditor({ lineHeight: value })}
+          min={1}
+          max={3}
+          step={0.1}
+        />
       </SettingGroup>
 
-      {/* Markdown Group */}
       <SettingGroup title="Markdown">
-        <SettingRow label="Tab Size" description="Number of spaces per tab" htmlFor="tabSize">
-          <NumberInput
-            id="tabSize"
-            value={editor.tabSize}
-            onChange={value => updateEditor({ tabSize: value })}
-            min={1}
-            max={8}
-            step={1}
-          />
-        </SettingRow>
+        <SettingNumber
+          label="Tab Size"
+          description="Number of spaces per tab"
+          htmlFor="tabSize"
+          value={editor.tabSize}
+          onChange={value => updateEditor({ tabSize: value })}
+          min={1}
+          max={8}
+          step={1}
+        />
 
         <SettingToggle
           label="Indent with Tabs"

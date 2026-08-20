@@ -10,8 +10,10 @@ import { validateAiCommandPreset, serializePreset } from '@dripnex/ai-core';
 import type { AiCommandPreset } from '@dripnex/ai-core';
 import { useSettingsStore, selectAi, selectAiKeyHydrationError } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
+import { SettingNumber } from '../components/SettingNumber';
 import { SettingRow } from '../components/SettingRow';
-import { Button, NumberInput, Select } from '../../../ui/primitives';
+import { SettingSelect } from '../components/SettingSelect';
+import { Button } from '../../../ui/primitives';
 import { FALLBACK_MODELS, PROVIDER_CATALOG, type AiProviderId } from '../ai/providers';
 import { ProviderMark } from '../ai/ProviderMark';
 import { OllamaConnect, ProviderConnect } from '../ai/ProviderConnect';
@@ -489,28 +491,24 @@ export function AiSection() {
       })}
 
       <SettingGroup title="Next edit suggestions">
-        <SettingRow
+        <SettingSelect
           label="Trigger"
           description="Ghost text at the cursor from your AI provider. Tab accepts, Escape dismisses. Alt+\ asks on demand."
           htmlFor="nesMode"
-        >
-          <Select
-            id="nesMode"
-            value={ai.nesMode ?? 'manual'}
-            onChange={value => {
-              const nesMode =
-                value === 'automatic' || value === 'disabled' || value === 'manual'
-                  ? value
-                  : 'manual';
-              updateAi({ nesMode });
-            }}
-            options={[
-              { value: 'manual', label: 'Manual (Alt+\\)' },
-              { value: 'automatic', label: 'Automatic (on idle)' },
-              { value: 'disabled', label: 'Disabled' },
-            ]}
-          />
-        </SettingRow>
+          value={ai.nesMode ?? 'manual'}
+          onChange={value => {
+            const nesMode =
+              value === 'automatic' || value === 'disabled' || value === 'manual'
+                ? value
+                : 'manual';
+            updateAi({ nesMode });
+          }}
+          options={[
+            { value: 'manual', label: 'Manual (Alt+\\)' },
+            { value: 'automatic', label: 'Automatic (on idle)' },
+            { value: 'disabled', label: 'Disabled' },
+          ]}
+        />
       </SettingGroup>
 
       <SettingGroup title="Knowledge base">
@@ -522,50 +520,42 @@ export function AiSection() {
             {kbStatusLabel(kb, !window.dripnex?.ai)}
           </div>
         </SettingRow>
-        <SettingRow
+        <SettingSelect
           label="Embed provider"
           description="Ollama stays on this machine. OpenAI uses the key from the OpenAI card."
           htmlFor="embedProvider"
-        >
-          <Select
-            id="embedProvider"
-            value={embedProvider}
-            onChange={value => {
-              const provider = value === 'openai' ? 'openai' : 'ollama';
-              const models = embedCatalog.find(item => item.id === provider)?.models ?? [];
-              const nextModel = models.some(model => model.id === embedModel)
-                ? embedModel
-                : (models[0]?.id ?? embedModel);
-              void applyEmbed({ embedProvider: provider, embedModel: nextModel });
-            }}
-            options={
-              embedCatalog.length > 0
-                ? embedCatalog.map(item => ({ value: item.id, label: item.displayName }))
-                : [
-                    { value: 'ollama', label: 'Ollama (Local)' },
-                    { value: 'openai', label: 'OpenAI' },
-                  ]
-            }
-          />
-        </SettingRow>
-        <SettingRow
+          value={embedProvider}
+          onChange={value => {
+            const provider = value === 'openai' ? 'openai' : 'ollama';
+            const models = embedCatalog.find(item => item.id === provider)?.models ?? [];
+            const nextModel = models.some(model => model.id === embedModel)
+              ? embedModel
+              : (models[0]?.id ?? embedModel);
+            void applyEmbed({ embedProvider: provider, embedModel: nextModel });
+          }}
+          options={
+            embedCatalog.length > 0
+              ? embedCatalog.map(item => ({ value: item.id, label: item.displayName }))
+              : [
+                  { value: 'ollama', label: 'Ollama (Local)' },
+                  { value: 'openai', label: 'OpenAI' },
+                ]
+          }
+        />
+        <SettingSelect
           label="Embedding model"
           description="Changing model rebuilds vectors for Ask Notes. Old vectors are dropped."
           htmlFor="embedModel"
-        >
-          <Select
-            id="embedModel"
-            value={embedModel}
-            onChange={value => {
-              void applyEmbed({ embedProvider, embedModel: value });
-            }}
-            options={
-              embedModelOptions.length > 0
-                ? embedModelOptions
-                : [{ value: embedModel, label: embedModel }]
-            }
-          />
-        </SettingRow>
+          value={embedModel}
+          onChange={value => {
+            void applyEmbed({ embedProvider, embedModel: value });
+          }}
+          options={
+            embedModelOptions.length > 0
+              ? embedModelOptions
+              : [{ value: embedModel, label: embedModel }]
+          }
+        />
         <SettingRow label="Index now" description="Embed passages that are still waiting">
           <Button
             variant="secondary"
@@ -583,36 +573,28 @@ export function AiSection() {
 
       {isConnected ? (
         <SettingGroup title="Model">
-          <SettingRow
+          <SettingSelect
             label="Model"
             description={`Used when chatting with ${catalog.name}`}
             htmlFor="aiModel"
-          >
-            <Select
-              id="aiModel"
-              value={ai.model}
-              onChange={value => updateAi({ model: value })}
-              options={
-                modelOptions.length > 0
-                  ? modelOptions
-                  : [{ value: ai.model || 'default', label: 'No models found' }]
-              }
-            />
-          </SettingRow>
-          <SettingRow
+            value={ai.model}
+            onChange={value => updateAi({ model: value })}
+            options={
+              modelOptions.length > 0
+                ? modelOptions
+                : [{ value: ai.model || 'default', label: 'No models found' }]
+            }
+          />
+          <SettingNumber
             label="Max context notes"
             description="How many notes Ask Notes may pull in"
             htmlFor="aiMaxContextNotes"
-          >
-            <NumberInput
-              id="aiMaxContextNotes"
-              value={ai.maxContextNotes}
-              onChange={value => updateAi({ maxContextNotes: value })}
-              min={1}
-              max={20}
-              step={1}
-            />
-          </SettingRow>
+            value={ai.maxContextNotes}
+            onChange={value => updateAi({ maxContextNotes: value })}
+            min={1}
+            max={20}
+            step={1}
+          />
         </SettingGroup>
       ) : null}
 
