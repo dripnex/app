@@ -89,6 +89,8 @@ export type { PluginStyleSheet } from './theme/pluginStyleStore';
 export { usePluginStyles } from './theme/usePluginStyles';
 export { useThemeOverrides } from './theme/useThemeOverrides';
 export { themeRegistryStore } from './theme/themeRegistryStore';
+export { createThemesApi } from './theme/createThemesApi';
+export type { ThemesAPI, ThemeInfo } from './theme/createThemesApi';
 export {
   isValidThemeToken,
   validateThemeTokens,
@@ -122,6 +124,8 @@ export {
   hostNotify,
   setHostVim,
   getHostVim,
+  setHostThemeActive,
+  hostSetActiveTheme,
 } from './loader/hostBridges';
 
 // Lifecycle

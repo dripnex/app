@@ -13,6 +13,7 @@ describe('isValidThemeToken', () => {
     expect(isValidThemeToken('--syntax-keyword')).toBe(true);
     expect(isValidThemeToken('--preview-heading-color')).toBe(true);
     expect(isValidThemeToken('--ui-sidebar-bg')).toBe(true);
+    expect(isValidThemeToken('--cm-heading')).toBe(true);
   });
 
   it('rejects unknown tokens', () => {

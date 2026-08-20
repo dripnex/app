@@ -1,7 +1,26 @@
 import { useEffect, useSyncExternalStore } from 'react';
-import { themeRegistryStore } from '@dripnex/plugin-api';
+import { setHostThemeActive, themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
 import { registerOfficialThemes } from '../themes/officialThemes';
+
+/** Persist a palette the same way Settings → Appearance does. */
+export function applyHostTheme(id: string | null): boolean {
+  const { settings, updateAppearance } = useSettingsStore.getState();
+  if (id === null) {
+    themeRegistryStore.getState().setActive(null);
+    updateAppearance({ activeThemeId: null });
+    return true;
+  }
+  const theme = themeRegistryStore.getState().themes.find(t => t.id === id);
+  if (!theme) return false;
+  themeRegistryStore.getState().setActive(id);
+  updateAppearance({
+    activeThemeId: id,
+    theme: theme.colorScheme,
+    accentColor: theme.tokens['--accent'] ?? settings.appearance.accentColor,
+  });
+  return true;
+}
 
 /** Register first-party palettes and restore the last chosen one. */
 export function useOfficialThemes(): void {
@@ -13,6 +32,8 @@ export function useOfficialThemes(): void {
 
   useEffect(() => {
     registerOfficialThemes();
+    setHostThemeActive(applyHostTheme);
+    return () => setHostThemeActive(null);
   }, []);
 
   useEffect(() => {

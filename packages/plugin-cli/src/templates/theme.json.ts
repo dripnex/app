@@ -16,6 +16,8 @@ export function themeJsonTemplate(id: string, name: string): string {
         '--text-muted': 'rgba(58, 50, 36, 0.52)',
         '--border': 'rgba(58, 50, 36, 0.12)',
         '--accent': '#2a7d6f',
+        '--cm-heading': '#21675c',
+        '--cm-link': '#2a7d6f',
       },
     },
     null,

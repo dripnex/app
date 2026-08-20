@@ -48,6 +48,7 @@ export interface InitApi {
   registerAiCommand: PluginContext['registerAiCommand'];
   registerCssVariables: PluginContext['registerCssVariables'];
   registerTheme: PluginContext['registerTheme'];
+  themes: PluginContext['themes'];
   registerRemarkPlugin: PluginContext['registerRemarkPlugin'];
   registerRehypePlugin: PluginContext['registerRehypePlugin'];
   registerPreviewComponent: PluginContext['registerPreviewComponent'];
@@ -90,6 +91,7 @@ export function createInitApi(ctx: PluginContext): InitApi {
     registerAiCommand: ctx.registerAiCommand,
     registerCssVariables: ctx.registerCssVariables,
     registerTheme: ctx.registerTheme,
+    themes: ctx.themes,
     registerRemarkPlugin: ctx.registerRemarkPlugin,
     registerRehypePlugin: ctx.registerRehypePlugin,
     registerPreviewComponent: ctx.registerPreviewComponent,
