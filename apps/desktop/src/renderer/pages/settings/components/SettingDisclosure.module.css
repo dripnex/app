@@ -8,12 +8,12 @@
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  padding: 1.05rem 1.25rem;
+  padding: var(--space-3) var(--space-4);
   border: none;
   background: none;
   color: var(--text-primary);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   text-align: left;
 }
@@ -28,7 +28,7 @@
 }
 
 .body {
-  padding: 0 1.25rem 1.05rem;
+  padding: 0 var(--space-4) var(--space-3);
 }
 
 .empty {

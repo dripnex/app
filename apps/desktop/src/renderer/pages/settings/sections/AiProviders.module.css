@@ -1,24 +1,17 @@
-.lede {
-  margin: 0 0 var(--space-6);
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
 .group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
   margin-bottom: var(--space-6);
 }
 
 .groupTitle {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  margin: 0 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 .list {
@@ -34,7 +27,7 @@
   width: 100%;
   padding: var(--space-4);
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   background: var(--bg-elevated);
   text-align: left;
   cursor: pointer;

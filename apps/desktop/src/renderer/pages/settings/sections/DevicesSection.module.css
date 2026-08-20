@@ -6,8 +6,8 @@
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 
 .row + .row {
@@ -52,8 +52,8 @@
 
 .name {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -114,8 +114,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -130,10 +130,10 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--danger, #ef4444) 7%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
 }
 
 .confirm p {
@@ -149,7 +149,7 @@
 }
 
 .inset {
-  padding: 14px 16px;
-  font-size: 13px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
   color: var(--text-muted);
 }

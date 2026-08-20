@@ -1,9 +1,9 @@
 .pluginCard {
-  background: var(--bg-hover);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
-  border-radius: 0.625rem;
-  padding: 1.125rem 1.25rem;
-  transition: border-color 0.2s ease;
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  transition: border-color var(--transition-fast);
 }
 
 .pluginCard:hover {
@@ -181,11 +181,11 @@
 
 .pluginSectionLabel {
   font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--text-tertiary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.625rem 0.25rem;
+  letter-spacing: var(--tracking-wide);
+  margin: 0 0 var(--space-2) var(--space-2);
 }
 
 /* Plugin Tabs */

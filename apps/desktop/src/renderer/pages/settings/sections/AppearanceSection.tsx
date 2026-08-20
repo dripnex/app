@@ -103,7 +103,7 @@ export function AppearanceSection() {
     <div className={styles.section}>
       <h2 className={styles.title}>Appearance</h2>
 
-      <p className={themeStyles.lede}>
+      <p className={styles.lede}>
         Official combinations. A community theme is its own repo — same tokens, no core fork.
       </p>
       <div className={themeStyles.grid}>

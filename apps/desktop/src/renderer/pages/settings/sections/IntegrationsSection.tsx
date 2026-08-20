@@ -6,6 +6,7 @@ import { Button } from '../../../ui/primitives';
 import { GitHubCard } from './GitHubCard';
 import { LocalHttpCard } from './LocalHttpCard';
 import { McpCard } from './McpCard';
+import layout from './Section.module.css';
 import styles from './IntegrationsSection.module.css';
 
 interface IntegrationsSectionProps {
@@ -65,11 +66,9 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
   };
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h2 className={styles.title}>Integrations</h2>
-        <p className={styles.lede}>Connect tools you already use. Secrets stay on this machine.</p>
-      </header>
+    <div className={layout.section}>
+      <h2 className={layout.title}>Integrations</h2>
+      <p className={layout.lede}>Connect tools you already use. Secrets stay on this machine.</p>
 
       <LocalHttpCard />
 
