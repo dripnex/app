@@ -9,6 +9,7 @@ interface SettingTextProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  flush?: boolean;
 }
 
 export function SettingText({
@@ -19,9 +20,10 @@ export function SettingText({
   onChange,
   placeholder,
   disabled,
+  flush,
 }: SettingTextProps) {
   return (
-    <SettingRow label={label} description={description} htmlFor={htmlFor}>
+    <SettingRow label={label} description={description} htmlFor={htmlFor} flush={flush}>
       <Input
         id={htmlFor}
         value={value}

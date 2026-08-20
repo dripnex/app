@@ -9,6 +9,7 @@ interface SettingSelectProps {
   onChange: (value: string) => void;
   options: SelectOption[];
   disabled?: boolean;
+  flush?: boolean;
 }
 
 export function SettingSelect({
@@ -19,9 +20,10 @@ export function SettingSelect({
   onChange,
   options,
   disabled,
+  flush,
 }: SettingSelectProps) {
   return (
-    <SettingRow label={label} description={description} htmlFor={htmlFor}>
+    <SettingRow label={label} description={description} htmlFor={htmlFor} flush={flush}>
       <Select
         id={htmlFor}
         value={value}

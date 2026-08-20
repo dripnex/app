@@ -11,6 +11,7 @@ interface SettingNumberProps {
   max?: number;
   step?: number;
   disabled?: boolean;
+  flush?: boolean;
 }
 
 export function SettingNumber({
@@ -23,9 +24,10 @@ export function SettingNumber({
   max,
   step,
   disabled,
+  flush,
 }: SettingNumberProps) {
   return (
-    <SettingRow label={label} description={description} htmlFor={htmlFor}>
+    <SettingRow label={label} description={description} htmlFor={htmlFor} flush={flush}>
       <NumberInput
         id={htmlFor}
         value={value}

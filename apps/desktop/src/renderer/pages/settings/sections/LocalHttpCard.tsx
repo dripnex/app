@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Copy, Eye, EyeOff, Server } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
-import { Button, Field, Toggle } from '../../../ui/primitives';
+import { Button, Field } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
+import { SettingToggle } from '../components/SettingToggle';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import type { LocalServerConnectionInfo } from '../../../../preload/api/localServer';
 import styles from './IntegrationsSection.module.css';
@@ -92,13 +93,16 @@ export function LocalHttpCard() {
             Loopback API for scripts, Raycast, and the clipper. Bearer token, this machine only.
           </p>
         </div>
-        <Toggle
-          id="http-api-enabled"
-          checked={integrations.httpApiEnabled}
-          disabled={!ready}
-          onChange={checked => updateIntegrations({ httpApiEnabled: checked })}
-        />
       </div>
+      <SettingToggle
+        flush
+        label="Enable Local HTTP"
+        description="Expose the loopback API on this machine."
+        htmlFor="http-api-enabled"
+        checked={integrations.httpApiEnabled}
+        disabled={!ready}
+        onChange={checked => updateIntegrations({ httpApiEnabled: checked })}
+      />
 
       {error ? (
         <p className={styles.callout} data-tone="warn">

@@ -6,9 +6,13 @@ import { useState } from 'react';
 import { ChevronDown, Trash2 } from 'lucide';
 import { Icon } from '../../../../ui/icons/Icon';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
-import { Input, NumberInput, Select, Toggle } from '../../../../ui/primitives';
 import { RangeInput } from '../../components/controls';
+import { SettingNumber } from '../../components/SettingNumber';
+import { SettingSelect } from '../../components/SettingSelect';
+import { SettingText } from '../../components/SettingText';
+import { SettingToggle } from '../../components/SettingToggle';
 import { SettingsCard } from '../../components/SettingsCard';
+import { SettingRow } from '../../components/SettingRow';
 import styles from './Plugins.module.css';
 
 export interface PluginCardProps {
@@ -57,24 +61,25 @@ export function PluginCard({
           </div>
           {description && <p className={styles.pluginDescription}>{description}</p>}
         </div>
-        <div className={styles.pluginCardControl}>
-          <Toggle
-            id={`plugin-${name.toLowerCase().replace(/\s+/g, '-')}`}
-            checked={enabled}
-            onChange={checked => onToggle?.(checked)}
-          />
-          {!isBuiltIn && onUninstall && (
-            <button
-              type="button"
-              className={styles.pluginUninstallButton}
-              onClick={onUninstall}
-              title="Uninstall plugin"
-            >
-              <Icon icon={Trash2} size={14} />
-            </button>
-          )}
-        </div>
+        {!isBuiltIn && onUninstall ? (
+          <button
+            type="button"
+            className={styles.pluginUninstallButton}
+            onClick={onUninstall}
+            title="Uninstall plugin"
+          >
+            <Icon icon={Trash2} size={14} />
+          </button>
+        ) : null}
       </div>
+      <SettingToggle
+        flush
+        label="Enabled"
+        description="Load this plugin when the app starts."
+        htmlFor={`plugin-${name.toLowerCase().replace(/\s+/g, '-')}`}
+        checked={enabled}
+        onChange={checked => onToggle?.(checked)}
+      />
 
       {hasConfig && (
         <>
@@ -95,44 +100,55 @@ export function PluginCard({
                 const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
 
                 return (
-                  <div key={key} className={styles.pluginConfigRow}>
-                    <div>
-                      <div className={styles.pluginConfigLabel}>{label}</div>
-                      {field.description && (
-                        <div className={styles.pluginConfigDescription}>{field.description}</div>
-                      )}
-                    </div>
-                    <div>
-                      {field.type === 'boolean' && (
-                        <Toggle
-                          id={fieldId}
-                          checked={value as boolean}
-                          onChange={checked => onConfigChange?.(key, checked)}
-                        />
-                      )}
-                      {field.type === 'string' && (
-                        <Input
-                          id={fieldId}
-                          value={(value as string) ?? ''}
-                          onChange={event => onConfigChange?.(key, event.target.value)}
-                        />
-                      )}
-                      {field.type === 'number' && (
-                        <NumberInput
-                          id={fieldId}
-                          value={(value as number) ?? 0}
-                          onChange={v => onConfigChange?.(key, v)}
-                        />
-                      )}
-                      {field.type === 'enum' && field.options && (
-                        <Select
-                          id={fieldId}
-                          value={(value as string) ?? ''}
-                          onChange={v => onConfigChange?.(key, v)}
-                          options={field.options}
-                        />
-                      )}
-                      {field.type === 'range' && (
+                  <div key={key}>
+                    {field.type === 'boolean' ? (
+                      <SettingToggle
+                        flush
+                        label={label}
+                        description={field.description}
+                        htmlFor={fieldId}
+                        checked={value as boolean}
+                        onChange={checked => onConfigChange?.(key, checked)}
+                      />
+                    ) : null}
+                    {field.type === 'string' ? (
+                      <SettingText
+                        flush
+                        label={label}
+                        description={field.description}
+                        htmlFor={fieldId}
+                        value={(value as string) ?? ''}
+                        onChange={next => onConfigChange?.(key, next)}
+                      />
+                    ) : null}
+                    {field.type === 'number' ? (
+                      <SettingNumber
+                        flush
+                        label={label}
+                        description={field.description}
+                        htmlFor={fieldId}
+                        value={(value as number) ?? 0}
+                        onChange={next => onConfigChange?.(key, next)}
+                      />
+                    ) : null}
+                    {field.type === 'enum' && field.options ? (
+                      <SettingSelect
+                        flush
+                        label={label}
+                        description={field.description}
+                        htmlFor={fieldId}
+                        value={(value as string) ?? ''}
+                        onChange={next => onConfigChange?.(key, next)}
+                        options={field.options}
+                      />
+                    ) : null}
+                    {field.type === 'range' ? (
+                      <SettingRow
+                        flush
+                        label={label}
+                        description={field.description}
+                        htmlFor={fieldId}
+                      >
                         <RangeInput
                           id={fieldId}
                           value={(value as number) ?? field.min ?? 0}
@@ -141,8 +157,8 @@ export function PluginCard({
                           max={field.max ?? 100}
                           step={field.step}
                         />
-                      )}
-                    </div>
+                      </SettingRow>
+                    ) : null}
                   </div>
                 );
               })}
