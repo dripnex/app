@@ -24,8 +24,8 @@ import {
   restoreDeletedNote,
   setNoteStatus,
   type NoteStatus,
-} from '@readied/core';
-import { createNoteId, createNotebookId, createTag } from '@readied/core';
+} from '@dripnex/core';
+import { createNoteId, createNotebookId, createTag } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNoteRepository, DataPaths, NoteToSnapshotFn } from './types.js';
 
@@ -33,6 +33,7 @@ export interface NoteHandlerDeps {
   noteRepository: SQLiteNoteRepository;
   dataPaths: DataPaths;
   noteToSnapshot: NoteToSnapshotFn;
+  onNotesChanged?: () => void;
 }
 
 const IdSchema = z.string().min(1).max(128);
@@ -40,9 +41,25 @@ const TitleSchema = z.string().max(512);
 const ContentSchema = z.string().max(10 * 1024 * 1024); // 10 MiB cap on note content
 const TagSchema = z.string().min(1).max(64);
 const StatusSchema: z.ZodType<NoteStatus> = z.enum(['active', 'on_hold', 'completed', 'dropped']);
+const ListNotesOptionsSchema = z.object({
+  limit: z.number().int().positive().max(100000).optional(),
+  offset: z.number().int().nonnegative().optional(),
+  tag: TagSchema.optional(),
+  tags: z.array(TagSchema).max(256).optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'title']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  archived: z.enum(['active', 'archived', 'all']).optional(),
+  notebookId: IdSchema.optional(),
+  notebookIds: z.array(IdSchema).max(256).optional(),
+  status: StatusSchema.optional(),
+  isPinned: z.boolean().optional(),
+  isDeleted: z.boolean().optional(),
+  excludeNotebookIds: z.array(IdSchema).max(256).optional(),
+});
 
 export function registerNoteHandlers(deps: NoteHandlerDeps): void {
-  const { noteRepository: repo, dataPaths, noteToSnapshot } = deps;
+  const { noteRepository: repo, dataPaths, noteToSnapshot, onNotesChanged } = deps;
+  const kickIndex = () => onNotesChanged?.();
 
   // ── Notes CRUD ──────────────────────────────────────────────────────────
 
@@ -55,7 +72,11 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
         notebookId: IdSchema.optional(),
       }),
     ]),
-    handler: input => createNoteOperation(input, repo),
+    handler: async input => {
+      const result = await createNoteOperation(input, repo);
+      if (result.ok) kickIndex();
+      return result;
+    },
   });
 
   defineIpcHandler({
@@ -67,15 +88,27 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
   defineIpcHandler({
     channel: 'notes:update',
     args: z.tuple([z.object({ id: IdSchema, content: ContentSchema })]),
-    handler: input =>
-      updateNoteOperation({ id: createNoteId(input.id), content: input.content }, repo),
+    handler: async input => {
+      const result = await updateNoteOperation(
+        { id: createNoteId(input.id), content: input.content },
+        repo
+      );
+      if (result.ok) kickIndex();
+      return result;
+    },
   });
 
   defineIpcHandler({
     channel: 'notes:updateTitle',
     args: z.tuple([z.object({ id: IdSchema, title: TitleSchema })]),
-    handler: input =>
-      updateTitleOperation({ id: createNoteId(input.id), title: input.title }, repo),
+    handler: async input => {
+      const result = await updateTitleOperation(
+        { id: createNoteId(input.id), title: input.title },
+        repo
+      );
+      if (result.ok) kickIndex();
+      return result;
+    },
   });
 
   defineIpcHandler({
@@ -99,7 +132,11 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
   defineIpcHandler({
     channel: 'notes:duplicate',
     args: z.tuple([IdSchema]),
-    handler: id => duplicateNoteOperation({ id: createNoteId(id) }, repo),
+    handler: async id => {
+      const result = await duplicateNoteOperation({ id: createNoteId(id) }, repo);
+      if (result.ok) kickIndex();
+      return result;
+    },
   });
 
   defineIpcHandler({
@@ -178,18 +215,7 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
 
   defineIpcHandler({
     channel: 'notes:list',
-    args: z.tuple([
-      z
-        .object({
-          limit: z.number().int().positive().max(100000).optional(),
-          offset: z.number().int().nonnegative().optional(),
-          tag: TagSchema.optional(),
-          sortBy: z.enum(['createdAt', 'updatedAt', 'title']).optional(),
-          sortOrder: z.enum(['asc', 'desc']).optional(),
-          archived: z.enum(['active', 'archived', 'all']).optional(),
-        })
-        .optional(),
-    ]),
+    args: z.tuple([ListNotesOptionsSchema.optional()]),
     handler: async options => {
       const notes = await repo.list(options);
       return notes.map(note => noteToSnapshot(note));
@@ -198,9 +224,16 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
 
   defineIpcHandler({
     channel: 'notes:search',
-    args: z.tuple([z.string().max(2048), z.number().int().positive().max(10000).optional()]),
-    handler: async (query, limit) => {
-      const notes = await repo.search(query, limit);
+    args: z.tuple([
+      z.string().max(2048),
+      z.union([z.number().int().positive().max(10000), ListNotesOptionsSchema]).optional(),
+    ]),
+    handler: async (query, limitOrOptions) => {
+      if (typeof limitOrOptions === 'number' || limitOrOptions === undefined) {
+        const notes = await repo.search(query, limitOrOptions);
+        return notes.map(note => noteToSnapshot(note));
+      }
+      const notes = await repo.search(query, limitOrOptions.limit ?? 50, undefined, limitOrOptions);
       return notes.map(note => noteToSnapshot(note));
     },
   });
@@ -241,6 +274,21 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
     channel: 'tags:listWithColors',
     args: z.tuple([]),
     handler: () => repo.getAllTagsWithColors(),
+  });
+
+  defineIpcHandler({
+    channel: 'tags:query',
+    args: z.tuple([
+      z
+        .object({
+          filter: z.string().max(128).optional(),
+          limit: z.number().int().min(0).max(10_000).optional(),
+          offset: z.number().int().min(0).max(1_000_000).optional(),
+          includeCount: z.boolean().optional(),
+        })
+        .optional(),
+    ]),
+    handler: options => repo.listTags(options ?? {}),
   });
 
   defineIpcHandler({
@@ -295,6 +343,7 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
     args: z.tuple([]),
     handler: () => {
       try {
+        repo.rebuildAllLinks();
         return repo.getGraphData();
       } catch (error) {
         console.error('Failed to get graph data:', error);
@@ -456,42 +505,13 @@ export function registerNoteHandlers(deps: NoteHandlerDeps): void {
   defineIpcHandler({
     channel: 'notes:count',
     args: z.tuple([]),
-    handler: async () => {
-      const allNotes = await repo.list({ archived: 'all' });
+    handler: () => repo.countSummary(),
+  });
 
-      const counts = {
-        active: 0,
-        archived: 0,
-        total: allNotes.length,
-        pinned: 0,
-        deleted: 0,
-        byStatus: {
-          active: 0,
-          on_hold: 0,
-          completed: 0,
-          dropped: 0,
-        } as Record<NoteStatus, number>,
-        byNotebook: {} as Record<string, number>,
-      };
-
-      for (const note of allNotes) {
-        if (note.metadata.archivedAt !== null) counts.archived++;
-        else counts.active++;
-
-        if (note.isPinned) counts.pinned++;
-        if (note.isDeleted) counts.deleted++;
-
-        if (note.status && counts.byStatus[note.status] !== undefined) {
-          counts.byStatus[note.status]++;
-        }
-
-        if (note.notebookId && !note.isDeleted && !note.metadata.archivedAt) {
-          counts.byNotebook[note.notebookId] = (counts.byNotebook[note.notebookId] || 0) + 1;
-        }
-      }
-
-      return counts;
-    },
+  defineIpcHandler({
+    channel: 'notes:countScoped',
+    args: z.tuple([ListNotesOptionsSchema.optional()]),
+    handler: options => repo.countScoped(options),
   });
 }
 

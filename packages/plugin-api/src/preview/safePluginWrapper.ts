@@ -24,11 +24,12 @@ export function safePluginWrapper(plugin: unknown, metadata: PluginMetadata): un
   // If plugin is not a function, return it as-is (let unified handle the error)
   if (typeof plugin !== 'function') return plugin;
 
-  // Return a new plugin function that wraps the original
-  return function safePlugin(...args: unknown[]) {
+  // Forward `this` — unified calls attachers as plugin.call(processor, ...opts).
+  // remark-math (and others) read this.data(); a loose call() crashes.
+  return function safePlugin(this: unknown, ...args: unknown[]) {
     let transformer: unknown;
     try {
-      transformer = (plugin as (...args: unknown[]) => unknown)(...args);
+      transformer = (plugin as (this: unknown, ...args: unknown[]) => unknown).apply(this, args);
     } catch (error) {
       console.warn(
         `[PluginPipeline] ${metadata.name}@${metadata.version} failed to initialize:`,

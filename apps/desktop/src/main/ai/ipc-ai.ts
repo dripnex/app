@@ -1,30 +1,223 @@
 // apps/desktop/src/main/ai/ipc-ai.ts
-import { ipcMain, app, dialog } from 'electron';
 import { readFile, writeFile } from 'node:fs/promises';
-import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@readied/ai-core';
-import type { ToolRegistry } from '@readied/ai-core';
+import { ipcMain, app, dialog } from 'electron';
+import { z } from 'zod';
+import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@dripnex/ai-core';
+import { DEFAULT_MODEL } from '@dripnex/ai-core';
+import type { ToolRegistry } from '@dripnex/ai-core';
+import { defineIpcHandler } from '../ipc/registry.js';
+import { getLogger } from '../logger.js';
 
 const BATCH_INTERVAL_MS = 50;
 
+function firstPartyAiKey(): string {
+  return process.env.DRIPNEX_AI_KEY || process.env.ANTHROPIC_API_KEY || '';
+}
+
+function applyFirstPartyAi<
+  T extends { provider: string; providerConfig: { apiKey?: string; baseUrl?: string } },
+>(request: T): T {
+  if (request.provider !== 'dripnex') return request;
+  return {
+    ...request,
+    providerConfig: {
+      ...request.providerConfig,
+      apiKey: request.providerConfig.apiKey || firstPartyAiKey(),
+    },
+  };
+}
+
+// ─── Input validation ───────────────────────────────────
+// These channels stream (they need event.sender) so they can't use the
+// tuple-based defineIpcHandler, but renderer input is still untrusted and
+// must be bounded. Parse before touching business logic.
+
+const MAX_CONTENT = 1024 * 1024; // 1 MB per field
+const IdStrSchema = z.string().min(1).max(256);
+const NoteContextSchema = z.object({
+  id: z.string().max(256),
+  title: z.string().max(4096),
+  content: z.string().max(MAX_CONTENT),
+  heading: z.string().max(4096).nullable().optional(),
+  score: z.number().optional(),
+});
+const ChatRequestSchema = z.object({
+  query: z.string().max(MAX_CONTENT),
+  currentNote: NoteContextSchema.nullish(),
+  relevantNotes: z.array(NoteContextSchema).max(200).default([]),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().max(MAX_CONTENT),
+      })
+    )
+    .max(1000)
+    .default([]),
+  mode: z.enum(['chat', 'ask-notes']),
+  provider: z.string().min(1).max(64),
+  model: z.string().min(1).max(256),
+  providerConfig: z
+    .object({
+      apiKey: z.string().max(4096).optional(),
+      baseUrl: z.string().max(2048).optional(),
+    })
+    .default({}),
+  maxResponseTokens: z.number().int().positive().max(200_000).optional(),
+  tools: z.boolean().optional(),
+});
+const ValidateConfigSchema = z.object({
+  provider: z.string().min(1).max(64),
+  apiKey: z.string().max(4096).optional(),
+  baseUrl: z.string().max(2048).optional(),
+});
+const RendererToolResultSchema = z.object({
+  ok: z.boolean(),
+  content: z.string().max(MAX_CONTENT),
+  error: z.string().max(4096).optional(),
+});
+
 // Per-window active handle tracking
 const activeHandles = new Map<number, Map<string, ChatHandle | ToolChatHandle>>();
+const activeStreamHandles = new Set<ChatHandle | ToolChatHandle>();
+
+const DROPPED_SEND = 'dropped IPC send: webContents destroyed';
+
+/** Send to the renderer only if the webContents is still alive. Never throws. */
+export function safeSend(
+  sender: Electron.WebContents,
+  channel: string,
+  ...args: unknown[]
+): boolean {
+  if (sender.isDestroyed()) {
+    warnDropped(channel);
+    return false;
+  }
+  try {
+    sender.send(channel, ...args);
+    return true;
+  } catch {
+    warnDropped(channel);
+    return false;
+  }
+}
+
+function warnDropped(channel: string): void {
+  try {
+    getLogger().warn({ channel }, DROPPED_SEND);
+  } catch {
+    console.warn(`[ai] ${DROPPED_SEND}`, channel);
+  }
+}
+
+export function trackHandle(windowId: number, handle: ChatHandle | ToolChatHandle): void {
+  if (!activeHandles.has(windowId)) {
+    activeHandles.set(windowId, new Map());
+  }
+  activeHandles.get(windowId)!.set(handle.requestId, handle);
+  activeStreamHandles.add(handle);
+}
+
+function untrackHandle(handle: ChatHandle | ToolChatHandle): void {
+  activeStreamHandles.delete(handle);
+  for (const handles of activeHandles.values()) {
+    handles.delete(handle.requestId);
+  }
+}
+
+/** Abort every in-flight AI stream. Call before destroying windows on update. */
+export function abortAllStreams(): void {
+  for (const handle of activeStreamHandles) {
+    handle.abort();
+  }
+  activeStreamHandles.clear();
+  activeHandles.clear();
+}
 
 // Pending tool confirmations: requestId -> callId -> resolve function
 const pendingConfirmations = new Map<string, Map<string, (approved: boolean) => void>>();
 const CONFIRM_TIMEOUT_MS = 60_000;
 
-// Pending renderer tool results: callId -> resolve function
+// Pending renderer tool results: `${requestId}:${callId}` -> resolve function
 const pendingRendererResults = new Map<
   string,
   (result: { ok: boolean; content: string; error?: string }) => void
 >();
 const RENDERER_TOOL_TIMEOUT_MS = 30_000;
 
-export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistry): void {
+export function registerAIHandlers(
+  service: AIService,
+  toolRegistry: ToolRegistry,
+  deps?: {
+    /** `undefined` = store not ready; `null` = ready but empty; string = use it */
+    resolveApiKey?: (provider: string) => Promise<string | null | undefined>;
+    retrieve?: (input: {
+      query: string;
+      relatedQuery?: string | null;
+      topK: number;
+      excludeIds: string[];
+    }) => Promise<
+      Array<{ id: string; title: string; content: string; heading?: string | null; score?: number }>
+    >;
+  }
+): void {
+  async function bindStoredKey(
+    request: {
+      provider: string;
+      providerConfig: { apiKey?: string; baseUrl?: string };
+    },
+    allowRendererFallback: boolean
+  ): Promise<typeof request> {
+    if (request.provider === 'ollama' || request.provider === 'dripnex') {
+      return request;
+    }
+    const stored = await deps?.resolveApiKey?.(request.provider);
+    if (typeof stored === 'string' && stored.length > 0) {
+      return {
+        ...request,
+        providerConfig: { ...request.providerConfig, apiKey: stored },
+      };
+    }
+    if (stored === null && !allowRendererFallback) {
+      return {
+        ...request,
+        providerConfig: { ...request.providerConfig, apiKey: '' },
+      };
+    }
+    return request;
+  }
+
+  defineIpcHandler({
+    channel: 'ai:firstPartyStatus',
+    args: z.tuple([]),
+    handler: () => ({ available: Boolean(firstPartyAiKey()) }),
+  });
+
+  defineIpcHandler({
+    channel: 'ai:retrieve',
+    args: z.tuple([
+      z.object({
+        query: z.string().max(2048),
+        relatedQuery: z.string().max(2048).optional().nullable(),
+        topK: z.number().int().min(1).max(50).default(5),
+        excludeIds: z.array(z.string().max(256)).max(50).default([]),
+      }),
+    ]),
+    handler: async input => {
+      if (!deps?.retrieve) return [];
+      return deps.retrieve({
+        query: input.query,
+        relatedQuery: input.relatedQuery,
+        topK: input.topK,
+        excludeIds: input.excludeIds,
+      });
+    },
+  });
+
   // ─── Streaming chat ─────────────────────────────────────
   ipcMain.handle(
     'ai:chat',
-    (
+    async (
       event,
       request: {
         query: string;
@@ -39,6 +232,14 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
         tools?: boolean;
       }
     ) => {
+      const parsed = ChatRequestSchema.safeParse(request);
+      if (!parsed.success) {
+        throw new Error(`Invalid ai:chat request: ${parsed.error.message}`);
+      }
+      request = parsed.data as typeof request;
+      request = (await bindStoredKey(request, false)) as typeof request;
+      request = applyFirstPartyAi(request);
+
       const windowId = event.sender.id;
       const toolDefs = request.tools ? toolRegistry.getDefinitions() : [];
 
@@ -55,10 +256,14 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
         }
 
         if (tool.requiresConfirmation) {
-          event.sender.send('ai:event', requestId, {
-            type: 'tool_confirm_needed',
-            callId: call.id,
-          });
+          if (
+            !safeSend(event.sender, 'ai:event', requestId, {
+              type: 'tool_confirm_needed',
+              callId: call.id,
+            })
+          ) {
+            return { ok: false, content: 'Renderer gone', error: 'destroyed' };
+          }
           const approved = await waitForConfirmation(requestId, call.id);
           if (!approved) {
             return { ok: false, content: 'Tool execution cancelled by user', error: 'Cancelled' };
@@ -79,12 +284,7 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           : service.chat(request);
 
       requestId = handle.requestId;
-
-      // Track handle
-      if (!activeHandles.has(windowId)) {
-        activeHandles.set(windowId, new Map());
-      }
-      activeHandles.get(windowId)!.set(handle.requestId, handle);
+      trackHandle(windowId, handle);
 
       void consumeStream(event.sender, handle);
 
@@ -94,6 +294,7 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
 
   // ─── Cancel ─────────────────────────────────────────────
   ipcMain.handle('ai:cancel', (event, requestId: string) => {
+    if (!IdStrSchema.safeParse(requestId).success) return;
     const windowId = event.sender.id;
     const handles = activeHandles.get(windowId);
     const handle = handles?.get(requestId);
@@ -107,15 +308,28 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   ipcMain.handle(
     'ai:validate',
     async (_event, config: { provider: string; apiKey?: string; baseUrl?: string }) => {
+      const parsedConfig = ValidateConfigSchema.safeParse(config);
+      if (!parsedConfig.success) {
+        return { ok: false, error: `Invalid ai:validate config: ${parsedConfig.error.message}` };
+      }
+      config = parsedConfig.data;
       try {
+        const bound = await bindStoredKey(
+          {
+            provider: config.provider ?? 'dripnex',
+            providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
+          },
+          true
+        );
+        const resolved = applyFirstPartyAi(bound);
         const handle = service.chat({
           query: 'Say "ok".',
           history: [],
           relevantNotes: [],
           mode: 'chat',
-          provider: config.provider ?? 'anthropic',
-          model: 'claude-sonnet-4-20250514',
-          providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
+          provider: resolved.provider,
+          model: DEFAULT_MODEL,
+          providerConfig: resolved.providerConfig,
           maxResponseTokens: 1,
         });
         // Consume stream to actually trigger the provider call
@@ -131,6 +345,33 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
           }
         }
         return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'ai:listModels',
+    async (_event, config: { provider: string; apiKey?: string; baseUrl?: string }) => {
+      const parsedConfig = ValidateConfigSchema.safeParse(config);
+      if (!parsedConfig.success) {
+        return { ok: false, error: `Invalid ai:listModels config: ${parsedConfig.error.message}` };
+      }
+      try {
+        const bound = await bindStoredKey(
+          {
+            provider: parsedConfig.data.provider,
+            providerConfig: {
+              apiKey: parsedConfig.data.apiKey,
+              baseUrl: parsedConfig.data.baseUrl,
+            },
+          },
+          true
+        );
+        const resolved = applyFirstPartyAi(bound);
+        const models = await service.listModels(resolved.provider, resolved.providerConfig);
+        return { ok: true, models };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }
@@ -172,6 +413,13 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
   ipcMain.handle(
     'ai:tool-confirm',
     (event, requestId: string, callId: string, approved: boolean) => {
+      if (
+        !IdStrSchema.safeParse(requestId).success ||
+        !IdStrSchema.safeParse(callId).success ||
+        typeof approved !== 'boolean'
+      ) {
+        return;
+      }
       // Verify the sender owns this request
       const windowId = event.sender.id;
       if (!activeHandles.get(windowId)?.has(requestId)) return;
@@ -193,25 +441,34 @@ export function registerAIHandlers(service: AIService, toolRegistry: ToolRegistr
       callId: string,
       result: { ok: boolean; content: string; error?: string }
     ) => {
+      if (
+        !IdStrSchema.safeParse(requestId).success ||
+        !IdStrSchema.safeParse(callId).success ||
+        !RendererToolResultSchema.safeParse(result).success
+      ) {
+        return;
+      }
       // Verify the sender owns this request
       const windowId = event.sender.id;
       if (!activeHandles.get(windowId)?.has(requestId)) return;
 
-      const resolve = pendingRendererResults.get(callId);
+      const key = `${requestId}:${callId}`;
+      const resolve = pendingRendererResults.get(key);
       if (resolve) {
         resolve(result);
-        pendingRendererResults.delete(callId);
+        pendingRendererResults.delete(key);
       }
     }
   );
 
   // ─── Cleanup on window destroy ──────────────────────────
   app.on('browser-window-created', (_event, window) => {
+    const wcId = window.webContents.id;
     window.webContents.on('destroyed', () => {
-      const handles = activeHandles.get(window.webContents.id);
+      const handles = activeHandles.get(wcId);
       if (handles) {
         for (const handle of handles.values()) handle.abort();
-        activeHandles.delete(window.webContents.id);
+        activeHandles.delete(wcId);
       }
     });
   });
@@ -246,13 +503,20 @@ export function executeToolInRenderer(
   toolName: string,
   args: Record<string, unknown>
 ): Promise<{ ok: boolean; content: string; error?: string }> {
+  // Key by (requestId, callId): callId is only unique within a request, so two
+  // concurrent requests could otherwise collide and resolve each other's promise.
+  const key = `${requestId}:${callId}`;
   return new Promise(resolve => {
-    pendingRendererResults.set(callId, resolve);
-    sender.send('ai:tool-execute-in-renderer', requestId, callId, toolName, args);
+    pendingRendererResults.set(key, resolve);
+    if (!safeSend(sender, 'ai:tool-execute-in-renderer', requestId, callId, toolName, args)) {
+      pendingRendererResults.delete(key);
+      resolve({ ok: false, content: 'Renderer gone', error: 'destroyed' });
+      return;
+    }
 
     setTimeout(() => {
-      if (pendingRendererResults.has(callId)) {
-        pendingRendererResults.delete(callId);
+      if (pendingRendererResults.has(key)) {
+        pendingRendererResults.delete(key);
         resolve({ ok: false, content: 'Renderer tool timed out', error: 'Timeout' });
       }
     }, RENDERER_TOOL_TIMEOUT_MS);
@@ -261,19 +525,25 @@ export function executeToolInRenderer(
 
 // ─── Stream consumer with batching ────────────────────────
 
-async function consumeStream(
+export async function consumeStream(
   sender: Electron.WebContents,
   handle: ChatHandle | ToolChatHandle
 ): Promise<void> {
   let textBuffer = '';
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const flush = (): void => {
-    if (textBuffer && !sender.isDestroyed()) {
-      sender.send('ai:event', handle.requestId, { type: 'text', delta: textBuffer });
+  const flush = (): boolean => {
+    if (textBuffer) {
+      const ok = safeSend(sender, 'ai:event', handle.requestId, {
+        type: 'text',
+        delta: textBuffer,
+      });
       textBuffer = '';
+      flushTimer = null;
+      return ok;
     }
     flushTimer = null;
+    return true;
   };
 
   try {
@@ -295,7 +565,10 @@ async function consumeStream(
           flushTimer = null;
         }
         flush();
-        sender.send('ai:event', handle.requestId, event);
+        if (!safeSend(sender, 'ai:event', handle.requestId, event)) {
+          handle.abort();
+          break;
+        }
       }
     }
 
@@ -307,18 +580,13 @@ async function consumeStream(
     flush();
   } catch (err) {
     flush();
-    if (!sender.isDestroyed()) {
-      sender.send('ai:event', handle.requestId, {
-        type: 'error',
-        code: 'provider_error',
-        error: err instanceof Error ? err.message : String(err),
-        retryable: false,
-      });
-    }
+    safeSend(sender, 'ai:event', handle.requestId, {
+      type: 'error',
+      code: 'provider_error',
+      error: err instanceof Error ? err.message : String(err),
+      retryable: false,
+    });
   } finally {
-    // Remove from active handles
-    for (const handles of activeHandles.values()) {
-      handles.delete(handle.requestId);
-    }
+    untrackHandle(handle);
   }
 }

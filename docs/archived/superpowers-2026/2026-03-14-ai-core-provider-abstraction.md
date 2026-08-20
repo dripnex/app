@@ -51,11 +51,11 @@
 | `apps/desktop/src/main/index.ts`                                  | Remove `registerAiHandlers()` function (lines 2185-2277), replace call (line 2421) with import from `ai/setup.ts`                  |
 | `apps/desktop/src/preload/index.ts`                               | Replace `ai.query()` with `ai.chat()` + `ai.onEvent()` + `ai.cancel()` + `ai.validate()`                                           |
 | `apps/desktop/src/renderer/components/ai/AiPanel.tsx`             | Refactor from await-response to event-driven streaming. Replace `ClaudeMessage` with `ChatMessage`, remove `buildRagPrompt` import |
-| `apps/desktop/src/renderer/App.tsx`                               | Update imports: `AiPanelMode` and `NoteContext` from `@readied/ai-core` instead of `@readied/ai-assistant`                         |
-| `apps/desktop/src/renderer/hooks/useRegisterPluginAiCommands.ts`  | Update `resolveTemplate` import from `@readied/ai-core`                                                                            |
+| `apps/desktop/src/renderer/App.tsx`                               | Update imports: `AiPanelMode` and `NoteContext` from `@dripnex/ai-core` instead of `@dripnex/ai-assistant`                         |
+| `apps/desktop/src/renderer/hooks/useRegisterPluginAiCommands.ts`  | Update `resolveTemplate` import from `@dripnex/ai-core`                                                                            |
 | `apps/desktop/src/renderer/stores/settings/schema.ts`             | Extend `AiSettings` with `provider` field                                                                                          |
 | `apps/desktop/src/renderer/pages/settings/sections/AiSection.tsx` | Update imports, add provider selector, refactor test-connection to use `ai.validate()`                                             |
-| `apps/desktop/package.json`                                       | Replace `@readied/ai-assistant` dep with `@readied/ai-core`                                                                        |
+| `apps/desktop/package.json`                                       | Replace `@dripnex/ai-assistant` dep with `@dripnex/ai-core`                                                                        |
 
 ### Kept as-is
 
@@ -81,7 +81,7 @@
 
 ```json
 {
-  "name": "@readied/ai-core",
+  "name": "@dripnex/ai-core",
   "version": "0.1.0",
   "private": true,
   "description": "Provider-agnostic AI core with streaming protocol",
@@ -130,8 +130,8 @@
 
 - [ ] **Step 4: Install dependencies**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm install`
-Expected: Success, `@readied/ai-core` appears in workspace
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm install`
+Expected: Success, `@dripnex/ai-core` appears in workspace
 
 - [ ] **Step 5: Verify typecheck**
 
@@ -727,7 +727,7 @@ export function estimateMessageTokens(content: MessageContent): number {
 
 // ─── System Prompts ─────────────────────────────────────────
 
-export const SYSTEM_PROMPT = `You are an AI assistant embedded in Readied, a markdown note-taking app.
+export const SYSTEM_PROMPT = `You are an AI assistant embedded in Dripnex, a markdown note-taking app.
 You help users with their notes: answering questions, summarizing content, suggesting improvements, and generating new content.
 
 Guidelines:
@@ -737,7 +737,7 @@ Guidelines:
 - Respect the user's writing style
 - Never fabricate information not present in the provided context`;
 
-export const ASK_NOTES_SYSTEM_PROMPT = `You are an AI assistant embedded in Readied, a markdown note-taking app.
+export const ASK_NOTES_SYSTEM_PROMPT = `You are an AI assistant embedded in Dripnex, a markdown note-taking app.
 You are in "Ask Your Notes" mode. Your primary job is to answer the user's question using ONLY the notes provided as context.
 
 Guidelines:
@@ -2067,19 +2067,19 @@ git commit -m "feat(ai-core): add AIService orchestrator with context building a
 - Create: `apps/desktop/src/main/ai/setup.ts`
 - Create: `apps/desktop/src/main/ai/ipc-ai.ts`
 - Modify: `apps/desktop/src/main/index.ts` — remove old `registerAiHandlers()`, import new setup
-- Modify: `apps/desktop/package.json` — replace `@readied/ai-assistant` with `@readied/ai-core`
+- Modify: `apps/desktop/package.json` — replace `@dripnex/ai-assistant` with `@dripnex/ai-core`
 
-- [ ] **Step 1: Add @readied/ai-core dependency to desktop**
+- [ ] **Step 1: Add @dripnex/ai-core dependency to desktop**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm --filter @readied/desktop remove @readied/ai-assistant && pnpm --filter @readied/desktop add @readied/ai-core@workspace:*`
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm --filter @dripnex/desktop remove @dripnex/ai-assistant && pnpm --filter @dripnex/desktop add @dripnex/ai-core@workspace:*`
 
 - [ ] **Step 2: Create setup.ts**
 
 ```typescript
 // apps/desktop/src/main/ai/setup.ts
 import { net } from 'electron';
-import { ProviderRegistry, AnthropicProvider, AIServiceImpl } from '@readied/ai-core';
-import type { AIService, FetchFn } from '@readied/ai-core';
+import { ProviderRegistry, AnthropicProvider, AIServiceImpl } from '@dripnex/ai-core';
+import type { AIService, FetchFn } from '@dripnex/ai-core';
 
 let service: AIService | null = null;
 
@@ -2100,8 +2100,8 @@ export function createAIService(): AIService {
 // apps/desktop/src/main/ai/ipc-ai.ts
 import { ipcMain, app, BrowserWindow, dialog } from 'electron';
 import { readFile, writeFile } from 'node:fs/promises';
-import type { AIService, ChatRequest, LLMEvent, ProviderConfig } from '@readied/ai-core';
-import type { ChatHandle } from '@readied/ai-core';
+import type { AIService, ChatRequest, LLMEvent, ProviderConfig } from '@dripnex/ai-core';
+import type { ChatHandle } from '@dripnex/ai-core';
 
 const BATCH_INTERVAL_MS = 50;
 
@@ -2274,7 +2274,7 @@ Note: Exact import location and settings store access pattern depends on how `se
 
 - [ ] **Step 5: Verify build**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm typecheck`
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm typecheck`
 Expected: No errors (may need to fix imports iteratively)
 
 - [ ] **Step 6: Commit**
@@ -2332,7 +2332,7 @@ ai: {
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm typecheck`
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm typecheck`
 Expected: May fail on renderer code that still uses old `ai.query()` — that's expected and fixed in Task 11
 
 - [ ] **Step 3: Commit**
@@ -2389,10 +2389,10 @@ Bump `SETTINGS_VERSION` to 3 and add migration in `settingsStore.ts`.
 
 Full refactor of `AiPanel.tsx`. Key changes:
 
-- Replace `await window.readied.ai.query(...)` with `window.readied.ai.chat(...)` + `window.readied.ai.onEvent()`
+- Replace `await window.dripnex.ai.query(...)` with `window.dripnex.ai.chat(...)` + `window.dripnex.ai.onEvent()`
 - Accumulate text deltas progressively for live streaming display
 - Handle error events by `code` (show user-friendly messages)
-- Support cancellation via `window.readied.ai.cancel(requestId)`
+- Support cancellation via `window.dripnex.ai.cancel(requestId)`
 - AI commands (summarize, rewrite, tweet) accumulate full response then act
 
 The `handleSubmit` function becomes:
@@ -2417,7 +2417,7 @@ const handleSubmit = useCallback(async () => {
   }
 
   // Start streaming
-  const { requestId } = await window.readied.ai.chat({
+  const { requestId } = await window.dripnex.ai.chat({
     query,
     currentNote,
     relevantNotes,
@@ -2430,7 +2430,7 @@ const handleSubmit = useCallback(async () => {
   activeRequestRef.current = requestId;
   let accumulated = '';
 
-  const unsubscribe = window.readied.ai.onEvent((reqId, event) => {
+  const unsubscribe = window.dripnex.ai.onEvent((reqId, event) => {
     if (reqId !== requestId) return;
     const e = event as {
       type: string;
@@ -2529,21 +2529,21 @@ Also add `AiPanelMode` export to `context-builder.ts`:
 export type AiPanelMode = 'chat' | 'ask-notes';
 ```
 
-- [ ] **Step 4: Update all renderer imports from @readied/ai-assistant to @readied/ai-core**
+- [ ] **Step 4: Update all renderer imports from @dripnex/ai-assistant to @dripnex/ai-core**
 
 Files to update:
 
-- `apps/desktop/src/renderer/pages/settings/sections/AiSection.tsx` — change `@readied/ai-assistant` → `@readied/ai-core`
-- `apps/desktop/src/renderer/App.tsx` — change `AiPanelMode`, `NoteContext`, and any other imports from `@readied/ai-assistant` → `@readied/ai-core`
-- `apps/desktop/src/renderer/hooks/useRegisterPluginAiCommands.ts` — change `resolveTemplate` import to `@readied/ai-core`
+- `apps/desktop/src/renderer/pages/settings/sections/AiSection.tsx` — change `@dripnex/ai-assistant` → `@dripnex/ai-core`
+- `apps/desktop/src/renderer/App.tsx` — change `AiPanelMode`, `NoteContext`, and any other imports from `@dripnex/ai-assistant` → `@dripnex/ai-core`
+- `apps/desktop/src/renderer/hooks/useRegisterPluginAiCommands.ts` — change `resolveTemplate` import to `@dripnex/ai-core`
 - `apps/desktop/src/renderer/components/ai/AiPanel.tsx` — replace `ClaudeMessage` with `ChatMessage`, remove `buildRagPrompt` import
 
-Run: `grep -r "@readied/ai-assistant" --include="*.ts" --include="*.tsx" apps/ packages/ | grep -v node_modules`
+Run: `grep -r "@dripnex/ai-assistant" --include="*.ts" --include="*.tsx" apps/ packages/ | grep -v node_modules`
 Fix any remaining imports found.
 
 - [ ] **Step 4b: Refactor AiSection.tsx test-connection flow**
 
-The current test-connection uses `window.readied.ai.query()` which no longer exists. Options:
+The current test-connection uses `window.dripnex.ai.query()` which no longer exists. Options:
 
 - (a) Add `ai:validate` IPC handler in `ipc-ai.ts` that calls `provider.validate(config)` directly
 - (b) Use `ai.chat()` with a test query
@@ -2566,16 +2566,16 @@ Add to preload `ai` section:
 validate: () => ipcRenderer.invoke('ai:validate') as Promise<{ ok: boolean; error?: string }>,
 ```
 
-Update `AiSection.tsx` `handleTestConnection` to call `window.readied.ai.validate()` instead of `window.readied.ai.query()`.
+Update `AiSection.tsx` `handleTestConnection` to call `window.dripnex.ai.validate()` instead of `window.dripnex.ai.query()`.
 
 - [ ] **Step 5: Run full typecheck**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm typecheck`
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm typecheck`
 Expected: No errors
 
 - [ ] **Step 6: Run tests**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm test`
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm test`
 Expected: All pass
 
 - [ ] **Step 7: Test manually in dev mode**
@@ -2603,11 +2603,11 @@ git commit -m "feat(desktop): migrate AI panel to streaming with provider abstra
 **Files:**
 
 - Delete: `packages/ai-assistant/` (entire directory)
-- Verify: no remaining imports from `@readied/ai-assistant`
+- Verify: no remaining imports from `@dripnex/ai-assistant`
 
 - [ ] **Step 1: Search for remaining imports**
 
-Run: `grep -r "@readied/ai-assistant" --include="*.ts" --include="*.tsx" apps/ packages/ | grep -v node_modules`
+Run: `grep -r "@dripnex/ai-assistant" --include="*.ts" --include="*.tsx" apps/ packages/ | grep -v node_modules`
 Expected: No results
 
 - [ ] **Step 2: Remove the package**
@@ -2616,7 +2616,7 @@ Run: `rm -rf packages/ai-assistant`
 
 - [ ] **Step 3: Run install to clean workspace**
 
-Run: `cd /Users/tomasmaritano/Documents/Github/readied/readide && pnpm install`
+Run: `cd /Users/tomasmaritano/Documents/Github/dripnex/readide && pnpm install`
 
 - [ ] **Step 4: Final typecheck + test**
 
@@ -2632,7 +2632,7 @@ Verify the AI assistant works end-to-end with streaming.
 
 ```bash
 git add -A
-git commit -m "chore: remove deprecated @readied/ai-assistant package"
+git commit -m "chore: remove deprecated @dripnex/ai-assistant package"
 ```
 
 ---

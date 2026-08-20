@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { extractTitle, extractTags, countWords } from '../src/domain/metadata.js';
+import {
+  extractTitle,
+  extractTags,
+  extractTasks,
+  countWords,
+  isPlaceholderTitle,
+} from '../src/domain/metadata.js';
 
 describe('Metadata', () => {
   describe('extractTitle', () => {
@@ -18,6 +24,11 @@ describe('Metadata', () => {
       expect(extractTitle(content)).toBe('No heading here');
     });
 
+    it('ignores a heading that is not at the top', () => {
+      const content = 'Intro paragraph\n\n# Later heading\n\nBody.';
+      expect(extractTitle(content)).toBe('Intro paragraph');
+    });
+
     it('returns fallback for empty content', () => {
       expect(extractTitle('')).toBe('Untitled');
       expect(extractTitle('   ')).toBe('Untitled');
@@ -27,10 +38,26 @@ describe('Metadata', () => {
       expect(extractTitle('', 'Custom Default')).toBe('Custom Default');
     });
 
+    it('detects placeholder titles', () => {
+      expect(isPlaceholderTitle('Untitled')).toBe(true);
+      expect(isPlaceholderTitle('untitled')).toBe(true);
+      expect(isPlaceholderTitle('  ')).toBe(true);
+      expect(isPlaceholderTitle('Ship the graph')).toBe(false);
+    });
+
     it('truncates very long titles', () => {
       const longTitle = 'A'.repeat(200);
       const content = longTitle + '\n\nContent.';
       expect(extractTitle(content).length).toBeLessThanOrEqual(100);
+    });
+  });
+
+  describe('extractTasks', () => {
+    it('counts GFM tasks outside fences', () => {
+      const content = ['# Title', '- [x] done', '- [ ] todo', '```', '- [ ] fake', '```'].join(
+        '\n'
+      );
+      expect(extractTasks(content)).toEqual({ total: 2, completed: 1 });
     });
   });
 
@@ -80,6 +107,18 @@ describe('Metadata', () => {
     it('returns empty array for content without tags', () => {
       const content = 'No tags here, just text.';
       expect(extractTags(content)).toEqual([]);
+    });
+
+    it('ignores hashtags inside fenced and inline code', () => {
+      const content = ['#real', '', '```js', 'const x = "#fake";', '```', '', 'also `#nope`'].join(
+        '\n'
+      );
+      expect(extractTags(content)).toEqual(['real']);
+    });
+
+    it('ignores hashtags inside tilde fences', () => {
+      const content = ['~~~', '#fake', '~~~', 'keep #real'].join('\n');
+      expect(extractTags(content)).toEqual(['real']);
     });
   });
 

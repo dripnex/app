@@ -1,146 +1,25 @@
 import { useState, useCallback, useMemo, type ReactElement } from 'react';
-import { WidgetType, Decoration, EditorView, type DecorationSet } from '@codemirror/view';
-import { RangeSetBuilder, StateField, type EditorState } from '@codemirror/state';
-import type { PluginManifest, ZoneComponentProps } from '@readied/plugin-api';
+import { WidgetType, Decoration, EditorView, keymap, type DecorationSet } from '@codemirror/view';
+import { EditorSelection, RangeSetBuilder, StateField, type EditorState } from '@codemirror/state';
+import type { PluginManifest, ZoneComponentProps } from '@dripnex/plugin-api';
+import {
+  applyTableOp,
+  findTableAtCursor,
+  findTableRanges,
+  formatAllTables,
+  generateGfmTable,
+  parseGfmTable,
+  tableToCsv,
+  type ParsedTable,
+  type TableOp,
+} from '@dripnex/tables';
 import React from 'react';
+import { cssm } from '../lib/cssm';
+import tableStyles from './tables.module.css';
 
-// ============================================================
-// Shared: GFM Table Parser
-// ============================================================
+export { findTableRanges, findTableAtCursor, parseGfmTable, generateGfmTable, tableToCsv };
 
-interface ParsedTable {
-  headers: string[];
-  alignments: Array<'left' | 'center' | 'right' | 'none'>;
-  rows: string[][];
-  from: number;
-  to: number;
-}
-
-const TABLE_SEP_RE = /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
-
-function parseAlignment(cell: string): 'left' | 'center' | 'right' | 'none' {
-  const trimmed = cell.trim();
-  const left = trimmed.startsWith(':');
-  const right = trimmed.endsWith(':');
-  if (left && right) return 'center';
-  if (right) return 'right';
-  if (left) return 'left';
-  return 'none';
-}
-
-function splitRow(line: string): string[] {
-  // Remove leading/trailing pipe and split
-  let trimmed = line.trim();
-  if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
-  if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
-  return trimmed.split('|').map(c => c.trim());
-}
-
-function parseGfmTable(text: string, from: number): ParsedTable | null {
-  const lines = text.split('\n');
-  const headerLine = lines[0];
-  const sepLine = lines[1];
-  if (!headerLine || !sepLine) return null;
-
-  // Line 0 = headers, Line 1 = separator
-  if (!TABLE_SEP_RE.test(sepLine)) return null;
-
-  const headers = splitRow(headerLine);
-  const sepCells = splitRow(sepLine);
-  if (headers.length !== sepCells.length) return null;
-
-  const alignments = sepCells.map(parseAlignment);
-  const rows: string[][] = [];
-
-  for (let i = 2; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line) break;
-    const trimmed = line.trim();
-    if (!trimmed || !trimmed.includes('|')) break;
-    const cells = splitRow(line);
-    // Pad or truncate to header count
-    while (cells.length < headers.length) cells.push('');
-    rows.push(cells.slice(0, headers.length));
-  }
-
-  return { headers, alignments, rows, from, to: from + text.length };
-}
-
-interface TableRange {
-  from: number;
-  to: number;
-  text: string;
-}
-
-function findTableRanges(docText: string): TableRange[] {
-  const ranges: TableRange[] = [];
-  const lines = docText.split('\n');
-  let i = 0;
-
-  while (i < lines.length) {
-    const currentLine = lines[i]!;
-    const nextLine = lines[i + 1];
-    // Look for a header line followed by a separator
-    if (nextLine !== undefined && currentLine.trim().includes('|') && TABLE_SEP_RE.test(nextLine)) {
-      const startLine = i;
-      i += 2; // Skip header + separator
-
-      // Consume body rows
-      while (i < lines.length && lines[i]!.trim().includes('|')) {
-        i++;
-      }
-
-      // Calculate offsets
-      let from = 0;
-      for (let j = 0; j < startLine; j++) {
-        from += lines[j]!.length + 1; // +1 for newline
-      }
-      let to = from;
-      for (let j = startLine; j < i; j++) {
-        to += lines[j]!.length + (j < i - 1 ? 1 : 0);
-      }
-
-      const text = lines.slice(startLine, i).join('\n');
-      ranges.push({ from, to, text });
-    } else {
-      i++;
-    }
-  }
-
-  return ranges;
-}
-
-function findTableAtCursor(content: string, pos: number): ParsedTable | null {
-  const ranges = findTableRanges(content);
-  for (const range of ranges) {
-    if (pos >= range.from && pos <= range.to) {
-      return parseGfmTable(range.text, range.from);
-    }
-  }
-  return null;
-}
-
-function generateGfmTable(rows: number, cols: number): string {
-  const header =
-    '| ' + Array.from({ length: cols }, (_, i) => `Column ${i + 1}`).join(' | ') + ' |';
-  const separator = '| ' + Array.from({ length: cols }, () => '---').join(' | ') + ' |';
-  const bodyRow = '| ' + Array.from({ length: cols }, () => '  ').join(' | ') + ' |';
-  const body = Array.from({ length: rows }, () => bodyRow).join('\n');
-  return `${header}\n${separator}\n${body}`;
-}
-
-function tableToCsv(table: ParsedTable): string {
-  const escapeCell = (cell: string): string => {
-    if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
-      return `"${cell.replace(/"/g, '""')}"`;
-    }
-    return cell;
-  };
-
-  const headerLine = table.headers.map(escapeCell).join(',');
-  const bodyLines = table.rows.map(row => row.map(escapeCell).join(','));
-  return [headerLine, ...bodyLines].join('\n');
-}
+const sc = cssm(tableStyles);
 
 // ============================================================
 // Feature 1: Insert Table Modal (React component)
@@ -168,22 +47,23 @@ function InsertTableModal({ meta }: InsertTableModalProps) {
   );
 
   return (
-    <div className="insert-table-modal" onClick={e => e.stopPropagation()}>
-      <div className="insert-table-modal-header">
-        <span className="insert-table-modal-title">Insert Table</span>
-        <span className="insert-table-modal-size">
+    <div className={sc('insert-table-modal')} onClick={e => e.stopPropagation()}>
+      <div className={sc('insert-table-modal-header')}>
+        <span className={sc('insert-table-modal-title')}>Insert Table</span>
+        <span className={sc('insert-table-modal-size')}>
           {hoverRow > 0 && hoverCol > 0 ? `${hoverRow} x ${hoverCol}` : 'Select size'}
         </span>
       </div>
-      <div className="insert-table-modal-grid">
+      <div className={sc('insert-table-modal-grid')}>
         {Array.from({ length: maxRows }, (_, r) => (
-          <div key={r} className="insert-table-modal-row">
+          <div key={r} className={sc('insert-table-modal-row')}>
             {Array.from({ length: maxCols }, (_, c) => (
               <button
                 key={c}
-                className={`insert-table-modal-cell${
-                  r + 1 <= hoverRow && c + 1 <= hoverCol ? ' active' : ''
-                }`}
+                className={sc(
+                  'insert-table-modal-cell',
+                  r + 1 <= hoverRow && c + 1 <= hoverCol && 'active'
+                )}
                 onMouseEnter={() => {
                   setHoverRow(r + 1);
                   setHoverCol(c + 1);
@@ -272,9 +152,21 @@ function buildTableDecorations(state: EditorState): DecorationSet {
   const sel = state.selection.main;
 
   for (const range of ranges) {
-    // Skip if cursor is inside this table range (show raw markdown for editing)
-    if (sel.from >= range.from && sel.from <= range.to) continue;
-    if (sel.to >= range.from && sel.to <= range.to) continue;
+    const cursorInside =
+      (sel.from >= range.from && sel.from <= range.to) ||
+      (sel.to >= range.from && sel.to <= range.to);
+
+    if (cursorInside) {
+      // Line marks only — adding these AND a replace at range.from is
+      // illegal (replace.from < later line.from).
+      const startLine = doc.lineAt(range.from);
+      const endLine = doc.lineAt(Math.max(range.from, range.to - 1));
+      for (let n = startLine.number; n <= endLine.number; n++) {
+        const line = doc.line(n);
+        builder.add(line.from, line.from, Decoration.line({ class: 'cm-table-range' }));
+      }
+      continue;
+    }
 
     const parsed = parseGfmTable(range.text, range.from);
     if (!parsed) continue;
@@ -399,54 +291,56 @@ function SortableTable(
 
   // Render with modified thead (sort indicators) and sorted tbody
   return (
-    <table {...rest} className="sortable-table">
-      {thead && (
-        <thead>
-          {React.Children.map(
-            (thead as ReactElement<{ children?: React.ReactNode }>).props.children,
-            trChild => {
-              if (!React.isValidElement(trChild)) return trChild;
-              const trEl = trChild as ReactElement<{
-                children?: React.ReactNode;
-                style?: React.CSSProperties;
-              }>;
-              return React.cloneElement(trEl, {
-                children: React.Children.map(
-                  (trChild as ReactElement<{ children?: React.ReactNode }>).props.children,
-                  (thChild, colIdx) => {
-                    if (!React.isValidElement(thChild)) return thChild;
-                    const el = thChild as ReactElement<{
-                      children?: React.ReactNode;
-                      style?: React.CSSProperties;
-                      className?: string;
-                    }>;
-                    const isSorted = sortCol === colIdx;
-                    const arrow = isSorted ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
-                    return React.cloneElement(el, {
-                      className: `sortable-th${isSorted ? ' sorted' : ''}`,
-                      onClick: () => handleHeaderClick(colIdx),
-                      style: {
-                        ...(el.props.style ?? {}),
-                        cursor: 'pointer',
-                        userSelect: 'none' as const,
-                      },
-                      children: (
-                        <>
-                          {el.props.children}
-                          {arrow && <span className="sort-indicator">{arrow}</span>}
-                        </>
-                      ),
-                    } as Record<string, unknown>);
-                  }
-                ),
-              } as Record<string, unknown>);
-            }
-          )}
-        </thead>
-      )}
-      {tbody && sortedTbodyChildren && <tbody>{sortedTbodyChildren}</tbody>}
-      {otherChildren}
-    </table>
+    <div className={sc('sortable-table-wrap')}>
+      <table {...rest} className={sc('sortable-table')}>
+        {thead && (
+          <thead>
+            {React.Children.map(
+              (thead as ReactElement<{ children?: React.ReactNode }>).props.children,
+              trChild => {
+                if (!React.isValidElement(trChild)) return trChild;
+                const trEl = trChild as ReactElement<{
+                  children?: React.ReactNode;
+                  style?: React.CSSProperties;
+                }>;
+                return React.cloneElement(trEl, {
+                  children: React.Children.map(
+                    (trChild as ReactElement<{ children?: React.ReactNode }>).props.children,
+                    (thChild, colIdx) => {
+                      if (!React.isValidElement(thChild)) return thChild;
+                      const el = thChild as ReactElement<{
+                        children?: React.ReactNode;
+                        style?: React.CSSProperties;
+                        className?: string;
+                      }>;
+                      const isSorted = sortCol === colIdx;
+                      const arrow = isSorted ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
+                      return React.cloneElement(el, {
+                        className: sc('sortable-th', isSorted && 'sorted'),
+                        onClick: () => handleHeaderClick(colIdx),
+                        style: {
+                          ...(el.props.style ?? {}),
+                          cursor: 'pointer',
+                          userSelect: 'none' as const,
+                        },
+                        children: (
+                          <>
+                            {el.props.children}
+                            {arrow && <span className={sc('sort-indicator')}>{arrow}</span>}
+                          </>
+                        ),
+                      } as Record<string, unknown>);
+                    }
+                  ),
+                } as Record<string, unknown>);
+              }
+            )}
+          </thead>
+        )}
+        {tbody && sortedTbodyChildren && <tbody>{sortedTbodyChildren}</tbody>}
+        {otherChildren}
+      </table>
+    </div>
   );
 }
 
@@ -461,11 +355,10 @@ function SortableTable(
 // ============================================================
 
 export const tablesPlugin: PluginManifest = {
-  id: 'readied-tables',
+  id: 'dripnex-tables',
   name: 'Tables',
   version: '1.0.0',
-  description:
-    'Insert Table wizard, WYSIWYG table rendering, sortable preview columns, and Export to CSV',
+  description: 'GFM tables: insert, WYSIWYG, Tab between cells, format, CSV export',
 
   activate(context) {
     let wysiwygEnabled = context.config.get<boolean>('wysiwygEnabled') ?? true;
@@ -556,6 +449,110 @@ export const tablesPlugin: PluginManifest = {
     );
 
     // --- Feature 4: Export to CSV ---
+    const applyOp = (op: TableOp): boolean => {
+      const content = context.editor.getContent();
+      const sel = context.editor.getSelection();
+      const edit = applyTableOp(content, sel.from, op);
+      if (!edit) return false;
+      context.editor.replaceRange(edit.from, edit.to, edit.text);
+      context.editor.setSelection(edit.cursorFrom, edit.cursorTo);
+      context.editor.focus();
+      return true;
+    };
+
+    const tableKeymap = keymap.of([
+      {
+        key: 'Tab',
+        run: view => {
+          const edit = applyTableOp(view.state.doc.toString(), view.state.selection.main.head, {
+            type: 'nextCell',
+          });
+          if (!edit) return false;
+          view.dispatch({
+            changes: { from: edit.from, to: edit.to, insert: edit.text },
+            selection:
+              edit.cursorFrom === edit.cursorTo
+                ? EditorSelection.cursor(edit.cursorFrom)
+                : EditorSelection.range(edit.cursorFrom, edit.cursorTo),
+          });
+          return true;
+        },
+      },
+      {
+        key: 'Shift-Tab',
+        run: view => {
+          const edit = applyTableOp(view.state.doc.toString(), view.state.selection.main.head, {
+            type: 'prevCell',
+          });
+          if (!edit) return false;
+          view.dispatch({
+            changes: { from: edit.from, to: edit.to, insert: edit.text },
+            selection:
+              edit.cursorFrom === edit.cursorTo
+                ? EditorSelection.cursor(edit.cursorFrom)
+                : EditorSelection.range(edit.cursorFrom, edit.cursorTo),
+          });
+          return true;
+        },
+      },
+    ]);
+
+    const unregisterTableKeys = context.registerExtensions('table-editor-keys', [tableKeymap]);
+
+    const tableCommands: Array<{ id: string; name: string; op: TableOp }> = [
+      { id: 'next-cell', name: 'Table: Next Cell', op: { type: 'nextCell' } },
+      { id: 'prev-cell', name: 'Table: Previous Cell', op: { type: 'prevCell' } },
+      { id: 'next-row', name: 'Table: Next Row', op: { type: 'nextRow' } },
+      { id: 'move-left', name: 'Table: Move Left', op: { type: 'move', dRow: 0, dCol: -1 } },
+      { id: 'move-right', name: 'Table: Move Right', op: { type: 'move', dRow: 0, dCol: 1 } },
+      { id: 'move-up', name: 'Table: Move Up', op: { type: 'move', dRow: -1, dCol: 0 } },
+      { id: 'move-down', name: 'Table: Move Down', op: { type: 'move', dRow: 1, dCol: 0 } },
+      { id: 'select-cell', name: 'Table: Select Cell', op: { type: 'selectCell' } },
+      { id: 'insert-row', name: 'Table: Insert Row', op: { type: 'insertRow' } },
+      { id: 'insert-column', name: 'Table: Insert Column', op: { type: 'insertColumn' } },
+      { id: 'delete-row', name: 'Table: Delete Row', op: { type: 'deleteRow' } },
+      { id: 'delete-column', name: 'Table: Delete Column', op: { type: 'deleteColumn' } },
+      { id: 'move-row-up', name: 'Table: Move Row Up', op: { type: 'moveRow', dir: -1 } },
+      { id: 'move-row-down', name: 'Table: Move Row Down', op: { type: 'moveRow', dir: 1 } },
+      {
+        id: 'move-column-left',
+        name: 'Table: Move Column Left',
+        op: { type: 'moveColumn', dir: -1 },
+      },
+      {
+        id: 'move-column-right',
+        name: 'Table: Move Column Right',
+        op: { type: 'moveColumn', dir: 1 },
+      },
+      { id: 'align-left', name: 'Table: Align Left', op: { type: 'align', alignment: 'left' } },
+      {
+        id: 'align-center',
+        name: 'Table: Align Center',
+        op: { type: 'align', alignment: 'center' },
+      },
+      { id: 'align-right', name: 'Table: Align Right', op: { type: 'align', alignment: 'right' } },
+      { id: 'align-none', name: 'Table: Align Default', op: { type: 'align', alignment: 'none' } },
+      { id: 'format', name: 'Table: Format', op: { type: 'format' } },
+      { id: 'escape', name: 'Table: Leave Table', op: { type: 'escape' } },
+    ];
+
+    const unregisterTableCommands = tableCommands.map(command =>
+      context.registerCommand({ id: command.id, name: command.name, icon: 'Table' }, () =>
+        applyOp(command.op)
+      )
+    );
+
+    const unregisterFormatAll = context.registerCommand(
+      { id: 'format-all', name: 'Table: Format All', icon: 'Table' },
+      () => {
+        const content = context.editor.getContent();
+        const next = formatAllTables(content);
+        if (next === content) return false;
+        context.editor.replaceRange(0, content.length, next);
+        return true;
+      }
+    );
+
     const unregisterExportCommand = context.registerCommand(
       {
         id: 'export-csv',
@@ -591,6 +588,9 @@ export const tablesPlugin: PluginManifest = {
         unregisterWysiwygCommand();
         unregisterPreview();
         unregisterExportCommand();
+        unregisterTableKeys();
+        unregisterFormatAll();
+        for (const unregister of unregisterTableCommands) unregister();
       },
     };
   },

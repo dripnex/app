@@ -1,5 +1,26 @@
 # App Icons
 
+Source mark: `logo.png` (tight brand PNG for in-app chrome).
+
+## How macOS wants it
+
+Apple HIG (`app-icons`): 1024×1024 **square**, no pre-rounded corners.
+The system applies the Dock squircle to the packaged `.icns`.
+Keep the glyph inside the production-template grid — primary art
+centered, not touching the mask. A simple mark (Docker whale, our
+chevron) reads at ~50% of the tile (512 px on the 1024 canvas, ~25%
+margin). Filling the tile makes the icon look oversized next to
+Slack / Docker / Cursor.
+
+`app.dock.setIcon` does **not** apply the system mask. Dev must use
+`icon-dock.png` (pre-squirreled). Packaged builds use `icon.icns`.
+
+```
+# 512 px mark, pad to 1024, then:
+swift scripts/make-dock-icon.swift apps/desktop/resources/icon.png \
+  apps/desktop/resources/icon-dock.png
+```
+
 Place the following icon files in this directory before building for release:
 
 ## Required Files

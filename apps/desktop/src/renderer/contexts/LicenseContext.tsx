@@ -41,10 +41,10 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const licenseState = await window.readied.license.getState();
+      const licenseState = await window.dripnex.license.getState();
       setState(licenseState);
     } catch (error) {
-      window.readied.log.error('Failed to get license state', { error: String(error) });
+      window.dripnex.log.error('Failed to get license state', { error: String(error) });
     }
   }, []);
 
@@ -59,7 +59,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
 
   const activateLicense = useCallback(
     async (content: string): Promise<LicenseResult> => {
-      const result = await window.readied.license.activate(content);
+      const result = await window.dripnex.license.activate(content);
       if (result.success) {
         await refresh();
         setIsDialogOpen(false);
@@ -70,7 +70,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   );
 
   const importLicense = useCallback(async (): Promise<LicenseResult> => {
-    const result = await window.readied.license.importFile();
+    const result = await window.dripnex.license.importFile();
     if (result.success) {
       await refresh();
       setIsDialogOpen(false);
@@ -79,14 +79,14 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const deactivateLicense = useCallback(async () => {
-    await window.readied.license.deactivate();
+    await window.dripnex.license.deactivate();
     await refresh();
   }, [refresh]);
 
   const openSubscribe = useCallback(
     async (options?: { plan?: 'monthly' | 'annual' }) => {
       try {
-        const result = await window.readied.license.openSubscribe(options);
+        const result = await window.dripnex.license.openSubscribe(options);
         if (result.success) {
           // Poll every 5s for up to 2 minutes waiting for webhook to update the API
           stopPolling();
@@ -95,7 +95,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
           pollRef.current = setInterval(async () => {
             attempts++;
             try {
-              const newState = await window.readied.license.refreshSubscription();
+              const newState = await window.dripnex.license.refreshSubscription();
               if (newState.status === 'pro_active' || attempts >= maxAttempts) {
                 stopPolling();
                 setState(newState);
@@ -110,7 +110,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
         }
         return result;
       } catch (error) {
-        window.readied.log.error('Failed to open subscription', { error: String(error) });
+        window.dripnex.log.error('Failed to open subscription', { error: String(error) });
         return { success: false, error: 'Failed to open subscription checkout' };
       }
     },

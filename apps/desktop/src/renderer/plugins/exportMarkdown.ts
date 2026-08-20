@@ -1,4 +1,5 @@
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
+import { buildPrintDocument, capturePreviewHtml } from './exportDocument';
 
 /**
  * Escape a string for safe inclusion as a YAML double-quoted scalar.
@@ -158,11 +159,17 @@ function markdownToHtml(content: string): string {
   return html;
 }
 
+function currentExportHtml(fallbackMarkdown: string, title: string): string {
+  const preview = capturePreviewHtml();
+  const body = preview && preview.trim() ? preview : markdownToHtml(fallbackMarkdown);
+  return buildPrintDocument(title, body);
+}
+
 export const exportMarkdownPlugin: PluginManifest = {
-  id: 'readied-export-markdown',
+  id: 'dripnex-export-markdown',
   name: 'Export Markdown',
-  version: '1.1.0',
-  description: 'Copy notes as Markdown or HTML, or export to file',
+  version: '1.2.0',
+  description: 'Copy or export notes as Markdown, HTML, or PDF, and print',
 
   activate(context) {
     const unregisterCopyMd = context.registerCommand(
@@ -207,7 +214,7 @@ export const exportMarkdownPlugin: PluginManifest = {
     const unregisterExportFile = context.registerCommand(
       {
         id: 'export-file',
-        name: 'Export Note to File',
+        name: 'Export as Markdown',
         icon: 'Download',
       },
       () => {
@@ -217,7 +224,6 @@ export const exportMarkdownPlugin: PluginManifest = {
         const note = context.app.getCurrentNote();
         const title = note?.title ?? 'Untitled';
 
-        // Build content with frontmatter if not already present
         let exportContent = content;
         if (!content.trimStart().startsWith('---')) {
           const frontmatter = buildFrontmatter({
@@ -227,9 +233,8 @@ export const exportMarkdownPlugin: PluginManifest = {
           exportContent = frontmatter + content;
         }
 
-        // Use IPC to show save dialog and write file
-        void window.readied.data
-          .exportNote(exportContent, title)
+        void window.dripnex.data
+          .exportFile(exportContent, title, 'md')
           .then(result => {
             if (result.success) {
               context.log.info(`Note exported to ${result.path}`);
@@ -243,11 +248,74 @@ export const exportMarkdownPlugin: PluginManifest = {
       }
     );
 
+    const unregisterExportHtml = context.registerCommand(
+      {
+        id: 'export-html',
+        name: 'Export as HTML',
+        icon: 'FileCode',
+      },
+      () => {
+        const content = context.editor.getContent();
+        if (!content) return false;
+        const title = context.app.getCurrentNote()?.title ?? 'Untitled';
+        const html = currentExportHtml(content, title);
+        void window.dripnex.data
+          .exportFile(html, title, 'html')
+          .then(result => {
+            if (result.success) context.log.info(`HTML exported to ${result.path}`);
+          })
+          .catch(() => context.log.error('Failed to export HTML'));
+        return true;
+      }
+    );
+
+    const unregisterExportPdf = context.registerCommand(
+      {
+        id: 'export-pdf',
+        name: 'Export as PDF',
+        icon: 'FileText',
+      },
+      () => {
+        const content = context.editor.getContent();
+        if (!content) return false;
+        const title = context.app.getCurrentNote()?.title ?? 'Untitled';
+        const html = currentExportHtml(content, title);
+        void window.dripnex.data
+          .exportFile(html, title, 'pdf')
+          .then(result => {
+            if (result.success) context.log.info(`PDF exported to ${result.path}`);
+          })
+          .catch(() => context.log.error('Failed to export PDF'));
+        return true;
+      }
+    );
+
+    const unregisterPrint = context.registerCommand(
+      {
+        id: 'print',
+        name: 'Print Note',
+        icon: 'Printer',
+      },
+      () => {
+        const content = context.editor.getContent();
+        if (!content) return false;
+        const title = context.app.getCurrentNote()?.title ?? 'Untitled';
+        const html = currentExportHtml(content, title);
+        void window.dripnex.data.printHtml(html).catch(() => {
+          context.log.error('Print failed');
+        });
+        return true;
+      }
+    );
+
     return {
       dispose() {
         unregisterCopyMd();
         unregisterCopyHtml();
         unregisterExportFile();
+        unregisterExportHtml();
+        unregisterExportPdf();
+        unregisterPrint();
       },
     };
   },

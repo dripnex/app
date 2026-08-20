@@ -1,4 +1,4 @@
-# Readied UI System
+# Dripnex UI System
 
 Canonical UI layer for the desktop renderer.
 
@@ -19,12 +19,12 @@ All colors, spacing, radii, and transitions are defined here.
 
 ## Primitives
 
-Low-level components built on Radix UI (or native HTML).
-These are unopinionated and purely structural.
+Low-level native components: Button, Input, Select, NumberInput, Field, Toggle, Toast.
+No Radix / shadcn — desktop stays on CSS modules + tokens.
 
 ## Patterns
 
-Composed from primitives. These encode specific Readied UX patterns
+Composed from primitives. These encode specific Dripnex UX patterns
 like slide-in panels, context menus, and toasts.
 
 ## Components

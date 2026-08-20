@@ -1,0 +1,58 @@
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 28%;
+}
+
+.icon,
+.iconImg {
+  width: 58%;
+  height: 58%;
+  display: block;
+}
+
+.iconImg {
+  object-fit: contain;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mark[data-id='dripnex'] {
+  background: #0a0b0d;
+}
+
+.mark[data-id='anthropic'] {
+  background: #d4a27f;
+  color: #191610;
+}
+
+.mark[data-id='openai'] {
+  background: #10a37f;
+}
+
+.mark[data-id='openai'] .iconImg,
+.mark[data-id='grok'] .iconImg,
+.mark[data-id='ollama'] .iconImg {
+  filter: invert(1);
+}
+
+.mark[data-id='grok'] {
+  background: #000;
+}
+
+.mark[data-id='grok'] .iconImg {
+  width: 68%;
+  height: 68%;
+}
+
+.mark[data-id='ollama'] {
+  background: #1c1917;
+}

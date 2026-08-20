@@ -8,8 +8,8 @@ const API_VERSION = '2023-06-01';
 
 const STATIC_MODELS: ModelInfo[] = [
   {
-    id: 'claude-sonnet-4-20250514',
-    displayName: 'Claude Sonnet 4',
+    id: 'claude-sonnet-5',
+    displayName: 'Claude Sonnet 5',
     contextWindow: 200_000,
     maxOutputTokens: 8192,
     supportsStreaming: true,
@@ -24,8 +24,8 @@ const STATIC_MODELS: ModelInfo[] = [
     supportsTools: true,
   },
   {
-    id: 'claude-opus-4-20250514',
-    displayName: 'Claude Opus 4',
+    id: 'claude-opus-4-8',
+    displayName: 'Claude Opus 4.8',
     contextWindow: 200_000,
     maxOutputTokens: 8192,
     supportsStreaming: true,
@@ -236,7 +236,26 @@ export class AnthropicProvider implements LLMProvider {
     if (!config.apiKey) {
       return { ok: false, error: 'API key is required' };
     }
-    return { ok: true };
+
+    try {
+      const response = await this.fetchFn('https://api.anthropic.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'x-api-key': config.apiKey,
+          'anthropic-version': API_VERSION,
+        },
+        body: '',
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          return { ok: false, error: 'Invalid API key' };
+        }
+        return { ok: false, error: `API error: ${response.status}` };
+      }
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : 'Network error' };
+    }
   }
 
   async listModels(_config: ProviderConfig): Promise<ModelInfo[]> {

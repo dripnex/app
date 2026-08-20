@@ -5,11 +5,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Download, RotateCcw } from 'lucide-react';
+import { Download, RotateCcw } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Toggle } from '../components/controls';
+import { SettingToggle } from '../components/SettingToggle';
+import { SettingsPage } from '../components/SettingsPage';
 import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
@@ -45,10 +47,10 @@ export function UpdatesSection() {
   // Subscribe to main-process update events
   useEffect(() => {
     const unsubs = [
-      window.readied.updates.onAvailable(info => {
+      window.dripnex.updates.onAvailable(info => {
         setState({ status: 'available', version: info.version });
       }),
-      window.readied.updates.onDownloadProgress(p => {
+      window.dripnex.updates.onDownloadProgress(p => {
         setState(prev => ({
           status: 'downloading',
           version: prev.status === 'downloading' || prev.status === 'available' ? prev.version : '',
@@ -58,10 +60,10 @@ export function UpdatesSection() {
           total: p.total,
         }));
       }),
-      window.readied.updates.onDownloadComplete(info => {
+      window.dripnex.updates.onDownloadComplete(info => {
         setState({ status: 'ready', version: info.version });
       }),
-      window.readied.updates.onError(err => {
+      window.dripnex.updates.onError(err => {
         setState({ status: 'error', message: err.message });
       }),
     ];
@@ -71,7 +73,7 @@ export function UpdatesSection() {
   const handleCheckForUpdates = useCallback(async () => {
     setState({ status: 'checking' });
     try {
-      const result = await window.readied.updates.checkNow();
+      const result = await window.dripnex.updates.checkNow();
       if (result.available) {
         setState({ status: 'available', version: result.version ?? '' });
       } else {
@@ -93,7 +95,7 @@ export function UpdatesSection() {
       transferred: 0,
       total: 0,
     });
-    const result = await window.readied.updates.startDownload();
+    const result = await window.dripnex.updates.startDownload();
     if (!result.ok) {
       setState({ status: 'error', message: 'Failed to start download' });
     }
@@ -102,7 +104,7 @@ export function UpdatesSection() {
   const handleInstall = useCallback(async () => {
     setState({ status: 'installing' });
     try {
-      await window.readied.updates.installNow();
+      await window.dripnex.updates.installNow();
     } catch {
       setState({ status: 'error', message: 'Failed to install update. Please try again.' });
     }
@@ -131,7 +133,7 @@ export function UpdatesSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             onClick={handleCheckForUpdates}
           >
             Check Now
@@ -148,7 +150,7 @@ export function UpdatesSection() {
           <Button
             variant="primary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             onClick={handleStartDownload}
           >
             Download v{state.version}
@@ -165,7 +167,7 @@ export function UpdatesSection() {
           <Button
             variant="primary"
             size="sm"
-            icon={<RotateCcw size={14} />}
+            icon={<Icon icon={RotateCcw} size={14} />}
             onClick={handleInstall}
           >
             Restart to Update
@@ -182,7 +184,7 @@ export function UpdatesSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<RotateCcw size={14} />}
+            icon={<Icon icon={RotateCcw} size={14} />}
             onClick={handleRetry}
           >
             Try Again
@@ -226,21 +228,15 @@ export function UpdatesSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Updates</h2>
-
+    <SettingsPage title="Updates">
       <SettingGroup title="Automatic Updates">
-        <SettingRow
+        <SettingToggle
           label="Check for updates automatically"
           description="Check for new versions when the app starts"
           htmlFor="autoCheck"
-        >
-          <Toggle
-            id="autoCheck"
-            checked={updates.autoCheck}
-            onChange={checked => updateUpdates({ autoCheck: checked })}
-          />
-        </SettingRow>
+          checked={updates.autoCheck}
+          onChange={checked => updateUpdates({ autoCheck: checked })}
+        />
       </SettingGroup>
 
       <SettingGroup title="Manual Check">
@@ -250,8 +246,8 @@ export function UpdatesSection() {
         >
           {renderButton()}
         </SettingRow>
-        {renderInfo()}
+        {renderInfo() ? <div className={styles.inset}>{renderInfo()}</div> : null}
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }

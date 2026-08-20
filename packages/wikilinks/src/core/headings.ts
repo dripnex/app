@@ -1,9 +1,12 @@
 /**
  * Heading Utilities
  *
- * Functions for extracting headings from markdown and generating slugs
- * for anchor navigation.
+ * Delegates to the shared fence-aware scan.
  */
+
+import { headingToSlug, scanMarkdown } from '@dripnex/markdown';
+
+export { headingToSlug };
 
 /** Represents a heading extracted from markdown */
 export interface Heading {
@@ -18,9 +21,6 @@ export interface Heading {
 /**
  * Extract all headings from markdown content.
  *
- * @param content - Markdown content to parse
- * @returns Array of headings with text, level, and slug
- *
  * @example
  * extractHeadings("# Title\n\n## Section One\n\nText\n\n### Sub-section")
  * // Returns: [
@@ -30,24 +30,11 @@ export interface Heading {
  * // ]
  */
 export function extractHeadings(content: string): Heading[] {
-  const headingPattern = /^(#{1,6})\s+(.+)$/gm;
-  const headings: Heading[] = [];
-  let match: RegExpExecArray | null;
-
-  while ((match = headingPattern.exec(content)) !== null) {
-    const level = match[1]!.length;
-    const text = match[2]!.trim();
-
-    if (text) {
-      headings.push({
-        text,
-        level,
-        slug: headingToSlug(text),
-      });
-    }
-  }
-
-  return headings;
+  return scanMarkdown(content).headings.map(({ text, level, slug }) => ({
+    text,
+    level,
+    slug,
+  }));
 }
 
 /**
@@ -58,34 +45,6 @@ export function extractHeadings(content: string): Heading[] {
  */
 export function extractHeadingTexts(content: string): string[] {
   return extractHeadings(content).map(h => h.text);
-}
-
-/**
- * Generate a URL-safe slug from heading text.
- * Matches GitHub's heading anchor generation algorithm.
- *
- * @param heading - Heading text to convert
- * @returns URL-safe slug
- *
- * @example
- * headingToSlug("Hello World!")  // "hello-world"
- * headingToSlug("API Reference") // "api-reference"
- * headingToSlug("1. Introduction") // "1-introduction"
- */
-export function headingToSlug(heading: string): string {
-  return (
-    heading
-      .toLowerCase()
-      .trim()
-      // Remove special characters except alphanumeric, spaces, and hyphens
-      .replace(/[^\w\s-]/g, '')
-      // Replace whitespace with hyphens
-      .replace(/\s+/g, '-')
-      // Remove consecutive hyphens
-      .replace(/-+/g, '-')
-      // Remove leading/trailing hyphens
-      .replace(/^-|-$/g, '')
-  );
 }
 
 /**
@@ -113,5 +72,22 @@ export function findHeadingByAnchor(content: string, anchor: string): Heading | 
     h =>
       h.text.toLowerCase().includes(normalizedAnchor) ||
       h.slug.includes(headingToSlug(normalizedAnchor))
+  );
+}
+
+/** Split `[[` inner text into note title + heading query. */
+export function splitWikilinkQuery(inner: string): { title: string; heading: string } | null {
+  const hash = inner.lastIndexOf('#');
+  if (hash < 0) return null;
+  return { title: inner.slice(0, hash).trim(), heading: inner.slice(hash + 1) };
+}
+
+/** Filter headings by text or slug substring. */
+export function filterHeadings(headings: readonly Heading[], query: string): Heading[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...headings];
+  const slug = headingToSlug(q);
+  return headings.filter(
+    heading => heading.text.toLowerCase().includes(q) || heading.slug.includes(slug)
   );
 }

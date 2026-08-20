@@ -5,16 +5,30 @@
  * to the renderer (settings UI).
  */
 
+import { dirname, join } from 'path';
 import { app } from 'electron';
 import { z } from 'zod';
-import { createNoteId, createNoteOperation, updateNoteOperation } from '@readied/core';
 import {
+  createNoteId,
+  createNotebook,
+  createNotebookId,
+  createNoteOperation,
+  deleteNoteOperation,
+  renameNotebook,
+  setNotebookIcon,
+  trashNoteOperation,
+  updateNoteOperation,
+} from '@dripnex/core';
+import {
+  ChangeLog,
   LocalServer,
   getOrCreateApiToken,
   type LocalServerHandlers,
 } from '../services/localServer.js';
+import { resolveMcpLaunch } from '../services/mcpLaunch.js';
+import { writeMcpWritesConfig } from '../services/mcpWrites.js';
 import { defineIpcHandler } from '../ipc/registry.js';
-import type { SQLiteNoteRepository, DataPaths } from './types.js';
+import type { SQLiteNoteRepository, SQLiteNotebookRepository, DataPaths } from './types.js';
 
 // ============================================================================
 // Types
@@ -22,6 +36,7 @@ import type { SQLiteNoteRepository, DataPaths } from './types.js';
 
 export interface LocalServerHandlerDeps {
   noteRepository: SQLiteNoteRepository;
+  notebookRepository: SQLiteNotebookRepository;
   dataPaths: DataPaths;
   noteToSnapshot: (note: {
     id: string;
@@ -30,7 +45,7 @@ export interface LocalServerHandlerDeps {
     title: string;
     isPinned: boolean;
     isDeleted: boolean;
-    status: import('@readied/core').NoteStatus;
+    status: import('@dripnex/core').NoteStatus;
     metadata: {
       createdAt: string;
       updatedAt: string;
@@ -47,11 +62,13 @@ export interface LocalServerHandlerDeps {
     updatedAt: string;
     tags: string[];
     wordCount: number;
+    taskCount?: number;
+    checkedTaskCount?: number;
     archivedAt: string | null;
     isArchived: boolean;
     isPinned: boolean;
     isDeleted: boolean;
-    status: import('@readied/core').NoteStatus;
+    status: import('@dripnex/core').NoteStatus;
   };
 }
 
@@ -60,6 +77,7 @@ export interface LocalServerHandlerDeps {
 // ============================================================================
 
 const server = new LocalServer();
+const changeLog = new ChangeLog();
 let apiToken: string | null = null;
 
 // ============================================================================
@@ -67,7 +85,9 @@ let apiToken: string | null = null;
 // ============================================================================
 
 export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void {
-  const { noteRepository: repo, dataPaths, noteToSnapshot } = deps;
+  const { noteRepository: repo, notebookRepository, dataPaths, noteToSnapshot } = deps;
+  changeLog.attach(join(dataPaths.root, 'changes.json'));
+  void changeLog.load();
 
   // Build handler callbacks that bridge HTTP requests to the note repository
   const handlers: LocalServerHandlers = {
@@ -96,6 +116,8 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
         updatedAt: snap.updatedAt,
         tags: snap.tags,
         wordCount: snap.wordCount,
+        taskCount: snap.taskCount,
+        checkedTaskCount: snap.checkedTaskCount,
         isPinned: snap.isPinned,
       };
     },
@@ -103,6 +125,7 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
     async createNote(input) {
       const result = await createNoteOperation(input, repo);
       if (result.ok) {
+        changeLog.record('note', result.data.id);
         return { ok: true, data: { id: result.data.id } };
       }
       return { ok: false, error: result.error };
@@ -111,6 +134,7 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
     async updateNote(id, content) {
       const noteId = createNoteId(id);
       const result = await updateNoteOperation({ id: noteId, content }, repo);
+      if (result.ok) changeLog.record('note', id);
       return { ok: result.ok, error: result.ok ? undefined : result.error };
     },
 
@@ -130,6 +154,108 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
 
     getAppVersion() {
       return app.getVersion();
+    },
+
+    async listNotebooks() {
+      const notebooks = await notebookRepository.getAll();
+      return notebooks.map(nb => ({
+        id: nb.id,
+        name: nb.name,
+        parentId: nb.parentId,
+        icon: nb.icon,
+      }));
+    },
+
+    async listTags() {
+      return repo.listTags();
+    },
+
+    async deleteNote(id, permanent) {
+      const noteId = createNoteId(id);
+      const result = permanent
+        ? await deleteNoteOperation({ id: noteId }, repo)
+        : await trashNoteOperation({ id: noteId }, repo);
+      if (result.ok) changeLog.record('note', id, true);
+      return { ok: result.ok, error: result.ok ? undefined : result.error };
+    },
+
+    async createNotebook(input) {
+      try {
+        let parentDepth = 0;
+        if (input.parentId) {
+          const parent = await notebookRepository.get(createNotebookId(input.parentId));
+          if (parent) parentDepth = parent.depth;
+        }
+        const nextOrder = await notebookRepository.getNextOrder(
+          input.parentId ? createNotebookId(input.parentId) : null
+        );
+        const notebook = createNotebook({
+          name: input.name,
+          parentId: input.parentId ? createNotebookId(input.parentId) : null,
+          parentDepth,
+          order: nextOrder,
+        });
+        await notebookRepository.save(notebook);
+        changeLog.record('book', notebook.id);
+        return { ok: true, data: { id: notebook.id } };
+      } catch (err) {
+        return { ok: false, error: err };
+      }
+    },
+
+    async deleteNotebook(id) {
+      try {
+        await notebookRepository.delete(createNotebookId(id));
+        changeLog.record('book', id, true);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err };
+      }
+    },
+
+    async updateNotebook(id, patch) {
+      try {
+        const notebook = await notebookRepository.get(createNotebookId(id));
+        if (!notebook) return { ok: false, error: 'not found' };
+        let next = notebook;
+        if (typeof patch.name === 'string' && patch.name.trim()) {
+          next = renameNotebook(next, patch.name);
+        }
+        if (patch.icon !== undefined) {
+          next = setNotebookIcon(next, patch.icon);
+        }
+        await notebookRepository.save(next);
+        changeLog.record('book', id);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err };
+      }
+    },
+
+    async putTag(name, patch) {
+      try {
+        const current = name.trim();
+        if (!current) return { ok: false, error: 'empty name' };
+        if (patch.color !== undefined) {
+          repo.setTagColor(current, patch.color);
+        } else if (!patch.newName) {
+          repo.setTagColor(current, null);
+        }
+        if (patch.newName && patch.newName.trim() && patch.newName.trim() !== current) {
+          const renamed = repo.renameTag(current, patch.newName);
+          if (!renamed.ok) return { ok: false, error: renamed.error };
+          changeLog.record('tag', patch.newName.trim().toLowerCase());
+        } else {
+          changeLog.record('tag', current.toLowerCase());
+        }
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err };
+      }
+    },
+
+    getChanges(since) {
+      return changeLog.since(since);
     },
   };
 
@@ -179,6 +305,47 @@ export function registerLocalServerHandlers(deps: LocalServerHandlerDeps): void 
           apiToken = await getOrCreateApiToken(dataPaths.root);
         }
         return { ok: true, value: apiToken };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'localServer:connectionInfo',
+    args: z.tuple([]),
+    handler: async () => {
+      try {
+        if (!apiToken) {
+          apiToken = await getOrCreateApiToken(dataPaths.root);
+        }
+        const launch = resolveMcpLaunch();
+        const port = server.getPort();
+        return {
+          ok: true,
+          running: server.isRunning(),
+          port,
+          url: `http://127.0.0.1:${port}`,
+          token: apiToken,
+          dbPath: dataPaths.database,
+          mcpCommand: launch?.command ?? null,
+          mcpArgs: launch?.args ?? null,
+        };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'localServer:setWrites',
+    args: z.tuple([z.boolean()]),
+    handler: async writes => {
+      try {
+        const override = process.env.DRIPNEX_DB_PATH;
+        const dir = override ? dirname(override) : dataPaths.root;
+        await writeMcpWritesConfig(dir, writes);
+        return { ok: true };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : String(err) };
       }

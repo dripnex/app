@@ -9,6 +9,8 @@ export interface SyncConflict {
   localVersion: number;
   remoteVersion: number;
   timestamp: string;
+  /** Disk backup of the local body created before pull overwrote the note. */
+  localCopyId?: string;
 }
 
 export interface SyncResult {
@@ -31,8 +33,14 @@ export interface SyncState {
 
 export type SyncStatusEvent =
   | { type: 'sync-start' }
-  | { type: 'sync-success'; changesApplied: number; changesPushed: number }
+  | {
+      type: 'sync-success';
+      changesApplied: number;
+      changesPushed: number;
+      conflicts?: SyncConflict[];
+    }
   | { type: 'sync-error'; error: string; isNetworkError: boolean; consecutiveFailures: number }
+  | { type: 'needs-setup'; error: string }
   | { type: 'auth-expired' };
 
 export type SyncStatusListener = (event: SyncStatusEvent) => void;

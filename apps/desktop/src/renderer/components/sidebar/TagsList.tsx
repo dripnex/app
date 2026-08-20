@@ -1,10 +1,10 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Hash, X, Circle } from 'lucide-react';
 import { useTags, noteKeys } from '../../hooks/useNotes';
 import { useTagColorsStore } from '../../stores/tagColorsStore';
-import { ColorPicker } from '../ColorPicker';
+import { ColorPickerModal, type ColorPickerAnchor } from '../ColorPicker';
 import { TagsContextMenu } from './TagsContextMenu';
+import { sc } from './sc';
 
 /** Context menu state */
 interface ContextMenuState {
@@ -30,34 +30,23 @@ interface TagsListProps {
   readonly selectedTag: string | null;
   /** Called when user clicks a tag - pass null to clear */
   readonly onSelectTag: (tag: string | null) => void;
+  readonly counts?: Record<string, number>;
+  readonly filterQuery?: string;
 }
 
-export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
+export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }: TagsListProps) {
   const queryClient = useQueryClient();
   const { data: tags = [], isLoading } = useTags();
   const getColor = useTagColorsStore(state => state.getColor);
   const setColor = useTagColorsStore(state => state.setColor);
 
-  // Color picker state
-  const [colorPickerTag, setColorPickerTag] = useState<string | null>(null);
-  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const [colorPicker, setColorPicker] = useState<{
+    tag: string;
+    anchor: ColorPickerAnchor;
+  } | null>(null);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-
-  // Close color picker on click outside
-  useEffect(() => {
-    if (!colorPickerTag) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
-        setColorPickerTag(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [colorPickerTag]);
 
   const handleTagClick = (tag: string) => {
     // Toggle: if same tag clicked, clear filter; otherwise set filter
@@ -66,13 +55,26 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
 
   const handleColorDotClick = useCallback((e: React.MouseEvent, tag: string) => {
     e.stopPropagation();
-    setColorPickerTag(prev => (prev === tag ? null : tag));
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setColorPicker(prev =>
+      prev?.tag === tag
+        ? null
+        : {
+            tag,
+            anchor: {
+              top: rect.top,
+              left: rect.left,
+              bottom: rect.bottom,
+              right: rect.right,
+            },
+          }
+    );
   }, []);
 
   const handleColorSelect = useCallback(
     async (tag: string, color: string | null) => {
       await setColor(tag, color);
-      setColorPickerTag(null);
+      setColorPicker(null);
     },
     [setColor]
   );
@@ -81,7 +83,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ tag, x: e.clientX, y: e.clientY });
-    setColorPickerTag(null); // Close any open color picker
+    setColorPicker(null);
   }, []);
 
   const handleDeleteTag = useCallback(
@@ -90,7 +92,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
       if (selectedTag === tag) {
         onSelectTag(null);
       }
-      await window.readied.notes.deleteTag(tag);
+      await window.dripnex.notes.deleteTag(tag);
       // Invalidate tags query for sidebar
       void queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
       // Remove from colors cache (tag no longer exists)
@@ -101,7 +103,7 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
 
   const handleRenameTag = useCallback(
     async (oldTag: string, newTag: string) => {
-      const result = await window.readied.notes.renameTag(oldTag, newTag);
+      const result = await window.dripnex.notes.renameTag(oldTag, newTag);
       if (result.ok) {
         // Update selected tag filter if renaming the active filter
         if (selectedTag === oldTag) {
@@ -121,83 +123,65 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
     [selectedTag, onSelectTag, queryClient]
   );
 
+  const visibleTags = tags.filter(tag => {
+    if (filterQuery && !tag.toLowerCase().includes(filterQuery.toLowerCase())) return false;
+    if (counts && (counts[tag] ?? 0) === 0) return false;
+    return true;
+  });
+
   if (isLoading) {
     return (
-      <div className="tags-list-loading" aria-busy="true">
-        <span className="tags-list-loading-text">Loading tags...</span>
+      <div className={sc('tags-list-loading')} aria-busy="true">
+        <span className={sc('tags-list-loading-text')}>Loading tags...</span>
       </div>
     );
   }
 
-  if (tags.length === 0) {
+  if (visibleTags.length === 0) {
     return (
-      <div className="tags-list-empty">
-        <span className="tags-list-empty-text">No tags yet</span>
-        <span className="tags-list-empty-hint">Add #tags in your notes</span>
+      <div className={sc('tags-list-empty')}>
+        <span className={sc('tags-list-empty-text')}>No tags yet</span>
+        <span className={sc('tags-list-empty-hint')}>Add #tags in your notes</span>
       </div>
     );
   }
 
   return (
     <>
-      <ul className="tags-list" role="listbox" aria-label="Tags">
-        {tags.map(tag => {
+      <ul className={sc('tags-list')} role="listbox" aria-label="Tags">
+        {visibleTags.map(tag => {
           const color = getColor(tag);
-          const isColorPickerOpen = colorPickerTag === tag;
+          const count = counts?.[tag];
 
           return (
             <li
               key={tag}
               role="option"
               aria-selected={tag === selectedTag}
-              className="tags-list-item-container"
+              className={sc('tags-list-item-container')}
               onContextMenu={e => handleContextMenu(e, tag)}
             >
-              {/* Color dot button - always visible, opens color picker */}
               <button
                 type="button"
-                className="tags-list-item-color-btn"
-                onClick={e => handleColorDotClick(e, tag)}
-                aria-label={`Set color for tag ${tag}`}
-              >
-                {color ? (
-                  <span className="tags-list-item-dot" style={{ backgroundColor: color }} />
-                ) : (
-                  <Circle size={10} className="tags-list-item-dot-empty" />
-                )}
-              </button>
-
-              {/* Color picker popover */}
-              {isColorPickerOpen && (
-                <ColorPicker
-                  ref={colorPickerRef}
-                  currentColor={color}
-                  onSelect={c => handleColorSelect(tag, c)}
-                  onClear={() => handleColorSelect(tag, null)}
-                />
-              )}
-
-              {/* Main tag button */}
-              <button
-                type="button"
-                className={`tags-list-item ${tag === selectedTag ? 'selected' : ''}`}
+                className={sc('sidebar-row', 'tags-list-item', tag === selectedTag && 'selected')}
                 onClick={() => handleTagClick(tag)}
               >
-                <Hash size={14} className="tags-list-item-icon" aria-hidden="true" />
-                <span className="tags-list-item-name">{tag}</span>
-              </button>
-
-              {/* Delete button */}
-              <button
-                type="button"
-                className="tags-list-item-delete"
-                onClick={e => {
-                  e.stopPropagation();
-                  void handleDeleteTag(tag);
-                }}
-                aria-label={`Delete tag ${tag}`}
-              >
-                <X size={12} />
+                <span
+                  className={sc('tags-list-item-color-btn')}
+                  onClick={e => handleColorDotClick(e, tag)}
+                  aria-label={color ? `Change color for ${tag}` : `Set color for ${tag}`}
+                >
+                  <span
+                    className={sc('tags-list-item-dot', !color && 'tags-list-item-dot-empty')}
+                    style={color ? { backgroundColor: color } : undefined}
+                  />
+                </span>
+                <span className={sc('sidebar-row-label')}>{tag}</span>
+                {count !== undefined && (
+                  <span className={sc('sidebar-row-count')} aria-label={`${count} notes`}>
+                    {count}
+                  </span>
+                )}
               </button>
             </li>
           );
@@ -205,6 +189,17 @@ export function TagsList({ selectedTag, onSelectTag }: TagsListProps) {
       </ul>
 
       {/* Context menu component */}
+      {colorPicker ? (
+        <ColorPickerModal
+          title={`Color · ${colorPicker.tag}`}
+          currentColor={getColor(colorPicker.tag)}
+          anchor={colorPicker.anchor}
+          onSelect={c => handleColorSelect(colorPicker.tag, c)}
+          onClear={() => handleColorSelect(colorPicker.tag, null)}
+          onClose={() => setColorPicker(null)}
+        />
+      ) : null}
+
       {contextMenu && (
         <TagsContextMenu
           tag={contextMenu.tag}

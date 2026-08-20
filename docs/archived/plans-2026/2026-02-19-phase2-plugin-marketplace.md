@@ -68,7 +68,7 @@ export type NewPluginCatalogEntry = typeof pluginCatalog.$inferInsert;
 
 **Step 3: Run typecheck**
 
-Run: `pnpm --filter @readied/api typecheck`
+Run: `pnpm --filter @dripnex/api typecheck`
 Expected: passes
 
 **Step 4: Commit**
@@ -110,7 +110,7 @@ app.route('/plugins', plugins);
 
 **Step 3: Run typecheck**
 
-Run: `pnpm --filter @readied/api typecheck`
+Run: `pnpm --filter @dripnex/api typecheck`
 Expected: passes
 
 **Step 4: Commit**
@@ -133,14 +133,14 @@ git commit -m "feat(api): add plugin catalog API routes (list, get, search)"
 
 Add entries for all built-in plugins + upcoming seed plugins:
 
-- readied-ai-assistant (existing)
-- readied-word-count (existing)
-- readied-typewriter-mode (new entry)
-- readied-active-line-highlight (new entry)
-- readied-tables (new entry)
-- readied-focus-mode (seed: community)
-- readied-reading-time (seed: community)
-- readied-export-markdown (seed: community)
+- dripnex-ai-assistant (existing)
+- dripnex-word-count (existing)
+- dripnex-typewriter-mode (new entry)
+- dripnex-active-line-highlight (new entry)
+- dripnex-tables (new entry)
+- dripnex-focus-mode (seed: community)
+- dripnex-reading-time (seed: community)
+- dripnex-export-markdown (seed: community)
 
 Each entry includes: id, name, description, author, version, category, icon, builtin, tags, downloads (number)
 
@@ -158,7 +158,7 @@ Show download count on each card.
 
 **Step 5: Verify**
 
-Run: `pnpm --filter @readied/marketing-site build`
+Run: `pnpm --filter @dripnex/marketing-site build`
 Expected: builds successfully
 
 **Step 6: Commit**
@@ -199,7 +199,7 @@ Add styles for `.pluginMarketplaceGrid`, `.pluginMarketplaceCard`, category pill
 
 **Step 4: Verify**
 
-Run: `pnpm --filter @readied/desktop typecheck`
+Run: `pnpm --filter @dripnex/desktop typecheck`
 Expected: passes
 
 **Step 5: Commit**
@@ -231,7 +231,7 @@ Add to builtInPlugins array.
 
 **Step 3: Verify**
 
-Run: `pnpm --filter @readied/desktop typecheck`
+Run: `pnpm --filter @dripnex/desktop typecheck`
 Expected: passes
 
 **Step 4: Commit**

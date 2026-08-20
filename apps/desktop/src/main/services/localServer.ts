@@ -29,6 +29,8 @@ export interface LocalServerHandlers {
     updatedAt: string;
     tags: string[];
     wordCount: number;
+    taskCount?: number;
+    checkedTaskCount?: number;
     isPinned: boolean;
   } | null>;
   createNote: (input: {
@@ -41,13 +43,105 @@ export interface LocalServerHandlers {
   ) => Promise<Array<{ id: string; title: string; excerpt: string; updatedAt: string }>>;
   getNoteCount: () => Promise<number>;
   getAppVersion: () => string;
+  listNotebooks: () => Promise<
+    Array<{ id: string; name: string; parentId: string | null; icon: string | null }>
+  >;
+  listTags: () => Promise<Array<{ name: string; color: string | null }>>;
+  deleteNote: (id: string, permanent?: boolean) => Promise<{ ok: boolean; error?: unknown }>;
+  createNotebook: (input: {
+    name: string;
+    parentId?: string | null;
+  }) => Promise<{ ok: boolean; data?: { id: string }; error?: unknown }>;
+  updateNotebook: (
+    id: string,
+    patch: { name?: string; icon?: string | null }
+  ) => Promise<{ ok: boolean; error?: unknown }>;
+  deleteNotebook: (id: string) => Promise<{ ok: boolean; error?: unknown }>;
+  putTag: (
+    name: string,
+    patch: { color?: string | null; newName?: string }
+  ) => Promise<{ ok: boolean; error?: unknown }>;
+  getChanges: (since: number) => { results: ChangeRecord[]; last_seq: number };
+}
+
+export interface ChangeRecord {
+  seq: number;
+  id: string;
+  kind: 'note' | 'book' | 'tag';
+  deleted?: boolean;
+}
+
+export class ChangeLog {
+  private seq = 0;
+  private readonly items: ChangeRecord[] = [];
+  private persistPath: string | null = null;
+  private persistChain = Promise.resolve();
+
+  attach(persistPath: string): void {
+    this.persistPath = persistPath;
+  }
+
+  async load(): Promise<void> {
+    if (!this.persistPath) return;
+    try {
+      const raw = await fs.readFile(this.persistPath, 'utf-8');
+      const parsed = JSON.parse(raw) as { seq?: unknown; items?: unknown };
+      if (typeof parsed.seq !== 'number' || !Array.isArray(parsed.items)) return;
+      const items: ChangeRecord[] = [];
+      for (const item of parsed.items) {
+        if (!item || typeof item !== 'object') continue;
+        const rec = item as Partial<ChangeRecord>;
+        if (typeof rec.seq !== 'number' || typeof rec.id !== 'string') continue;
+        if (rec.kind !== 'note' && rec.kind !== 'book' && rec.kind !== 'tag') continue;
+        items.push({
+          seq: rec.seq,
+          id: rec.id,
+          kind: rec.kind,
+          deleted: rec.deleted === true ? true : undefined,
+        });
+      }
+      this.seq = parsed.seq;
+      this.items.splice(0, this.items.length, ...items.slice(-500));
+    } catch {
+      // missing or corrupt — start empty
+    }
+  }
+
+  record(kind: ChangeRecord['kind'], id: string, deleted = false): ChangeRecord {
+    this.seq += 1;
+    const rec: ChangeRecord = { seq: this.seq, id, kind, deleted: deleted || undefined };
+    this.items.push(rec);
+    if (this.items.length > 500) this.items.shift();
+    this.schedulePersist();
+    return rec;
+  }
+
+  since(n: number): { results: ChangeRecord[]; last_seq: number } {
+    return {
+      results: this.items.filter(item => item.seq > n),
+      last_seq: this.seq,
+    };
+  }
+
+  async flush(): Promise<void> {
+    await this.persistChain;
+  }
+
+  private schedulePersist(): void {
+    if (!this.persistPath) return;
+    const path = this.persistPath;
+    const payload = JSON.stringify({ seq: this.seq, items: this.items });
+    this.persistChain = this.persistChain
+      .then(() => fs.writeFile(path, payload, { encoding: 'utf-8', mode: 0o600 }))
+      .catch(() => {});
+  }
 }
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const DEFAULT_PORT = 29168; // "readied" in phone keypad
+const DEFAULT_PORT = 29168; // "dripnex" in phone keypad
 const TOKEN_FILE = 'api-token.txt';
 
 // ============================================================================
@@ -142,14 +236,16 @@ export class LocalServer {
     res: ServerResponse,
     handlers: LocalServerHandlers
   ): Promise<void> {
-    // Auth check (constant-time comparison to prevent timing attacks)
-    const authHeader = req.headers.authorization;
-    const expected = `Bearer ${this.token}`;
-    if (
-      !authHeader ||
-      authHeader.length !== expected.length ||
-      !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
-    ) {
+    // Auth check (constant-time comparison to prevent timing attacks).
+    // Compare BYTE lengths, not JS string lengths: a multibyte Authorization
+    // header can share the same UTF-16 length as `expected` while producing a
+    // different-length Buffer, which makes timingSafeEqual throw a RangeError
+    // (unhandled here → hung socket). Buffer.length is the byte length, so the
+    // guard below guarantees timingSafeEqual only sees equal-length buffers.
+    const authHeader = req.headers.authorization ?? '';
+    const authBuf = Buffer.from(authHeader);
+    const expectedBuf = Buffer.from(`Bearer ${this.token}`);
+    if (authBuf.length !== expectedBuf.length || !timingSafeEqual(authBuf, expectedBuf)) {
       this.sendJson(res, 401, { error: 'Unauthorized' });
       return;
     }
@@ -253,6 +349,120 @@ export class LocalServer {
       if (method === 'GET' && pathname === '/api/notes') {
         const notes = await handlers.listNotes();
         this.sendJson(res, 200, notes);
+        return;
+      }
+
+      if (method === 'GET' && pathname === '/api/books') {
+        const books = await handlers.listNotebooks();
+        this.sendJson(res, 200, books);
+        return;
+      }
+
+      if (method === 'GET' && pathname === '/api/tags') {
+        const tags = await handlers.listTags();
+        this.sendJson(res, 200, tags);
+        return;
+      }
+
+      if (method === 'DELETE' && pathname.match(/^\/api\/notes\/[^/]+$/)) {
+        const noteId = pathname.split('/').pop()!;
+        const permanent = url.searchParams.get('permanent') === '1';
+        const result = await handlers.deleteNote(noteId, permanent);
+        if (result.ok) {
+          this.sendJson(res, 200, { ok: true });
+        } else {
+          this.sendJson(res, 404, { error: 'Note not found' });
+        }
+        return;
+      }
+
+      if (method === 'PUT' && pathname.match(/^\/api\/books\/[^/]+$/)) {
+        const bookId = pathname.split('/').pop()!;
+        const body = await this.readBody(req);
+        const patch: { name?: string; icon?: string | null } = {};
+        if (typeof body.name === 'string') patch.name = body.name;
+        if (body.icon === null || typeof body.icon === 'string') patch.icon = body.icon;
+        if (patch.name === undefined && patch.icon === undefined) {
+          this.sendJson(res, 400, { error: 'Missing name or icon' });
+          return;
+        }
+        const result = await handlers.updateNotebook(bookId, patch);
+        if (result.ok) {
+          this.sendJson(res, 200, { ok: true });
+        } else {
+          this.sendJson(res, 404, { error: 'Notebook not found' });
+        }
+        return;
+      }
+
+      if (method === 'POST' && pathname === '/api/tags') {
+        const body = await this.readBody(req);
+        const name = typeof body.name === 'string' ? body.name : '';
+        if (!name.trim()) {
+          this.sendJson(res, 400, { error: 'Missing name' });
+          return;
+        }
+        const color =
+          body.color === null || typeof body.color === 'string' ? body.color : undefined;
+        const result = await handlers.putTag(name, { color });
+        if (result.ok) {
+          this.sendJson(res, 201, { ok: true, name: name.trim().toLowerCase() });
+        } else {
+          this.sendJson(res, 500, { error: 'Failed to save tag' });
+        }
+        return;
+      }
+
+      if (method === 'PUT' && pathname.match(/^\/api\/tags\/[^/]+$/)) {
+        const tagName = decodeURIComponent(pathname.split('/').pop()!);
+        const body = await this.readBody(req);
+        const patch: { color?: string | null; newName?: string } = {};
+        if (body.color === null || typeof body.color === 'string') patch.color = body.color;
+        if (typeof body.name === 'string') patch.newName = body.name;
+        if (patch.color === undefined && patch.newName === undefined) {
+          this.sendJson(res, 400, { error: 'Missing color or name' });
+          return;
+        }
+        const result = await handlers.putTag(tagName, patch);
+        if (result.ok) {
+          this.sendJson(res, 200, { ok: true });
+        } else {
+          this.sendJson(res, 404, { error: 'Tag not found' });
+        }
+        return;
+      }
+
+      if (method === 'POST' && pathname === '/api/books') {
+        const body = await this.readBody(req);
+        const name = typeof body.name === 'string' ? body.name : '';
+        if (!name.trim()) {
+          this.sendJson(res, 400, { error: 'Missing name' });
+          return;
+        }
+        const parentId = typeof body.parentId === 'string' ? body.parentId : undefined;
+        const result = await handlers.createNotebook({ name, parentId });
+        if (result.ok && result.data) {
+          this.sendJson(res, 201, { id: result.data.id });
+        } else {
+          this.sendJson(res, 500, { error: 'Failed to create notebook' });
+        }
+        return;
+      }
+
+      if (method === 'DELETE' && pathname.match(/^\/api\/books\/[^/]+$/)) {
+        const bookId = pathname.split('/').pop()!;
+        const result = await handlers.deleteNotebook(bookId);
+        if (result.ok) {
+          this.sendJson(res, 200, { ok: true });
+        } else {
+          this.sendJson(res, 404, { error: 'Notebook not found' });
+        }
+        return;
+      }
+
+      if (method === 'GET' && (pathname === '/api/_changes' || pathname === '/_changes')) {
+        const since = Number(url.searchParams.get('since') ?? '0');
+        this.sendJson(res, 200, handlers.getChanges(Number.isFinite(since) ? since : 0));
         return;
       }
 

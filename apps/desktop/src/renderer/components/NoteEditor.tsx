@@ -1,15 +1,29 @@
 import { useRef, useCallback, useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { FileText, MoreVertical, Link2 } from 'lucide-react';
-import { LayoutZone } from '@readied/plugin-api';
+import { FileText, MoreVertical, Link2, Hash } from 'lucide';
+import { LayoutZone } from '@dripnex/plugin-api';
+import { toggleNthGfmTask, type MarkdownHeading } from '@dripnex/markdown';
+import { Icon } from '../ui/icons/Icon';
+import { getEditorView } from '../hooks/useCommandRegistry';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
-import { useEditorBufferStore, selectIsDirty } from '../stores/editorBufferStore';
+import {
+  useEditorBufferStore,
+  selectIsDirty,
+  selectContentForNote,
+} from '../stores/editorBufferStore';
+import { useHeadingJumpStore } from '../stores/headingJumpStore';
 import { useShareStore, selectShareInfo } from '../stores/shareStore';
+import { findHeadingForAnchor } from '../utils/outlineActive';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
+import { useResolvedWikilinkTargets } from '../hooks/useResolvedWikilinkTargets';
+import { useWikilinkPeek } from '../hooks/useWikilinkPeek';
 import { useNotebook } from '../hooks/useNotebooks';
+import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
+import { notebookStyleProps } from '../utils/notebookStyle';
+import { WikilinkPeek } from './editor/WikilinkPeek';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
 import { ImageLightbox } from './ImageLightbox';
@@ -17,13 +31,15 @@ import { BacklinksPanel } from './editor/BacklinksPanel';
 import { RevisionHistoryPanel } from './editor/RevisionHistoryPanel';
 import {
   ActionsPanel,
+  EditorChrome,
   EditorHeader,
-  EditorViewToggle,
-  FormattingToolbar,
+  OutlinePanel,
+  SelectionToolbar,
   MarkdownPreview,
 } from './editor';
 import { TitleInput } from './TitleInput';
 import { useToast } from './Toast';
+import { sc } from './noteEditorSc';
 
 // Lazy load the markdown editor for better initial load performance
 const MarkdownEditor = lazy(() =>
@@ -33,8 +49,8 @@ const MarkdownEditor = lazy(() =>
 /** Loading spinner for editor */
 function EditorLoading() {
   return (
-    <div className="note-editor-loading" aria-label="Loading editor">
-      <div className="editor-spinner" />
+    <div className={sc('note-editor-loading')} aria-label="Loading editor">
+      <div className={sc('editor-spinner')} />
     </div>
   );
 }
@@ -46,12 +62,23 @@ interface NoteEditorProps {
   onMoveToNotebook?: (notebookId: string) => void;
   onStatusChange?: (status: NoteStatus) => void;
   onDuplicate?: () => void;
+  onUseTemplate?: () => void;
   onDelete?: () => void;
+  onRestoreDeleted?: () => void;
+  onPermanentDelete?: () => void;
   onPin?: () => void;
-  onWikilinkClick?: (target: string) => void;
+  onWikilinkClick?: (target: string, anchor?: string) => void;
   onNavigateToNote?: (noteId: string) => void;
   /** Called when note is updated (e.g., tags changed) */
   onNoteUpdate?: (note: NoteSnapshot) => void;
+  canBack?: boolean;
+  canForward?: boolean;
+  distractionFree?: boolean;
+  onBack?: () => void;
+  onForward?: () => void;
+  onToggleZen?: () => void;
+  onOpenWindow?: () => void;
+  chromeVariant?: 'main' | 'window';
 }
 
 export function NoteEditor({
@@ -61,11 +88,22 @@ export function NoteEditor({
   onMoveToNotebook,
   onStatusChange,
   onDuplicate,
+  onUseTemplate,
   onDelete,
+  onRestoreDeleted,
+  onPermanentDelete,
   onPin,
   onWikilinkClick,
   onNavigateToNote,
   onNoteUpdate,
+  canBack = false,
+  canForward = false,
+  distractionFree = false,
+  onBack,
+  onForward,
+  onToggleZen,
+  onOpenWindow,
+  chromeVariant = 'main',
 }: NoteEditorProps) {
   const { showToast } = useToast();
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -76,15 +114,30 @@ export function NoteEditor({
   // View mode from preferences store
   const viewMode = useEditorPreferencesStore(state => state.viewMode);
   const setViewMode = useEditorPreferencesStore(state => state.setViewMode);
+  const outlineOpen = useEditorPreferencesStore(state => state.outlineOpen);
+  const toggleOutline = useEditorPreferencesStore(state => state.toggleOutline);
 
-  // Initialize editor buffer when note changes
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
+  // Initialize editor buffer when note changes. Flush a dirty buffer first
+  // so switching notes (e.g. [[ Create ]]) does not drop the last edit.
   useEffect(() => {
-    // Cancel any pending debounce from previous note to prevent stale mutations
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
+    const id = note?.id;
 
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      const buf = useEditorBufferStore.getState();
+      if (id && buf.noteId === id && buf.isDirty) {
+        onUpdateRef.current(buf.liveContent);
+      }
+    };
+  }, [note?.id]);
+
+  useEffect(() => {
     if (note) {
       useEditorBufferStore.getState().setNote(note.id, note.content);
     } else {
@@ -98,6 +151,20 @@ export function NoteEditor({
     inlineTags: note?.tags ?? [],
     onNoteUpdate,
   });
+
+  const handleKindChange = useCallback(
+    async (kind: NoteKind) => {
+      for (const tag of manualTags) {
+        if (isKindTag(tag) && normalizeTag(tag) !== kind) {
+          await removeTag(tag);
+        }
+      }
+      if (!displayTags.some(tag => normalizeTag(tag) === kind)) {
+        await addTag(kind);
+      }
+    },
+    [addTag, displayTags, manualTags, removeTag]
+  );
 
   // Actions panel state
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -166,22 +233,104 @@ export function NoteEditor({
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   // Embed resolution (extracted to hook)
+  const liveContent = useEditorBufferStore(selectContentForNote(note?.id ?? null));
+  const knownWikilinkTitles = useResolvedWikilinkTargets(liveContent ?? note?.content ?? '');
+  const wikilinkPeek = useWikilinkPeek();
+
   const { resolvedEmbeds, getEmbedUrl } = useEmbedResolver({
     noteId: note?.id ?? null,
-    content: note?.content ?? null,
+    content: liveContent ?? note?.content ?? null,
   });
 
-  // Toolbar visibility state (for passing to ActionsPanel)
-  const [toolbarVisibility, setToolbarVisibility] = useState<ToolbarVisibility>({
+  const toolbarVisibility: ToolbarVisibility = {
     text: true,
     lists: true,
     blocks: true,
     history: true,
-  });
+  };
 
   const showEditor = viewMode === 'editor' || viewMode === 'split';
   const showPreview = viewMode === 'preview' || viewMode === 'split';
   const isSplitMode = viewMode === 'split';
+
+  const [outlineActiveLine, setOutlineActiveLine] = useState<number | null>(null);
+  const [outlineActiveText, setOutlineActiveText] = useState<string | null>(null);
+
+  const handleOutlineJump = useCallback(
+    (heading: MarkdownHeading) => {
+      setOutlineActiveLine(heading.line);
+      setOutlineActiveText(heading.text);
+      if (showEditor) {
+        editorRef.current?.jumpToLine(heading.line);
+      } else {
+        previewRef.current?.jumpToHeading(heading.text);
+      }
+    },
+    [showEditor]
+  );
+
+  const pendingJumpNoteId = useHeadingJumpStore(s => s.noteId);
+  const pendingJumpHeading = useHeadingJumpStore(s => s.heading);
+
+  const tryHeadingJump = useCallback(() => {
+    if (!note) return;
+    const pending = useHeadingJumpStore.getState();
+    if (pending.noteId !== note.id || !pending.heading) return;
+    const target = showEditor ? editorRef.current : previewRef.current;
+    if (!target) return;
+    const match = findHeadingForAnchor(note.content, pending.heading);
+    useHeadingJumpStore.getState().consume(note.id);
+    if (match) handleOutlineJump(match);
+  }, [note, showEditor, handleOutlineJump]);
+
+  useEffect(() => {
+    tryHeadingJump();
+  }, [note?.id, pendingJumpNoteId, pendingJumpHeading, tryHeadingJump]);
+
+  useEffect(() => {
+    if (!outlineOpen || !note) return;
+    let unsub: (() => void) | undefined;
+    let interval: number | undefined;
+
+    const attach = (): boolean => {
+      if (showEditor && editorRef.current) {
+        const editor = editorRef.current;
+        const sync = () => {
+          setOutlineActiveLine(editor.getVisibleLine());
+          setOutlineActiveText(null);
+        };
+        unsub = editor.onScroll(sync);
+        sync();
+        return true;
+      }
+      if (!showEditor && previewRef.current) {
+        const preview = previewRef.current;
+        const sync = () => {
+          setOutlineActiveLine(null);
+          setOutlineActiveText(preview.getVisibleHeading());
+        };
+        unsub = preview.onScroll(sync);
+        sync();
+        return true;
+      }
+      return false;
+    };
+
+    if (!attach()) {
+      let tries = 0;
+      interval = window.setInterval(() => {
+        tries += 1;
+        if (attach() || tries > 20) {
+          if (interval) window.clearInterval(interval);
+        }
+      }, 50);
+    }
+
+    return () => {
+      if (interval) window.clearInterval(interval);
+      unsub?.();
+    };
+  }, [outlineOpen, showEditor, note?.id, viewMode]);
 
   // Scroll sync for split mode (see useScrollSync for architecture docs)
   const { masterRef, handleEditorReady, handlePreviewReady } = useScrollSync({
@@ -189,6 +338,16 @@ export function NoteEditor({
     editorRef,
     previewRef,
   });
+
+  const onEditorReady = useCallback(() => {
+    handleEditorReady();
+    tryHeadingJump();
+  }, [handleEditorReady, tryHeadingJump]);
+
+  const onPreviewReady = useCallback(() => {
+    handlePreviewReady();
+    tryHeadingJump();
+  }, [handlePreviewReady, tryHeadingJump]);
 
   // Handle content change with debounce
   const handleChange = useCallback(
@@ -206,6 +365,28 @@ export function NoteEditor({
     [onUpdate]
   );
 
+  const handlePreviewCheckbox = useCallback(
+    (index: number) => {
+      if (!note) return;
+      const current =
+        useEditorBufferStore.getState().noteId === note.id
+          ? useEditorBufferStore.getState().liveContent
+          : note.content;
+      const next = toggleNthGfmTask(current, index);
+      if (next == null || next === current) return;
+      const view = getEditorView();
+      if (view) {
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: next },
+        });
+        return;
+      }
+      useEditorBufferStore.getState().updateBuffer(next);
+      handleChange(next);
+    },
+    [note, handleChange]
+  );
+
   // Cleanup debounce timer on unmount to prevent stale mutations
   useEffect(() => {
     return () => {
@@ -218,7 +399,7 @@ export function NoteEditor({
   // Handle share on web
   const handleShareOnWeb = useCallback(async () => {
     if (!note) return;
-    const result = await window.readied.share.create({
+    const result = await window.dripnex.share.create({
       noteId: note.id,
       title: note.title,
       content: note.content,
@@ -238,7 +419,7 @@ export function NoteEditor({
   // Handle unshare
   const handleUnshare = useCallback(async () => {
     if (!note || !shareInfo) return;
-    const result = await window.readied.share.delete(shareInfo.slug);
+    const result = await window.dripnex.share.delete(shareInfo.slug);
     if (result.success) {
       removeShared(note.id);
       showToast('Note unshared');
@@ -273,45 +454,94 @@ export function NoteEditor({
 
   if (!note) {
     return (
-      <main className="note-editor" aria-label="Note editor">
-        <div className="note-editor-empty" role="status">
-          <span className="empty-icon" aria-hidden="true">
-            <FileText size={48} />
+      <main className={sc('note-editor')} aria-label="Note editor">
+        <div className={sc('note-editor-empty')} role="status">
+          <span className={sc('empty-icon')} aria-hidden="true">
+            <Icon icon={FileText} size={48} />
           </span>
-          <p className="empty-title">Select a note to edit</p>
-          <p className="empty-hint">Or press ⌘N to create a new one</p>
+          <p className={sc('empty-title')}>Select a note to edit</p>
+          <p className={sc('empty-hint')}>Or press ⌘N to create a new one</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="note-editor" aria-label="Note editor">
-      {/* Title row with actions buttons */}
-      <header className="note-editor-header">
+    <main
+      className={`${sc('note-editor')} ${notebookStyleProps(note.notebookId).className}`}
+      data-notebook-id={note.notebookId || undefined}
+      aria-label="Note editor"
+    >
+      <EditorChrome
+        variant={chromeVariant}
+        canBack={canBack}
+        canForward={canForward}
+        distractionFree={distractionFree}
+        viewMode={viewMode}
+        onBack={() => onBack?.()}
+        onForward={() => onForward?.()}
+        onToggleZen={() => onToggleZen?.()}
+        onOpenWindow={() => onOpenWindow?.()}
+        onModeChange={setViewMode}
+        outlineButton={
+          <div className={sc('editor-view-toggle')} role="group" aria-label="Outline">
+            <button
+              type="button"
+              className={sc('editor-view-toggle-btn', outlineOpen && 'active')}
+              onClick={toggleOutline}
+              title="Outline"
+              aria-label="Toggle outline"
+              aria-pressed={outlineOpen}
+            >
+              <Icon icon={Hash} size={16} />
+            </button>
+          </div>
+        }
+        actions={
+          <>
+            {saveStatus ? (
+              <span
+                className={sc('save-indicator', showSaved && 'save-indicator--fade')}
+                aria-live="polite"
+              >
+                {saveStatus}
+              </span>
+            ) : null}
+            {onUseTemplate ? (
+              <button
+                type="button"
+                className={sc('note-editor-use-template')}
+                onClick={onUseTemplate}
+                title="Create a new note from this template"
+              >
+                Use template
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={sc('note-editor-actions-btn', backlinksCount > 0 && 'has-badge')}
+              onClick={() => setBacklinksOpen(true)}
+              title={`Backlinks${backlinksCount > 0 ? ` (${backlinksCount})` : ''}`}
+              aria-label="Open backlinks panel"
+            >
+              <Icon icon={Link2} size={18} />
+              {backlinksCount > 0 && <span className={sc('badge')}>{backlinksCount}</span>}
+            </button>
+            <button
+              type="button"
+              className={sc('note-editor-actions-btn')}
+              onClick={() => setActionsOpen(true)}
+              title="More actions"
+              aria-label="Open actions panel"
+            >
+              <Icon icon={MoreVertical} size={18} />
+            </button>
+            <LayoutZone name="editor-header-actions" />
+          </>
+        }
+      />
+      <header className={sc('note-editor-header')}>
         <TitleInput value={note.title} onChange={handleTitleChange} onEnter={handleTitleEnter} />
-        <div className="note-editor-header-actions">
-          <button
-            type="button"
-            className={`note-editor-actions-btn ${backlinksCount > 0 ? 'has-badge' : ''}`}
-            onClick={() => setBacklinksOpen(true)}
-            title={`Backlinks${backlinksCount > 0 ? ` (${backlinksCount})` : ''}`}
-            aria-label="Open backlinks panel"
-          >
-            <Link2 size={18} />
-            {backlinksCount > 0 && <span className="badge">{backlinksCount}</span>}
-          </button>
-          <button
-            type="button"
-            className="note-editor-actions-btn"
-            onClick={() => setActionsOpen(true)}
-            title="More actions"
-            aria-label="Open actions panel"
-          >
-            <MoreVertical size={18} />
-          </button>
-          <LayoutZone name="editor-header-actions" />
-        </div>
       </header>
       {/* Metadata row: Notebook, Status, Tags */}
       {onMoveToNotebook && onStatusChange && (
@@ -323,70 +553,86 @@ export function NoteEditor({
           onStatusChange={onStatusChange}
           onAddTag={addTag}
           onRemoveTag={removeTag}
+          onKindChange={kind => void handleKindChange(kind)}
         />
       )}
-      <div ref={toolbarRowRef} className="note-editor-toolbar-row">
-        <FormattingToolbar onVisibilityChange={setToolbarVisibility} containerRef={toolbarRowRef} />
+      <div ref={toolbarRowRef} className={sc('note-editor-toolbar-row')}>
         <LayoutZone name="editor-toolbar" />
-        {saveStatus && (
-          <span
-            className={`save-indicator ${showSaved ? 'save-indicator--fade' : ''}`}
-            aria-live="polite"
-          >
-            {saveStatus}
-          </span>
-        )}
       </div>
-      <div className={`note-editor-body note-editor-body--${viewMode}`}>
-        {showEditor && (
-          <div
-            className="split-pane split-pane--editor"
-            onMouseEnter={() => {
-              masterRef.current = 'editor';
-            }}
-          >
-            <Suspense fallback={<EditorLoading />}>
-              <MarkdownEditor
-                ref={editorRef}
-                key={note.id}
-                initialContent={note.content}
-                onChange={handleChange}
-                onReady={handleEditorReady}
+      <div className={sc('note-editor-workspace')}>
+        <div className={sc('note-editor-body', `note-editor-body--${viewMode}`)}>
+          {showEditor && (
+            <div
+              className={sc('split-pane', 'split-pane--editor')}
+              onMouseEnter={() => {
+                masterRef.current = 'editor';
+              }}
+            >
+              <SelectionToolbar />
+              <Suspense fallback={<EditorLoading />}>
+                <MarkdownEditor
+                  ref={editorRef}
+                  key={note.id}
+                  initialContent={note.content}
+                  onChange={handleChange}
+                  onReady={onEditorReady}
+                  noteId={note.id}
+                  noteTitle={note.title}
+                  notebookId={note.notebookId}
+                  getEmbedUrl={getEmbedUrl}
+                  onWikilinkClick={onWikilinkClick}
+                  onWikilinkHover={(target, coords) =>
+                    wikilinkPeek.request(target, coords.x, coords.y)
+                  }
+                  onWikilinkHoverEnd={wikilinkPeek.leave}
+                  knownWikilinkTitles={knownWikilinkTitles}
+                />
+              </Suspense>
+            </div>
+          )}
+          {showPreview && (
+            <div
+              className={sc('split-pane', 'split-pane--preview')}
+              onMouseEnter={() => {
+                masterRef.current = 'preview';
+              }}
+            >
+              <LayoutZone name="preview-toolbar" />
+              <MarkdownPreview
+                ref={previewRef}
+                content={note.content}
                 noteId={note.id}
-                getEmbedUrl={getEmbedUrl}
+                notebookId={note.notebookId}
+                createdAt={note.createdAt}
+                updatedAt={note.updatedAt}
+                onReady={onPreviewReady}
+                onWikilinkClick={onWikilinkClick}
+                onWikilinkHover={(target, coords) =>
+                  wikilinkPeek.request(target, coords.x, coords.y)
+                }
+                onWikilinkHoverEnd={wikilinkPeek.leave}
+                knownWikilinkTitles={knownWikilinkTitles}
+                onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
+                resolvedEmbeds={resolvedEmbeds}
+                onCheckboxToggle={handlePreviewCheckbox}
               />
-            </Suspense>
-          </div>
-        )}
-        {showPreview && (
-          <div
-            className="split-pane split-pane--preview"
-            onMouseEnter={() => {
-              masterRef.current = 'preview';
-            }}
-          >
-            <MarkdownPreview
-              ref={previewRef}
-              content={note.content}
-              noteId={note.id}
-              createdAt={note.createdAt}
-              updatedAt={note.updatedAt}
-              onReady={handlePreviewReady}
-              onWikilinkClick={onWikilinkClick}
-              onEmbedClick={(target, url) => setLightbox({ src: url, alt: target })}
-              resolvedEmbeds={resolvedEmbeds}
-            />
-          </div>
-        )}
-
-        {/* Floating View Toggle */}
-        <div className="floating-view-toggle">
-          <EditorViewToggle mode={viewMode} onModeChange={setViewMode} />
+            </div>
+          )}
         </div>
+        {outlineOpen ? (
+          <OutlinePanel
+            content={liveContent ?? note.content}
+            onJump={handleOutlineJump}
+            activeLine={outlineActiveLine}
+            activeText={outlineActiveText}
+          />
+        ) : null}
       </div>
+
+      <LayoutZone name="editor-footer" />
 
       {/* Plugin Status Bar */}
-      <LayoutZone name="editor-status-bar" className="note-editor-status-bar" />
+      <LayoutZone name="editor-status-bar" className={sc('note-editor-status-bar')} />
 
       {/* Plugin Panels */}
       <LayoutZone name="panel" />
@@ -398,15 +644,19 @@ export function NoteEditor({
         noteId={note.id}
         noteTitle={note.title}
         isPinned={note.isPinned}
+        isDeleted={note.isDeleted}
         onPin={onPin}
         onDuplicate={onDuplicate}
         onDelete={onDelete}
+        onRestoreDeleted={onRestoreDeleted}
+        onPermanentDelete={onPermanentDelete}
         onRevisionHistory={note.notebookId ? () => setRevisionHistoryOpen(true) : undefined}
         onShareOnWeb={handleShareOnWeb}
         shareInfo={shareInfo}
         onUnshare={handleUnshare}
         onCopyShareLink={handleCopyShareLink}
         hiddenFormatting={toolbarVisibility}
+        heading={outlineActiveText}
       />
 
       {/* Backlinks Panel */}
@@ -423,6 +673,20 @@ export function NoteEditor({
         onClose={() => setRevisionHistoryOpen(false)}
         notebookId={note.notebookId}
       />
+
+      {wikilinkPeek.peek ? (
+        <WikilinkPeek
+          target={wikilinkPeek.peek.target}
+          x={wikilinkPeek.peek.x}
+          y={wikilinkPeek.peek.y}
+          onOpen={title => {
+            onWikilinkClick?.(title);
+            wikilinkPeek.close();
+          }}
+          onHold={wikilinkPeek.hold}
+          onLeave={wikilinkPeek.leave}
+        />
+      ) : null}
 
       {/* Image Lightbox */}
       {lightbox && (

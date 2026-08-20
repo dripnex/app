@@ -1,8 +1,11 @@
 /**
  * Token Storage Service
  *
- * Securely stores JWT tokens using Electron's safeStorage API.
- * Tokens are encrypted with OS-level security (Keychain on macOS, DPAPI on Windows, libsecret on Linux).
+ * Prefers Electron safeStorage (Keychain / DPAPI / libsecret). When the OS
+ * store is unavailable — unsigned electron-vite on macOS, locked keychain,
+ * missing libsecret — persist the same JSON with mode 0600 so login still
+ * completes. Never delete a file we cannot decrypt: the keychain may come
+ * back on the next attempt.
  *
  * @module TokenStorage
  */
@@ -19,6 +22,8 @@ export interface Tokens {
   accessToken: string;
   refreshToken: string;
 }
+
+const FILE_MODE = 0o600;
 
 // ============================================================================
 // TokenStorage Class
@@ -43,14 +48,9 @@ export class TokenStorage {
   async saveTokens(accessToken: string, refreshToken: string): Promise<void> {
     const tokens: Tokens = { accessToken, refreshToken };
     const plaintext = JSON.stringify(tokens);
-
-    // Encrypt using OS keychain
-    if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error('Encryption is not available on this system');
-    }
-
-    const encrypted = safeStorage.encryptString(plaintext);
-    await fs.writeFile(this.filePath, encrypted);
+    const payload = this.encryptOrPlaintext(plaintext);
+    await fs.writeFile(this.filePath, payload, { mode: FILE_MODE });
+    await fs.chmod(this.filePath, FILE_MODE);
   }
 
   /**
@@ -58,26 +58,24 @@ export class TokenStorage {
    * @returns Tokens object or null if not found
    */
   async getTokens(): Promise<Tokens | null> {
+    let data: Buffer;
     try {
-      const encrypted = await fs.readFile(this.filePath);
-      const plaintext = safeStorage.decryptString(encrypted);
-      const tokens = JSON.parse(plaintext) as Tokens;
-
-      // Validate structure
-      if (!tokens.accessToken || !tokens.refreshToken) {
-        throw new Error('Invalid token structure');
-      }
-
-      return tokens;
+      data = await fs.readFile(this.filePath);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // File doesn't exist - no tokens saved yet
         return null;
       }
-      // Decryption or parsing failed - clear corrupted file
-      await this.clearTokens();
+      // Unexpected read error — treat as "no usable tokens right now" without
+      // destroying the file.
       return null;
     }
+
+    const plaintext = this.decryptOrPlaintext(data);
+    if (plaintext === null) {
+      return null;
+    }
+
+    return parseTokens(plaintext);
   }
 
   /**
@@ -90,7 +88,6 @@ export class TokenStorage {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error;
       }
-      // File doesn't exist - already clear
     }
   }
 
@@ -123,5 +120,65 @@ export class TokenStorage {
   async getRefreshToken(): Promise<string | null> {
     const tokens = await this.getTokens();
     return tokens?.refreshToken ?? null;
+  }
+
+  private encryptOrPlaintext(plaintext: string): Buffer {
+    if (safeStorage.isEncryptionAvailable()) {
+      return safeStorage.encryptString(plaintext);
+    }
+
+    console.warn(
+      '[tokenStorage] OS encryption unavailable; writing session tokens with 0600 permissions'
+    );
+    return Buffer.from(plaintext, 'utf8');
+  }
+
+  private decryptOrPlaintext(data: Buffer): string | null {
+    if (looksLikeJsonObject(data)) {
+      return data.toString('utf8');
+    }
+
+    if (!safeStorage.isEncryptionAvailable()) {
+      return null;
+    }
+
+    try {
+      return safeStorage.decryptString(data);
+    } catch {
+      // DATA SAFETY: decryption failed. This is frequently transient —
+      // the OS keychain can be temporarily locked (e.g. right after wake on
+      // macOS, or libsecret not yet running on Linux). Leave the file intact
+      // and report "no tokens" for now; a later call with an unlocked
+      // keychain recovers them. Explicit logout still clears via clearTokens().
+      return null;
+    }
+  }
+}
+
+function looksLikeJsonObject(data: Buffer): boolean {
+  for (let i = 0; i < data.length; i += 1) {
+    const byte = data[i];
+    if (byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d) {
+      continue;
+    }
+    return byte === 0x7b; // '{'
+  }
+  return false;
+}
+
+function parseTokens(plaintext: string): Tokens | null {
+  try {
+    const parsed = JSON.parse(plaintext) as unknown;
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof (parsed as Tokens).accessToken !== 'string' ||
+      typeof (parsed as Tokens).refreshToken !== 'string'
+    ) {
+      return null;
+    }
+    return parsed as Tokens;
+  } catch {
+    return null;
   }
 }

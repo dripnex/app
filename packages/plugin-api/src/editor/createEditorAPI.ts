@@ -48,6 +48,18 @@ export function createEditorAPI(getView: () => EditorView | null): EditorAPIWith
       });
     },
 
+    setSelection(from, to = from) {
+      const view = getView();
+      if (!view) return;
+      const max = view.state.doc.length;
+      const start = Math.max(0, Math.min(from, max));
+      const end = Math.max(0, Math.min(to, max));
+      view.dispatch({
+        selection:
+          start === end ? EditorSelection.cursor(start) : EditorSelection.range(start, end),
+      });
+    },
+
     getWordCount() {
       const content = this.getContent();
       if (!content.trim()) return 0;
@@ -80,6 +92,8 @@ export function createEditorAPI(getView: () => EditorView | null): EditorAPIWith
     focus() {
       getView()?.focus();
     },
+
+    getView,
 
     _notifyDocChanged(content) {
       for (const cb of docChangedListeners) {

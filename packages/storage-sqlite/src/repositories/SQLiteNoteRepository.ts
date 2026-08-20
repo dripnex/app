@@ -1,12 +1,26 @@
 /**
  * SQLite Note Repository
  *
- * Implements the ExtendedNoteRepository interface from @readied/storage-core
+ * Implements the ExtendedNoteRepository interface from @dripnex/storage-core
  */
 
-import type { ExtendedNoteRepository, ListNotesOptions } from '@readied/storage-core';
-import { type Note, type NoteId, type Tag, createNoteId, createTag } from '@readied/core';
-import { extractWikilinks } from '@readied/wikilinks';
+import type {
+  BacklinkInfo,
+  ExtendedNoteRepository,
+  GraphData,
+  ListNotesOptions,
+  NoteCountScoped,
+  NoteCountSummary,
+} from '@dripnex/storage-core';
+import {
+  type Note,
+  type NoteId,
+  type NoteStatus,
+  type Tag,
+  createNoteId,
+  createTag,
+} from '@dripnex/core';
+import { extractWikilinks } from '@dripnex/wikilinks';
 import type { DatabaseConnection } from '../database.js';
 import {
   rowToNote,
@@ -14,13 +28,95 @@ import {
   archivedConditionSql,
   type NoteRow,
   type TagRow,
-  type TagWithColorRow,
-  type BacklinkInfo,
 } from './noteMapping.js';
+import { indexNoteChunks } from './indexNoteChunks.js';
 
 // Re-export public types so external imports (e.g. desktop's handlers/types.ts)
 // keep working unchanged.
-export type { BacklinkInfo };
+export type { BacklinkInfo, NoteCountSummary, NoteCountScoped };
+
+function emptyByStatus(): Record<NoteStatus, number> {
+  return { active: 0, on_hold: 0, completed: 0, dropped: 0 };
+}
+
+function requiredTags(options: ListNotesOptions): string[] {
+  const tags = new Set<string>();
+  if (options.tag) {
+    const normalized = options.tag.trim().toLowerCase();
+    if (normalized) tags.add(normalized);
+  }
+  if (options.tags) {
+    for (const tag of options.tags) {
+      const normalized = tag.trim().toLowerCase();
+      if (normalized) tags.add(normalized);
+    }
+  }
+  return [...tags];
+}
+
+/** Shared WHERE fragments for list / search / countScoped. */
+export function noteFilterSql(
+  options: ListNotesOptions,
+  extras?: { defaultExcludeDeleted?: boolean }
+): { sql: string; params: Array<string | number> } {
+  const parts: string[] = [];
+  const params: Array<string | number> = [];
+  const archived = options.archived ?? 'active';
+
+  parts.push(archivedConditionSql(archived, 'n'));
+
+  if (options.notebookIds !== undefined) {
+    if (options.notebookIds.length === 0) {
+      parts.push('AND 0');
+    } else {
+      const placeholders = options.notebookIds.map(() => '?').join(', ');
+      parts.push(`AND n.notebook_id IN (${placeholders})`);
+      params.push(...options.notebookIds);
+    }
+  } else if (options.notebookId !== undefined) {
+    parts.push('AND n.notebook_id = ?');
+    params.push(options.notebookId);
+  }
+
+  if (options.excludeNotebookIds && options.excludeNotebookIds.length > 0) {
+    const placeholders = options.excludeNotebookIds.map(() => '?').join(', ');
+    parts.push(`AND n.notebook_id NOT IN (${placeholders})`);
+    params.push(...options.excludeNotebookIds);
+  }
+
+  if (options.status !== undefined) {
+    parts.push('AND n.status = ?');
+    params.push(options.status);
+  }
+
+  if (options.isPinned !== undefined) {
+    parts.push('AND n.is_pinned = ?');
+    params.push(options.isPinned ? 1 : 0);
+  }
+
+  if (options.isDeleted !== undefined) {
+    parts.push('AND n.is_deleted = ?');
+    params.push(options.isDeleted ? 1 : 0);
+  } else if (extras?.defaultExcludeDeleted) {
+    parts.push('AND n.is_deleted = 0');
+  }
+
+  const tags = requiredTags(options);
+  if (tags.length > 0) {
+    const placeholders = tags.map(() => '?').join(', ');
+    parts.push(`AND n.id IN (
+      SELECT nt.note_id
+      FROM note_tags nt
+      JOIN tags t ON nt.tag_id = t.id
+      WHERE t.name IN (${placeholders})
+      GROUP BY nt.note_id
+      HAVING COUNT(DISTINCT t.name) = ?
+    )`);
+    params.push(...tags, tags.length);
+  }
+
+  return { sql: parts.filter(Boolean).join(' '), params };
+}
 
 /** Sync history entry returned by getSyncHistory */
 export interface SyncHistoryEntry {
@@ -47,7 +143,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   /** Get a note by ID (includes archived notes) */
   async get(id: NoteId): Promise<Note | null> {
     const stmt = this.db.prepare<NoteRow>(`
-      SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count,
+             task_count, checked_task_count, archived_at,
              is_pinned, is_deleted, status
       FROM notes
       WHERE id = ?
@@ -65,15 +162,18 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     this.db.transaction(() => {
       // Upsert note
       const stmt = this.db.prepare(`
-        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
+        INSERT INTO notes (id, notebook_id, content, title, created_at, updated_at, word_count,
+                           task_count, checked_task_count, archived_at,
                            is_pinned, is_deleted, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           notebook_id = excluded.notebook_id,
           content = excluded.content,
           title = excluded.title,
           updated_at = excluded.updated_at,
           word_count = excluded.word_count,
+          task_count = excluded.task_count,
+          checked_task_count = excluded.checked_task_count,
           archived_at = excluded.archived_at,
           is_pinned = excluded.is_pinned,
           is_deleted = excluded.is_deleted,
@@ -88,6 +188,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         note.metadata.createdAt,
         note.metadata.updatedAt,
         note.metadata.wordCount,
+        note.metadata.taskCount,
+        note.metadata.checkedTaskCount,
         note.metadata.archivedAt,
         note.isPinned ? 1 : 0,
         note.isDeleted ? 1 : 0,
@@ -96,6 +198,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
       // Update content-extracted tags (preserves manual tags)
       this.syncExtractedTags(note.id, note.metadata.tags);
+      indexNoteChunks(this.db, note.id, note.content);
     });
   }
 
@@ -108,14 +211,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
 
   /** List notes with optional filtering and pagination */
   async list(options: ListNotesOptions = {}): Promise<Note[]> {
-    const {
-      limit = 50,
-      offset = 0,
-      tag,
-      sortBy = 'updatedAt',
-      sortOrder = 'desc',
-      archived = 'active',
-    } = options;
+    const { limit = 50, offset = 0, sortBy = 'updatedAt', sortOrder = 'desc' } = options;
 
     const sortColumn = {
       createdAt: 'created_at',
@@ -123,36 +219,20 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       title: 'title',
     }[sortBy];
 
-    const archivedCondition = archivedConditionSql(archived, 'n');
-    let sql: string;
-    let params: (string | number)[];
+    const filter = noteFilterSql(options);
 
-    if (tag) {
-      sql = `
-        SELECT DISTINCT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count, n.archived_at,
-               n.is_pinned, n.is_deleted, n.status
-        FROM notes n
-        JOIN note_tags nt ON n.id = nt.note_id
-        JOIN tags t ON nt.tag_id = t.id
-        WHERE t.name = ? ${archivedCondition}
-        ORDER BY n.${sortColumn} ${sortOrder.toUpperCase()}
-        LIMIT ? OFFSET ?
-      `;
-      params = [tag.toLowerCase(), limit, offset];
-    } else {
-      sql = `
-        SELECT id, notebook_id, content, title, created_at, updated_at, word_count, archived_at,
-               is_pinned, is_deleted, status
-        FROM notes n
-        WHERE 1=1 ${archivedCondition}
-        ORDER BY ${sortColumn} ${sortOrder.toUpperCase()}
-        LIMIT ? OFFSET ?
-      `;
-      params = [limit, offset];
-    }
+    const sql = `
+      SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at, n.word_count,
+             n.task_count, n.checked_task_count, n.archived_at,
+             n.is_pinned, n.is_deleted, n.status
+      FROM notes n
+      WHERE 1=1 ${filter.sql}
+      ORDER BY n.${sortColumn} ${sortOrder.toUpperCase()}
+      LIMIT ? OFFSET ?
+    `;
 
     const stmt = this.db.prepare<NoteRow>(sql);
-    const rows = stmt.all(...params) as NoteRow[];
+    const rows = stmt.all(...filter.params, limit, offset) as NoteRow[];
 
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
@@ -164,29 +244,37 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
   async search(
     query: string,
     limit: number = 20,
-    includeArchived: boolean = false
+    includeArchived: boolean = false,
+    options: ListNotesOptions = {}
   ): Promise<Note[]> {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
       return [];
     }
 
-    const archivedCondition = includeArchived ? '' : 'AND n.archived_at IS NULL';
+    const filter = noteFilterSql(
+      {
+        ...options,
+        archived: options.archived ?? (includeArchived ? 'all' : 'active'),
+      },
+      { defaultExcludeDeleted: true }
+    );
 
     // Prepare FTS5 query: escape special chars, add prefix matching
     const ftsQuery = prepareFtsQuery(trimmedQuery);
 
     const stmt = this.db.prepare<NoteRow>(`
       SELECT n.id, n.notebook_id, n.content, n.title, n.created_at, n.updated_at,
-             n.word_count, n.archived_at, n.is_pinned, n.is_deleted, n.status
-      FROM notes_fts fts
-      JOIN notes n ON fts.id = n.id
-      WHERE notes_fts MATCH ? ${archivedCondition}
+             n.word_count, n.task_count, n.checked_task_count, n.archived_at,
+             n.is_pinned, n.is_deleted, n.status
+      FROM notes_fts
+      JOIN notes n ON n.id = notes_fts.id
+      WHERE notes_fts MATCH ? ${filter.sql}
       ORDER BY bm25(notes_fts)
       LIMIT ?
     `);
 
-    const rows = stmt.all(ftsQuery, limit) as NoteRow[];
+    const rows = stmt.all(ftsQuery, ...filter.params, limit) as NoteRow[];
 
     return rows.map(row => {
       const tags = this.getTagsForNote(createNoteId(row.id));
@@ -215,12 +303,159 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     return row.count;
   }
 
+  /**
+   * Global note counts. active / pinned / byStatus include deleted notes
+   * (matches the previous JS aggregation). byNotebook excludes deleted + archived.
+   */
+  countSummary(): NoteCountSummary {
+    const totals = this.db
+      .prepare<{
+        total: number;
+        active: number;
+        archived: number;
+        pinned: number;
+        deleted: number;
+      }>(
+        `
+      SELECT
+        COUNT(*) as total,
+        COALESCE(SUM(CASE WHEN archived_at IS NULL THEN 1 ELSE 0 END), 0) as active,
+        COALESCE(SUM(CASE WHEN archived_at IS NOT NULL THEN 1 ELSE 0 END), 0) as archived,
+        COALESCE(SUM(CASE WHEN is_pinned = 1 THEN 1 ELSE 0 END), 0) as pinned,
+        COALESCE(SUM(CASE WHEN is_deleted = 1 THEN 1 ELSE 0 END), 0) as deleted
+      FROM notes
+    `
+      )
+      .get() as {
+      total: number;
+      active: number;
+      archived: number;
+      pinned: number;
+      deleted: number;
+    };
+
+    const byStatus = emptyByStatus();
+    const statusRows = this.db
+      .prepare<{
+        status: string;
+        count: number;
+      }>('SELECT status, COUNT(*) as count FROM notes GROUP BY status')
+      .all() as Array<{ status: string; count: number }>;
+    for (const row of statusRows) {
+      if (row.status in byStatus) {
+        byStatus[row.status as NoteStatus] = row.count;
+      }
+    }
+
+    const byNotebook: Record<string, number> = {};
+    const notebookRows = this.db
+      .prepare<{ notebook_id: string; count: number }>(
+        `
+      SELECT notebook_id, COUNT(*) as count
+      FROM notes
+      WHERE is_deleted = 0 AND archived_at IS NULL
+      GROUP BY notebook_id
+    `
+      )
+      .all() as Array<{ notebook_id: string; count: number }>;
+    for (const row of notebookRows) {
+      byNotebook[row.notebook_id] = row.count;
+    }
+
+    return {
+      total: totals.total,
+      active: totals.active,
+      archived: totals.archived,
+      pinned: totals.pinned,
+      deleted: totals.deleted,
+      byStatus,
+      byNotebook,
+    };
+  }
+
+  /** COUNT(*), byStatus, and byTag under the same WHERE as list (limit/sort ignored). */
+  countScoped(options: ListNotesOptions = {}): NoteCountScoped {
+    const filter = noteFilterSql(options);
+
+    const totals = this.db
+      .prepare<{
+        total: number;
+        status_active: number;
+        status_on_hold: number;
+        status_completed: number;
+        status_dropped: number;
+      }>(
+        `
+      SELECT
+        COUNT(*) as total,
+        COALESCE(SUM(CASE WHEN n.status = 'active' THEN 1 ELSE 0 END), 0) as status_active,
+        COALESCE(SUM(CASE WHEN n.status = 'on_hold' THEN 1 ELSE 0 END), 0) as status_on_hold,
+        COALESCE(SUM(CASE WHEN n.status = 'completed' THEN 1 ELSE 0 END), 0) as status_completed,
+        COALESCE(SUM(CASE WHEN n.status = 'dropped' THEN 1 ELSE 0 END), 0) as status_dropped
+      FROM notes n
+      WHERE 1=1 ${filter.sql}
+    `
+      )
+      .get(...filter.params) as {
+      total: number;
+      status_active: number;
+      status_on_hold: number;
+      status_completed: number;
+      status_dropped: number;
+    };
+
+    const byTag: Record<string, number> = {};
+    const tagRows = this.db
+      .prepare<{ name: string; count: number }>(
+        `
+      SELECT t.name, COUNT(*) as count
+      FROM notes n
+      JOIN note_tags nt ON n.id = nt.note_id
+      JOIN tags t ON nt.tag_id = t.id
+      WHERE 1=1 ${filter.sql}
+      GROUP BY t.name
+    `
+      )
+      .all(...filter.params) as Array<{ name: string; count: number }>;
+    for (const row of tagRows) {
+      byTag[row.name] = row.count;
+    }
+
+    return {
+      total: totals.total,
+      byStatus: {
+        active: totals.status_active,
+        on_hold: totals.status_on_hold,
+        completed: totals.status_completed,
+        dropped: totals.status_dropped,
+      },
+      byTag,
+    };
+  }
+
   /** Get all tags (persistent - includes tags not currently in use) */
   async getAllTags(_includeArchived: boolean = false): Promise<Tag[]> {
     // Tags are persistent entities - return all from tags table
     const stmt = this.db.prepare<TagRow>('SELECT name FROM tags ORDER BY name ASC');
     const rows = stmt.all() as TagRow[];
     return rows.map(r => createTag(r.name));
+  }
+
+  async findByTitle(title: string): Promise<Note | null> {
+    const row = this.db
+      .prepare<NoteRow>(
+        `
+      SELECT id, notebook_id, content, title, created_at, updated_at, word_count,
+             task_count, checked_task_count, archived_at,
+             is_pinned, is_deleted, status
+      FROM notes
+      WHERE title = ? COLLATE NOCASE AND archived_at IS NULL AND is_deleted = 0
+      LIMIT 1
+    `
+      )
+      .get(title) as NoteRow | undefined;
+    if (!row) return null;
+    return rowToNote(row, this.getTagsForNote(createNoteId(row.id)));
   }
 
   /**
@@ -336,11 +571,48 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
    * Get all tags with their colors.
    */
   getAllTagsWithColors(): Array<{ name: string; color: string | null }> {
-    const stmt = this.db.prepare<TagWithColorRow>(`
-      SELECT name, color FROM tags ORDER BY name ASC
+    return this.listTags();
+  }
+
+  /** Filter/paginate tags in SQL. Empty filter = all tags. */
+  listTags(
+    query: {
+      filter?: string;
+      limit?: number;
+      offset?: number;
+      includeCount?: boolean;
+    } = {}
+  ): Array<{ name: string; color: string | null; count?: number }> {
+    const filter = query.filter?.trim().toLowerCase() ?? '';
+    const offset = Math.max(0, query.offset ?? 0);
+    const limit = query.limit === undefined ? -1 : Math.max(0, query.limit);
+    const countSelect = query.includeCount
+      ? `, COUNT(DISTINCT CASE WHEN n.is_deleted = 0 THEN n.id END) as note_count`
+      : '';
+    const countJoin = query.includeCount
+      ? `LEFT JOIN note_tags nt ON nt.tag_id = t.id
+         LEFT JOIN notes n ON n.id = nt.note_id`
+      : '';
+    const groupBy = query.includeCount ? 'GROUP BY t.id' : '';
+    const stmt = this.db.prepare(`
+      SELECT t.name, t.color${countSelect}
+      FROM tags t
+      ${countJoin}
+      WHERE (? = '' OR instr(lower(t.name), ?) > 0)
+      ${groupBy}
+      ORDER BY t.name ASC
+      LIMIT ? OFFSET ?
     `);
-    const rows = stmt.all() as TagWithColorRow[];
-    return rows.map(r => ({ name: r.name, color: r.color }));
+    const rows = stmt.all(filter, filter, limit, offset) as Array<{
+      name: string;
+      color: string | null;
+      note_count?: number;
+    }>;
+    return rows.map(row => ({
+      name: row.name,
+      color: row.color,
+      ...(query.includeCount ? { count: Number(row.note_count ?? 0) } : {}),
+    }));
   }
 
   /**
@@ -349,10 +621,13 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
    */
   setTagColor(tagName: string, color: string | null): void {
     const normalized = tagName.trim().toLowerCase();
-    const stmt = this.db.prepare(`
-      UPDATE tags SET color = ? WHERE name = ?
-    `);
-    stmt.run(color, normalized);
+    if (!normalized) return;
+    this.db
+      .prepare(
+        `INSERT INTO tags (name, color) VALUES (?, ?)
+         ON CONFLICT(name) DO UPDATE SET color = excluded.color`
+      )
+      .run(normalized, color);
   }
 
   /**
@@ -446,7 +721,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       // Prepare statements
       const findNoteByTitle = this.db.prepare<{ id: string; title: string }>(`
         SELECT id, title FROM notes
-        WHERE title = ? COLLATE NOCASE AND archived_at IS NULL
+        WHERE title = ? COLLATE NOCASE AND archived_at IS NULL AND is_deleted = 0
         LIMIT 1
       `);
 
@@ -482,7 +757,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       SELECT l.source_note_id, n.title, l.target_ref
       FROM links l
       JOIN notes n ON l.source_note_id = n.id
-      WHERE l.target_note_id = ? AND n.archived_at IS NULL
+      WHERE l.target_note_id = ? AND n.archived_at IS NULL AND n.is_deleted = 0
       ORDER BY n.updated_at DESC
     `);
 
@@ -515,7 +790,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     }>(`
       SELECT l.target_ref, l.target_note_id, n.title as target_title
       FROM links l
-      LEFT JOIN notes n ON l.target_note_id = n.id
+      LEFT JOIN notes n ON l.target_note_id = n.id AND n.is_deleted = 0
       WHERE l.source_note_id = ?
       ORDER BY l.target_ref
     `);
@@ -549,35 +824,72 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
     stmt.run(noteId, title);
   }
 
+  /** Re-extract wikilinks for every live note. Cheap; keeps the graph honest. */
+  rebuildAllLinks(): number {
+    const rows = this.db
+      .prepare<{ id: string; content: string }>(
+        `
+      SELECT id, content
+      FROM notes
+      WHERE archived_at IS NULL AND is_deleted = 0
+    `
+      )
+      .all() as Array<{ id: string; content: string }>;
+    for (const row of rows) {
+      this.syncLinks(createNoteId(row.id), row.content);
+    }
+    return rows.length;
+  }
+
   /**
    * Get all data needed for graph visualization.
    * Returns nodes (notes) and edges (resolved links).
    */
-  getGraphData(): {
-    nodes: Array<{ id: string; title: string; notebookId: string }>;
-    edges: Array<{ source: string; target: string }>;
-  } {
-    // Get all non-archived notes
-    const notesStmt = this.db.prepare<{ id: string; title: string; notebook_id: string }>(`
-      SELECT id, title, notebook_id
+  getGraphData(): GraphData {
+    const notesStmt = this.db.prepare<{
+      id: string;
+      title: string;
+      notebook_id: string;
+      status: string;
+    }>(`
+      SELECT id, title, notebook_id, status
       FROM notes
-      WHERE archived_at IS NULL
+      WHERE archived_at IS NULL AND is_deleted = 0
     `);
     const noteRows = notesStmt.all() as Array<{
       id: string;
       title: string;
       notebook_id: string;
+      status: string;
     }>;
 
-    // Get all resolved links (where both source and target exist)
+    const tagRows = this.db
+      .prepare<{ note_id: string; name: string }>(
+        `
+      SELECT nt.note_id, t.name
+      FROM note_tags nt
+      JOIN tags t ON t.id = nt.tag_id
+      JOIN notes n ON n.id = nt.note_id
+      WHERE n.archived_at IS NULL AND n.is_deleted = 0
+    `
+      )
+      .all() as Array<{ note_id: string; name: string }>;
+
+    const tagsByNote = new Map<string, string[]>();
+    for (const row of tagRows) {
+      const list = tagsByNote.get(row.note_id) ?? [];
+      list.push(row.name);
+      tagsByNote.set(row.note_id, list);
+    }
+
     const linksStmt = this.db.prepare<{ source: string; target: string }>(`
       SELECT l.source_note_id as source, l.target_note_id as target
       FROM links l
       JOIN notes n1 ON l.source_note_id = n1.id
       JOIN notes n2 ON l.target_note_id = n2.id
       WHERE l.target_note_id IS NOT NULL
-        AND n1.archived_at IS NULL
-        AND n2.archived_at IS NULL
+        AND n1.archived_at IS NULL AND n1.is_deleted = 0
+        AND n2.archived_at IS NULL AND n2.is_deleted = 0
     `);
     const linkRows = linksStmt.all() as Array<{ source: string; target: string }>;
 
@@ -586,6 +898,8 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
         id: row.id,
         title: row.title,
         notebookId: row.notebook_id,
+        status: row.status,
+        tags: tagsByNote.get(row.id) ?? [],
       })),
       edges: linkRows,
     };

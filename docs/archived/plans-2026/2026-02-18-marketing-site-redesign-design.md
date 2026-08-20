@@ -62,7 +62,7 @@ Success:        #22c55e  (green-500, for "free" badges)
 2. **Hero** — Badge with version, headline "Your Markdown. Your Machine. Your Rules.", subtext, dual CTAs, live markdown demo (typewriter left, rendered right)
 3. **Social Proof Bar** — GitHub stars, downloads count, "Works offline" badge
 4. **Features Grid** — 6 cards (Local Files, Offline First, Fast & Light, Backlinks, CodeMirror Editor, AI Assist Pro), each with code snippet instead of generic icon
-5. **"Why Local?" Comparison** — Side-by-side: Cloud note apps (❌) vs Readied (✅)
+5. **"Why Local?" Comparison** — Side-by-side: Cloud note apps (❌) vs Dripnex (✅)
 6. **Workflow Showcase** — Tabbed interface: Write | Organize | Search — each shows editor mockup
 7. **Final CTA** — "Ready to own your notes?" with Download + Pricing buttons
 8. **Footer** — 4-column links, newsletter input, tagline
@@ -94,7 +94,7 @@ Success:        #22c55e  (green-500, for "free" badges)
 
 - Narrative scroll, large typography
 - Each principle = full viewport section
-- Code examples showing what Readied does/doesn't do
+- Code examples showing what Dripnex does/doesn't do
 - Ends with download CTA
 
 ### FAQ
@@ -123,12 +123,12 @@ Success:        #22c55e  (green-500, for "free" badges)
 - Sticky, glassmorphism (`backdrop-blur-xl bg-zinc-950/80`)
 - "Docs" dropdown: Philosophy, FAQ, Plugins
 - Mobile: hamburger → full-screen slide-down
-- Logo: "readied" lowercase, monospace, with accent dot
+- Logo: "dripnex" lowercase, monospace, with accent dot
 
 ## Footer
 
 ```
-readied.
+dripnex.
 "The note app that stays out of your way."
 
 Product      Resources      Legal       Connect
@@ -138,7 +138,7 @@ Download     Philosophy                 Discord
              FAQ
 
 ────────────────────────────────────────────────
-© 2025 Readied. Built with ♥ for developers.
+© 2025 Dripnex. Built with ♥ for developers.
 [Newsletter: "Get updates"]   [→]
 ```
 
@@ -148,4 +148,4 @@ Download     Philosophy                 Discord
 - Styling: Tailwind CSS (keep, update config for new design system)
 - Interactive: React components (client:load for demos, client:idle for non-critical)
 - Animations: CSS + Intersection Observer (no heavy JS animation library)
-- Data: Continue using @readied/product-config as single source of truth
+- Data: Continue using @dripnex/product-config as single source of truth

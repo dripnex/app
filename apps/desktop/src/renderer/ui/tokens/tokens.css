@@ -1,5 +1,5 @@
 /* =============================================================================
-   READIED DESIGN TOKENS
+   DRIPNEX DESIGN TOKENS
    Single source of truth for all visual properties.
 
    RULES:
@@ -13,6 +13,7 @@
    DARK THEME (default)
    ============================================================================= */
 :root {
+  color-scheme: dark;
   /* ── Spacing Scale ────────────────────────────────────────────────────────── */
   --space-0: 0;
   --space-1: 4px;
@@ -46,6 +47,7 @@
 
   /* ── Accent ───────────────────────────────────────────────────────────────── */
   --accent: #5eead4;
+  --accent-primary: var(--accent);
   --accent-hover: #2dd4bf;
   --accent-muted: rgba(94, 234, 212, 0.15);
   --accent-subtle: rgba(94, 234, 212, 0.1);
@@ -62,11 +64,11 @@
   --link: var(--accent);
   --link-hover: var(--accent-hover);
 
-  /* ── Status ───────────────────────────────────────────────────────────────── */
-  --status-active: var(--text-secondary);
-  --status-on-hold: #f59e0b;
-  --status-completed: #22c55e;
-  --status-dropped: #ef4444;
+  /* ── Status (active follows Settings accent) ──────────────────────────────── */
+  --status-active: var(--accent);
+  --status-on-hold: #fbbf24;
+  --status-completed: #4ade80;
+  --status-dropped: #fb7185;
   --status-error: var(--danger);
 
   /* ── Glass Effects ────────────────────────────────────────────────────────── */
@@ -116,6 +118,39 @@
   /* ── Layout ───────────────────────────────────────────────────────────────── */
   --sidebar-width: 200px;
   --list-width: 280px;
+  --chrome-header-height: 44px;
+  --chrome-header-padding: 8px 10px;
+  --chrome-traffic-inset: 72px;
+
+  /* ── Editor (CodeMirror). Always alias so light/dark never fall through to black. */
+  --cm-text: var(--text-primary);
+  --cm-cursor: var(--accent);
+  --cm-selection: var(--accent-muted);
+  --cm-active-line: var(--bg-hover);
+  --cm-gutter-border: var(--border-subtle);
+  --cm-gutter-text: var(--text-faint);
+  --cm-heading: var(--text-primary);
+  --cm-emphasis: var(--text-primary);
+  --cm-strong: var(--text-primary);
+  --cm-strikethrough: var(--text-muted);
+  --cm-link: var(--accent);
+  --cm-quote: var(--text-secondary);
+  --cm-quote-border: var(--border);
+  --cm-meta: var(--text-muted);
+  --cm-code-bg: var(--bg-inset);
+  --cm-tooltip-bg: var(--glass-bg-menu);
+  --cm-tooltip-border: var(--glass-border-menu);
+  --cm-tooltip-text: var(--text-primary);
+  --cm-bracket-match: var(--accent-muted);
+  --cm-list: var(--accent);
+
+  /* ── Editor list marks (Inkdrop --md-list-mark-*) ─────────────────────────── */
+  --md-list-mark-color: var(--accent);
+  --md-list-mark-2-color: #60a5fa;
+  --md-list-mark-3-color: #c4b5fd;
+  --mde-preview-list-marker-color: var(--text-primary);
+  --mde-preview-list-marker-2-color: var(--text-primary);
+  --mde-preview-list-marker-3-color: var(--text-primary);
 
   /* ── Radii ────────────────────────────────────────────────────────────────── */
   --radius-sm: 4px;
@@ -151,8 +186,7 @@
   --text-tertiary: var(--text-faint);
   --text-normal: var(--text-primary);
 
-  /* Accent aliases */
-  --accent-primary: var(--accent);
+  /* Accent aliases. --accent-primary is a core chrome token defined above. */
   --accent-strong: var(--accent-hover);
 
   /* Border aliases */
@@ -181,48 +215,54 @@
    LIGHT THEME
    ============================================================================= */
 :root[data-color-scheme="light"] {
-  /* ── Surfaces ─────────────────────────────────────────────────────────────── */
-  --bg-base: #ffffff;
-  --bg-surface: #f9fafb;
-  --bg-elevated: #f3f4f6;
-  --bg-inset: #e5e7eb;
-  --bg-hover: rgba(0, 0, 0, 0.04);
-  --bg-active: rgba(0, 0, 0, 0.08);
+  color-scheme: light;
+  /* Warm paper surfaces (Inkdrop-like), not cold gray-50 */
+  --bg-base: #f3f2ee;
+  --bg-surface: #e7e5df;
+  --bg-elevated: #fffcf7;
+  --bg-inset: #eceae4;
+  --bg-hover: rgba(28, 27, 25, 0.06);
+  --bg-active: rgba(28, 27, 25, 0.1);
 
-  /* ── Borders ──────────────────────────────────────────────────────────────── */
-  --border: rgba(0, 0, 0, 0.08);
-  --border-subtle: rgba(0, 0, 0, 0.04);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --border-hover: rgba(0, 0, 0, 0.12);
+  --border: rgba(28, 27, 25, 0.12);
+  --border-subtle: rgba(28, 27, 25, 0.08);
+  --border-strong: rgba(28, 27, 25, 0.18);
+  --border-hover: rgba(28, 27, 25, 0.2);
 
-  /* ── Text ─────────────────────────────────────────────────────────────────── */
-  --text-primary: #111827;
-  --text-secondary: rgba(0, 0, 0, 0.7);
-  --text-muted: rgba(0, 0, 0, 0.5);
-  --text-faint: rgba(0, 0, 0, 0.3);
+  --text-primary: #3a3834;
+  --text-secondary: rgba(58, 56, 52, 0.78);
+  --text-muted: rgba(58, 56, 52, 0.56);
+  --text-faint: rgba(58, 56, 52, 0.4);
 
-  /* ── Accent ───────────────────────────────────────────────────────────────── */
-  --accent: #14b8a6;
-  --accent-hover: #0d9488;
-  --accent-muted: rgba(20, 184, 166, 0.15);
-  --accent-subtle: rgba(20, 184, 166, 0.1);
+  --accent: #0d8a80;
+  --accent-primary: var(--accent);
+  --accent-hover: #0b736b;
+  --accent-muted: rgba(13, 138, 128, 0.16);
+  --accent-subtle: rgba(13, 138, 128, 0.1);
 
-  /* ── Status ───────────────────────────────────────────────────────────────── */
+  --status-active: var(--accent);
   --status-on-hold: #d97706;
   --status-completed: #16a34a;
-  --status-dropped: #dc2626;
+  --status-dropped: #e11d48;
 
-  /* ── Glass Effects ────────────────────────────────────────────────────────── */
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-bg-fallback: rgba(255, 255, 255, 0.95);
-  --glass-bg-menu: rgba(255, 255, 255, 0.92);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-border-menu: rgba(0, 0, 0, 0.06);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --cm-list: var(--accent);
+  --cm-link: var(--accent);
+  --md-list-mark-color: var(--accent);
+  --md-list-mark-2-color: #2563eb;
+  --md-list-mark-3-color: #7c3aed;
+  --mde-preview-list-marker-color: var(--text-primary);
+  --mde-preview-list-marker-2-color: var(--text-primary);
+  --mde-preview-list-marker-3-color: var(--text-primary);
 
-  /* ── Shadows ──────────────────────────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.10);
+  --glass-bg: rgba(247, 246, 243, 0.88);
+  --glass-bg-fallback: rgba(247, 246, 243, 0.96);
+  --glass-bg-menu: rgba(255, 255, 255, 0.94);
+  --glass-border: rgba(28, 27, 25, 0.08);
+  --glass-border-menu: rgba(28, 27, 25, 0.08);
+  --glass-shadow: 0 10px 28px rgba(28, 27, 25, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(28, 27, 25, 0.05);
+  --shadow-md: 0 4px 8px rgba(28, 27, 25, 0.07);
+  --shadow-lg: 0 10px 18px rgba(28, 27, 25, 0.08);
+  --shadow-xl: 0 18px 32px rgba(28, 27, 25, 0.12);
 }

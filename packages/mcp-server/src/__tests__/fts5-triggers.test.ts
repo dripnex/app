@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { openDb } from '../db.js';
 
 /**
- * Minimal schema that mirrors the real Readied database enough to
+ * Minimal schema that mirrors the real Dripnex database enough to
  * exercise the FTS5 triggers that caused "no such module: fts5"
  * when the MCP server used sql.js (which lacks FTS5).
  */

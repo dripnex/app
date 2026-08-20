@@ -8,6 +8,7 @@ import {
   PinOff,
   Trash2,
   History,
+  ArchiveRestore,
   Share2,
   ExternalLink,
   Globe,
@@ -20,7 +21,10 @@ import {
   Minus,
   Undo2,
   Redo2,
-} from 'lucide-react';
+} from 'lucide';
+import { headingToSlug } from '@dripnex/markdown';
+import { Icon } from '../../../ui/icons/Icon';
+import { formatWikilink } from '../../../utils/formatWikilink';
 import type { ToolbarVisibility } from '../FormattingToolbar';
 import type { ShareInfo } from '../../../stores/shareStore';
 import { dispatchCommand } from '../../../hooks/useCommandRegistry';
@@ -32,9 +36,12 @@ interface ActionsPanelProps {
   readonly noteId: string;
   readonly noteTitle?: string;
   readonly isPinned?: boolean;
+  readonly isDeleted?: boolean;
   readonly onPin?: () => void;
   readonly onDuplicate?: () => void;
   readonly onDelete?: () => void;
+  readonly onRestoreDeleted?: () => void;
+  readonly onPermanentDelete?: () => void;
   readonly onRevisionHistory?: () => void;
   readonly onShareOnWeb?: () => void;
   readonly shareInfo?: ShareInfo | null;
@@ -42,6 +49,8 @@ interface ActionsPanelProps {
   readonly onCopyShareLink?: () => void;
   /** Hidden formatting groups from toolbar overflow */
   readonly hiddenFormatting?: ToolbarVisibility;
+  /** Current heading, used as a hash on Copy note link */
+  readonly heading?: string | null;
 }
 
 /**
@@ -51,7 +60,7 @@ interface ActionsPanelProps {
  * - Duplicate (functional)
  * - Copy Note Link (functional)
  * - Pin to Top / Unpin (functional)
- * - Move to Trash (functional)
+ * - Move to Trash / Restore / Delete forever (functional)
  * - Revision History (functional)
  * - Share on Web (coming soon)
  *
@@ -63,15 +72,19 @@ export const ActionsPanel = memo(function ActionsPanel({
   noteId,
   noteTitle,
   isPinned,
+  isDeleted,
   onPin,
   onDuplicate,
   onDelete,
+  onRestoreDeleted,
+  onPermanentDelete,
   onRevisionHistory,
   onShareOnWeb,
   shareInfo,
   onUnshare,
   onCopyShareLink,
   hiddenFormatting,
+  heading,
 }: ActionsPanelProps) {
   // Handle ESC key to close
   useEffect(() => {
@@ -98,14 +111,26 @@ export const ActionsPanel = memo(function ActionsPanel({
 
   // Copy note link to clipboard
   const handleCopyLink = useCallback(async () => {
-    const noteLink = `readied://note/${noteId}`;
+    const hash = heading ? `#${encodeURIComponent(headingToSlug(heading))}` : '';
+    const noteLink = `dripnex://note/${encodeURIComponent(noteId)}${hash}`;
     try {
       await navigator.clipboard.writeText(noteLink);
       onClose();
     } catch (error) {
       console.error('Failed to copy note link:', error);
     }
-  }, [noteId, onClose]);
+  }, [noteId, heading, onClose]);
+
+  const handleCopyWikilink = useCallback(async () => {
+    const link = formatWikilink(noteTitle ?? '', heading);
+    if (link === '[[]]') return;
+    try {
+      await navigator.clipboard.writeText(link);
+      onClose();
+    } catch (error) {
+      console.error('Failed to copy wikilink:', error);
+    }
+  }, [noteTitle, heading, onClose]);
 
   // Handle duplicate
   const handleDuplicate = useCallback(() => {
@@ -124,6 +149,16 @@ export const ActionsPanel = memo(function ActionsPanel({
     onDelete?.();
     onClose();
   }, [onDelete, onClose]);
+
+  const handleRestoreDeleted = useCallback(() => {
+    onRestoreDeleted?.();
+    onClose();
+  }, [onRestoreDeleted, onClose]);
+
+  const handlePermanentDelete = useCallback(() => {
+    onPermanentDelete?.();
+    onClose();
+  }, [onPermanentDelete, onClose]);
 
   // Handle revision history
   const handleRevisionHistory = useCallback(() => {
@@ -151,7 +186,7 @@ export const ActionsPanel = memo(function ActionsPanel({
 
   // Open note in new window
   const handleOpenInNewWindow = useCallback(async () => {
-    await window.readied.windows.openNote(noteId, noteTitle || 'Note');
+    await window.dripnex.windows.openNote(noteId, noteTitle || 'Note');
     onClose();
   }, [noteId, noteTitle, onClose]);
 
@@ -186,7 +221,7 @@ export const ActionsPanel = memo(function ActionsPanel({
             onClick={onClose}
             aria-label="Close actions panel"
           >
-            <X size={18} />
+            <Icon icon={X} size={18} />
           </button>
         </header>
 
@@ -209,7 +244,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <List size={16} />
+                      <Icon icon={List} size={16} />
                     </span>
                     Bullet List
                   </button>
@@ -222,7 +257,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <ListOrdered size={16} />
+                      <Icon icon={ListOrdered} size={16} />
                     </span>
                     Numbered List
                   </button>
@@ -235,7 +270,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <CheckSquare size={16} />
+                      <Icon icon={CheckSquare} size={16} />
                     </span>
                     Checkbox
                   </button>
@@ -254,7 +289,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <Quote size={16} />
+                      <Icon icon={Quote} size={16} />
                     </span>
                     Quote
                   </button>
@@ -267,7 +302,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <FileCode size={16} />
+                      <Icon icon={FileCode} size={16} />
                     </span>
                     Code Block
                   </button>
@@ -280,7 +315,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <Minus size={16} />
+                      <Icon icon={Minus} size={16} />
                     </span>
                     Horizontal Rule
                   </button>
@@ -299,7 +334,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <Undo2 size={16} />
+                      <Icon icon={Undo2} size={16} />
                     </span>
                     Undo
                   </button>
@@ -312,7 +347,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                     }}
                   >
                     <span className={styles.icon}>
-                      <Redo2 size={16} />
+                      <Icon icon={Redo2} size={16} />
                     </span>
                     Redo
                   </button>
@@ -334,45 +369,79 @@ export const ActionsPanel = memo(function ActionsPanel({
               disabled={!onDuplicate}
             >
               <span className={styles.icon}>
-                <Copy size={16} />
+                <Icon icon={Copy} size={16} />
               </span>
               Duplicate
             </button>
 
             <button type="button" className={styles.item} onClick={handleCopyLink}>
               <span className={styles.icon}>
-                <Link2 size={16} />
+                <Icon icon={Link2} size={16} />
               </span>
               Copy Note Link
             </button>
 
+            <button type="button" className={styles.item} onClick={handleCopyWikilink}>
+              <span className={styles.icon}>
+                <Icon icon={Link2} size={16} />
+              </span>
+              Copy Wikilink
+            </button>
+
             <button type="button" className={styles.item} onClick={handlePin} disabled={!onPin}>
               <span className={styles.icon}>
-                {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                {isPinned ? <Icon icon={PinOff} size={16} /> : <Icon icon={Pin} size={16} />}
               </span>
               {isPinned ? 'Unpin' : 'Pin to Top'}
             </button>
 
             <button type="button" className={styles.item} onClick={handleOpenInNewWindow}>
               <span className={styles.icon}>
-                <ExternalLink size={16} />
+                <Icon icon={ExternalLink} size={16} />
               </span>
               Open in New Window
             </button>
 
             <div className={styles.divider} />
 
-            <button
-              type="button"
-              className={styles.itemDanger}
-              onClick={handleDelete}
-              disabled={!onDelete}
-            >
-              <span className={styles.icon}>
-                <Trash2 size={16} />
-              </span>
-              Move to Trash
-            </button>
+            {isDeleted ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.item}
+                  onClick={handleRestoreDeleted}
+                  disabled={!onRestoreDeleted}
+                >
+                  <span className={styles.icon}>
+                    <Icon icon={ArchiveRestore} size={16} />
+                  </span>
+                  Restore
+                </button>
+                <button
+                  type="button"
+                  className={styles.itemDanger}
+                  onClick={handlePermanentDelete}
+                  disabled={!onPermanentDelete}
+                >
+                  <span className={styles.icon}>
+                    <Icon icon={Trash2} size={16} />
+                  </span>
+                  Delete forever
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={styles.itemDanger}
+                onClick={handleDelete}
+                disabled={!onDelete}
+              >
+                <span className={styles.icon}>
+                  <Icon icon={Trash2} size={16} />
+                </span>
+                Move to Trash
+              </button>
+            )}
           </div>
 
           {/* Advanced Section */}
@@ -386,7 +455,7 @@ export const ActionsPanel = memo(function ActionsPanel({
               disabled={!onRevisionHistory}
             >
               <span className={styles.icon}>
-                <History size={16} />
+                <Icon icon={History} size={16} />
               </span>
               Revision History
             </button>
@@ -395,7 +464,7 @@ export const ActionsPanel = memo(function ActionsPanel({
               <>
                 <button type="button" className={styles.item} onClick={handleCopyShareLink}>
                   <span className={styles.icon}>
-                    <Link2 size={16} />
+                    <Icon icon={Link2} size={16} />
                   </span>
                   Copy Share Link
                 </button>
@@ -406,13 +475,13 @@ export const ActionsPanel = memo(function ActionsPanel({
                   disabled={!onShareOnWeb}
                 >
                   <span className={styles.icon}>
-                    <Share2 size={16} />
+                    <Icon icon={Share2} size={16} />
                   </span>
                   Update Shared Note
                 </button>
                 <button type="button" className={styles.itemDanger} onClick={handleUnshare}>
                   <span className={styles.icon}>
-                    <Globe size={16} />
+                    <Icon icon={Globe} size={16} />
                   </span>
                   Unshare
                 </button>
@@ -425,7 +494,7 @@ export const ActionsPanel = memo(function ActionsPanel({
                 disabled={!onShareOnWeb}
               >
                 <span className={styles.icon}>
-                  <Share2 size={16} />
+                  <Icon icon={Share2} size={16} />
                 </span>
                 Share on Web
               </button>

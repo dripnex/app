@@ -329,7 +329,7 @@ git commit -m "feat(plugin-api): add useThemeOverrides hook"
 Find where `useCssVariables()` is called (around line 78). Add `useThemeOverrides()` between `useAppearanceSettings()` and `useCssVariables()`:
 
 ```typescript
-import { useThemeOverrides } from '@readied/plugin-api';
+import { useThemeOverrides } from '@dripnex/plugin-api';
 
 // Inside NotesApp component:
 usePerformanceMode();
@@ -466,9 +466,9 @@ git commit -m "feat(desktop): add nativeTheme IPC sync in main process"
 
 - Modify: `apps/desktop/src/preload/index.ts`
 
-**Step 1: Add theme methods to ReadiedAPI**
+**Step 1: Add theme methods to DripnexAPI**
 
-In the `ReadiedAPI` interface, add:
+In the `DripnexAPI` interface, add:
 
 ```typescript
 theme: {
@@ -479,7 +479,7 @@ theme: {
 };
 ```
 
-In the `contextBridge.exposeInMainWorld('readied', ...)` implementation:
+In the `contextBridge.exposeInMainWorld('dripnex', ...)` implementation:
 
 ```typescript
 theme: {
@@ -571,14 +571,14 @@ export function useAppearanceSettings(): void {
 
   // Sync nativeTheme source in main process
   useEffect(() => {
-    window.readied.theme.setSource(theme);
+    window.dripnex.theme.setSource(theme);
   }, [theme]);
 
   // Listen for system theme changes via IPC (replaces media query listener)
   useEffect(() => {
     if (theme !== 'system') return;
 
-    const unsub = window.readied.theme.onSystemChanged(isDark => {
+    const unsub = window.dripnex.theme.onSystemChanged(isDark => {
       applyAppearance('system', accentColor, zoomLevel, isDark);
     });
     return unsub;
@@ -641,7 +641,7 @@ Import the theme registry:
 
 ```typescript
 import { useSyncExternalStore } from 'react';
-import { themeRegistryStore } from '@readied/plugin-api';
+import { themeRegistryStore } from '@dripnex/plugin-api';
 ```
 
 Inside the component, subscribe to themes:
@@ -803,7 +803,7 @@ describe('validateThemeTokens', () => {
 **Step 2: Run tests**
 
 ```bash
-pnpm --filter @readied/plugin-api test
+pnpm --filter @dripnex/plugin-api test
 ```
 
 **Step 3: Commit**
@@ -902,7 +902,7 @@ describe('themeRegistryStore', () => {
 **Step 2: Run tests**
 
 ```bash
-pnpm --filter @readied/plugin-api test
+pnpm --filter @dripnex/plugin-api test
 ```
 
 **Step 3: Commit**

@@ -3,10 +3,11 @@
  * — tag sync pull/push with validation
  */
 
+import { randomUUID } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@libsql/client';
-import { randomUUID } from 'node:crypto';
 import app from '../src/index.js';
+import type { Env } from '../src/db/client.js';
 import {
   createTestEnv,
   initTestDb,
@@ -16,7 +17,6 @@ import {
   createAccessToken,
   authHeader,
 } from './helpers.js';
-import type { Env } from '../src/db/client.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -221,7 +221,7 @@ describe('POST /sync/tags — push tag changes', () => {
 
     expect(res.status).toBe(422);
     const body = await res.json();
-    expect(body.error).toBe('Tag data must include name');
+    expect(body.error).toBe('Tag data must include a valid name');
   });
 
   it('detects conflicts between devices', async () => {

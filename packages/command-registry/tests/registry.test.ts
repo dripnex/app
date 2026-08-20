@@ -74,6 +74,22 @@ describe('CommandRegistry', () => {
     expect(await reg.dispatch('foo')).toBe(false);
   });
 
+  it('passes a payload to execute', async () => {
+    const reg = new CommandRegistry();
+    let seen: unknown;
+    reg.register(
+      makeCommand({
+        id: 'foo',
+        execute: payload => {
+          seen = payload;
+          return true;
+        },
+      })
+    );
+    await expect(reg.dispatch('foo', { noteId: 'n1' })).resolves.toBe(true);
+    expect(seen).toEqual({ noteId: 'n1' });
+  });
+
   it('filters by category', () => {
     const reg = new CommandRegistry();
     reg.register(makeCommand({ id: 'a', category: 'editor' }));
@@ -82,6 +98,21 @@ describe('CommandRegistry', () => {
 
     expect(reg.getByCategory('editor')).toHaveLength(2);
     expect(reg.getByCategory('app')).toHaveLength(1);
+  });
+
+  it('keeps note-list j/k out of the editor context', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'app:next-note',
+        context: 'note-list',
+        defaultKeybinding: { key: 'j', modifiers: [] },
+      })
+    );
+    expect(reg.findByKeybinding({ key: 'j', modifiers: [] }, 'note-list')?.id).toBe(
+      'app:next-note'
+    );
+    expect(reg.findByKeybinding({ key: 'j', modifiers: [] }, 'editor')).toBeUndefined();
   });
 
   it('finds command by keybinding', () => {
@@ -96,6 +127,29 @@ describe('CommandRegistry', () => {
 
     const found = reg.findByKeybinding({ key: 'b', modifiers: ['Mod'] }, 'editor');
     expect(found?.id).toBe('bold');
+  });
+
+  it('patches default keybindings without beating user overrides', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'plugin:hello:say',
+        defaultKeybinding: { key: 'h', modifiers: ['Mod'] },
+      })
+    );
+    expect(
+      reg.setDefaultKeybinding('plugin:hello:say', { key: 'k', modifiers: ['Mod', 'Shift'] })
+    ).toBe(true);
+    expect(reg.getKeybinding('plugin:hello:say')).toEqual({
+      key: 'k',
+      modifiers: ['Mod', 'Shift'],
+    });
+    reg.setKeybindingOverride({
+      commandId: 'plugin:hello:say',
+      keybinding: { key: 'j', modifiers: ['Mod'] },
+    });
+    expect(reg.getKeybinding('plugin:hello:say')).toEqual({ key: 'j', modifiers: ['Mod'] });
+    expect(reg.setDefaultKeybinding('missing', { key: 'x', modifiers: [] })).toBe(false);
   });
 
   it('respects keybinding overrides', () => {
@@ -113,6 +167,60 @@ describe('CommandRegistry', () => {
     });
 
     expect(reg.getKeybinding('bold')).toEqual({ key: 'b', modifiers: ['Mod', 'Shift'] });
+  });
+
+  it('replaceKeybindingOverrides replaces the whole map', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'bold',
+        defaultKeybinding: { key: 'b', modifiers: ['Mod'] },
+      })
+    );
+    reg.setKeybindingOverride({
+      commandId: 'bold',
+      keybinding: { key: 'x', modifiers: ['Mod'] },
+    });
+    reg.replaceKeybindingOverrides([
+      { commandId: 'bold', keybinding: { key: 'i', modifiers: ['Mod'] } },
+    ]);
+    expect(reg.getKeybinding('bold')).toEqual({ key: 'i', modifiers: ['Mod'] });
+    reg.replaceKeybindingOverrides([]);
+    expect(reg.getKeybinding('bold')).toEqual({ key: 'b', modifiers: ['Mod'] });
+  });
+
+  it('dispatch returns false when execute throws', async () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'boom',
+        execute: () => {
+          throw new Error('nope');
+        },
+      })
+    );
+    expect(await reg.dispatch('boom')).toBe(false);
+  });
+
+  it('detects a global binding overlapping another context', () => {
+    const reg = new CommandRegistry();
+    reg.register(
+      makeCommand({
+        id: 'global-save',
+        context: 'global',
+        defaultKeybinding: { key: 's', modifiers: ['Mod'] },
+      })
+    );
+    reg.register(
+      makeCommand({
+        id: 'editor-save',
+        context: 'editor',
+        defaultKeybinding: { key: 's', modifiers: ['Mod'] },
+      })
+    );
+    const conflicts = reg.getConflicts();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0]!.commands.map(c => c.id).sort()).toEqual(['editor-save', 'global-save']);
   });
 
   it('detects conflicts', () => {

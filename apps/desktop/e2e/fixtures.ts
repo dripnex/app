@@ -3,7 +3,7 @@
  *
  * `launchApp()` launches a fresh Electron instance with an isolated
  * userData directory so tests don't interfere with each other or with
- * a developer's local Readied install. Each test should call this in
+ * a developer's local Dripnex install. Each test should call this in
  * its own `beforeEach`.
  */
 
@@ -24,11 +24,11 @@ interface LaunchedApp {
  * Launches the desktop app and waits for the first window to be ready.
  *
  * Uses a fresh temp `userData` so the test gets an empty database every
- * time. Set READIED_E2E_KEEP_USERDATA=1 to keep the dir on failure for
+ * time. Set DRIPNEX_E2E_KEEP_USERDATA=1 to keep the dir on failure for
  * post-mortem.
  */
 export async function launchApp(): Promise<LaunchedApp> {
-  const userDataDir = await mkdtemp(join(tmpdir(), 'readied-e2e-'));
+  const userDataDir = await mkdtemp(join(tmpdir(), 'dripnex-e2e-'));
 
   const app = await electron.launch({
     args: [
@@ -40,10 +40,10 @@ export async function launchApp(): Promise<LaunchedApp> {
     env: {
       ...process.env,
       NODE_ENV: 'test',
-      READIED_E2E: '1',
+      DRIPNEX_E2E: '1',
       // Pin the data root explicitly so the app uses our temp dir for
       // its SQLite database too, not just for Electron's userData.
-      READIED_DATA_DIR: userDataDir,
+      DRIPNEX_DATA_DIR: userDataDir,
     },
   });
 
@@ -57,7 +57,7 @@ export async function launchApp(): Promise<LaunchedApp> {
     userDataDir,
     cleanup: async () => {
       await app.close().catch(() => {});
-      if (process.env.READIED_E2E_KEEP_USERDATA !== '1') {
+      if (process.env.DRIPNEX_E2E_KEEP_USERDATA !== '1') {
         await rm(userDataDir, { recursive: true, force: true }).catch(() => {});
       }
     },

@@ -1,4 +1,4 @@
-import { getProductConfig } from '@readied/product-config';
+import { getProductConfig } from '@dripnex/product-config';
 import type { TrialState, StoredTrialData } from './types.js';
 
 /**

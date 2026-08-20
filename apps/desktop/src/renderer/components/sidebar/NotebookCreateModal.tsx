@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import styles from './NotebookCreateModal.module.css';
 
 interface NotebookCreateModalProps {
@@ -57,7 +58,7 @@ export function NotebookCreateModal({ parentId, onSubmit, onCancel }: NotebookCr
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <BookOpen size={20} className={styles.headerIcon} />
+          <Icon icon={BookOpen} size={20} className={styles.headerIcon} />
           <span className={styles.headerTitle}>Add New Notebook</span>
         </div>
 

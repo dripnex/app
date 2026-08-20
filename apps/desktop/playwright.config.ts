@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 /**
- * Playwright config for the Readied Electron app.
+ * Playwright config for the Dripnex Electron app.
  *
  * Tests are end-to-end against the built Electron bundle in `out/`,
  * launched via Playwright's `electron` API (`_electron.launch`).

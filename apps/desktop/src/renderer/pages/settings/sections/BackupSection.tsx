@@ -5,10 +5,12 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Download, Upload, Archive, FolderOpen } from 'lucide-react';
+import { Download, Upload, Archive, FolderOpen } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectBackup } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingsPage } from '../components/SettingsPage';
 import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
@@ -24,7 +26,7 @@ export function BackupSection() {
     setIsExporting(true);
     setMessage(null);
     try {
-      const result = await window.readied.data.export();
+      const result = await window.dripnex.data.export();
       if (result.success) {
         setMessage(`Exported ${result.noteCount} notes to ${result.path}`);
       } else {
@@ -41,7 +43,7 @@ export function BackupSection() {
     setIsImporting(true);
     setMessage(null);
     try {
-      const result = await window.readied.data.import();
+      const result = await window.dripnex.data.import();
       if (result.success) {
         setMessage(`Imported ${result.noteCount} notes`);
       } else {
@@ -58,7 +60,7 @@ export function BackupSection() {
     setIsBackingUp(true);
     setMessage(null);
     try {
-      const result = await window.readied.data.backup();
+      const result = await window.dripnex.data.backup();
       if (result.success) {
         setMessage(`Backup created: ${result.path}`);
         updateBackup({ lastBackupAt: Date.now() });
@@ -73,7 +75,7 @@ export function BackupSection() {
   }, [updateBackup]);
 
   const handleOpenDataFolder = useCallback(async () => {
-    await window.readied.data.openFolder();
+    await window.dripnex.data.openFolder();
   }, []);
 
   const formatLastBackup = () => {
@@ -89,15 +91,13 @@ export function BackupSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Backup & Data</h2>
-
+    <SettingsPage title="Backup & Data">
       <SettingGroup title="Export">
         <SettingRow label="Export All Notes" description="Export all your notes as Markdown files">
           <Button
             variant="secondary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             loading={isExporting}
             onClick={handleExport}
           >
@@ -109,12 +109,12 @@ export function BackupSection() {
       <SettingGroup title="Import">
         <SettingRow
           label="Import Notes"
-          description="Import from Obsidian, Markdown folder, or Readied export"
+          description="Import from Obsidian, Markdown folder, or Dripnex export"
         >
           <Button
             variant="secondary"
             size="sm"
-            icon={<Upload size={14} />}
+            icon={<Icon icon={Upload} size={14} />}
             loading={isImporting}
             onClick={handleImport}
           >
@@ -128,7 +128,7 @@ export function BackupSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Archive size={14} />}
+            icon={<Icon icon={Archive} size={14} />}
             loading={isBackingUp}
             onClick={handleBackup}
           >
@@ -140,7 +140,7 @@ export function BackupSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<FolderOpen size={14} />}
+            icon={<Icon icon={FolderOpen} size={14} />}
             onClick={handleOpenDataFolder}
           >
             Open Folder
@@ -149,6 +149,6 @@ export function BackupSection() {
       </SettingGroup>
 
       {message && <div className={styles.checkResult}>{message}</div>}
-    </div>
+    </SettingsPage>
   );
 }

@@ -100,7 +100,7 @@ curl -X POST http://localhost:8787/subscription/webhook \
 
 1. Go to [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
 2. Click "Add endpoint"
-3. Enter URL: `https://api.readied.app/subscription/webhook`
+3. Enter URL: `https://api.dripnex.app/subscription/webhook`
 4. Select events:
    - `checkout.session.completed`
    - `customer.subscription.updated`

@@ -16,7 +16,7 @@ export type CommandCategory =
   | 'plugin'
   | 'ai';
 
-export type CommandContext = 'editor' | 'app' | 'global';
+export type CommandContext = 'editor' | 'note-list' | 'app' | 'global';
 
 export interface CommandDefinition {
   id: string;
@@ -30,8 +30,11 @@ export interface CommandDefinition {
   showInPalette?: boolean;
 }
 
+/** Optional args for `dispatch(id, payload)` — Inkdrop `commands.dispatch(el, name, detail)`. */
+export type CommandPayload = Record<string, unknown>;
+
 export interface RegisteredCommand extends CommandDefinition {
-  execute: () => boolean | void | Promise<boolean | void>;
+  execute: (payload?: CommandPayload) => boolean | void | Promise<boolean | void>;
 }
 
 export interface KeyBindingOverride {

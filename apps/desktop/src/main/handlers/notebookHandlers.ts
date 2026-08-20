@@ -8,10 +8,13 @@ import { z } from 'zod';
 import {
   createNotebookId,
   createNotebook,
+  createTemplatesNotebook,
   renameNotebook,
+  setNotebookIcon,
   moveNotebook,
   INBOX_NOTEBOOK_ID,
-} from '@readied/core';
+  TEMPLATES_NOTEBOOK_ID,
+} from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import type { SQLiteNotebookRepository } from './types.js';
 
@@ -33,6 +36,7 @@ export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
     order: number;
     createdAt: string;
     updatedAt: string;
+    icon: string | null;
   }) => ({
     id: nb.id,
     name: nb.name,
@@ -41,6 +45,7 @@ export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
     order: nb.order,
     createdAt: nb.createdAt,
     updatedAt: nb.updatedAt,
+    icon: nb.icon,
   });
 
   defineIpcHandler({
@@ -113,6 +118,18 @@ export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
   });
 
   defineIpcHandler({
+    channel: 'notebooks:ensureTemplates',
+    args: z.tuple([]),
+    handler: async () => {
+      const existing = await repo.get(TEMPLATES_NOTEBOOK_ID);
+      if (existing) return serialize(existing);
+      const notebook = createTemplatesNotebook();
+      await repo.save(notebook);
+      return serialize(notebook);
+    },
+  });
+
+  defineIpcHandler({
     channel: 'notebooks:rename',
     args: z.tuple([IdSchema, NameSchema]),
     handler: async (id, name) => {
@@ -121,6 +138,20 @@ export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
         throw new Error('Notebook not found');
       }
       const updated = renameNotebook(notebook, name);
+      await repo.save(updated);
+      return serialize(updated);
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'notebooks:setIcon',
+    args: z.tuple([IdSchema, z.string().min(1).max(64).nullable()]),
+    handler: async (id, icon) => {
+      const notebook = await repo.get(createNotebookId(id));
+      if (!notebook) {
+        throw new Error('Notebook not found');
+      }
+      const updated = setNotebookIcon(notebook, icon);
       await repo.save(updated);
       return serialize(updated);
     },
@@ -185,8 +216,8 @@ export function registerNotebookHandlers(deps: NotebookHandlerDeps): void {
     args: z.tuple([IdSchema]),
     handler: async id => {
       const notebookId = createNotebookId(id);
-      if (notebookId === INBOX_NOTEBOOK_ID) {
-        throw new Error('Cannot delete Inbox notebook');
+      if (notebookId === INBOX_NOTEBOOK_ID || notebookId === TEMPLATES_NOTEBOOK_ID) {
+        throw new Error('Cannot delete reserved notebook');
       }
       await repo.delete(notebookId);
       return { success: true };

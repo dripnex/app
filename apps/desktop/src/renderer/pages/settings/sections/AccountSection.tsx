@@ -13,15 +13,15 @@ import {
   Sparkles,
   CreditCard,
   ExternalLink,
-  ChevronDown,
-  ChevronRight,
-} from 'lucide-react';
-import { getProductConfig } from '@readied/product-config';
+} from 'lucide';
+import { getProductConfig } from '@dripnex/product-config';
+import { Icon } from '../../../ui/icons/Icon';
 import {
   useAuthStore,
   selectUser,
   selectIsAuthenticated,
   selectIsLoading,
+  selectError,
 } from '../../../stores/authStore';
 import {
   useSyncStore,
@@ -32,9 +32,11 @@ import {
 import { useLicense } from '../../../contexts/LicenseContext';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingDisclosure } from '../components/SettingDisclosure';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
 import { ConflictResolver } from '../../../components/sync/ConflictResolver';
 import { Button } from '../../../ui/primitives';
+import { SettingsPage } from '../components/SettingsPage';
 import { DevicesSection } from './DevicesSection';
 import styles from './Section.module.css';
 
@@ -52,6 +54,7 @@ export function AccountSection() {
   const user = useAuthStore(selectUser);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isLoading = useAuthStore(selectIsLoading);
+  const authError = useAuthStore(selectError);
   const logout = useAuthStore(state => state.logout);
   const loadSession = useAuthStore(state => state.loadSession);
   const syncNow = useSyncStore(state => state.syncNow);
@@ -91,7 +94,7 @@ export function AccountSection() {
 
   const loadSyncHistory = useCallback(async () => {
     try {
-      const result = await window.readied.sync.history(10);
+      const result = await window.dripnex.sync.history(10);
       if (result.success) {
         setSyncHistory(result.history);
       }
@@ -179,7 +182,7 @@ export function AccountSection() {
     setIsManaging(true);
     setMessage(null);
     try {
-      const result = await window.readied.subscription.openPortal('https://readied.app');
+      const result = await window.dripnex.subscription.openPortal('https://dripnex.app');
       if (!result.success) {
         setMessage(`Failed to open billing portal: ${result.error || 'Unknown error'}`);
       }
@@ -230,15 +233,13 @@ export function AccountSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Account</h2>
-
+    <SettingsPage title="Account">
       <SettingGroup title="Authentication">
         {isAuthenticated && user ? (
           <>
             <SettingRow label="Signed in as" description={user.email}>
-              <div className={styles.statusBadge}>
-                <UserIcon size={14} />
+              <div className={styles.statusBadge} data-tone="ok">
+                <Icon icon={UserIcon} size={14} />
                 <span>Active</span>
               </div>
             </SettingRow>
@@ -247,7 +248,7 @@ export function AccountSection() {
               <Button
                 variant="danger"
                 size="sm"
-                icon={<LogOut size={14} />}
+                icon={<Icon icon={LogOut} size={14} />}
                 onClick={handleSignOut}
                 disabled={isLoading}
               >
@@ -263,11 +264,10 @@ export function AccountSection() {
             <Button
               variant="primary"
               size="sm"
-              icon={<LogIn size={14} />}
-              loading={isLoading}
+              icon={<Icon icon={LogIn} size={14} />}
               onClick={handleSignIn}
             >
-              {isLoading ? 'Loading...' : 'Sign In'}
+              Sign In
             </Button>
           </SettingRow>
         )}
@@ -280,7 +280,7 @@ export function AccountSection() {
               <Button
                 variant="primary"
                 size="sm"
-                icon={<RefreshCw size={14} />}
+                icon={<Icon icon={RefreshCw} size={14} />}
                 loading={isSyncing || syncStatus === 'syncing'}
                 onClick={handleSync}
               >
@@ -294,20 +294,15 @@ export function AccountSection() {
               </div>
             )}
 
-            <button
-              type="button"
-              className={styles.historyToggle}
-              onClick={() => setShowHistory(!showHistory)}
+            <SettingDisclosure
+              label="Sync History"
+              open={showHistory}
+              onToggle={() => setShowHistory(!showHistory)}
             >
-              {showHistory ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <span>Sync History</span>
-            </button>
-
-            {showHistory && (
-              <div className={styles.syncHistoryTable}>
-                {syncHistory.length === 0 ? (
-                  <div className={styles.placeholder}>No sync history yet</div>
-                ) : (
+              {syncHistory.length === 0 ? (
+                <p className={styles.historyEmpty}>No sync history yet</p>
+              ) : (
+                <div className={styles.syncHistoryTable}>
                   <table className={styles.historyTable}>
                     <thead>
                       <tr>
@@ -340,9 +335,9 @@ export function AccountSection() {
                       ))}
                     </tbody>
                   </table>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </SettingDisclosure>
           </SettingGroup>
 
           <DevicesSection />
@@ -351,8 +346,8 @@ export function AccountSection() {
 
           <SettingGroup title="Subscription">
             <SettingRow label="Plan" description={`Current status: ${getLicenseStatusText()}`}>
-              <div className={styles.statusBadge}>
-                <CreditCard size={14} />
+              <div className={styles.statusBadge} data-tone={isProActive ? 'ok' : undefined}>
+                <Icon icon={CreditCard} size={14} />
                 <span>{getLicenseStatusText()}</span>
               </div>
             </SettingRow>
@@ -365,7 +360,7 @@ export function AccountSection() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  icon={<ExternalLink size={14} />}
+                  icon={<Icon icon={ExternalLink} size={14} />}
                   loading={isManaging}
                   onClick={handleManageSubscription}
                 >
@@ -383,7 +378,7 @@ export function AccountSection() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    icon={<Sparkles size={14} />}
+                    icon={<Icon icon={Sparkles} size={14} />}
                     onClick={() => handleUpgrade('monthly')}
                     disabled={isUpgrading}
                   >
@@ -392,7 +387,7 @@ export function AccountSection() {
                   <Button
                     variant="primary"
                     size="sm"
-                    icon={<Sparkles size={14} />}
+                    icon={<Icon icon={Sparkles} size={14} />}
                     onClick={() => handleUpgrade('annual')}
                     disabled={isUpgrading}
                   >
@@ -406,6 +401,8 @@ export function AccountSection() {
         </>
       )}
 
+      {authError && <div className={styles.errorMessage}>{authError}</div>}
+
       {message && (
         <div className={isAuthenticated ? styles.successMessage : styles.infoMessage}>
           {message}
@@ -415,6 +412,6 @@ export function AccountSection() {
       {showMagicLinkFlow && (
         <MagicLinkFlow onSuccess={handleMagicLinkSuccess} onCancel={handleMagicLinkCancel} />
       )}
-    </div>
+    </SettingsPage>
   );
 }

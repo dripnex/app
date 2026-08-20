@@ -14,13 +14,12 @@ const SENTRY_DSN = process.env.SENTRY_DSN || '';
 export function initSentry(): void {
   // Skip if no DSN configured
   if (!SENTRY_DSN) {
-    console.warn('[Sentry] No DSN configured, skipping initialization');
     return;
   }
 
   Sentry.init({
     dsn: SENTRY_DSN,
-    release: `readied@${app.getVersion()}`,
+    release: `dripnex@${app.getVersion()}`,
     environment: app.isPackaged ? 'production' : 'development',
 
     // Only send errors in production

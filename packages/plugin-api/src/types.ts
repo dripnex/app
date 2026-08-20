@@ -1,9 +1,12 @@
 import type { Extension } from '@codemirror/state';
+import type { EditorView } from '@codemirror/view';
 import type { ComponentType } from 'react';
 import type { LayoutManager } from './layout/types';
 import type { EditorDecorationAPI } from './editor/decorationAPI';
 import type { CodeBlockRendererProps } from './preview/codeBlockStore';
 import type { DataAPI } from './data/createDataAPI';
+import type { PluginComponents } from './components/catalog';
+import type { MarkdownRenderer } from './preview/createMarkdownRenderer';
 
 /** Controlled subset of editor operations for plugins */
 export interface EditorAPI {
@@ -11,12 +14,15 @@ export interface EditorAPI {
   getSelection(): { from: number; to: number };
   replaceRange(from: number, to: number, text: string): void;
   insertAtCursor(text: string): void;
+  setSelection(from: number, to?: number): void;
   getWordCount(): number;
   getCharCount(): number;
   getLineCount(): number;
   onDocChanged(callback: (content: string) => void): () => void;
   onSelectionChanged(callback: (sel: { from: number; to: number }) => void): () => void;
   focus(): void;
+  /** Live CodeMirror 6 view, or null if the editor is not mounted. */
+  getView(): EditorView | null;
 }
 
 /** Slim note info exposed to plugins (read-only) */
@@ -44,6 +50,58 @@ export interface NotebookInfo {
   id: string;
   name: string;
   parentId: string | null;
+  icon?: string | null;
+}
+
+/**
+ * Read-only projection of app state for plugins and init.js.
+ * Desktop pushes this via `setHostStoreSnapshot`. No `dispatch`.
+ */
+export interface AppStoreSnapshot {
+  editingNote: {
+    id: string | null;
+    content: string;
+    isDirty: boolean;
+  };
+  /**
+   * Visible list in this window, not the full library.
+   * Use `app.listNotes()` / `data.getNotes()` for queries.
+   */
+  notes: {
+    items: NoteSummaryInfo[];
+    current: NoteInfo | null;
+  };
+  navigation:
+    | { kind: 'global'; filter: 'all' | 'pinned' | 'trash' }
+    | { kind: 'notebook'; id: string }
+    | { kind: 'tag'; name: string }
+    | { kind: 'search'; query: string };
+  view: {
+    workspaceRootId: string | null;
+    workspaceListAll: boolean;
+    statusFilter: string | null;
+    tagFilter: string | null;
+    sortBy: 'title' | 'createdAt' | 'updatedAt';
+    sortOrder: 'asc' | 'desc';
+  };
+  /** Appearance only. Never includes API keys or other secrets. */
+  settings: {
+    theme: 'dark' | 'light' | 'system';
+    accentColor: string;
+    activeThemeId: string | null;
+    performanceMode: 'auto' | 'high' | 'medium' | 'low';
+    frostTransparency: number;
+    zoomLevel: string;
+  };
+  theme: {
+    activeThemeId: string | null;
+    frosted: boolean;
+  };
+}
+
+export interface AppStore {
+  getState(): AppStoreSnapshot;
+  subscribe(listener: () => void): () => void;
 }
 
 /** Read-only app operations for plugins */
@@ -89,9 +147,12 @@ export interface PluginConfigSchema {
 export interface PluginConfigAPI {
   get<T>(key: string): T | undefined;
   set(key: string, value: unknown): void;
+  /** Live updates from Settings or other windows. Returns unsubscribe. */
+  observe<T>(key: string, callback: (value: T) => void): () => void;
 }
 
 export interface PluginLogger {
+  debug(message: string, ...args: unknown[]): void;
   info(message: string, ...args: unknown[]): void;
   warn(message: string, ...args: unknown[]): void;
   error(message: string, ...args: unknown[]): void;
@@ -152,8 +213,15 @@ export interface PluginContext {
   registerExtensions(id: string, extensions: Extension[]): () => void;
   registerCommand(
     options: PluginCommandOptions,
-    execute: () => boolean | void | Promise<boolean | void>
+    execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>
   ): () => void;
+  /** Dispatch a host or plugin command by id (`app:save-note`, `plugin:…`). */
+  dispatchCommand(id: string, payload?: Record<string, unknown>): Promise<boolean>;
+  /**
+   * Publish a Vim API for `dripnex.vim` in init.js.
+   * Call at module load (not only activate) so init.js can map keys.
+   */
+  registerVim(api: unknown): () => void;
   /** Register a remark (mdast) plugin for the markdown preview pipeline */
   registerRemarkPlugin(id: string, plugin: unknown, options?: PluginHookOptions): () => void;
   /** Register a rehype (hast) plugin for the markdown preview pipeline */
@@ -176,6 +244,75 @@ export interface PluginContext {
   registerAiCommand(options: PluginAiCommandOptions): () => void;
   /** Register CSS custom properties (theme overrides or custom variables) */
   registerCssVariables(id: string, variables: Record<string, string>): () => void;
+  /**
+   * Add an item to the application Plugins menu.
+   * `click` is registered as a command. `command` reuses an existing command id.
+   */
+  menu: {
+    add(item: {
+      label: string;
+      accelerator?: string;
+      command?: string;
+      click?: () => boolean | void | Promise<boolean | void>;
+    }): () => void;
+  };
+  clipboard: {
+    readText(): Promise<string>;
+    writeText(text: string): Promise<void>;
+  };
+  notifications: {
+    addSuccess(message: string): void;
+    addInfo(message: string): void;
+    addWarning(message: string): void;
+    addError(message: string): void;
+  };
+  contextMenu: {
+    add(
+      target: 'note-list-item' | 'notebook-item' | 'tag-item' | 'editor',
+      item: {
+        label: string;
+        command?: string;
+        click?: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
+      }
+    ): () => void;
+  };
+  /**
+   * Stock React UI: Button, Modal, Dialog (Inkdrop Component Manager).
+   * Mount overlays with `layout.addComponent('modal', …)`.
+   */
+  components: PluginComponents;
+  /**
+   * Preview DOM events (Inkdrop `inkdrop.components.preview.on`).
+   * Return `false` from a handler to prevent the default action.
+   */
+  preview: {
+    on(
+      event: 'a:click' | 'checkbox:change',
+      handler: (detail: {
+        href?: string;
+        text?: string;
+        index?: number;
+        checked?: boolean;
+      }) => boolean | void
+    ): () => void;
+  };
+  /** List, read, and activate registered palettes (official + community). */
+  themes: {
+    list(): Array<{
+      id: string;
+      name: string;
+      colorScheme: 'dark' | 'light';
+      description?: string;
+    }>;
+    getActive(): {
+      id: string;
+      name: string;
+      colorScheme: 'dark' | 'light';
+      description?: string;
+    } | null;
+    setActive(id: string | null): boolean;
+    onDidChange(callback: (id: string | null) => void): () => void;
+  };
   /** Register a complete theme with validated tokens */
   registerTheme(theme: {
     id: string;
@@ -188,8 +325,18 @@ export interface PluginContext {
   config: PluginConfigAPI;
   log: PluginLogger;
   app: AppAPI;
+  /**
+   * Read-only app state (`getState` / `subscribe`). No `dispatch`.
+   * Mutate through `dispatchCommand`, `editor`, or `data`.
+   */
+  store: AppStore;
   /** Rich data query API for notes, notebooks, tags, links, and graph */
   data: DataAPI;
+  /**
+   * Inkdrop `markdownRenderer`: remark/rehype arrays, React element map,
+   * fenced-code map, and preview events.
+   */
+  markdownRenderer: MarkdownRenderer;
 }
 
 export interface PluginManifest {

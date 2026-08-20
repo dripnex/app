@@ -1,4 +1,5 @@
 // packages/ai-core/src/context-builder.ts
+import { noteInstruction } from '@dripnex/core';
 import type { ChatMessage, MessageContent } from './types.js';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -9,6 +10,15 @@ export interface NoteContext {
   id: string;
   title: string;
   content: string;
+  heading?: string | null;
+  score?: number;
+}
+
+export interface ContextCitation {
+  id: string;
+  title: string;
+  heading: string | null;
+  snippet: string;
 }
 
 export interface ContextSources {
@@ -16,6 +26,8 @@ export interface ContextSources {
   currentNote?: NoteContext | null;
   history: ChatMessage[];
   relevantNotes: NoteContext[];
+  /** Reserved against the budget so the user turn still fits */
+  query?: string;
   toolResults?: Array<{ callId: string; result: unknown }>;
 }
 
@@ -30,6 +42,7 @@ export interface ContextBuildResult {
   tokenEstimate: number;
   truncated: boolean;
   notesIncluded: number;
+  citations: ContextCitation[];
 }
 
 // ─── Token Estimation ───────────────────────────────────────
@@ -44,13 +57,17 @@ export function estimateMessageTokens(content: MessageContent): number {
   return content.reduce((sum, part) => {
     if (part.type === 'text') return sum + estimateTokens(part.text);
     if (part.type === 'image') return sum + 1000;
+    if (part.type === 'tool_use') {
+      return sum + estimateTokens(part.name) + estimateTokens(JSON.stringify(part.input ?? {}));
+    }
+    if (part.type === 'tool_result') return sum + estimateTokens(part.content);
     return sum;
   }, 0);
 }
 
 // ─── System Prompts ─────────────────────────────────────────
 
-export const SYSTEM_PROMPT = `You are an AI assistant embedded in Readied, a markdown note-taking app.
+export const SYSTEM_PROMPT = `You are an AI assistant embedded in Dripnex, a markdown note-taking app.
 You help users with their notes: answering questions, summarizing content, suggesting improvements, and generating new content.
 
 Guidelines:
@@ -60,13 +77,14 @@ Guidelines:
 - Respect the user's writing style
 - Never fabricate information not present in the provided context`;
 
-export const ASK_NOTES_SYSTEM_PROMPT = `You are an AI assistant embedded in Readied, a markdown note-taking app.
+export const ASK_NOTES_SYSTEM_PROMPT = `You are an AI assistant embedded in Dripnex, a markdown note-taking app.
 You are in "Ask Your Notes" mode. Your primary job is to answer the user's question using ONLY the notes provided as context.
 
 Guidelines:
 - Answer based on the content found in the user's notes
 - If the notes do not contain enough information, say so clearly
-- Cite note titles when referencing information
+- Cite sources with the bracket numbers from the Source [n] labels (e.g. [1], [2]). Do not invent numbers.
+- If the current note has a Template instruction, follow it when drafting or filing work
 - Format responses in markdown
 - Be concise and helpful
 - Never fabricate information not present in the provided notes`;
@@ -84,6 +102,23 @@ function formatCurrentNote(note: NoteContext): string {
   return `\n\nThe user is currently viewing this note:\n\n--- Current Note: "${note.title}" ---\n${note.content}`;
 }
 
+export function formatNoteLabel(note: NoteContext): string {
+  return note.heading ? `${note.title} › ${note.heading}` : note.title;
+}
+
+function formatRelevantNote(note: NoteContext, index: number): string {
+  return `--- Source [${index}]: "${formatNoteLabel(note)}" ---\n${note.content}`;
+}
+
+function citationFrom(note: NoteContext): ContextCitation {
+  return {
+    id: note.id,
+    title: note.title,
+    heading: note.heading ?? null,
+    snippet: note.content.replace(/\s+/g, ' ').trim().slice(0, 160),
+  };
+}
+
 function truncateToTokens(text: string, maxTokens: number): string {
   const maxChars = maxTokens * 4;
   if (text.length <= maxChars) return text;
@@ -91,13 +126,21 @@ function truncateToTokens(text: string, maxTokens: number): string {
 }
 
 export function buildContext(sources: ContextSources, budget: ContextBudget): ContextBuildResult {
-  const available = Math.max(0, budget.maxContextTokens - budget.maxResponseTokens);
-  let used = 0;
+  const queryTokens = sources.query ? estimateTokens(sources.query) : 0;
+  const available = Math.max(0, budget.maxContextTokens - budget.maxResponseTokens - queryTokens);
+  let used = queryTokens;
   let truncated = false;
 
   // 1. System prompt (always fits)
   let system = sources.systemPrompt;
   used += estimateTokens(system);
+
+  const instruction = sources.currentNote ? noteInstruction(sources.currentNote.content) : null;
+  if (instruction) {
+    const block = `\n\nTemplate instruction for the current note:\n${instruction}\nFollow this when drafting or filing work in this note.`;
+    system += block;
+    used += estimateTokens(block);
+  }
 
   // 2. Current note (high priority, truncate if huge)
   if (sources.currentNote) {
@@ -127,12 +170,16 @@ export function buildContext(sources: ContextSources, budget: ContextBudget): Co
     used += msgTokens;
   }
 
-  // 4. Relevant notes (fill remaining budget)
+  // 4. Relevant passages, already ordered by score. Pack until the budget fills.
   let notesIncluded = 0;
+  const citations: ContextCitation[] = [];
   if (sources.relevantNotes.length > 0) {
+    const ranked = [...sources.relevantNotes].sort(
+      (left, right) => (right.score ?? 0) - (left.score ?? 0)
+    );
     const notesSections: string[] = [];
-    for (const note of sources.relevantNotes) {
-      const section = `--- Note: "${note.title}" ---\n${note.content}`;
+    for (const note of ranked) {
+      const section = formatRelevantNote(note, notesIncluded + 1);
       const sectionTokens = estimateTokens(section);
       if (used + sectionTokens > available) {
         truncated = true;
@@ -141,11 +188,12 @@ export function buildContext(sources: ContextSources, budget: ContextBudget): Co
       notesSections.push(section);
       used += sectionTokens;
       notesIncluded++;
+      citations.push(citationFrom(note));
     }
     if (notesSections.length > 0) {
-      system += `\n\nRelevant notes from user's knowledge base:\n\n${notesSections.join('\n\n')}`;
+      system += `\n\nRelevant passages from the user's notes:\n\n${notesSections.join('\n\n')}`;
     }
   }
 
-  return { system, messages, tokenEstimate: used, truncated, notesIncluded };
+  return { system, messages, tokenEstimate: used, truncated, notesIncluded, citations };
 }

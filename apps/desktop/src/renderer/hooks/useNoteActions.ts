@@ -1,9 +1,12 @@
 import { useCallback } from 'react';
+import type { AppAPIWithEvents, DataAPIWithEvents } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
-import type { AppAPIWithEvents, DataAPIWithEvents } from '@readied/plugin-api';
+import { useHeadingJumpStore } from '../stores/headingJumpStore';
+import { resolveWikilinkClick } from '../utils/resolveWikilinkClick';
+import { useSettingsStore } from '../stores/settings';
 import { useNoteMutations } from './useNotes';
 import { useSyncLinks } from './useLinks';
-import { useNavigationActions, useStatusFilter } from './useNavigation';
+import { useNavigationActions, useStatusFilter, useGlobalFilter } from './useNavigation';
 
 interface UseNoteActionsOptions {
   selectedNote: NoteSnapshot | null;
@@ -36,28 +39,51 @@ export function useNoteActions({
     setNoteStatus,
     pinNote,
     unpinNote,
+    softDeleteNote,
+    restoreDeletedNote,
   } = useNoteMutations();
 
   const syncLinks = useSyncLinks();
-  const { goToAllNotes } = useNavigationActions();
+  const { goToAllNotes, goToNotebook } = useNavigationActions();
   const statusFilter = useStatusFilter();
+  const globalFilter = useGlobalFilter();
+  const defaultNotebookId = useSettingsStore(s => s.settings.general.defaultNotebookId);
 
   // Create new note (respects current navigation context)
   const handleNewNote = useCallback(async () => {
+    if (globalFilter === 'trash') {
+      goToAllNotes();
+    }
+    const notebookId =
+      globalFilter === 'trash'
+        ? 'inbox'
+        : selectedNotebookId && selectedNotebookId !== 'templates'
+          ? selectedNotebookId
+          : defaultNotebookId || 'inbox';
     const newNote = await createNote.mutateAsync({
       content: '# Untitled\n\n',
-      notebookId: selectedNotebookId ?? undefined,
+      notebookId,
     });
     setSelectedNote(newNote);
     clearSearch();
     appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
     dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
-  }, [createNote, selectedNotebookId, clearSearch, appAPI, dataAPI, setSelectedNote]);
+  }, [
+    createNote,
+    selectedNotebookId,
+    defaultNotebookId,
+    globalFilter,
+    goToAllNotes,
+    clearSearch,
+    appAPI,
+    dataAPI,
+    setSelectedNote,
+  ]);
 
   // Select note
   const handleSelectNote = useCallback(
     async (id: string) => {
-      const result = await window.readied.notes.get(id);
+      const result = await window.dripnex.notes.get(id);
       if (result.ok) {
         setSelectedNote(result.data);
         appAPI._notifyNoteSelected({
@@ -70,18 +96,47 @@ export function useNoteActions({
     [appAPI, setSelectedNote]
   );
 
-  // Handle wikilink click - best-effort navigation by title
-  const handleWikilinkClick = useCallback(
+  const handleCreateLinkedNote = useCallback(
     async (title: string) => {
-      const notes = await window.readied.notes.search(title);
-      if (notes.length > 0) {
-        const match = notes.find(n => n.title.toLowerCase() === title.toLowerCase());
-        if (match) {
-          void handleSelectNote(match.id);
-        }
+      const notebookId =
+        selectedNotebookId && selectedNotebookId !== 'templates' ? selectedNotebookId : undefined;
+      const newNote = await createNote.mutateAsync({
+        content: `# ${title}\n\n`,
+        notebookId,
+      });
+      setSelectedNote(newNote);
+      clearSearch();
+      appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
+    },
+    [createNote, selectedNotebookId, setSelectedNote, clearSearch, appAPI, dataAPI]
+  );
+
+  const handleWikilinkClick = useCallback(
+    async (title: string, anchor?: string) => {
+      const query = title.trim();
+      const notes = query ? await window.dripnex.notes.search(query) : [];
+      const match = notes.find(n => n.title.toLowerCase() === query.toLowerCase());
+      const action = resolveWikilinkClick({
+        title,
+        heading: anchor,
+        currentNote: selectedNote,
+        match,
+      });
+      if (action.kind === 'heading') {
+        useHeadingJumpStore.getState().request(action.noteId, action.heading);
+        return;
+      }
+      if (action.kind === 'create') {
+        await handleCreateLinkedNote(action.title);
+        return;
+      }
+      if (action.kind === 'open') {
+        if (action.heading) useHeadingJumpStore.getState().request(action.noteId, action.heading);
+        void handleSelectNote(action.noteId);
       }
     },
-    [handleSelectNote]
+    [handleCreateLinkedNote, handleSelectNote, selectedNote]
   );
 
   // Update note content
@@ -97,14 +152,14 @@ export function useNoteActions({
       // Auto-commit to git if enabled (fire-and-forget, don't block UI)
       if (updated.notebookId) {
         try {
-          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
+          const gitSettings = await window.dripnex.notebooks.getGitSettings(updated.notebookId);
           if (
             gitSettings.success &&
             gitSettings.settings?.enabled &&
             gitSettings.settings?.autoCommit
           ) {
-            await window.readied.git.writeNote(updated.notebookId, updated.id, content);
-            await window.readied.git.commit(updated.notebookId, `Update note: ${updated.title}`, [
+            await window.dripnex.git.writeNote(updated.notebookId, updated.id, content);
+            await window.dripnex.git.commit(updated.notebookId, `Update note: ${updated.title}`, [
               `${updated.id}.md`,
             ]);
           }
@@ -126,14 +181,14 @@ export function useNoteActions({
 
       if (updated.notebookId) {
         try {
-          const gitSettings = await window.readied.notebooks.getGitSettings(updated.notebookId);
+          const gitSettings = await window.dripnex.notebooks.getGitSettings(updated.notebookId);
           if (
             gitSettings.success &&
             gitSettings.settings?.enabled &&
             gitSettings.settings?.autoCommit
           ) {
-            await window.readied.git.writeNote(updated.notebookId, updated.id, updated.content);
-            await window.readied.git.commit(updated.notebookId, `Rename note: ${updated.title}`, [
+            await window.dripnex.git.writeNote(updated.notebookId, updated.id, updated.content);
+            await window.dripnex.git.commit(updated.notebookId, `Rename note: ${updated.title}`, [
               `${updated.id}.md`,
             ]);
           }
@@ -145,8 +200,31 @@ export function useNoteActions({
     [selectedNote, updateNoteTitle, dataAPI, setSelectedNote]
   );
 
-  // Delete note
+  // Soft-delete note (move to trash)
   const handleDeleteNote = useCallback(
+    async (id: string) => {
+      await softDeleteNote.mutateAsync(id);
+      if (selectedNote?.id === id) {
+        setSelectedNote(null);
+      }
+      appAPI._notifyNoteDeleted(id);
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'deleted', id });
+    },
+    [selectedNote, softDeleteNote, appAPI, dataAPI, setSelectedNote]
+  );
+
+  const handleRestoreDeleted = useCallback(
+    async (id: string) => {
+      await restoreDeletedNote.mutateAsync(id);
+      if (selectedNote?.id === id) {
+        setSelectedNote(null);
+      }
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'updated', id });
+    },
+    [selectedNote, restoreDeletedNote, dataAPI, setSelectedNote]
+  );
+
+  const handlePermanentDelete = useCallback(
     async (id: string) => {
       await deleteNote.mutateAsync(id);
       if (selectedNote?.id === id) {
@@ -161,7 +239,7 @@ export function useNoteActions({
   // Archive note (toggle based on current state)
   const handleArchiveNote = useCallback(
     async (id: string) => {
-      const result = await window.readied.notes.get(id);
+      const result = await window.dripnex.notes.get(id);
       if (!result.ok) return;
 
       if (result.data.isArchived) {
@@ -174,6 +252,36 @@ export function useNoteActions({
       }
     },
     [selectedNote, archiveNote, restoreNote, setSelectedNote]
+  );
+
+  const handleCreateFromTemplate = useCallback(
+    async (templateNoteId: string) => {
+      const result = await window.dripnex.notes.get(templateNoteId);
+      if (!result.ok) return;
+      const destinationNotebookId =
+        selectedNotebookId && selectedNotebookId !== 'templates'
+          ? selectedNotebookId
+          : defaultNotebookId || 'inbox';
+      const newNote = await createNote.mutateAsync({
+        content: result.data.content,
+        notebookId: destinationNotebookId,
+      });
+      goToNotebook(destinationNotebookId);
+      setSelectedNote(newNote);
+      clearSearch();
+      appAPI._notifyNoteCreated({ id: newNote.id, title: newNote.title, content: newNote.content });
+      dataAPI._notifyNotesChanged({ kind: 'note', action: 'created', id: newNote.id });
+    },
+    [
+      createNote,
+      selectedNotebookId,
+      defaultNotebookId,
+      goToNotebook,
+      setSelectedNote,
+      clearSearch,
+      appAPI,
+      dataAPI,
+    ]
   );
 
   // Duplicate note
@@ -235,12 +343,16 @@ export function useNoteActions({
   return {
     handleNewNote,
     handleSelectNote,
+    handleCreateLinkedNote,
     handleWikilinkClick,
     handleUpdateNote,
     handleUpdateTitle,
     handleDeleteNote,
+    handleRestoreDeleted,
+    handlePermanentDelete,
     handleArchiveNote,
     handleDuplicateNote,
+    handleCreateFromTemplate,
     handlePinNote,
     handleMoveNote,
     handleMoveSelectedNote,

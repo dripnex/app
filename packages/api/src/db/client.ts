@@ -9,6 +9,11 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './schema.js';
 
+/** Cloudflare Workers Rate Limiting binding (configured in wrangler.toml). */
+export interface RateLimitBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
 export type Env = {
   TURSO_DATABASE_URL: string;
   TURSO_AUTH_TOKEN: string;
@@ -21,6 +26,11 @@ export type Env = {
   SITE_URL?: string;
   ADMIN_TOKEN?: string;
   ENVIRONMENT: string;
+  // Rate limiting bindings (optional so unit tests / local runs without the
+  // binding fail open rather than crash — see middleware/rateLimit.ts).
+  AUTH_RL?: RateLimitBinding;
+  SYNC_RL?: RateLimitBinding;
+  PUBLIC_RL?: RateLimitBinding;
 };
 
 /**

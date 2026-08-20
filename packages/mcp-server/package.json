@@ -1,10 +1,10 @@
 {
-  "name": "@readied/mcp-server",
+  "name": "@dripnex/mcp-server",
   "version": "0.1.0",
-  "description": "MCP server for Readied — read, create, search, and manage notes from Claude Code",
+  "description": "MCP server for Dripnex — read, create, search, and manage notes from Claude Code",
   "type": "module",
   "bin": {
-    "readied-mcp": "./dist/index.js"
+    "dripnex-mcp": "./dist/index.js"
   },
   "exports": {
     ".": {
@@ -21,6 +21,8 @@
     "node": ">=22.5.0"
   },
   "dependencies": {
+    "@dripnex/core": "workspace:*",
+    "@dripnex/storage-core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.4.3"
   },

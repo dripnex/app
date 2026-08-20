@@ -11,7 +11,7 @@
  * - sync_metadata: key-value store for sync state (cursor, device_id, etc.)
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addSyncFields: Migration = {
   version: 20260107000002,

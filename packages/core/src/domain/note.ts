@@ -12,7 +12,14 @@ import {
   INBOX_NOTEBOOK_ID,
   DEFAULT_NOTE_STATUS,
 } from './types.js';
-import { extractTitle, extractTags, countWords, type NoteMetadata } from './metadata.js';
+import {
+  extractTitle,
+  extractTags,
+  extractTasks,
+  countWords,
+  isPlaceholderTitle,
+  type NoteMetadata,
+} from './metadata.js';
 
 /** The Note entity - immutable by design */
 export interface Note {
@@ -75,12 +82,15 @@ export function createNote(options: CreateNoteOptions): Note {
   // Title is structural: use provided title or extract from content
   const title = options.title ?? extractTitle(options.content);
 
+  const tasks = extractTasks(options.content);
   const metadata: NoteMetadata = {
     title, // Keep in sync for backwards compatibility
     createdAt: options.createdAt ?? now,
     updatedAt: now,
     tags: extractTags(options.content),
     wordCount: countWords(options.content),
+    taskCount: tasks.total,
+    checkedTaskCount: tasks.completed,
     archivedAt: null,
   };
 
@@ -96,23 +106,29 @@ export function createNote(options: CreateNoteOptions): Note {
   };
 }
 
-/** Updates a note's content, preserving id, notebookId, title, createdAt, and archivedAt */
+/** Updates a note's content. A placeholder title adopts the new first heading. */
 export function updateNoteContent(note: Note, newContent: string): Note {
   const now = createTimestamp();
+  const extracted = extractTitle(newContent);
+  const title =
+    isPlaceholderTitle(note.title) && !isPlaceholderTitle(extracted) ? extracted : note.title;
 
+  const tasks = extractTasks(newContent);
   const metadata: NoteMetadata = {
-    title: note.title, // Title is structural, NOT re-extracted from content
+    title,
     createdAt: note.metadata.createdAt,
     updatedAt: now,
     tags: extractTags(newContent),
     wordCount: countWords(newContent),
+    taskCount: tasks.total,
+    checkedTaskCount: tasks.completed,
     archivedAt: note.metadata.archivedAt,
   };
 
   return {
     id: note.id,
     notebookId: note.notebookId,
-    title: note.title, // Preserve structural title
+    title,
     content: newContent,
     isPinned: note.isPinned,
     isDeleted: note.isDeleted,

@@ -3,7 +3,13 @@ import type { EditorView } from '@codemirror/view';
 import type { PluginManifest, EditorAPI, AppAPI } from '../types';
 import type { DataAPI } from '../data/createDataAPI';
 import { PLUGIN_API_VERSION } from '../apiVersion';
-import { PluginRegistry, type RegisterCommandFn, type ConfigBridge } from './PluginRegistry';
+import type { PluginPackageFiles } from '../packageFiles/applyPluginPackageFiles';
+import {
+  PluginRegistry,
+  type RegisterCommandFn,
+  type ConfigBridge,
+  type SetDefaultKeybindingFn,
+} from './PluginRegistry';
 import { sortPlugins } from './sortPlugins';
 
 interface PluginHostProps {
@@ -14,6 +20,8 @@ interface PluginHostProps {
   registerCommand?: RegisterCommandFn;
   configBridge?: ConfigBridge;
   getView?: () => EditorView | null;
+  packageFiles?: Record<string, PluginPackageFiles>;
+  setDefaultKeybinding?: SetDefaultKeybindingFn;
 }
 
 /**
@@ -39,6 +47,8 @@ export function PluginHost({
   registerCommand,
   configBridge,
   getView,
+  packageFiles,
+  setDefaultKeybinding,
 }: PluginHostProps) {
   const registryRef = useRef<PluginRegistry | null>(null);
 
@@ -83,7 +93,9 @@ export function PluginHost({
             dataAPI,
             registerCommand,
             configBridge,
-            getView
+            getView,
+            packageFiles?.[manifest.id],
+            setDefaultKeybinding
           );
         } catch (error) {
           // Individual plugin failure should not prevent other plugins from loading
@@ -102,7 +114,17 @@ export function PluginHost({
         registry.unload(manifest.id);
       }
     };
-  }, [plugins, editorAPI, appAPI, dataAPI, registerCommand, configBridge, getView]);
+  }, [
+    plugins,
+    editorAPI,
+    appAPI,
+    dataAPI,
+    registerCommand,
+    configBridge,
+    getView,
+    packageFiles,
+    setDefaultKeybinding,
+  ]);
 
   // Headless - renders nothing
   return null;

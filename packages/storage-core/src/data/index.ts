@@ -11,6 +11,8 @@ export {
   ensureDirectory,
   generateBackupFilename,
   generateMigrationBackupFilename,
+  userDataRootCandidates,
+  resolveUserDataRoot,
 } from './DataPaths.js';
 
 // Backup system

@@ -2,10 +2,11 @@
  * Tests for GET /sync — note sync pull endpoint
  */
 
+import { randomUUID } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@libsql/client';
-import { randomUUID } from 'node:crypto';
 import app from '../src/index.js';
+import type { Env } from '../src/db/client.js';
 import {
   createTestEnv,
   initTestDb,
@@ -15,7 +16,6 @@ import {
   createAccessToken,
   authHeader,
 } from './helpers.js';
-import type { Env } from '../src/db/client.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

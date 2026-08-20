@@ -2,24 +2,27 @@
 /* eslint-disable no-console */
 
 /**
- * readied-plugin CLI
+ * dripnex-plugin CLI
  *
- * Scaffold and manage Readied plugins.
+ * Scaffold and manage Dripnex plugins.
  *
  * Usage:
- *   readied-plugin init <name>          Create a new plugin project
- *   readied-plugin list                 List installed plugins
- *   readied-plugin install <path>       Install a plugin from directory or archive
- *   readied-plugin uninstall <id>       Remove an installed plugin
- *   readied-plugin link [path]          Symlink a local plugin for development
- *   readied-plugin --help               Show this help message
+ *   dripnex-plugin init <name>          Create a new plugin project
+ *   dripnex-plugin list                 List installed plugins
+ *   dripnex-plugin install <spec>       Install from directory, archive, or owner/repo[@tag]
+ *   dripnex-plugin uninstall <id>       Remove an installed plugin
+ *   dripnex-plugin link [path]          Symlink a local plugin for development
+ *   dripnex-plugin --help               Show this help message
  */
 
 import { initPlugin } from './commands/init';
+import { parseInitArgs } from './parseInitArgs';
 import { listPlugins } from './commands/list';
 import { installPlugin } from './commands/install';
 import { uninstallPlugin } from './commands/uninstall';
 import { linkPlugin } from './commands/link';
+import { packPlugin } from './commands/pack';
+import { publishPlugin } from './commands/publish';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -27,23 +30,31 @@ const command = args[0];
 async function main() {
   switch (command) {
     case 'init': {
-      const name = args.slice(1).join(' ');
-      if (!name) {
-        console.error('Usage: readied-plugin init <plugin-name>');
-        console.error('Example: readied-plugin init "My Plugin"');
-        process.exit(1);
-      }
-
       try {
-        const dir = await initPlugin({ name });
-        console.log(`Plugin scaffolded at: ${dir}`);
+        const { name, type } = parseInitArgs(args.slice(1));
+        if (!name) {
+          console.error('Usage: dripnex-plugin init <name> [--type plugin|theme]');
+          console.error('Example: dripnex-plugin init "My Plugin"');
+          console.error('Example: dripnex-plugin init "Paper" --type theme');
+          process.exit(1);
+        }
+
+        const dir = await initPlugin({ name, type });
+        console.log(`${type === 'theme' ? 'Theme' : 'Plugin'} scaffolded at: ${dir}`);
         console.log('');
-        console.log('Next steps:');
-        console.log(`  cd ${dir}`);
-        console.log('  npm install');
-        console.log('  npm run build');
-        console.log('');
-        console.log('Then install it with: readied-plugin install ' + dir);
+        if (type === 'theme') {
+          console.log('Next steps:');
+          console.log(`  cd ${dir}`);
+          console.log('  edit theme.json');
+          console.log(`  dripnex-plugin link`);
+        } else {
+          console.log('Next steps:');
+          console.log(`  cd ${dir}`);
+          console.log('  npm install');
+          console.log('  npm run build');
+          console.log('');
+          console.log('Then install it with: dripnex-plugin install ' + dir);
+        }
       } catch (error) {
         console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
@@ -57,7 +68,7 @@ async function main() {
       break;
 
     case 'install':
-      installPlugin(args[1] ?? '');
+      await installPlugin(args[1] ?? '');
       break;
 
     case 'uninstall':
@@ -69,30 +80,45 @@ async function main() {
       linkPlugin(args[1] ?? '.');
       break;
 
+    case 'pack':
+      packPlugin(args[1] ?? '.');
+      break;
+
+    case 'publish':
+      await publishPlugin(args[1] ?? '.');
+      break;
+
     case '--help':
     case '-h':
     case undefined:
-      console.log('readied-plugin — Scaffold and manage Readied plugins');
+      console.log('dripnex-plugin — Scaffold and manage Dripnex plugins');
       console.log('');
       console.log('Commands:');
-      console.log('  init <name>          Create a new plugin project');
+      console.log('  init <name> [--type plugin|theme]   Create a plugin or a theme package');
       console.log('  list                 List installed plugins');
-      console.log('  install <path>       Install a plugin from directory or archive');
+      console.log('  install <spec>       Install from directory, archive, or owner/repo[@tag]');
       console.log('  uninstall <id>       Remove an installed plugin');
       console.log('  link [path]          Symlink a local plugin for development');
+      console.log('  pack [path]          Build a versioned .tar.gz');
+      console.log(
+        '  publish [path]       Pack, GitHub-release, and register on the Dripnex registry'
+      );
       console.log('');
       console.log('Examples:');
-      console.log('  readied-plugin init "My Plugin"');
-      console.log('  readied-plugin list');
-      console.log('  readied-plugin install ./my-plugin');
-      console.log('  readied-plugin install plugin-v1.0.0.tar.gz');
-      console.log('  readied-plugin uninstall my-plugin');
-      console.log('  readied-plugin link .');
+      console.log('  dripnex-plugin init "My Plugin"');
+      console.log('  dripnex-plugin init "Paper" --type theme');
+      console.log('  dripnex-plugin list');
+      console.log('  dripnex-plugin install ./my-plugin');
+      console.log('  dripnex-plugin install plugin-v1.0.0.tar.gz');
+      console.log('  dripnex-plugin install stamp');
+      console.log('  dripnex-plugin install dripnex/plugin-stamp@v0.1.0');
+      console.log('  dripnex-plugin uninstall my-plugin');
+      console.log('  dripnex-plugin link .');
       break;
 
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Run "readied-plugin --help" for usage');
+      console.error('Run "dripnex-plugin --help" for usage');
       process.exit(1);
   }
 }

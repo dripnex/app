@@ -1,15 +1,22 @@
 /**
  * API Client Service
  *
- * Centralized HTTP client for communicating with the Readied backend API.
+ * Centralized HTTP client for communicating with the Dripnex backend API.
  * Handles authentication, token refresh, retry logic, and error handling.
  *
  * @module ApiClient
  */
 
-import fetch from 'cross-fetch';
+import type {
+  NotePullResponse,
+  NotePushResponse,
+  NotePushResult,
+  RemoteNoteChange,
+} from '@dripnex/sync-core';
 import type { TokenStorage } from './tokenStorage.js';
 import type { DeviceInfo } from './deviceInfo.js';
+
+export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 
 // ============================================================================
 // Types
@@ -26,33 +33,10 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-export interface SyncChange {
-  id: string;
-  noteId: string;
-  version: number;
-  operation: 'create' | 'update' | 'delete';
-  encryptedData: string | null;
-  deviceId: string;
-  createdAt: string;
-}
-
-export interface PullResponse {
-  changes: SyncChange[];
-  cursor: number;
-  hasMore: boolean;
-}
-
-export interface PushResult {
-  noteId: string;
-  version: number;
-  status: 'applied' | 'conflict';
-  serverVersion?: number;
-}
-
-export interface PushResponse {
-  results: PushResult[];
-  cursor: number;
-}
+export type SyncChange = RemoteNoteChange;
+export type PullResponse = NotePullResponse;
+export type PushResult = NotePushResult;
+export type PushResponse = NotePushResponse;
 
 export interface TagSyncChange {
   id: string;
@@ -140,6 +124,22 @@ export class ApiError extends Error {
   }
 }
 
+/** Default budget for a single HTTP attempt. Hanging DNS/TLS must not lock the UI. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+
+/** Live workers.dev origin while api.dripnex.app DNS is still propagating. */
+export const API_FALLBACK_URL = 'https://readied-api-production.readied.workers.dev';
+
+function isAbortError(error: unknown): boolean {
+  return (error instanceof Error || error instanceof DOMException) && error.name === 'AbortError';
+}
+
+function requestSignal(existing?: AbortSignal | null): AbortSignal {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  if (!existing) return timeout;
+  return AbortSignal.any([existing, timeout]);
+}
+
 export type RefreshErrorType = 'success' | 'expired' | 'network' | 'device_limit' | 'unknown';
 
 export interface RefreshResult {
@@ -155,15 +155,22 @@ export class ApiClient {
   private baseURL: string;
   private tokenStorage: TokenStorage;
   private deviceInfo: DeviceInfo;
+  private fetchFn: FetchFn;
   private isRefreshing = false;
   private refreshPromise: Promise<RefreshResult> | null = null;
   private _bytesSent = 0;
   private _bytesReceived = 0;
 
-  constructor(baseURL: string, tokenStorage: TokenStorage, deviceInfo: DeviceInfo) {
+  constructor(
+    baseURL: string,
+    tokenStorage: TokenStorage,
+    deviceInfo: DeviceInfo,
+    fetchFn: FetchFn = globalThis.fetch
+  ) {
     this.baseURL = baseURL;
     this.tokenStorage = tokenStorage;
     this.deviceInfo = deviceInfo;
+    this.fetchFn = fetchFn;
   }
 
   // ==========================================================================
@@ -211,9 +218,10 @@ export class ApiClient {
     }
 
     try {
-      const response = await fetch(url, {
+      const response = await this.fetchFn(url, {
         ...options,
         headers,
+        signal: requestSignal(options.signal),
       });
 
       // Handle 401 - Token expired
@@ -244,7 +252,10 @@ export class ApiClient {
 
       // Handle non-OK responses
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
+        const errorBody = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string;
+        };
         throw new ApiError(
           response.status,
           errorBody.error || errorBody.message || 'Request failed',
@@ -261,6 +272,19 @@ export class ApiClient {
       // Network error or fetch failure
       if (error instanceof ApiError) {
         throw error;
+      }
+
+      if (isAbortError(error)) {
+        throw new ApiError(0, 'Request timed out');
+      }
+
+      const raw = error instanceof Error ? error.message : '';
+      if (
+        this.baseURL.includes('api.dripnex.app') &&
+        /enotfound|getaddrinfo|could not resolve|err_name_not_resolved/i.test(raw)
+      ) {
+        this.baseURL = API_FALLBACK_URL;
+        return this.request<T>(endpoint, options, retries);
       }
 
       // Retry on network errors (5xx) with exponential backoff
@@ -301,13 +325,14 @@ export class ApiClient {
         return { type: 'expired', message: 'No refresh token available' };
       }
 
-      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+      const response = await this.fetchFn(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           refreshToken,
           deviceId: this.deviceInfo.deviceId,
         }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -357,7 +382,11 @@ export class ApiClient {
       await this.tokenStorage.saveTokens(data.accessToken, data.refreshToken);
       return { type: 'success' };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown network error';
+      const message = isAbortError(error)
+        ? 'Request timed out'
+        : error instanceof Error
+          ? error.message
+          : 'Unknown network error';
       console.error('[ApiClient] Token refresh failed: network error', { message });
       return { type: 'network', message };
     }

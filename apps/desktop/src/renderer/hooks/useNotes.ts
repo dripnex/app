@@ -28,7 +28,8 @@ export const noteKeys = {
   list: (options?: ListOptions) => [...noteKeys.lists(), options ?? {}] as const,
   details: () => [...noteKeys.all, 'detail'] as const,
   detail: (id: string) => [...noteKeys.details(), id] as const,
-  search: (query: string) => [...noteKeys.all, 'search', query] as const,
+  search: (query: string, options?: number | ListOptions) =>
+    [...noteKeys.all, 'search', query, options ?? {}] as const,
   tags: () => [...noteKeys.all, 'tags'] as const,
   counts: () => [...noteKeys.all, 'counts'] as const,
   activityStats: () => [...noteKeys.all, 'activityStats'] as const,
@@ -38,19 +39,27 @@ export const noteKeys = {
 export function useNotes(options?: ListOptions) {
   return useQuery({
     queryKey: noteKeys.list(options),
-    queryFn: () => window.readied.notes.list(options),
+    queryFn: () => window.dripnex.notes.list(options),
   });
 }
 
 /** Hook for searching notes (returns notes with excerpt) */
-export function useSearchNotes(query: string, limit?: number) {
+export function useSearchNotes(query: string, options?: number | ListOptions) {
+  const scoped =
+    typeof options === 'object' &&
+    (options.isDeleted === true || options.archived === 'archived' || Boolean(options.notebookId));
+
   return useQuery({
-    queryKey: noteKeys.search(query),
+    queryKey: noteKeys.search(query, options),
     queryFn: async () => {
-      const notes = await window.readied.notes.search(query, limit);
+      if (query.trim().length === 0 && typeof options === 'object') {
+        const notes = await window.dripnex.notes.list(options);
+        return notes.map(withExcerpt);
+      }
+      const notes = await window.dripnex.notes.search(query, options);
       return notes.map(withExcerpt);
     },
-    enabled: query.trim().length > 0,
+    enabled: query.trim().length > 0 || scoped,
   });
 }
 
@@ -60,7 +69,7 @@ export function useNote(id: string | null) {
     queryKey: noteKeys.detail(id ?? ''),
     queryFn: async () => {
       if (!id) return null;
-      const result = await window.readied.notes.get(id);
+      const result = await window.dripnex.notes.get(id);
       return result.ok ? result.data : null;
     },
     enabled: !!id,
@@ -71,7 +80,7 @@ export function useNote(id: string | null) {
 export function useTags() {
   return useQuery({
     queryKey: noteKeys.tags(),
-    queryFn: () => window.readied.notes.tags(),
+    queryFn: () => window.dripnex.notes.tags(),
   });
 }
 
@@ -79,7 +88,14 @@ export function useTags() {
 export function useNoteCounts() {
   return useQuery({
     queryKey: noteKeys.counts(),
-    queryFn: () => window.readied.notes.count(),
+    queryFn: () => window.dripnex.notes.count(),
+  });
+}
+
+export function useScopedNoteCounts(options: ListOptions) {
+  return useQuery({
+    queryKey: [...noteKeys.counts(), 'scoped', options],
+    queryFn: () => window.dripnex.notes.countScoped(options),
   });
 }
 
@@ -87,7 +103,7 @@ export function useNoteCounts() {
 export function useActivityStats() {
   return useQuery({
     queryKey: noteKeys.activityStats(),
-    queryFn: () => window.readied.notes.activityStats(),
+    queryFn: () => window.dripnex.notes.activityStats(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -114,7 +130,7 @@ export function useNoteMutations() {
 
   const createNote = useMutation({
     mutationFn: async (input: { content: string; id?: string; notebookId?: string }) => {
-      const result = await window.readied.notes.create(input);
+      const result = await window.dripnex.notes.create(input);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -123,7 +139,7 @@ export function useNoteMutations() {
 
   const updateNote = useMutation({
     mutationFn: async (input: { id: string; content: string }) => {
-      const result = await window.readied.notes.update(input);
+      const result = await window.dripnex.notes.update(input);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -135,7 +151,7 @@ export function useNoteMutations() {
 
   const updateNoteTitle = useMutation({
     mutationFn: async (input: { id: string; title: string }) => {
-      const result = await window.readied.notes.updateTitle(input);
+      const result = await window.dripnex.notes.updateTitle(input);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -147,7 +163,7 @@ export function useNoteMutations() {
 
   const deleteNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.delete(id);
+      const result = await window.dripnex.notes.delete(id);
       if (!result.ok) throw new Error(result.error.type);
     },
     onSuccess: () => invalidateNotes(),
@@ -155,7 +171,7 @@ export function useNoteMutations() {
 
   const archiveNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.archive(id);
+      const result = await window.dripnex.notes.archive(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -164,7 +180,7 @@ export function useNoteMutations() {
 
   const restoreNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.restore(id);
+      const result = await window.dripnex.notes.restore(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -173,7 +189,7 @@ export function useNoteMutations() {
 
   const duplicateNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.duplicate(id);
+      const result = await window.dripnex.notes.duplicate(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -182,7 +198,7 @@ export function useNoteMutations() {
 
   const moveNote = useMutation({
     mutationFn: async ({ noteId, notebookId }: { noteId: string; notebookId: string }) => {
-      const result = await window.readied.notes.move(noteId, notebookId);
+      const result = await window.dripnex.notes.move(noteId, notebookId);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -191,7 +207,7 @@ export function useNoteMutations() {
 
   const pinNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.pin(id);
+      const result = await window.dripnex.notes.pin(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -200,7 +216,7 @@ export function useNoteMutations() {
 
   const unpinNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.unpin(id);
+      const result = await window.dripnex.notes.unpin(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -209,7 +225,7 @@ export function useNoteMutations() {
 
   const softDeleteNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.softDelete(id);
+      const result = await window.dripnex.notes.softDelete(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -218,7 +234,7 @@ export function useNoteMutations() {
 
   const restoreDeletedNote = useMutation({
     mutationFn: async (id: string) => {
-      const result = await window.readied.notes.restoreDeleted(id);
+      const result = await window.dripnex.notes.restoreDeleted(id);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },
@@ -227,7 +243,7 @@ export function useNoteMutations() {
 
   const setNoteStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: NoteStatus }) => {
-      const result = await window.readied.notes.setStatus(id, status);
+      const result = await window.dripnex.notes.setStatus(id, status);
       if (!result.ok) throw new Error(result.error.type);
       return result.data;
     },

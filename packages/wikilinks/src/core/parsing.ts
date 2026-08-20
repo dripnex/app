@@ -1,36 +1,14 @@
 /**
  * Wikilink Parsing
  *
- * Pure domain logic for extracting wikilinks from markdown content.
- * No dependencies on storage, UI, or external libraries.
+ * Delegates to the shared fence-aware scan.
  */
 
+import { scanMarkdown } from '@dripnex/markdown';
 import type { WikilinkRef } from './types.js';
 
 /**
- * Pattern for matching wikilinks with optional heading anchor:
- * - [[target]]
- * - [[target#heading]]
- * - [[target|display]]
- * - [[target#heading|display]]
- *
- * Groups: [1]=target, [2]=anchor (optional), [3]=display (optional)
- */
-const WIKILINK_PATTERN = /\[\[([^[\]|#]+)(?:#([^[\]|]+))?(?:\|([^\]]+))?\]\]/g;
-
-/**
- * Extract all wikilinks from markdown content.
- *
- * Supports:
- * - Simple: [[Target]]
- * - With anchor: [[Target#Heading]]
- * - Aliased: [[Target|display text]]
- * - Combined: [[Target#Heading|display text]]
- *
- * Returns unique targets only (deduplicated by target+anchor).
- *
- * @param content - Markdown content to parse
- * @returns Array of unique wikilink references
+ * Extract unique wikilinks from markdown content.
  *
  * @example
  * extractWikilinks("See [[Note A]] and [[Note B#Section|my note]]")
@@ -40,29 +18,7 @@ const WIKILINK_PATTERN = /\[\[([^[\]|#]+)(?:#([^[\]|]+))?(?:\|([^\]]+))?\]\]/g;
  * // ]
  */
 export function extractWikilinks(content: string): WikilinkRef[] {
-  const seen = new Set<string>();
-  const links: WikilinkRef[] = [];
-  let match: RegExpExecArray | null;
-
-  while ((match = WIKILINK_PATTERN.exec(content)) !== null) {
-    const target = match[1]?.trim();
-    if (!target) continue;
-
-    const anchor = match[2]?.trim();
-    const display = match[3]?.trim();
-
-    // Deduplicate by target + anchor combination
-    const key = `${target.toLowerCase()}#${anchor?.toLowerCase() ?? ''}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const link: WikilinkRef = { target };
-    if (anchor) link.anchor = anchor;
-    if (display) link.display = display;
-    links.push(link);
-  }
-
-  return links;
+  return scanMarkdown(content).wikilinks;
 }
 
 /**
@@ -72,5 +28,80 @@ export function extractWikilinks(content: string): WikilinkRef[] {
  * @returns Array of unique target strings
  */
 export function extractWikilinkTargets(content: string): string[] {
-  return extractWikilinks(content).map(link => link.target);
+  return extractWikilinks(content)
+    .map(link => link.target)
+    .filter(Boolean);
+}
+
+export interface WikilinkSpan {
+  start: number;
+  end: number;
+  ref: WikilinkRef;
+}
+
+/** Every valid `[[...]]` span in `text`. Linear, no regex. */
+export function findWikilinkSpans(text: string): WikilinkSpan[] {
+  const spans: WikilinkSpan[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const open = text.indexOf('[[', i);
+    if (open === -1) break;
+    const close = text.indexOf(']]', open + 2);
+    if (close === -1) break;
+    const ref = parseWikilinkInner(text.slice(open + 2, close));
+    if (ref) spans.push({ start: open, end: close + 2, ref });
+    i = open + 2;
+  }
+  return spans;
+}
+
+/** Wikilink whose `[[...]]` span contains `index` (inclusive). */
+export function parseWikilinkAt(text: string, index: number): WikilinkRef | null {
+  if (index < 0 || index > text.length) return null;
+  for (const span of findWikilinkSpans(text)) {
+    if (index >= span.start && index <= span.end) return span.ref;
+  }
+  return null;
+}
+
+function parseWikilinkInner(inner: string): WikilinkRef | null {
+  let i = 0;
+  while (i < inner.length) {
+    const c = inner[i];
+    if (c === '#' || c === '|' || c === ']') break;
+    i += 1;
+  }
+  const target = inner.slice(0, i).trim();
+  let rest = inner.slice(i);
+
+  let anchor: string | undefined;
+  if (rest.startsWith('#')) {
+    rest = rest.slice(1);
+    i = 0;
+    while (i < rest.length) {
+      const c = rest[i];
+      if (c === '|' || c === ']') break;
+      i += 1;
+    }
+    if (i === 0) return null;
+    anchor = rest.slice(0, i).trim();
+    rest = rest.slice(i);
+    if (!anchor) return null;
+  }
+
+  let display: string | undefined;
+  if (rest.startsWith('|')) {
+    rest = rest.slice(1);
+    if (!rest) return null;
+    display = rest.trim();
+    rest = '';
+    if (!display) return null;
+  }
+
+  if (rest) return null;
+  if (!target && !anchor) return null;
+  const ref: WikilinkRef = { target };
+  if (anchor) ref.anchor = anchor;
+  if (display) ref.display = display;
+  return ref;
 }

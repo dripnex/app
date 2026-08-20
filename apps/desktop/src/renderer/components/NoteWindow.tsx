@@ -6,22 +6,14 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useThemeOverrides } from '@dripnex/plugin-api';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useSyncLinks } from '../hooks/useLinks';
 import { useAppearanceSettings } from '../hooks/useAppearanceSettings';
+import { useOfficialThemes } from '../hooks/useOfficialThemes';
 import { ToastProvider } from './Toast';
 import { NoteEditor } from './NoteEditor';
 import './NoteWindow.css';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60,
-      retry: 1,
-    },
-  },
-});
 
 interface NoteWindowContentProps {
   noteId: string;
@@ -29,10 +21,13 @@ interface NoteWindowContentProps {
 
 function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   useAppearanceSettings();
+  useOfficialThemes();
+  useThemeOverrides();
   const [note, setNote] = useState<NoteSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingContentRef = useRef<string | null>(null);
   const syncLinks = useSyncLinks();
 
   // Load note on mount
@@ -41,7 +36,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
       setLoading(true);
       setError(null);
       try {
-        const result = await window.readied.notes.get(noteId);
+        const result = await window.dripnex.notes.get(noteId);
         if (result.ok) {
           setNote(result.data);
         } else {
@@ -60,27 +55,57 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   const handleUpdate = useCallback(
     async (content: string) => {
       if (!note) return;
+      pendingContentRef.current = content;
 
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
 
       debounceRef.current = setTimeout(async () => {
-        const updated = await window.readied.notes.update({ id: note.id, content });
+        const updated = await window.dripnex.notes.update({ id: note.id, content });
         if (updated.ok) {
           setNote(updated.data);
           syncLinks.mutate({ noteId: note.id, content });
+          if (pendingContentRef.current === content) {
+            pendingContentRef.current = null;
+          }
         }
       }, 500);
     },
     [note, syncLinks]
   );
 
+  useEffect(() => {
+    return window.dripnex.editor.onFlushRequest(id => {
+      void (async () => {
+        try {
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+            debounceRef.current = null;
+          }
+          const pending = pendingContentRef.current;
+          if (pending !== null && note) {
+            const updated = await window.dripnex.notes.update({ id: note.id, content: pending });
+            if (updated.ok) {
+              setNote(updated.data);
+              syncLinks.mutate({ noteId: note.id, content: pending });
+              if (pendingContentRef.current === pending) {
+                pendingContentRef.current = null;
+              }
+            }
+          }
+        } finally {
+          window.dripnex.editor.notifyFlushed(id);
+        }
+      })();
+    });
+  }, [note, syncLinks]);
+
   // Update note title
   const handleTitleUpdate = useCallback(
     async (title: string) => {
       if (!note) return;
-      const updated = await window.readied.notes.updateTitle({ id: note.id, title });
+      const updated = await window.dripnex.notes.updateTitle({ id: note.id, title });
       if (updated.ok) {
         setNote(updated.data);
         // Update window title
@@ -94,7 +119,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
   const handleStatusChange = useCallback(
     async (status: NoteStatus) => {
       if (!note) return;
-      const updated = await window.readied.notes.setStatus(note.id, status);
+      const updated = await window.dripnex.notes.setStatus(note.id, status);
       if (updated.ok) {
         setNote(updated.data);
       }
@@ -126,6 +151,7 @@ function NoteWindowContent({ noteId }: NoteWindowContentProps) {
         onUpdate={handleUpdate}
         onTitleUpdate={handleTitleUpdate}
         onStatusChange={handleStatusChange}
+        chromeVariant="window"
       />
     </div>
   );
@@ -137,10 +163,8 @@ interface NoteWindowProps {
 
 export function NoteWindow({ noteId }: NoteWindowProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <NoteWindowContent noteId={noteId} />
-      </ToastProvider>
-    </QueryClientProvider>
+    <ToastProvider>
+      <NoteWindowContent noteId={noteId} />
+    </ToastProvider>
   );
 }

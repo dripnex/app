@@ -12,13 +12,13 @@ import type {
   AppLicenseState,
   StoredSubscriptionData,
   SubscriptionInfo,
-} from '@readied/licensing';
+} from '@dripnex/licensing';
 import {
   computeLicenseState,
   startTrial,
   canStartTrial,
   isCachedSubscriptionValid,
-} from '@readied/licensing';
+} from '@dripnex/licensing';
 import { defineIpcHandler } from '../ipc/registry.js';
 import { loggers } from '../logger';
 import type { ApiClient, SubscriptionStatus } from '../services/apiClient';
@@ -188,8 +188,8 @@ export function registerLicenseHandlers(deps: LicenseHandlerDependencies): void 
 
         const { url } = await apiClient.createCheckoutSession({
           plan: options?.plan || 'monthly',
-          successUrl: 'https://readied.app/subscription/success',
-          cancelUrl: 'https://readied.app/subscription/cancel',
+          successUrl: 'https://dripnex.app/subscription/success',
+          cancelUrl: 'https://dripnex.app/subscription/cancel',
         });
 
         if (!url) {

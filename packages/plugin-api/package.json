@@ -1,8 +1,8 @@
 {
-  "name": "@readied/plugin-api",
+  "name": "@dripnex/plugin-api",
   "version": "0.1.0",
   "private": true,
-  "description": "Plugin API for Readied: LayoutManager, EditorAPI, Plugin lifecycle",
+  "description": "Plugin API for Dripnex: LayoutManager, EditorAPI, Plugin lifecycle",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -17,8 +17,12 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@dripnex/logger": "workspace:*"
+  },
   "peerDependencies": {
     "react": "^18.0.0",
+    "react-dom": "^18.0.0",
     "zustand": "^5.0.0",
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0"
@@ -27,7 +31,9 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.43.0",
     "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8",
     "zustand": "^5.0.14"

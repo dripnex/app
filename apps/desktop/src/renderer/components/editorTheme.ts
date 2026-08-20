@@ -1,5 +1,5 @@
 /**
- * CodeMirror theme + syntax highlighting for Readied's MarkdownEditor.
+ * CodeMirror theme + syntax highlighting for Dripnex's MarkdownEditor.
  *
  * Pure values extracted from MarkdownEditor.tsx so theme tweaks don't
  * force a rebuild of the entire editor file. Colors come from CSS
@@ -19,7 +19,7 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
   return EditorView.theme({
     '&': {
       backgroundColor: 'transparent',
-      color: 'var(--cm-text)',
+      color: 'var(--cm-text, var(--text-primary))',
       fontSize: `${fontSize}px`,
       height: '100%',
     },
@@ -51,11 +51,38 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
       padding: '0 12px 0 16px',
       minWidth: '40px',
     },
+    '.cm-foldGutter .cm-gutterElement': {
+      padding: '0 4px 0 2px',
+      width: '14px',
+    },
+    '.cm-foldPlaceholder': {
+      backgroundColor: 'var(--bg-hover)',
+      border: 'none',
+      color: 'var(--text-muted)',
+      borderRadius: '4px',
+      margin: '0 4px',
+      padding: '0 6px',
+    },
     '.cm-scroller': {
       overflow: 'auto',
+      position: 'relative',
     },
     '.cm-line': {
       padding: '0 4px',
+    },
+    '.md-list-mark': {
+      color: 'var(--md-list-mark-color, var(--cm-list))',
+    },
+    '.md-list-mark-2': {
+      color: 'var(--md-list-mark-2-color)',
+    },
+    '.md-list-mark-3': {
+      color: 'var(--md-list-mark-3-color)',
+    },
+    '.cm-nes-ghost': {
+      opacity: '0.45',
+      pointerEvents: 'none',
+      color: 'var(--text-muted)',
     },
     '&.cm-focused .cm-matchingBracket': {
       backgroundColor: 'var(--cm-bracket-match)',
@@ -87,22 +114,82 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
     '.cm-completionLabel': {
       fontWeight: '500',
     },
+    '.cm-task-checked': {
+      textDecoration: 'line-through',
+      color: 'var(--cm-strikethrough, var(--text-muted))',
+    },
+    '.cm-md-link-tooltip': {
+      backgroundColor: 'var(--cm-tooltip-bg, var(--bg-elevated))',
+      color: 'var(--cm-link, var(--accent))',
+      border: '1px solid var(--cm-tooltip-border, var(--border))',
+      borderRadius: '6px',
+      padding: '4px 8px',
+      fontSize: '12px',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      maxWidth: '360px',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    },
+    '.cm-fence-copy': {
+      position: 'absolute',
+      right: '10px',
+      zIndex: '2',
+      padding: '2px 8px',
+      fontSize: '11px',
+      lineHeight: '1.4',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      color: 'var(--text-secondary)',
+      backgroundColor: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
+      borderRadius: '6px',
+      cursor: 'pointer',
+    },
+    '.cm-fence-copy:hover': {
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-hover)',
+    },
   });
 }
 
 /** Syntax highlighting for Markdown — uses CSS variables so dark/light works. */
 export const markdownHighlighting = HighlightStyle.define([
   // Headings
-  { tag: tags.heading1, color: 'var(--cm-heading)', fontWeight: '700', fontSize: '1.5em' },
-  { tag: tags.heading2, color: 'var(--cm-heading)', fontWeight: '600', fontSize: '1.3em' },
-  { tag: tags.heading3, color: 'var(--cm-heading)', fontWeight: '600', fontSize: '1.15em' },
-  { tag: tags.heading4, color: 'var(--cm-heading)', fontWeight: '600' },
-  { tag: tags.heading5, color: 'var(--cm-heading)', fontWeight: '600' },
-  { tag: tags.heading6, color: 'var(--cm-heading)', fontWeight: '600' },
+  {
+    tag: tags.heading1,
+    color: 'var(--cm-heading, var(--text-primary))',
+    fontWeight: '700',
+    fontSize: '1.5em',
+  },
+  {
+    tag: tags.heading2,
+    color: 'var(--cm-heading, var(--text-primary))',
+    fontWeight: '600',
+    fontSize: '1.3em',
+  },
+  {
+    tag: tags.heading3,
+    color: 'var(--cm-heading, var(--text-primary))',
+    fontWeight: '600',
+    fontSize: '1.15em',
+  },
+  { tag: tags.heading4, color: 'var(--cm-heading, var(--text-primary))', fontWeight: '600' },
+  { tag: tags.heading5, color: 'var(--cm-heading, var(--text-primary))', fontWeight: '600' },
+  { tag: tags.heading6, color: 'var(--cm-heading, var(--text-primary))', fontWeight: '600' },
 
   // Emphasis
-  { tag: tags.emphasis, fontStyle: 'italic', color: 'var(--cm-emphasis)' },
-  { tag: tags.strong, fontWeight: '700', color: 'var(--cm-strong)' },
+  {
+    tag: tags.emphasis,
+    fontStyle: 'italic',
+    color: 'var(--cm-emphasis, var(--text-primary))',
+    class: 'cm-em',
+  },
+  {
+    tag: tags.strong,
+    fontWeight: '700',
+    color: 'var(--cm-strong, var(--text-primary))',
+    class: 'cm-strong',
+  },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: 'var(--cm-strikethrough)' },
 
   // Code
@@ -115,11 +202,10 @@ export const markdownHighlighting = HighlightStyle.define([
   },
 
   // Links
-  { tag: tags.link, color: 'var(--cm-link)', textDecoration: 'underline' },
-  { tag: tags.url, color: 'var(--cm-link)' },
+  { tag: tags.link, color: 'var(--cm-link, var(--accent))', textDecoration: 'underline' },
+  { tag: tags.url, color: 'var(--cm-link, var(--accent))' },
 
-  // Lists
-  { tag: tags.list, color: 'var(--cm-list)' },
+  // Lists — marker color comes from listMarkDecorations (.md-list-mark*)
 
   // Quotes
   {

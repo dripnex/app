@@ -1,11 +1,11 @@
 /**
- * @readied/wikilinks
+ * @dripnex/wikilinks
  *
- * Wikilink system for Readied.
+ * Wikilink system for Dripnex.
  * Pure domain logic - no Electron, React, or UI dependencies.
  *
  * USAGE:
- *   import { createWikilinkPlugin } from '@readied/wikilinks';
+ *   import { createWikilinkPlugin } from '@dripnex/wikilinks';
  *   const plugin = createWikilinkPlugin(resolver);
  *
  * The createWikilinkPlugin factory is the recommended entry point.
@@ -17,7 +17,13 @@ export type { WikilinkNote, WikilinkResolver } from './core/contracts.js';
 export type { WikilinkRef } from './core/types.js';
 
 // Core - parsing (pure, no deps)
-export { extractWikilinks, extractWikilinkTargets } from './core/parsing.js';
+export {
+  extractWikilinks,
+  extractWikilinkTargets,
+  findWikilinkSpans,
+  parseWikilinkAt,
+} from './core/parsing.js';
+export type { WikilinkSpan } from './core/parsing.js';
 
 // Core - headings (for [[Note#Heading]] support)
 export type { Heading } from './core/headings.js';
@@ -26,15 +32,20 @@ export {
   extractHeadingTexts,
   headingToSlug,
   findHeadingByAnchor,
+  splitWikilinkQuery,
+  filterHeadings,
 } from './core/headings.js';
 
 // Adapters (for advanced use only)
 export {
   createWikilinkAutocomplete,
+  createWikilinkTitle,
   setCurrentNoteId,
   currentNoteIdField,
 } from './adapters/codemirror/autocomplete.js';
-export { wikilinkExtension } from './adapters/codemirror/highlight.js';
+export { wikilinkExtension, createWikilinkHighlighter } from './adapters/codemirror/highlight.js';
+export { wikilinkClickHandler } from './adapters/codemirror/click.js';
+export { wikilinkHoverHandler } from './adapters/codemirror/hover.js';
 export { remarkWikilink } from './adapters/remark/remark-wikilink.js';
 
 // Factory function - RECOMMENDED ENTRY POINT

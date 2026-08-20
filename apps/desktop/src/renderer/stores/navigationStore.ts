@@ -37,6 +37,10 @@ export type SortOrder = 'asc' | 'desc';
 interface NavigationStore {
   // State
   navigation: NavigationState;
+  /** When set, the sidebar is focused on this notebook tree. */
+  workspaceRootId: string | null;
+  /** All Notes inside a workspace lists the whole tree, not one notebook. */
+  workspaceListAll: boolean;
   statusFilter: StatusFilter;
   tagFilter: TagFilter;
   sortBy: SortBy;
@@ -47,6 +51,8 @@ interface NavigationStore {
   goToAllInCurrentContext: () => void;
   goToPinned: () => void;
   goToTrash: () => void;
+  enterWorkspace: (id: string) => void;
+  exitWorkspace: () => void;
   goToNotebook: (id: string) => void;
   goToTag: (name: string) => void;
   goToSearch: (query: string) => void;
@@ -71,6 +77,8 @@ const DEFAULT_NAVIGATION: NavigationState = { kind: 'global', filter: 'all' };
 export const useNavigationStore = create<NavigationStore>((set, get) => ({
   // Initial state
   navigation: DEFAULT_NAVIGATION,
+  workspaceRootId: null,
+  workspaceListAll: false,
   statusFilter: null,
   tagFilter: null,
   sortBy: 'updatedAt',
@@ -78,28 +86,99 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
 
   // Navigation actions (clear filters when changing context)
   goToAllNotes: () =>
-    set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null }),
+    set({
+      navigation: { kind: 'global', filter: 'all' },
+      workspaceRootId: null,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
   goToAllInCurrentContext: () => {
-    const { navigation } = get();
-    if (navigation.kind === 'notebook') {
-      // Stay in notebook, just clear filters
-      set({ statusFilter: null, tagFilter: null });
-    } else {
-      // Go to global "all notes"
-      set({ navigation: { kind: 'global', filter: 'all' }, statusFilter: null, tagFilter: null });
+    const { workspaceRootId } = get();
+    if (workspaceRootId) {
+      set({
+        navigation: { kind: 'notebook', id: workspaceRootId },
+        workspaceListAll: true,
+        statusFilter: null,
+        tagFilter: null,
+      });
+      return;
     }
+    set({
+      navigation: { kind: 'global', filter: 'all' },
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    });
   },
   goToPinned: () =>
-    set({ navigation: { kind: 'global', filter: 'pinned' }, statusFilter: null, tagFilter: null }),
+    set({
+      navigation: { kind: 'global', filter: 'pinned' },
+      workspaceRootId: null,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
   goToTrash: () =>
-    set({ navigation: { kind: 'global', filter: 'trash' }, statusFilter: null, tagFilter: null }),
+    set({
+      navigation: { kind: 'global', filter: 'trash' },
+      workspaceRootId: null,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
+  enterWorkspace: id =>
+    set({
+      navigation: { kind: 'notebook', id },
+      workspaceRootId: id,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
+  exitWorkspace: () =>
+    set({
+      navigation: DEFAULT_NAVIGATION,
+      workspaceRootId: null,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
   goToNotebook: id =>
-    set({ navigation: { kind: 'notebook', id }, statusFilter: null, tagFilter: null }),
-  goToTag: name => set({ navigation: { kind: 'tag', name }, statusFilter: null, tagFilter: null }),
+    set({
+      navigation: { kind: 'notebook', id },
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
+  goToTag: name => {
+    const { tagFilter, navigation } = get();
+    const next =
+      tagFilter === name || (navigation.kind === 'tag' && navigation.name === name) ? null : name;
+    if (navigation.kind === 'tag') {
+      set({
+        navigation: { kind: 'global', filter: 'all' },
+        tagFilter: next,
+      });
+      return;
+    }
+    set({ tagFilter: next });
+  },
   goToSearch: query =>
-    set({ navigation: { kind: 'search', query }, statusFilter: null, tagFilter: null }),
+    set({
+      navigation: { kind: 'search', query },
+      workspaceRootId: null,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
   clearNavigation: () =>
-    set({ navigation: DEFAULT_NAVIGATION, statusFilter: null, tagFilter: null }),
+    set({
+      navigation: DEFAULT_NAVIGATION,
+      workspaceRootId: null,
+      workspaceListAll: false,
+      statusFilter: null,
+      tagFilter: null,
+    }),
 
   // Filter actions
   setStatusFilter: status => set({ statusFilter: status }),
@@ -135,7 +214,10 @@ export const selectGlobalFilter = (state: NavigationStore) =>
   state.navigation.kind === 'global' ? state.navigation.filter : null;
 
 export const selectSelectedTag = (state: NavigationStore) =>
-  state.navigation.kind === 'tag' ? state.navigation.name : null;
+  state.tagFilter ?? (state.navigation.kind === 'tag' ? state.navigation.name : null);
 
 export const selectSortBy = (state: NavigationStore) => state.sortBy;
 export const selectSortOrder = (state: NavigationStore) => state.sortOrder;
+
+export const selectWorkspaceRootId = (state: NavigationStore) => state.workspaceRootId;
+export const selectWorkspaceListAll = (state: NavigationStore) => state.workspaceListAll;

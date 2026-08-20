@@ -1,21 +1,21 @@
 {
-  "name": "readied",
-  "version": "0.15.3",
+  "name": "dripnex",
+  "version": "0.15.2",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "description": "Markdown-first, offline-forever desktop note app",
   "author": {
     "name": "Tomy Maritano",
-    "email": "hello@readied.app",
-    "url": "https://readied.app"
+    "email": "hello@dripnex.app",
+    "url": "https://dripnex.app"
   },
-  "homepage": "https://readied.app",
+  "homepage": "https://dripnex.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tomymaritano/readide.git"
+    "url": "https://github.com/dripnex/readide.git"
   },
   "bugs": {
-    "url": "https://github.com/tomymaritano/readide/issues"
+    "url": "https://github.com/dripnex/readide/issues"
   },
   "keywords": [
     "markdown",
@@ -30,18 +30,21 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "test": "turbo test --filter=!@readied/storage-sqlite",
-    "test:coverage": "turbo test --filter=!@readied/storage-sqlite -- --coverage",
-    "lint": "eslint packages apps --cache",
-    "lint:fix": "eslint packages apps --fix --cache",
+    "test": "turbo test --filter=!@dripnex/storage-sqlite",
+    "test:coverage": "turbo test --filter=!@dripnex/storage-sqlite -- --coverage",
+    "lint": "eslint packages apps/desktop --cache",
+    "lint:fix": "eslint packages apps/desktop --fix --cache",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore --ignore-path .prettierignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore --ignore-path .prettierignore",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules .eslintcache",
     "knip": "knip",
+    "changeset": "changeset",
+    "plugin": "pnpm --filter @dripnex/plugin-cli cli --",
     "postinstall": "lefthook install"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^10.0.1",
@@ -73,7 +76,11 @@
     "*.{json,md}": "prettier --write"
   },
   "packageManager": "pnpm@9.15.1",
-  "pnpm": {},
+  "pnpm": {
+    "overrides": {
+      "@lezer/common": "1.5.2"
+    }
+  },
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"

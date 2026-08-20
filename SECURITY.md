@@ -11,7 +11,7 @@
 
 **Do not open a public issue for security vulnerabilities.**
 
-Please report security issues to: **security@readied.app**
+Please report security issues to: **security@dripnex.app**
 
 Include:
 

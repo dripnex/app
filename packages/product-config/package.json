@@ -1,5 +1,5 @@
 {
-  "name": "@readied/product-config",
+  "name": "@dripnex/product-config",
   "version": "0.1.0",
   "private": true,
   "type": "module",

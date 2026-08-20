@@ -10,11 +10,13 @@
  * 3. Bump SETTINGS_VERSION and add migration logic in settingsStore.ts
  */
 
+import { DEFAULT_MODEL } from '@dripnex/ai-core';
+
 // ============================================================================
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 3;
+export const SETTINGS_VERSION = 9;
 
 // ============================================================================
 // Section Types
@@ -26,6 +28,8 @@ export interface GeneralSettings {
   defaultNotebookId: string;
   /** Remember window position and size on startup */
   rememberWindowPosition: boolean;
+  /** Right-click Inspect Element and Toggle Developer Tools */
+  developmentMode: boolean;
 }
 
 /** Update checker settings (stateful, not just a boolean) */
@@ -48,6 +52,10 @@ export interface AppearanceSettings {
   acrylicBackground: boolean;
   /** Active plugin theme ID (null = use base dark/light) */
   activeThemeId: string | null;
+  /** Glass blur. Auto follows hardware / reduced-motion. */
+  performanceMode: 'auto' | 'high' | 'medium' | 'low';
+  /** How much desktop shows through frosted palettes. 0 = theme default, 100 = very clear. */
+  frostTransparency: number;
 }
 
 /** Backup settings */
@@ -63,13 +71,34 @@ export interface BackupSettings {
 /** AI Assistant settings */
 export interface AiSettings {
   /** LLM provider id */
-  provider: 'anthropic' | 'openai' | 'ollama';
+  provider: 'dripnex' | 'anthropic' | 'openai' | 'grok' | 'ollama';
   /** API key (provider-specific) */
   apiKey: string;
   /** Model id */
   model: string;
   /** Maximum number of notes to include as context */
   maxContextNotes: number;
+  /** Ollama (or compatible) base URL. Empty = default localhost:11434 */
+  baseUrl?: string;
+  /** Local index embed provider */
+  embedProvider: 'ollama' | 'openai';
+  /** Embedding model id (must match the provider) */
+  embedModel: string;
+  /**
+   * Next-edit suggestions (Inkdrop NES).
+   * Manual = Alt+\\, automatic = after idle, disabled = off.
+   */
+  nesMode: 'manual' | 'automatic' | 'disabled';
+}
+
+/** Local integrations (MCP / local HTTP). */
+export interface IntegrationsSettings {
+  /** Start the local HTTP API (notes/books/tags) on loopback. */
+  httpApiEnabled: boolean;
+  /** Start the local HTTP API and show MCP connection snippets. */
+  mcpEnabled: boolean;
+  /** Allow MCP create/update/trash. Written to mcp.json next to the DB. */
+  mcpWrites: boolean;
 }
 
 /** Editor settings for CodeMirror */
@@ -96,6 +125,8 @@ export interface EditorSettings {
   indentWithTabs: boolean;
   /** Enable spell check in editor */
   spellCheck: boolean;
+  /** Cap editor and preview width so lines stay readable */
+  readableLineLength: boolean;
 }
 
 // ============================================================================
@@ -120,8 +151,33 @@ export interface SettingsSchemaV3 extends Omit<SettingsSchemaV2, 'version'> {
   version: 3;
 }
 
+export interface SettingsSchemaV4 extends Omit<SettingsSchemaV3, 'version'> {
+  version: 4;
+}
+
+export interface SettingsSchemaV5 extends Omit<SettingsSchemaV4, 'version'> {
+  version: 5;
+}
+
+export interface SettingsSchemaV6 extends Omit<SettingsSchemaV5, 'version'> {
+  version: 6;
+  integrations: IntegrationsSettings;
+}
+
+export interface SettingsSchemaV7 extends Omit<SettingsSchemaV6, 'version'> {
+  version: 7;
+}
+
+export interface SettingsSchemaV8 extends Omit<SettingsSchemaV7, 'version'> {
+  version: 8;
+}
+
+export interface SettingsSchemaV9 extends Omit<SettingsSchemaV8, 'version'> {
+  version: 9;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV3;
+export type SettingsSchema = SettingsSchemaV9;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
@@ -133,6 +189,7 @@ export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
 export const DEFAULT_GENERAL: GeneralSettings = {
   defaultNotebookId: 'inbox',
   rememberWindowPosition: true,
+  developmentMode: false,
 };
 
 export const DEFAULT_UPDATES: UpdatesSettings = {
@@ -146,13 +203,19 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   zoomLevel: '1.0',
   acrylicBackground: false,
   activeThemeId: null,
+  performanceMode: 'auto',
+  frostTransparency: 40,
 };
 
 export const DEFAULT_AI: AiSettings = {
-  provider: 'anthropic',
+  provider: 'dripnex',
   apiKey: '',
-  model: 'claude-sonnet-4-20250514',
+  model: DEFAULT_MODEL,
   maxContextNotes: 5,
+  baseUrl: '',
+  embedProvider: 'ollama',
+  embedModel: 'nomic-embed-text',
+  nesMode: 'manual',
 };
 
 export const DEFAULT_EDITOR: EditorSettings = {
@@ -167,6 +230,7 @@ export const DEFAULT_EDITOR: EditorSettings = {
   tabSize: 2,
   indentWithTabs: false,
   spellCheck: true,
+  readableLineLength: false,
 };
 
 export const DEFAULT_BACKUP: BackupSettings = {
@@ -175,13 +239,20 @@ export const DEFAULT_BACKUP: BackupSettings = {
   lastBackupAt: null,
 };
 
+export const DEFAULT_INTEGRATIONS: IntegrationsSettings = {
+  httpApiEnabled: false,
+  mcpEnabled: false,
+  mcpWrites: false,
+};
+
 /** Complete default settings */
 export const DEFAULT_SETTINGS: SettingsSchema = {
-  version: 3,
+  version: SETTINGS_VERSION,
   general: DEFAULT_GENERAL,
   updates: DEFAULT_UPDATES,
   appearance: DEFAULT_APPEARANCE,
   ai: DEFAULT_AI,
   editor: DEFAULT_EDITOR,
   backup: DEFAULT_BACKUP,
+  integrations: DEFAULT_INTEGRATIONS,
 };

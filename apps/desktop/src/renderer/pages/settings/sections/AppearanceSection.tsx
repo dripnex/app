@@ -1,17 +1,20 @@
 /**
  * Appearance Settings Section
  *
- * Theme, zoom level, and visual preferences.
+ * Base palette, accent, zoom, performance. Named themes live on Themes.
  */
 
+import { themeRegistryStore } from '@dripnex/plugin-api';
 import { useSyncExternalStore } from 'react';
-import { themeRegistryStore } from '@readied/plugin-api';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
+import { detectPerfMode } from '../../../hooks/usePerformanceMode';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
-import { Select, ColorPicker, type ColorOption } from '../components/controls';
-import styles from './Section.module.css';
+import { SettingSelect } from '../components/SettingSelect';
+import { ACCENT_SWATCHES } from '../../../ui/tokens/palette';
+import { ColorPicker, RangeInput, type ColorOption } from '../components/controls';
+import { SettingsPage } from '../components/SettingsPage';
 
 const themeOptions = [
   { value: 'dark', label: 'Dark' },
@@ -29,133 +32,124 @@ const zoomOptions = [
 ];
 
 const performanceModeOptions = [
-  { value: 'high', label: 'High (Full effects)' },
+  { value: 'auto', label: 'Auto' },
+  { value: 'high', label: 'High (Full blur)' },
   { value: 'medium', label: 'Medium (Reduced blur)' },
   { value: 'low', label: 'Low (No blur)' },
 ];
 
-const accentColorOptions: ColorOption[] = [
-  { value: '#5eead4', label: 'Teal (Default)' },
-  { value: '#60a5fa', label: 'Blue' },
-  { value: '#a78bfa', label: 'Purple' },
-  { value: '#f472b6', label: 'Pink' },
-  { value: '#fb7185', label: 'Rose' },
-  { value: '#fb923c', label: 'Orange' },
-  { value: '#4ade80', label: 'Green' },
-  { value: '#fbbf24', label: 'Amber' },
-];
+const accentColorOptions: ColorOption[] = ACCENT_SWATCHES.map(swatch => ({
+  value: swatch.value,
+  label: swatch.label,
+}));
 
 export function AppearanceSection() {
   const appearance = useSettingsStore(selectAppearance);
   const updateAppearance = useSettingsStore(s => s.updateAppearance);
-  const { mode: perfMode, setMode: setPerfMode } = usePerformanceStore();
-
-  const pluginThemes = useSyncExternalStore(
-    themeRegistryStore.subscribe,
-    () => themeRegistryStore.getState().themes
-  );
-  const activeThemeId = useSyncExternalStore(
-    themeRegistryStore.subscribe,
-    () => themeRegistryStore.getState().activeThemeId
+  const { setMode: setPerfMode } = usePerformanceStore();
+  const perfMode = appearance.performanceMode || 'auto';
+  const frostTransparency = appearance.frostTransparency ?? 40;
+  const frosted = Boolean(
+    useSyncExternalStore(
+      themeRegistryStore.subscribe,
+      () => themeRegistryStore.getState().getActiveTheme()?.frosted
+    )
   );
 
   const theme = appearance.theme || 'dark';
   const zoomLevel = appearance.zoomLevel || '1.0';
   const accentColor = appearance.accentColor || '#5eead4';
+  const accentOptions: ColorOption[] = accentColorOptions.some(
+    option => option.value.toLowerCase() === accentColor.toLowerCase()
+  )
+    ? accentColorOptions
+    : [{ value: accentColor, label: 'Theme' }, ...accentColorOptions];
 
   const handleThemeChange = (value: string) => {
-    updateAppearance({ theme: value as 'dark' | 'light' | 'system' });
-  };
-
-  const handleAccentColorChange = (value: string) => {
-    updateAppearance({ accentColor: value });
-  };
-
-  const handleZoomChange = (value: string) => {
-    updateAppearance({ zoomLevel: value });
-  };
-
-  const handlePluginThemeChange = (value: string) => {
-    const newId = value === 'default' ? null : value;
-    themeRegistryStore.getState().setActive(newId);
-    updateAppearance({ activeThemeId: newId });
+    themeRegistryStore.getState().setActive(null);
+    updateAppearance({
+      theme: value as 'dark' | 'light' | 'system',
+      activeThemeId: null,
+      accentColor: value === 'light' ? '#0d8a80' : '#5eead4',
+    });
   };
 
   const handlePerfModeChange = (value: string) => {
-    setPerfMode(value as 'high' | 'medium' | 'low');
-    document.documentElement.dataset.perf = value;
+    const performanceMode =
+      value === 'high' || value === 'medium' || value === 'low' || value === 'auto'
+        ? value
+        : 'auto';
+    updateAppearance({ performanceMode });
+    setPerfMode(performanceMode === 'auto' ? detectPerfMode() : performanceMode);
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Appearance</h2>
-
-      <SettingGroup title="Theme">
-        <SettingRow
-          label="Color Theme"
-          description="Choose your preferred color scheme"
+    <SettingsPage
+      title="Appearance"
+      lede="Zoom, accent, and effects. Named palettes are under Themes."
+    >
+      <SettingGroup title="Palette">
+        <SettingSelect
+          label="Base"
+          description="Default only. Dark / Light / System leaves a named theme."
           htmlFor="theme"
-        >
-          <Select id="theme" value={theme} onChange={handleThemeChange} options={themeOptions} />
-        </SettingRow>
-
+          value={theme}
+          onChange={handleThemeChange}
+          options={themeOptions}
+        />
         <SettingRow
-          label="Accent Color"
-          description="Choose your preferred accent color"
+          label="Accent"
+          description="Overrides the palette accent if you want a different one"
           htmlFor="accentColor"
         >
           <ColorPicker
             id="accentColor"
             value={accentColor}
-            onChange={handleAccentColorChange}
-            colors={accentColorOptions}
+            onChange={value => updateAppearance({ accentColor: value })}
+            colors={accentOptions}
           />
         </SettingRow>
-        {pluginThemes.length > 0 && (
-          <SettingRow
-            label="Plugin Theme"
-            description="Apply a theme from an installed plugin"
-            htmlFor="pluginTheme"
-          >
-            <Select
-              id="pluginTheme"
-              value={activeThemeId ?? 'default'}
-              onChange={handlePluginThemeChange}
-              options={[
-                { value: 'default', label: 'Default' },
-                ...pluginThemes.map(t => ({
-                  value: t.id,
-                  label: `${t.name} (${t.colorScheme})`,
-                })),
-              ]}
-            />
-          </SettingRow>
-        )}
       </SettingGroup>
 
       <SettingGroup title="Display">
-        <SettingRow label="Zoom Level" description="Adjust the interface size" htmlFor="zoomLevel">
-          <Select
-            id="zoomLevel"
-            value={zoomLevel}
-            onChange={handleZoomChange}
-            options={zoomOptions}
-          />
-        </SettingRow>
-
-        <SettingRow
+        <SettingSelect
+          label="Zoom Level"
+          description="Adjust the interface size"
+          htmlFor="zoomLevel"
+          value={zoomLevel}
+          onChange={value => updateAppearance({ zoomLevel: value })}
+          options={zoomOptions}
+        />
+        <SettingSelect
           label="Performance Mode"
-          description="Adjust visual effects based on your hardware"
+          description="Low turns off window frost and menu blur"
           htmlFor="performanceMode"
+          value={perfMode}
+          onChange={handlePerfModeChange}
+          options={performanceModeOptions}
+        />
+        <SettingRow
+          label="Transparency"
+          description={
+            !frosted
+              ? 'Pick a frosted palette under Themes to use this'
+              : perfMode === 'low'
+                ? 'Turn Performance off Low to see the desktop'
+                : 'How much desktop shows through Glass, Midnight, Ember, and Ion'
+          }
+          htmlFor="frostTransparency"
         >
-          <Select
-            id="performanceMode"
-            value={perfMode}
-            onChange={handlePerfModeChange}
-            options={performanceModeOptions}
+          <RangeInput
+            id="frostTransparency"
+            value={frostTransparency}
+            onChange={value => updateAppearance({ frostTransparency: value })}
+            min={0}
+            max={100}
+            step={5}
+            disabled={!frosted || perfMode === 'low'}
           />
         </SettingRow>
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }

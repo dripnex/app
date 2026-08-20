@@ -15,6 +15,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
 import { sharedNotes } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
+import { publicRateLimit } from '../middleware/rateLimit.js';
 
 const share = new Hono<{
   Bindings: Env;
@@ -45,8 +46,8 @@ share.post('/', authMiddleware, zValidator('json', createShareSchema), async c =
   const { noteId, title, content, tags, backlinks, wordCount, notebookName } = c.req.valid('json');
   const db = createDb(c.env);
 
-  // Generate slug: first 8 hex chars of a UUID
-  const slug = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  // 128-bit slug (32 hex). The old 8-hex (32-bit) form was enumerable.
+  const slug = crypto.randomUUID().replace(/-/g, '');
   const now = new Date().toISOString();
 
   // Upsert: insert or update on (userId, noteId) conflict
@@ -79,7 +80,7 @@ share.post('/', authMiddleware, zValidator('json', createShareSchema), async c =
     })
     .returning({ slug: sharedNotes.slug });
 
-  const baseUrl = c.env.SITE_URL || 'https://readied.app';
+  const baseUrl = c.env.SITE_URL || 'https://dripnex.app';
   const url = `${baseUrl}/shared?slug=${result!.slug}`;
 
   return c.json({ slug: result!.slug, url });
@@ -87,7 +88,7 @@ share.post('/', authMiddleware, zValidator('json', createShareSchema), async c =
 
 // ─── GET /public/:userId — List public notes (no auth) ──────────────────────
 
-share.get('/public/:userId', zValidator('query', listQuerySchema), async c => {
+share.get('/public/:userId', publicRateLimit, zValidator('query', listQuerySchema), async c => {
   const userId = c.req.param('userId');
   const { limit, offset } = c.req.valid('query');
   const db = createDb(c.env);
@@ -118,8 +119,11 @@ share.get('/public/:userId', zValidator('query', listQuerySchema), async c => {
 
 // ─── GET /:slug — Get shared note (public, no auth) ─────────────────────────
 
-share.get('/:slug', async c => {
+share.get('/:slug', publicRateLimit, async c => {
   const slug = c.req.param('slug');
+  if (!slug) {
+    return c.json({ error: 'Not found' }, 404);
+  }
   const db = createDb(c.env);
 
   const [note] = await db
@@ -153,6 +157,9 @@ share.get('/:slug', async c => {
 share.delete('/:slug', authMiddleware, async c => {
   const { userId } = c.get('user');
   const slug = c.req.param('slug');
+  if (!slug) {
+    return c.json({ error: 'Not found' }, 404);
+  }
   const db = createDb(c.env);
 
   const deleted = await db

@@ -38,6 +38,43 @@ export interface AiAPI {
   removeKey: (provider: string) => Promise<void>;
   hasKey: (provider: string) => Promise<boolean>;
   listConnectedProviders: () => Promise<string[]>;
+  firstPartyStatus: () => Promise<{ available: boolean }>;
+  kbStatus: () => Promise<{
+    pending: number;
+    embedded: number;
+    model: string;
+    provider: string;
+    dim: number;
+  }>;
+  kbReindex: () => Promise<void>;
+  kbSetEmbed: (input: {
+    provider: 'ollama' | 'openai';
+    model: string;
+    baseUrl?: string;
+  }) => Promise<{ provider: string; model: string; dim: number }>;
+  kbCatalog: () => Promise<
+    Array<{
+      id: string;
+      displayName: string;
+      models: Array<{ id: string; displayName: string; dimensions: number }>;
+    }>
+  >;
+  inferredGraph: () => Promise<Array<{ source: string; target: string; score: number }>>;
+  retrieve: (input: {
+    query: string;
+    relatedQuery?: string | null;
+    topK: number;
+    excludeIds?: string[];
+  }) => Promise<
+    Array<{ id: string; title: string; content: string; heading?: string | null; score?: number }>
+  >;
+  listModels: (config: {
+    provider: string;
+    apiKey?: string;
+    baseUrl?: string;
+  }) => Promise<
+    { ok: true; models: Array<{ id: string; displayName?: string }> } | { ok: false; error: string }
+  >;
 }
 
 export function createAiApi(): AiAPI {
@@ -83,5 +120,13 @@ export function createAiApi(): AiAPI {
     removeKey: (provider: string) => ipcRenderer.invoke('ai:removeKey', provider),
     hasKey: (provider: string) => ipcRenderer.invoke('ai:hasKey', provider),
     listConnectedProviders: () => ipcRenderer.invoke('ai:listConnectedProviders'),
+    firstPartyStatus: () => ipcRenderer.invoke('ai:firstPartyStatus'),
+    kbStatus: () => ipcRenderer.invoke('kb:status'),
+    kbReindex: () => ipcRenderer.invoke('kb:reindex'),
+    kbSetEmbed: input => ipcRenderer.invoke('kb:setEmbed', input),
+    kbCatalog: () => ipcRenderer.invoke('kb:catalog'),
+    inferredGraph: () => ipcRenderer.invoke('kb:inferredGraph'),
+    retrieve: input => ipcRenderer.invoke('ai:retrieve', input),
+    listModels: config => ipcRenderer.invoke('ai:listModels', config),
   };
 }

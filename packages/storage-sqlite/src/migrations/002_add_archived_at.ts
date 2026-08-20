@@ -2,7 +2,7 @@
  * Add archived_at column for soft delete
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addArchivedAt: Migration = {
   version: 20241231000002,

@@ -1,26 +1,41 @@
 #!/usr/bin/env node
 
 /**
- * Readied MCP Server
+ * Dripnex MCP Server
  *
- * Exposes Readied notes to Claude Code via the Model Context Protocol.
+ * Exposes Dripnex notes to Claude Code via the Model Context Protocol.
  * Reads directly from the local SQLite database using node:sqlite (Node 22.5+).
  *
  * Tools:
- *   - readied_list_notes: List notes with optional filters
- *   - readied_read_note: Read a specific note by ID or title
- *   - readied_create_note: Create a new note
- *   - readied_update_note: Update an existing note
- *   - readied_search_notes: Search across notes (FTS5)
- *   - readied_list_notebooks: List all notebooks
- *   - readied_trash_note: Move a note to trash
+ *   - dripnex_list_notes: List notes with optional filters
+ *   - dripnex_read_note: Read a specific note by ID or title
+ *   - dripnex_search_notes: Search across notes (FTS5)
+ *   - dripnex_list_notebooks: List all notebooks
+ *   - dripnex_list_tags: List tags with note counts
+ *   - dripnex_list_templates: List templates and their instruction: frontmatter
+ *
+ * Writes (create/update/trash) are off unless Settings → Integrations
+ * enables them (mcp.json next to the DB) or DRIPNEX_MCP_WRITES=1.
+ * Writes go through @dripnex/core operations + NoteRepository.
+ * The desktop refetches on focus / dripnex.external-write.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import {
+  applyTemplateFrontmatter,
+  createNoteId,
+  createNoteOperation,
+  noteInstruction,
+  trashNoteOperation,
+  updateNoteOperation,
+} from '@dripnex/core';
 import type { Database } from './db.js';
-import { openDb } from './db.js';
+import { openDb, resolveDbPath } from './db.js';
+import { markExternalWrite, packageDirFromModuleUrl, readPackageVersion } from './notes.js';
+import { NodeSqliteNoteRepository } from './sqliteRepo.js';
+import { writesDisabledMessage, writesEnabled } from './writes.js';
 
 function query(db: Database, sql: string, params: unknown[] = []): Record<string, unknown>[] {
   return db.prepare(sql).all(...(params as never[])) as Record<string, unknown>[];
@@ -34,8 +49,29 @@ function queryOne(
   return (db.prepare(sql).get(...(params as never[])) as Record<string, unknown>) ?? null;
 }
 
-function execute(db: Database, sql: string, params: unknown[] = []): number {
-  return Number(db.prepare(sql).run(...(params as never[])).changes);
+function findTemplate(
+  db: Database,
+  name: string
+): { id: string; title: string; content: string } | null {
+  const exact = queryOne(
+    db,
+    `SELECT id, title, content FROM notes
+      WHERE notebook_id = 'templates' AND is_deleted = 0 AND title = ?
+      LIMIT 1`,
+    [name]
+  );
+  if (exact) {
+    return { id: String(exact.id), title: String(exact.title), content: String(exact.content) };
+  }
+  const fuzzy = queryOne(
+    db,
+    `SELECT id, title, content FROM notes
+      WHERE notebook_id = 'templates' AND is_deleted = 0 AND title LIKE '%' || ? || '%'
+      ORDER BY updated_at DESC LIMIT 1`,
+    [name]
+  );
+  if (!fuzzy) return null;
+  return { id: String(fuzzy.id), title: String(fuzzy.title), content: String(fuzzy.content) };
 }
 
 /** Escape and prepare a query string for FTS5 MATCH syntax */
@@ -46,18 +82,28 @@ function prepareFtsQuery(input: string): string {
   return terms.map(t => `"${t}"*`).join(' OR ');
 }
 
-function createServer(db: Database) {
+function createServer(db: Database, options: { dbPath?: string } = {}) {
+  const version = readPackageVersion(packageDirFromModuleUrl(import.meta.url));
   const server = new McpServer({
-    name: 'readied',
-    version: '0.1.0',
+    name: 'dripnex',
+    version,
   });
+  const notes = new NodeSqliteNoteRepository(db);
+  const afterWrite = () => {
+    if (options.dbPath) markExternalWrite(options.dbPath);
+  };
+  const denyWrites = () => ({
+    content: [{ type: 'text' as const, text: writesDisabledMessage() }],
+    isError: true,
+  });
+  const allowWrites = () => writesEnabled(options.dbPath);
 
   // ── List notes ──────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_list_notes',
+    'dripnex_list_notes',
     {
-      description: 'List notes in Readied. Returns titles, IDs, and metadata.',
+      description: 'List notes in Dripnex. Returns titles, IDs, and metadata.',
       inputSchema: {
         notebook: z.string().optional().describe('Filter by notebook name'),
         limit: z.number().default(20).describe('Max notes to return'),
@@ -107,7 +153,7 @@ function createServer(db: Database) {
   // ── Read note ───────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_read_note',
+    'dripnex_read_note',
     {
       description: 'Read the full content of a note by ID or title search.',
       inputSchema: {
@@ -159,39 +205,77 @@ function createServer(db: Database) {
   // ── Create note ─────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_create_note',
+    'dripnex_create_note',
     {
-      description: 'Create a new note in Readied. Content should be markdown.',
+      description:
+        'Create a new note in Dripnex. Pass template to copy a Templates notebook note, including its instruction: frontmatter.',
       inputSchema: {
-        content: z.string().describe('Markdown content for the note'),
+        content: z
+          .string()
+          .optional()
+          .describe('Markdown body. Combined with template instruction when both are set.'),
+        template: z.string().optional().describe('Template title from the Templates notebook'),
         notebook: z.string().optional().describe('Notebook name (defaults to Inbox)'),
       },
     },
-    async ({ content, notebook }) => {
-      const id = crypto.randomUUID();
-      const now = new Date().toISOString();
+    async ({ content, template, notebook }) => {
+      if (!allowWrites()) return denyWrites();
 
-      const titleMatch = content.match(/^#+ (.+)$/m);
-      const title = titleMatch?.[1]
-        ? titleMatch[1].trim()
-        : content.split('\n')[0]?.slice(0, 100) || 'Untitled';
-      const wordCount = content.split(/\s+/).filter(Boolean).length;
-
-      let notebookId = 'inbox';
-      if (notebook) {
-        const nb = queryOne(db, 'SELECT id FROM notebooks WHERE name = ? LIMIT 1', [notebook]);
-        if (nb) notebookId = nb.id as string;
+      let markdown = content ?? '';
+      if (template) {
+        const found = findTemplate(db, template);
+        if (!found) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Template "${template}" not found. Note was not created.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+        markdown = content ? applyTemplateFrontmatter(found.content, content) : found.content;
+      } else if (!content) {
+        return {
+          content: [{ type: 'text' as const, text: 'Provide content or a template name.' }],
+          isError: true,
+        };
       }
 
-      execute(
-        db,
-        `INSERT INTO notes (id, content, title, created_at, updated_at, word_count, notebook_id, status, needs_sync, local_version, sync_version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 1, 1, 0)`,
-        [id, content, title, now, now, wordCount, notebookId]
-      );
+      let notebookId: string | undefined;
+      if (notebook) {
+        const id = notes.findNotebookIdByName(notebook);
+        if (!id) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Notebook "${notebook}" not found. Note was not created.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+        notebookId = id;
+      }
+
+      const result = await createNoteOperation({ content: markdown, notebookId }, notes);
+      if (!result.ok) {
+        return {
+          content: [{ type: 'text' as const, text: 'Failed to create note.' }],
+          isError: true,
+        };
+      }
+      afterWrite();
 
       return {
-        content: [{ type: 'text' as const, text: `Note created: "${title}" (ID: ${id})` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Note created: "${result.data.title}" (ID: ${result.data.id})`,
+          },
+        ],
       };
     }
   );
@@ -199,7 +283,7 @@ function createServer(db: Database) {
   // ── Update note ─────────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_update_note',
+    'dripnex_update_note',
     {
       description: 'Update an existing note. Replaces the full content.',
       inputSchema: {
@@ -208,31 +292,24 @@ function createServer(db: Database) {
       },
     },
     async ({ id, content }) => {
-      const now = new Date().toISOString();
-      const titleMatch = content.match(/^#+ (.+)$/m);
-      const title = titleMatch?.[1]
-        ? titleMatch[1].trim()
-        : content.split('\n')[0]?.slice(0, 100) || 'Untitled';
-      const wordCount = content.split(/\s+/).filter(Boolean).length;
+      if (!allowWrites()) return denyWrites();
 
-      const changes = execute(
-        db,
-        'UPDATE notes SET content = ?, title = ?, updated_at = ?, word_count = ?, needs_sync = 1, local_version = local_version + 1 WHERE id = ?',
-        [content, title, now, wordCount, id]
-      );
-
-      if (changes === 0) {
+      const result = await updateNoteOperation({ id: createNoteId(id), content }, notes);
+      if (!result.ok) {
         return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
       }
+      afterWrite();
 
-      return { content: [{ type: 'text' as const, text: `Note updated: "${title}"` }] };
+      return {
+        content: [{ type: 'text' as const, text: `Note updated: "${result.data.title}"` }],
+      };
     }
   );
 
   // ── Search notes (FTS5) ──────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_search_notes',
+    'dripnex_search_notes',
     {
       description:
         'Full-text search across all notes using FTS5 with relevance ranking. Returns matching notes with snippets.',
@@ -276,9 +353,9 @@ function createServer(db: Database) {
   // ── List notebooks ──────────────────────────────────────────────────────
 
   server.registerTool(
-    'readied_list_notebooks',
+    'dripnex_list_notebooks',
     {
-      description: 'List all notebooks in Readied.',
+      description: 'List all notebooks in Dripnex.',
       inputSchema: {},
     },
     async () => {
@@ -299,10 +376,61 @@ function createServer(db: Database) {
     }
   );
 
-  // ── Trash note ──────────────────────────────────────────────────────────
+  server.registerTool(
+    'dripnex_list_templates',
+    {
+      description:
+        'List notes in the Templates notebook, including any instruction: frontmatter for agents.',
+      inputSchema: {},
+    },
+    async () => {
+      const templates = query(
+        db,
+        `SELECT id, title, content
+           FROM notes
+          WHERE notebook_id = 'templates' AND is_deleted = 0
+          ORDER BY title`
+      );
+      if (templates.length === 0) {
+        return { content: [{ type: 'text' as const, text: 'No templates found.' }] };
+      }
+      const text = templates
+        .map(t => {
+          const instruction = noteInstruction(String(t.content ?? ''));
+          const line = `- **${t.title}** — ID: ${t.id}`;
+          return instruction ? `${line}\n  instruction: ${instruction.replace(/\n/g, ' ')}` : line;
+        })
+        .join('\n');
+      return { content: [{ type: 'text' as const, text }] };
+    }
+  );
 
   server.registerTool(
-    'readied_trash_note',
+    'dripnex_list_tags',
+    {
+      description: 'List all tags in Dripnex with how many active notes use each.',
+      inputSchema: {},
+    },
+    async () => {
+      const tags = query(
+        db,
+        `SELECT t.name,
+                COUNT(DISTINCT CASE WHEN n.is_deleted = 0 THEN n.id END) as note_count
+         FROM tags t
+         LEFT JOIN note_tags nt ON nt.tag_id = t.id
+         LEFT JOIN notes n ON n.id = nt.note_id
+         GROUP BY t.id
+         ORDER BY t.name`
+      );
+
+      const text = tags.map(t => `- **${t.name}** (${t.note_count} notes)`).join('\n');
+
+      return { content: [{ type: 'text' as const, text: text || 'No tags found.' }] };
+    }
+  );
+
+  server.registerTool(
+    'dripnex_trash_note',
     {
       description: 'Move a note to trash (soft delete).',
       inputSchema: {
@@ -310,15 +438,13 @@ function createServer(db: Database) {
       },
     },
     async ({ id }) => {
-      const changes = execute(
-        db,
-        'UPDATE notes SET is_deleted = 1, updated_at = ?, needs_sync = 1 WHERE id = ?',
-        [new Date().toISOString(), id]
-      );
+      if (!allowWrites()) return denyWrites();
 
-      if (changes === 0) {
+      const result = await trashNoteOperation({ id: createNoteId(id) }, notes);
+      if (!result.ok) {
         return { content: [{ type: 'text' as const, text: 'Note not found.' }] };
       }
+      afterWrite();
 
       return { content: [{ type: 'text' as const, text: 'Note moved to trash.' }] };
     }
@@ -330,8 +456,9 @@ function createServer(db: Database) {
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
-  const db = openDb();
-  const server = createServer(db);
+  const dbPath = resolveDbPath();
+  const db = openDb(dbPath);
+  const server = createServer(db, { dbPath });
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

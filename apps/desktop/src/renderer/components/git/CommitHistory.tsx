@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw, Upload } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
+import { Button, Input } from '../../ui/primitives';
 import styles from './CommitHistory.module.css';
 
 interface GitCommitData {
@@ -28,16 +31,23 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
+  const [remoteUrl, setRemoteUrl] = useState('');
+  const [remoteBusy, setRemoteBusy] = useState(false);
+  const [remoteMessage, setRemoteMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void loadCommits();
+    void window.dripnex.git.remotes?.(notebookId).then(result => {
+      const origin = result.remotes?.find(remote => remote.remote === 'origin');
+      if (origin) setRemoteUrl(origin.url);
+    });
   }, [notebookId]);
 
   const loadCommits = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await window.readied.git.log(notebookId, 50);
+      const result = await window.dripnex.git.log(notebookId, 50);
       if (result.success && result.commits) {
         setCommits(result.commits);
       } else {
@@ -61,7 +71,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
       }
 
       try {
-        const result = await window.readied.git.checkout(notebookId, commitSha);
+        const result = await window.dripnex.git.checkout(notebookId, commitSha);
         if (result.success) {
           alert('Successfully reverted to commit!');
           onClose();
@@ -74,6 +84,27 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
     },
     [notebookId, onClose]
   );
+
+  const saveRemote = useCallback(async () => {
+    if (!window.dripnex.git.setRemote) return;
+    setRemoteBusy(true);
+    setRemoteMessage(null);
+    const result = await window.dripnex.git.setRemote(notebookId, remoteUrl);
+    setRemoteBusy(false);
+    setRemoteMessage(
+      result.success ? `Remote set to ${result.remote}` : (result.error ?? 'Failed')
+    );
+    if (result.success && result.remote) setRemoteUrl(result.remote);
+  }, [notebookId, remoteUrl]);
+
+  const pushRemote = useCallback(async () => {
+    if (!window.dripnex.git.push) return;
+    setRemoteBusy(true);
+    setRemoteMessage(null);
+    const result = await window.dripnex.git.push(notebookId);
+    setRemoteBusy(false);
+    setRemoteMessage(result.success ? 'Pushed to origin' : (result.error ?? 'Push failed'));
+  }, [notebookId]);
 
   const toggleCommit = useCallback((oid: string) => {
     setExpandedCommit(prev => (prev === oid ? null : oid));
@@ -104,12 +135,12 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
     return formatDate(timestamp);
   };
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <GitCommit size={20} />
+            <Icon icon={GitCommit} size={20} />
             <div>
               <h2 className={styles.title}>Commit History</h2>
               <p className={styles.subtitle}>{notebookName}</p>
@@ -119,6 +150,34 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
             ×
           </button>
         </div>
+
+        <div className={styles.remoteBar}>
+          <Input
+            size="sm"
+            value={remoteUrl}
+            onChange={event => setRemoteUrl(event.target.value)}
+            placeholder="https://github.com/you/notes"
+            aria-label="GitHub remote"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={remoteBusy}
+            onClick={() => void saveRemote()}
+          >
+            Set remote
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Icon icon={Upload} size={13} />}
+            loading={remoteBusy}
+            onClick={() => void pushRemote()}
+          >
+            Push
+          </Button>
+        </div>
+        {remoteMessage ? <p className={styles.remoteMsg}>{remoteMessage}</p> : null}
 
         <div className={styles.body}>
           {isLoading && (
@@ -137,7 +196,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
 
           {!isLoading && !error && commits.length === 0 && (
             <div className={styles.empty}>
-              <GitCommit size={48} />
+              <Icon icon={GitCommit} size={48} />
               <p>No commits yet</p>
               <span>Changes will appear here once you enable auto-commit or manually commit</span>
             </div>
@@ -154,17 +213,21 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
                         className={styles.expandBtn}
                         aria-label={isExpanded ? 'Collapse' : 'Expand'}
                       >
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        {isExpanded ? (
+                          <Icon icon={ChevronDown} size={16} />
+                        ) : (
+                          <Icon icon={ChevronRight} size={16} />
+                        )}
                       </button>
                       <div className={styles.commitMain}>
                         <p className={styles.commitMessage}>{commit.message}</p>
                         <div className={styles.commitMeta}>
                           <span className={styles.commitAuthor}>
-                            <User size={12} />
+                            <Icon icon={User} size={12} />
                             {commit.author.name}
                           </span>
                           <span className={styles.commitTime}>
-                            <Clock size={12} />
+                            <Icon icon={Clock} size={12} />
                             {formatRelativeTime(commit.author.timestamp)}
                           </span>
                         </div>
@@ -194,7 +257,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
                             className={styles.revertBtn}
                             onClick={() => handleCheckout(commit.oid, commit.message)}
                           >
-                            <RotateCcw size={14} />
+                            <Icon icon={RotateCcw} size={14} />
                             Revert to this commit
                           </button>
                         </div>
@@ -207,6 +270,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

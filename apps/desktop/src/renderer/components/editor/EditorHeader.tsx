@@ -1,8 +1,11 @@
 import { memo } from 'react';
 import type { NoteSnapshot, NoteStatus } from '../../../preload/index';
+import { kindFromTags, type NoteKind } from '../../lib/knowledge';
+import { KindDropdown } from './KindDropdown';
 import { NotebookSelector } from './NotebookSelector';
 import { StatusDropdown } from './StatusDropdown';
 import { TagsInput } from './TagsInput';
+import { sc } from './sc';
 
 interface EditorHeaderProps {
   readonly note: NoteSnapshot;
@@ -12,6 +15,7 @@ interface EditorHeaderProps {
   readonly onStatusChange: (status: NoteStatus) => void;
   readonly onAddTag: (tag: string) => void;
   readonly onRemoveTag: (tag: string) => void;
+  readonly onKindChange?: (kind: NoteKind) => void;
 }
 
 /**
@@ -28,10 +32,14 @@ export const EditorHeader = memo(function EditorHeader({
   onStatusChange,
   onAddTag,
   onRemoveTag,
+  onKindChange,
 }: EditorHeaderProps) {
+  const kind = kindFromTags(tags, note.status);
+
   return (
-    <div className="editor-header">
+    <div className={sc('editor-header')}>
       <NotebookSelector notebookId={note.notebookId} onMove={onMoveToNotebook} />
+      {onKindChange ? <KindDropdown kind={kind} onChange={onKindChange} /> : null}
       <StatusDropdown status={note.status} onStatusChange={onStatusChange} />
       <TagsInput
         tags={tags}

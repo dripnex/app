@@ -1,6 +1,6 @@
 # Automated Release Pipeline Design
 
-> Production-grade CI/CD for Readied desktop app with semantic versioning, two-stage builds, and electron auto-update.
+> Production-grade CI/CD for Dripnex desktop app with semantic versioning, two-stage builds, and electron auto-update.
 
 ## Goal
 
@@ -413,10 +413,10 @@ jobs:
           access-token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           access-token-secret: ${{ secrets.TWITTER_ACCESS_SECRET }}
           text: |
-            Readied ${{ steps.version.outputs.tag }} is out!
+            Dripnex ${{ steps.version.outputs.tag }} is out!
 
             https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}
-            #readied #markdown #devtools
+            #dripnex #markdown #devtools
 ```
 
 **Token usage:** `release.yml` and electron-builder dist steps use `secrets.GH_TOKEN` (a Personal Access Token) because: (1) semantic-release needs to push tags that trigger the build workflow — `GITHUB_TOKEN` cannot trigger other workflows, and (2) electron-builder needs write access to upload artifacts to the GitHub Release. The `publish` and `sync-develop` jobs use `secrets.GITHUB_TOKEN` (default) since they only need standard repo access.

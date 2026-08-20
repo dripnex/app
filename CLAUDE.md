@@ -1,4 +1,4 @@
-# Readied
+# Dripnex
 
 > Markdown-first, offline-forever desktop note app.
 
@@ -15,7 +15,6 @@
 ```
 apps/
   desktop/           # Electron app (main, preload, renderer)
-  web/               # Next.js marketing site + docs
 packages/
   ai-core/           # Provider-agnostic AI: streaming, LLM providers, context builder
   core/              # Domain logic + markdown parsing
@@ -25,7 +24,8 @@ packages/
   storage-sqlite/    # SQLite adapter (peerDep for better-sqlite3)
   licensing/         # License validation
   product-config/    # Product configuration
-  sync-core/         # Sync engine
+  sync-core/         # Sync contracts + notebook tree validation
+                     # Live sync is desktop SyncService, not this package
 ```
 
 ## Commands
@@ -73,7 +73,7 @@ Pattern for workspace packages with native deps:
 
 ## Type Version Alignment
 
-Each app manages its own `@types/react` version: `apps/desktop` uses React 18 types and `apps/web` uses React 19 types. Global overrides were removed to prevent cross-app type conflicts.
+`apps/desktop` pins `@types/react` to match its React version. Marketing and docs live in `dripnex/marketing` and `dripnex/docs-site`, not this repo.
 
 **If you see `'X' cannot be used as a JSX component` errors:** Check that each app's `package.json` pins `@types/react` to match its React version.
 
@@ -94,7 +94,7 @@ cd packages/storage-sqlite && pnpm rebuild better-sqlite3 && pnpm test
 1. `pnpm dev` — Run desktop in development mode
 2. `pnpm test` — Test before committing
 3. `pnpm typecheck` — Validate TypeScript
-4. `pnpm build && pnpm --filter @readied/desktop dist:mac` — Build for production
+4. `pnpm build && pnpm --filter @dripnex/desktop dist:mac` — Build for production
 
 ## Git Flow
 
@@ -312,7 +312,7 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 
 - `packages/ai-core/` — LLMProvider interface, ProviderRegistry, AnthropicProvider, ContextBuilder, AIService
 - `apps/desktop/src/main/ai/ipc-ai.ts` — IPC bridge, 50ms batched event streaming
-- `apps/desktop/src/preload/index.ts` — `window.readied.ai` API (chat, onEvent, cancel)
+- `apps/desktop/src/preload/index.ts` — `window.dripnex.ai` API (chat, onEvent, cancel)
 - `apps/desktop/src/renderer/components/ai/AiPanel.tsx` — Chat UI with streaming
 
 **Adding a new LLM provider:**
@@ -331,7 +331,7 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 
 - **No SDK dependencies in ai-core:** Providers use native `fetch` + SSE parsing
 - **Streaming only:** No request/response pattern — everything streams via `LLMEvent`
-- **Single panel instance:** Both Cmd+K and Sparkles button toggle the same AiPanel in App.tsx via CustomEvent (`readied:ai:toggle-panel`)
+- **Single panel instance:** Both Cmd+K and Sparkles button toggle the same AiPanel in App.tsx via CustomEvent (`dripnex:ai:toggle-panel`)
 - **Settings store is source of truth:** API key, model, and provider come from Zustand settings store (`selectAi` selector), not plugin config
 
 ## Documentation
@@ -339,5 +339,5 @@ Renderer (AiPanel) → IPC → Main (ipc-ai.ts) → AIService → ProviderRegist
 - **Architecture decisions:** `plan.md`
 - **Package docs:** `packages/*/README.md`
 - **Technical docs:** `apps/docs-site/`
-- **Live docs:** https://tomymaritano.github.io/readide/
-- **GitHub:** https://github.com/tomymaritano/readide
+- **Live docs:** https://dripnex.app/docs
+- **GitHub:** https://github.com/dripnex/readide

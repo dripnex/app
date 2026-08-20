@@ -8,7 +8,7 @@
  * - Unique constraint includes anchor to allow same target with different anchors
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addLinkAnchors: Migration = {
   version: 20260107000001,

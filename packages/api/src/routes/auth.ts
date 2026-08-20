@@ -11,6 +11,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, isNull } from 'drizzle-orm';
+import { getProductConfig, URLS } from '@dripnex/product-config';
 import { createDb, type Env } from '../db/client.js';
 import { users, magicLinks, devices, subscriptions } from '../db/schema.js';
 import { createTokens, verifyRefreshToken, authMiddleware } from '../middleware/auth.js';
@@ -51,12 +52,21 @@ auth.post('/magic-link', zValidator('json', magicLinkSchema), async c => {
     expiresAt,
   });
 
-  // Send email — desktop clients get a readied:// deep link URL
+  // Send email — ALWAYS link to the https web verify page, which is clickable
+  // in email clients and then hands off to the desktop app via the custom-
+  // scheme deep link (see dripnex/marketing .../auth/verify).
+  //
+  // A custom-scheme URL (dripnex://…) placed directly in an email is NOT
+  // clickable in most mail clients (Gmail, Apple Mail, Outlook strip or ignore
+  // non-http(s) hrefs), which left desktop users unable to click the link.
+  // The `client` param is forwarded so the web page can tailor its messaging.
   const emailService = createEmailService(c.env.RESEND_API_KEY);
-  const magicLinkUrl =
-    client === 'desktop'
-      ? `readied://auth/verify?token=${token}`
-      : `https://readied.app/auth/verify?token=${token}`;
+  // Apex dripnex.app is still a parking lander; marketing Pages is live.
+  // Switch to https://dripnex.app/auth/verify once the zone points at Pages.
+  const verifyOrigin = URLS.marketing;
+  const magicLinkUrl = `${verifyOrigin}/auth/verify?token=${token}&client=${encodeURIComponent(
+    client
+  )}`;
   const emailSent = await emailService.sendMagicLink(email, magicLinkUrl);
 
   if (!emailSent) {
@@ -80,27 +90,18 @@ auth.post('/verify', zValidator('json', verifySchema), async c => {
   const db = createDb(c.env);
 
   // Find valid magic link
+  const now = new Date().toISOString();
   const [link] = await db
-    .select()
-    .from(magicLinks)
+    .update(magicLinks)
+    .set({ usedAt: now })
     .where(
-      and(
-        eq(magicLinks.token, token),
-        gt(magicLinks.expiresAt, new Date().toISOString()),
-        isNull(magicLinks.usedAt)
-      )
+      and(eq(magicLinks.token, token), gt(magicLinks.expiresAt, now), isNull(magicLinks.usedAt))
     )
-    .limit(1);
+    .returning();
 
   if (!link) {
     return c.json({ error: 'Invalid or expired token' }, 400);
   }
-
-  // Mark as used
-  await db
-    .update(magicLinks)
-    .set({ usedAt: new Date().toISOString() })
-    .where(eq(magicLinks.id, link.id));
 
   // Get user
   const [user] = await db.select().from(users).where(eq(users.id, link.userId)).limit(1);
@@ -137,7 +138,7 @@ auth.post('/verify', zValidator('json', verifySchema), async c => {
     .limit(1);
 
   if (!existingSub) {
-    const trialDays = 14;
+    const trialDays = getProductConfig().trialDays;
     const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
     await db.insert(subscriptions).values({
       userId: user.id,

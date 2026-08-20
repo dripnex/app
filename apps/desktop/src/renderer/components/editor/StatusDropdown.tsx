@@ -1,18 +1,21 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { Circle, CircleDot, CheckCircle2, XCircle, ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import type { NoteStatus } from '../../../preload/index';
 import { useDropdownPosition } from '../../hooks/useDropdownPosition';
+import { StatusGlyph } from '../sidebar/StatusGlyph';
+import { sc } from './sc';
 
 interface StatusDropdownProps {
   readonly status: NoteStatus;
   readonly onStatusChange: (status: NoteStatus) => void;
 }
 
-const statusConfig: Record<NoteStatus, { label: string; icon: React.ReactNode }> = {
-  active: { label: 'Active', icon: <Circle size={14} /> },
-  on_hold: { label: 'On Hold', icon: <CircleDot size={14} /> },
-  completed: { label: 'Completed', icon: <CheckCircle2 size={14} /> },
-  dropped: { label: 'Dropped', icon: <XCircle size={14} /> },
+const statusConfig: Record<NoteStatus, { label: string }> = {
+  active: { label: 'Active' },
+  on_hold: { label: 'On Hold' },
+  completed: { label: 'Completed' },
+  dropped: { label: 'Dropped' },
 };
 
 const statuses: NoteStatus[] = ['active', 'on_hold', 'completed', 'dropped'];
@@ -57,26 +60,28 @@ export const StatusDropdown = memo(function StatusDropdown({
   };
 
   return (
-    <div className="editor-header-dropdown" ref={containerRef}>
+    <div className={sc('editor-header-dropdown')} ref={containerRef}>
       <button
         ref={triggerRef}
         type="button"
-        className="editor-header-dropdown-btn status-dropdown-btn"
+        className={sc('editor-header-dropdown-btn', 'status-dropdown-btn')}
         data-status={status}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-label={`Status: ${currentConfig.label}`}
       >
-        <span className="status-icon">{currentConfig.icon}</span>
+        <span className={sc('status-icon')}>
+          <StatusGlyph status={status} />
+        </span>
         <span>{currentConfig.label}</span>
-        <ChevronDown size={12} className="chevron-icon" />
+        <Icon icon={ChevronDown} size={12} className={sc('chevron-icon')} />
       </button>
 
       {isOpen && (
         <div
           ref={menuRef}
-          className="editor-header-menu"
+          className={sc('editor-header-menu')}
           role="menu"
           style={{
             top: menuPosition.top,
@@ -92,15 +97,17 @@ export const StatusDropdown = memo(function StatusDropdown({
                 key={s}
                 type="button"
                 role="menuitem"
-                className={`editor-header-menu-item ${s === status ? 'selected' : ''}`}
+                className={sc('editor-header-menu-item', s === status && 'selected')}
                 data-status={s}
                 onClick={() => handleSelect(s)}
               >
-                <span className="item-icon">{config.icon}</span>
-                <span className="item-label">{config.label}</span>
+                <span className={sc('item-icon')}>
+                  <StatusGlyph status={s} />
+                </span>
+                <span className={sc('item-label')}>{config.label}</span>
                 {s === status && (
-                  <span className="item-check">
-                    <Check size={14} />
+                  <span className={sc('item-check')}>
+                    <Icon icon={Check} size={14} />
                   </span>
                 )}
               </button>

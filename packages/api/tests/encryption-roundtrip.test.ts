@@ -30,7 +30,7 @@ describe('Encryption Round-Trip (AES-256-GCM)', () => {
   });
 
   it('encrypt then decrypt returns original plaintext', () => {
-    const plaintext = 'Hello, Readied!';
+    const plaintext = 'Hello, Dripnex!';
     const encrypted = encrypt(key, plaintext);
     const decrypted = decrypt(key, encrypted);
     expect(decrypted).toBe(plaintext);

@@ -15,7 +15,10 @@ describe('navigationStore', () => {
     // Reset store to initial state before each test
     useNavigationStore.setState({
       navigation: { kind: 'global', filter: 'all' },
+      workspaceRootId: null,
+      workspaceListAll: false,
       statusFilter: null,
+      tagFilter: null,
     });
   });
 
@@ -71,13 +74,19 @@ describe('navigationStore', () => {
       });
     });
 
-    it('goToTag sets navigation to tag view with name', () => {
+    it('goToTag sets the tag filter without leaving the current notebook', () => {
+      useNavigationStore.getState().goToNotebook('inbox');
       useNavigationStore.getState().goToTag('javascript');
 
-      expect(useNavigationStore.getState().navigation).toEqual({
-        kind: 'tag',
-        name: 'javascript',
-      });
+      const state = useNavigationStore.getState();
+      expect(state.navigation).toEqual({ kind: 'notebook', id: 'inbox' });
+      expect(state.tagFilter).toBe('javascript');
+    });
+
+    it('goToTag toggles the same tag off', () => {
+      useNavigationStore.getState().goToTag('javascript');
+      useNavigationStore.getState().goToTag('javascript');
+      expect(useNavigationStore.getState().tagFilter).toBeNull();
     });
 
     it('goToSearch sets navigation to search view with query', () => {
@@ -87,6 +96,33 @@ describe('navigationStore', () => {
         kind: 'search',
         query: 'test query',
       });
+    });
+
+    it('enterWorkspace focuses a notebook tree and keeps it when selecting a child', () => {
+      useNavigationStore.getState().enterWorkspace('work');
+      useNavigationStore.getState().goToNotebook('api');
+      const state = useNavigationStore.getState();
+      expect(state.workspaceRootId).toBe('work');
+      expect(state.navigation).toEqual({ kind: 'notebook', id: 'api' });
+      expect(state.workspaceListAll).toBe(false);
+    });
+
+    it('goToAllInCurrentContext lists the whole workspace tree', () => {
+      useNavigationStore.getState().enterWorkspace('work');
+      useNavigationStore.getState().goToNotebook('api');
+      useNavigationStore.getState().goToAllInCurrentContext();
+      const state = useNavigationStore.getState();
+      expect(state.workspaceRootId).toBe('work');
+      expect(state.workspaceListAll).toBe(true);
+      expect(state.navigation).toEqual({ kind: 'notebook', id: 'work' });
+    });
+
+    it('exitWorkspace returns to all notes', () => {
+      useNavigationStore.getState().enterWorkspace('work');
+      useNavigationStore.getState().exitWorkspace();
+      const state = useNavigationStore.getState();
+      expect(state.workspaceRootId).toBeNull();
+      expect(state.navigation).toEqual({ kind: 'global', filter: 'all' });
     });
 
     it('clearNavigation resets to default (global/all)', () => {

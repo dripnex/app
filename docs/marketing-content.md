@@ -1,4 +1,4 @@
-# Readied — Marketing Content
+# Dripnex — Marketing Content
 
 > Content and copy for the marketing site. Update this before the site.
 
@@ -33,13 +33,13 @@
 
 ---
 
-### Why Readied Exists
+### Why Dripnex Exists
 
 **Intro paragraph:**
 
 You've seen this before. You invest months into a note app. Then they pivot to AI. Or raise prices. Or shut down. Or break your export.
 
-Readied exists because we got tired of that cycle too.
+Dripnex exists because we got tired of that cycle too.
 
 ---
 
@@ -95,9 +95,9 @@ Three points:
 
 **Heading:** What we don't do (and why)
 
-**Intro:** Readied is not trying to be a platform. Platforms optimize for extensibility. We optimize for survivability.
+**Intro:** Dripnex is not trying to be a platform. Platforms optimize for extensibility. We optimize for survivability.
 
-| Feature          | Readied | Why not                                               |
+| Feature          | Dripnex | Why not                                               |
 | ---------------- | ------- | ----------------------------------------------------- |
 | Cloud sync       | No      | Servers die. Local files don't.                       |
 | Plugins          | No      | Plugin ecosystems break with updates.                 |
@@ -111,14 +111,14 @@ Three points:
 
 ### Who This Is For
 
-**Heading:** Readied is for people who:
+**Heading:** Dripnex is for people who:
 
 - Have exported "Markdown" from Notion and found it wasn't quite Markdown
 - Watched their favorite app pivot to enterprise features they don't need
 - Keep backups because they've learned not to trust sync
 - Want an app that works the same way in 10 years
 
-**Closing:** If that sounds excessive, you may not need Readied yet. If it sounds familiar, you already know why it exists.
+**Closing:** If that sounds excessive, you may not need Dripnex yet. If it sounds familiar, you already know why it exists.
 
 ---
 
@@ -140,7 +140,7 @@ Three points:
 - Privacy Policy
 - Terms of Service
 
-**Copyright:** "© 2025 Readied."
+**Copyright:** "© 2025 Dripnex."
 
 ---
 
@@ -152,7 +152,7 @@ Three points:
 
 Most note apps lock your data behind subscriptions. Stop paying? Lose access. We believe that's wrong.
 
-Readied is free forever for core features. Pro unlocks sync and advanced capabilities.
+Dripnex is free forever for core features. Pro unlocks sync and advanced capabilities.
 
 ---
 
@@ -212,11 +212,11 @@ Readied is free forever for core features. Pro unlocks sync and advanced capabil
 
 ### FAQ
 
-**Q: What if you stop developing Readied?**
+**Q: What if you stop developing Dripnex?**
 A: Your app keeps working. Your files are standard Markdown. Nothing depends on us existing. Free tier works forever.
 
 **Q: Why not open source?**
-A: Open source note apps struggle to sustain development. This model lets us work on Readied full-time without VC pressure.
+A: Open source note apps struggle to sustain development. This model lets us work on Dripnex full-time without VC pressure.
 
 **Q: Can I cancel my Pro subscription?**
 A: Yes, cancel anytime. You keep your notes (they're local files). You revert to Free tier features.
@@ -238,13 +238,13 @@ A: Both. Apple Silicon, Intel Mac, and Windows x64.
 
 **macOS:**
 
-- Apple Silicon (M1/M2/M3) — `Readied-x.x.x-arm64.dmg`
-- Intel — `Readied-x.x.x-x64.dmg`
+- Apple Silicon (M1/M2/M3) — `Dripnex-x.x.x-arm64.dmg`
+- Intel — `Dripnex-x.x.x-x64.dmg`
 - Requires macOS 11+
 
 **Windows:**
 
-- Windows 10/11 (x64) — `Readied-x.x.x-win-x64.exe`
+- Windows 10/11 (x64) — `Dripnex-x.x.x-win-x64.exe`
 - Portable version available (no install required)
 
 ---
@@ -265,9 +265,9 @@ A: Both. Apple Silicon, Intel Mac, and Windows x64.
 Each release includes SHA256 checksums:
 
 ```
-SHA256 (Readied-x.x.x-arm64.dmg) = abc123...
-SHA256 (Readied-x.x.x-x64.dmg) = def456...
-SHA256 (Readied-x.x.x-win-x64.exe) = ghi789...
+SHA256 (Dripnex-x.x.x-arm64.dmg) = abc123...
+SHA256 (Dripnex-x.x.x-x64.dmg) = def456...
+SHA256 (Dripnex-x.x.x-win-x64.exe) = ghi789...
 ```
 
 **Source inspection:** Code is available on GitHub for security review.
@@ -303,26 +303,26 @@ Pull automatically from GitHub Releases API.
 
 ### Page Titles
 
-- Landing: "Readied — Your notes survive the app"
-- Pricing: "Pricing — Readied"
-- Download: "Download — Readied"
-- Changelog: "Changelog — Readied"
+- Landing: "Dripnex — Your notes survive the app"
+- Pricing: "Pricing — Dripnex"
+- Download: "Download — Dripnex"
+- Changelog: "Changelog — Dripnex"
 
 ### Meta Description
 
-> Readied is a Markdown editor for people who don't trust note apps. No cloud. No subscription. No lock-in. Your files, your machine, forever.
+> Dripnex is a Markdown editor for people who don't trust note apps. No cloud. No subscription. No lock-in. Your files, your machine, forever.
 
 ### Open Graph
 
 - Image: App screenshot (editor view, not marketing graphics)
 - Type: website
-- Site name: Readied
+- Site name: Dripnex
 
 ---
 
 ## Messaging Principles
 
-**Core thesis:** Readied is an app that refuses to outgrow its purpose.
+**Core thesis:** Dripnex is an app that refuses to outgrow its purpose.
 
 Every section should read as a consequence of that principle.
 

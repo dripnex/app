@@ -1,4 +1,4 @@
-# @readied/licensing
+# @dripnex/licensing
 
 License and subscription verification helpers.
 
@@ -27,7 +27,7 @@ The signature is computed over `canonicalJson(payload)` — a deterministic, sor
 ### Server side (signing)
 
 ```ts
-import { signSubscriptionPayload } from '@readied/licensing';
+import { signSubscriptionPayload } from '@dripnex/licensing';
 
 const envelope = await signSubscriptionPayload(
   {
@@ -48,7 +48,7 @@ return envelope;
 ### Client side (verification)
 
 ```ts
-import { verifySubscriptionSignature } from '@readied/licensing';
+import { verifySubscriptionSignature } from '@dripnex/licensing';
 
 const result = await verifySubscriptionSignature(envelope, {
   publicKey: SUBSCRIPTION_PUBLIC_KEY, // embedded in the desktop

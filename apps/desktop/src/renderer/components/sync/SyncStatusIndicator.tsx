@@ -6,7 +6,8 @@
  */
 
 import { useState } from 'react';
-import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, CheckCircle, AlertCircle, AlertTriangle } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import {
   useSyncStore,
   selectStatus,
@@ -23,57 +24,52 @@ export function SyncStatusIndicator() {
   const hasConflicts = useSyncStore(selectHasConflicts);
   const conflicts = useSyncStore(selectConflicts);
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const openConflictScreen = useSyncStore(state => state.openConflictScreen);
   const [showTooltip, setShowTooltip] = useState(false);
 
   const getStatusInfo = () => {
     if (!isAuthenticated) {
       return {
-        icon: <CloudOff size={14} />,
+        icon: CloudOff,
         label: 'Not signed in',
         className: styles.statusMuted,
+        spinning: false,
       };
     }
-
-    // Conflicts take priority over idle state
     if (hasConflicts && status !== 'syncing') {
       return {
-        icon: <AlertTriangle size={14} />,
-        label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — resolve in Settings`,
+        icon: AlertTriangle,
+        label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — Review`,
         className: styles.statusWarning,
+        spinning: false,
       };
     }
-
     switch (status) {
       case 'syncing':
         return {
-          icon: <RefreshCw size={14} className={styles.spinning} />,
+          icon: RefreshCw,
           label: 'Syncing...',
           className: styles.statusSyncing,
+          spinning: true,
         };
       case 'idle':
         return {
-          icon: <CheckCircle size={14} />,
+          icon: CheckCircle,
           label: lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync',
           className: styles.statusSuccess,
+          spinning: false,
         };
       case 'error':
         return {
-          icon: <AlertCircle size={14} />,
+          icon: AlertCircle,
           label: 'Sync failed',
           className: styles.statusError,
+          spinning: false,
         };
       case 'offline':
-        return {
-          icon: <CloudOff size={14} />,
-          label: 'Offline',
-          className: styles.statusMuted,
-        };
+        return { icon: CloudOff, label: 'Offline', className: styles.statusMuted, spinning: false };
       default:
-        return {
-          icon: <Cloud size={14} />,
-          label: 'Unknown',
-          className: styles.statusMuted,
-        };
+        return { icon: Cloud, label: 'Unknown', className: styles.statusMuted, spinning: false };
     }
   };
 
@@ -91,15 +87,30 @@ export function SyncStatusIndicator() {
     return `${days}d ago`;
   };
 
-  const { icon, label, className } = getStatusInfo();
+  const { icon, label, className, spinning } = getStatusInfo();
 
   return (
     <div
       className={`${styles.container} ${className}`}
+      role={hasConflicts ? 'button' : undefined}
+      tabIndex={hasConflicts ? 0 : undefined}
+      aria-label={hasConflicts ? label : undefined}
+      onClick={() => {
+        if (hasConflicts) openConflictScreen();
+      }}
+      onKeyDown={event => {
+        if (!hasConflicts) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openConflictScreen();
+        }
+      }}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div className={styles.icon}>{icon}</div>
+      <div className={styles.icon}>
+        <Icon icon={icon} size={14} className={spinning ? styles.spinning : undefined} />
+      </div>
       {showTooltip && <div className={styles.tooltip}>{label}</div>}
     </div>
   );

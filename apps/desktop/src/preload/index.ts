@@ -6,7 +6,6 @@
  */
 
 import { contextBridge } from 'electron';
-
 import {
   createNotesApi,
   createNotebooksApi,
@@ -32,9 +31,10 @@ import {
   createWindowsApi,
   createShareApi,
   createEditorApi,
+  createClipboardApi,
   createLocalServerApi,
+  createIntegrationsApi,
 } from './api';
-
 import type {
   NotesAPI,
   NotebooksAPI,
@@ -60,7 +60,9 @@ import type {
   WindowsAPI,
   ShareAPI,
   EditorAPI,
+  ClipboardAPI,
   LocalServerAPI,
+  IntegrationsAPI,
 } from './api';
 
 // Re-export all types so the renderer can still import from '../preload/index'
@@ -74,6 +76,7 @@ export type {
   NotebookTree,
   ListOptions,
   NoteCounts,
+  NoteScopedCounts,
   BackupInfo,
   BackupResult,
   ExportResult,
@@ -102,7 +105,7 @@ export type {
 } from './api/types';
 
 /** The API exposed to the renderer */
-export interface ReadiedAPI {
+export interface DripnexAPI {
   notes: NotesAPI;
   notebooks: NotebooksAPI;
   data: DataAPI;
@@ -127,11 +130,13 @@ export interface ReadiedAPI {
   theme: ThemeAPI;
   plugins: PluginsAPI;
   editor: EditorAPI;
+  clipboard: ClipboardAPI;
   localServer: LocalServerAPI;
+  integrations: IntegrationsAPI;
 }
 
 // Compose and expose the API
-const api: ReadiedAPI = {
+const api: DripnexAPI = {
   notes: createNotesApi(),
   notebooks: createNotebooksApi(),
   data: createDataApi(),
@@ -156,14 +161,16 @@ const api: ReadiedAPI = {
   theme: createThemeApi(),
   plugins: createPluginsApi(),
   editor: createEditorApi(),
+  clipboard: createClipboardApi(),
   localServer: createLocalServerApi(),
+  integrations: createIntegrationsApi(),
 };
 
-contextBridge.exposeInMainWorld('readied', api);
+contextBridge.exposeInMainWorld('dripnex', api);
 
 // Type augmentation for window
 declare global {
   interface Window {
-    readied: ReadiedAPI;
+    dripnex: DripnexAPI;
   }
 }

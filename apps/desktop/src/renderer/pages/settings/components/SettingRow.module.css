@@ -2,36 +2,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 1rem;
-  gap: 1.5rem;
-  transition: background 0.1s ease;
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-2) var(--space-4);
+  flex-wrap: wrap;
 }
 
-.row:hover {
-  background: var(--bg-active, rgba(255, 255, 255, 0.02));
+.flush {
+  padding-left: 0;
+  padding-right: 0;
 }
 
-.info {
-  flex: 1;
+.info,
+.labelContainer {
+  flex: 1 1 220px;
   min-width: 0;
 }
 
 .label {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
   color: var(--text-primary);
   cursor: default;
 }
 
 .description {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  line-height: 1.4;
   margin-top: 2px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
 }
 
 .control {
-  flex-shrink: 0;
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  max-width: 100%;
 }

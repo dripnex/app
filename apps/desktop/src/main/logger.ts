@@ -28,7 +28,7 @@ export function initLogger(config: LoggerConfig): Logger {
   const { logsDir, level, isDevelopment } = config;
 
   const baseConfig = {
-    app: 'readied',
+    app: 'dripnex',
     version: app.getVersion(),
     pid: process.pid,
   };
@@ -48,7 +48,7 @@ export function initLogger(config: LoggerConfig): Logger {
       mkdirSync(logsDir, { recursive: true });
     }
 
-    const logFile = join(logsDir, `readied-${new Date().toISOString().split('T')[0]}.log`);
+    const logFile = join(logsDir, `dripnex-${new Date().toISOString().split('T')[0]}.log`);
     const stream = createWriteStream(logFile, { flags: 'a' });
 
     logger = pino(

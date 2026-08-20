@@ -25,7 +25,7 @@ Project maintainers may remove, edit, or reject comments, commits, code, issues,
 
 ## Reporting
 
-Report issues to: hello@readied.app
+Report issues to: hello@dripnex.app
 
 ## Attribution
 

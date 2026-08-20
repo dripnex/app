@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { extractEmbedTargets } from '@readied/embeds';
+import { scanMarkdown } from '@dripnex/markdown';
 
 interface UseEmbedResolverOptions {
   noteId: string | null;
@@ -32,7 +32,7 @@ export function useEmbedResolver({
       return;
     }
 
-    const targets = extractEmbedTargets(content);
+    const targets = scanMarkdown(content).embedTargets;
     if (targets.length === 0) {
       setResolvedEmbeds({});
       return;
@@ -51,7 +51,7 @@ export function useEmbedResolver({
     const currentNoteId = noteId;
 
     let cancelled = false;
-    window.readied.embeds
+    window.dripnex.embeds
       .resolveBatch(localTargets, currentNoteId)
       .then(result => {
         if (!cancelled) setResolvedEmbeds(result);

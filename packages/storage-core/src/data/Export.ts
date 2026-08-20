@@ -37,6 +37,10 @@ export interface ExportNoteMetadata {
   archivedAt: string | null;
   tags: string[];
   wordCount: number;
+  notebookId?: string;
+  isPinned?: boolean;
+  isDeleted?: boolean;
+  status?: string;
 }
 
 export interface ExportOptions {
@@ -58,6 +62,10 @@ export interface ExportResult {
 /**
  * Generate a safe filename from note title.
  */
+function yamlQuote(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
 function safeFilename(title: string, id: string): string {
   // Sanitize title: remove special chars, limit length
   const sanitized = title
@@ -82,19 +90,26 @@ function prependFrontmatter(note: NoteSnapshot): string {
     return note.content;
   }
 
-  const escapedTitle = note.title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  const tagsYaml = note.tags.length > 0 ? `tags: [${note.tags.join(', ')}]` : 'tags: []';
+  const escapedTitle = yamlQuote(note.title);
+  const tagsYaml =
+    note.tags.length > 0 ? `tags: [${note.tags.map(yamlQuote).join(', ')}]` : 'tags: []';
 
   const frontmatter = [
     '---',
-    `id: "${note.id}"`,
-    `title: "${escapedTitle}"`,
+    `id: ${yamlQuote(note.id)}`,
+    `title: ${escapedTitle}`,
     `created: ${note.createdAt}`,
     `updated: ${note.updatedAt}`,
     tagsYaml,
+    note.notebookId ? `notebook: ${yamlQuote(note.notebookId)}` : null,
+    note.status ? `status: ${note.status}` : null,
+    note.isPinned != null ? `pinned: ${note.isPinned}` : null,
+    note.isDeleted != null ? `deleted: ${note.isDeleted}` : null,
     '---',
     '',
-  ].join('\n');
+  ]
+    .filter((line): line is string => line !== null)
+    .join('\n');
 
   return frontmatter + note.content;
 }
@@ -143,8 +158,12 @@ export function exportNotes(notes: NoteSnapshot[], options: ExportOptions): Expo
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
         archivedAt: note.archivedAt,
-        tags: note.tags,
+        tags: [...note.tags],
         wordCount: note.wordCount,
+        notebookId: note.notebookId,
+        isPinned: note.isPinned,
+        isDeleted: note.isDeleted,
+        status: note.status,
       });
     }
 

@@ -433,7 +433,7 @@ git commit -m "feat(api): add notebook sync pull/push endpoints with tree valida
  * Also adds unique constraint to sync_queue to prevent duplicates.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const notebookSyncTracking: Migration = {
   version: 20260311000001,
@@ -770,8 +770,8 @@ Update imports and constructor to accept `SQLiteNotebookRepository`:
 
 ```typescript
 // Add to imports
-import type { SQLiteNotebookRepository } from '@readied/storage-sqlite';
-import { createNotebookId } from '@readied/core';
+import type { SQLiteNotebookRepository } from '@dripnex/storage-sqlite';
+import { createNotebookId } from '@dripnex/core';
 ```
 
 Add to constructor:
@@ -1352,7 +1352,7 @@ Update `packages/sync-core/tests/treeValidation.test.ts` to import from `'../src
 In `packages/api/src/routes/sync.ts`, replace the inline `validateNotebookTree` with:
 
 ```typescript
-import { validateNotebookTree } from '@readied/sync-core';
+import { validateNotebookTree } from '@dripnex/sync-core';
 ```
 
 **Step 5: Run all tests**

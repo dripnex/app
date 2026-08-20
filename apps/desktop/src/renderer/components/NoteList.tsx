@@ -1,38 +1,61 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Sparkles,
   Archive,
   Search,
+  Filter,
   X,
-  Check,
   SquarePen,
-  ArrowUpDown,
+  FileStack,
+  Files,
+  PanelLeft,
+  PanelLeftClose,
+  Plus,
   Pin,
   PinOff,
   Globe,
-} from 'lucide-react';
-import { LayoutZone } from '@readied/plugin-api';
+} from 'lucide';
+import { LayoutZone } from '@dripnex/plugin-api';
+import { Icon } from '../ui/icons/Icon';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
-import { useNavigationStore } from '../stores/navigationStore';
+import type { NoteStatus } from '../../preload/index';
 import { formatRelativeTime } from '../utils/date';
 import { useTagColorsStore } from '../stores/tagColorsStore';
 import { useShareStore, selectIsShared } from '../stores/shareStore';
+import { kindFromTags, kindMeta } from '../lib/knowledge';
+import { cssm } from '../lib/cssm';
+import { dispatchCommand } from '../hooks/useCommandRegistry';
+import { IconButton } from '../ui/primitives';
+import { noteListNavDirection } from '../utils/noteListKeys';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
-import { NoteListFilterBar, FilterToggleButton } from './NoteListFilterBar';
+import { TemplatePicker } from './TemplatePicker/TemplatePicker';
+import styles from './NoteList.module.css';
+
+const sc = cssm(styles);
+
+const STATUS_LABEL: Record<NoteStatus, string> = {
+  active: 'Active',
+  on_hold: 'On Hold',
+  completed: 'Completed',
+  dropped: 'Dropped',
+};
 
 interface NoteListProps {
   notes: NoteWithExcerpt[];
   selectedId: string | null;
   selectedNotebookId: string | null;
   selectedTag: string | null;
+  selectedStatus: NoteStatus | null;
   selectedQuickFilter: QuickFilterType | null;
   sortBy: SortBy;
   sortOrder: SortOrder;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onRestoreDeleted: (id: string) => void;
+  onPermanentDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onDuplicate: (id: string) => void;
   onPin: (id: string) => void;
@@ -40,48 +63,43 @@ interface NoteListProps {
   onSearch: (query: string) => void;
   onNewNote: () => void;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
+  onCreateFromTemplate?: (noteId: string) => void;
   onTagClick: (tag: string) => void;
+  onToggleSidebar?: () => void;
+  sidebarCollapsed?: boolean;
   isLoading: boolean;
 }
 
 /** Loading skeleton for note list */
 function NoteListSkeleton() {
   return (
-    <div className="note-list-skeleton" aria-hidden="true">
+    <div className={sc('note-list-skeleton')} aria-hidden="true">
       {[1, 2, 3, 4].map(i => (
-        <div key={i} className="skeleton-item">
-          <div className="skeleton-title" />
-          <div className="skeleton-meta" />
-          <div className="skeleton-preview" />
+        <div key={i} className={sc('skeleton-item')}>
+          <div className={sc('skeleton-title')} />
+          <div className={sc('skeleton-meta')} />
+          <div className={sc('skeleton-preview')} />
         </div>
       ))}
     </div>
   );
 }
 
-/** Sort options configuration */
-const SORT_OPTIONS: Array<{ value: SortBy; label: string; order: SortOrder }> = [
-  { value: 'updatedAt', label: 'Last Updated', order: 'desc' },
-  { value: 'createdAt', label: 'Date Created', order: 'desc' },
-  { value: 'title', label: 'Title A-Z', order: 'asc' },
-  { value: 'title', label: 'Title Z-A', order: 'desc' },
-];
-
 /** Empty state with icon and context-aware messaging */
 function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-results' }) {
   const content = {
     'no-notes': {
-      icon: <Sparkles size={32} />,
+      icon: <Icon icon={Sparkles} size={32} />,
       title: 'No notes yet',
       hint: 'Press ⌘N to create your first note',
     },
     'no-archived': {
-      icon: <Archive size={32} />,
-      title: 'No archived notes',
-      hint: 'Archived notes will appear here',
+      icon: <Icon icon={Archive} size={32} />,
+      title: 'Trash is empty',
+      hint: 'Deleted notes will appear here',
     },
     'no-results': {
-      icon: <Search size={32} />,
+      icon: <Icon icon={Search} size={32} />,
       title: 'No matches found',
       hint: 'Try a different search term',
     },
@@ -90,12 +108,12 @@ function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-res
   const { icon, title, hint } = content[variant];
 
   return (
-    <div className="note-list-empty" role="status" aria-live="polite">
-      <span className="empty-icon" aria-hidden="true">
+    <div className={sc('note-list-empty')} role="status" aria-live="polite">
+      <span className={sc('empty-icon')} aria-hidden="true">
         {icon}
       </span>
-      <p className="empty-title">{title}</p>
-      <p className="empty-hint">{hint}</p>
+      <p className={sc('empty-title')}>{title}</p>
+      <p className={sc('empty-hint')}>{hint}</p>
     </div>
   );
 }
@@ -106,6 +124,7 @@ interface ContextMenuState {
   notebookId: string | null;
   isArchived: boolean;
   isPinned: boolean;
+  isDeleted: boolean;
   x: number;
   y: number;
 }
@@ -121,34 +140,50 @@ export function NoteList({
   selectedId,
   selectedNotebookId,
   selectedTag,
+  selectedStatus,
   selectedQuickFilter,
-  sortBy,
-  sortOrder,
+  sortBy: _sortBy,
+  sortOrder: _sortOrder,
   onSelect,
   onDelete,
+  onRestoreDeleted,
+  onPermanentDelete,
   onArchive,
   onDuplicate,
   onPin,
   onMove,
   onSearch,
   onNewNote,
-  onSortChange,
+  onSortChange: _onSortChange,
+  onCreateFromTemplate,
   onTagClick,
+  onToggleSidebar,
+  sidebarCollapsed,
   isLoading,
 }: NoteListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [showFilterBar, setShowFilterBar] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [notebookPicker, setNotebookPicker] = useState<NotebookPickerState | null>(null);
-  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const { data: notebooks = [] } = useNotebookList();
   const { data: notebook } = useNotebook(selectedNotebookId);
+  const listItemsRef = useRef<HTMLUListElement | null>(null);
 
-  // Count active filters for the badge
-  const statusFilter = useNavigationStore(s => s.statusFilter);
-  const tagFilter = useNavigationStore(s => s.tagFilter);
-  const activeFilterCount = (statusFilter ? 1 : 0) + (tagFilter ? 1 : 0);
+  useEffect(() => {
+    const selected = listItemsRef.current?.querySelector('[aria-selected="true"]');
+    selected?.scrollIntoView({ block: 'nearest' });
+  }, [selectedId]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const direction = noteListNavDirection(event);
+      if (!direction) return;
+      event.preventDefault();
+      void dispatchCommand(direction === 1 ? 'app:next-note' : 'app:prev-note');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // Handler to open notebook picker from context menu
   const handleOpenNotebookPicker = useCallback(
@@ -208,6 +243,7 @@ export function NoteList({
       notebookId: note.notebookId,
       isArchived: note.isArchived,
       isPinned: note.isPinned,
+      isDeleted: note.isDeleted,
       x: e.clientX,
       y: e.clientY,
     });
@@ -217,111 +253,70 @@ export function NoteList({
   const getHeaderTitle = () => {
     if (selectedQuickFilter === 'pinned') return 'Pinned';
     if (selectedQuickFilter === 'trash') return 'Trash';
-    if (selectedTag) return `#${selectedTag}`;
+    if (selectedStatus === 'active') return 'Active';
+    if (selectedStatus === 'on_hold') return 'On Hold';
+    if (selectedStatus === 'completed') return 'Completed';
+    if (selectedStatus === 'dropped') return 'Dropped';
+    if (selectedTag) return selectedTag;
     if (selectedNotebookId && notebook) return notebook.name;
     return 'All Notes';
   };
 
-  // Close sort dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target as Node)) {
-        setShowSortDropdown(false);
-      }
-    };
-
-    if (showSortDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showSortDropdown]);
-
-  // Check if a sort option is active
-  const isSortActive = (option: (typeof SORT_OPTIONS)[number]) => {
-    return sortBy === option.value && sortOrder === option.order;
-  };
+  const selectedIndex = selectedId ? notes.findIndex(n => n.id === selectedId) : -1;
+  const listPosition =
+    selectedIndex >= 0 ? `${selectedIndex + 1} of ${notes.length}` : `${notes.length}`;
 
   return (
-    <nav className="note-list" aria-label="Notes navigation">
+    <nav className={sc('note-list')} aria-label="Notes navigation" data-note-list>
       {/* Header Toolbar */}
-      <div className="note-list-header">
-        <div className="sort-btn-container" ref={sortDropdownRef}>
-          <button
-            type="button"
-            className="header-btn"
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-            aria-label="Sort notes"
-            aria-expanded={showSortDropdown}
-            aria-haspopup="menu"
+      <div className={sc('note-list-header')}>
+        {onToggleSidebar ? (
+          <IconButton
+            label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+            pressed={!sidebarCollapsed}
+            onClick={onToggleSidebar}
           >
-            <ArrowUpDown size={16} aria-hidden="true" />
-          </button>
-          {showSortDropdown && (
-            <div className="sort-dropdown" role="menu">
-              {SORT_OPTIONS.map((option, index) => (
-                <button
-                  key={`${option.value}-${option.order}-${index}`}
-                  type="button"
-                  role="menuitem"
-                  className={`sort-option ${isSortActive(option) ? 'active' : ''}`}
-                  onClick={() => {
-                    onSortChange(option.value, option.order);
-                    setShowSortDropdown(false);
-                  }}
-                >
-                  <span>{option.label}</span>
-                  {isSortActive(option) && (
-                    <span className="check-icon">
-                      <Check size={14} />
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <span className="header-title">{getHeaderTitle()}</span>
-        <button
-          type="button"
-          className="header-btn"
-          onClick={onNewNote}
-          aria-label="Create new note"
-        >
-          <SquarePen size={16} aria-hidden="true" />
-        </button>
+            <Icon icon={sidebarCollapsed ? PanelLeft : PanelLeftClose} size={16} />
+          </IconButton>
+        ) : null}
+        <span className={sc('header-title')}>{getHeaderTitle()}</span>
+        <LayoutZone name="note-list-header" />
+        {onCreateFromTemplate && selectedNotebookId !== 'templates' ? (
+          <IconButton label="New from template" onClick={() => setTemplatePickerOpen(true)}>
+            <Icon icon={FileStack} hoverIcon={Files} size={16} />
+          </IconButton>
+        ) : null}
+        <IconButton label="Create new note" onClick={onNewNote}>
+          <Icon icon={SquarePen} hoverIcon={Plus} size={16} />
+        </IconButton>
       </div>
 
       {/* Search bar with icon + filter toggle */}
-      <div className="note-list-search">
-        <div className="search-input-wrapper">
-          <Search size={14} className="search-icon" aria-hidden="true" />
+      <div className={sc('note-list-search')}>
+        <div className={sc('search-input-wrapper')}>
+          <Icon icon={Filter} hoverIcon={Search} size={14} className={sc('search-icon')} />
           <label htmlFor="note-search" className="visually-hidden">
-            Search notes
+            Filter notes
           </label>
           <input
             id="note-search"
             type="search"
-            placeholder="Search"
+            placeholder="Filter"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="search-input"
+            className={sc('search-input')}
             aria-describedby={searchQuery ? 'search-status' : undefined}
           />
           {searchQuery && (
             <button
-              className="search-clear"
+              className={sc('search-clear')}
               onClick={clearSearch}
-              aria-label="Clear search"
+              aria-label="Clear filter"
               type="button"
             >
-              <X size={14} />
+              <Icon icon={X} size={14} />
             </button>
           )}
-          <FilterToggleButton
-            isOpen={showFilterBar}
-            activeCount={activeFilterCount}
-            onClick={() => setShowFilterBar(prev => !prev)}
-          />
         </div>
         {searchQuery && (
           <span id="search-status" className="visually-hidden">
@@ -330,19 +325,20 @@ export function NoteList({
         )}
       </div>
 
-      {/* Collapsible filter bar */}
-      {showFilterBar && (
-        <NoteListFilterBar sortBy={sortBy} sortOrder={sortOrder} onSortChange={onSortChange} />
-      )}
-
       {/* Note list content */}
-      <div className="note-list-content" aria-busy={isLoading}>
+      <div className={sc('note-list-content')} aria-busy={isLoading}>
         {isLoading ? (
           <NoteListSkeleton />
         ) : notes.length === 0 ? (
           <EmptyState variant={getEmptyVariant()} />
         ) : (
-          <ul className="note-list-items" role="listbox" aria-label="Notes">
+          <ul
+            ref={listItemsRef}
+            className={sc('note-list-items')}
+            role="listbox"
+            aria-label="Notes"
+            aria-activedescendant={selectedId ? `note-${selectedId}` : undefined}
+          >
             {notes.map((note, index) => (
               <NoteListItem
                 key={note.id}
@@ -365,18 +361,24 @@ export function NoteList({
           currentNotebookId={contextMenu.notebookId}
           isArchived={contextMenu.isArchived}
           isPinned={contextMenu.isPinned}
+          isDeleted={contextMenu.isDeleted}
           position={{ x: contextMenu.x, y: contextMenu.y }}
           onClose={() => setContextMenu(null)}
           onPin={onPin}
           onDuplicate={onDuplicate}
           onArchive={onArchive}
           onDelete={onDelete}
+          onRestoreDeleted={onRestoreDeleted}
+          onPermanentDelete={onPermanentDelete}
           onOpenPicker={handleOpenNotebookPicker}
+          onCreateFromTemplate={onCreateFromTemplate}
         />
       )}
 
-      {/* Plugin Note List Footer */}
-      <LayoutZone name="note-list-footer" />
+      <div className={sc('note-list-status')}>
+        {notes.length > 0 ? <span className={sc('note-list-count')}>{listPosition}</span> : null}
+        <LayoutZone name="note-list-footer" />
+      </div>
 
       {/* Notebook picker modal */}
       {notebookPicker && (
@@ -387,6 +389,13 @@ export function NoteList({
           onClose={() => setNotebookPicker(null)}
         />
       )}
+
+      {templatePickerOpen && onCreateFromTemplate ? (
+        <TemplatePicker
+          onSelect={onCreateFromTemplate}
+          onClose={() => setTemplatePickerOpen(false)}
+        />
+      ) : null}
     </nav>
   );
 }
@@ -410,6 +419,11 @@ function NoteListItem({
 }: NoteListItemProps) {
   const getColor = useTagColorsStore(state => state.getColor);
   const isShared = useShareStore(selectIsShared(note.id));
+  const kind = kindMeta(kindFromTags(note.tags, note.status));
+  const tasks = {
+    total: note.taskCount ?? 0,
+    completed: note.checkedTaskCount ?? 0,
+  };
   const [showUnpinEffect, setShowUnpinEffect] = useState(false);
   const prevPinnedRef = useRef(note.isPinned);
 
@@ -425,9 +439,10 @@ function NoteListItem({
 
   return (
     <li
+      id={`note-${note.id}`}
       role="option"
       aria-selected={isSelected}
-      className={`note-list-item ${isSelected ? 'selected' : ''}`}
+      className={sc('note-list-item', isSelected && 'selected')}
       style={{ '--item-index': Math.min(index, 10) } as React.CSSProperties}
       onClick={() => onSelect(note.id)}
       onContextMenu={e => onContextMenu(e, note)}
@@ -439,23 +454,40 @@ function NoteListItem({
       }}
       tabIndex={0}
     >
-      <div className="note-list-item-title">
-        {note.isPinned && <Pin size={12} className="pin-icon" aria-label="Pinned" />}
-        {showUnpinEffect && <PinOff size={12} className="unpin-icon" aria-hidden="true" />}
-        {isShared && <Globe size={12} className="share-icon" aria-label="Shared" />}
+      <div className={sc('note-list-item-title')}>
+        <span className={sc('kind-dot')} style={{ background: kind.color }} title={kind.label} />
+        {note.isPinned && (
+          <Icon icon={Pin} size={12} className={sc('pin-icon')} aria-label="Pinned" />
+        )}
+        {showUnpinEffect && (
+          <Icon icon={PinOff} size={12} className={sc('unpin-icon')} aria-hidden="true" />
+        )}
+        {isShared && (
+          <Icon icon={Globe} size={12} className={sc('share-icon')} aria-label="Shared" />
+        )}
         {note.title || 'Untitled'}
       </div>
-      <div className="note-list-item-meta">
-        <span className="timestamp">{formatRelativeTime(note.updatedAt)}</span>
+      <div className={sc('note-list-item-meta')}>
+        <span className={sc('timestamp')}>{formatRelativeTime(note.updatedAt)}</span>
+        {note.status !== 'active' ? (
+          <span className={sc('status-chip', `status-chip--${note.status}`)}>
+            {STATUS_LABEL[note.status]}
+          </span>
+        ) : null}
+        {tasks.total > 0 ? (
+          <span className={sc('task-progress')}>
+            {tasks.completed} of {tasks.total}
+          </span>
+        ) : null}
         {note.tags.length > 0 && (
-          <span className="tags">
+          <span className={sc('tags')}>
             {note.tags.slice(0, 2).map(tag => {
               const color = getColor(tag);
               return (
                 <button
                   key={tag}
                   type="button"
-                  className="tag-badge tag-badge-clickable"
+                  className={sc('tag-badge', 'tag-badge-clickable')}
                   onClick={e => {
                     e.stopPropagation();
                     onTagClick(tag);
@@ -463,7 +495,7 @@ function NoteListItem({
                 >
                   {color && (
                     <span
-                      className="tag-badge-dot"
+                      className={sc('tag-badge-dot')}
                       style={{ backgroundColor: color }}
                       aria-hidden="true"
                     />
@@ -474,8 +506,12 @@ function NoteListItem({
             })}
           </span>
         )}
+        <LayoutZone
+          name="note-list-item-suffix"
+          meta={{ noteId: note.id, title: note.title, notebookId: note.notebookId }}
+        />
       </div>
-      {note.excerpt && <div className="note-list-item-preview">{note.excerpt}</div>}
+      {note.excerpt && <div className={sc('note-list-item-preview')}>{note.excerpt}</div>}
     </li>
   );
 }

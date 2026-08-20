@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createNote, createNoteId } from '@readied/core';
+import { createNote, createNoteId, createNotebookId } from '@dripnex/core';
 import { InMemoryNoteRepository } from '../src/repositories/InMemoryNoteRepository.js';
 
 describe('InMemoryNoteRepository', () => {
@@ -31,6 +31,28 @@ describe('InMemoryNoteRepository', () => {
 
       await repository.delete(note.id);
       expect(repository.size()).toBe(0);
+    });
+
+    it('finds a live note by title', async () => {
+      const note = createNote({ content: '# Graph Target' });
+      await repository.save(note);
+      const found = await repository.findByTitle('graph target');
+      expect(found?.id).toBe(note.id);
+    });
+
+    it('builds a graph from recorded links', async () => {
+      const a = createNote({ content: '# Alpha' });
+      const b = createNote({ content: '# Beta' });
+      await repository.save(a);
+      await repository.save(b);
+      repository.addLink(a.id, 'Beta');
+
+      const graph = repository.getGraphData();
+      expect(graph.nodes).toHaveLength(2);
+      expect(graph.edges).toEqual([{ source: a.id, target: b.id }]);
+      expect(repository.getBacklinks(b.id)).toEqual([
+        { noteId: a.id, noteTitle: a.title, targetRef: 'Beta' },
+      ]);
     });
 
     it('updates an existing note', async () => {
@@ -71,6 +93,69 @@ describe('InMemoryNoteRepository', () => {
     it('respects offset', async () => {
       const notes = await repository.list({ offset: 1, limit: 10 });
       expect(notes.length).toBe(2);
+    });
+
+    it('filters by notebookId, status, pin, and tags AND', async () => {
+      const nbA = createNotebookId('nb-a');
+      const nbB = createNotebookId('nb-b');
+
+      await repository.save(
+        createNote({
+          id: createNoteId('a1'),
+          notebookId: nbA,
+          content: '# A1 #work #shared',
+          status: 'completed',
+          isPinned: true,
+        })
+      );
+      await repository.save(
+        createNote({
+          id: createNoteId('a2'),
+          notebookId: nbA,
+          content: '# A2 #work',
+          isDeleted: true,
+        })
+      );
+      await repository.save(
+        createNote({
+          id: createNoteId('b1'),
+          notebookId: nbB,
+          content: '# B1 #work #shared',
+        })
+      );
+
+      const byNotebook = await repository.list({ notebookId: nbA, archived: 'all' });
+      expect(byNotebook.map(n => n.id).sort()).toEqual(['a1', 'a2']);
+
+      const byNotebooks = await repository.list({
+        notebookIds: [nbA, nbB],
+        archived: 'all',
+        isDeleted: false,
+      });
+      expect(byNotebooks.map(n => n.id).sort()).toEqual(['a1', 'b1']);
+
+      const emptyIds = await repository.list({
+        notebookIds: [],
+        notebookId: nbA,
+        archived: 'all',
+      });
+      expect(emptyIds).toEqual([]);
+
+      const excluded = await repository.list({ excludeNotebookIds: [nbA], archived: 'all' });
+      expect(excluded.every(n => n.notebookId !== nbA)).toBe(true);
+      expect(excluded.some(n => n.id === 'b1')).toBe(true);
+
+      const pinned = await repository.list({ isPinned: true, archived: 'all' });
+      expect(pinned.map(n => n.id)).toEqual(['a1']);
+
+      const completed = await repository.list({ status: 'completed', archived: 'all' });
+      expect(completed.map(n => n.id)).toEqual(['a1']);
+
+      const andTags = await repository.list({ tags: ['work', 'shared'], archived: 'all' });
+      expect(andTags.map(n => n.id).sort()).toEqual(['a1', 'b1']);
+
+      const deleted = await repository.list({ isDeleted: true, archived: 'all' });
+      expect(deleted.map(n => n.id)).toEqual(['a2']);
     });
   });
 

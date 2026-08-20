@@ -28,7 +28,7 @@ Create `packages/storage-sqlite/src/migrations/017_sync_history.ts`:
  * Adds a local table for tracking sync cycle metrics and debugging.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const syncHistory: Migration = {
   version: 20260311000004,
@@ -73,7 +73,7 @@ export const migrations: Migration[] = [
 
 **Step 3: Verify build**
 
-Run: `pnpm --filter @readied/storage-sqlite build`
+Run: `pnpm --filter @dripnex/storage-sqlite build`
 Expected: No errors
 
 **Step 4: Commit**
@@ -221,7 +221,7 @@ Make sure `SyncHistoryEntry` is exported from the package's public API (check `p
 
 **Step 4: Verify build**
 
-Run: `pnpm --filter @readied/storage-sqlite build`
+Run: `pnpm --filter @dripnex/storage-sqlite build`
 
 **Step 5: Commit**
 
@@ -284,7 +284,7 @@ return json as T;
 
 **Step 3: Verify build**
 
-Run: `pnpm --filter @readied/desktop build` (or just typecheck)
+Run: `pnpm --filter @dripnex/desktop build` (or just typecheck)
 
 **Step 4: Commit**
 
@@ -434,7 +434,7 @@ ipcMain.handle('sync:history', async (_event, limit?: number) => {
 
 In `apps/desktop/src/preload/index.ts`:
 
-Add type in `ReadiedAPI` interface, inside the `sync:` section (after line 547):
+Add type in `DripnexAPI` interface, inside the `sync:` section (after line 547):
 
 ```typescript
 /** Get sync history */
@@ -608,7 +608,7 @@ const [syncHistory, setSyncHistory] = useState<
 
 const loadSyncHistory = useCallback(async () => {
   try {
-    const result = await window.readied.sync.history(10);
+    const result = await window.dripnex.sync.history(10);
     if (result.success) {
       setSyncHistory(result.history);
     }

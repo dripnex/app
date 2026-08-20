@@ -144,9 +144,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          gh pr create \
-            --base develop \
-            --head main \
-            --title "chore: sync release $TAG_NAME back to develop" \
-            --body "Auto sync of release commit and changelog." \
-            --repo "$GITHUB_REPOSITORY" || echo "PR already exists or cannot be created"
+          set -euo pipefail
+          if ! pr_count="$(gh pr list --base develop --head main --repo "$GITHUB_REPOSITORY" --json number --jq 'length')"; then
+            echo "::error::Unable to check for an existing sync PR."
+            exit 1
+          fi
+          if [ "$pr_count" -eq 0 ]; then
+            gh pr create \
+              --base develop \
+              --head main \
+              --title "chore: sync release $TAG_NAME back to develop" \
+              --body "Auto sync of release commit and changelog." \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            echo "Sync PR already open; nothing to create."
+          fi

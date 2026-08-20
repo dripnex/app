@@ -100,7 +100,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['electron', 'better-sqlite3', '@readied/storage-sqlite'],
+              group: ['electron', 'better-sqlite3', '@dripnex/storage-sqlite'],
               message: 'Core package must remain pure. No Electron or native dependencies.',
             },
           ],
@@ -140,6 +140,20 @@ export default tseslint.config(
     files: ['**/*.config.js', '**/*.config.ts', '**/*.config.mjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+
+  {
+    files: ['**/scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
     },
   }
 );

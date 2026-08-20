@@ -6,7 +6,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractWikilinks, extractWikilinkTargets } from '../src/core/parsing.js';
+import {
+  extractWikilinks,
+  extractWikilinkTargets,
+  findWikilinkSpans,
+  parseWikilinkAt,
+} from '../src/core/parsing.js';
 
 describe('extractWikilinks', () => {
   it('extracts simple [[target]] wikilink', () => {
@@ -78,9 +83,29 @@ describe('extractWikilinks', () => {
     expect(result).toEqual([{ target: 'Valid' }]);
   });
 
+  it('extracts same-note heading links', () => {
+    expect(extractWikilinks('Jump [[#Setup]]')).toEqual([{ target: '', anchor: 'Setup' }]);
+    expect(extractWikilinkTargets('Jump [[#Setup]] and [[Note A]]')).toEqual(['Note A']);
+  });
+
   it('handles consecutive wikilinks without space', () => {
     const result = extractWikilinks('[[A]][[B]][[C]]');
     expect(result).toEqual([{ target: 'A' }, { target: 'B' }, { target: 'C' }]);
+  });
+
+  it('does not treat embeds ![[file]] as wikilinks', () => {
+    const result = extractWikilinks('See [[Note A]] and ![[photo.png]]');
+    expect(result).toEqual([{ target: 'Note A' }]);
+  });
+
+  it('ignores wikilinks inside fenced and inline code', () => {
+    const result = extractWikilinks('[[Real]]\n```\n[[Fake]]\n```\nand `[[also-fake]]`');
+    expect(result).toEqual([{ target: 'Real' }]);
+  });
+
+  it('ignores wikilinks inside tilde fences', () => {
+    const result = extractWikilinks('[[Real]]\n~~~\n[[Fake]]\n~~~');
+    expect(result).toEqual([{ target: 'Real' }]);
   });
 });
 
@@ -98,5 +123,46 @@ describe('extractWikilinkTargets', () => {
   it('deduplicates targets', () => {
     const result = extractWikilinkTargets('[[Note]] and [[Note]] again');
     expect(result).toEqual(['Note']);
+  });
+});
+
+describe('parseWikilinkAt', () => {
+  it('finds target, heading, and alias at a cursor', () => {
+    const line = 'See [[Note A#Setup|here]] now';
+    expect(parseWikilinkAt(line, 6)).toEqual({
+      target: 'Note A',
+      anchor: 'Setup',
+      display: 'here',
+    });
+    expect(parseWikilinkAt(line, 0)).toBeNull();
+    expect(parseWikilinkAt('Jump [[#Setup]]', 8)).toEqual({ target: '', anchor: 'Setup' });
+  });
+
+  it('includes the opening and closing brackets', () => {
+    const line = '[[Note]]';
+    expect(parseWikilinkAt(line, 0)).toEqual({ target: 'Note' });
+    expect(parseWikilinkAt(line, line.length)).toEqual({ target: 'Note' });
+  });
+
+  it('picks the span that contains the cursor', () => {
+    const line = '[[A]] then [[B#H|x]]';
+    expect(parseWikilinkAt(line, 2)).toEqual({ target: 'A' });
+    expect(parseWikilinkAt(line, 12)).toEqual({ target: 'B', anchor: 'H', display: 'x' });
+  });
+
+  it('rejects empty and incomplete tokens', () => {
+    expect(parseWikilinkAt('[[]]', 1)).toBeNull();
+    expect(parseWikilinkAt('[[#]]', 1)).toBeNull();
+    expect(parseWikilinkAt('[[Note', 2)).toBeNull();
+  });
+});
+
+describe('findWikilinkSpans', () => {
+  it('returns start/end and the parsed ref', () => {
+    const text = 'See [[A#H|x]] and [[#Setup]]';
+    expect(findWikilinkSpans(text)).toEqual([
+      { start: 4, end: 13, ref: { target: 'A', anchor: 'H', display: 'x' } },
+      { start: 18, end: 28, ref: { target: '', anchor: 'Setup' } },
+    ]);
   });
 });

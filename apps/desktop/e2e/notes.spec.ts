@@ -5,7 +5,7 @@ import { launchApp } from './fixtures.js';
  * Notes CRUD end-to-end.
  *
  * We exercise the IPC contract directly through the preload bridge
- * (`window.readied.notes`) rather than driving the editor UI. This is
+ * (`window.dripnex.notes`) rather than driving the editor UI. This is
  * intentional:
  *   - The UI elements (selectors, labels, hotkeys) churn often. Asserting
  *     against the IPC surface gives us regression coverage on the
@@ -24,7 +24,7 @@ test.describe('notes IPC contract', () => {
         async ([id, body]) => {
           const api = (
             window as unknown as {
-              readied: {
+              dripnex: {
                 notes: {
                   create: (input: {
                     id?: string;
@@ -38,7 +38,7 @@ test.describe('notes IPC contract', () => {
                 };
               };
             }
-          ).readied;
+          ).dripnex;
           const created = await api.notes.create({ id, content: body });
           return { created };
         },
@@ -51,13 +51,13 @@ test.describe('notes IPC contract', () => {
         async () =>
           (
             window as unknown as {
-              readied: {
+              dripnex: {
                 notes: {
                   list: () => Promise<Array<{ id: string; title: string; content: string }>>;
                 };
               };
             }
-          ).readied.notes.list(),
+          ).dripnex.notes.list(),
         undefined
       );
 
@@ -77,11 +77,11 @@ test.describe('notes IPC contract', () => {
         async ([body]) => {
           const api = (
             window as unknown as {
-              readied: {
+              dripnex: {
                 notes: { create: (input: { content: string }) => Promise<unknown> };
               };
             }
-          ).readied;
+          ).dripnex;
           await api.notes.create({ content: `# Searchable\n\n${body}` });
         },
         [marker] as const
@@ -91,7 +91,7 @@ test.describe('notes IPC contract', () => {
         async ([q]) =>
           (
             window as unknown as {
-              readied: {
+              dripnex: {
                 notes: {
                   search: (
                     query: string,
@@ -100,7 +100,7 @@ test.describe('notes IPC contract', () => {
                 };
               };
             }
-          ).readied.notes.search(q, 10),
+          ).dripnex.notes.search(q, 10),
         [marker] as const
       );
 

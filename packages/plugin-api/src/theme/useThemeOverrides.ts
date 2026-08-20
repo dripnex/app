@@ -1,8 +1,9 @@
+/// <reference lib="dom" />
 /**
  * useThemeOverrides Hook
  *
  * Applies active theme tokens from ThemeRegistry to document.documentElement.
- * Call once in app root, AFTER useAppearanceSettings.
+ * Call once in app root. Appearance may overlay --accent after this.
  */
 
 import { useEffect, useSyncExternalStore } from 'react';
@@ -29,24 +30,26 @@ export function useThemeOverrides(): void {
     const applied = new Set<string>();
 
     if (theme) {
-      // Set plugin theme color scheme on data-theme (separate from data-color-scheme)
-      root.setAttribute('data-theme', theme.colorScheme);
+      root.setAttribute('data-theme', theme.id);
+      root.setAttribute('data-color-scheme', theme.colorScheme);
+      root.style.colorScheme = theme.colorScheme;
+      if (theme.frosted) root.setAttribute('data-frosted', 'true');
+      else root.removeAttribute('data-frosted');
 
-      // Apply theme tokens
       for (const [prop, value] of Object.entries(theme.tokens)) {
         root.style.setProperty(prop, value);
         applied.add(prop);
       }
     } else {
-      // No active plugin theme — remove the attribute so it doesn't conflict
       root.removeAttribute('data-theme');
+      root.removeAttribute('data-frosted');
     }
 
     return () => {
-      // Remove applied properties so base tokens take over
       for (const prop of applied) {
         root.style.removeProperty(prop);
       }
+      root.removeAttribute('data-frosted');
     };
   }, [activeThemeId, themes]);
 }

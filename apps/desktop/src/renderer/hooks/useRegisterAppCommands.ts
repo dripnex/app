@@ -1,15 +1,37 @@
 import { useEffect, useRef } from 'react';
-import { appCommands } from '@readied/command-registry/definitions';
+import { appCommands } from '@dripnex/command-registry/definitions';
 import { registry } from './useCommandRegistry';
 
 interface AppCommandHandlers {
+  onOpenNote: (noteId: string, heading?: string) => void;
   onNewNote: () => void;
   onDuplicateNote: () => void;
   onFocusSearch: () => void;
+  onFindInNote: () => void;
   onCycleViewMode: () => void;
+  onTogglePreview: () => void;
+  onToggleSplit: () => void;
+  onNextNote: () => void;
+  onPrevNote: () => void;
+  onSaveNote: () => void;
+  onToggleOutline: () => void;
   onToggleGraph: () => void;
   onOpenSettings: () => void;
   onCommandPalette: () => void;
+  onQuickOpen: () => void;
+  onJumpNotebook: () => void;
+  onJumpTag: () => void;
+  onJumpHeading: () => void;
+  onCopyWikilink: () => void;
+  onOpenNowBoard: () => void;
+  onOpenInitScript: () => void;
+  onOpenUserStyles: () => void;
+  onOpenKeymap: () => void;
+  onReloadPlugins: () => void;
+  onNoteBack: () => void;
+  onNoteForward: () => void;
+  onToggleZen: () => void;
+  onOpenInWindow: () => void;
 }
 
 /**
@@ -21,14 +43,40 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
   handlersRef.current = handlers;
 
   useEffect(() => {
-    const executors: Record<string, () => void> = {
+    const executors: Record<string, (payload?: Record<string, unknown>) => void> = {
+      'app:open-note': payload => {
+        const noteId = typeof payload?.noteId === 'string' ? payload.noteId : null;
+        const heading = typeof payload?.heading === 'string' ? payload.heading : undefined;
+        if (noteId) handlersRef.current.onOpenNote(noteId, heading);
+      },
       'app:new-note': () => handlersRef.current.onNewNote(),
       'app:duplicate-note': () => handlersRef.current.onDuplicateNote(),
       'app:focus-search': () => handlersRef.current.onFocusSearch(),
+      'app:find-in-note': () => handlersRef.current.onFindInNote(),
       'app:cycle-view-mode': () => handlersRef.current.onCycleViewMode(),
+      'app:toggle-preview': () => handlersRef.current.onTogglePreview(),
+      'app:toggle-split': () => handlersRef.current.onToggleSplit(),
+      'app:next-note': () => handlersRef.current.onNextNote(),
+      'app:prev-note': () => handlersRef.current.onPrevNote(),
+      'app:save-note': () => handlersRef.current.onSaveNote(),
+      'app:toggle-outline': () => handlersRef.current.onToggleOutline(),
       'app:toggle-graph': () => handlersRef.current.onToggleGraph(),
       'app:open-settings': () => handlersRef.current.onOpenSettings(),
       'app:command-palette': () => handlersRef.current.onCommandPalette(),
+      'app:quick-open': () => handlersRef.current.onQuickOpen(),
+      'app:jump-notebook': () => handlersRef.current.onJumpNotebook(),
+      'app:jump-tag': () => handlersRef.current.onJumpTag(),
+      'app:jump-heading': () => handlersRef.current.onJumpHeading(),
+      'app:copy-wikilink': () => handlersRef.current.onCopyWikilink(),
+      'app:open-now-board': () => handlersRef.current.onOpenNowBoard(),
+      'app:open-init-script': () => handlersRef.current.onOpenInitScript(),
+      'app:open-user-styles': () => handlersRef.current.onOpenUserStyles(),
+      'app:open-keymap': () => handlersRef.current.onOpenKeymap(),
+      'app:reload-plugins': () => handlersRef.current.onReloadPlugins(),
+      'app:note-back': () => handlersRef.current.onNoteBack(),
+      'app:note-forward': () => handlersRef.current.onNoteForward(),
+      'app:toggle-zen': () => handlersRef.current.onToggleZen(),
+      'app:open-in-window': () => handlersRef.current.onOpenInWindow(),
     };
 
     const unregisters: Array<() => void> = [];
@@ -38,8 +86,8 @@ export function useRegisterAppCommands(handlers: AppCommandHandlers): void {
       if (executor) {
         const unregister = registry.register({
           ...def,
-          execute: () => {
-            executor();
+          execute: payload => {
+            executor(payload);
             return true;
           },
         });

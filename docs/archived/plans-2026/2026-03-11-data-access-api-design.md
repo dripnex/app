@@ -17,7 +17,7 @@ Plugin code
   → context.data.getNotes({ tag: 'x', sortBy: 'updatedAt' })
     → createDataAPI() — options handling, error wrapping, event dispatch
       → DataAPIBridge — thin 1:1 mapping to IPC
-        → window.readied.notes.list({ tag: 'x', sortBy: 'updatedAt' })
+        → window.dripnex.notes.list({ tag: 'x', sortBy: 'updatedAt' })
           → ipcRenderer.invoke('notes:list', ...)
             → SQLiteNoteRepository.list(...)
 ```

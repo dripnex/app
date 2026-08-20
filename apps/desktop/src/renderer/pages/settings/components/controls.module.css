@@ -1,52 +1,3 @@
-/* Toggle (Checkbox) */
-.toggle {
-  width: 40px;
-  height: 22px;
-  cursor: pointer;
-  appearance: none;
-  background: var(--bg-inset, var(--bg-hover));
-  border-radius: 11px;
-  position: relative;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1.5px solid var(--border);
-  flex-shrink: 0;
-}
-
-.toggle:hover {
-  border-color: var(--border-hover);
-}
-
-.toggle:checked {
-  background: var(--accent-primary, var(--accent));
-  border-color: var(--accent-primary, var(--accent));
-}
-
-.toggle:checked:hover {
-  opacity: 0.9;
-}
-
-.toggle::before {
-  content: '';
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: white;
-  top: 1.5px;
-  left: 1.5px;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.toggle:checked::before {
-  transform: translateX(18px);
-}
-
-.toggle:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 /* Number Input */
 .numberInput {
   width: 80px;
@@ -71,29 +22,10 @@
   cursor: not-allowed;
 }
 
-/* Text Input */
+/* Settings rows keep a readable control width */
 .textInput {
-  width: 100%;
-  max-width: 280px;
-  padding: 0.375rem 0.625rem;
-  background: var(--bg-base);
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  color: var(--text-primary);
-  font-size: 0.8125rem;
-  font-family: inherit;
-  transition: border-color 0.15s ease;
-}
-
-.textInput:focus {
-  outline: none;
-  border-color: var(--accent-primary, var(--accent));
-  box-shadow: 0 0 0 2px var(--accent-muted, rgba(99, 102, 241, 0.15));
-}
-
-.textInput:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  width: 220px;
+  max-width: 100%;
 }
 
 /* Range Input (Slider) */
@@ -112,6 +44,11 @@
   background: var(--border);
   border-radius: 2px;
   border: none;
+}
+
+.rangeSlider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .rangeSlider::-webkit-slider-thumb {

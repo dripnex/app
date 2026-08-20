@@ -1,29 +1,36 @@
 import { useCallback, useMemo } from 'react';
 import { useNotebookTree, useNotebookMutations, getAncestorIds } from '../../hooks/useNotebooks';
 import type { NotebookTreeNode } from '../../../preload/index';
+import { findNotebookNode } from '../../utils/notebookTree';
 import { NotebookItem } from './NotebookItem';
+import { sc } from './sc';
 
 interface NotebookListProps {
   readonly selectedNotebookId: string | null;
   readonly onSelectNotebook: (id: string) => void;
+  readonly onEnterWorkspace?: (id: string) => void;
+  readonly onDeletedNotebook?: (id: string) => void;
   readonly filterParentId?: string | null;
+  /** Show this notebook and its descendants as the forest root. */
+  readonly workspaceRootId?: string | null;
   /** Request to create a child notebook */
   readonly onRequestCreateChild: (parentId: string) => void;
+  readonly nameFilter?: string;
 }
 
 function NotebookListSkeleton() {
   return (
-    <div className="notebook-list-skeleton" aria-busy="true">
-      <div className="skeleton-item" />
-      <div className="skeleton-item" />
-      <div className="skeleton-item" />
+    <div className={sc('notebook-list-skeleton')} aria-busy="true">
+      <div className={sc('skeleton-item')} />
+      <div className={sc('skeleton-item')} />
+      <div className={sc('skeleton-item')} />
     </div>
   );
 }
 
 function NotebookListEmpty() {
   return (
-    <div className="notebook-list-empty">
+    <div className={sc('notebook-list-empty')}>
       <p>No notebooks yet</p>
     </div>
   );
@@ -31,7 +38,7 @@ function NotebookListEmpty() {
 
 function NotebookListError({ message }: { message: string }) {
   return (
-    <div className="notebook-list-error" role="alert">
+    <div className={sc('notebook-list-error')} role="alert">
       <p>Error loading notebooks: {message}</p>
     </div>
   );
@@ -46,11 +53,16 @@ function NotebookListError({ message }: { message: string }) {
 export function NotebookList({
   selectedNotebookId,
   onSelectNotebook,
+  onEnterWorkspace,
+  onDeletedNotebook,
   filterParentId,
+  workspaceRootId,
   onRequestCreateChild,
+  nameFilter = '',
 }: NotebookListProps) {
   const { data: tree, isLoading, error } = useNotebookTree();
-  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks } = useNotebookMutations();
+  const { renameNotebook, deleteNotebook, moveNotebook, reorderNotebooks, setNotebookIcon } =
+    useNotebookMutations();
 
   // Calculate ancestor IDs for breadcrumb-style highlighting
   const ancestorIds = useMemo(
@@ -60,7 +72,12 @@ export function NotebookList({
 
   // Filter tree to show only children of filterParentId when in contextual mode
   const displayedTree = useMemo(() => {
-    if (!filterParentId || !tree) return tree ?? [];
+    if (!tree) return [];
+    if (workspaceRootId) {
+      const root = findNotebookNode(tree, workspaceRootId);
+      return root ? [root] : [];
+    }
+    if (!filterParentId) return tree;
 
     function findChildren(nodes: NotebookTreeNode[]): NotebookTreeNode[] {
       for (const node of nodes) {
@@ -73,10 +90,33 @@ export function NotebookList({
       return [];
     }
     return findChildren(tree);
-  }, [tree, filterParentId]);
+  }, [tree, filterParentId, workspaceRootId]);
+
+  const filteredTree = useMemo(() => {
+    const q = nameFilter.trim().toLowerCase();
+    if (!q) return displayedTree;
+
+    function match(nodes: NotebookTreeNode[]): NotebookTreeNode[] {
+      const next: NotebookTreeNode[] = [];
+      for (const node of nodes) {
+        const children = match(node.children);
+        if (node.notebook.name.toLowerCase().includes(q) || children.length > 0) {
+          next.push({ ...node, children });
+        }
+      }
+      return next;
+    }
+
+    return match(displayedTree);
+  }, [displayedTree, nameFilter]);
+
+  const visibleTree = useMemo(
+    () => filteredTree.filter(node => node.notebook.id !== 'templates'),
+    [filteredTree]
+  );
 
   // Sibling IDs at the root level (for reorder)
-  const rootSiblingIds = useMemo(() => displayedTree.map(n => n.notebook.id), [displayedTree]);
+  const rootSiblingIds = useMemo(() => visibleTree.map(n => n.notebook.id), [visibleTree]);
 
   const handleRename = useCallback(
     async (id: string, name: string) => {
@@ -85,14 +125,19 @@ export function NotebookList({
     [renameNotebook]
   );
 
+  const handleSetIcon = useCallback(
+    async (id: string, icon: string | null) => {
+      await setNotebookIcon.mutateAsync({ id, icon });
+    },
+    [setNotebookIcon]
+  );
+
   const handleDelete = useCallback(
     async (id: string) => {
       await deleteNotebook.mutateAsync(id);
-      if (selectedNotebookId === id) {
-        onSelectNotebook('inbox');
-      }
+      onDeletedNotebook?.(id);
     },
-    [deleteNotebook, selectedNotebookId, onSelectNotebook]
+    [deleteNotebook, onDeletedNotebook]
   );
 
   const handleMove = useCallback(
@@ -125,9 +170,9 @@ export function NotebookList({
   }
 
   return (
-    <div className="notebook-list">
-      <ul className="notebook-list-tree" role="tree" aria-label="Notebooks">
-        {displayedTree.map(node => (
+    <div className={sc('notebook-list')}>
+      <ul className={sc('notebook-list-tree')} role="tree" aria-label="Notebooks">
+        {visibleTree.map(node => (
           <NotebookItem
             key={node.notebook.id}
             node={node}
@@ -137,9 +182,11 @@ export function NotebookList({
             ancestorIds={ancestorIds}
             selectedNotebookId={selectedNotebookId}
             onSelect={onSelectNotebook}
+            onEnterWorkspace={onEnterWorkspace}
             onRename={handleRename}
             onDelete={handleDelete}
             onCreateChild={onRequestCreateChild}
+            onSetIcon={handleSetIcon}
             onMove={handleMove}
             onReorder={handleReorder}
             siblingIds={rootSiblingIds}

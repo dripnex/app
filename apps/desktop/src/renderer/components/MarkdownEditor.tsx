@@ -2,7 +2,15 @@
  * CodeMirror 6 Markdown Editor
  */
 
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from 'react';
 import { EditorState, EditorSelection, type Extension, Compartment } from '@codemirror/state';
 import {
   EditorView,
@@ -13,10 +21,18 @@ import {
   drawSelection,
 } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { indentUnit } from '@codemirror/language';
+import { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { syntaxHighlighting, indentOnInput, bracketMatching } from '@codemirror/language';
+import {
+  indentUnit,
+  syntaxHighlighting,
+  indentOnInput,
+  bracketMatching,
+  foldGutter,
+  foldKeymap,
+  codeFolding,
+} from '@codemirror/language';
 import {
   toggleBold,
   toggleItalic,
@@ -32,20 +48,41 @@ import {
   insertHorizontalRule,
   undoChange,
   redoChange,
-} from '@readied/commands';
+  isBareHttpUrl,
+  isInsideMarkdownLink,
+  wrapSelectionWithUrl,
+  continueMarkupKeymap,
+  editorLineKeymap,
+  listIndentKeymap,
+} from '@dripnex/commands';
 import {
-  wikilinkExtension,
+  createWikilinkHighlighter,
+  wikilinkClickHandler,
+  wikilinkHoverHandler,
   createWikilinkAutocomplete,
   setCurrentNoteId,
   currentNoteIdField,
-} from '@readied/wikilinks';
-import { embedInlinePreview } from '@readied/embeds/codemirror';
-import { pluginExtensionCompartment, editorPluginStore } from '@readied/plugin-api';
+} from '@dripnex/wikilinks';
+import { embedInlinePreview } from '@dripnex/embeds/codemirror';
+import { pluginExtensionCompartment, editorPluginStore } from '@dripnex/plugin-api';
 import { htmlToGfmMarkdown } from '../utils/htmlToMarkdown';
+import { scrollBehavior } from '../utils/motion';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
+import { createNesExtension, requestNesCompletion } from '../editor/nes';
+import { editorPolishExtensions } from '../editor/editorPolish';
 import { setEditorView } from '../hooks/useCommandRegistry';
+import { emojiShortcodeCompletions } from '../plugins/emojiShortcodes';
+import {
+  knownTitlesFromResolution,
+  type WikilinkTitleResolution,
+} from '../utils/isMissingWikilink';
+import { notebookStyleProps } from '../utils/notebookStyle';
 import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
+import { listMarkHighlighter } from './editor/listMarkDecorations';
+import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
+import { UrlPastePicker } from './editor/UrlPastePicker';
+import styles from './MarkdownEditor.module.css';
 
 // Compartments for dynamic settings
 const lineNumbersCompartment = new Compartment();
@@ -55,6 +92,7 @@ const themeCompartment = new Compartment();
 const tabSizeCompartment = new Compartment();
 const scrollPastEndCompartment = new Compartment();
 const spellCheckCompartment = new Compartment();
+const wikilinkHighlightCompartment = new Compartment();
 
 // createEditorTheme, markdownHighlighting, and SCROLL_PAST_END_PADDING
 // live in editorTheme.ts.
@@ -66,8 +104,15 @@ interface MarkdownEditorProps {
   onReady?: () => void;
   /** Current note ID (for excluding from wikilink autocomplete) */
   noteId?: string;
+  noteTitle?: string;
+  notebookId?: string | null;
   /** Callback to get resolved embed URL (for inline image preview) */
   getEmbedUrl?: (target: string) => string | null;
+  /** Cmd/Ctrl-click a `[[wikilink]]` in the editor */
+  onWikilinkClick?: (target: string, anchor?: string) => void;
+  onWikilinkHover?: (target: string, coords: { x: number; y: number }) => void;
+  onWikilinkHoverEnd?: () => void;
+  knownWikilinkTitles?: WikilinkTitleResolution;
 }
 
 /** Imperative handle exposed via ref */
@@ -93,18 +138,46 @@ export interface MarkdownEditorHandle {
   setScrollFraction: (fraction: number) => void;
   onScroll: (callback: (fraction: number) => void) => () => void;
   canScroll: () => boolean;
+  jumpToLine: (line: number) => void;
+  getVisibleLine: () => number;
 }
 
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
-    { initialContent, onChange, placeholder = 'Start writing...', onReady, noteId, getEmbedUrl },
+    {
+      initialContent,
+      onChange,
+      placeholder = 'Start writing...',
+      onReady,
+      noteId,
+      noteTitle,
+      notebookId,
+      getEmbedUrl,
+      onWikilinkClick,
+      onWikilinkHover,
+      onWikilinkHoverEnd,
+      knownWikilinkTitles = { status: 'pending' },
+    },
     ref
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
     const noteIdRef = useRef(noteId);
+    const noteTitleRef = useRef(noteTitle ?? '');
     const getEmbedUrlRef = useRef(getEmbedUrl);
+    const onWikilinkClickRef = useRef(onWikilinkClick);
+    const onWikilinkHoverRef = useRef(onWikilinkHover);
+    const onWikilinkHoverEndRef = useRef(onWikilinkHoverEnd);
+    const [urlPaste, setUrlPaste] = useState<{
+      url: string;
+      from: number;
+      to: number;
+      top: number;
+      left: number;
+    } | null>(null);
+    const setUrlPasteRef = useRef(setUrlPaste);
+    setUrlPasteRef.current = setUrlPaste;
 
     // Get editor settings
     const editorSettings = useSettingsStore(selectEditor);
@@ -114,16 +187,26 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       () =>
         createWikilinkAutocomplete({
           searchNotes: async query => {
-            const notes = await window.readied.notes.search(query, 20);
+            const notes = await window.dripnex.notes.search(query, 20);
             return notes.map(n => ({ id: n.id, title: n.title }));
           },
           listNotes: async () => {
-            const notes = await window.readied.notes.list({
+            const notes = await window.dripnex.notes.list({
               sortBy: 'updatedAt',
               sortOrder: 'desc',
               archived: 'active',
             });
             return notes.map(n => ({ id: n.id, title: n.title }));
+          },
+          extraSources: [slashCompletions, fenceLanguageCompletions, emojiShortcodeCompletions],
+          createNote: title => {
+            window.dispatchEvent(
+              new CustomEvent('dripnex:create-linked-note', { detail: { title } })
+            );
+          },
+          getNoteContent: async id => {
+            const result = await window.dripnex.notes.get(id);
+            return result.ok ? result.data.content : null;
           },
         }),
       []
@@ -208,12 +291,39 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         scroller.addEventListener('scroll', handler);
         return () => scroller.removeEventListener('scroll', handler);
       },
+      jumpToLine: (line: number) => {
+        const view = viewRef.current;
+        if (!view) return;
+        const n = Math.max(1, Math.min(line, view.state.doc.lines));
+        const pos = view.state.doc.line(n).from;
+        view.dispatch({
+          selection: EditorSelection.cursor(pos),
+        });
+        const coords = view.coordsAtPos(pos);
+        const scroller = view.scrollDOM;
+        if (coords) {
+          const scrollerRect = scroller.getBoundingClientRect();
+          const top = scroller.scrollTop + (coords.top - scrollerRect.top) - 48;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: scrollBehavior() });
+        }
+        view.focus();
+      },
+      getVisibleLine: () => {
+        const view = viewRef.current;
+        if (!view) return 1;
+        const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop + 48);
+        return view.state.doc.lineAt(block.from).number;
+      },
     }));
 
     // Keep refs updated
     onChangeRef.current = onChange;
     noteIdRef.current = noteId;
+    noteTitleRef.current = noteTitle ?? '';
     getEmbedUrlRef.current = getEmbedUrl;
+    onWikilinkClickRef.current = onWikilinkClick;
+    onWikilinkHoverRef.current = onWikilinkHover;
+    onWikilinkHoverEndRef.current = onWikilinkHoverEnd;
 
     // Create extensions with configurable settings via compartments
     const createExtensions = useCallback((): Extension[] => {
@@ -277,6 +387,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Selection
         drawSelection(),
+        EditorState.allowMultipleSelections.of(true),
 
         // History (undo/redo)
         history(),
@@ -284,23 +395,51 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         // Bracket matching
         bracketMatching(),
 
+        // Fold headings, lists, and fenced blocks
+        codeFolding(),
+        foldGutter(),
+
         // Auto indent
         indentOnInput(),
 
-        // Keymaps
-        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        // Find in note (Mod+F is owned by the command registry in editor context)
+        search({ top: true }),
+        highlightSelectionMatches(),
+
+        // Keymaps — Enter-continues-markup and F5/Ctrl-J before defaultKeymap
+        keymap.of([
+          continueMarkupKeymap,
+          ...editorLineKeymap,
+          ...defaultKeymap,
+          ...searchKeymap,
+          ...foldKeymap,
+          ...historyKeymap,
+          listIndentKeymap,
+          indentWithTab,
+        ]),
 
         // Markdown language with nested code highlighting
         markdown({
           base: markdownLanguage,
           codeLanguages: languages,
         }),
+        markdownLanguage.data.of({
+          commentTokens: { block: { open: '<!--', close: '-->' } },
+        }),
 
         // Syntax highlighting
         syntaxHighlighting(markdownHighlighting),
+        listMarkHighlighter,
 
         // Wikilink [[note]] highlighting
-        wikilinkExtension,
+        wikilinkHighlightCompartment.of(createWikilinkHighlighter(null)),
+        wikilinkClickHandler((target, anchor) => {
+          onWikilinkClickRef.current?.(target, anchor);
+        }),
+        wikilinkHoverHandler(
+          (target, coords) => onWikilinkHoverRef.current?.(target, coords),
+          () => onWikilinkHoverEndRef.current?.()
+        ),
 
         // Wikilink autocomplete (triggers on [[)
         wikilinkAutocomplete,
@@ -308,11 +447,20 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         // Embed inline preview (shows images after ![[...]] syntax)
         embedInlinePreview(target => getEmbedUrlRef.current?.(target) ?? null),
 
+        // Checked-task strike, link URL tooltip, fence copy
+        ...editorPolishExtensions,
+
         // Placeholder
         EditorView.contentAttributes.of({ 'data-placeholder': placeholder }),
 
         // Plugin extensions compartment (reconfigured dynamically)
         pluginExtensionCompartment.of([]),
+
+        createNesExtension({
+          getMode: () => useSettingsStore.getState().settings.ai.nesMode ?? 'manual',
+          getTitle: () => noteTitleRef.current,
+          complete: requestNesCompletion,
+        }),
 
         // Update listener
         EditorView.updateListener.of(update => {
@@ -362,7 +510,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         e.preventDefault();
 
         const bytes = await file.arrayBuffer();
-        const result = await window.readied.embeds.saveAsset(
+        const result = await window.dripnex.embeds.saveAsset(
           currentNoteId,
           file.type,
           bytes,
@@ -411,7 +559,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           if (!blob) return;
 
           const bytes = await blob.arrayBuffer();
-          const result = await window.readied.embeds.saveAsset(currentNoteId, blob.type, bytes);
+          const result = await window.dripnex.embeds.saveAsset(currentNoteId, blob.type, bytes);
           if (!result.ok) {
             console.error('Failed to save asset:', result.error);
             return;
@@ -427,63 +575,44 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           return;
         }
 
-        // 3. Check for URL paste — auto-link with fetched title
+        // 3. URL paste — wrap a selection, or insert and offer a format.
         const plainText = e.clipboardData?.getData('text/plain')?.trim();
-        if (plainText && /^https?:\/\/\S+$/.test(plainText)) {
-          // Check if cursor is already inside a markdown link syntax
-          const pos = view.state.selection.main.head;
-          const lineText = view.state.doc.lineAt(pos).text;
-          const lineOffset = pos - view.state.doc.lineAt(pos).from;
-          const textBefore = lineText.slice(0, lineOffset);
-          // If we're inside [...] or (...) of a link, don't intercept
-          const openBracket = textBefore.lastIndexOf('[');
-          const closeBracket = textBefore.lastIndexOf(']');
-          const openParen = textBefore.lastIndexOf('(');
-          const closeParen = textBefore.lastIndexOf(')');
-          if (
-            openBracket > closeBracket || // inside [...]
-            openParen > closeParen // inside (...)
-          ) {
-            return; // Let default paste handle it
+        if (plainText && isBareHttpUrl(plainText)) {
+          const { from, to } = view.state.selection.main;
+          const line = view.state.doc.lineAt(from);
+          if (isInsideMarkdownLink(line.text, from - line.from)) {
+            return;
           }
 
           e.preventDefault();
+          const selected = from !== to ? view.state.sliceDoc(from, to) : '';
+          if (selected) {
+            const next = wrapSelectionWithUrl(selected, plainText);
+            view.dispatch({
+              changes: { from, to, insert: next },
+              selection: EditorSelection.cursor(from + next.length),
+              userEvent: 'input.paste',
+            });
+            return;
+          }
 
-          // Insert raw URL immediately
-          const from = view.state.selection.main.from;
-          const to = view.state.selection.main.to;
           view.dispatch({
             changes: { from, to, insert: plainText },
             selection: EditorSelection.cursor(from + plainText.length),
             userEvent: 'input.paste',
           });
-
-          // Fetch title in background and replace with markdown link.
-          // Track the exact range where we inserted the URL so later
-          // edits don't cause us to rewrite the wrong occurrence.
-          const insertedFrom = from;
-          const insertedTo = from + plainText.length;
-          window.readied.editor
-            .fetchUrlTitle(plainText)
-            .then(({ title }) => {
-              if (!title) return;
-              // Verify the URL still sits at the expected position
-              const currentDoc = view.state.doc.toString();
-              const textAtRange = currentDoc.slice(insertedFrom, insertedTo);
-              if (textAtRange !== plainText) return;
-              // Verify it's still a bare URL (not already wrapped in markdown link)
-              const charBefore = insertedFrom > 0 ? currentDoc[insertedFrom - 1] : '';
-              if (charBefore === '(' || charBefore === '<') return;
-              const mdLink = `[${title}](${plainText})`;
-              view.dispatch({
-                changes: { from: insertedFrom, to: insertedTo, insert: mdLink },
-                selection: EditorSelection.cursor(insertedFrom + mdLink.length),
-                userEvent: 'input.paste',
-              });
-            })
-            .catch(() => {
-              // Fetch failed — URL was already inserted, nothing to do
+          requestAnimationFrame(() => {
+            const start = view.coordsAtPos(from);
+            const end = view.coordsAtPos(from + plainText.length);
+            if (!start || !end) return;
+            setUrlPasteRef.current({
+              url: plainText,
+              from,
+              to: from + plainText.length,
+              top: Math.max(start.bottom, end.bottom),
+              left: (start.left + end.left) / 2,
             });
+          });
           return;
         }
       };
@@ -509,15 +638,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       const currentContent = view.state.doc.toString();
       if (currentContent !== initialContent) {
-        const { selection } = view.state;
-
         view.dispatch({
           changes: {
             from: 0,
             to: view.state.doc.length,
             insert: initialContent,
           },
-          selection, // Preserve cursor (CodeMirror clamps if invalid)
         });
       }
     }, [initialContent]);
@@ -602,6 +728,34 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       });
     }, [editorSettings]);
 
-    return <div ref={containerRef} className="markdown-editor" />;
+    useEffect(() => {
+      const view = viewRef.current;
+      if (!view) return;
+      view.dispatch({
+        effects: wikilinkHighlightCompartment.reconfigure(
+          createWikilinkHighlighter(knownTitlesFromResolution(knownWikilinkTitles))
+        ),
+      });
+    }, [knownWikilinkTitles]);
+
+    return (
+      <>
+        <div
+          ref={containerRef}
+          className={`${styles['markdown-editor']} ${editorSettings.readableLineLength ? styles.readable : ''} ${notebookStyleProps(notebookId).className}`}
+          data-notebook-id={notebookId || undefined}
+        />
+        {urlPaste ? (
+          <UrlPastePicker
+            url={urlPaste.url}
+            from={urlPaste.from}
+            to={urlPaste.to}
+            top={urlPaste.top}
+            left={urlPaste.left}
+            onClose={() => setUrlPaste(null)}
+          />
+        ) : null}
+      </>
+    );
   }
 );

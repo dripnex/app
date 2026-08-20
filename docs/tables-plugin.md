@@ -2,7 +2,7 @@
 
 ## Overview
 
-Built-in plugin (`readied-tables`) that adds full GFM table support: insert wizard, WYSIWYG editing, sortable preview, and CSV export.
+Built-in plugin (`dripnex-tables`) that adds full GFM table support: insert wizard, WYSIWYG editing, sortable preview, and CSV export.
 
 **File:** `apps/desktop/src/renderer/plugins/tables.tsx`
 
@@ -34,6 +34,7 @@ Built-in plugin (`readied-tables`) that adds full GFM table support: insert wiza
 - When cursor leaves, re-renders the visual table
 - Respects alignment markers: `:---` (left), `:---:` (center), `---:` (right)
 - Toggleable via command, state persisted in plugin config
+- Wide cells wrap (`overflow-wrap` / `word-break`); the widget wrapper scrolls on the x-axis. Per-range no-wrap while editing is deferred to the plugin-tables extraction — editor-global `lineWrapping` still wraps raw pipe rows.
 
 **Key functions:**
 

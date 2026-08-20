@@ -1,18 +1,20 @@
 import { create } from 'zustand';
+import { hasNewConflict, mergeConflicts } from '../utils/conflictCopy';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline' | 'auth-expired';
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline' | 'auth-expired' | 'needs-setup';
 
 export interface SyncStatusEvent {
-  type: 'sync-start' | 'sync-success' | 'sync-error' | 'auth-expired';
+  type: 'sync-start' | 'sync-success' | 'sync-error' | 'needs-setup' | 'auth-expired';
   error?: string;
   isNetworkError?: boolean;
   consecutiveFailures?: number;
   changesApplied?: number;
   changesPushed?: number;
+  conflicts?: Conflict[];
 }
 
 export interface Conflict {
@@ -22,6 +24,7 @@ export interface Conflict {
   localVersion: number;
   remoteVersion: number;
   timestamp: string;
+  localCopyId?: string;
 }
 
 // ============================================================================
@@ -45,10 +48,14 @@ interface SyncState {
   consecutiveFailures: number;
   /** Number of local changes waiting to be pushed */
   pendingCount: number;
+  /** User hid the conflict screen until the next new conflict */
+  conflictScreenDismissed: boolean;
 
   // Actions
   syncNow: () => Promise<void>;
   resolveConflict: (noteId: string, resolution: 'local' | 'remote') => Promise<void>;
+  dismissConflictScreen: () => void;
+  openConflictScreen: () => void;
   clearError: () => void;
   setEnabled: (enabled: boolean) => void;
   updateLastSyncAt: (timestamp: number) => void;
@@ -73,6 +80,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
   isEnabled: false,
   consecutiveFailures: 0,
   pendingCount: 0,
+  conflictScreenDismissed: false,
 
   // Actions
 
@@ -88,22 +96,25 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
     set({ status: 'syncing', error: null });
     try {
       // Perform full sync cycle
-      const syncResult = await window.readied.sync.syncNow();
+      const syncResult = await window.dripnex.sync.syncNow();
 
       if (!syncResult.success) {
         throw new Error(syncResult.error || 'Sync failed');
       }
 
       // Get updated status from server
-      const statusResult = await window.readied.sync.status();
+      const statusResult = await window.dripnex.sync.status();
 
-      // Update state with results
-      set({
+      const incoming = syncResult.conflicts || [];
+      set(state => ({
         status: 'idle',
         cursor: statusResult.cursor || 0,
-        conflicts: syncResult.conflicts || [],
+        conflicts: mergeConflicts(state.conflicts, incoming),
+        conflictScreenDismissed: hasNewConflict(state.conflicts, incoming)
+          ? false
+          : state.conflictScreenDismissed,
         lastSyncAt: Date.now(),
-      });
+      }));
     } catch (error) {
       let errorMessage = 'Sync failed';
       let status: SyncStatus = 'error';
@@ -117,6 +128,9 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
           errorMessage = 'Connection timeout. Please try again.';
         } else if (msg.includes('unauthorized') || msg.includes('401')) {
           errorMessage = 'Session expired. Please sign in again.';
+        } else if (msg.includes('encryption') || msg.includes('passphrase')) {
+          errorMessage = error.message;
+          status = 'needs-setup';
         } else if (msg.includes('forbidden') || msg.includes('403')) {
           errorMessage = 'Sync requires Pro subscription.';
         } else if (msg.includes('rate limit') || msg.includes('429')) {
@@ -138,7 +152,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
    */
   resolveConflict: async (noteId: string, resolution: 'local' | 'remote') => {
     try {
-      await window.readied.sync.resolveConflict(noteId, resolution);
+      await window.dripnex.sync.resolveConflict(noteId, resolution);
 
       // Remove resolved conflict
       set(state => ({
@@ -167,6 +181,10 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
     }
   },
 
+  dismissConflictScreen: () => set({ conflictScreenDismissed: true }),
+
+  openConflictScreen: () => set({ conflictScreenDismissed: false }),
+
   /**
    * Clear error message
    */
@@ -187,7 +205,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
    */
   refreshPendingCount: async () => {
     try {
-      const result = await window.readied.sync.pendingCount();
+      const result = await window.dripnex.sync.pendingCount();
       if (result.success) {
         set({ pendingCount: result.count });
       }
@@ -242,7 +260,7 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
     // Fetch initial pending count
     void get().refreshPendingCount();
 
-    const unsubscribe = window.readied.sync.onStatusChange((raw: unknown) => {
+    const unsubscribe = window.dripnex.sync.onStatusChange((raw: unknown) => {
       const event = raw as SyncStatusEvent;
 
       switch (event.type) {
@@ -250,16 +268,22 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
           set({ status: 'syncing', error: null });
           break;
 
-        case 'sync-success':
-          set({
+        case 'sync-success': {
+          const incoming = event.conflicts ?? [];
+          set(state => ({
             status: 'idle',
             error: null,
             consecutiveFailures: 0,
             lastSyncAt: Date.now(),
-          });
+            conflicts: mergeConflicts(state.conflicts, incoming),
+            conflictScreenDismissed: hasNewConflict(state.conflicts, incoming)
+              ? false
+              : state.conflictScreenDismissed,
+          }));
           // Refresh pending count after successful sync
           void get().refreshPendingCount();
           break;
+        }
 
         case 'sync-error': {
           const isNetwork = event.isNetworkError ?? false;
@@ -272,6 +296,13 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
           void get().refreshPendingCount();
           break;
         }
+
+        case 'needs-setup':
+          set({
+            status: 'needs-setup',
+            error: event.error ?? 'Set up a passphrase to sync.',
+          });
+          break;
 
         case 'auth-expired':
           set({
@@ -299,5 +330,6 @@ export const selectError = (state: SyncState) => state.error;
 export const selectIsEnabled = (state: SyncState) => state.isEnabled;
 export const selectIsSyncing = (state: SyncState) => state.status === 'syncing';
 export const selectHasConflicts = (state: SyncState) => state.conflicts.length > 0;
+export const selectConflictScreenDismissed = (state: SyncState) => state.conflictScreenDismissed;
 export const selectConsecutiveFailures = (state: SyncState) => state.consecutiveFailures;
 export const selectPendingCount = (state: SyncState) => state.pendingCount;

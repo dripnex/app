@@ -7,7 +7,10 @@
 
 import { shell } from 'electron';
 import { z } from 'zod';
+import { LocalNotePushSchema } from '@dripnex/sync-core';
 import { defineIpcHandler } from '../ipc/registry.js';
+import type { LocalIdentity } from '../services/localIdentity.js';
+import { resolveSession } from '../services/session.js';
 import type {
   ApiClient,
   EncryptionService,
@@ -21,6 +24,7 @@ export interface AuthSyncHandlerDeps {
   tokenStorage: TokenStorage;
   syncService: SyncService;
   encryptionService: EncryptionService | null;
+  localIdentity: LocalIdentity;
   broadcastToWindows: BroadcastFn;
 }
 
@@ -37,22 +41,13 @@ const KeyHexSchema = z
   .regex(/^[a-f0-9]+$/i);
 const UrlSchema = z.string().url().max(2048);
 
-const SyncChangeSchema = z.object({
-  noteId: IdSchema,
-  operation: z.enum(['create', 'update', 'delete']),
-  content: z
-    .string()
-    .max(10 * 1024 * 1024)
-    .optional(),
-  localVersion: z.number().int().nonnegative().optional(),
-});
-
 export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
   const {
     apiClient: client,
     tokenStorage: storage,
     syncService: sync,
     encryptionService: encryption,
+    localIdentity,
   } = deps;
 
   sync.onStatusChange(event => {
@@ -71,11 +66,28 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
         await client.requestMagicLink(email);
         return { success: true };
       } catch (error) {
+        const raw = error instanceof Error ? error.message : 'Failed to request magic link';
+        const unreachable = /enotfound|getaddrinfo|could not resolve|failed to fetch|network/i.test(
+          raw
+        );
+        const errorMessage = unreachable
+          ? 'Cannot reach api.dripnex.app. The API host is not live yet.'
+          : raw;
+        console.error('[auth] magic-link failed', { raw, errorMessage });
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Failed to request magic link',
+          error: errorMessage,
         };
       }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'auth:continueLocally',
+    args: z.tuple([EmailSchema]),
+    handler: async email => {
+      const user = await localIdentity.save(email);
+      return { success: true, user };
     },
   });
 
@@ -99,17 +111,14 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
   defineIpcHandler({
     channel: 'auth:getSession',
     args: z.tuple([]),
-    handler: async () => {
-      try {
-        const hasTokens = await storage.hasTokens();
-        if (!hasTokens) return null;
-        const user = await client.getCurrentUser();
-        return { user };
-      } catch {
-        await storage.clearTokens();
-        return null;
-      }
-    },
+    handler: async () =>
+      resolveSession({
+        hasTokens: () => storage.hasTokens(),
+        getCurrentUser: () => client.getCurrentUser(),
+        getAccessToken: () => storage.getAccessToken(),
+        clearTokens: () => storage.clearTokens(),
+        readLocal: () => localIdentity.read(),
+      }),
   });
 
   defineIpcHandler({
@@ -119,6 +128,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
       try {
         sync?.stopAutoSync();
         await storage.clearTokens();
+        await localIdentity.clear();
         return { success: true };
       } catch (error) {
         return {
@@ -135,7 +145,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
     handler: async () => {
       try {
         const refreshed = await client.refreshAccessToken();
-        return { success: refreshed };
+        return { success: refreshed.type === 'success' };
       } catch {
         return { success: false };
       }
@@ -171,7 +181,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
 
   defineIpcHandler({
     channel: 'sync:push',
-    args: z.tuple([z.array(SyncChangeSchema).max(100000)]),
+    args: z.tuple([z.array(LocalNotePushSchema).max(100000)]),
     handler: async changes => {
       try {
         const result = await sync.push(changes);
@@ -438,7 +448,10 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
         if (!serverKeys.exists || !serverKeys.wrappedCekRecovery) {
           return { success: false, error: 'No recovery key found on server' };
         }
-        await encryption.unlockWithRecoveryKey(recoveryKey, serverKeys.wrappedCekRecovery);
+        await encryption.unlockWithRecoveryKey(
+          recoveryKey.replace(/[\s-]/g, ''),
+          serverKeys.wrappedCekRecovery
+        );
         return { success: true };
       } catch (error) {
         return {
@@ -536,7 +549,7 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
     args: z.tuple([]),
     handler: () => {
       try {
-        void shell.openExternal('https://readied.app/pricing');
+        void shell.openExternal('https://dripnex.app/pricing');
         return { success: true };
       } catch (error) {
         return {

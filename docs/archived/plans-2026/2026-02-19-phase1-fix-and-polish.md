@@ -22,7 +22,7 @@ In `PluginsSection.tsx`, find the `BUILT_IN_PLUGINS` array (line 38) and add the
 
 ```typescript
   {
-    id: 'readied-ai-assistant',
+    id: 'dripnex-ai-assistant',
     name: 'AI Assistant',
     version: '0.1.0',
     description: 'AI assistant with RAG over your notes, powered by Claude',
@@ -44,7 +44,7 @@ Expected: Three config fields appear:
 - Model (dropdown: Claude Sonnet 4.5 / Claude Haiku 4.5)
 - Max Context Notes (range slider 1-20)
 
-The config form auto-generates from the `configSchema` in `aiAssistant.tsx:102-125`. The Settings UI fetches config via `window.readied.pluginConfig.getAll('readied-ai-assistant')`.
+The config form auto-generates from the `configSchema` in `aiAssistant.tsx:102-125`. The Settings UI fetches config via `window.dripnex.pluginConfig.getAll('dripnex-ai-assistant')`.
 
 **Step 4: Test config persistence**
 
@@ -53,7 +53,7 @@ Expected: Values persisted (stored in SQLite `plugin_config` table).
 
 **Step 5: Remove Tables placeholder**
 
-Remove the `readied-tables` entry from `BUILT_IN_PLUGINS` (it has no implementation). We'll add it back when the plugin is real (Task 4).
+Remove the `dripnex-tables` entry from `BUILT_IN_PLUGINS` (it has no implementation). We'll add it back when the plugin is real (Task 4).
 
 **Step 6: Commit**
 
@@ -102,7 +102,7 @@ import { wordCountPlugin } from './wordCount';
 import { typewriterModePlugin } from './typewriterMode';
 import { activeLineHighlightPlugin } from './activeLineHighlight';
 import { aiAssistantPlugin } from './aiAssistant';
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 /** All built-in plugin manifests. Used by App.tsx and PluginsSection. */
 export const builtInPlugins: PluginManifest[] = [
@@ -174,8 +174,8 @@ Read `apps/desktop/src/main/handlers/shareHandlers.ts` — it likely has the str
 The handler should:
 
 1. Generate a random slug (8 chars, alphanumeric)
-2. POST to `https://api.readied.app/share` with `{ slug, title, content }`
-3. Return `{ success: true, url: 'https://readied.app/shared?slug=xxx', slug }`
+2. POST to `https://api.dripnex.app/share` with `{ slug, title, content }`
+3. Return `{ success: true, url: 'https://dripnex.app/shared?slug=xxx', slug }`
 4. Copy URL to clipboard via Electron's `clipboard.writeText()`
 
 ```typescript
@@ -191,7 +191,7 @@ ipcMain.handle(
   async (_event, input: { noteId: string; title: string; content: string }) => {
     try {
       const slug = generateSlug();
-      const response = await fetch('https://api.readied.app/share', {
+      const response = await fetch('https://api.dripnex.app/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, title: input.title, content: input.content }),
@@ -201,7 +201,7 @@ ipcMain.handle(
         return { success: false, error: `API error: ${response.status}` };
       }
 
-      const url = `https://readied.app/shared?slug=${slug}`;
+      const url = `https://dripnex.app/shared?slug=${slug}`;
       clipboard.writeText(url);
       return { success: true, url, slug };
     } catch (error) {
@@ -216,7 +216,7 @@ ipcMain.handle(
 ```typescript
 ipcMain.handle('share:delete', async (_event, slug: string) => {
   try {
-    const response = await fetch(`https://api.readied.app/share/${slug}`, {
+    const response = await fetch(`https://api.dripnex.app/share/${slug}`, {
       method: 'DELETE',
     });
     return {
@@ -282,7 +282,7 @@ export default {
 3. Click "..." actions > "Share on Web"
 4. Expected: toast "Link copied to clipboard"
 5. Open the URL in browser
-6. Expected: note renders on readied.app/shared page
+6. Expected: note renders on dripnex.app/shared page
 
 **Step 6: Commit**
 
@@ -306,10 +306,10 @@ The plugin registers a command "Insert Table" that inserts a markdown table temp
 
 ```typescript
 // apps/desktop/src/renderer/plugins/tables.tsx
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 export const tablesPlugin: PluginManifest = {
-  id: 'readied-tables',
+  id: 'dripnex-tables',
   name: 'Tables',
   version: '1.0.0',
   description: 'Insert markdown tables with a command. Tables render in preview via GFM.',

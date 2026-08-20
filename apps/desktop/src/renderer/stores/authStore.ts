@@ -20,11 +20,14 @@ interface AuthState {
   isAuthenticated: boolean;
   /** Loading state for async operations */
   isLoading: boolean;
+  /** True after the first getSession() attempt finishes. */
+  sessionHydrated: boolean;
   /** Error message from last operation */
   error: string | null;
 
   // Actions
   requestMagicLink: (email: string) => Promise<void>;
+  continueLocally: (email: string) => Promise<void>;
   verifyToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   loadSession: () => Promise<void>;
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>()(set => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  sessionHydrated: false,
   error: null,
 
   // Actions
@@ -50,7 +54,7 @@ export const useAuthStore = create<AuthState>()(set => ({
   requestMagicLink: async (email: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await window.readied.auth.requestMagicLink(email);
+      const result = await window.dripnex.auth.requestMagicLink(email);
       if (!result.success) {
         throw new Error(result.error || 'Failed to send magic link');
       }
@@ -77,12 +81,36 @@ export const useAuthStore = create<AuthState>()(set => ({
   },
 
   /**
+   * Create a local-only identity when the cloud API is unreachable.
+   */
+  continueLocally: async (email: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await window.dripnex.auth.continueLocally(email);
+      if (!result.success || !result.user) {
+        throw new Error(result.error || 'Failed to continue locally');
+      }
+      set({
+        user: result.user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to continue locally',
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Verify magic link token and authenticate
    */
   verifyToken: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await window.readied.auth.verifyToken(token);
+      const result = await window.dripnex.auth.verifyToken(token);
       if (result.success && result.user) {
         set({
           user: result.user,
@@ -90,19 +118,7 @@ export const useAuthStore = create<AuthState>()(set => ({
           isLoading: false,
         });
 
-        // Start auto-sync only if license allows cloud sync
-        try {
-          const licenseState = await window.readied.license.getState();
-          const canSync =
-            licenseState.status === 'trial' ||
-            licenseState.status === 'pro_active' ||
-            licenseState.status === 'pro_grace';
-          if (canSync) {
-            await window.readied.sync.startAutoSync(5 * 60 * 1000);
-          }
-        } catch {
-          // License check failed — don't start sync
-        }
+        await startCloudSyncIfReady();
       } else {
         throw new Error(result.error || 'Verification failed');
       }
@@ -136,9 +152,9 @@ export const useAuthStore = create<AuthState>()(set => ({
     set({ isLoading: true, error: null });
     try {
       // Stop auto-sync before logout
-      await window.readied.sync.stopAutoSync();
+      await window.dripnex.sync.stopAutoSync();
 
-      await window.readied.auth.logout();
+      await window.dripnex.auth.logout();
       set({
         user: null,
         isAuthenticated: false,
@@ -159,33 +175,23 @@ export const useAuthStore = create<AuthState>()(set => ({
   loadSession: async () => {
     set({ isLoading: true, error: null });
     try {
-      const session = await window.readied.auth.getSession();
+      const session = await window.dripnex.auth.getSession();
       if (session) {
         set({
           user: session.user,
           isAuthenticated: true,
           isLoading: false,
+          sessionHydrated: true,
         });
 
-        // Start auto-sync only if license allows cloud sync
-        try {
-          const licenseState = await window.readied.license.getState();
-          const canSync =
-            licenseState.status === 'trial' ||
-            licenseState.status === 'pro_active' ||
-            licenseState.status === 'pro_grace';
-          if (canSync) {
-            await window.readied.sync.startAutoSync(5 * 60 * 1000);
-          }
-        } catch {
-          // License check failed — don't start sync
-        }
+        await startCloudSyncIfReady();
       } else {
-        set({ isLoading: false });
+        set({ isLoading: false, sessionHydrated: true });
       }
     } catch (error) {
       set({
         isLoading: false,
+        sessionHydrated: true,
         error: error instanceof Error ? error.message : 'Failed to load session',
       });
     }
@@ -204,5 +210,24 @@ export const useAuthStore = create<AuthState>()(set => ({
 export const selectUser = (state: AuthState) => state.user;
 export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;
 export const selectIsLoading = (state: AuthState) => state.isLoading;
+export const selectSessionHydrated = (state: AuthState) => state.sessionHydrated;
 export const selectError = (state: AuthState) => state.error;
 export const selectEmail = (state: AuthState) => state.user?.email ?? null;
+
+export async function startCloudSyncIfReady(): Promise<void> {
+  try {
+    const [licenseState, encryption] = await Promise.all([
+      window.dripnex.license.getState(),
+      window.dripnex.encryption.isReady(),
+    ]);
+    const canSync =
+      licenseState.status === 'trial' ||
+      licenseState.status === 'pro_active' ||
+      licenseState.status === 'pro_grace';
+    if (canSync && encryption.ready) {
+      await window.dripnex.sync.startAutoSync(5 * 60 * 1000);
+    }
+  } catch {
+    // License or encryption check failed — don't start sync
+  }
+}

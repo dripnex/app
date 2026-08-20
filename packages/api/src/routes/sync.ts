@@ -13,6 +13,11 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, gt, desc, sql } from 'drizzle-orm';
+import {
+  EncryptedNotePushRequestSchema,
+  validateNotebookTree,
+  type TreeNode,
+} from '@dripnex/sync-core';
 import { createDb, type Env } from '../db/client.js';
 import {
   syncLog,
@@ -29,6 +34,14 @@ const sync = new Hono<{
   Bindings: Env;
   Variables: { user: AuthUser };
 }>();
+
+function parseClientJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+}
 
 // All sync routes require auth and rate limiting
 sync.use('*', authMiddleware);
@@ -102,20 +115,7 @@ sync.get('/', zValidator('query', pullSchema), async c => {
   });
 });
 
-// Push local changes
-const changeSchema = z.object({
-  noteId: z.string(),
-  operation: z.enum(['create', 'update', 'delete']),
-  encryptedData: z.string().nullable().optional(),
-  localVersion: z.number().int().optional(),
-});
-
-const pushSchema = z.object({
-  changes: z.array(changeSchema).min(1).max(100),
-  deviceId: z.string().uuid(),
-});
-
-sync.post('/', zValidator('json', pushSchema), async c => {
+sync.post('/', zValidator('json', EncryptedNotePushRequestSchema), async c => {
   const { changes, deviceId } = c.req.valid('json');
   const { userId } = c.get('user');
   const db = createDb(c.env);
@@ -257,62 +257,9 @@ const notebookPushSchema = z.object({
   deviceId: z.string().uuid(),
 });
 
-/**
- * Validate notebook tree integrity before accepting push.
- * Checks: depth <= 2, parentId exists, no circular references.
- */
-function validateNotebookTree(
-  changes: Array<{ notebookId: string; operation: string; data?: string | null }>,
-  existingNotebooks: Map<string, { parentId: string | null; depth: number }>
-): { valid: true } | { valid: false; error: string; notebookId: string } {
-  const tree = new Map(existingNotebooks);
-
-  for (const change of changes) {
-    if (change.operation === 'delete') {
-      tree.delete(change.notebookId);
-      continue;
-    }
-    if (!change.data) continue;
-    const parsed = JSON.parse(change.data) as {
-      name: string;
-      parentId: string | null;
-      depth: number;
-      order: number;
-    };
-
-    if (parsed.depth > 2) {
-      return {
-        valid: false,
-        error: `depth exceeds max (2), got ${parsed.depth}`,
-        notebookId: change.notebookId,
-      };
-    }
-    if (parsed.parentId && !tree.has(parsed.parentId)) {
-      return {
-        valid: false,
-        error: `parentId '${parsed.parentId}' not found`,
-        notebookId: change.notebookId,
-      };
-    }
-    if (parsed.parentId) {
-      const visited = new Set<string>([change.notebookId]);
-      let current: string | null = parsed.parentId;
-      while (current) {
-        if (visited.has(current)) {
-          return {
-            valid: false,
-            error: 'circular reference detected',
-            notebookId: change.notebookId,
-          };
-        }
-        visited.add(current);
-        current = tree.get(current)?.parentId ?? null;
-      }
-    }
-    tree.set(change.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
-  }
-  return { valid: true };
-}
+// Notebook tree validation (depth<=2, parent exists, no cycles) is shared with
+// the desktop/sync logic — imported from @dripnex/sync-core (single source of
+// truth) instead of a duplicated inline copy.
 
 // Pull notebook changes
 sync.get('/notebooks', zValidator('query', pullSchema), async c => {
@@ -377,15 +324,19 @@ sync.post('/notebooks', zValidator('json', notebookPushSchema), async c => {
     .where(eq(notebookSyncLog.userId, userId))
     .orderBy(desc(notebookSyncLog.version));
 
-  const latestByNotebook = new Map<string, { parentId: string | null; depth: number }>();
+  const latestByNotebook = new Map<string, TreeNode>();
   const processedIds = new Set<string>();
   for (const entry of existingEntries) {
     if (processedIds.has(entry.notebookId)) continue;
     processedIds.add(entry.notebookId);
     // Skip deleted notebooks — they shouldn't appear in the validation tree
     if (entry.operation === 'delete' || !entry.data) continue;
-    const parsed = JSON.parse(entry.data);
-    latestByNotebook.set(entry.notebookId, { parentId: parsed.parentId, depth: parsed.depth });
+    const parsed = parseClientJson(entry.data) as { parentId?: string; depth?: number } | undefined;
+    if (!parsed) continue;
+    latestByNotebook.set(entry.notebookId, {
+      parentId: parsed.parentId ?? null,
+      depth: parsed.depth ?? 0,
+    });
   }
 
   // Validate tree integrity
@@ -554,9 +505,9 @@ sync.post('/tags', zValidator('json', tagPushSchema), async c => {
   // Validate tag data
   for (const change of changes) {
     if (change.operation !== 'delete' && change.data) {
-      const parsed = JSON.parse(change.data);
-      if (!parsed.name || typeof parsed.name !== 'string') {
-        return c.json({ error: 'Tag data must include name' }, 422);
+      const parsed = parseClientJson(change.data) as { name?: unknown } | undefined;
+      if (!parsed || typeof parsed.name !== 'string' || !parsed.name) {
+        return c.json({ error: 'Tag data must include a valid name' }, 422);
       }
     }
   }
@@ -654,7 +605,7 @@ sync.get('/keys', async c => {
     salt: keys.salt,
     wrappedCek: keys.wrappedCek,
     wrappedCekRecovery: keys.wrappedCekRecovery,
-    kdfParams: JSON.parse(keys.kdfParams),
+    kdfParams: parseClientJson(keys.kdfParams) ?? {},
   });
 });
 

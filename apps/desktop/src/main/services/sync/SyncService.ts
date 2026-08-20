@@ -8,14 +8,16 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@readied/storage-sqlite';
+import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@dripnex/storage-sqlite';
 import {
   createNoteId,
   createNotebookId,
   createNotebook,
+  createTag,
   createTimestamp,
-  type NoteStatus,
-} from '@readied/core';
+  extractTasks,
+} from '@dripnex/core';
+import type { LocalNotePush } from '@dripnex/sync-core';
 import type {
   ApiClient,
   SyncChange,
@@ -31,6 +33,9 @@ import type {
   SyncStatusListener,
 } from './types.js';
 import { MAX_BACKOFF_MS, isNetworkError, isAuthError } from './helpers.js';
+import { parseSyncedNote, serializeSyncedNote } from './envelope.js';
+import type { SyncCursorStore } from './cursorStore.js';
+import { chosenConflictContent, needsLocalRestore } from './resolveNoteConflict.js';
 
 // ============================================================================
 // SyncService Class
@@ -47,6 +52,8 @@ export class SyncService {
   private baseAutoSyncInterval: number = 5 * 60 * 1000; // remember the original interval for reset
   private abortController: AbortController | null = null;
   private statusListener: SyncStatusListener | null = null;
+  private cursorStore: SyncCursorStore | null = null;
+  private pendingConflicts = new Map<string, SyncConflict>();
 
   constructor(
     apiClient: ApiClient,
@@ -68,6 +75,23 @@ export class SyncService {
       lastError: null,
       consecutiveFailures: 0,
     };
+  }
+
+  async restoreCursors(store: SyncCursorStore): Promise<void> {
+    this.cursorStore = store;
+    const saved = await store.load();
+    this.state.cursor = saved.cursor;
+    this.state.tagCursor = saved.tagCursor;
+    this.state.notebookCursor = saved.notebookCursor;
+  }
+
+  private persistCursors(): void {
+    if (!this.cursorStore) return;
+    void this.cursorStore.save({
+      cursor: this.state.cursor,
+      tagCursor: this.state.tagCursor,
+      notebookCursor: this.state.notebookCursor,
+    });
   }
 
   // ==========================================================================
@@ -133,6 +157,7 @@ export class SyncService {
       this.state.cursor =
         appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
       this.state.lastSyncAt = Date.now();
+      this.persistCursors();
 
       return {
         success: true,
@@ -183,6 +208,7 @@ export class SyncService {
       // Only advance cursor to last successfully applied change
       this.state.notebookCursor =
         appliedCount === result.changes.length ? result.cursor : lastAppliedCursor;
+      this.persistCursors();
 
       return {
         success: true,
@@ -265,14 +291,7 @@ export class SyncService {
   /**
    * Push local changes to server
    */
-  async push(
-    changes: Array<{
-      noteId: string;
-      operation: 'create' | 'update' | 'delete';
-      content?: string;
-      localVersion?: number;
-    }>
-  ): Promise<{
+  async push(changes: LocalNotePush[]): Promise<{
     success: boolean;
     results: Array<{
       noteId: string;
@@ -298,8 +317,8 @@ export class SyncService {
       // Push to server
       const result = await this.apiClient.pushChanges(encryptedChanges);
 
-      // Update cursor
       this.state.cursor = result.cursor;
+      this.persistCursors();
 
       return {
         success: true,
@@ -347,6 +366,7 @@ export class SyncService {
 
       this.state.tagCursor =
         applied === result.changes.length ? result.cursor : this.state.tagCursor;
+      this.persistCursors();
 
       return { success: true, applied };
     } catch (error) {
@@ -385,6 +405,7 @@ export class SyncService {
 
       this.noteRepository.markMultipleTagsAsSynced(successIds);
       this.state.tagCursor = result.cursor;
+      this.persistCursors();
 
       return { success: true, pushed: successIds.length };
     } catch (error) {
@@ -424,10 +445,8 @@ export class SyncService {
     // or unlock their sync passphrase first.
     if (!this.encryptionService.isReady()) {
       this.emitStatus({
-        type: 'sync-error',
-        error: 'Encryption not ready. Set up a passphrase in Settings.',
-        isNetworkError: false,
-        consecutiveFailures: this.state.consecutiveFailures,
+        type: 'needs-setup',
+        error: 'Set up a passphrase to sync.',
       });
       return {
         success: false,
@@ -509,7 +528,16 @@ export class SyncService {
         const changesToPush = pendingChanges.map(({ note, localVersion }) => ({
           noteId: note.id,
           operation: (note.isDeleted ? 'delete' : 'update') as 'create' | 'update' | 'delete',
-          content: !note.isDeleted ? note.content : undefined,
+          content: !note.isDeleted
+            ? serializeSyncedNote({
+                content: note.content,
+                notebookId: note.notebookId,
+                isPinned: note.isPinned,
+                isDeleted: note.isDeleted,
+                status: note.status,
+                tags: [...note.metadata.tags],
+              })
+            : undefined,
           localVersion,
         }));
 
@@ -585,6 +613,7 @@ export class SyncService {
         type: 'sync-success',
         changesApplied: totalApplied,
         changesPushed: totalPushed,
+        conflicts: pullResult.conflicts,
       });
 
       return {
@@ -689,16 +718,53 @@ export class SyncService {
       throw new Error(`Note ${noteId} not found`);
     }
 
+    const pending = this.pendingConflicts.get(noteId);
+    const id = createNoteId(noteId);
+    const copy = pending?.localCopyId
+      ? await this.noteRepository.get(createNoteId(pending.localCopyId))
+      : null;
+
     if (resolution === 'local') {
-      // Keep local version, mark for push to server
-      this.noteRepository.resetSyncTracking(createNoteId(noteId));
-      console.warn(`Conflict resolved: keeping local version for ${noteId}, marked for sync`);
+      const localContent = copy?.content ?? pending?.localContent;
+      if (localContent != null && needsLocalRestore(note.content, localContent)) {
+        const title = this.extractTitle(localContent);
+        await this.noteRepository.save({
+          ...(copy ?? note),
+          id,
+          content: localContent,
+          title,
+          metadata: {
+            ...(copy ?? note).metadata,
+            title,
+            updatedAt: createTimestamp(new Date()),
+          },
+        });
+      }
+      this.noteRepository.resetSyncTracking(id);
+    } else if (pending) {
+      const remoteContent = chosenConflictContent('remote', pending);
+      if (note.content !== remoteContent) {
+        const title = this.extractTitle(remoteContent);
+        await this.noteRepository.save({
+          ...note,
+          content: remoteContent,
+          title,
+          metadata: {
+            ...note.metadata,
+            title,
+            updatedAt: createTimestamp(new Date()),
+          },
+        });
+      }
+      this.noteRepository.markAsSynced(id);
     } else {
-      // Keep remote version (already applied during pull)
-      // Just mark as synced to clear the conflict state
-      this.noteRepository.markAsSynced(createNoteId(noteId));
-      console.warn(`Conflict resolved: keeping remote version for ${noteId}`);
+      this.noteRepository.markAsSynced(id);
     }
+
+    if (copy) {
+      await this.noteRepository.delete(copy.id);
+    }
+    this.pendingConflicts.delete(noteId);
   }
 
   /**
@@ -780,7 +846,14 @@ export class SyncService {
 
     this.autoSyncTimer = setTimeout(async () => {
       try {
-        await this.syncNow();
+        if (!this.encryptionService.isReady()) {
+          this.emitStatus({
+            type: 'needs-setup',
+            error: 'Set up a passphrase to sync.',
+          });
+        } else {
+          await this.syncNow();
+        }
       } catch (error) {
         console.error('Auto-sync failed:', error);
       }
@@ -825,16 +898,18 @@ export class SyncService {
     const decryptedContent = change.encryptedData
       ? await this.encryptionService.decrypt(change.encryptedData)
       : null;
+    const payload = decryptedContent ? parseSyncedNote(decryptedContent) : null;
 
     switch (change.operation) {
       case 'create':
       case 'update': {
-        if (!decryptedContent) {
+        if (!payload) {
           throw new Error(`No content for ${change.operation} operation`);
         }
 
         // Check for existing note
         const existingNote = await this.noteRepository.get(noteId);
+        const remoteTitle = this.extractTitle(payload.content);
 
         if (existingNote) {
           // Conflict detection:
@@ -847,21 +922,23 @@ export class SyncService {
             hasLocalEdits && change.deviceId !== this.apiClient['deviceInfo'].deviceId;
 
           if (isConflict) {
-            // Store conflict for user resolution
-            conflicts.push({
+            const localCopyId = `${change.noteId}-conflict-${Date.now()}`;
+            const conflict: SyncConflict = {
               noteId: change.noteId,
               localContent: existingNote.content,
-              remoteContent: decryptedContent,
+              remoteContent: payload.content,
               localVersion: change.version - 1, // Estimate
               remoteVersion: change.version,
               timestamp: new Date().toISOString(),
-            });
+              localCopyId,
+            };
+            conflicts.push(conflict);
+            this.pendingConflicts.set(change.noteId, conflict);
 
-            // Create a conflict copy
             const conflictTitle = `${existingNote.title} (Conflict ${new Date().toLocaleString()})`;
             await this.noteRepository.save({
               ...existingNote,
-              id: createNoteId(`${change.noteId}-conflict-${Date.now()}`),
+              id: createNoteId(localCopyId),
               title: conflictTitle,
               metadata: {
                 ...existingNote.metadata,
@@ -870,43 +947,45 @@ export class SyncService {
             });
           }
 
-          // Apply remote change (overwrite local)
-          const remoteTitle = this.extractTitle(decryptedContent);
           await this.noteRepository.save({
             ...existingNote,
-            content: decryptedContent,
+            notebookId: createNotebookId(payload.notebookId),
+            content: payload.content,
             title: remoteTitle,
+            isPinned: payload.isPinned,
+            isDeleted: payload.isDeleted,
+            status: payload.status,
             metadata: {
               ...existingNote.metadata,
               title: remoteTitle,
               updatedAt: createTimestamp(new Date(change.createdAt)),
+              tags: payload.tags.map(createTag),
             },
           });
 
-          // Mark as synced to avoid re-pushing
           this.noteRepository.markAsSynced(noteId);
         } else {
-          // Create new note
-          const newTitle = this.extractTitle(decryptedContent);
+          const tasks = extractTasks(payload.content);
           await this.noteRepository.save({
             id: noteId,
-            notebookId: createNotebookId('inbox'), // Default to inbox
-            content: decryptedContent,
-            title: newTitle,
-            isPinned: false,
-            isDeleted: false,
-            status: 'active' as NoteStatus,
+            notebookId: createNotebookId(payload.notebookId),
+            content: payload.content,
+            title: remoteTitle,
+            isPinned: payload.isPinned,
+            isDeleted: payload.isDeleted,
+            status: payload.status,
             metadata: {
-              title: newTitle,
+              title: remoteTitle,
               createdAt: createTimestamp(new Date(change.createdAt)),
               updatedAt: createTimestamp(new Date(change.createdAt)),
-              tags: [],
-              wordCount: decryptedContent.split(/\s+/).length,
+              tags: payload.tags.map(createTag),
+              wordCount: payload.content.split(/\s+/).length,
+              taskCount: tasks.total,
+              checkedTaskCount: tasks.completed,
               archivedAt: null,
             },
           });
 
-          // Mark as synced to avoid re-pushing
           this.noteRepository.markAsSynced(noteId);
         }
         break;
@@ -914,8 +993,12 @@ export class SyncService {
 
       case 'delete': {
         const existingNote = await this.noteRepository.get(noteId);
-        if (existingNote) {
-          await this.noteRepository.delete(noteId);
+        if (existingNote && !existingNote.isDeleted) {
+          await this.noteRepository.save({
+            ...existingNote,
+            isDeleted: true,
+          });
+          this.noteRepository.markAsSynced(noteId);
         }
         break;
       }

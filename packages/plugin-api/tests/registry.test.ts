@@ -6,6 +6,7 @@ import { remarkPluginStore } from '../src/preview/remarkPluginStore';
 import { rehypePluginStore } from '../src/preview/rehypePluginStore';
 import { previewComponentStore } from '../src/preview/previewComponentStore';
 import { codeBlockStore } from '../src/preview/codeBlockStore';
+import { pluginStyleStore } from '../src/theme/pluginStyleStore';
 
 function makeManifest(overrides: Partial<PluginManifest> = {}): PluginManifest {
   return {
@@ -23,12 +24,14 @@ function makeEditorAPI(): EditorAPI {
     getSelection: () => ({ from: 0, to: 0 }),
     replaceRange: () => {},
     insertAtCursor: () => {},
+    setSelection: () => {},
     getWordCount: () => 0,
     getCharCount: () => 0,
     getLineCount: () => 0,
     onDocChanged: () => () => {},
     onSelectionChanged: () => () => {},
     focus: () => {},
+    getView: () => null,
   };
 }
 
@@ -116,6 +119,8 @@ describe('PluginRegistry', () => {
       expect(ctx).toHaveProperty('editor');
       expect(ctx).toHaveProperty('registerExtensions');
       expect(ctx).toHaveProperty('registerCommand');
+      expect(ctx).toHaveProperty('dispatchCommand');
+      expect(ctx).toHaveProperty('registerVim');
       expect(ctx).toHaveProperty('registerRemarkPlugin');
       expect(ctx).toHaveProperty('registerRehypePlugin');
       expect(ctx).toHaveProperty('registerPreviewComponent');
@@ -124,6 +129,11 @@ describe('PluginRegistry', () => {
       expect(ctx).toHaveProperty('config');
       expect(ctx).toHaveProperty('log');
       expect(ctx).toHaveProperty('app');
+      expect(ctx).toHaveProperty('store');
+      expect(ctx).toHaveProperty('notifications');
+      expect(ctx).toHaveProperty('contextMenu');
+      expect(ctx).toHaveProperty('components');
+      expect(ctx).toHaveProperty('markdownRenderer');
     });
 
     it('exposes data listing methods on context.app', async () => {
@@ -212,6 +222,28 @@ describe('PluginRegistry', () => {
       );
       expect(setBridge).toHaveBeenCalledWith('test-plugin', 'font', 'mono');
     });
+
+    it('config.observe fires when set or applyPluginConfig updates the key', async () => {
+      const { applyPluginConfig } = await import('../src/lifecycle/configRuntime');
+      const seen: unknown[] = [];
+
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.config.observe('theme', value => {
+              seen.push(value);
+            });
+            ctx.config.set('theme', 'dark');
+          },
+        })
+      );
+
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(seen).toEqual(['dark']);
+
+      applyPluginConfig('test-plugin', 'theme', 'light');
+      expect(seen).toEqual(['dark', 'light']);
+    });
   });
 
   describe('command registration', () => {
@@ -285,6 +317,39 @@ describe('PluginRegistry', () => {
       registry.deactivate('test-plugin');
 
       expect(unregister).toHaveBeenCalledOnce();
+    });
+
+    it('applies package keymaps and menus after activate', async () => {
+      const registerCommandFn: RegisterCommandFn = vi.fn().mockReturnValue(() => {});
+      const setDefaultKeybinding = vi.fn().mockReturnValue(true);
+
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerCommand({ id: 'say-hello', name: 'Say Hello' }, () => true);
+          },
+        })
+      );
+
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        registerCommandFn,
+        undefined,
+        undefined,
+        {
+          keymaps: ['{ "say-hello": "Mod+Shift+H" }'],
+          menus: ['{ "menu": [{ "label": "Hello", "command": "say-hello" }] }'],
+        },
+        setDefaultKeybinding
+      );
+
+      expect(setDefaultKeybinding).toHaveBeenCalledWith('plugin:test-plugin:say-hello', {
+        key: 'h',
+        modifiers: ['Mod', 'Shift'],
+      });
     });
   });
 
@@ -639,6 +704,24 @@ describe('PluginRegistry', () => {
       expect(rehypePluginStore.getState().registrations).toHaveLength(0);
       expect(previewComponentStore.getState().registrations).toHaveLength(0);
       expect(codeBlockStore.getState().registrations).toHaveLength(0);
+    });
+
+    it('deactivate removes package styles', async () => {
+      registry.load(makeManifest());
+      await registry.activate(
+        'test-plugin',
+        makeEditorAPI(),
+        makeAppAPI(),
+        mockDataAPI,
+        undefined,
+        undefined,
+        undefined,
+        { keymaps: [], menus: [], styles: ['.hello { color: red; }'] }
+      );
+
+      expect(pluginStyleStore.getState().sheets).toHaveLength(1);
+      registry.deactivate('test-plugin');
+      expect(pluginStyleStore.getState().sheets).toHaveLength(0);
     });
   });
 

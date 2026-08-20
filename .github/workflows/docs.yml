@@ -28,12 +28,12 @@ jobs:
       - name: Force HTTPS for GitHub git dependencies
         run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
-      # Marketing site only needs @readied/web + product-config's transitive
+      # Marketing site only needs @dripnex/web + product-config's transitive
       # deps. Plain `pnpm install` would also run apps/desktop's postinstall
       # (electron-builder install-app-deps -> better-sqlite3 native rebuild),
       # which fails on the Linux + Node 22 runner. See #287 for the
       # deploy-api workflow and #288 for release.yml — same fix shape.
-      - run: pnpm install --filter '@readied/web...' --ignore-scripts
+      - run: pnpm install --filter '@dripnex/web...' --ignore-scripts
 
       - name: Build web app
         working-directory: apps/web
@@ -48,5 +48,42 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npx wrangler@3 pages project create readied-web --production-branch main 2>/dev/null || true
-          npx wrangler@3 pages deploy apps/web/out --project-name=readied-web --commit-dirty=true
+          set -euo pipefail
+          AUTH_HEADER="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          curl -sS -X DELETE \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/readied-web/domains/dripnex.app" \
+            -H "$AUTH_HEADER" || true
+          npx wrangler@3 pages project create dripnex-web --production-branch main 2>/dev/null || true
+          # Production deploy so the apex custom domain serves this build.
+          npx wrangler@3 pages deploy apps/web/out --project-name=dripnex-web --branch main --commit-dirty=true
+
+          ZONE_ID="$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=dripnex.app" \
+            -H "$AUTH_HEADER" | jq -r '.result[0].id // empty')"
+          echo "zone=${ZONE_ID}"
+          DNS_JSON="$(curl -sS "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?per_page=100" \
+            -H "$AUTH_HEADER")"
+          echo "$DNS_JSON" | jq -c '{success,errors,count:(.result|length?)}'
+          echo "$DNS_JSON" | jq -c '.result[]? | {id,type,name,content,proxied}'
+
+          # Drop parking/forwarding records on apex + www so Pages can own them.
+          # Leave api.dripnex.app (Worker) and mail/TXT/MX alone.
+          echo "$DNS_JSON" | jq -r '.result[]?
+                | select((.name=="dripnex.app" or .name=="www.dripnex.app")
+                    and (.type=="A" or .type=="AAAA" or .type=="CNAME")
+                    and ((.content // "") | test("pages.dev|workers.dev") | not))
+                | .id' \
+            | while read -r rec_id; do
+                [ -n "$rec_id" ] || continue
+                echo "deleting conflicting record ${rec_id}"
+                curl -sS -X DELETE \
+                  "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${rec_id}" \
+                  -H "$AUTH_HEADER" | jq -c '{success,errors}' || true
+              done
+
+          for host in dripnex.app www.dripnex.app; do
+            curl -sS -X POST \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/dripnex-web/domains" \
+              -H "$AUTH_HEADER" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"${host}\"}" | jq -c '{name:.result.name,status:.result.status,success}'
+          done

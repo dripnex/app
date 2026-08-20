@@ -15,8 +15,9 @@ import {
   createNoteId,
   createNotebookId,
   DEFAULT_NOTE_STATUS,
-} from '@readied/core';
-import type { ArchivedFilter } from '@readied/storage-core';
+  extractTasks,
+} from '@dripnex/core';
+import type { ArchivedFilter } from '@dripnex/storage-core';
 
 /** Row shape returned by `SELECT * FROM notes` */
 export interface NoteRow {
@@ -27,6 +28,8 @@ export interface NoteRow {
   created_at: string;
   updated_at: string;
   word_count: number;
+  task_count?: number | null;
+  checked_task_count?: number | null;
   archived_at: string | null;
   is_pinned: number; // SQLite stores booleans as 0/1
   is_deleted: number;
@@ -71,6 +74,11 @@ export function rowToNote(row: NoteRow, tags: Tag[]): Note {
     status: (row.status as NoteStatus) || DEFAULT_NOTE_STATUS,
   });
 
+  const tasks =
+    row.task_count == null || row.checked_task_count == null
+      ? extractTasks(row.content)
+      : { total: row.task_count, completed: row.checked_task_count };
+
   return {
     ...note,
     notebookId: createNotebookId(row.notebook_id),
@@ -85,6 +93,8 @@ export function rowToNote(row: NoteRow, tags: Tag[]): Note {
       updatedAt: row.updated_at as Timestamp,
       tags,
       wordCount: row.word_count,
+      taskCount: tasks.total,
+      checkedTaskCount: tasks.completed,
       archivedAt: row.archived_at as Timestamp | null,
     },
   };

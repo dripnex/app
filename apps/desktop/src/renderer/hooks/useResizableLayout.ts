@@ -1,15 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-const STORAGE_KEY = 'readied:layout';
+const STORAGE_KEY = 'dripnex:layout';
 
 interface LayoutState {
   sidebarWidth: number;
   notelistWidth: number;
+  sidebarCollapsed: boolean;
+  distractionFree: boolean;
 }
 
 const DEFAULT_LAYOUT: LayoutState = {
   sidebarWidth: 220,
   notelistWidth: 280,
+  sidebarCollapsed: false,
+  distractionFree: false,
 };
 
 const MIN_SIDEBAR = 200;
@@ -37,6 +41,8 @@ export function useResizableLayout() {
             MIN_NOTELIST,
             MAX_NOTELIST
           ),
+          sidebarCollapsed: Boolean(parsed.sidebarCollapsed),
+          distractionFree: Boolean(parsed.distractionFree),
         };
       }
     } catch {
@@ -114,9 +120,23 @@ export function useResizableLayout() {
     [layout.notelistWidth]
   );
 
+  const toggleSidebar = useCallback(() => {
+    setLayout(prev => ({ ...prev, sidebarCollapsed: !prev.sidebarCollapsed }));
+  }, []);
+
+  const toggleDistractionFree = useCallback(() => {
+    setLayout(prev => ({ ...prev, distractionFree: !prev.distractionFree }));
+  }, []);
+
+  const hideChrome = layout.distractionFree;
+
   return {
-    sidebarWidth: layout.sidebarWidth,
-    notelistWidth: layout.notelistWidth,
+    sidebarWidth: hideChrome || layout.sidebarCollapsed ? 0 : layout.sidebarWidth,
+    notelistWidth: hideChrome ? 0 : layout.notelistWidth,
+    sidebarCollapsed: layout.sidebarCollapsed,
+    distractionFree: layout.distractionFree,
+    toggleSidebar,
+    toggleDistractionFree,
     startResizeSidebar,
     startResizeNotelist,
   };

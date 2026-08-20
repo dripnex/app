@@ -45,6 +45,23 @@
   }
 }
 
+.remoteBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 0;
+}
+
+.remoteBar :global(input) {
+  flex: 1;
+}
+
+.remoteMsg {
+  margin: 8px 24px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .header {
   display: flex;
   align-items: center;

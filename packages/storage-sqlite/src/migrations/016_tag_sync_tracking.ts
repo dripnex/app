@@ -5,7 +5,7 @@
  * Tags use INTEGER autoincrement locally but need a UUID for cross-device identity.
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const tagSyncTracking: Migration = {
   version: 20250311000003,

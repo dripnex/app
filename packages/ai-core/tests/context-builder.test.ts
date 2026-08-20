@@ -30,6 +30,14 @@ describe('estimateMessageTokens', () => {
       ])
     ).toBe(1 + 1000); // 1 token for "hi" + 1000 for image
   });
+
+  it('counts tool_use and tool_result parts', () => {
+    const tokens = estimateMessageTokens([
+      { type: 'tool_use', id: '1', name: 'search_notes', input: { query: 'hello' } },
+      { type: 'tool_result', tool_use_id: '1', content: 'found two notes' },
+    ]);
+    expect(tokens).toBeGreaterThan(0);
+  });
 });
 
 describe('buildContext', () => {
@@ -56,6 +64,24 @@ describe('buildContext', () => {
     );
     expect(result.system).toContain('Test Note');
     expect(result.system).toContain('Some content here');
+  });
+
+  it('surfaces instruction: from the current note', () => {
+    const result = buildContext(
+      {
+        systemPrompt,
+        currentNote: {
+          id: '1',
+          title: 'Meeting',
+          content: '---\ninstruction: Capture attendees and next actions.\n---\n# Meeting\n',
+        },
+        history: [],
+        relevantNotes: [],
+      },
+      { maxContextTokens: 10000, maxResponseTokens: 100 }
+    );
+    expect(result.system).toContain('Template instruction for the current note:');
+    expect(result.system).toContain('Capture attendees and next actions.');
   });
 
   it('includes conversation history newest-first priority', () => {
@@ -103,6 +129,27 @@ describe('buildContext', () => {
     expect(result.system).toContain('Note A');
     expect(result.system).toContain('Note B');
     expect(result.notesIncluded).toBe(2);
+    expect(result.citations).toHaveLength(2);
+  });
+
+  it('packs higher-score passages first and labels headings', () => {
+    const result = buildContext(
+      {
+        systemPrompt,
+        history: [],
+        relevantNotes: [
+          { id: '1', title: 'Alpha', content: 'low', heading: 'Intro', score: 1 },
+          { id: '2', title: 'Beta', content: 'high', heading: 'Recipe', score: 9 },
+        ],
+      },
+      { maxContextTokens: 10000, maxResponseTokens: 100 }
+    );
+    expect(result.system.indexOf('Beta › Recipe')).toBeLessThan(
+      result.system.indexOf('Alpha › Intro')
+    );
+    expect(result.system).toContain('Source [1]: "Beta › Recipe"');
+    expect(result.system).toContain('Source [2]: "Alpha › Intro"');
+    expect(result.citations[0]).toMatchObject({ id: '2', title: 'Beta', heading: 'Recipe' });
   });
 
   it('drops notes that exceed budget', () => {
@@ -129,5 +176,20 @@ describe('buildContext', () => {
       { maxContextTokens: 10000, maxResponseTokens: 100 }
     );
     expect(result.tokenEstimate).toBeGreaterThan(0);
+  });
+
+  it('reserves query tokens against the budget', () => {
+    const hugeQuery = 'q'.repeat(800); // ~200 tokens
+    const result = buildContext(
+      {
+        systemPrompt,
+        history: [],
+        relevantNotes: [{ id: '1', title: 'Note', content: 'x'.repeat(4000) }],
+        query: hugeQuery,
+      },
+      { maxContextTokens: 400, maxResponseTokens: 100 }
+    );
+    expect(result.tokenEstimate).toBeLessThanOrEqual(300);
+    expect(result.truncated).toBe(true);
   });
 });

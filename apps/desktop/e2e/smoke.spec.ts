@@ -5,7 +5,7 @@ test.describe('app launch (smoke)', () => {
   test('launches and shows the main window', async () => {
     const { app, window, cleanup } = await launchApp();
     try {
-      // Title is "Readied" in production. Allow any non-empty title in case
+      // Title is "Dripnex" in production. Allow any non-empty title in case
       // dev/test envs use a different one.
       const title = await window.title();
       expect(title.length).toBeGreaterThan(0);
@@ -20,7 +20,7 @@ test.describe('app launch (smoke)', () => {
 
       // Sanity: the app exposed its IPC bridge.
       const hasBridge = await window.evaluate(
-        () => typeof (window as unknown as { readied?: unknown }).readied !== 'undefined'
+        () => typeof (window as unknown as { dripnex?: unknown }).dripnex !== 'undefined'
       );
       expect(hasBridge).toBe(true);
 
@@ -51,6 +51,34 @@ test.describe('app launch (smoke)', () => {
       const real = consoleErrors.filter(line => !ignored.some(re => re.test(line)));
 
       expect(real, real.join('\n')).toEqual([]);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  // Regression for #311: optimizeDeps only covers the dev server. The
+  // production rollup/rolldown build used to split @codemirror/@lezer
+  // across lazy chunks, so HighlightStyle.define() saw `tags` as
+  // undefined and the packaged editor logged "[CodeMirror] plugin error:
+  // TypeError: tags is not iterable". This test must load MarkdownEditor
+  // (lazy from NoteEditor) against the built bundle.
+  test('opening a note loads CodeMirror without plugin errors', async () => {
+    const { window, cleanup } = await launchApp();
+    const consoleErrors: string[] = [];
+    window.on('console', msg => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    window.on('pageerror', err => consoleErrors.push(`pageerror: ${err.message}`));
+
+    try {
+      await window.getByRole('button', { name: 'Create Your First Note' }).click();
+
+      const content = window.locator('.cm-content');
+      await expect(content).toBeVisible({ timeout: 15_000 });
+      await expect(content).toContainText('Untitled');
+
+      const codeMirrorErrors = consoleErrors.filter(line => /\[CodeMirror\]/.test(line));
+      expect(codeMirrorErrors, codeMirrorErrors.join('\n')).toEqual([]);
     } finally {
       await cleanup();
     }

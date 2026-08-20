@@ -1,0 +1,362 @@
+/**
+ * Editor Header Styles
+ * Controls above the note title: Notebook selector, Status dropdown, Tags
+ */
+
+/* ============================================================================
+   Editor Header Container
+   ============================================================================ */
+
+.editor-header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  min-height: 26px;
+  padding: 0 16px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+}
+
+/* ============================================================================
+   Dropdown Trigger Button (shared style)
+   ============================================================================ */
+
+.editor-header-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.editor-header-dropdown-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-header-dropdown-btn .dropdown-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.editor-header-dropdown-btn .chevron-icon {
+  color: var(--text-faint);
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* ============================================================================
+   Dropdown Container (for positioning)
+   ============================================================================ */
+
+.editor-header-dropdown {
+  position: relative;
+}
+
+/* ============================================================================
+   Dropdown Menu (shared)
+   ============================================================================ */
+
+.editor-header-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  z-index: 100;
+  padding: 4px 0;
+}
+
+.editor-header-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.editor-header-menu-item:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.editor-header-menu-item.selected {
+  color: var(--accent);
+}
+
+.editor-header-menu-item .item-icon {
+  flex-shrink: 0;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-header-menu-item .item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-header-menu-item .item-check {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* ============================================================================
+   Notebook Selector
+   ============================================================================ */
+
+.notebook-selector-item {
+  padding-left: calc(8px + var(--depth, 0) * 12px);
+}
+
+/* ============================================================================
+   Status Dropdown
+   ============================================================================ */
+
+.status-dropdown-btn .status-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Status color coding */
+.status-dropdown-btn[data-status="active"] .status-icon,
+.editor-header-menu-item[data-status="active"] .item-icon {
+  color: var(--text-secondary);
+}
+
+.status-dropdown-btn[data-status="on_hold"] .status-icon,
+.editor-header-menu-item[data-status="on_hold"] .item-icon {
+  color: var(--status-on-hold);
+}
+
+.status-dropdown-btn[data-status="completed"] .status-icon,
+.editor-header-menu-item[data-status="completed"] .item-icon {
+  color: var(--status-completed);
+}
+
+.status-dropdown-btn[data-status="dropped"] .status-icon,
+.editor-header-menu-item[data-status="dropped"] .item-icon {
+  color: var(--status-dropped);
+}
+
+/* ============================================================================
+   Tags Input (Read-only in Phase 1)
+   ============================================================================ */
+
+.tags-display {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+}
+
+.tags-display:hover {
+  background: var(--bg-hover);
+}
+
+.tags-display-label {
+  color: var(--text-faint);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tags-display-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.tag-chip--colored {
+  background: var(--tag-color-bg, var(--bg-elevated));
+  color: var(--tag-color, var(--text-secondary));
+}
+
+.tag-chip--colored .tag-hash {
+  color: var(--tag-color, var(--text-faint));
+  opacity: 0.7;
+}
+
+.tag-chip .tag-hash {
+  color: var(--text-faint);
+}
+
+.tags-display-empty {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: normal;
+}
+
+/* Editable tags styles */
+.tags-display--editable {
+  cursor: default;
+}
+
+.tags-display-chips {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tag-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: 2px;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all var(--transition-fast);
+}
+
+.tag-chip-remove:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+}
+
+.tag-chip--add {
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.tag-chip--add:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.tags-input-field {
+  width: 60px;
+  min-width: 40px;
+  padding: 2px 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.tags-input-field:focus {
+  border-color: var(--accent);
+}
+
+.tags-input-field::placeholder {
+  color: var(--text-faint);
+}
+
+/* Tags autocomplete wrapper */
+.tags-input-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Tags autocomplete suggestions dropdown */
+.tags-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 140px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  z-index: 100;
+  animation: tags-suggestions-enter var(--transition-fast) ease-out;
+}
+
+@keyframes tags-suggestions-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tags-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-normal);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.tags-suggestion-item:hover,
+.tags-suggestion-item.selected {
+  background: var(--bg-hover);
+}
+
+.tags-suggestion-item.selected {
+  color: var(--accent);
+}
+
+.tags-suggestion-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+
+:global(:root[data-perf="low"]) .tags-suggestions {
+  animation: none !important;
+  transition: none !important;
+}

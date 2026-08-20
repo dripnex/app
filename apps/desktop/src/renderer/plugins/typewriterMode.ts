@@ -1,6 +1,6 @@
 import { ViewPlugin, type ViewUpdate } from '@codemirror/view';
 import type { Extension } from '@codemirror/state';
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 /**
  * CM6 extension that scrolls the cursor to the vertical center of the editor.
@@ -31,7 +31,7 @@ function typewriterScroll(): Extension {
 }
 
 export const typewriterModePlugin: PluginManifest = {
-  id: 'readied-typewriter-mode',
+  id: 'dripnex-typewriter-mode',
   name: 'Typewriter Mode',
   version: '1.0.0',
   description: 'Keeps the cursor line centered in the editor for a focused writing experience',
@@ -58,6 +58,12 @@ export const typewriterModePlugin: PluginManifest = {
       enable();
     }
 
+    const unobserve = context.config.observe<boolean>('enabled', value => {
+      enabled = Boolean(value);
+      if (enabled) enable();
+      else disable();
+    });
+
     // Register toggle command
     const unregisterCommand = context.registerCommand(
       {
@@ -80,6 +86,7 @@ export const typewriterModePlugin: PluginManifest = {
 
     return {
       dispose() {
+        unobserve();
         disable();
         unregisterCommand();
       },

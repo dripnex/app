@@ -6,6 +6,7 @@ export type {
   CommandDefinition,
   RegisteredCommand,
   KeyBindingOverride,
+  CommandPayload,
 } from './types';
 
 export {
@@ -14,3 +15,6 @@ export {
   keybindingsMatch,
   formatKeybinding,
 } from './registry';
+
+export { parseChord, parseKeymap, stripJsonc } from './keymap';
+export type { ParseKeymapResult } from './keymap';

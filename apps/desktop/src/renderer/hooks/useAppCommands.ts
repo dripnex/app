@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AiPanelMode } from '@readied/ai-core';
+import type { AiPanelMode } from '@dripnex/ai-core';
 import {
   SUMMARIZE_SYSTEM_PROMPT,
   SUMMARIZE_USER_TEMPLATE,
@@ -8,15 +8,26 @@ import {
   TWEET_SYSTEM_PROMPT,
   TWEET_USER_TEMPLATE,
   resolveTemplate,
-} from '@readied/ai-core';
+} from '@dripnex/ai-core';
+import { openSearchPanel } from '@codemirror/search';
+import { scanMarkdown } from '@dripnex/markdown';
 import type { AiInitialCommand } from '../components/ai/AiPanel';
+import { useHeadingJumpStore } from '../stores/headingJumpStore';
+import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
+import { usePreviewFindStore } from '../stores/previewFindStore';
+import type { NoteSnapshot } from '../../preload/index';
+import type { PaletteMode } from '../utils/paletteQuery';
+import { neighborId } from '../utils/neighborId';
+import { formatWikilink } from '../utils/formatWikilink';
+import { headingIndexAtOrBefore } from '../utils/outlineActive';
+import { dismissNes } from '../editor/nes/extension';
 import { useRegisterAiCommands } from './useRegisterAiCommands';
 import { useRegisterPluginAiCommands } from './useRegisterPluginAiCommands';
 import { useCommandKeybindings } from './useCommandKeybindings';
 import { useRegisterAppCommands } from './useRegisterAppCommands';
-import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
 import { getEditorView } from './useCommandRegistry';
-import type { NoteSnapshot } from '../../preload/index';
+import { useNavigationActions } from './useNavigation';
+import { ensureNowBoard } from './useNowBoard';
 
 interface UseAppCommandsOptions {
   handleNewNote: () => Promise<void>;
@@ -24,11 +35,18 @@ interface UseAppCommandsOptions {
   selectedNote: NoteSnapshot | null;
   isCommandPaletteOpen: boolean;
   setIsCommandPaletteOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
+  openPalette: (mode: PaletteMode) => void;
   isGraphOpen: boolean;
   setIsGraphOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   searchQuery: string;
   clearSearch: () => void;
   setSelectedNote: (note: NoteSnapshot | null) => void;
+  displayedNotes: ReadonlyArray<{ id: string }>;
+  onSelectNote: (id: string) => void;
+  onNoteBack: () => void;
+  onNoteForward: () => void;
+  onToggleZen: () => void;
+  onOpenInWindow: () => void;
 }
 
 export function useAppCommands({
@@ -37,13 +55,24 @@ export function useAppCommands({
   selectedNote,
   isCommandPaletteOpen,
   setIsCommandPaletteOpen,
+  openPalette,
   isGraphOpen,
   setIsGraphOpen,
   searchQuery,
   clearSearch,
   setSelectedNote,
+  displayedNotes,
+  onSelectNote,
+  onNoteBack,
+  onNoteForward,
+  onToggleZen,
+  onOpenInWindow,
 }: UseAppCommandsOptions) {
   const cycleViewMode = useEditorPreferencesStore(state => state.cycleViewMode);
+  const togglePreview = useEditorPreferencesStore(state => state.togglePreview);
+  const toggleSplit = useEditorPreferencesStore(state => state.toggleSplit);
+  const toggleOutline = useEditorPreferencesStore(state => state.toggleOutline);
+  const { goToAllNotes } = useNavigationActions();
 
   // AI panel state
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -61,18 +90,109 @@ export function useAppCommands({
 
   // Register app commands (new note, duplicate, search, etc.)
   useRegisterAppCommands({
+    onOpenNote: useCallback(
+      (noteId: string, heading?: string) => {
+        void (async () => {
+          const result = await window.dripnex.notes.get(noteId);
+          if (!result.ok) return;
+          if (heading) useHeadingJumpStore.getState().request(noteId, heading);
+          setSelectedNote(result.data);
+        })();
+      },
+      [setSelectedNote]
+    ),
     onNewNote: handleNewNote,
     onDuplicateNote: useCallback(() => {
       if (selectedNote) void handleDuplicateNote(selectedNote.id);
     }, [selectedNote, handleDuplicateNote]),
     onFocusSearch: useCallback(() => {
-      const searchInput = document.querySelector('.search-input') as HTMLInputElement;
+      const searchInput = document.getElementById('note-search') as HTMLInputElement | null;
+      searchInput?.focus();
+    }, []),
+    onFindInNote: useCallback(() => {
+      const viewMode = useEditorPreferencesStore.getState().viewMode;
+      const view = getEditorView();
+      if (view && (viewMode === 'editor' || viewMode === 'split')) {
+        openSearchPanel(view);
+        view.focus();
+        return;
+      }
+      if (viewMode === 'preview' || viewMode === 'split') {
+        usePreviewFindStore.getState().openPanel();
+        return;
+      }
+      const searchInput = document.getElementById('note-search') as HTMLInputElement | null;
       searchInput?.focus();
     }, []),
     onCycleViewMode: cycleViewMode,
+    onTogglePreview: togglePreview,
+    onToggleSplit: toggleSplit,
+    onNextNote: useCallback(() => {
+      const next = neighborId(
+        displayedNotes.map(n => n.id),
+        selectedNote?.id ?? null,
+        1
+      );
+      if (next) onSelectNote(next);
+    }, [displayedNotes, selectedNote?.id, onSelectNote]),
+    onPrevNote: useCallback(() => {
+      const prev = neighborId(
+        displayedNotes.map(n => n.id),
+        selectedNote?.id ?? null,
+        -1
+      );
+      if (prev) onSelectNote(prev);
+    }, [displayedNotes, selectedNote?.id, onSelectNote]),
+    onSaveNote: useCallback(() => {
+      window.dispatchEvent(new Event('dripnex:save-note'));
+    }, []),
+    onToggleOutline: toggleOutline,
     onToggleGraph: useCallback(() => setIsGraphOpen(prev => !prev), [setIsGraphOpen]),
-    onOpenSettings: useCallback(() => window.readied.windows.openSettings(), []),
-    onCommandPalette: toggleCommandPalette,
+    onOpenSettings: useCallback(() => window.dripnex.windows.openSettings(), []),
+    onCommandPalette: () => openPalette('commands'),
+    onQuickOpen: () => openPalette('notes'),
+    onJumpNotebook: () => openPalette('notebooks'),
+    onJumpTag: () => openPalette('tags'),
+    onJumpHeading: () => openPalette('headings'),
+    onCopyWikilink: useCallback(() => {
+      const title = selectedNote?.title ?? '';
+      const view = getEditorView();
+      let heading: string | undefined;
+      if (view) {
+        const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+        const headings = scanMarkdown(view.state.doc.toString()).headings;
+        const index = headingIndexAtOrBefore(headings, line);
+        heading = index >= 0 ? headings[index]?.text : undefined;
+      }
+      const link = formatWikilink(title, heading);
+      if (link === '[[]]') return;
+      void navigator.clipboard.writeText(link);
+    }, [selectedNote?.title]),
+    onOpenNowBoard: useCallback(() => {
+      void (async () => {
+        const result = await ensureNowBoard();
+        if (!result) return;
+        goToAllNotes();
+        setSelectedNote(result.note);
+        clearSearch();
+      })();
+    }, [goToAllNotes, setSelectedNote, clearSearch]),
+    onOpenInitScript: useCallback(() => {
+      void window.dripnex.plugins.openUserFile('init');
+    }, []),
+    onOpenUserStyles: useCallback(() => {
+      void window.dripnex.plugins.openUserFile('styles');
+    }, []),
+    onOpenKeymap: useCallback(() => {
+      void window.dripnex.plugins.openUserFile('keymap');
+    }, []),
+    onReloadPlugins: useCallback(() => {
+      window.dripnex.plugins.requestReload();
+    }, []),
+    onNoteBack,
+    onNoteForward,
+    onToggleZen,
+    onOpenInWindow,
   });
 
   // AI panel toggle/modes
@@ -94,8 +214,8 @@ export function useAppCommands({
   // Listen for the plugin's Sparkles button CustomEvent
   useEffect(() => {
     const handler = () => toggleAiPanel();
-    window.addEventListener('readied:ai:toggle-panel', handler);
-    return () => window.removeEventListener('readied:ai:toggle-panel', handler);
+    window.addEventListener('dripnex:ai:toggle-panel', handler);
+    return () => window.removeEventListener('dripnex:ai:toggle-panel', handler);
   }, [toggleAiPanel]);
 
   /** Helper: get selection text from editor */
@@ -105,6 +225,24 @@ export function useAppCommands({
     const { from, to } = view.state.selection.main;
     return view.state.sliceDoc(from, to);
   }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ system?: string; instruction?: string }>).detail;
+      const selection = getSelectionText();
+      if (!selection || !detail?.system) return;
+      const extra = detail.instruction ? `\n\nInstruction: ${detail.instruction}` : '';
+      setPendingAiCommand({
+        systemPrompt: detail.system,
+        userPrompt: `Selection:\n${selection}${extra}`,
+        outputTarget: 'replace',
+      });
+      setAiPanelMode('chat');
+      setIsAiPanelOpen(true);
+    };
+    window.addEventListener('dripnex:ai:edit', handler);
+    return () => window.removeEventListener('dripnex:ai:edit', handler);
+  }, [getSelectionText]);
 
   /** Helper: replace selection in editor */
   const aiReplaceSelection = useCallback((text: string) => {
@@ -166,13 +304,18 @@ export function useAppCommands({
   // Global keyboard handler (routes through CommandRegistry)
   useCommandKeybindings({
     onEscape: useCallback(() => {
-      // Cascading escape: command palette -> AI panel -> graph -> search -> deselect note
+      // Cascading escape: palette -> NES ghost -> AI panel -> graph -> search -> deselect
+      const view = getEditorView();
       if (isCommandPaletteOpen) {
         setIsCommandPaletteOpen(false);
+      } else if (view && dismissNes(view)) {
+        return;
       } else if (isAiPanelOpen) {
         setIsAiPanelOpen(false);
       } else if (isGraphOpen) {
         setIsGraphOpen(false);
+      } else if (usePreviewFindStore.getState().open) {
+        usePreviewFindStore.getState().closePanel();
       } else if (searchQuery) {
         clearSearch();
       } else if (selectedNote) {
@@ -207,6 +350,7 @@ export function useAppCommands({
     isAiPanelOpen,
     aiPanelMode,
     pendingAiCommand,
+    openAskNotes,
     closeAiPanel,
     clearPendingAiCommand,
     aiReplaceSelection,

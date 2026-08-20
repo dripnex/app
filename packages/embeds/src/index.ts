@@ -1,11 +1,11 @@
 /**
- * @readied/embeds
+ * @dripnex/embeds
  *
- * Embed system for Readied.
+ * Embed system for Dripnex.
  * Supports ![[filename]] syntax for embedding images, videos, audio, and PDFs.
  *
  * USAGE:
- *   import { remarkEmbed, extractEmbeds } from '@readied/embeds';
+ *   import { remarkEmbed, extractEmbeds } from '@dripnex/embeds';
  *
  *   // In remark plugins:
  *   remarkPlugins={[remarkGfm, remarkWikilink, remarkEmbed]}

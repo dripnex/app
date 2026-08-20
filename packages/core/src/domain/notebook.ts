@@ -10,6 +10,7 @@ import {
   createTimestamp,
   generateNotebookId,
   INBOX_NOTEBOOK_ID,
+  TEMPLATES_NOTEBOOK_ID,
   MAX_NOTEBOOK_DEPTH,
 } from './types.js';
 
@@ -35,6 +36,9 @@ export interface Notebook {
 
   /** When last modified */
   readonly updatedAt: Timestamp;
+
+  /** Lucide icon id for the sidebar (`folder`, `globe`, …). Null = default. */
+  readonly icon: string | null;
 }
 
 /** Extended notebook with computed counts */
@@ -74,6 +78,9 @@ export interface CreateNotebookOptions {
 
   /** Optional creation timestamp */
   createdAt?: Timestamp;
+
+  /** Optional sidebar icon */
+  icon?: string | null;
 }
 
 /** Creates a new Notebook */
@@ -90,6 +97,22 @@ export function createNotebook(options: CreateNotebookOptions): Notebook {
     order: options.order ?? 0,
     createdAt: options.createdAt ?? now,
     updatedAt: now,
+    icon: options.icon ?? null,
+  };
+}
+
+/** Creates the reserved Note Templates notebook */
+export function createTemplatesNotebook(): Notebook {
+  const now = createTimestamp();
+  return {
+    id: TEMPLATES_NOTEBOOK_ID,
+    name: 'Note Templates',
+    parentId: null,
+    depth: 0,
+    order: 1,
+    createdAt: now,
+    updatedAt: now,
+    icon: 'file-stack',
   };
 }
 
@@ -105,6 +128,7 @@ export function createInboxNotebook(): Notebook {
     order: 0, // Always first
     createdAt: now,
     updatedAt: now,
+    icon: 'inbox',
   };
 }
 
@@ -155,6 +179,17 @@ export function moveNotebook(
   };
 }
 
+/** Sets or clears the sidebar icon. */
+export function setNotebookIcon(notebook: Notebook, icon: string | null): Notebook {
+  const next = icon?.trim() || null;
+  if (notebook.icon === next) return notebook;
+  return {
+    ...notebook,
+    icon: next,
+    updatedAt: createTimestamp(),
+  };
+}
+
 /** Updates the sort order of a notebook */
 export function reorderNotebook(notebook: Notebook, newOrder: number): Notebook {
   return {
@@ -179,9 +214,13 @@ export function isInbox(notebook: Notebook): boolean {
   return notebook.id === INBOX_NOTEBOOK_ID;
 }
 
+export function isReservedNotebook(notebook: Notebook): boolean {
+  return notebook.id === INBOX_NOTEBOOK_ID || notebook.id === TEMPLATES_NOTEBOOK_ID;
+}
+
 /** Checks if a notebook can be deleted (Inbox cannot) */
 export function canDelete(notebook: Notebook): boolean {
-  return !isInbox(notebook);
+  return !isReservedNotebook(notebook);
 }
 
 /** Builds a tree structure from a flat list of notebooks */

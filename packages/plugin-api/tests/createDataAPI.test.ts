@@ -45,6 +45,41 @@ describe('createDataAPI', () => {
       expect(result.hasMore).toBe(true);
     });
 
+    it('writes notes through the bridge', async () => {
+      const created = { id: 'n1', title: 'Hi', content: '# Hi' };
+      const api = createDataAPI(
+        makeBridge({
+          createNote: async () => created,
+          updateNote: async () => ({ ...created, content: '# Bye' }),
+          trashNote: async () => true,
+        })
+      );
+      expect(await api.createNote({ content: '# Hi' })).toEqual(created);
+      expect(await api.updateNote('n1', '# Bye')).toEqual({ ...created, content: '# Bye' });
+      expect(await api.trashNote('n1')).toBe(true);
+    });
+
+    it('writes notebooks and tags through the bridge', async () => {
+      const created = { id: 'b1', name: 'Inbox', parentId: null as string | null };
+      const api = createDataAPI(
+        makeBridge({
+          createNotebook: async () => created,
+          updateNotebook: async () => ({ ...created, name: 'Work' }),
+          deleteNotebook: async () => true,
+          setTagColor: async () => true,
+          renameTag: async () => true,
+        })
+      );
+      expect(await api.createNotebook({ name: 'Inbox' })).toEqual(created);
+      expect(await api.updateNotebook('b1', { name: 'Work' })).toEqual({
+        ...created,
+        name: 'Work',
+      });
+      expect(await api.deleteNotebook('b1')).toBe(true);
+      expect(await api.setTagColor('ship', '#f00')).toBe(true);
+      expect(await api.renameTag('ship', 'done')).toBe(true);
+    });
+
     it('hasMore is false when all notes returned', async () => {
       const api = createDataAPI(
         makeBridge({
@@ -132,6 +167,18 @@ describe('createDataAPI', () => {
       const api = createDataAPI(makeBridge({ getTags: async () => ['a', 'b', 'c', 'd', 'e'] }));
       const result = await api.getTags({ limit: 2, offset: 1 });
       expect(result.map(t => t.name)).toEqual(['b', 'c']);
+    });
+
+    it('prefers queryTags when the host implements SQL filtering', async () => {
+      const queryTags = async () => [{ name: 'from-sql', color: '#111' }];
+      const api = createDataAPI(
+        makeBridge({
+          getTags: async () => ['should-not-run'],
+          queryTags,
+        })
+      );
+      const result = await api.getTags({ filter: 'sql', limit: 1 });
+      expect(result).toEqual([{ name: 'from-sql', color: '#111' }]);
     });
   });
 

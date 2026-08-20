@@ -9,7 +9,7 @@
  * - bm25() provides relevance ranking for search results
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 
 export const addFts5Index: Migration = {
   version: 20260106000001,

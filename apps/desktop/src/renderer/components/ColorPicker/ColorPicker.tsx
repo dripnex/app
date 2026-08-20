@@ -1,17 +1,8 @@
 import { forwardRef } from 'react';
+import { TAG_COLORS } from '../../ui/tokens/palette';
 import styles from './ColorPicker.module.css';
 
-/** Predefined color palette for tags */
-export const TAG_COLORS = [
-  '#ef4444', // Red
-  '#f59e0b', // Amber
-  '#22c55e', // Green
-  '#3b82f6', // Blue
-  '#8b5cf6', // Purple
-  '#ec4899', // Pink
-  '#06b6d4', // Cyan
-  '#84cc16', // Lime
-];
+export { TAG_COLORS };
 
 export interface ColorPickerProps {
   /** Currently selected color (null if none) */

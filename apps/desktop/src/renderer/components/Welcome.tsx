@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '../ui/primitives';
+import logo from '../assets/logo.png';
 import styles from './Welcome.module.css';
 
 interface WelcomeProps {
@@ -62,7 +63,10 @@ export function Welcome({ onComplete }: WelcomeProps) {
       aria-labelledby="welcome-heading"
     >
       <div className={styles.container}>
-        <span className={styles.brand}>Readied</span>
+        <div className={styles.brandRow}>
+          <img src={logo} alt="" className={styles.logo} width={72} height={72} />
+          <span className={styles.brand}>Dripnex</span>
+        </div>
 
         <h1 id="welcome-heading" className={styles.headline}>
           Your Markdown. Your Machine. Your&nbsp;Rules.

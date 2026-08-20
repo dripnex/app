@@ -1,3 +1,4 @@
+import { createLogger } from '@dripnex/logger';
 import type { Extension } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import type { ComponentType } from 'react';
@@ -23,8 +24,29 @@ import { previewComponentStore } from '../preview/previewComponentStore';
 import { codeBlockStore } from '../preview/codeBlockStore';
 import type { CodeBlockRendererProps } from '../preview/codeBlockStore';
 import { cssVariableStore } from '../theme/cssVariableStore';
+import { pluginStyleStore } from '../theme/pluginStyleStore';
 import { themeRegistryStore } from '../theme/themeRegistryStore';
+import { createThemesApi } from '../theme/createThemesApi';
 import { aiCommandStore } from '../ai/aiCommandStore';
+import { pluginMenuStore } from '../menu/pluginMenuStore';
+import { pluginContextMenuStore } from '../menu/pluginContextMenuStore';
+import { dispatchHostCommand, getHostVim, hostNotify, setHostVim } from '../loader/hostBridges';
+import { getHostStore } from '../store/appStore';
+import { previewEventStore } from '../preview/previewEventStore';
+import { pluginComponents } from '../components/catalog.js';
+import { createMarkdownRenderer } from '../preview/createMarkdownRenderer.js';
+import {
+  applyPluginPackageFiles,
+  type PluginPackageFiles,
+} from '../packageFiles/applyPluginPackageFiles';
+import type { PluginKeymapBinding } from '../packageFiles/parsePluginKeymap';
+import {
+  applyPluginConfig,
+  clearPluginConfig,
+  getPluginConfig,
+  observePluginConfig,
+  resetPluginConfig,
+} from './configRuntime';
 
 export const MAX_CRASH_COUNT = 3;
 
@@ -41,7 +63,7 @@ export interface RegisterCommandFn {
     icon?: string;
     showInPalette?: boolean;
     enabled?: boolean;
-    execute: () => boolean | void | Promise<boolean | void>;
+    execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
   }): () => void;
 }
 
@@ -51,11 +73,17 @@ export interface ConfigBridge {
   set: (pluginId: string, key: string, value: unknown) => Promise<void>;
 }
 
+export type SetDefaultKeybindingFn = (
+  commandId: string,
+  keybinding: PluginKeymapBinding['keybinding']
+) => boolean;
+
 interface PluginEntry {
   manifest: PluginManifest;
   state: PluginState;
   disposable?: PluginDisposable;
   commandUnregisters: Array<() => void>;
+  vimApi?: unknown;
   /** Event unsubscribers tracked by the auto-cleanup wrapper */
   eventUnsubscribers: Array<() => void>;
   /** Number of times activate() has thrown */
@@ -102,7 +130,9 @@ export class PluginRegistry {
     dataAPI: DataAPI,
     registerCommandFn?: RegisterCommandFn,
     configBridge?: ConfigBridge,
-    getView?: () => EditorView | null
+    getView?: () => EditorView | null,
+    packageFiles?: PluginPackageFiles,
+    setDefaultKeybinding?: SetDefaultKeybindingFn
   ): Promise<void> {
     const entry = this.plugins.get(id);
     if (!entry) {
@@ -124,7 +154,7 @@ export class PluginRegistry {
     // Build registerCommand wrapper with auto-prefix + defaults
     const registerCommand = (
       options: PluginCommandOptions,
-      execute: () => boolean | void | Promise<boolean | void>
+      execute: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>
     ): (() => void) => {
       if (!registerCommandFn) {
         console.warn(`[${id}] registerCommand not available (no host bridge)`);
@@ -152,16 +182,22 @@ export class PluginRegistry {
 
     // Hydrate config cache from persistence before plugin starts
     const configCache: Record<string, unknown> = configBridge ? await configBridge.getAll(id) : {};
+    resetPluginConfig(id, configCache);
 
     const config: PluginConfigAPI = {
       get<T>(key: string): T | undefined {
-        return configCache[key] as T | undefined;
+        return getPluginConfig<T>(id, key);
       },
       set(key: string, value: unknown) {
-        configCache[key] = value;
+        applyPluginConfig(id, key, value);
         if (configBridge) {
           void configBridge.set(id, key, value);
         }
+      },
+      observe<T>(key: string, callback: (value: T) => void) {
+        return observePluginConfig(id, key, raw => {
+          callback(raw as T);
+        });
       },
     };
 
@@ -270,10 +306,111 @@ export class PluginRegistry {
       },
     };
 
+    const menu = {
+      add(item: {
+        label: string;
+        accelerator?: string;
+        command?: string;
+        click?: () => boolean | void | Promise<boolean | void>;
+      }): () => void {
+        const localId =
+          item.command ?? `menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
+        if (item.click) {
+          registerCommand(
+            {
+              id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
+              name: item.label,
+              keybinding: parseAccelerator(item.accelerator),
+              showInPalette: true,
+            },
+            item.click
+          );
+        }
+        pluginMenuStore.getState().add({
+          pluginId: id,
+          label: item.label,
+          commandId,
+          accelerator: item.accelerator,
+        });
+        return () => pluginMenuStore.getState().remove(commandId);
+      },
+    };
+
+    const notifications = {
+      addSuccess(message: string) {
+        hostNotify('success', message);
+      },
+      addInfo(message: string) {
+        hostNotify('info', message);
+      },
+      addWarning(message: string) {
+        hostNotify('warning', message);
+      },
+      addError(message: string) {
+        hostNotify('error', message);
+      },
+    };
+
+    const contextMenu = {
+      add(
+        target: 'note-list-item' | 'notebook-item' | 'tag-item' | 'editor',
+        item: {
+          label: string;
+          command?: string;
+          click?: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
+        }
+      ): () => void {
+        const localId =
+          item.command ?? `ctx-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
+        if (item.click) {
+          registerCommand(
+            {
+              id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
+              name: item.label,
+              showInPalette: false,
+            },
+            item.click
+          );
+        }
+        pluginContextMenuStore.getState().add({
+          pluginId: id,
+          target,
+          label: item.label,
+          commandId,
+        });
+        return () => pluginContextMenuStore.getState().remove(commandId);
+      },
+    };
+
+    const clipboard = createClipboardApi();
+
+    const preview = {
+      on(
+        event: 'a:click' | 'checkbox:change',
+        handler: (detail: {
+          href?: string;
+          text?: string;
+          index?: number;
+          checked?: boolean;
+        }) => boolean | void
+      ): () => void {
+        return previewEventStore.getState().on(id, event, handler);
+      },
+    };
+
     const context: PluginContext = {
       layout: createLayoutManager(id),
       editor: trackedEditor,
       decorations: decoResult?.api ?? noopDecorations,
+      menu,
+      clipboard,
+      notifications,
+      contextMenu,
+      preview,
+      components: pluginComponents,
+      markdownRenderer: createMarkdownRenderer(id),
       registerExtensions: (extId: string, extensions: Extension[]) => {
         editorPluginStore.getState().register({
           id: extId,
@@ -283,6 +420,15 @@ export class PluginRegistry {
         return () => editorPluginStore.getState().unregister(extId);
       },
       registerCommand,
+      dispatchCommand: (commandId, payload) => dispatchHostCommand(commandId, payload),
+      registerVim: (api: unknown) => {
+        setHostVim(api);
+        entry.vimApi = api;
+        return () => {
+          if (getHostVim() === api) setHostVim(null);
+          if (entry.vimApi === api) delete entry.vimApi;
+        };
+      },
       registerRemarkPlugin: (
         regId: string,
         plugin: unknown,
@@ -358,6 +504,7 @@ export class PluginRegistry {
         cssVariableStore.getState().register({ id: regId, pluginId: id, variables });
         return () => cssVariableStore.getState().unregister(regId);
       },
+      themes: createThemesApi(),
       registerTheme: (theme): (() => void) => {
         const success = themeRegistryStore.getState().register({
           ...theme,
@@ -369,13 +516,9 @@ export class PluginRegistry {
         return () => themeRegistryStore.getState().unregister(theme.id);
       },
       config,
-      log: {
-        // eslint-disable-next-line no-console
-        info: (msg: string, ...args: unknown[]) => console.info(`[${id}]`, msg, ...args),
-        warn: (msg: string, ...args: unknown[]) => console.warn(`[${id}]`, msg, ...args),
-        error: (msg: string, ...args: unknown[]) => console.error(`[${id}]`, msg, ...args),
-      },
+      log: createLogger(id),
       app: trackedApp,
+      store: getHostStore(),
       data: trackedData,
     };
 
@@ -383,6 +526,12 @@ export class PluginRegistry {
       const disposable = entry.manifest.activate(context);
       entry.state = 'active';
       entry.disposable = disposable ?? undefined;
+      if (packageFiles) {
+        const applied = applyPluginPackageFiles(id, packageFiles, { setDefaultKeybinding });
+        for (const err of applied.errors) {
+          console.warn(`[plugin:${id}] ${err}`);
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[plugin:${id}] activate() threw:`, error);
@@ -397,8 +546,12 @@ export class PluginRegistry {
       previewComponentStore.getState().unregisterAll(id);
       codeBlockStore.getState().unregisterAll(id);
       cssVariableStore.getState().unregisterAll(id);
+      pluginStyleStore.getState().unregisterAll(id);
       themeRegistryStore.getState().unregisterAll(id);
       aiCommandStore.getState().unregisterAll(id);
+      pluginMenuStore.getState().removeAll(id);
+      pluginContextMenuStore.getState().removeAll(id);
+      previewEventStore.getState().removeAll(id);
       const layoutManager = createLayoutManager(id);
       layoutManager.removeAllForPlugin(id);
       for (const unregister of entry.commandUnregisters) {
@@ -419,6 +572,11 @@ export class PluginRegistry {
     } catch (error) {
       console.error(`[plugin:${id}] dispose() threw:`, error);
     }
+
+    if (entry.vimApi && getHostVim() === entry.vimApi) {
+      setHostVim(null);
+    }
+    delete entry.vimApi;
 
     // Call deactivate lifecycle (guarded)
     try {
@@ -442,10 +600,14 @@ export class PluginRegistry {
 
     // Cleanup theme stores
     cssVariableStore.getState().unregisterAll(id);
+    pluginStyleStore.getState().unregisterAll(id);
     themeRegistryStore.getState().unregisterAll(id);
 
     // Cleanup AI command registrations
     aiCommandStore.getState().unregisterAll(id);
+    pluginMenuStore.getState().removeAll(id);
+    pluginContextMenuStore.getState().removeAll(id);
+    previewEventStore.getState().removeAll(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {
@@ -461,6 +623,7 @@ export class PluginRegistry {
 
     entry.state = 'deactivated';
     entry.disposable = undefined;
+    clearPluginConfig(id);
   }
 
   /** Unload a plugin completely */
@@ -508,4 +671,61 @@ export class PluginRegistry {
     if (!entry) return false;
     return entry.state === 'error' && entry.errorCount >= MAX_CRASH_COUNT;
   }
+}
+
+function createClipboardApi(): PluginContext['clipboard'] {
+  const host = (
+    globalThis as {
+      window?: {
+        dripnex?: {
+          clipboard?: {
+            readText: () => Promise<string>;
+            writeText: (text: string) => Promise<void>;
+          };
+        };
+      };
+    }
+  ).window?.dripnex?.clipboard;
+
+  return {
+    async readText() {
+      if (host?.readText) {
+        try {
+          return await host.readText();
+        } catch {
+          return '';
+        }
+      }
+      try {
+        return await navigator.clipboard.readText();
+      } catch {
+        return '';
+      }
+    },
+    async writeText(text) {
+      if (host?.writeText) {
+        await host.writeText(text);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // locked session / missing permission
+      }
+    },
+  };
+}
+
+function parseAccelerator(
+  accelerator: string | undefined
+): PluginCommandOptions['keybinding'] | undefined {
+  if (!accelerator) return undefined;
+  const parts = accelerator
+    .split('+')
+    .map(p => p.trim())
+    .filter(Boolean);
+  const key = parts.pop();
+  if (!key) return undefined;
+  const modifiers = parts.map(p => (p === 'CmdOrCtrl' || p === 'Command' ? 'Mod' : p));
+  return { key, modifiers };
 }

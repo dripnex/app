@@ -1,4 +1,7 @@
-import { useMemo } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
+import { sc } from './sc';
 
 interface AiMessageProps {
   role: 'user' | 'assistant';
@@ -8,34 +11,14 @@ interface AiMessageProps {
 export function AiMessage({ role, content }: AiMessageProps) {
   const isUser = role === 'user';
 
-  const formattedContent = useMemo(() => {
-    // Simple markdown rendering: bold, italic, code blocks, inline code
-    let html = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    // Code blocks
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
-      return `<pre><code>${code.trim()}</code></pre>`;
-    });
-
-    // Inline code
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Bold
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Italic
-    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // Line breaks
-    html = html.replace(/\n/g, '<br>');
-
-    return html;
-  }, [content]);
-
   return (
-    <div className={`ai-message ai-message--${role}`}>
-      <div className="ai-message-label">{isUser ? 'You' : 'AI'}</div>
-      <div className="ai-message-content" dangerouslySetInnerHTML={{ __html: formattedContent }} />
+    <div className={sc('ai-message', `ai-message--${role}`)}>
+      <div className={sc('ai-message-label')}>{isUser ? 'You' : 'AI'}</div>
+      <div className={sc('ai-message-content')}>
+        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+          {content}
+        </Markdown>
+      </div>
     </div>
   );
 }

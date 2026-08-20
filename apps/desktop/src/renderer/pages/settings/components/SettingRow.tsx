@@ -16,11 +16,13 @@ interface SettingRowProps {
   children: ReactNode;
   /** HTML id for accessibility (links label to control) */
   htmlFor?: string;
+  /** Drop horizontal padding when nested inside a card. */
+  flush?: boolean;
 }
 
-export function SettingRow({ label, description, children, htmlFor }: SettingRowProps) {
+export function SettingRow({ label, description, children, htmlFor, flush }: SettingRowProps) {
   return (
-    <div className={styles.row}>
+    <div className={`${styles.row} ${flush ? styles.flush : ''}`}>
       <div className={styles.labelContainer}>
         <label className={styles.label} htmlFor={htmlFor}>
           {label}

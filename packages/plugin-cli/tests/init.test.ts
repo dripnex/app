@@ -5,7 +5,7 @@ import { tmpdir } from 'os';
 import { describe, it, expect, afterEach } from 'vitest';
 import { initPlugin } from '../src/commands/init';
 
-const TEST_DIR = join(tmpdir(), `readied-plugin-test-${Date.now()}`);
+const TEST_DIR = join(tmpdir(), `dripnex-plugin-test-${Date.now()}`);
 
 function testDir(name: string): string {
   return join(TEST_DIR, name);
@@ -26,6 +26,9 @@ describe('initPlugin', () => {
     expect(existsSync(join(dir, 'package.json'))).toBe(true);
     expect(existsSync(join(dir, 'tsconfig.json'))).toBe(true);
     expect(existsSync(join(dir, 'src', 'index.ts'))).toBe(true);
+    expect(existsSync(join(dir, 'keymaps', 'default.json'))).toBe(true);
+    expect(existsSync(join(dir, 'menus', 'main.json'))).toBe(true);
+    expect(existsSync(join(dir, 'styles', 'index.css'))).toBe(true);
   });
 
   it('generates valid manifest.json', async () => {
@@ -42,7 +45,7 @@ describe('initPlugin', () => {
     const dir = await initPlugin({ name: 'Test Plugin', dir: testDir('test-plugin') });
     const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf-8'));
 
-    expect(pkg.name).toBe('readied-plugin-test-plugin');
+    expect(pkg.name).toBe('dripnex-plugin-test-plugin');
     expect(pkg.scripts.build).toBe('tsc');
   });
 
@@ -53,6 +56,20 @@ describe('initPlugin', () => {
     expect(index).toContain("id: 'demo'");
     expect(index).toContain("name: 'Demo'");
     expect(index).toContain('module.exports');
+    expect(index).toContain("id: 'say-hello'");
+    expect(index).toContain('context.registerCommand');
+  });
+
+  it('scaffolds package keymaps, menus, and styles', async () => {
+    const dir = await initPlugin({ name: 'Demo', dir: testDir('demo-files') });
+    const keymap = JSON.parse(await readFile(join(dir, 'keymaps', 'default.json'), 'utf-8'));
+    const menus = JSON.parse(await readFile(join(dir, 'menus', 'main.json'), 'utf-8'));
+    const css = await readFile(join(dir, 'styles', 'index.css'), 'utf-8');
+
+    expect(keymap['say-hello']).toBe('Mod+Shift+H');
+    expect(menus.menu[0]).toEqual({ label: 'Say Hello', command: 'say-hello' });
+    expect(menus['context-menu']['note-list-item'][0].command).toBe('say-hello');
+    expect(css).toContain('Loaded while this plugin is enabled');
   });
 
   it('throws if directory already exists', async () => {
@@ -66,6 +83,19 @@ describe('initPlugin', () => {
     await expect(initPlugin({ name: '', dir: testDir('empty') })).rejects.toThrow(
       'Plugin name is required'
     );
+  });
+
+  it('scaffolds a theme package without JS', async () => {
+    const dir = await initPlugin({ name: 'Paper', dir: testDir('paper'), type: 'theme' });
+    const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf-8'));
+    const theme = JSON.parse(await readFile(join(dir, 'theme.json'), 'utf-8'));
+
+    expect(manifest.id).toBe('paper');
+    expect(manifest.main).toBeUndefined();
+    expect(theme.colorScheme).toBe('light');
+    expect(theme.tokens['--bg-base']).toBeTruthy();
+    expect(existsSync(join(dir, 'styles', 'index.css'))).toBe(true);
+    expect(existsSync(join(dir, 'src'))).toBe(false);
   });
 
   it('converts name to kebab-case id', async () => {

@@ -45,10 +45,25 @@
   border: none;
 }
 
-.note-window .note-editor-header {
+.note-window .note-editor-chrome {
+  -webkit-app-region: drag;
+  padding-left: var(--chrome-traffic-inset);
+}
+
+.note-window .note-editor-chrome-left,
+.note-window .note-editor-header-mid,
+.note-window .note-editor-header-actions {
+  -webkit-app-region: no-drag;
+}
+
+.note-window .note-editor-chrome-drag {
+  display: block;
+  flex: 1;
+  min-width: 48px;
+  height: 28px;
   -webkit-app-region: drag;
 }
 
-.note-window .note-editor-header-actions {
-  -webkit-app-region: no-drag;
+.note-window .note-editor-header {
+  -webkit-app-region: drag;
 }

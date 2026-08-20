@@ -1,4 +1,4 @@
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 
 /**
  * Active Line Highlight — built-in plugin #3
@@ -8,7 +8,7 @@ import type { PluginManifest } from '@readied/plugin-api';
  * Updates on selection change, clears on note switch.
  */
 export const activeLineHighlightPlugin: PluginManifest = {
-  id: 'readied-active-line',
+  id: 'dripnex-active-line',
   name: 'Active Line Highlight',
   version: '1.0.0',
   description: 'Highlights the line where the cursor is positioned',

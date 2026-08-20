@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X } from 'lucide';
+import { Icon } from '../ui/icons/Icon';
 import styles from './UpdateBanner.module.css';
 
 type BannerState =
@@ -17,14 +18,14 @@ export function UpdateBanner() {
     const cleanups: Array<() => void> = [];
 
     cleanups.push(
-      window.readied.updates.onAvailable(info => {
+      window.dripnex.updates.onAvailable(info => {
         setState({ kind: 'available', version: info.version });
         setDismissed(false);
       })
     );
 
     cleanups.push(
-      window.readied.updates.onDownloadProgress(p => {
+      window.dripnex.updates.onDownloadProgress(p => {
         setState(prev =>
           prev.kind === 'hidden'
             ? prev
@@ -38,14 +39,14 @@ export function UpdateBanner() {
     );
 
     cleanups.push(
-      window.readied.updates.onDownloadComplete(info => {
+      window.dripnex.updates.onDownloadComplete(info => {
         setState({ kind: 'ready', version: info.version });
         setDismissed(false);
       })
     );
 
     cleanups.push(
-      window.readied.updates.onError((err: { message?: string }) => {
+      window.dripnex.updates.onError((err: { message?: string }) => {
         setState(prev =>
           prev.kind === 'hidden'
             ? prev
@@ -64,7 +65,7 @@ export function UpdateBanner() {
 
   const handleDownload = useCallback(async () => {
     try {
-      const result = await window.readied.updates.startDownload();
+      const result = await window.dripnex.updates.startDownload();
       if (!result.ok) {
         setState(prev =>
           prev.kind === 'hidden'
@@ -90,7 +91,7 @@ export function UpdateBanner() {
   }, []);
 
   const handleInstall = useCallback(() => {
-    void window.readied.updates.installNow();
+    void window.dripnex.updates.installNow();
   }, []);
 
   if (state.kind === 'hidden' || dismissed) return null;
@@ -133,7 +134,7 @@ export function UpdateBanner() {
         onClick={() => setDismissed(true)}
         aria-label="Dismiss update banner"
       >
-        <X size={14} />
+        <Icon icon={X} size={14} />
       </button>
     </div>
   );

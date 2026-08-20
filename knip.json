@@ -4,6 +4,7 @@
     ".": {
       "entry": ["eslint.config.js"],
       "ignoreDependencies": [
+        "@changesets/cli",
         "@semantic-release/changelog",
         "@semantic-release/commit-analyzer",
         "@semantic-release/exec",
@@ -19,14 +20,11 @@
         "src/main/index.ts",
         "src/preload/index.ts",
         "src/renderer/main.tsx",
-        "electron-vite.config.ts",
+        "electron.vite.config.ts",
         "vitest.config.ts",
         "playwright.config.ts",
         "e2e/**/*.{ts,spec.ts}"
       ]
-    },
-    "apps/web": {
-      "entry": ["src/**/*.{ts,tsx,astro}", "astro.config.{ts,js,mjs}"]
     },
     "packages/*": {
       "entry": ["src/index.ts"]

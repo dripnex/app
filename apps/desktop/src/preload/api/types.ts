@@ -5,30 +5,20 @@
  * from `../preload/index`.
  */
 
+import type { NoteStatus } from '@dripnex/core';
+import type {
+  NotePullResponse,
+  NotePushResponse,
+  NotePushResult,
+  RemoteNoteChange,
+} from '@dripnex/sync-core';
+
+export type { NoteStatus, NoteSnapshot } from '@dripnex/core';
+
 /** Result type from operations */
 export type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: { type: string; error?: unknown } };
-
-/** Note status for workflow tracking */
-export type NoteStatus = 'active' | 'on_hold' | 'completed' | 'dropped';
-
-/** Note snapshot from the API */
-export interface NoteSnapshot {
-  id: string;
-  notebookId: string;
-  content: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  wordCount: number;
-  archivedAt: string | null;
-  isArchived: boolean;
-  isPinned: boolean;
-  isDeleted: boolean;
-  status: NoteStatus;
-}
 
 /** Notebook snapshot from the API */
 export interface NotebookSnapshot {
@@ -39,6 +29,7 @@ export interface NotebookSnapshot {
   order: number;
   createdAt: string;
   updatedAt: string;
+  icon: string | null;
 }
 
 /** Notebook with metadata (note/child counts) */
@@ -61,9 +52,22 @@ export interface ListOptions {
   limit?: number;
   offset?: number;
   tag?: string;
+  /** AND of all listed tags; combined with `tag` when both are set */
+  tags?: string[];
   sortBy?: 'createdAt' | 'updatedAt' | 'title';
   sortOrder?: 'asc' | 'desc';
   archived?: 'active' | 'archived' | 'all';
+  notebookId?: string;
+  /**
+   * When set (including `[]`), matches any of these notebooks and ignores
+   * `notebookId`. An empty list matches nothing.
+   */
+  notebookIds?: string[];
+  status?: NoteStatus;
+  isPinned?: boolean;
+  /** Undefined = do not filter by deleted state */
+  isDeleted?: boolean;
+  excludeNotebookIds?: string[];
 }
 
 /** Note counts */
@@ -74,6 +78,14 @@ export interface NoteCounts {
   pinned: number;
   deleted: number;
   byStatus: Record<NoteStatus, number>;
+  byNotebook: Record<string, number>;
+}
+
+/** Counts under the same WHERE as list (limit/sort ignored) */
+export interface NoteScopedCounts {
+  total: number;
+  byStatus: Record<NoteStatus, number>;
+  byTag: Record<string, number>;
 }
 
 /** Activity stats for heatmap */
@@ -129,7 +141,7 @@ export interface DataPaths {
   logs: string;
 }
 
-/** License state (mirrored from @readied/licensing AppLicenseState) */
+/** License state (mirrored from @dripnex/licensing AppLicenseState) */
 export type LicenseStatus =
   | 'free'
   | 'trial'
@@ -198,7 +210,13 @@ export interface OutgoingLinkInfo {
 
 /** Graph data for visualization */
 export interface GraphData {
-  nodes: Array<{ id: string; title: string; notebookId: string }>;
+  nodes: Array<{
+    id: string;
+    title: string;
+    notebookId: string;
+    status?: string;
+    tags?: string[];
+  }>;
   edges: Array<{ source: string; target: string }>;
 }
 
@@ -211,37 +229,10 @@ export interface User {
   email: string;
 }
 
-/** Sync change */
-export interface SyncChange {
-  id: string;
-  noteId: string;
-  version: number;
-  operation: 'create' | 'update' | 'delete';
-  encryptedData: string | null;
-  deviceId: string;
-  createdAt: string;
-}
-
-/** Pull response */
-export interface PullResponse {
-  changes: SyncChange[];
-  cursor: number;
-  hasMore: boolean;
-}
-
-/** Push result */
-export interface PushResult {
-  noteId: string;
-  version: number;
-  status: 'applied' | 'conflict';
-  serverVersion?: number;
-}
-
-/** Push response */
-export interface PushResponse {
-  results: PushResult[];
-  cursor: number;
-}
+export type SyncChange = RemoteNoteChange;
+export type PullResponse = NotePullResponse;
+export type PushResult = NotePushResult;
+export type PushResponse = NotePushResponse;
 
 /** Sync status */
 export interface SyncStatus {
@@ -284,7 +275,12 @@ export interface ScannedPlugin {
   description?: string;
   configSchema?: Record<string, PluginConfigSchemaField>;
   code: string;
+  hasMain: boolean;
   path: string;
+  keymaps: string[];
+  menus: string[];
+  styles: string[];
+  themes: string[];
 }
 
 /** Plugin registry state row */

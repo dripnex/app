@@ -44,6 +44,22 @@ describe('editorPreferencesStore', () => {
     });
   });
 
+  describe('togglePreview / toggleSplit', () => {
+    it('toggles preview against editor', () => {
+      useEditorPreferencesStore.getState().togglePreview();
+      expect(useEditorPreferencesStore.getState().viewMode).toBe('preview');
+      useEditorPreferencesStore.getState().togglePreview();
+      expect(useEditorPreferencesStore.getState().viewMode).toBe('editor');
+    });
+
+    it('toggles split against editor', () => {
+      useEditorPreferencesStore.getState().toggleSplit();
+      expect(useEditorPreferencesStore.getState().viewMode).toBe('split');
+      useEditorPreferencesStore.getState().toggleSplit();
+      expect(useEditorPreferencesStore.getState().viewMode).toBe('editor');
+    });
+  });
+
   describe('selectors', () => {
     it('selectViewMode returns current mode', () => {
       useEditorPreferencesStore.getState().setViewMode('split');

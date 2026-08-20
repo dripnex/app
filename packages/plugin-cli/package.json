@@ -1,11 +1,11 @@
 {
-  "name": "@readied/plugin-cli",
+  "name": "@dripnex/plugin-cli",
   "version": "0.1.0",
   "private": true,
-  "description": "CLI tool for scaffolding Readied plugins",
+  "description": "CLI tool for scaffolding Dripnex plugins",
   "type": "module",
   "bin": {
-    "readied-plugin": "./dist/cli.js"
+    "dripnex-plugin": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -15,11 +15,16 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "cli": "tsx src/cli.ts",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@dripnex/storage-core": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^25.9.2",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },

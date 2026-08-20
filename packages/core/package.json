@@ -1,8 +1,8 @@
 {
-  "name": "@readied/core",
+  "name": "@dripnex/core",
   "version": "0.1.0",
   "private": true,
-  "description": "Core domain logic for Readied",
+  "description": "Core domain logic for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@dripnex/markdown": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

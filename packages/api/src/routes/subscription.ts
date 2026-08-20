@@ -16,8 +16,9 @@ import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 import { createDb, type Env } from '../db/client.js';
-import { subscriptions, users } from '../db/schema.js';
+import { subscriptions, users, stripeEvents } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
+import { getProductConfig } from '@dripnex/product-config';
 import { verifyStripeSignature } from '../services/stripe.js';
 
 const subscription = new Hono<{
@@ -62,26 +63,47 @@ subscription.post('/webhook', async c => {
     return c.json({ error: 'Invalid JSON' }, 400);
   }
 
+  if (!event.id) {
+    return c.json({ error: 'Missing event id' }, 400);
+  }
+
   const db = createDb(c.env);
+
+  const [claimed] = await db
+    .insert(stripeEvents)
+    .values({
+      id: event.id,
+      type: event.type,
+      createdAt: new Date().toISOString(),
+    })
+    .onConflictDoNothing()
+    .returning({ id: stripeEvents.id });
+
+  if (!claimed) {
+    return c.json({ received: true, duplicate: true });
+  }
 
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as CheckoutSession;
-      if (session.customer_email) {
-        // Find or create user
-        const [existing] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, session.customer_email))
-          .limit(1);
-        let user = existing;
+      const email = session.customer_email;
+      const metadataUserId = session.metadata?.userId;
+      if (email || metadataUserId) {
+        let user = metadataUserId
+          ? (await db.select().from(users).where(eq(users.id, metadataUserId)).limit(1))[0]
+          : undefined;
+        if (!user && email) {
+          const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+          user = existing;
+        }
+
+        if (!user && email) {
+          const [created] = await db.insert(users).values({ email }).returning();
+          user = created!;
+        }
 
         if (!user) {
-          const [created] = await db
-            .insert(users)
-            .values({ email: session.customer_email })
-            .returning();
-          user = created!;
+          break;
         }
 
         // Create or update subscription
@@ -125,16 +147,50 @@ subscription.post('/webhook', async c => {
         .where(eq(subscriptions.stripeSubscriptionId, sub.id))
         .returning({ id: subscriptions.id });
 
-      // If no row was updated, create it (handles case where checkout.session.completed was missed)
-      if (updated.length === 0 && sub.customer) {
-        // Find user by Stripe customer ID
-        const [existing] = await db
-          .select()
-          .from(subscriptions)
-          .where(eq(subscriptions.stripeCustomerId, sub.customer))
-          .limit(1);
+      if (updated.length === 0) {
+        const [byCustomer] = sub.customer
+          ? await db
+              .select()
+              .from(subscriptions)
+              .where(eq(subscriptions.stripeCustomerId, sub.customer))
+              .limit(1)
+          : [];
 
-        if (!existing) {
+        if (byCustomer) {
+          await db
+            .update(subscriptions)
+            .set({
+              stripeSubscriptionId: sub.id,
+              status: mapStripeStatus(sub.status),
+              currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+              canceledAt: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+              cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(subscriptions.id, byCustomer.id));
+        } else if (sub.metadata?.userId) {
+          await db
+            .insert(subscriptions)
+            .values({
+              userId: sub.metadata.userId,
+              stripeCustomerId: sub.customer,
+              stripeSubscriptionId: sub.id,
+              status: mapStripeStatus(sub.status),
+              plan: 'pro',
+              currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+            })
+            .onConflictDoUpdate({
+              target: subscriptions.userId,
+              set: {
+                stripeCustomerId: sub.customer,
+                stripeSubscriptionId: sub.id,
+                status: mapStripeStatus(sub.status),
+                plan: 'pro',
+                currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            });
+        } else {
           console.warn('Subscription created/updated but no matching row found', {
             subscriptionId: sub.id,
             customerId: sub.customer,
@@ -252,8 +308,11 @@ subscription.post('/checkout', zValidator('json', checkoutSchema), async c => {
           quantity: 1,
         },
       ],
-      success_url: successUrl || 'https://readied.app/subscription/success',
-      cancel_url: cancelUrl || 'https://readied.app/subscription/cancel',
+      success_url: successUrl || 'https://dripnex.app/subscription/success',
+      cancel_url: cancelUrl || 'https://dripnex.app/subscription/cancel',
+      subscription_data: {
+        metadata: { userId, email, plan },
+      },
       metadata: {
         userId,
         email,
@@ -316,10 +375,15 @@ subscription.post('/checkout/public', zValidator('json', publicCheckoutSchema), 
           quantity: 1,
         },
       ],
-      success_url: successUrl || 'https://readied.app/subscription/success',
-      cancel_url: cancelUrl || 'https://readied.app/subscribe',
+      success_url: successUrl || 'https://dripnex.app/subscription/success',
+      cancel_url: cancelUrl || 'https://dripnex.app/subscribe',
       subscription_data: {
-        trial_period_days: 14,
+        trial_period_days: getProductConfig().trialDays,
+        metadata: {
+          userId: user.id.toString(),
+          email,
+          plan,
+        },
       },
       metadata: {
         userId: user.id.toString(),
@@ -381,6 +445,7 @@ subscription.post('/portal', zValidator('json', portalSchema), async c => {
 
 // Helper types for Stripe events
 interface StripeEvent {
+  id: string;
   type: string;
   data: { object: unknown };
 }
@@ -389,6 +454,7 @@ interface CheckoutSession {
   customer: string;
   customer_email: string | null;
   subscription: string;
+  metadata?: { userId?: string };
 }
 
 interface StripeSubscription {
@@ -398,6 +464,7 @@ interface StripeSubscription {
   current_period_end: number;
   canceled_at: number | null;
   cancel_at_period_end: boolean;
+  metadata?: { userId?: string };
 }
 
 interface StripeInvoice {

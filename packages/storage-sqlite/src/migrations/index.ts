@@ -2,7 +2,7 @@
  * Migration exports
  */
 
-import type { Migration } from '@readied/storage-core';
+import type { Migration } from '@dripnex/storage-core';
 import { initialSchema } from './001_initial_schema.js';
 import { addArchivedAt } from './002_add_archived_at.js';
 import { addNotebooks } from './003_notebooks.js';
@@ -20,6 +20,21 @@ import { pluginRegistry } from './014_plugin_registry.js';
 import { notebookSyncTracking } from './015_notebook_sync_tracking.js';
 import { tagSyncTracking } from './016_tag_sync_tracking.js';
 import { syncHistory } from './017_sync_history.js';
+import { ftsIncludeDeleted } from './018_fts_include_deleted.js';
+import { embeddings } from './019_embeddings.js';
+import { notebookIcons } from './020_notebook_icons.js';
+import { noteTasks } from './021_note_tasks.js';
+
+/** Fail fast if two files share a version (the runner keys on version). */
+export function assertMigrationVersionsUnique(migrations: Migration[]): void {
+  const seen = new Set<number>();
+  for (const migration of migrations) {
+    if (seen.has(migration.version)) {
+      throw new Error(`Duplicate migration version ${migration.version} (${migration.name})`);
+    }
+    seen.add(migration.version);
+  }
+}
 
 /** All migrations in order */
 export const allMigrations: Migration[] = [
@@ -40,7 +55,13 @@ export const allMigrations: Migration[] = [
   notebookSyncTracking,
   tagSyncTracking,
   syncHistory,
+  ftsIncludeDeleted,
+  embeddings,
+  notebookIcons,
+  noteTasks,
 ];
+
+assertMigrationVersionsUnique(allMigrations);
 
 export {
   initialSchema,
@@ -60,4 +81,8 @@ export {
   notebookSyncTracking,
   tagSyncTracking,
   syncHistory,
+  ftsIncludeDeleted,
+  embeddings,
+  notebookIcons,
+  noteTasks,
 };

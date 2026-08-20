@@ -1,10 +1,15 @@
 export { ActionsPanel } from './ActionsPanel';
 export { EditorHeader } from './EditorHeader';
 export { EditorViewToggle } from './EditorViewToggle';
+export { EditorChrome } from './EditorChrome';
+export { OutlinePanel } from './OutlinePanel';
+export { UrlPastePicker } from './UrlPastePicker';
 export { FormattingToolbar } from './FormattingToolbar';
+export { SelectionToolbar } from './SelectionToolbar';
 export type { ToolbarVisibility } from './FormattingToolbar';
 export { MarkdownPreview } from './MarkdownPreview';
 export type { MarkdownPreviewHandle } from './MarkdownPreview';
 export { NotebookSelector } from './NotebookSelector';
 export { StatusDropdown } from './StatusDropdown';
+export { KindDropdown } from './KindDropdown';
 export { TagsInput } from './TagsInput';

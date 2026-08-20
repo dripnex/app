@@ -61,7 +61,7 @@ No new stores or IPC channels needed. All changes build on existing infrastructu
 - Validation function is pure (no side effects), testable in isolation
 - Plugin Inspector reads from existing `pluginRuntimeStore` (plugins, errors)
 - Load timing added as metadata in `pluginRuntimeStore` during scan
-- Dev mode check uses existing `window.readied.isDevelopment` flag
+- Dev mode check uses existing `window.dripnex.isDevelopment` flag
 
 ## Not Included
 

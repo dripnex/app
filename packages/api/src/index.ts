@@ -1,7 +1,7 @@
 /**
- * Readied API
+ * Dripnex API
  *
- * Backend API for Readied cloud sync.
+ * Backend API for Dripnex cloud sync.
  * Built with Hono for edge runtime compatibility.
  *
  * Deployable to:
@@ -26,8 +26,31 @@ import { share } from './routes/share.js';
 import { plugins } from './routes/plugins.js';
 import { deviceRoutes } from './routes/devices.js';
 import { admin } from './routes/admin.js';
+import { ensureMigrated } from './db/runMigrations.js';
 
 const app = new Hono<{ Bindings: Env }>();
+
+app.use('*', async (c, next) => {
+  if (!c.env?.TURSO_DATABASE_URL) {
+    return next();
+  }
+  try {
+    await ensureMigrated(c.env);
+  } catch (error) {
+    console.error('[migrate]', error);
+    if (c.req.path === '/health' || c.req.path === '/') {
+      return c.json(
+        {
+          status: 'error',
+          error: 'schema migration failed',
+        },
+        500
+      );
+    }
+    return c.json({ error: 'Service unavailable' }, 503);
+  }
+  return next();
+});
 
 // Global middleware
 app.use('*', logger());
@@ -46,9 +69,20 @@ app.use(
 app.use(
   '/admin/*',
   cors({
-    origin: ['https://readied.app', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: [
+      'https://dripnex.app',
+      'https://www.dripnex.app',
+      'https://readied-web.pages.dev',
+      'https://dripnex-web.pages.dev',
+      'https://dripnex-marketing.pages.dev',
+      'http://localhost:3000',
+      'http://localhost:3010',
+      'http://localhost:5173',
+    ],
     allowMethods: ['GET', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'x-admin-token'],
+    // Authorization is required: admin auth now accepts a verified JWT bearer
+    // token (see routes/admin.ts), in addition to the x-admin-token header.
+    allowHeaders: ['Content-Type', 'x-admin-token', 'Authorization'],
     maxAge: 86400,
   })
 );
@@ -56,7 +90,17 @@ app.use(
 app.use(
   '*',
   cors({
-    origin: ['https://readied.app', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: [
+      'https://dripnex.app',
+      'https://www.dripnex.app',
+      'https://readied-web.pages.dev',
+      'https://dripnex-web.pages.dev',
+      'https://dripnex-marketing.pages.dev',
+      'http://localhost:5173',
+      'http://localhost:5176',
+      'http://localhost:3000',
+      'http://localhost:3010',
+    ],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -67,7 +111,7 @@ app.use(
 // Health check
 app.get('/', c => {
   return c.json({
-    name: 'Readied API',
+    name: 'Dripnex API',
     version: '0.1.0',
     status: 'healthy',
   });
@@ -84,6 +128,7 @@ app.route('/subscription', subscription);
 app.route('/newsletter', newsletterRoute);
 app.route('/share', share);
 app.route('/plugins', plugins);
+app.route('/packages', plugins);
 app.route('/devices', deviceRoutes);
 app.route('/admin', admin);
 

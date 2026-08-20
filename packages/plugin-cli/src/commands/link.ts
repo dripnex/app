@@ -28,7 +28,7 @@ export function linkPlugin(source: string): void {
     console.error('Error: No valid manifest.json found in the source directory.');
     console.error('       manifest.json must contain at least: id, name, version');
     console.error('');
-    console.error('Run "readied-plugin init <name>" to scaffold a new plugin.');
+    console.error('Run "dripnex-plugin init <name>" to scaffold a new plugin.');
     process.exit(1);
   }
 
@@ -39,10 +39,10 @@ export function linkPlugin(source: string): void {
     const linkStat = lstatSync(linkPath);
     if (linkStat.isSymbolicLink()) {
       console.error(`Error: Plugin "${manifest.id}" is already linked.`);
-      console.error(`       Run "readied-plugin uninstall ${manifest.id}" to remove it first.`);
+      console.error(`       Run "dripnex-plugin uninstall ${manifest.id}" to remove it first.`);
     } else {
       console.error(`Error: Plugin "${manifest.id}" is already installed (not linked).`);
-      console.error(`       Run "readied-plugin uninstall ${manifest.id}" to remove it first.`);
+      console.error(`       Run "dripnex-plugin uninstall ${manifest.id}" to remove it first.`);
     }
     process.exit(1);
   }
@@ -58,6 +58,12 @@ export function linkPlugin(source: string): void {
 
   console.log(`Linked "${manifest.name}" (${manifest.id}@${manifest.version})`);
   console.log(`  ${linkPath} -> ${sourcePath}`);
+  const mainPath = join(sourcePath, manifest.main ?? 'dist/index.js');
+  if (!existsSync(mainPath)) {
+    console.log('');
+    console.log(`Warning: ${manifest.main ?? 'dist/index.js'} is missing.`);
+    console.log('Build the plugin before Dripnex can load it (npm run build).');
+  }
   console.log('');
-  console.log('Changes to the source directory will be reflected immediately.');
+  console.log('Reload plugins from Settings → Plugins, or restart Dripnex.');
 }

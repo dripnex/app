@@ -1,59 +1,39 @@
 import { memo } from 'react';
-import { Columns2, Eye } from 'lucide-react';
+import { Columns2, Eye, PenLine } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import type { EditorViewMode } from '../../stores/editorPreferencesStore';
+import { sc } from '../noteEditorSc';
 
 interface EditorViewToggleProps {
   readonly mode: EditorViewMode;
   readonly onModeChange: (mode: EditorViewMode) => void;
 }
 
-/**
- * EditorViewToggle - Two toggle buttons for editor view modes
- *
- * Button 1: Editor/Preview toggle
- * - Shows <> (Code) when in editor/split mode, click → preview
- * - Shows Eye when in preview mode, click → editor
- *
- * Button 2: Split toggle
- * - Click toggles split on/off
- */
+const MODES: Array<{ id: EditorViewMode; label: string; icon: typeof PenLine }> = [
+  { id: 'editor', label: 'Edit', icon: PenLine },
+  { id: 'split', label: 'Split', icon: Columns2 },
+  { id: 'preview', label: 'Preview', icon: Eye },
+];
+
 export const EditorViewToggle = memo(function EditorViewToggle({
   mode,
   onModeChange,
 }: EditorViewToggleProps) {
-  const isPreview = mode === 'preview';
-  const isSplit = mode === 'split';
-
-  const handlePreviewToggle = () => {
-    onModeChange(isPreview ? 'editor' : 'preview');
-  };
-
-  const handleSplitToggle = () => {
-    onModeChange(isSplit ? 'editor' : 'split');
-  };
-
   return (
-    <div className="editor-view-toggle" role="group" aria-label="View mode">
-      <button
-        type="button"
-        className={`editor-view-toggle-btn ${isPreview ? 'active filled' : ''}`}
-        onClick={handlePreviewToggle}
-        title={isPreview ? 'Back to editor' : 'Preview (⌘⇧P)'}
-        aria-label={isPreview ? 'Back to editor' : 'Preview'}
-        aria-pressed={isPreview}
-      >
-        <Eye size={16} />
-      </button>
-      <button
-        type="button"
-        className={`editor-view-toggle-btn ${isSplit ? 'active' : ''}`}
-        onClick={handleSplitToggle}
-        title="Split view"
-        aria-label="Split view"
-        aria-pressed={isSplit}
-      >
-        <Columns2 size={16} />
-      </button>
+    <div className={sc('editor-view-toggle')} role="group" aria-label="View mode">
+      {MODES.map(({ id, label, icon }) => (
+        <button
+          key={id}
+          type="button"
+          className={sc('editor-view-toggle-btn', mode === id && 'active')}
+          onClick={() => onModeChange(id)}
+          title={label}
+          aria-label={label}
+          aria-pressed={mode === id}
+        >
+          <Icon icon={icon} size={16} />
+        </button>
+      ))}
     </div>
   );
 });

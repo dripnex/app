@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a feature for Readied
+about: Suggest a feature for Dripnex
 title: '[Feature] '
 labels: enhancement
 assignees: ''

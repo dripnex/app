@@ -1,17 +1,14 @@
 /**
- * Electron Main Process
- *
- * Initializes the app, database, and IPC handlers.
- * Handler logic is in apps/desktop/src/main/handlers/*.ts
+ * Electron main process: boot, protocol, lifecycle.
+ * Windows live in ./windows, network guards in ./network, IPC in ./handlers.
  */
 
-// Initialize Sentry FIRST (before any other imports that might throw)
 // eslint-disable-next-line import-x/order
 import { initSentry } from './sentry';
 initSentry();
 
 import { join, normalize } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, watch, writeFileSync } from 'fs';
 import {
   app,
   BrowserWindow,
@@ -20,25 +17,27 @@ import {
   net,
   nativeTheme,
   globalShortcut,
-  screen,
+  safeStorage,
 } from 'electron';
-import { runMigrations, createDataPaths, type DataPaths } from '@readied/storage-core';
+import { runMigrations, createDataPaths, type DataPaths } from '@dripnex/storage-core';
 import {
   createDatabase,
   allMigrations,
   SQLiteNoteRepository,
   SQLiteNotebookRepository,
-} from '@readied/storage-sqlite';
-import { createNoteId, createNoteOperation, type NoteStatus } from '@readied/core';
-import { initLogger, getLogger, loggers } from './logger';
+  SQLiteChunkRepository,
+} from '@dripnex/storage-sqlite';
+import { createNoteId, createNoteOperation, updateNoteOperation } from '@dripnex/core';
+import { initLogger, getLogger, loggers, createChildLogger } from './logger';
 import { TokenStorage } from './services/tokenStorage.js';
+import { LocalIdentity } from './services/localIdentity.js';
 import { AiKeyStorage } from './services/aiKeyStorage.js';
 import { FileLicenseStorage } from './services/fileLicenseStorage.js';
-import { loadWindowState, saveWindowState } from './services/windowState.js';
 import { getOrCreateDeviceInfo, type DeviceInfo } from './services/deviceInfo.js';
 import { ApiClient } from './services/apiClient.js';
 import { EncryptionService } from './services/encryptionService.js';
 import { SyncService } from './services/syncService.js';
+import { SyncCursorStore } from './services/sync/cursorStore.js';
 import { GitService } from './services/gitService.js';
 import { registerLicenseHandlers } from './handlers/licenseHandlers.js';
 import { registerShareHandlers } from './handlers/shareHandlers.js';
@@ -50,105 +49,63 @@ import { registerUpdateHandlers, initAutoUpdater } from './handlers/updateHandle
 import { registerAuthSyncHandlers } from './handlers/authSyncHandlers.js';
 import { registerGitHandlers } from './handlers/gitHandlers.js';
 import { registerPluginHandlers } from './handlers/pluginHandlers.js';
+import { registerClipboardHandlers } from './handlers/clipboardHandlers.js';
+import { registerEditorHandlers } from './handlers/editorHandlers.js';
 import { registerAiKeyHandlers } from './handlers/aiKeyHandlers.js';
-import { startPluginWatcher, stopPluginWatcher } from './pluginWatcher.js';
+import { noteToSnapshot } from './handlers/noteSnapshot.js';
+import { startPluginWatcher, startUserFileWatcher, stopPluginWatcher } from './pluginWatcher.js';
+import { ensureUserHackFiles } from './userHackFiles.js';
 import { createAIService, getToolRegistry } from './ai/setup.js';
 import { registerBuiltInTools } from './ai/built-in-tools.js';
+import { registerGitHubTools } from './ai/github-tools.js';
+import { retrieveAskNotes } from './ai/hybrid-retriever.js';
+import { createEmbeddingIndexer } from './ai/indexer.js';
+import {
+  applyEmbedConfig,
+  embedTexts,
+  getEmbedMeta,
+  listEmbedCatalog,
+} from './ai/embed-runtime.js';
+import { registerKbHandlers } from './ai/kb-ipc.js';
+import { inferEdgesFromChunks } from './ai/inferred-graph.js';
 import { registerAIHandlers as registerAIHandlersNew } from './ai/ipc-ai.js';
 import { registerLocalServerHandlers, stopLocalServer } from './handlers/localServerHandlers.js';
-
-// ============================================================================
-// Global State
-// ============================================================================
+import { registerIntegrations } from './integrations/register.js';
+import { registerNavigationGuards } from './network/navigation.js';
+import { broadcastToWindows } from './windows/broadcast.js';
+import { flushOpenEditors } from './windows/flushEditors.js';
+import { resolveDockIconPath } from './windows/icons.js';
+import { deliverDripnexUrl, queueDeepLink, parseDripnexUrl } from './windows/authDeepLink.js';
+import {
+  createMainWindow,
+  registerQuickCaptureShortcut,
+  registerWindowHandlers,
+} from './windows/register.js';
+import {
+  applyDevelopmentModeFromSettings,
+  registerDevelopmentMode,
+} from './windows/developmentMode.js';
+import { registerApplicationMenu } from './windows/applicationMenu.js';
 
 let db: ReturnType<typeof createDatabase> | null = null;
 let noteRepository: SQLiteNoteRepository | null = null;
 let notebookRepository: SQLiteNotebookRepository | null = null;
+let chunkRepository: SQLiteChunkRepository | null = null;
+let embeddingIndexer: ReturnType<typeof createEmbeddingIndexer> | null = null;
 let dataPaths: DataPaths | null = null;
 let licenseStorage: FileLicenseStorage | null = null;
-
-// Backend API services (initialized on app ready)
 let tokenStorage: TokenStorage | null = null;
 let deviceInfo: DeviceInfo | null = null;
 let apiClient: ApiClient | null = null;
 let encryptionService: EncryptionService | null = null;
 let syncService: SyncService | null = null;
 let aiKeyStorage: AiKeyStorage | null = null;
-
-// Pending deep link token — stored if the deep link arrives before the window is ready
-let pendingAuthToken: string | null = null;
-// Set of webContents IDs allowed to close themselves via window:closeSelf
-const closableWindowIds = new Set<number>();
-// Git service (initialized on app ready)
 let gitService: GitService | null = null;
 
-// ============================================================================
-// Shared Helpers (exported for handler modules)
-// ============================================================================
-
-/** Safely send IPC message to all windows, ignoring destroyed ones */
-export function broadcastToWindows(channel: string, ...args: unknown[]): void {
-  for (const win of BrowserWindow.getAllWindows()) {
-    try {
-      if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
-        win.webContents.send(channel, ...args);
-      }
-    } catch {
-      // Window was destroyed between check and send — ignore
-    }
-  }
-}
-
-/** Helper to convert a Note to a snapshot for IPC */
-export function noteToSnapshot(note: {
-  id: string;
-  notebookId: string;
-  content: string;
-  title: string;
-  isPinned: boolean;
-  isDeleted: boolean;
-  status: NoteStatus;
-  metadata: {
-    createdAt: string;
-    updatedAt: string;
-    tags: readonly string[];
-    wordCount: number;
-    archivedAt: string | null;
-  };
-}) {
-  return {
-    id: note.id,
-    notebookId: note.notebookId,
-    content: note.content,
-    title: note.title,
-    createdAt: note.metadata.createdAt,
-    updatedAt: note.metadata.updatedAt,
-    tags: [...note.metadata.tags],
-    wordCount: note.metadata.wordCount,
-    archivedAt: note.metadata.archivedAt,
-    isArchived: note.metadata.archivedAt !== null,
-    isPinned: note.isPinned,
-    isDeleted: note.isDeleted,
-    status: note.status,
-  };
-}
-
-// File-based license storage and window state persistence live in
-// dedicated modules under ./services/. See:
-//   - services/fileLicenseStorage.ts
-//   - services/windowState.ts
-
-// ============================================================================
-// Initialization
-// ============================================================================
-
-/** Initialize data paths */
 function initDataPaths(): DataPaths {
-  const userDataPath = app.getPath('userData');
-  return createDataPaths(userDataPath);
+  return createDataPaths(app.getPath('userData'));
 }
 
-/** Initialize the database */
 function initDatabase(): void {
   if (!dataPaths) {
     throw new Error('Data paths not initialized');
@@ -161,305 +118,14 @@ function initDatabase(): void {
   runMigrations(db, allMigrations);
   noteRepository = new SQLiteNoteRepository(db);
   notebookRepository = new SQLiteNotebookRepository(db);
-
-  // Initialize Git service for git-backed notebooks
+  chunkRepository = new SQLiteChunkRepository(db);
   gitService = new GitService(dataPaths.root);
 
   dbLog.info('Database initialized');
 }
 
-// ============================================================================
-// Window Creation
-// ============================================================================
+registerNavigationGuards();
 
-/** Create the main window */
-function createWindow(): void {
-  // Load saved window state
-  const windowState = loadWindowState();
-
-  const mainWindow = new BrowserWindow({
-    x: windowState.x,
-    y: windowState.y,
-    width: windowState.width,
-    height: windowState.height,
-    minWidth: 800,
-    minHeight: 600,
-    show: false,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 8, y: 8 },
-    backgroundColor: '#0a0b0d',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false, // Required for better-sqlite3
-    },
-  });
-
-  // Restore maximized state after window is created
-  if (windowState.isMaximized) {
-    mainWindow.maximize();
-  }
-
-  // Save window state on resize/move/close (debounced)
-  let saveTimeout: NodeJS.Timeout | null = null;
-  const debouncedSave = () => {
-    if (saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => {
-      if (!mainWindow.isDestroyed() && !mainWindow.isMaximized()) {
-        const bounds = mainWindow.getBounds();
-        saveWindowState({
-          ...bounds,
-          isMaximized: false,
-        });
-      }
-    }, 500);
-  };
-
-  mainWindow.on('resize', debouncedSave);
-  mainWindow.on('move', debouncedSave);
-
-  mainWindow.on('maximize', () => {
-    if (mainWindow.isDestroyed()) return;
-    saveWindowState({
-      ...mainWindow.getBounds(),
-      isMaximized: true,
-    });
-  });
-
-  mainWindow.on('unmaximize', () => {
-    if (mainWindow.isDestroyed()) return;
-    saveWindowState({
-      ...mainWindow.getBounds(),
-      isMaximized: false,
-    });
-  });
-
-  mainWindow.on('ready-to-show', () => {
-    if (mainWindow.isDestroyed()) return;
-    mainWindow.show();
-  });
-
-  // Deliver any pending deep link auth token once the renderer is ready.
-  // Guard against window destruction — did-finish-load can fire late during
-  // app shutdown or auto-update restart, and the captured `mainWindow` ref
-  // would throw 'Object has been destroyed' on .send/.show/.focus.
-  mainWindow.webContents.on('did-finish-load', () => {
-    if (!pendingAuthToken) return;
-    if (mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) return;
-    getLogger().info('Delivering queued auth token to renderer');
-    mainWindow.webContents.send('auth:verify-token', pendingAuthToken);
-    mainWindow.show();
-    mainWindow.focus();
-    pendingAuthToken = null;
-  });
-
-  // Load renderer
-  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
-}
-
-/** Create a new window for viewing a single note */
-function createNoteWindow(noteId: string, noteTitle: string): void {
-  const noteWindow = new BrowserWindow({
-    width: 800,
-    height: 700,
-    minWidth: 500,
-    minHeight: 400,
-    show: false,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 8, y: 8 },
-    backgroundColor: '#0a0b0d',
-    title: noteTitle || 'Note',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
-  });
-
-  noteWindow.on('ready-to-show', () => {
-    if (noteWindow.isDestroyed()) return;
-    noteWindow.show();
-    if (process.env.NODE_ENV === 'development') {
-      noteWindow.webContents.openDevTools();
-    }
-  });
-
-  // Load renderer with note ID in query param
-  const query = `?noteWindow=${encodeURIComponent(noteId)}`;
-  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    void noteWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}${query}`);
-  } else {
-    void noteWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      query: { noteWindow: noteId },
-    });
-  }
-}
-
-// ============================================================================
-// Quick Capture Window
-// ============================================================================
-
-/** Quick capture window singleton */
-let quickCaptureWindow: BrowserWindow | null = null;
-
-/** Create or focus the quick capture floating window */
-function createQuickCaptureWindow(): void {
-  // If window exists, focus it
-  if (quickCaptureWindow && !quickCaptureWindow.isDestroyed()) {
-    quickCaptureWindow.show();
-    quickCaptureWindow.focus();
-    return;
-  }
-
-  // Center on the current cursor screen
-  const cursorPoint = screen.getCursorScreenPoint();
-  const display = screen.getDisplayNearestPoint(cursorPoint);
-  const { x, y, width, height } = display.workArea;
-  const winWidth = 480;
-  const winHeight = 340;
-
-  quickCaptureWindow = new BrowserWindow({
-    x: Math.round(x + (width - winWidth) / 2),
-    y: Math.round(y + (height - winHeight) / 2),
-    width: winWidth,
-    height: winHeight,
-    resizable: false,
-    frame: false,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    show: false,
-    backgroundColor: '#0a0b0d',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
-  });
-
-  closableWindowIds.add(quickCaptureWindow.webContents.id);
-
-  quickCaptureWindow.on('ready-to-show', () => {
-    quickCaptureWindow?.show();
-  });
-
-  // Blur listener intentionally removed — closing on blur drops user input.
-  // The window is closed via Escape key or explicit close/save actions.
-
-  quickCaptureWindow.on('closed', () => {
-    if (quickCaptureWindow) {
-      closableWindowIds.delete(quickCaptureWindow.webContents.id);
-    }
-    quickCaptureWindow = null;
-  });
-
-  // Load quick capture view via query param
-  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    void quickCaptureWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}?view=quick-capture`);
-  } else {
-    void quickCaptureWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      query: { view: 'quick-capture' },
-    });
-  }
-}
-
-/** Settings window singleton */
-let settingsWindow: BrowserWindow | null = null;
-
-/** Create or focus the settings window */
-function createSettingsWindow(): void {
-  // If window exists, focus it
-  if (settingsWindow && !settingsWindow.isDestroyed()) {
-    settingsWindow.focus();
-    return;
-  }
-
-  settingsWindow = new BrowserWindow({
-    width: 720,
-    height: 520,
-    minWidth: 620,
-    minHeight: 460,
-    show: false,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 8, y: 8 },
-    backgroundColor: '#0a0b0d',
-    title: 'Settings',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
-  });
-
-  closableWindowIds.add(settingsWindow.webContents.id);
-
-  settingsWindow.on('ready-to-show', () => {
-    settingsWindow?.show();
-    if (process.env.NODE_ENV === 'development') {
-      settingsWindow?.webContents.openDevTools();
-    }
-  });
-
-  settingsWindow.on('closed', () => {
-    if (settingsWindow) {
-      closableWindowIds.delete(settingsWindow.webContents.id);
-    }
-    settingsWindow = null;
-  });
-
-  // Load settings page via query param (same index.html, different view)
-  if (process.env.NODE_ENV === 'development' && process.env.ELECTRON_RENDERER_URL) {
-    const settingsUrl = `${process.env.ELECTRON_RENDERER_URL}?view=settings`;
-    void settingsWindow.loadURL(settingsUrl);
-  } else {
-    void settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      query: { view: 'settings' },
-    });
-  }
-}
-
-// ============================================================================
-// Window Management IPC (small enough to keep inline)
-// ============================================================================
-
-function registerWindowHandlers(): void {
-  // Open a note in a new window
-  ipcMain.handle('window:openNote', async (_event, noteId: string, noteTitle: string) => {
-    createNoteWindow(noteId, noteTitle);
-    return { ok: true };
-  });
-
-  // Open settings window
-  ipcMain.handle('window:openSettings', async () => {
-    createSettingsWindow();
-    return { ok: true };
-  });
-}
-
-// ============================================================================
-// Protocol Registration
-// ============================================================================
-
-/**
- * asset:// protocol
- *
- * Invariant:
- * - Renderer NEVER accesses filesystem paths directly
- * - All local assets are resolved via asset:// URLs
- *
- * Rationale:
- * - Avoids file:// which is blocked in dev (http://localhost)
- * - Same behavior in dev and production
- * - Enables secure embeds (images, video, pdf)
- */
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'asset',
@@ -471,7 +137,7 @@ protocol.registerSchemesAsPrivileged([
     },
   },
   {
-    scheme: 'readied',
+    scheme: 'dripnex',
     privileges: {
       secure: true,
       standard: true,
@@ -479,59 +145,45 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-// ============================================================================
-// Single Instance Lock (MUST be before whenReady to prevent secondary init)
-// ============================================================================
-
-// Register as default protocol client (Windows/Linux)
 if (process.defaultApp) {
   if (process.argv.length >= 2 && process.argv[1]) {
-    app.setAsDefaultProtocolClient('readied', process.execPath, [process.argv[1]]);
+    app.setAsDefaultProtocolClient('dripnex', process.execPath, [process.argv[1]]);
   }
 } else {
-  app.setAsDefaultProtocolClient('readied');
+  app.setAsDefaultProtocolClient('dripnex');
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  // Secondary instance — quit immediately before any initialization
   app.quit();
 }
 
-// ============================================================================
-// App Lifecycle (only runs in primary instance)
-// ============================================================================
-
 app
   .whenReady()
-  .then(() => {
-    if (!gotTheLock) return; // Extra guard: don't initialize if secondary
-    // Initialize data paths first (creates directories)
+  .then(async () => {
+    if (!gotTheLock) return;
+    registerDevelopmentMode();
+    registerApplicationMenu({ dataRoot: () => dataPaths?.root ?? null });
+    if (process.platform === 'darwin' && !app.isPackaged) {
+      const dockIcon = resolveDockIconPath();
+      if (dockIcon) app.dock?.setIcon(dockIcon);
+    }
     dataPaths = initDataPaths();
 
-    // Register asset:// protocol handler (modern protocol.handle API)
     protocol.handle('asset', request => {
-      // asset://local/noteId/filename → assets/noteId/filename
-      // Strip protocol and host (local/)
       let urlPath = decodeURIComponent(new URL(request.url).pathname);
       if (urlPath.startsWith('/')) {
         urlPath = urlPath.slice(1);
       }
-
-      // Sanitize: prevent path traversal attacks
       const safePath = normalize(urlPath).replace(/^(\.\.[/\\])+/, '');
-
       const filePath = join(dataPaths!.assets, safePath);
-
       if (!existsSync(filePath)) {
         return new Response('Not Found', { status: 404 });
       }
-
       return net.fetch(`file://${filePath}`);
     });
 
-    // Initialize logger (must be after dataPaths)
     const log = initLogger({
       logsDir: dataPaths.logs,
       level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
@@ -539,21 +191,108 @@ app
     });
     log.info({ dataDir: dataPaths.root }, 'Application starting');
 
-    // Initialize database and repositories
+    const externalWriteSignal = join(dataPaths.root, 'dripnex.external-write');
+    if (!existsSync(externalWriteSignal)) {
+      writeFileSync(externalWriteSignal, '0');
+    }
+    watch(externalWriteSignal, () => {
+      broadcastToWindows('data:external-change', { at: Date.now() });
+      embeddingIndexer?.schedule();
+    });
+
     initDatabase();
 
-    // Register all IPC handler modules
+    embeddingIndexer = createEmbeddingIndexer({
+      chunks: chunkRepository!,
+      getMeta: () => {
+        const meta = getEmbedMeta();
+        return { model: meta.model, dim: meta.dim };
+      },
+      embed: texts =>
+        embedTexts(texts, () =>
+          aiKeyStorage ? aiKeyStorage.getKey('openai') : Promise.resolve(undefined)
+        ),
+      log: createChildLogger({ component: 'kb' }),
+    });
+    embeddingIndexer.schedule();
+    setInterval(() => embeddingIndexer?.schedule(), 30_000);
+
+    const applyKbFromSettings = async (settings: unknown) => {
+      const ai = (
+        settings as { ai?: { embedProvider?: string; embedModel?: string; baseUrl?: string } }
+      )?.ai;
+      if (!ai) return;
+      const { changed, meta } = applyEmbedConfig({
+        provider: ai.embedProvider === 'openai' ? 'openai' : 'ollama',
+        model: ai.embedModel,
+        baseUrl: ai.baseUrl,
+      });
+      if (changed) {
+        await chunkRepository?.invalidateOtherModels({ model: meta.model, dim: meta.dim });
+      }
+      embeddingIndexer?.schedule();
+    };
+
+    registerKbHandlers({
+      status: async () => {
+        const meta = getEmbedMeta();
+        return {
+          pending: (await chunkRepository!.countPending()) ?? 0,
+          embedded: await chunkRepository!.countEmbedded({
+            model: meta.model,
+            dim: meta.dim,
+          }),
+          model: meta.model,
+          provider: meta.provider,
+          dim: meta.dim,
+        };
+      },
+      reindex: () => embeddingIndexer?.schedule(),
+      setEmbed: async input => {
+        const { changed, meta } = applyEmbedConfig(input);
+        if (changed) {
+          await chunkRepository?.invalidateOtherModels({ model: meta.model, dim: meta.dim });
+        }
+        embeddingIndexer?.schedule();
+        return { ...meta };
+      },
+      catalog: () => listEmbedCatalog(),
+      inferredGraph: async () => {
+        if (!chunkRepository || !noteRepository) return [];
+        const meta = getEmbedMeta();
+        const chunks = await chunkRepository.listEmbedded({
+          model: meta.model,
+          dim: meta.dim,
+        });
+        const graph = noteRepository.getGraphData();
+        const existing = graph.edges.map(edge =>
+          edge.source < edge.target
+            ? `${edge.source}|${edge.target}`
+            : `${edge.target}|${edge.source}`
+        );
+        return inferEdgesFromChunks(
+          chunks
+            .filter(chunk => chunk.embedding)
+            .map(chunk => ({ noteId: chunk.noteId, embedding: chunk.embedding! })),
+          existing
+        );
+      },
+    });
+
     registerNoteHandlers({
       noteRepository: noteRepository!,
       dataPaths,
       noteToSnapshot,
+      onNotesChanged: () => embeddingIndexer?.schedule(),
     });
     registerNotebookHandlers({
       notebookRepository: notebookRepository!,
     });
     registerGitHandlers({
       gitService: gitService!,
+      getGithubToken: () => (aiKeyStorage ? aiKeyStorage.getKey('github') : Promise.resolve(null)),
     });
+    registerClipboardHandlers();
     registerPluginHandlers({
       dataPaths,
       db: db!,
@@ -561,22 +300,93 @@ app
     registerWindowHandlers();
     registerLocalServerHandlers({
       noteRepository: noteRepository!,
+      notebookRepository: notebookRepository!,
       dataPaths,
       noteToSnapshot,
     });
-    registerAIHandlersNew(createAIService(), getToolRegistry());
+    const notesRepo = noteRepository;
+    registerIntegrations({
+      dataDir: dataPaths.root,
+      getAppVersion: () => app.getVersion(),
+      githubNotes: notesRepo
+        ? {
+            create: async (content, notebookId) => {
+              const result = await createNoteOperation({ content, notebookId }, notesRepo);
+              if (!result.ok) return null;
+              writeFileSync(externalWriteSignal, `${Date.now()}\n`);
+              embeddingIndexer?.schedule();
+              return { id: result.data.id };
+            },
+            update: async (id, content) => {
+              const result = await updateNoteOperation(
+                { id: createNoteId(id), content },
+                notesRepo
+              );
+              if (!result.ok) return false;
+              writeFileSync(externalWriteSignal, `${Date.now()}\n`);
+              embeddingIndexer?.schedule();
+              return true;
+            },
+            get: async id => {
+              const note = await notesRepo.get(createNoteId(id));
+              if (!note) return null;
+              return { id: note.id, content: note.content, isDeleted: note.isDeleted };
+            },
+          }
+        : undefined,
+    });
+    const notesForRetrieve = noteRepository;
+    const chunksForRetrieve = chunkRepository;
+    const retrieveExtras =
+      notesForRetrieve && chunksForRetrieve
+        ? {
+            listEmbedded: () => {
+              const meta = getEmbedMeta();
+              return chunksForRetrieve.listEmbedded({
+                model: meta.model,
+                dim: meta.dim,
+              });
+            },
+            countEmbedded: () => {
+              const meta = getEmbedMeta();
+              return chunksForRetrieve.countEmbedded({
+                model: meta.model,
+                dim: meta.dim,
+              });
+            },
+            embedQuery: async (query: string) => {
+              const [vector] = await embedTexts([query], () =>
+                aiKeyStorage ? aiKeyStorage.getKey('openai') : Promise.resolve(undefined)
+              );
+              return vector ?? [];
+            },
+            listForNote: (noteId: string) => chunksForRetrieve.listForNote(noteId),
+          }
+        : chunksForRetrieve
+          ? { listForNote: (noteId: string) => chunksForRetrieve.listForNote(noteId) }
+          : undefined;
+    registerAIHandlersNew(createAIService(), getToolRegistry(), {
+      resolveApiKey: provider =>
+        aiKeyStorage ? aiKeyStorage.getKey(provider) : Promise.resolve(undefined),
+      retrieve: notesForRetrieve
+        ? input => retrieveAskNotes(notesForRetrieve, input, retrieveExtras)
+        : undefined,
+    });
 
-    // Register built-in AI tools with database access
     if (noteRepository && notebookRepository) {
       const noteRepo = noteRepository;
       const nbRepo = notebookRepository;
       registerBuiltInTools(getToolRegistry(), {
         searchNotes: async (query, limit) => {
-          const notes = await noteRepo.search(query, limit);
-          return notes.map(n => ({
-            id: n.id,
-            title: n.title,
-            snippet: n.content.slice(0, 200),
+          const hits = await retrieveAskNotes(
+            noteRepo,
+            { query, topK: limit ?? 10 },
+            retrieveExtras
+          );
+          return hits.map(hit => ({
+            id: hit.id,
+            title: hit.title,
+            snippet: hit.content.replace(/\s+/g, ' ').trim().slice(0, 200),
           }));
         },
         readNote: async id => {
@@ -586,7 +396,12 @@ app
         },
         listNotebooks: async () => {
           const notebooks = await nbRepo.getAll();
-          return notebooks.map(nb => ({ id: nb.id, name: nb.name, noteCount: 0 }));
+          const counts = noteRepo.countSummary();
+          return notebooks.map(nb => ({
+            id: nb.id,
+            name: nb.name,
+            noteCount: counts.byNotebook[nb.id] ?? 0,
+          }));
         },
         createNote: async (title, content, notebookId) => {
           const result = await createNoteOperation(
@@ -599,11 +414,17 @@ app
           return { id: result.data.id };
         },
       });
+      registerGitHubTools(getToolRegistry(), {
+        getToken: () => (aiKeyStorage ? aiKeyStorage.getKey('github') : Promise.resolve(null)),
+      });
     }
 
-    // Start plugin hot-reload watcher in dev mode
-    if (process.env.NODE_ENV === 'development' && dataPaths) {
-      startPluginWatcher(dataPaths.plugins);
+    if (dataPaths) {
+      await ensureUserHackFiles(dataPaths.root);
+      startUserFileWatcher(dataPaths.root);
+      if (process.env.NODE_ENV === 'development') {
+        startPluginWatcher(dataPaths.plugins);
+      }
     }
 
     registerDataHandlers({
@@ -615,7 +436,6 @@ app
       },
     });
 
-    // Initialize license storage
     licenseStorage = new FileLicenseStorage(dataPaths.root);
 
     registerLogHandlers({
@@ -625,60 +445,22 @@ app
       broadcastToWindows,
     });
 
-    // App version
     ipcMain.handle('app:version', () => app.getVersion());
+    registerEditorHandlers();
 
-    // Editor: fetch URL title for auto-link on paste
-    ipcMain.handle('editor:fetchUrlTitle', async (_event, url: string) => {
-      try {
-        // Validate URL to prevent fetching arbitrary resources
-        const parsed = new URL(url);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          return { title: null };
-        }
-        const response = await net.fetch(url, {
-          signal: AbortSignal.timeout(3000),
-          headers: { 'User-Agent': 'Readied/' + app.getVersion() },
-        });
-        // Only parse HTML responses
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('text/html')) {
-          return { title: null };
-        }
-        // Read only first 16KB to extract <title>
-        const reader = response.body?.getReader();
-        if (!reader) return { title: null };
-        let html = '';
-        const decoder = new TextDecoder();
-        while (html.length < 16384) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          html += decoder.decode(value, { stream: true });
-          // Early exit once we have </title>
-          if (/<\/title>/i.test(html)) break;
-        }
-        reader.cancel().catch(() => {});
-        const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        return { title: match?.[1]?.trim() || null };
-      } catch {
-        return { title: null };
-      }
-    });
-
-    // Theme — sync Electron nativeTheme with renderer
     ipcMain.on('theme:set-source', (_event, source: string) => {
       if (source === 'dark' || source === 'light' || source === 'system') {
         nativeTheme.themeSource = source;
       }
     });
 
-    // Notify all renderer windows when system theme changes
     nativeTheme.on('updated', () => {
       broadcastToWindows('theme:system-changed', nativeTheme.shouldUseDarkColors);
     });
 
-    // Settings sync: broadcast to all windows except sender
     ipcMain.on('settings:changed', (event, settings) => {
+      applyDevelopmentModeFromSettings(settings);
+      void applyKbFromSettings(settings);
       const senderWebContents = event.sender;
       for (const win of BrowserWindow.getAllWindows()) {
         try {
@@ -695,18 +477,15 @@ app
       }
     });
 
-    // Initialize auth and sync services
     const initAuthSync = async () => {
       if (!dataPaths) {
         log.error('Cannot initialize auth/sync services: dataPaths not initialized');
         return;
       }
-
       if (!noteRepository) {
         log.error('Cannot initialize sync service: noteRepository not initialized');
         return;
       }
-
       if (!notebookRepository) {
         log.error('Cannot initialize sync service: notebookRepository not initialized');
         return;
@@ -717,20 +496,13 @@ app
         aiKeyStorage = new AiKeyStorage(dataPaths.root);
         deviceInfo = await getOrCreateDeviceInfo(dataPaths.root);
 
-        const apiBaseUrl = process.env.READIED_API_URL || 'https://api.readied.app';
-        apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo);
-
-        encryptionService = new EncryptionService(dataPaths.root);
-        await encryptionService.initialize();
-
-        syncService = new SyncService(
-          apiClient,
-          encryptionService,
-          noteRepository,
-          notebookRepository
+        const apiBaseUrl = process.env.DRIPNEX_API_URL || 'https://api.dripnex.app';
+        apiClient = new ApiClient(apiBaseUrl, tokenStorage, deviceInfo, (url, init) =>
+          net.fetch(url, init)
         );
 
-        // Register license handlers with dependencies
+        registerAiKeyHandlers({ aiKeyStorage });
+        registerShareHandlers({ apiClient });
         if (licenseStorage) {
           registerLicenseHandlers({
             licenseStorage,
@@ -738,16 +510,38 @@ app
           });
         }
 
+        encryptionService = new EncryptionService(dataPaths.root);
+        try {
+          await encryptionService.initialize();
+        } catch (encError) {
+          log.error(
+            { error: encError instanceof Error ? encError.message : String(encError) },
+            'Encryption init failed — auth handlers still registered'
+          );
+        }
+
+        syncService = new SyncService(
+          apiClient,
+          encryptionService,
+          noteRepository,
+          notebookRepository
+        );
+        await syncService.restoreCursors(
+          new SyncCursorStore(join(dataPaths.root, 'sync-cursors.json'))
+        );
+
         registerAuthSyncHandlers({
           apiClient,
           tokenStorage,
           syncService,
           encryptionService,
+          localIdentity: new LocalIdentity(dataPaths.root),
           broadcastToWindows,
         });
-        registerShareHandlers({ apiClient });
-        registerAiKeyHandlers({ aiKeyStorage });
-        log.info('Auth and sync services initialized');
+        log.info(
+          { encryptionAvailable: safeStorage.isEncryptionAvailable() },
+          'Auth and sync services initialized'
+        );
       } catch (error) {
         log.error(
           { error: error instanceof Error ? error.message : String(error) },
@@ -760,7 +554,6 @@ app
 
     log.info('All IPC handlers registered');
 
-    // Install React DevTools in development (dynamic import keeps it out of prod bundle)
     if (process.env.NODE_ENV === 'development') {
       import('electron-devtools-installer')
         .then(({ default: installExt, REACT_DEVELOPER_TOOLS: RDT }) =>
@@ -773,44 +566,17 @@ app
             )
         )
         .catch(() => {
-          /* electron-devtools-installer not available — ignore */
+          /* electron-devtools-installer not available */
         });
     }
 
-    // Register global quick capture shortcut
-    const registered = globalShortcut.register('CommandOrControl+Shift+N', () => {
-      createQuickCaptureWindow();
-    });
-    if (!registered) {
-      log.warn('Failed to register global shortcut CommandOrControl+Shift+N — already in use?');
-    }
-
-    // IPC: open quick capture from renderer
-    ipcMain.handle('window:openQuickCapture', async () => {
-      createQuickCaptureWindow();
-      return { ok: true };
-    });
-
-    // IPC: close the calling window (only allowed for quick-capture and settings windows)
-    ipcMain.handle('window:closeSelf', async event => {
-      const senderId = event.sender.id;
-      if (!closableWindowIds.has(senderId)) {
-        return { ok: false, error: 'This window is not allowed to close itself' };
-      }
-      const win = BrowserWindow.fromWebContents(event.sender);
-      if (win && !win.isDestroyed()) {
-        win.close();
-      }
-      return { ok: true };
-    });
-
-    // Create window and start auto-updater
-    createWindow();
+    registerQuickCaptureShortcut();
+    createMainWindow();
     initAutoUpdater({ broadcastToWindows });
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
+        createMainWindow();
       }
     });
   })
@@ -827,12 +593,21 @@ app.on('window-all-closed', () => {
 
 let isQuitting = false;
 app.on('before-quit', async event => {
-  if (isQuitting) return; // Guard against re-entry
+  if (isQuitting) return;
   isQuitting = true;
   event.preventDefault();
 
   globalShortcut.unregisterAll();
   stopPluginWatcher();
+
+  try {
+    await flushOpenEditors();
+  } catch (err) {
+    getLogger().error(
+      { error: err instanceof Error ? err.message : String(err) },
+      'Error flushing editors during shutdown'
+    );
+  }
 
   try {
     await stopLocalServer();
@@ -843,15 +618,9 @@ app.on('before-quit', async event => {
     );
   }
 
-  // Don't close the DB here — windows are still alive and may issue IPC
-  // requests (e.g. notebooks:tree on reload) until they fully unmount.
-  // The DB is closed in `will-quit`, after window-all-closed has fired.
   app.quit();
 });
 
-// Close the database after all windows are gone but before the process exits.
-// This avoids the "database connection is not open" race where the renderer
-// fires an IPC request between db.close() and window destruction.
 app.on('will-quit', () => {
   if (db) {
     try {
@@ -867,104 +636,35 @@ app.on('will-quit', () => {
   }
 });
 
-// Deep link handler for readied:// protocol (macOS)
 app.on('open-url', (event, url) => {
   event.preventDefault();
   const log = getLogger();
   log.info({ url }, 'Deep link received');
-
-  try {
-    const urlObj = new URL(url);
-
-    // Handle auth verification: readied://auth/verify?token=xxx
-    if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
-      const token = urlObj.searchParams.get('token');
-      if (token) {
-        log.info('Auth verification token received via deep link');
-
-        // Send token to renderer process — queue if window isn't ready yet
-        const mainWin = BrowserWindow.getAllWindows().find(
-          win => !win.isDestroyed() && win.webContents.isLoading() === false
-        );
-        if (mainWin) {
-          mainWin.webContents.send('auth:verify-token', token);
-          mainWin.show();
-          mainWin.focus();
-        } else {
-          log.info('Window not ready, queuing auth token for later delivery');
-          pendingAuthToken = token;
-        }
-      } else {
-        log.warn('Deep link missing token parameter');
-      }
-    } else {
-      log.warn(
-        { hostname: urlObj.hostname, pathname: urlObj.pathname },
-        'Unknown deep link format'
-      );
-    }
-  } catch (error) {
-    log.error(
-      { error: error instanceof Error ? error.message : String(error) },
-      'Failed to parse deep link URL'
-    );
+  if (!deliverDripnexUrl(url)) {
+    log.warn({ url }, 'Unknown deep link format');
   }
 });
 
-// Primary instance: check startup args for deep link URL (cold start on Windows/Linux)
-const startupDeepLink = process.argv.find(arg => arg.startsWith('readied://'));
+const startupDeepLink = process.argv.find(arg => arg.startsWith('dripnex://'));
 if (startupDeepLink) {
-  try {
-    const urlObj = new URL(startupDeepLink);
-    if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
-      const token = urlObj.searchParams.get('token');
-      if (token) {
-        pendingAuthToken = token;
-      }
-    }
-  } catch {
-    // Invalid URL in argv — ignore
-  }
+  const parsed = parseDripnexUrl(startupDeepLink);
+  if (parsed) queueDeepLink(parsed);
 }
 
-// Handle deep links forwarded from secondary instances (app already running)
 app.on('second-instance', (_event, commandLine) => {
   const log = getLogger();
-  const deepLinkUrl = commandLine.find(arg => arg.startsWith('readied://'));
+  const deepLinkUrl = commandLine.find(arg => arg.startsWith('dripnex://'));
 
   if (deepLinkUrl) {
     log.info({ url: deepLinkUrl }, 'Deep link received via second-instance (Windows/Linux)');
-
-    try {
-      const urlObj = new URL(deepLinkUrl);
-
-      if (urlObj.hostname === 'auth' && urlObj.pathname === '/verify') {
-        const token = urlObj.searchParams.get('token');
-        if (token) {
-          log.info('Auth verification token received via second-instance');
-
-          const mainWin = BrowserWindow.getAllWindows().find(
-            win => !win.isDestroyed() && win.webContents.isLoading() === false
-          );
-          if (mainWin) {
-            mainWin.webContents.send('auth:verify-token', token);
-            mainWin.show();
-            mainWin.focus();
-          } else {
-            pendingAuthToken = token;
-          }
-        }
-      }
-    } catch (error) {
-      log.error(
-        { error: error instanceof Error ? error.message : String(error) },
-        'Failed to parse deep link from second-instance'
-      );
+    if (!deliverDripnexUrl(deepLinkUrl)) {
+      log.warn({ url: deepLinkUrl }, 'Unknown deep link format');
     }
   }
 
-  // Focus the existing window
-  const mainWin = BrowserWindow.getAllWindows().find(win => !win.isDestroyed());
+  const mainWin = BrowserWindow.getAllWindows().find(
+    win => !win.isDestroyed() && !win.webContents.isDestroyed()
+  );
   if (mainWin) {
     if (mainWin.isMinimized()) mainWin.restore();
     mainWin.focus();

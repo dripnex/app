@@ -3,8 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: https:;" />
-    <title>Readied</title>
+    <!-- unsafe-eval: trusted init.js + community plugins run via new Function() in-process. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: asset: https:;" />
+    <title>Dripnex</title>
+    <style>
+      html,
+      body,
+      #root {
+        background: transparent;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

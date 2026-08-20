@@ -10,8 +10,9 @@
  */
 
 import { createStore } from 'zustand/vanilla';
-import type { PluginManifest } from '@readied/plugin-api';
-import { loadPluginFromSource, loadInitScript } from '@readied/plugin-api';
+import type { PluginManifest, PluginPackageFiles } from '@dripnex/plugin-api';
+import { loadPluginFromSource, loadInitScript, createThemeOnlyManifest } from '@dripnex/plugin-api';
+import { createPluginRequire } from '../plugins/pluginRequire';
 
 export interface PluginLoadError {
   pluginId: string;
@@ -34,6 +35,8 @@ interface PluginRuntimeState {
   errors: PluginLoadError[];
   /** Load timing per plugin */
   timings: PluginLoadTiming[];
+  /** Declarative keymaps/menus/styles from each scanned plugin package */
+  packageFiles: Record<string, PluginPackageFiles>;
   /** Current lifecycle status */
   status: RuntimeStatus;
 }
@@ -56,7 +59,7 @@ let listenerAttached = false;
 function attachIpcListener() {
   if (listenerAttached) return;
   listenerAttached = true;
-  window.readied.ipc.on('plugins:reload', () => {
+  window.dripnex.ipc.on('plugins:reload', () => {
     void pluginRuntimeStore.getState().reload();
   });
 }
@@ -65,31 +68,42 @@ async function executeScan(generation: number): Promise<{
   plugins: PluginManifest[];
   errors: PluginLoadError[];
   timings: PluginLoadTiming[];
+  packageFiles: Record<string, PluginPackageFiles>;
 } | null> {
   try {
     const [scanned, stateList, initCode] = await Promise.all([
-      window.readied.plugins.scan(),
-      window.readied.plugins.listState(),
-      window.readied.plugins.readInitScript(),
+      window.dripnex.plugins.scan(),
+      window.dripnex.plugins.listState(),
+      window.dripnex.plugins.readInitScript(),
     ]);
 
     // Race check: another scan started while this one was in-flight
     if (scanGeneration !== generation) return null;
 
     const stateMap = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+    const pluginRequire = createPluginRequire();
     const plugins: PluginManifest[] = [];
     const errors: PluginLoadError[] = [];
     const timings: PluginLoadTiming[] = [];
+    const packageFiles: Record<string, PluginPackageFiles> = {};
 
     for (const sp of scanned) {
       const enabled = stateMap.get(sp.id) ?? true;
       if (!enabled) continue;
 
       const start = performance.now();
-      const manifest = loadPluginFromSource(sp.code, sp.id);
+      const manifest = sp.hasMain
+        ? loadPluginFromSource(sp.code, sp.id, { require: pluginRequire })
+        : createThemeOnlyManifest(sp.id, sp.name, sp.version);
       const elapsed = performance.now() - start;
 
       timings.push({ pluginId: sp.id, pluginName: sp.name, loadTimeMs: elapsed });
+      packageFiles[sp.id] = {
+        keymaps: sp.keymaps ?? [],
+        menus: sp.menus ?? [],
+        styles: sp.styles ?? [],
+        themes: sp.themes ?? [],
+      };
 
       if (manifest) {
         plugins.push(manifest);
@@ -127,7 +141,7 @@ async function executeScan(generation: number): Promise<{
     // Race check again after CPU-bound eval loop
     if (scanGeneration !== generation) return null;
 
-    return { plugins, errors, timings };
+    return { plugins, errors, timings, packageFiles };
   } catch (error) {
     console.error('[pluginRuntime] scan failed:', error);
     return null;
@@ -138,6 +152,7 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
   plugins: [],
   errors: [],
   timings: [],
+  packageFiles: {},
   status: 'idle',
 
   async init() {
@@ -150,6 +165,7 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
         plugins: result.plugins,
         errors: result.errors,
         timings: result.timings,
+        packageFiles: result.packageFiles,
         status: 'ready',
       });
     } else if (scanGeneration === gen) {
@@ -166,6 +182,7 @@ export const pluginRuntimeStore = createStore<PluginRuntimeStore>(set => ({
         plugins: result.plugins,
         errors: result.errors,
         timings: result.timings,
+        packageFiles: result.packageFiles,
         status: 'ready',
       });
     } else if (scanGeneration === gen) {

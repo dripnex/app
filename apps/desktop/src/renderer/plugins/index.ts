@@ -5,7 +5,7 @@
  * Used by App.tsx (plugin loading) and PluginsSection (settings display).
  */
 
-import type { PluginManifest } from '@readied/plugin-api';
+import type { PluginManifest } from '@dripnex/plugin-api';
 import { wordCountPlugin } from './wordCount';
 import { typewriterModePlugin } from './typewriterMode';
 import { activeLineHighlightPlugin } from './activeLineHighlight';
@@ -16,7 +16,8 @@ import { readingTimePlugin } from './readingTime';
 import { exportMarkdownPlugin } from './exportMarkdown';
 import { mermaidPlugin } from './mermaid';
 import { mathPlugin } from './math';
-import { vimModePlugin } from './vimMode';
+import { pasteAsLinkPlugin } from './pasteAsLink';
+import { motionPlugin } from './motion';
 
 export {
   wordCountPlugin,
@@ -29,7 +30,8 @@ export {
   exportMarkdownPlugin,
   mermaidPlugin,
   mathPlugin,
-  vimModePlugin,
+  pasteAsLinkPlugin,
+  motionPlugin,
 };
 
 /** All built-in plugin manifests. */
@@ -44,5 +46,6 @@ export const builtInPlugins: PluginManifest[] = [
   exportMarkdownPlugin,
   mermaidPlugin,
   mathPlugin,
-  vimModePlugin,
+  pasteAsLinkPlugin,
+  motionPlugin,
 ];

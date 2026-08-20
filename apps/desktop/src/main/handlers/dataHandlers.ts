@@ -17,12 +17,33 @@ import {
   importNotes,
   detectImportType,
   type DataPaths,
-} from '@readied/storage-core';
-import { createDatabase, allMigrations } from '@readied/storage-sqlite';
-import { runMigrations } from '@readied/storage-core';
-import { createNoteOperation } from '@readied/core';
+} from '@dripnex/storage-core';
+import { createDatabase, allMigrations } from '@dripnex/storage-sqlite';
+import { runMigrations } from '@dripnex/storage-core';
+import {
+  createNoteOperation,
+  createNoteId,
+  pinNote,
+  setNoteStatus,
+  softDeleteNote,
+  type NoteStatus,
+} from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
+import { htmlToPdfBuffer, printHtml } from '../services/printNote.js';
 import type { SQLiteNoteRepository, Database } from './types.js';
+
+function safeExportName(suggestedName: string): string {
+  let safeName =
+    suggestedName
+      .normalize('NFC')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[/\\:*?"<>|\x00-\x1f.]/g, '')
+      .substring(0, 80)
+      .trim() || 'note';
+  const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
+  if (WINDOWS_RESERVED.test(safeName)) safeName = `_${safeName}`;
+  return safeName;
+}
 
 export interface DataHandlerDeps {
   dataPaths: DataPaths;
@@ -139,7 +160,7 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
       // Show save dialog
       const { filePath, canceled } = await dialog.showSaveDialog({
         title: 'Export Notes',
-        defaultPath: join(app.getPath('documents'), 'readied-export'),
+        defaultPath: join(app.getPath('documents'), 'dripnex-export'),
         buttonLabel: 'Export',
       });
 
@@ -157,7 +178,14 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
         updatedAt: note.metadata.updatedAt,
         tags: [...note.metadata.tags],
         wordCount: note.metadata.wordCount,
+        taskCount: note.metadata.taskCount,
+        checkedTaskCount: note.metadata.checkedTaskCount,
         archivedAt: note.metadata.archivedAt,
+        notebookId: note.notebookId,
+        isArchived: note.metadata.archivedAt !== null,
+        isPinned: note.isPinned,
+        isDeleted: note.isDeleted,
+        status: note.status,
       }));
 
       const result = exportNotes(snapshots, {
@@ -178,15 +206,7 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
     channel: 'data:exportNote',
     args: z.tuple([z.string().max(1024 * 1024), z.string().max(512)]),
     handler: async (content, suggestedName) => {
-      let safeName =
-        suggestedName
-          .normalize('NFC')
-          // eslint-disable-next-line no-control-regex
-          .replace(/[/\\:*?"<>|\x00-\x1f.]/g, '')
-          .substring(0, 80)
-          .trim() || 'note';
-      const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
-      if (WINDOWS_RESERVED.test(safeName)) safeName = `_${safeName}`;
+      const safeName = safeExportName(suggestedName);
       const { filePath, canceled } = await dialog.showSaveDialog({
         title: 'Export Note',
         defaultPath: join(app.getPath('documents'), `${safeName}.md`),
@@ -208,6 +228,55 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
         };
       }
     },
+  });
+
+  defineIpcHandler({
+    channel: 'data:exportFile',
+    args: z.tuple([
+      z.string().max(5 * 1024 * 1024),
+      z.string().max(512),
+      z.enum(['md', 'html', 'pdf']),
+    ]),
+    handler: async (content, suggestedName, kind) => {
+      const safeName = safeExportName(suggestedName);
+      const filters =
+        kind === 'pdf'
+          ? [{ name: 'PDF', extensions: ['pdf'] }]
+          : kind === 'html'
+            ? [{ name: 'HTML', extensions: ['html'] }]
+            : [{ name: 'Markdown', extensions: ['md'] }];
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Export Note',
+        defaultPath: join(app.getPath('documents'), `${safeName}.${kind}`),
+        buttonLabel: 'Export',
+        filters,
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: 'Export cancelled' };
+      }
+
+      try {
+        if (kind === 'pdf') {
+          const pdf = await htmlToPdfBuffer(content);
+          await writeFile(filePath, pdf);
+        } else {
+          await writeFile(filePath, content, 'utf-8');
+        }
+        return { success: true, path: filePath };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to write file',
+        };
+      }
+    },
+  });
+
+  defineIpcHandler({
+    channel: 'note:printHtml',
+    args: z.tuple([z.string().max(5 * 1024 * 1024)]),
+    handler: html => printHtml(html),
   });
 
   defineIpcHandler({
@@ -240,14 +309,30 @@ export function registerDataHandlers(deps: DataHandlerDeps): void {
 
       // Import each note
       let imported = 0;
+      const statuses = new Set<NoteStatus>(['active', 'on_hold', 'completed', 'dropped']);
       for (const imported_note of result.notes) {
         try {
-          await createNoteOperation(
+          const created = await createNoteOperation(
             {
               content: imported_note.content,
+              id: imported_note.id,
+              notebookId: imported_note.notebookId,
             },
             repo
           );
+          if (!created.ok) continue;
+          const note = await repo.get(createNoteId(created.data.id));
+          if (!note) {
+            imported++;
+            continue;
+          }
+          let next = note;
+          if (imported_note.isPinned) next = pinNote(next);
+          if (imported_note.status && statuses.has(imported_note.status as NoteStatus)) {
+            next = setNoteStatus(next, imported_note.status as NoteStatus);
+          }
+          if (imported_note.isDeleted) next = softDeleteNote(next);
+          if (next !== note) await repo.save(next);
           imported++;
         } catch {
           // Skip notes that fail to import

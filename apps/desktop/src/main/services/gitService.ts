@@ -10,6 +10,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
+import { normalizeGithubRemote } from './gitRemote.js';
 
 // ============================================================================
 // Types
@@ -49,8 +51,8 @@ export interface GitDiff {
 export class GitService {
   private readonly baseDir: string;
   private readonly defaultAuthor = {
-    name: 'Readied User',
-    email: 'user@readied.app',
+    name: 'Dripnex User',
+    email: 'user@dripnex.app',
   };
 
   constructor(baseDir: string) {
@@ -85,7 +87,7 @@ export class GitService {
     // Create initial .gitignore
     const gitignorePath = path.join(repoPath, '.gitignore');
     const gitignoreContent = [
-      '# Readied internal files',
+      '# Dripnex internal files',
       '.DS_Store',
       'Thumbs.db',
       '',
@@ -125,7 +127,7 @@ export class GitService {
    */
   async writeNoteFile(notebookId: string, noteId: string, content: string): Promise<void> {
     const repoPath = this.getRepoPath(notebookId);
-    const filePath = path.join(repoPath, `${noteId}.md`);
+    const filePath = this.getNoteFilePath(repoPath, noteId);
 
     // Ensure directory exists
     if (!fs.existsSync(repoPath)) {
@@ -141,7 +143,7 @@ export class GitService {
    */
   async readNoteFile(notebookId: string, noteId: string): Promise<string | null> {
     const repoPath = this.getRepoPath(notebookId);
-    const filePath = path.join(repoPath, `${noteId}.md`);
+    const filePath = this.getNoteFilePath(repoPath, noteId);
 
     if (!fs.existsSync(filePath)) {
       return null;
@@ -155,7 +157,7 @@ export class GitService {
    */
   async deleteNoteFile(notebookId: string, noteId: string): Promise<void> {
     const repoPath = this.getRepoPath(notebookId);
-    const filePath = path.join(repoPath, `${noteId}.md`);
+    const filePath = this.getNoteFilePath(repoPath, noteId);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -429,11 +431,68 @@ export class GitService {
   // Utility Methods
   // ==========================================================================
 
+  async listRemotes(notebookId: string): Promise<Array<{ remote: string; url: string }>> {
+    const repoPath = this.getRepoPath(notebookId);
+    return git.listRemotes({ fs, dir: repoPath });
+  }
+
+  async setGithubRemote(notebookId: string, url: string): Promise<string> {
+    const normalized = normalizeGithubRemote(url);
+    if (!normalized) {
+      throw new Error('Use an https://github.com/owner/repo URL.');
+    }
+    const repoPath = this.getRepoPath(notebookId);
+    const remotes = await git.listRemotes({ fs, dir: repoPath });
+    if (remotes.some(remote => remote.remote === 'origin')) {
+      await git.deleteRemote({ fs, dir: repoPath, remote: 'origin' });
+    }
+    await git.addRemote({ fs, dir: repoPath, remote: 'origin', url: normalized });
+    return normalized;
+  }
+
+  async pushOrigin(notebookId: string, token: string): Promise<void> {
+    if (!token.trim()) {
+      throw new Error('Connect GitHub in Settings → Integrations first.');
+    }
+    const repoPath = this.getRepoPath(notebookId);
+    await git.push({
+      fs,
+      http,
+      dir: repoPath,
+      remote: 'origin',
+      ref: 'main',
+      onAuth: () => ({ username: 'x-access-token', password: token }),
+    });
+  }
+
+  /**
+   * Resolve `segments` against `base` and guarantee the result stays inside
+   * `base`. Defense-in-depth against path traversal: the IPC layer already
+   * restricts ID charsets (see gitHandlers.ts), but this ensures a malformed
+   * or future-changed ID can never escape the notebooks directory.
+   */
+  private resolveWithin(base: string, ...segments: string[]): string {
+    const normalizedBase = path.resolve(base);
+    const target = path.resolve(normalizedBase, ...segments);
+    if (target !== normalizedBase && !target.startsWith(normalizedBase + path.sep)) {
+      throw new Error('Resolved path escapes the allowed directory');
+    }
+    return target;
+  }
+
   /**
    * Get the filesystem path to a notebook's git repository
    */
   private getRepoPath(notebookId: string): string {
-    return path.join(this.baseDir, 'notebooks', notebookId);
+    return this.resolveWithin(path.join(this.baseDir, 'notebooks'), notebookId);
+  }
+
+  /**
+   * Get the filesystem path to a note file within a notebook repo, validating
+   * that it stays inside the repository directory.
+   */
+  private getNoteFilePath(repoPath: string, noteId: string): string {
+    return this.resolveWithin(repoPath, `${noteId}.md`);
   }
 
   /**

@@ -8,22 +8,35 @@ import {
   useSyncExternalStore,
 } from 'react';
 import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import rehypeHighlight from 'rehype-highlight';
-import '../../styles/code-highlight.css';
-import { Clock, CalendarPlus, ListChecks } from 'lucide-react';
-import { remarkWikilink } from '@readied/wikilinks';
-import { extractEmbedTargets } from '@readied/embeds';
-import { countMarkdownTasks } from '@readied/tasks';
+import { Clock, CalendarPlus, ListChecks } from 'lucide';
+import { scanMarkdown } from '@dripnex/markdown';
 import {
   remarkPluginStore,
   rehypePluginStore,
   previewComponentStore,
   codeBlockStore,
-} from '@readied/plugin-api';
+  emitPreviewEvent,
+} from '@dripnex/plugin-api';
+import { Icon } from '../../ui/icons/Icon';
+import { coreRemarkPlugins } from '../../lib/coreRemarkPlugins';
 import { formatDateTime } from '../../utils/date';
 import { useEditorBufferStore, selectContentForNote } from '../../stores/editorBufferStore';
+import { usePreviewFindStore } from '../../stores/previewFindStore';
+import { applyPreviewFind, unwrapPreviewFindMarks } from '../../utils/previewFind';
+import { scrollBehavior } from '../../utils/motion';
+import { cssm } from '../../lib/cssm';
+import { emitLocalDeepLink } from '../../utils/parseDripnexUrl';
+import { isMissingWikilink, type WikilinkTitleResolution } from '../../utils/isMissingWikilink';
+import { notebookStyleProps } from '../../utils/notebookStyle';
+import { useSettingsStore, selectEditor } from '../../stores/settings';
+import { PreviewFindBar } from './PreviewFindBar';
+import { FenceBlock } from './FenceBlock';
+import styles from './MarkdownPreview.module.css';
+
+const sc = cssm(styles);
 
 /** Escape special regex characters in a string */
 function escapeRegex(str: string): string {
@@ -33,13 +46,19 @@ function escapeRegex(str: string): string {
 interface MarkdownPreviewProps {
   readonly content: string;
   readonly noteId: string;
+  readonly notebookId?: string | null;
   readonly createdAt?: string;
   readonly updatedAt?: string;
   readonly onReady?: () => void;
   readonly onWikilinkClick?: (target: string, anchor?: string) => void;
+  readonly onWikilinkHover?: (target: string, coords: { x: number; y: number }) => void;
+  readonly onWikilinkHoverEnd?: () => void;
+  readonly knownWikilinkTitles?: WikilinkTitleResolution;
   readonly onEmbedClick?: (target: string, url: string) => void;
   /** Optional pre-resolved embeds from parent (for sharing with editor) */
   readonly resolvedEmbeds?: Record<string, string | null>;
+  /** Toggle the Nth GFM task when a preview checkbox is clicked */
+  readonly onCheckboxToggle?: (index: number, checked: boolean) => void;
 }
 
 /** Imperative handle for scroll sync */
@@ -48,6 +67,8 @@ export interface MarkdownPreviewHandle {
   setScrollFraction: (fraction: number) => void;
   onScroll: (callback: (fraction: number) => void) => () => void;
   canScroll: () => boolean;
+  jumpToHeading: (text: string) => void;
+  getVisibleHeading: () => string | null;
 }
 
 export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreviewProps>(
@@ -55,19 +76,29 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     {
       content: contentProp,
       noteId,
+      notebookId,
       createdAt,
       updatedAt,
       onReady,
       onWikilinkClick,
+      onWikilinkHover,
+      onWikilinkHoverEnd,
+      knownWikilinkTitles = { status: 'pending' },
       onEmbedClick,
       resolvedEmbeds: resolvedEmbedsProp,
+      onCheckboxToggle,
     },
     ref
   ) {
+    const readableLineLength = useSettingsStore(s => selectEditor(s).readableLineLength);
     const containerRef = useRef<HTMLDivElement>(null);
     const [internalResolvedEmbeds, setInternalResolvedEmbeds] = useState<
       Record<string, string | null>
     >({});
+    const [findCount, setFindCount] = useState(0);
+    const findOpen = usePreviewFindStore(s => s.open);
+    const findQuery = usePreviewFindStore(s => s.query);
+    const findIndex = usePreviewFindStore(s => s.index);
 
     // Subscribe to plugin preview stores
     const pluginRemarkRegs = useSyncExternalStore(
@@ -87,9 +118,44 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       () => codeBlockStore.getState().registrations
     );
 
+    // SECURITY: rehypeRaw parses raw HTML embedded in note markdown, so the
+    // output must be sanitized before rendering (defends against XSS via
+    // <script>, event handlers, javascript: URLs, etc.). The schema extends the
+    // GitHub-flavored default to preserve app features: the custom <embed-image>
+    // element, task-list checkboxes, className/data-* (wikilinks, syntax
+    // highlight), asset:// image URLs, and plugin-registered preview elements.
+    // Runs BEFORE rehypeHighlight so highlight's generated spans/classes are
+    // trusted output rather than sanitized input.
+    const sanitizeSchema = useMemo(() => {
+      const base = defaultSchema;
+      const attrs = base.attributes ?? {};
+      const star = (attrs['*'] ?? []) as unknown[];
+      return {
+        ...base,
+        tagNames: [
+          ...(base.tagNames ?? []),
+          'embed-image',
+          'mark',
+          ...pluginComponentRegs.map(r => r.tagName),
+        ],
+        attributes: {
+          ...attrs,
+          '*': [...star, 'className', 'data*'],
+          'embed-image': ['src', 'alt', 'className', 'loading'],
+          input: ['type', 'checked', 'disabled'],
+        },
+        protocols: {
+          ...base.protocols,
+          // Local embeds are resolved to asset:// URLs before rendering.
+          src: [...(base.protocols?.src ?? []), 'asset'],
+        },
+      } as typeof defaultSchema;
+    }, [pluginComponentRegs]);
+
     // Use live buffer content if available for this note, otherwise fall back to prop
     const liveContent = useEditorBufferStore(selectContentForNote(noteId));
     const content = liveContent ?? contentProp;
+    const scan = useMemo(() => scanMarkdown(content), [content]);
 
     // Use prop if provided, otherwise internal state
     const resolvedEmbeds = resolvedEmbedsProp ?? internalResolvedEmbeds;
@@ -99,21 +165,21 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
       // Skip if parent is managing resolved embeds
       if (resolvedEmbedsProp !== undefined) return;
 
-      const targets = extractEmbedTargets(content);
+      const targets = scan.embedTargets;
       if (targets.length === 0) {
         setInternalResolvedEmbeds({});
         return;
       }
-      void window.readied.embeds.resolveBatch(targets, noteId).then(result => {
+      void window.dripnex.embeds.resolveBatch(targets, noteId).then(result => {
         setInternalResolvedEmbeds(result);
       });
-    }, [content, noteId, resolvedEmbedsProp]);
+    }, [scan.embedTargets, noteId, resolvedEmbedsProp]);
 
     // Invariant:
     // Never normalize embeds to markdown images until all URLs are resolved.
     // Violating this produces <img src=""> and broken previews.
     const resolvedContent = useMemo(() => {
-      const targets = extractEmbedTargets(content);
+      const targets = scan.embedTargets;
       if (targets.length === 0) return content;
 
       // Check if all LOCAL targets are resolved (external URLs don't need IPC)
@@ -143,29 +209,72 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         );
       }
       return result;
-    }, [content, resolvedEmbeds]);
+    }, [content, resolvedEmbeds, scan.embedTargets]);
 
-    // Click handler for wikilinks and embeds
     const handleClick = (e: React.MouseEvent) => {
-      const wikilinkEl = (e.target as HTMLElement).closest('.wikilink');
+      const target = e.target as HTMLElement;
+
+      const wikilinkEl = target.closest('.wikilink');
       if (wikilinkEl) {
-        const noteTitle = wikilinkEl.getAttribute('data-target');
+        const noteTitle = wikilinkEl.getAttribute('data-target') ?? '';
         const anchor = wikilinkEl.getAttribute('data-anchor') ?? undefined;
-        if (noteTitle && onWikilinkClick) {
+        if (onWikilinkClick && (noteTitle || anchor)) {
           e.preventDefault();
           onWikilinkClick(noteTitle, anchor);
         }
         return;
       }
 
-      const imgEl = e.target as HTMLElement;
-      if (imgEl.tagName === 'IMG') {
-        const src = imgEl.getAttribute('src');
+      const anchorEl = target.closest('a');
+      if (anchorEl) {
+        const href = anchorEl.getAttribute('href') ?? '';
+        const allowed = emitPreviewEvent('a:click', {
+          href,
+          text: (anchorEl.textContent ?? '').trim(),
+        });
+        if (!allowed || href.startsWith('dripnex://')) {
+          e.preventDefault();
+        }
+        if (href.startsWith('dripnex://')) emitLocalDeepLink(href);
+        return;
+      }
+
+      if (target.tagName === 'IMG') {
+        const src = target.getAttribute('src');
         if (src?.startsWith('asset://') && onEmbedClick) {
           e.preventDefault();
           onEmbedClick(src, src);
         }
       }
+    };
+
+    const handleWikilinkHover = (e: React.MouseEvent) => {
+      const el = (e.target as HTMLElement).closest('.wikilink');
+      const title = el?.getAttribute('data-target')?.trim() ?? '';
+      if (!title) {
+        onWikilinkHoverEnd?.();
+        return;
+      }
+      onWikilinkHover?.(title, { x: e.clientX, y: e.clientY });
+    };
+
+    const handleWikilinkHoverEnd = (e: React.MouseEvent) => {
+      const from = (e.target as HTMLElement).closest('.wikilink');
+      const to = (e.relatedTarget as HTMLElement | null)?.closest?.('.wikilink');
+      if (from && from !== to) onWikilinkHoverEnd?.();
+    };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const box = e.target;
+      const root = containerRef.current;
+      if (!root) return;
+      const boxes = root.querySelectorAll('input[type="checkbox"]');
+      const index = Array.prototype.indexOf.call(boxes, box);
+      if (index < 0) return;
+      const checked = box.checked;
+      const allowed = emitPreviewEvent('checkbox:change', { index, checked });
+      if (!allowed) return;
+      onCheckboxToggle?.(index, checked);
     };
 
     useEffect(() => {
@@ -201,110 +310,192 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
         if (!el) return false;
         return el.scrollHeight > el.clientHeight + 1;
       },
+      jumpToHeading: (text: string) => {
+        const el = containerRef.current;
+        if (!el) return;
+        const headings = el.querySelectorAll('h1,h2,h3,h4,h5,h6');
+        const target = Array.from(headings).find(h => (h.textContent ?? '').trim() === text);
+        target?.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+      },
+      getVisibleHeading: () => {
+        const el = containerRef.current;
+        if (!el) return null;
+        const headings = Array.from(el.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+        if (headings.length === 0) return null;
+        const top = el.getBoundingClientRect().top + 12;
+        let current = headings[0] ?? null;
+        for (const heading of headings) {
+          if (heading.getBoundingClientRect().top <= top + 24) current = heading;
+          else break;
+        }
+        return current?.textContent?.trim() ?? null;
+      },
     }));
 
-    const tasks = useMemo(() => countMarkdownTasks(content), [content]);
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      if (!findOpen) {
+        unwrapPreviewFindMarks(el);
+        setFindCount(0);
+        return;
+      }
+      setFindCount(applyPreviewFind(el, findQuery, findIndex));
+    }, [content, findOpen, findQuery, findIndex]);
+
+    useEffect(() => {
+      const root = containerRef.current;
+      if (!root) return;
+      for (const el of root.querySelectorAll('.wikilink')) {
+        const target = el.getAttribute('data-target') ?? '';
+        el.classList.toggle('wikilink--missing', isMissingWikilink(target, knownWikilinkTitles));
+      }
+    }, [resolvedContent, knownWikilinkTitles]);
+
+    const tasks = scan.tasks;
     const hasProgress = tasks.total > 0;
     const progressPercent = hasProgress ? (tasks.completed / tasks.total) * 100 : 0;
 
     return (
-      <div ref={containerRef} className="markdown-preview" onClick={handleClick}>
-        <div className="preview-metadata-header">
-          {hasProgress && (
-            <div className="preview-meta-item">
-              <ListChecks size={12} className="preview-meta-icon" aria-hidden="true" />
-              <div className="preview-meta-content">
-                <span className="preview-meta-label">PROGRESS</span>
-                <div className="preview-meta-progress">
-                  <div className="preview-progress-bar">
-                    <div
-                      className="preview-progress-fill"
-                      style={{ width: `${progressPercent}%` }}
-                    />
+      <div className={sc('preview-shell', readableLineLength && 'readable')}>
+        {findOpen ? <PreviewFindBar matchCount={findCount} /> : null}
+        <div
+          ref={containerRef}
+          className={`${sc('markdown-preview')} ${notebookStyleProps(notebookId).className}`}
+          data-preview
+          data-notebook-id={notebookId || undefined}
+          onClick={handleClick}
+          onMouseOver={handleWikilinkHover}
+          onMouseOut={handleWikilinkHoverEnd}
+          onChange={handleCheckboxChange}
+        >
+          <div className={sc('preview-metadata-header')}>
+            {hasProgress && (
+              <div className={sc('preview-meta-item')}>
+                <Icon
+                  icon={ListChecks}
+                  size={12}
+                  className={sc('preview-meta-icon')}
+                  aria-hidden="true"
+                />
+                <div className={sc('preview-meta-content')}>
+                  <span className={sc('preview-meta-label')}>PROGRESS</span>
+                  <div className={sc('preview-meta-progress')}>
+                    <div className={sc('preview-progress-bar')}>
+                      <div
+                        className={sc('preview-progress-fill')}
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <span className={sc('preview-progress-text')}>
+                      {tasks.completed} of {tasks.total} tasks
+                    </span>
                   </div>
-                  <span className="preview-progress-text">
-                    {tasks.completed} of {tasks.total} tasks
-                  </span>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {createdAt && (
-            <div className="preview-meta-item">
-              <Clock size={12} className="preview-meta-icon" aria-hidden="true" />
-              <div className="preview-meta-content">
-                <span className="preview-meta-label">CREATED AT</span>
-                <span className="preview-meta-value">{formatDateTime(createdAt)}</span>
+            {createdAt && (
+              <div className={sc('preview-meta-item')}>
+                <Icon
+                  icon={Clock}
+                  size={12}
+                  className={sc('preview-meta-icon')}
+                  aria-hidden="true"
+                />
+                <div className={sc('preview-meta-content')}>
+                  <span className={sc('preview-meta-label')}>CREATED AT</span>
+                  <span className={sc('preview-meta-value')}>{formatDateTime(createdAt)}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {updatedAt && (
-            <div className="preview-meta-item">
-              <CalendarPlus size={12} className="preview-meta-icon" aria-hidden="true" />
-              <div className="preview-meta-content">
-                <span className="preview-meta-label">UPDATED AT</span>
-                <span className="preview-meta-value">{formatDateTime(updatedAt)}</span>
+            {updatedAt && (
+              <div className={sc('preview-meta-item')}>
+                <Icon
+                  icon={CalendarPlus}
+                  size={12}
+                  className={sc('preview-meta-icon')}
+                  aria-hidden="true"
+                />
+                <div className={sc('preview-meta-content')}>
+                  <span className={sc('preview-meta-label')}>UPDATED AT</span>
+                  <span className={sc('preview-meta-value')}>{formatDateTime(updatedAt)}</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          <div data-preview-body>
+            <Markdown
+              remarkPlugins={
+                [
+                  ...coreRemarkPlugins(),
+                  ...pluginRemarkRegs.map(r => r.plugin),
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ] as any[]
+              }
+              rehypePlugins={
+                [
+                  rehypeRaw,
+                  [rehypeSanitize, sanitizeSchema],
+                  rehypeHighlight,
+                  ...pluginRehypeRegs.map(r => r.plugin),
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ] as any[]
+              }
+              components={
+                {
+                  pre: ({ children }) => <FenceBlock>{children}</FenceBlock>,
+                  input: ({ type, checked, ...props }) => {
+                    if (type === 'checkbox') {
+                      return (
+                        <input
+                          type="checkbox"
+                          checked={Boolean(checked)}
+                          onChange={handleCheckboxChange}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      );
+                    }
+                    return <input type={type} {...props} />;
+                  },
+                  // Custom embed-image element bypasses rehype URL sanitization
+                  'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
+                    <img
+                      src={src}
+                      alt={alt}
+                      className={sc('embed', 'embed-image')}
+                      loading="lazy"
+                    />
+                  ),
+                  // Code block renderer delegation to plugins
+                  code: ({ className, children, ...props }) => {
+                    const match = /language-([\w+#.-]+)/.exec(className || '');
+                    const lang = match?.[1];
+                    if (lang) {
+                      const reg = pluginCodeBlockRegs.find(r => r.language === lang);
+                      if (reg) {
+                        const CodeRenderer = reg.component;
+                        const code = String(children).replace(/\n$/, '');
+                        return <CodeRenderer code={code} language={lang} />;
+                      }
+                    }
+                    return (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    );
+                  },
+                  // Plugin-registered preview components
+                  ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
+                } as Record<string, React.ComponentType<unknown>>
+              }
+            >
+              {resolvedContent}
+            </Markdown>
+          </div>
         </div>
-
-        <Markdown
-          remarkPlugins={
-            [
-              remarkGfm,
-              remarkWikilink,
-              ...pluginRemarkRegs.map(r => r.plugin),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ] as any[]
-          }
-          rehypePlugins={
-            [
-              rehypeRaw,
-              rehypeHighlight,
-              ...pluginRehypeRegs.map(r => r.plugin),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ] as any[]
-          }
-          components={
-            {
-              input: ({ type, checked, ...props }) => {
-                if (type === 'checkbox') {
-                  return <input type="checkbox" checked={checked} disabled {...props} />;
-                }
-                return <input type={type} {...props} />;
-              },
-              // Custom embed-image element bypasses rehype URL sanitization
-              'embed-image': ({ src, alt }: { src?: string; alt?: string }) => (
-                <img src={src} alt={alt} className="embed embed-image" loading="lazy" />
-              ),
-              // Code block renderer delegation to plugins
-              code: ({ className, children, ...props }) => {
-                const match = /language-([\w+#.-]+)/.exec(className || '');
-                const lang = match?.[1];
-                if (lang) {
-                  const reg = pluginCodeBlockRegs.find(r => r.language === lang);
-                  if (reg) {
-                    const CodeRenderer = reg.component;
-                    const code = String(children).replace(/\n$/, '');
-                    return <CodeRenderer code={code} language={lang} />;
-                  }
-                }
-                return (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-              // Plugin-registered preview components
-              ...Object.fromEntries(pluginComponentRegs.map(r => [r.tagName, r.component])),
-            } as Record<string, React.ComponentType<unknown>>
-          }
-        >
-          {resolvedContent}
-        </Markdown>
       </div>
     );
   }

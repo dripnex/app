@@ -3,10 +3,11 @@
  */
 
 import { useState, useCallback, useSyncExternalStore } from 'react';
-import { RefreshCw, ChevronDown, AlertTriangle } from 'lucide-react';
+import { RefreshCw, ChevronDown, AlertTriangle } from 'lucide';
+import { Icon } from '../../../../ui/icons/Icon';
 import { pluginRuntimeStore } from '../../../../stores/pluginRuntimeStore';
 import { Button } from '../../../../ui/primitives';
-import styles from '../Section.module.css';
+import styles from './Plugins.module.css';
 
 export function PluginInspector() {
   const [open, setOpen] = useState(false);
@@ -29,19 +30,21 @@ export function PluginInspector() {
   );
 
   const handleForceReload = useCallback(() => {
-    window.readied.plugins.requestReload();
+    window.dripnex.plugins.requestReload();
   }, []);
 
   return (
     <div className={styles.inspectorPanel}>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         className={styles.inspectorToggle}
         onClick={() => setOpen(prev => !prev)}
         aria-expanded={open}
         aria-controls="plugin-inspector-panel"
       >
-        <ChevronDown
+        <Icon
+          icon={ChevronDown}
           size={14}
           style={{
             transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
@@ -51,11 +54,11 @@ export function PluginInspector() {
         <span>Developer</span>
         {errors.length > 0 && (
           <span className={styles.inspectorErrorBadge}>
-            <AlertTriangle size={12} />
+            <Icon icon={AlertTriangle} size={12} />
             {errors.length}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div id="plugin-inspector-panel" role="region" className={styles.inspectorContent}>
@@ -102,7 +105,7 @@ export function PluginInspector() {
             <Button
               variant="secondary"
               size="sm"
-              icon={<RefreshCw size={14} />}
+              icon={<Icon icon={RefreshCw} size={14} />}
               onClick={handleForceReload}
             >
               Force Reload All

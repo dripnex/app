@@ -76,7 +76,7 @@
 Cloudflare provides basic analytics for Workers:
 
 1. **View in Dashboard**
-   - Go to Workers & Pages > readied-api > Analytics
+   - Go to Workers & Pages > dripnex-api > Analytics
    - Metrics: Requests, Errors, CPU time, Duration
 
 2. **Analytics Engine (Optional - Paid)**
@@ -118,7 +118,7 @@ wrangler tail
 1. Go to https://uptimerobot.com
 2. Add monitor:
    - Type: HTTP(S)
-   - URL: `https://api.readied.app/health`
+   - URL: `https://api.dripnex.app/health`
    - Interval: 5 minutes
    - Alert: Email when down
 
@@ -132,7 +132,7 @@ wrangler tail
 
 Create public status page:
 
-- Domain: `status.readied.app`
+- Domain: `status.dripnex.app`
 - Shows API health, incident history
 - Options:
   - Cloudflare Pages + StatusPage.io

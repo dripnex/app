@@ -8,9 +8,15 @@
 
 .content {
   flex: 1;
-  padding: 2rem 2.5rem 3rem;
+  min-width: 0;
+  padding: var(--chrome-header-height) var(--space-8) var(--space-10);
   overflow-y: auto;
   overflow-x: hidden;
+  background: transparent;
+}
+
+:global(html[data-frosted='true']) .container {
+  background: transparent;
 }
 
 /* Thin scrollbar */

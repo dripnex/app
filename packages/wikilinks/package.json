@@ -1,8 +1,8 @@
 {
-  "name": "@readied/wikilinks",
+  "name": "@dripnex/wikilinks",
   "version": "0.1.0",
   "private": true,
-  "description": "Wikilink system for Readied",
+  "description": "Wikilink system for Dripnex",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -23,6 +23,7 @@
     "@codemirror/view": "^6.0.0"
   },
   "dependencies": {
+    "@dripnex/markdown": "workspace:*",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {

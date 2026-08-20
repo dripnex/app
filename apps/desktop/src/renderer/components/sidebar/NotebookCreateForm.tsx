@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { sc } from './sc';
 
 interface NotebookCreateFormProps {
   readonly parentId?: string | null;
@@ -35,7 +36,7 @@ export function NotebookCreateForm({ parentId, onSubmit, onCancel }: NotebookCre
   );
 
   return (
-    <form onSubmit={handleSubmit} className="notebook-create-form">
+    <form onSubmit={handleSubmit} className={sc('notebook-create-form')}>
       <input
         ref={inputRef}
         type="text"
@@ -43,20 +44,20 @@ export function NotebookCreateForm({ parentId, onSubmit, onCancel }: NotebookCre
         onChange={e => setName(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Notebook name"
-        className="notebook-create-input"
+        className={sc('notebook-create-input')}
         aria-label="New notebook name"
       />
-      <div className="notebook-create-actions">
+      <div className={sc('notebook-create-actions')}>
         <button
           type="submit"
-          className="notebook-create-btn notebook-create-btn--primary"
+          className={sc('notebook-create-btn', 'notebook-create-btn--primary')}
           disabled={!name.trim()}
         >
           Create
         </button>
         <button
           type="button"
-          className="notebook-create-btn notebook-create-btn--secondary"
+          className={sc('notebook-create-btn', 'notebook-create-btn--secondary')}
           onClick={onCancel}
         >
           Cancel

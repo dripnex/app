@@ -38,6 +38,17 @@ export interface DataAPI {
   onNotesChanged(callback: (event: DataChangeEvent<'note'>) => void): () => void;
   onNotebooksChanged(callback: (event: DataChangeEvent<'notebook'>) => void): () => void;
   onTagsChanged(callback: (event: DataChangeEvent<'tag'>) => void): () => void;
+  createNote(input: { content: string; notebookId?: string }): Promise<NoteInfo>;
+  updateNote(id: string, content: string): Promise<NoteInfo | null>;
+  trashNote(id: string): Promise<boolean>;
+  createNotebook(input: { name: string; parentId?: string | null }): Promise<NotebookInfo>;
+  updateNotebook(
+    id: string,
+    patch: { name?: string; icon?: string | null; parentId?: string | null }
+  ): Promise<NotebookInfo | null>;
+  deleteNotebook(id: string): Promise<boolean>;
+  setTagColor(name: string, color: string | null): Promise<boolean>;
+  renameTag(oldName: string, newName: string): Promise<boolean>;
 }
 
 // ── DataAPIWithEvents (host-facing, adds _notify*) ──
@@ -60,9 +71,22 @@ export interface DataAPIBridge {
   getNotebook(id: string): Promise<NotebookDetailInfo | null>;
   getTags(): Promise<string[]>;
   getTagsWithColors(): Promise<Array<{ name: string; color: string | null }>>;
+  /** Preferred: filter/limit run in SQLite. */
+  queryTags?(options?: TagQueryOptions): Promise<TagInfo[]>;
   getBacklinks(noteId: string): Promise<LinkInfo[]>;
   getOutgoingLinks(noteId: string): Promise<OutgoingLinkInfo[]>;
   getGraphData(): Promise<GraphData>;
+  createNote?(input: { content: string; notebookId?: string }): Promise<NoteInfo>;
+  updateNote?(id: string, content: string): Promise<NoteInfo | null>;
+  trashNote?(id: string): Promise<boolean>;
+  createNotebook?(input: { name: string; parentId?: string | null }): Promise<NotebookInfo>;
+  updateNotebook?(
+    id: string,
+    patch: { name?: string; icon?: string | null; parentId?: string | null }
+  ): Promise<NotebookInfo | null>;
+  deleteNotebook?(id: string): Promise<boolean>;
+  setTagColor?(name: string, color: string | null): Promise<boolean>;
+  renameTag?(oldName: string, newName: string): Promise<boolean>;
 }
 
 // ── Helpers ─────────────────────────────────────────
@@ -127,6 +151,10 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
 
     async getTags(options?: TagQueryOptions): Promise<TagInfo[]> {
       return safeBridgeCall('getTags', async () => {
+        if (bridge.queryTags) {
+          return bridge.queryTags(options);
+        }
+
         let tags: TagInfo[];
 
         if (options?.includeColors) {
@@ -137,13 +165,11 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
           tags = raw.map(name => ({ name }));
         }
 
-        // Client-side case-insensitive substring filter
         if (options?.filter) {
           const filterLower = options.filter.toLowerCase();
           tags = tags.filter(t => t.name.toLowerCase().includes(filterLower));
         }
 
-        // Client-side pagination
         const offset = options?.offset ?? 0;
         const limit = options?.limit;
         if (limit !== undefined) {
@@ -204,6 +230,62 @@ export function createDataAPI(bridge: DataAPIBridge): DataAPIWithEvents {
       return () => {
         tagsChangedListeners.delete(cb);
       };
+    },
+
+    async createNote(input) {
+      return safeBridgeCall('createNote', async () => {
+        if (!bridge.createNote) throw new DataAccessError('createNote', 'Not available');
+        return bridge.createNote(input);
+      });
+    },
+
+    async updateNote(id, content) {
+      return safeBridgeCall('updateNote', async () => {
+        if (!bridge.updateNote) throw new DataAccessError('updateNote', 'Not available');
+        return bridge.updateNote(id, content);
+      });
+    },
+
+    async trashNote(id) {
+      return safeBridgeCall('trashNote', async () => {
+        if (!bridge.trashNote) throw new DataAccessError('trashNote', 'Not available');
+        return bridge.trashNote(id);
+      });
+    },
+
+    async createNotebook(input) {
+      return safeBridgeCall('createNotebook', async () => {
+        if (!bridge.createNotebook) throw new DataAccessError('createNotebook', 'Not available');
+        return bridge.createNotebook(input);
+      });
+    },
+
+    async updateNotebook(id, patch) {
+      return safeBridgeCall('updateNotebook', async () => {
+        if (!bridge.updateNotebook) throw new DataAccessError('updateNotebook', 'Not available');
+        return bridge.updateNotebook(id, patch);
+      });
+    },
+
+    async deleteNotebook(id) {
+      return safeBridgeCall('deleteNotebook', async () => {
+        if (!bridge.deleteNotebook) throw new DataAccessError('deleteNotebook', 'Not available');
+        return bridge.deleteNotebook(id);
+      });
+    },
+
+    async setTagColor(name, color) {
+      return safeBridgeCall('setTagColor', async () => {
+        if (!bridge.setTagColor) throw new DataAccessError('setTagColor', 'Not available');
+        return bridge.setTagColor(name, color);
+      });
+    },
+
+    async renameTag(oldName, newName) {
+      return safeBridgeCall('renameTag', async () => {
+        if (!bridge.renameTag) throw new DataAccessError('renameTag', 'Not available');
+        return bridge.renameTag(oldName, newName);
+      });
     },
 
     // ── Internal notify (host calls these) ─────────

@@ -41,7 +41,7 @@ function fakeView(initialDoc: string, selection: { from: number; to: number }) {
   };
 }
 
-describe('@readied/commands markdown', () => {
+describe('@dripnex/commands markdown', () => {
   describe('wrapping commands', () => {
     it('toggleBold wraps selected text with **', () => {
       const t = fakeView('hello world', { from: 0, to: 5 });

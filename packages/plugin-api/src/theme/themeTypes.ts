@@ -4,12 +4,23 @@
  * Defines ThemeDefinition and the token whitelist for validation.
  */
 
-/** Core CSS tokens that themes are allowed to override */
+/**
+ * Core CSS tokens that themes are allowed to override.
+ * `--accent-primary` is the chrome accent (buttons, settings). Palettes that
+ * only set `--accent` get it copied in `validateThemeTokens`.
+ */
 export const CORE_THEME_TOKENS = [
   '--bg-base',
   '--bg-surface',
   '--bg-elevated',
   '--bg-inset',
+  '--bg-hover',
+  '--bg-active',
+  '--accent',
+  '--accent-primary',
+  '--accent-hover',
+  '--accent-muted',
+  '--accent-subtle',
   '--text-primary',
   '--text-secondary',
   '--text-muted',
@@ -34,7 +45,14 @@ export const CORE_THEME_TOKENS = [
 ] as const;
 
 /** Valid extension scope prefixes for non-core tokens */
-export const THEME_EXTENSION_SCOPES = ['--syntax-', '--preview-', '--ui-'] as const;
+export const THEME_EXTENSION_SCOPES = [
+  '--syntax-',
+  '--preview-',
+  '--ui-',
+  '--cm-',
+  '--md-',
+  '--mde-',
+] as const;
 
 /** A complete theme definition */
 export interface ThemeDefinition {
@@ -45,6 +63,8 @@ export interface ThemeDefinition {
   colorScheme: 'dark' | 'light';
   tokens: Record<string, string>;
   pluginId?: string;
+  /** Native window vibrancy. Chrome tokens should be translucent. */
+  frosted?: boolean;
 }
 
 /** Check if a token name is in the whitelist or a valid extension scope */
@@ -65,6 +85,10 @@ export function validateThemeTokens(
     } else {
       console.warn(`[ThemeRegistry] Theme "${themeId}": rejected invalid token "${token}"`);
     }
+  }
+  // Chrome reads --accent-primary. A palette that only sets --accent still owns both.
+  if (valid['--accent'] && !valid['--accent-primary']) {
+    valid['--accent-primary'] = valid['--accent'];
   }
   return valid;
 }
