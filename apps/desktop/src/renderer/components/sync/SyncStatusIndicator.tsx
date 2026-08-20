@@ -29,30 +29,47 @@ export function SyncStatusIndicator() {
 
   const getStatusInfo = () => {
     if (!isAuthenticated) {
-      return { icon: CloudOff, label: 'Not signed in', className: styles.statusMuted };
+      return {
+        icon: CloudOff,
+        label: 'Not signed in',
+        className: styles.statusMuted,
+        spinning: false,
+      };
     }
     if (hasConflicts && status !== 'syncing') {
       return {
         icon: AlertTriangle,
         label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — Review`,
         className: styles.statusWarning,
+        spinning: false,
       };
     }
     switch (status) {
       case 'syncing':
-        return { icon: RefreshCw, label: 'Syncing...', className: styles.statusSyncing };
+        return {
+          icon: RefreshCw,
+          label: 'Syncing...',
+          className: styles.statusSyncing,
+          spinning: true,
+        };
       case 'idle':
         return {
           icon: CheckCircle,
           label: lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync',
           className: styles.statusSuccess,
+          spinning: false,
         };
       case 'error':
-        return { icon: AlertCircle, label: 'Sync failed', className: styles.statusError };
+        return {
+          icon: AlertCircle,
+          label: 'Sync failed',
+          className: styles.statusError,
+          spinning: false,
+        };
       case 'offline':
-        return { icon: CloudOff, label: 'Offline', className: styles.statusMuted };
+        return { icon: CloudOff, label: 'Offline', className: styles.statusMuted, spinning: false };
       default:
-        return { icon: Cloud, label: 'Unknown', className: styles.statusMuted };
+        return { icon: Cloud, label: 'Unknown', className: styles.statusMuted, spinning: false };
     }
   };
 
@@ -70,7 +87,7 @@ export function SyncStatusIndicator() {
     return `${days}d ago`;
   };
 
-  const { icon, label, className } = getStatusInfo();
+  const { icon, label, className, spinning } = getStatusInfo();
 
   return (
     <div
@@ -92,11 +109,7 @@ export function SyncStatusIndicator() {
       onMouseLeave={() => setShowTooltip(false)}
     >
       <div className={styles.icon}>
-        <Icon
-          icon={icon}
-          size={14}
-          className={status === 'syncing' ? styles.spinning : undefined}
-        />
+        <Icon icon={icon} size={14} className={spinning ? styles.spinning : undefined} />
       </div>
       {showTooltip && <div className={styles.tooltip}>{label}</div>}
     </div>

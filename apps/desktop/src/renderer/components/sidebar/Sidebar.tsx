@@ -137,16 +137,24 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
   const showTrash = !inWorkspace;
   const [binOpen, setBinOpen] = useState(false);
   const prevDeleted = useRef(globalCounts.deleted);
+  const binTimerRef = useRef<number | null>(null);
   useEffect(() => {
     const next = globalCounts.deleted;
     if (next > prevDeleted.current) {
       setBinOpen(true);
-      const id = window.setTimeout(() => setBinOpen(false), 520);
-      prevDeleted.current = next;
-      return () => window.clearTimeout(id);
+      if (binTimerRef.current !== null) window.clearTimeout(binTimerRef.current);
+      binTimerRef.current = window.setTimeout(() => {
+        setBinOpen(false);
+        binTimerRef.current = null;
+      }, 520);
     }
     prevDeleted.current = next;
   }, [globalCounts.deleted]);
+  useEffect(() => {
+    return () => {
+      if (binTimerRef.current !== null) window.clearTimeout(binTimerRef.current);
+    };
+  }, []);
 
   const handleSelectNotebook = useCallback(
     (id: string) => {
@@ -241,11 +249,13 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
         className={sc('sidebar-content', 'sidebar-pane', `sidebar-pane--${paneDirection}`)}
         key={workspaceRootId ?? 'root'}
       >
-        <SidebarQuickFilters
-          allNotesCount={scoped.all}
-          allNotesSelected={allNotesSelected}
-          onSelectAll={goToAllInCurrentContext}
-        />
+        {!inWorkspace ? (
+          <SidebarQuickFilters
+            allNotesCount={scoped.all}
+            allNotesSelected={allNotesSelected}
+            onSelectAll={goToAllInCurrentContext}
+          />
+        ) : null}
 
         {!isNotebookContext && (
           <div className={sc('sidebar-templates')}>

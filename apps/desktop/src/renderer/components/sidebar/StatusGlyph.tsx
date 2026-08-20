@@ -11,5 +11,5 @@ const ICONS: Record<NoteStatus, IconInput> = {
 
 /** Stroke icon — color comes from the parent (sidebar / header tokens). */
 export function StatusGlyph({ status }: { status: NoteStatus }) {
-  return <Icon icon={ICONS[status]} size={14} strokeWidth={2.25} />;
+  return <Icon icon={ICONS[status]} size={14} strokeWidth={2.25} aria-hidden="true" />;
 }

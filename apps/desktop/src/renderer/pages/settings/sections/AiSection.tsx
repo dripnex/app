@@ -425,15 +425,17 @@ export function AiSection() {
                     flush
                     active={active}
                     tone={connected && active ? 'ok' : tone}
-                    onClick={() => {
-                      if (!active) selectProvider(item.id);
-                    }}
                   >
-                    <div className={cardStyles.top}>
+                    <button
+                      type="button"
+                      className={cardStyles.top}
+                      aria-pressed={active}
+                      onClick={() => selectProvider(item.id)}
+                    >
                       <ProviderMark id={item.id} />
                       <div className={cardStyles.copy}>
                         <div className={cardStyles.nameRow}>
-                          <h3 className={cardStyles.name}>{item.name}</h3>
+                          <span className={cardStyles.name}>{item.name}</span>
                           <span className={cardStyles.kind}>{kindLabel(item.kind)}</span>
                           <span className={cardStyles.badge} data-tone={tone}>
                             {badge}
@@ -441,10 +443,10 @@ export function AiSection() {
                         </div>
                         <p className={cardStyles.desc}>{item.description}</p>
                       </div>
-                    </div>
+                    </button>
 
                     {active ? (
-                      <div className={cardStyles.body} onClick={event => event.stopPropagation()}>
+                      <div className={cardStyles.body}>
                         <p className={cardStyles.hint}>
                           {unavailable && item.unavailableHint ? item.unavailableHint : item.hint}
                         </p>

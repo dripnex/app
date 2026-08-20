@@ -13,14 +13,28 @@ export interface IconProps {
   color?: string;
   label?: string;
   style?: CSSProperties;
+  'aria-label'?: string;
+  'aria-hidden'?: boolean | 'true' | 'false';
 }
 
 export const Icon = forwardRef<MorphHandle, IconProps>(function Icon(
-  { icon, hoverIcon, size = 16, strokeWidth = 2, className, color, label, style },
+  {
+    icon,
+    hoverIcon,
+    size = 16,
+    strokeWidth = 2,
+    className,
+    color,
+    label,
+    style,
+    'aria-label': ariaLabel,
+    'aria-hidden': ariaHidden,
+  },
   ref
 ) {
   const [hover, setHover] = useState(false);
   const shown = hover && hoverIcon ? hoverIcon : icon;
+  const hidden = ariaHidden === true || ariaHidden === 'true';
 
   return (
     <MorphIcon
@@ -30,7 +44,9 @@ export const Icon = forwardRef<MorphHandle, IconProps>(function Icon(
       strokeWidth={strokeWidth}
       className={className}
       color={color}
-      label={label}
+      label={hidden ? undefined : (label ?? ariaLabel)}
+      aria-hidden={hidden || undefined}
+      aria-label={hidden ? undefined : ariaLabel}
       style={style}
       spring="snappy"
       reducedMotion="user"
