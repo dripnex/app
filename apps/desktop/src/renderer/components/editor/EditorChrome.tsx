@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Maximize2, Minimize2, SquareArrowOutUpRight } from 'lucide';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+  SquareArrowOutUpRight,
+} from 'lucide';
 import { Icon } from '../../ui/icons/Icon';
 import type { EditorViewMode } from '../../stores/editorPreferencesStore';
 import { IconButton } from '../../ui/primitives';
@@ -41,18 +48,14 @@ export function EditorChrome({
         {variant === 'main' ? (
           <>
             <IconButton label="Open in new window" onClick={onOpenWindow}>
-              <Icon icon={SquareArrowOutUpRight} size={16} aria-hidden="true" />
+              <Icon icon={SquareArrowOutUpRight} hoverIcon={ExternalLink} size={16} />
             </IconButton>
             <IconButton
               label={distractionFree ? 'Exit Distraction Free Mode' : 'Enter Distraction Free Mode'}
               pressed={distractionFree}
               onClick={onToggleZen}
             >
-              {distractionFree ? (
-                <Icon icon={Minimize2} size={16} aria-hidden="true" />
-              ) : (
-                <Icon icon={Maximize2} size={16} aria-hidden="true" />
-              )}
+              <Icon icon={distractionFree ? Minimize2 : Maximize2} size={16} />
             </IconButton>
             <IconButton label="Back" disabled={!canBack} onClick={onBack}>
               <Icon icon={ArrowLeft} size={16} aria-hidden="true" />

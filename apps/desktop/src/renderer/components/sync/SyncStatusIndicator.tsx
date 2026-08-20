@@ -29,53 +29,30 @@ export function SyncStatusIndicator() {
 
   const getStatusInfo = () => {
     if (!isAuthenticated) {
-      return {
-        icon: <Icon icon={CloudOff} size={14} />,
-        label: 'Not signed in',
-        className: styles.statusMuted,
-      };
+      return { icon: CloudOff, label: 'Not signed in', className: styles.statusMuted };
     }
-
-    // Conflicts take priority over idle state
     if (hasConflicts && status !== 'syncing') {
       return {
-        icon: <Icon icon={AlertTriangle} size={14} />,
+        icon: AlertTriangle,
         label: `${conflicts.length} conflict${conflicts.length > 1 ? 's' : ''} — Review`,
         className: styles.statusWarning,
       };
     }
-
     switch (status) {
       case 'syncing':
-        return {
-          icon: <Icon icon={RefreshCw} size={14} className={styles.spinning} />,
-          label: 'Syncing...',
-          className: styles.statusSyncing,
-        };
+        return { icon: RefreshCw, label: 'Syncing...', className: styles.statusSyncing };
       case 'idle':
         return {
-          icon: <Icon icon={CheckCircle} size={14} />,
+          icon: CheckCircle,
           label: lastSyncAt ? `Synced ${formatRelativeTime(lastSyncAt)}` : 'Ready to sync',
           className: styles.statusSuccess,
         };
       case 'error':
-        return {
-          icon: <Icon icon={AlertCircle} size={14} />,
-          label: 'Sync failed',
-          className: styles.statusError,
-        };
+        return { icon: AlertCircle, label: 'Sync failed', className: styles.statusError };
       case 'offline':
-        return {
-          icon: <Icon icon={CloudOff} size={14} />,
-          label: 'Offline',
-          className: styles.statusMuted,
-        };
+        return { icon: CloudOff, label: 'Offline', className: styles.statusMuted };
       default:
-        return {
-          icon: <Icon icon={Cloud} size={14} />,
-          label: 'Unknown',
-          className: styles.statusMuted,
-        };
+        return { icon: Cloud, label: 'Unknown', className: styles.statusMuted };
     }
   };
 
@@ -114,7 +91,13 @@ export function SyncStatusIndicator() {
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div className={styles.icon}>{icon}</div>
+      <div className={styles.icon}>
+        <Icon
+          icon={icon}
+          size={14}
+          className={status === 'syncing' ? styles.spinning : undefined}
+        />
+      </div>
       {showTooltip && <div className={styles.tooltip}>{label}</div>}
     </div>
   );

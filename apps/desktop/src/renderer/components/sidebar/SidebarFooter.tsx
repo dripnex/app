@@ -286,20 +286,14 @@ export const SidebarFooter = memo(function SidebarFooter({
   const email = useAuthStore(state => state.user?.email ?? null);
   const syncStatus = useSyncStore(selectStatus);
 
-  const getSyncIcon = () => {
-    switch (syncStatus) {
-      case 'syncing':
-        return <Icon icon={RefreshCw} size={12} className={sc('sidebar-footer-sync-spinning')} />;
-      case 'error':
-      case 'auth-expired':
-      case 'needs-setup':
-        return <Icon icon={AlertCircle} size={12} />;
-      case 'offline':
-        return <Icon icon={CloudOff} size={12} />;
-      default:
-        return <Icon icon={Cloud} size={12} />;
-    }
-  };
+  const syncIcon =
+    syncStatus === 'syncing'
+      ? RefreshCw
+      : syncStatus === 'error' || syncStatus === 'auth-expired' || syncStatus === 'needs-setup'
+        ? AlertCircle
+        : syncStatus === 'offline'
+          ? CloudOff
+          : Cloud;
 
   const lastSyncAtFooter = useSyncStore(selectLastSyncAt);
 
@@ -335,7 +329,11 @@ export const SidebarFooter = memo(function SidebarFooter({
             title={getSyncTooltip()}
             onClick={onEnableSyncClick}
           >
-            {getSyncIcon()}
+            <Icon
+              icon={syncIcon}
+              size={12}
+              className={syncStatus === 'syncing' ? sc('sidebar-footer-sync-spinning') : undefined}
+            />
           </button>
         </div>
       ) : (

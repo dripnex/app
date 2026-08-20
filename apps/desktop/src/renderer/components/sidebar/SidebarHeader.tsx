@@ -1,4 +1,4 @@
-import { Network, Settings } from 'lucide';
+import { Network, Settings, Settings2, Waypoints } from 'lucide';
 import { Icon } from '../../ui/icons/Icon';
 import { IconButton } from '../../ui/primitives';
 import { SyncStatusIndicator } from '../sync/SyncStatusIndicator';
@@ -15,11 +15,11 @@ export function SidebarHeader({ onSettingsClick, onOpenGraph }: SidebarHeaderPro
       <SyncStatusIndicator />
       {onOpenGraph ? (
         <IconButton label="Open graph" onClick={onOpenGraph}>
-          <Icon icon={Network} size={16} aria-hidden="true" />
+          <Icon icon={Network} hoverIcon={Waypoints} size={16} />
         </IconButton>
       ) : null}
       <IconButton label="Settings" onClick={onSettingsClick}>
-        <Icon icon={Settings} size={16} aria-hidden="true" />
+        <Icon icon={Settings} hoverIcon={Settings2} size={16} />
       </IconButton>
     </div>
   );

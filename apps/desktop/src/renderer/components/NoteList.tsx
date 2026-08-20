@@ -7,7 +7,10 @@ import {
   X,
   SquarePen,
   FileStack,
+  Files,
   PanelLeft,
+  PanelLeftClose,
+  Plus,
   Pin,
   PinOff,
   Globe,
@@ -273,25 +276,25 @@ export function NoteList({
             pressed={!sidebarCollapsed}
             onClick={onToggleSidebar}
           >
-            <Icon icon={PanelLeft} size={16} aria-hidden="true" />
+            <Icon icon={sidebarCollapsed ? PanelLeft : PanelLeftClose} size={16} />
           </IconButton>
         ) : null}
         <span className={sc('header-title')}>{getHeaderTitle()}</span>
         <LayoutZone name="note-list-header" />
         {onCreateFromTemplate && selectedNotebookId !== 'templates' ? (
           <IconButton label="New from template" onClick={() => setTemplatePickerOpen(true)}>
-            <Icon icon={FileStack} size={16} aria-hidden="true" />
+            <Icon icon={FileStack} hoverIcon={Files} size={16} />
           </IconButton>
         ) : null}
         <IconButton label="Create new note" onClick={onNewNote}>
-          <Icon icon={SquarePen} size={16} aria-hidden="true" />
+          <Icon icon={SquarePen} hoverIcon={Plus} size={16} />
         </IconButton>
       </div>
 
       {/* Search bar with icon + filter toggle */}
       <div className={sc('note-list-search')}>
         <div className={sc('search-input-wrapper')}>
-          <Icon icon={Filter} size={14} className={sc('search-icon')} aria-hidden="true" />
+          <Icon icon={Filter} hoverIcon={Search} size={14} className={sc('search-icon')} />
           <label htmlFor="note-search" className="visually-hidden">
             Filter notes
           </label>
