@@ -92,6 +92,12 @@ jobs:
           ref: ${{ needs.meta.outputs.tag }}
           fetch-depth: 0
 
+      - name: Stamp package version from tag
+        shell: bash
+        run: node scripts/bump-version.mjs "${TAG#v}"
+        env:
+          TAG: ${{ needs.meta.outputs.tag }}
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
 
