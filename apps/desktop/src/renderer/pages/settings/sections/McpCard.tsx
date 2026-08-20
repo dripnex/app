@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Bot, Check, Copy, Eye, EyeOff } from 'lucide-react';
 import { Button, Field, Toggle } from '../../../ui/primitives';
+import { SettingsCard } from '../components/SettingsCard';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import {
   buildClaudeSnippet,
@@ -88,7 +89,7 @@ export function McpCard() {
   const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
   return (
-    <article className={styles.card} data-tone={badgeTone}>
+    <SettingsCard tone={badgeTone}>
       <div className={styles.cardTop}>
         <span className={styles.brandMark} aria-hidden="true">
           <Bot size={18} />
@@ -195,7 +196,7 @@ export function McpCard() {
       ) : null}
 
       {error ? <p className={styles.error}>{error}</p> : null}
-    </article>
+    </SettingsCard>
   );
 }
 

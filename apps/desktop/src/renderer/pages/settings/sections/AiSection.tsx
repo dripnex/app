@@ -18,6 +18,7 @@ import { FALLBACK_MODELS, PROVIDER_CATALOG, type AiProviderId } from '../ai/prov
 import { ProviderMark } from '../ai/ProviderMark';
 import { OllamaConnect, ProviderConnect } from '../ai/ProviderConnect';
 import { kbIndexDescription, kbStatusLabel } from '../../../components/ai/askNotesCopy';
+import { SettingsCard } from '../components/SettingsCard';
 import { SettingsPage } from '../components/SettingsPage';
 import styles from './Section.module.css';
 import cardStyles from './AiProviders.module.css';
@@ -418,11 +419,11 @@ export function AiSection() {
                       ? 'muted'
                       : 'idle';
                 return (
-                  <article
+                  <SettingsCard
                     key={item.id}
-                    className={cardStyles.card}
-                    data-active={active}
-                    data-tone={connected && active ? 'ok' : undefined}
+                    flush
+                    active={active}
+                    tone={connected && active ? 'ok' : tone}
                     onClick={() => {
                       if (!active) selectProvider(item.id);
                     }}
@@ -482,7 +483,7 @@ export function AiSection() {
                         ) : null}
                       </div>
                     ) : null}
-                  </article>
+                  </SettingsCard>
                 );
               })}
             </div>

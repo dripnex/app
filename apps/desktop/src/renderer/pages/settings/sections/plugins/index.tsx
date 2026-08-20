@@ -13,6 +13,7 @@ import { builtInPlugins } from '../../../../plugins';
 import { Button, toast } from '../../../../ui/primitives';
 import { SettingGroup } from '../../components/SettingGroup';
 import { SettingRow } from '../../components/SettingRow';
+import { SettingsCard } from '../../components/SettingsCard';
 import { SettingsPage } from '../../components/SettingsPage';
 import styles from './Plugins.module.css';
 import type { DiscoveredPluginInfo, BuiltInPluginInfo } from './types';
@@ -386,7 +387,7 @@ export function PluginsSection() {
           <div style={{ marginTop: '1.5rem' }}>
             <div className={styles.pluginSectionLabel}>Community</div>
             {filteredCommunity.length === 0 && !search ? (
-              <div className={styles.pluginCard}>
+              <SettingsCard flush>
                 <div className={styles.pluginEmptyState}>
                   <p>No community plugins installed yet.</p>
                   {pluginsPath && (
@@ -400,7 +401,7 @@ export function PluginsSection() {
                     </Button>
                   )}
                 </div>
-              </div>
+              </SettingsCard>
             ) : filteredCommunity.length === 0 && search ? (
               <div className={styles.pluginEmptyState}>
                 <p>No community plugins match &ldquo;{search}&rdquo;</p>

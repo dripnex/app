@@ -3,6 +3,7 @@ import { ExternalLink, KeyRound } from 'lucide-react';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
 import { Button } from '../../../ui/primitives';
+import { SettingsCard } from '../components/SettingsCard';
 import { SettingsPage } from '../components/SettingsPage';
 import { GitHubCard } from './GitHubCard';
 import { LocalHttpCard } from './LocalHttpCard';
@@ -76,7 +77,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
 
       <GitHubCard />
 
-      <article className={styles.card} data-tone={badgeTone}>
+      <SettingsCard tone={badgeTone}>
         <div className={styles.cardTop}>
           <OnePasswordMark size={36} />
           <div className={styles.cardCopy}>
@@ -173,7 +174,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
           1Password SDK docs
           <ExternalLink size={12} />
         </a>
-      </article>
+      </SettingsCard>
     </SettingsPage>
   );
 }

@@ -7,6 +7,7 @@ import { ChevronDown, Trash2 } from 'lucide-react';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
 import { Input, NumberInput, Select, Toggle } from '../../../../ui/primitives';
 import { RangeInput } from '../../components/controls';
+import { SettingsCard } from '../../components/SettingsCard';
 import styles from './Plugins.module.css';
 
 export interface PluginCardProps {
@@ -43,7 +44,7 @@ export function PluginCard({
   };
 
   return (
-    <div className={styles.pluginCard}>
+    <SettingsCard flush>
       <div className={styles.pluginCardHeader}>
         <div className={styles.pluginCardInfo}>
           <div className={styles.pluginCardMeta}>
@@ -148,6 +149,6 @@ export function PluginCard({
           )}
         </>
       )}
-    </div>
+    </SettingsCard>
   );
 }

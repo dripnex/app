@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { GitCommit, Clock, User, ChevronDown, ChevronRight, RotateCcw, Upload } from 'lucide-react';
 import { Button, Input } from '../../ui/primitives';
 import styles from './CommitHistory.module.css';
@@ -133,7 +134,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
     return formatDate(timestamp);
   };
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
@@ -264,6 +265,7 @@ export function CommitHistory({ notebookId, notebookName, onClose }: CommitHisto
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

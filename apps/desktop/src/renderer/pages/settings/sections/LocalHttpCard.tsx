@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Copy, Eye, EyeOff, Server } from 'lucide-react';
 import { Button, Field, Toggle } from '../../../ui/primitives';
+import { SettingsCard } from '../components/SettingsCard';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import type { LocalServerConnectionInfo } from '../../../../preload/api/localServer';
 import styles from './IntegrationsSection.module.css';
@@ -74,7 +75,7 @@ export function LocalHttpCard() {
   const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
   return (
-    <article className={styles.card} data-tone={badgeTone}>
+    <SettingsCard tone={badgeTone}>
       <div className={styles.cardTop}>
         <span className={styles.brandMark} aria-hidden="true">
           <Server size={18} />
@@ -149,6 +150,6 @@ export function LocalHttpCard() {
           <p className={styles.fieldHint}>{ENDPOINTS.join(' · ')}</p>
         </div>
       ) : null}
-    </article>
+    </SettingsCard>
   );
 }
