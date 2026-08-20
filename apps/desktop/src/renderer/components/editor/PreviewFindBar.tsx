@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { usePreviewFindStore } from '../../stores/previewFindStore';
 import { cssm } from '../../lib/cssm';
 import styles from './PreviewFindBar.module.css';
@@ -53,7 +54,7 @@ export function PreviewFindBar({ matchCount }: PreviewFindBarProps) {
         onClick={() => step(-1, matchCount)}
         aria-label="Previous match"
       >
-        <ChevronUp size={14} />
+        <Icon icon={ChevronUp} size={14} />
       </button>
       <button
         type="button"
@@ -61,7 +62,7 @@ export function PreviewFindBar({ matchCount }: PreviewFindBarProps) {
         onClick={() => step(1, matchCount)}
         aria-label="Next match"
       >
-        <ChevronDown size={14} />
+        <Icon icon={ChevronDown} size={14} />
       </button>
       <button
         type="button"
@@ -69,7 +70,7 @@ export function PreviewFindBar({ matchCount }: PreviewFindBarProps) {
         onClick={closePanel}
         aria-label="Close find"
       >
-        <X size={14} />
+        <Icon icon={X} size={14} />
       </button>
     </div>
   );

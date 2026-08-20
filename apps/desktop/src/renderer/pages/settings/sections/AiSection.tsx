@@ -3,19 +3,24 @@
  */
 
 import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
-import { CheckCircle, XCircle, Upload, Download, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Upload, Download, RefreshCw } from 'lucide';
 import { aiCommandStore } from '@dripnex/plugin-api';
 import type { AiCommandRegistration } from '@dripnex/plugin-api';
 import { validateAiCommandPreset, serializePreset } from '@dripnex/ai-core';
 import type { AiCommandPreset } from '@dripnex/ai-core';
+import { Icon } from '../../../ui/icons/Icon';
 import { useSettingsStore, selectAi, selectAiKeyHydrationError } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
+import { SettingNumber } from '../components/SettingNumber';
 import { SettingRow } from '../components/SettingRow';
-import { Button, NumberInput, Select } from '../../../ui/primitives';
+import { SettingSelect } from '../components/SettingSelect';
+import { Button } from '../../../ui/primitives';
 import { FALLBACK_MODELS, PROVIDER_CATALOG, type AiProviderId } from '../ai/providers';
 import { ProviderMark } from '../ai/ProviderMark';
 import { OllamaConnect, ProviderConnect } from '../ai/ProviderConnect';
 import { kbIndexDescription, kbStatusLabel } from '../../../components/ai/askNotesCopy';
+import { SettingsCard } from '../components/SettingsCard';
+import { SettingsPage } from '../components/SettingsPage';
 import styles from './Section.module.css';
 import cardStyles from './AiProviders.module.css';
 
@@ -381,14 +386,10 @@ export function AiSection() {
   }, []);
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>AI Assistant</h2>
-      <p className={styles.lede}>
-        Dripnex AI is included with your account — no key. Other clouds still require a one-time key
-        until those providers open a public OAuth for apps. Keys stay in the keychain. Ollama never
-        leaves this machine.
-      </p>
-
+    <SettingsPage
+      title="AI Assistant"
+      lede="Dripnex AI is included with your account — no key. Other clouds still require a one-time key until those providers open a public OAuth for apps. Keys stay in the keychain. Ollama never leaves this machine."
+    >
       {PROVIDER_GROUPS.map(group => {
         const items = PROVIDER_CATALOG.filter(item => group.kinds.includes(item.kind));
         if (items.length === 0) return null;
@@ -419,20 +420,22 @@ export function AiSection() {
                       ? 'muted'
                       : 'idle';
                 return (
-                  <article
+                  <SettingsCard
                     key={item.id}
-                    className={cardStyles.card}
-                    data-active={active}
-                    data-tone={connected && active ? 'ok' : undefined}
-                    onClick={() => {
-                      if (!active) selectProvider(item.id);
-                    }}
+                    flush
+                    active={active}
+                    tone={connected && active ? 'ok' : tone}
                   >
-                    <div className={cardStyles.top}>
+                    <button
+                      type="button"
+                      className={cardStyles.top}
+                      aria-pressed={active}
+                      onClick={() => selectProvider(item.id)}
+                    >
                       <ProviderMark id={item.id} />
                       <div className={cardStyles.copy}>
                         <div className={cardStyles.nameRow}>
-                          <h3 className={cardStyles.name}>{item.name}</h3>
+                          <span className={cardStyles.name}>{item.name}</span>
                           <span className={cardStyles.kind}>{kindLabel(item.kind)}</span>
                           <span className={cardStyles.badge} data-tone={tone}>
                             {badge}
@@ -440,10 +443,10 @@ export function AiSection() {
                         </div>
                         <p className={cardStyles.desc}>{item.description}</p>
                       </div>
-                    </div>
+                    </button>
 
                     {active ? (
-                      <div className={cardStyles.body} onClick={event => event.stopPropagation()}>
+                      <div className={cardStyles.body}>
                         <p className={cardStyles.hint}>
                           {unavailable && item.unavailableHint ? item.unavailableHint : item.hint}
                         </p>
@@ -483,7 +486,7 @@ export function AiSection() {
                         ) : null}
                       </div>
                     ) : null}
-                  </article>
+                  </SettingsCard>
                 );
               })}
             </div>
@@ -492,28 +495,24 @@ export function AiSection() {
       })}
 
       <SettingGroup title="Next edit suggestions">
-        <SettingRow
+        <SettingSelect
           label="Trigger"
           description="Ghost text at the cursor from your AI provider. Tab accepts, Escape dismisses. Alt+\ asks on demand."
           htmlFor="nesMode"
-        >
-          <Select
-            id="nesMode"
-            value={ai.nesMode ?? 'manual'}
-            onChange={value => {
-              const nesMode =
-                value === 'automatic' || value === 'disabled' || value === 'manual'
-                  ? value
-                  : 'manual';
-              updateAi({ nesMode });
-            }}
-            options={[
-              { value: 'manual', label: 'Manual (Alt+\\)' },
-              { value: 'automatic', label: 'Automatic (on idle)' },
-              { value: 'disabled', label: 'Disabled' },
-            ]}
-          />
-        </SettingRow>
+          value={ai.nesMode ?? 'manual'}
+          onChange={value => {
+            const nesMode =
+              value === 'automatic' || value === 'disabled' || value === 'manual'
+                ? value
+                : 'manual';
+            updateAi({ nesMode });
+          }}
+          options={[
+            { value: 'manual', label: 'Manual (Alt+\\)' },
+            { value: 'automatic', label: 'Automatic (on idle)' },
+            { value: 'disabled', label: 'Disabled' },
+          ]}
+        />
       </SettingGroup>
 
       <SettingGroup title="Knowledge base">
@@ -525,55 +524,47 @@ export function AiSection() {
             {kbStatusLabel(kb, !window.dripnex?.ai)}
           </div>
         </SettingRow>
-        <SettingRow
+        <SettingSelect
           label="Embed provider"
           description="Ollama stays on this machine. OpenAI uses the key from the OpenAI card."
           htmlFor="embedProvider"
-        >
-          <Select
-            id="embedProvider"
-            value={embedProvider}
-            onChange={value => {
-              const provider = value === 'openai' ? 'openai' : 'ollama';
-              const models = embedCatalog.find(item => item.id === provider)?.models ?? [];
-              const nextModel = models.some(model => model.id === embedModel)
-                ? embedModel
-                : (models[0]?.id ?? embedModel);
-              void applyEmbed({ embedProvider: provider, embedModel: nextModel });
-            }}
-            options={
-              embedCatalog.length > 0
-                ? embedCatalog.map(item => ({ value: item.id, label: item.displayName }))
-                : [
-                    { value: 'ollama', label: 'Ollama (Local)' },
-                    { value: 'openai', label: 'OpenAI' },
-                  ]
-            }
-          />
-        </SettingRow>
-        <SettingRow
+          value={embedProvider}
+          onChange={value => {
+            const provider = value === 'openai' ? 'openai' : 'ollama';
+            const models = embedCatalog.find(item => item.id === provider)?.models ?? [];
+            const nextModel = models.some(model => model.id === embedModel)
+              ? embedModel
+              : (models[0]?.id ?? embedModel);
+            void applyEmbed({ embedProvider: provider, embedModel: nextModel });
+          }}
+          options={
+            embedCatalog.length > 0
+              ? embedCatalog.map(item => ({ value: item.id, label: item.displayName }))
+              : [
+                  { value: 'ollama', label: 'Ollama (Local)' },
+                  { value: 'openai', label: 'OpenAI' },
+                ]
+          }
+        />
+        <SettingSelect
           label="Embedding model"
           description="Changing model rebuilds vectors for Ask Notes. Old vectors are dropped."
           htmlFor="embedModel"
-        >
-          <Select
-            id="embedModel"
-            value={embedModel}
-            onChange={value => {
-              void applyEmbed({ embedProvider, embedModel: value });
-            }}
-            options={
-              embedModelOptions.length > 0
-                ? embedModelOptions
-                : [{ value: embedModel, label: embedModel }]
-            }
-          />
-        </SettingRow>
+          value={embedModel}
+          onChange={value => {
+            void applyEmbed({ embedProvider, embedModel: value });
+          }}
+          options={
+            embedModelOptions.length > 0
+              ? embedModelOptions
+              : [{ value: embedModel, label: embedModel }]
+          }
+        />
         <SettingRow label="Index now" description="Embed passages that are still waiting">
           <Button
             variant="secondary"
             size="sm"
-            icon={<RefreshCw size={14} />}
+            icon={<Icon icon={RefreshCw} size={14} />}
             disabled={typeof window.dripnex.ai.kbReindex !== 'function'}
             onClick={() => {
               void window.dripnex.ai.kbReindex?.().then(() => refreshKb());
@@ -586,36 +577,28 @@ export function AiSection() {
 
       {isConnected ? (
         <SettingGroup title="Model">
-          <SettingRow
+          <SettingSelect
             label="Model"
             description={`Used when chatting with ${catalog.name}`}
             htmlFor="aiModel"
-          >
-            <Select
-              id="aiModel"
-              value={ai.model}
-              onChange={value => updateAi({ model: value })}
-              options={
-                modelOptions.length > 0
-                  ? modelOptions
-                  : [{ value: ai.model || 'default', label: 'No models found' }]
-              }
-            />
-          </SettingRow>
-          <SettingRow
+            value={ai.model}
+            onChange={value => updateAi({ model: value })}
+            options={
+              modelOptions.length > 0
+                ? modelOptions
+                : [{ value: ai.model || 'default', label: 'No models found' }]
+            }
+          />
+          <SettingNumber
             label="Max context notes"
             description="How many notes Ask Notes may pull in"
             htmlFor="aiMaxContextNotes"
-          >
-            <NumberInput
-              id="aiMaxContextNotes"
-              value={ai.maxContextNotes}
-              onChange={value => updateAi({ maxContextNotes: value })}
-              min={1}
-              max={20}
-              step={1}
-            />
-          </SettingRow>
+            value={ai.maxContextNotes}
+            onChange={value => updateAi({ maxContextNotes: value })}
+            min={1}
+            max={20}
+            step={1}
+          />
         </SettingGroup>
       ) : null}
 
@@ -624,7 +607,7 @@ export function AiSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Upload size={14} />}
+            icon={<Icon icon={Upload} size={14} />}
             onClick={() => void handleImportPreset()}
           >
             Import
@@ -634,7 +617,7 @@ export function AiSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Icon icon={Download} size={14} />}
             onClick={() => void handleExportPreset()}
             disabled={registeredAiCommands.length === 0}
           >
@@ -644,7 +627,7 @@ export function AiSection() {
         {presetMessage?.type === 'success' && (
           <div className={styles.successMessage}>
             <span className={styles.aiMessageIcon}>
-              <CheckCircle size={14} />
+              <Icon icon={CheckCircle} size={14} />
               {presetMessage.text}
             </span>
           </div>
@@ -652,7 +635,7 @@ export function AiSection() {
         {presetMessage?.type === 'error' && (
           <div className={styles.errorMessage}>
             <span className={styles.aiMessageIcon}>
-              <XCircle size={14} />
+              <Icon icon={XCircle} size={14} />
               {presetMessage.text}
             </span>
           </div>
@@ -673,6 +656,6 @@ export function AiSection() {
           </div>
         )}
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }

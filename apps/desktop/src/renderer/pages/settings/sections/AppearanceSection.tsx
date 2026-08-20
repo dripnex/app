@@ -10,10 +10,10 @@ import { useSettingsStore, selectAppearance } from '../../../stores/settings';
 import { usePerformanceStore } from '../../../stores/performanceStore';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingSelect } from '../components/SettingSelect';
 import { ACCENT_SWATCHES } from '../../../ui/tokens/palette';
-import { Select } from '../../../ui/primitives';
 import { ColorPicker, type ColorOption } from '../components/controls';
-import styles from './Section.module.css';
+import { SettingsPage } from '../components/SettingsPage';
 import themeStyles from './AppearanceThemes.module.css';
 
 const themeOptions = [
@@ -100,12 +100,10 @@ export function AppearanceSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Appearance</h2>
-
-      <p className={themeStyles.lede}>
-        Official combinations. A community theme is its own repo — same tokens, no core fork.
-      </p>
+    <SettingsPage
+      title="Appearance"
+      lede="Official combinations. A community theme is its own repo — same tokens, no core fork."
+    >
       <div className={themeStyles.grid}>
         <PaletteCard
           name="Default"
@@ -135,14 +133,14 @@ export function AppearanceSection() {
       </div>
 
       <SettingGroup title="Palette">
-        <SettingRow
+        <SettingSelect
           label="Base"
           description="Default only. Picking Dark / Light / System leaves the named palette."
           htmlFor="theme"
-        >
-          <Select id="theme" value={theme} onChange={handleThemeChange} options={themeOptions} />
-        </SettingRow>
-
+          value={theme}
+          onChange={handleThemeChange}
+          options={themeOptions}
+        />
         <SettingRow
           label="Accent"
           description="Overrides the palette accent if you want a different one"
@@ -158,29 +156,24 @@ export function AppearanceSection() {
       </SettingGroup>
 
       <SettingGroup title="Display">
-        <SettingRow label="Zoom Level" description="Adjust the interface size" htmlFor="zoomLevel">
-          <Select
-            id="zoomLevel"
-            value={zoomLevel}
-            onChange={handleZoomChange}
-            options={zoomOptions}
-          />
-        </SettingRow>
-
-        <SettingRow
+        <SettingSelect
+          label="Zoom Level"
+          description="Adjust the interface size"
+          htmlFor="zoomLevel"
+          value={zoomLevel}
+          onChange={handleZoomChange}
+          options={zoomOptions}
+        />
+        <SettingSelect
           label="Performance Mode"
           description="Adjust visual effects based on your hardware"
           htmlFor="performanceMode"
-        >
-          <Select
-            id="performanceMode"
-            value={perfMode}
-            onChange={handlePerfModeChange}
-            options={performanceModeOptions}
-          />
-        </SettingRow>
+          value={perfMode}
+          onChange={handlePerfModeChange}
+          options={performanceModeOptions}
+        />
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }
 

@@ -1,5 +1,6 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
-import { Cloud, CloudOff, RefreshCw, AlertCircle, AlertTriangle, Check } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, AlertCircle, AlertTriangle, Check } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { useAuthStore } from '../../stores/authStore';
 import {
   useSyncStore,
@@ -129,7 +130,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   if (syncStatus === 'syncing') {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--syncing')}>
-        <RefreshCw size={11} className={sc('sidebar-footer-sync-spinning')} />
+        <Icon icon={RefreshCw} size={11} className={sc('sidebar-footer-sync-spinning')} />
         <span>Syncing...</span>
       </div>
     );
@@ -139,7 +140,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
     const n = conflicts.length;
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--conflict')}>
-        <AlertTriangle size={11} />
+        <Icon icon={AlertTriangle} size={11} />
         <span>
           {n} conflict{n === 1 ? '' : 's'}
         </span>
@@ -158,7 +159,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   if (showSynced) {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--synced')}>
-        <Check size={11} />
+        <Icon icon={Check} size={11} />
         <span>Synced</span>
       </div>
     );
@@ -167,7 +168,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   if (footerAction === 'setup' && onSetupEncryption) {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
-        <AlertCircle size={11} />
+        <Icon icon={AlertCircle} size={11} />
         <span title={syncError ?? undefined}>Set up encryption</span>
         <button
           type="button"
@@ -190,7 +191,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
     });
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
-        <AlertCircle size={11} />
+        <Icon icon={AlertCircle} size={11} />
         <span title={syncError ?? undefined}>
           {syncFooterErrorLabel({
             encryptionReady,
@@ -219,7 +220,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   if (syncStatus === 'offline') {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--offline')}>
-        <CloudOff size={11} />
+        <Icon icon={CloudOff} size={11} />
         <span>{pendingCount > 0 ? `Offline \u2014 ${pendingCount} pending` : 'Offline'}</span>
       </div>
     );
@@ -229,7 +230,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   if (pendingCount > 0) {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--pending')}>
-        <Cloud size={11} />
+        <Icon icon={Cloud} size={11} />
         <span>{pendingCount} pending</span>
       </div>
     );
@@ -245,7 +246,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
     });
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--error')}>
-        <AlertCircle size={11} />
+        <Icon icon={AlertCircle} size={11} />
         <span>{action === 'setup' ? 'Set up encryption' : 'Sync unstable'}</span>
         {action ? (
           <button
@@ -267,7 +268,7 @@ const SyncProgressIndicator = memo(function SyncProgressIndicator({
   if (lastSyncAt) {
     return (
       <div className={sc('sidebar-footer-progress', 'sidebar-footer-progress--idle')}>
-        <Cloud size={11} />
+        <Icon icon={Cloud} size={11} />
         <span>Synced {formatRelativeTime(lastSyncAt)}</span>
       </div>
     );
@@ -285,20 +286,14 @@ export const SidebarFooter = memo(function SidebarFooter({
   const email = useAuthStore(state => state.user?.email ?? null);
   const syncStatus = useSyncStore(selectStatus);
 
-  const getSyncIcon = () => {
-    switch (syncStatus) {
-      case 'syncing':
-        return <RefreshCw size={12} className={sc('sidebar-footer-sync-spinning')} />;
-      case 'error':
-      case 'auth-expired':
-      case 'needs-setup':
-        return <AlertCircle size={12} />;
-      case 'offline':
-        return <CloudOff size={12} />;
-      default:
-        return <Cloud size={12} />;
-    }
-  };
+  const syncIcon =
+    syncStatus === 'syncing'
+      ? RefreshCw
+      : syncStatus === 'error' || syncStatus === 'auth-expired' || syncStatus === 'needs-setup'
+        ? AlertCircle
+        : syncStatus === 'offline'
+          ? CloudOff
+          : Cloud;
 
   const lastSyncAtFooter = useSyncStore(selectLastSyncAt);
 
@@ -334,12 +329,16 @@ export const SidebarFooter = memo(function SidebarFooter({
             title={getSyncTooltip()}
             onClick={onEnableSyncClick}
           >
-            {getSyncIcon()}
+            <Icon
+              icon={syncIcon}
+              size={12}
+              className={syncStatus === 'syncing' ? sc('sidebar-footer-sync-spinning') : undefined}
+            />
           </button>
         </div>
       ) : (
         <button type="button" className={sc('sidebar-footer-signin')} onClick={onEnableSyncClick}>
-          <Cloud size={12} />
+          <Icon icon={Cloud} size={12} />
           <span>Enable Sync</span>
         </button>
       )}

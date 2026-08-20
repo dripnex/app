@@ -4,7 +4,8 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Monitor, Smartphone, Laptop, Check, X, Pencil, LogOut } from 'lucide-react';
+import { Monitor, Smartphone, Laptop, Check, X, Pencil, LogOut } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { SettingGroup } from '../components/SettingGroup';
 import { Button } from '../../../ui/primitives';
 import styles from './DevicesSection.module.css';
@@ -22,12 +23,12 @@ interface Device {
 function getPlatformIcon(platform: string | null) {
   switch (platform) {
     case 'darwin':
-      return <Laptop size={18} />;
+      return <Icon icon={Laptop} size={18} />;
     case 'ios':
     case 'android':
-      return <Smartphone size={18} />;
+      return <Icon icon={Smartphone} size={18} />;
     default:
-      return <Monitor size={18} />;
+      return <Icon icon={Monitor} size={18} />;
   }
 }
 
@@ -112,13 +113,18 @@ function DeviceRow({
               maxLength={100}
               aria-label="Device name"
             />
-            <Button variant="secondary" size="sm" icon={<Check size={14} />} onClick={handleSave}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Icon icon={Check} size={14} />}
+              onClick={handleSave}
+            >
               Save
             </Button>
             <Button
               variant="secondary"
               size="sm"
-              icon={<X size={14} />}
+              icon={<Icon icon={X} size={14} />}
               onMouseDown={event => {
                 event.preventDefault();
                 setEditing(false);
@@ -145,7 +151,7 @@ function DeviceRow({
           <Button
             variant="secondary"
             size="sm"
-            icon={<Pencil size={13} />}
+            icon={<Icon icon={Pencil} size={13} />}
             onClick={() => {
               setEditName(displayName(device));
               setEditing(true);
@@ -156,7 +162,7 @@ function DeviceRow({
           <Button
             variant="danger"
             size="sm"
-            icon={<LogOut size={13} />}
+            icon={<Icon icon={LogOut} size={13} />}
             onClick={() => onRevoke(device.deviceId)}
           >
             {device.isCurrent ? 'Sign out' : 'Remove'}
@@ -247,7 +253,7 @@ export function DevicesSection() {
               <Button
                 variant="danger"
                 size="sm"
-                icon={<LogOut size={14} />}
+                icon={<Icon icon={LogOut} size={14} />}
                 onClick={() => setPending({ kind: 'others' })}
                 disabled={revokeOthersMutation.isPending}
               >

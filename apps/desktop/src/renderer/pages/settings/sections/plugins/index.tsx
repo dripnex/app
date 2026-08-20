@@ -6,14 +6,16 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RefreshCw, FolderOpen, Download, Search, FileCode, Palette, Keyboard } from 'lucide-react';
+import { RefreshCw, FolderOpen, Download, Search, FileCode, Palette, Keyboard } from 'lucide';
 import { validateConfigValue } from '@dripnex/plugin-api';
+import { Icon } from '../../../../ui/icons/Icon';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
 import { builtInPlugins } from '../../../../plugins';
 import { Button, toast } from '../../../../ui/primitives';
 import { SettingGroup } from '../../components/SettingGroup';
 import { SettingRow } from '../../components/SettingRow';
-import layout from '../Section.module.css';
+import { SettingsCard } from '../../components/SettingsCard';
+import { SettingsPage } from '../../components/SettingsPage';
 import styles from './Plugins.module.css';
 import type { DiscoveredPluginInfo, BuiltInPluginInfo } from './types';
 import { PluginCard } from './PluginCard';
@@ -278,13 +280,10 @@ export function PluginsSection() {
   );
 
   return (
-    <div className={layout.section}>
-      <h2 className={layout.title}>Plugins</h2>
-      <p className={layout.lede}>
-        Built-ins ship in the app. Community plugins are their own git repos — Browse and click
-        Install.
-      </p>
-
+    <SettingsPage
+      title="Plugins"
+      lede="Built-ins ship in the app. Community plugins are their own git repos — Browse and click Install."
+    >
       <SettingGroup title="Customize">
         <SettingRow
           label="Init script"
@@ -293,7 +292,7 @@ export function PluginsSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<FileCode size={14} />}
+            icon={<Icon icon={FileCode} size={14} />}
             onClick={() => void handleOpenUserFile('init')}
           >
             Open init.js
@@ -306,7 +305,7 @@ export function PluginsSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Palette size={14} />}
+            icon={<Icon icon={Palette} size={14} />}
             onClick={() => void handleOpenUserFile('styles')}
           >
             Open styles.css
@@ -319,7 +318,7 @@ export function PluginsSection() {
           <Button
             variant="secondary"
             size="sm"
-            icon={<Keyboard size={14} />}
+            icon={<Icon icon={Keyboard} size={14} />}
             onClick={() => void handleOpenUserFile('keymap')}
           >
             Open keybindings.json
@@ -349,7 +348,7 @@ export function PluginsSection() {
         <>
           {/* Search */}
           <div className={styles.pluginSearchWrapper}>
-            <Search size={14} className={styles.pluginSearchIcon} />
+            <Icon icon={Search} size={14} className={styles.pluginSearchIcon} />
             <input
               type="text"
               className={styles.pluginSearchInput}
@@ -389,21 +388,21 @@ export function PluginsSection() {
           <div style={{ marginTop: '1.5rem' }}>
             <div className={styles.pluginSectionLabel}>Community</div>
             {filteredCommunity.length === 0 && !search ? (
-              <div className={styles.pluginCard}>
+              <SettingsCard flush>
                 <div className={styles.pluginEmptyState}>
                   <p>No community plugins installed yet.</p>
                   {pluginsPath && (
                     <Button
                       variant="secondary"
                       size="sm"
-                      icon={<FolderOpen size={14} />}
+                      icon={<Icon icon={FolderOpen} size={14} />}
                       onClick={handleOpenFolder}
                     >
                       Open Plugins Folder
                     </Button>
                   )}
                 </div>
-              </div>
+              </SettingsCard>
             ) : filteredCommunity.length === 0 && search ? (
               <div className={styles.pluginEmptyState}>
                 <p>No community plugins match &ldquo;{search}&rdquo;</p>
@@ -435,7 +434,7 @@ export function PluginsSection() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Download size={14} />}
+                icon={<Icon icon={Download} size={14} />}
                 onClick={handleInstall}
               >
                 Install from File
@@ -443,7 +442,7 @@ export function PluginsSection() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<RefreshCw size={14} />}
+                icon={<Icon icon={RefreshCw} size={14} />}
                 loading={isReloading}
                 onClick={handleReload}
               >
@@ -453,7 +452,7 @@ export function PluginsSection() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  icon={<FolderOpen size={14} />}
+                  icon={<Icon icon={FolderOpen} size={14} />}
                   onClick={handleOpenFolder}
                 >
                   Open Plugins Folder
@@ -467,6 +466,6 @@ export function PluginsSection() {
       {activeTab === 'browse' && <BrowseTab />}
 
       {import.meta.env.DEV && <PluginInspector />}
-    </div>
+    </SettingsPage>
   );
 }

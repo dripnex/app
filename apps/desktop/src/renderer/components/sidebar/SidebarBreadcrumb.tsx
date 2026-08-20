@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { BookOpen, Inbox, ChevronRight, X } from 'lucide-react';
+import { BookOpen, Inbox, ChevronRight, X } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { useNotebookTree, getNotebookPath } from '../../hooks/useNotebooks';
 import { sc } from './sc';
 
@@ -210,7 +211,7 @@ export function SidebarBreadcrumb({
               onClick={handleRootClick}
               aria-label="Go to all notebooks"
             >
-              <BookOpen size={14} aria-hidden="true" />
+              <Icon icon={BookOpen} size={14} aria-hidden="true" />
             </button>
 
             {/* Exiting segments (rendered first, positioned absolute) */}
@@ -220,7 +221,8 @@ export function SidebarBreadcrumb({
                 className={sc('sidebar-breadcrumb-segment', 'segment--exiting')}
                 style={{ '--segment-index': commonPrefixLength + index } as React.CSSProperties}
               >
-                <ChevronRight
+                <Icon
+                  icon={ChevronRight}
                   size={10}
                   className={sc('sidebar-breadcrumb-separator')}
                   aria-hidden="true"
@@ -241,7 +243,8 @@ export function SidebarBreadcrumb({
                     seg.status === 'entering' && 'segment--entering'
                   )}
                 >
-                  <ChevronRight
+                  <Icon
+                    icon={ChevronRight}
                     size={10}
                     className={sc('sidebar-breadcrumb-separator')}
                     aria-hidden="true"
@@ -252,7 +255,7 @@ export function SidebarBreadcrumb({
                     onClick={() => handleItemClick(seg.id)}
                     aria-current={isLast ? 'location' : undefined}
                   >
-                    {seg.id === 'inbox' ? <Inbox size={13} aria-hidden="true" /> : null}
+                    {seg.id === 'inbox' ? <Icon icon={Inbox} size={13} aria-hidden="true" /> : null}
                     {seg.name}
                   </button>
                 </span>
@@ -264,7 +267,8 @@ export function SidebarBreadcrumb({
         {tagFilter && (
           <span className={sc('sidebar-breadcrumb-segment')}>
             {hasNotebookPath && (
-              <ChevronRight
+              <Icon
+                icon={ChevronRight}
                 size={10}
                 className={sc('sidebar-breadcrumb-separator')}
                 aria-hidden="true"
@@ -278,7 +282,7 @@ export function SidebarBreadcrumb({
                 onClick={onClearTagFilter}
                 aria-label={`Clear tag filter: ${tagFilter}`}
               >
-                <X size={12} aria-hidden="true" />
+                <Icon icon={X} size={12} aria-hidden="true" />
               </button>
             </span>
           </span>

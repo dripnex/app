@@ -6,7 +6,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw } from 'lucide';
+import { Icon } from '../ui/icons/Icon';
 import { cssm } from '../lib/cssm';
 import styles from './ImageLightbox.module.css';
 
@@ -75,7 +76,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
           aria-label="Zoom out"
           title="Zoom out (-)"
         >
-          <ZoomOut size={20} />
+          <Icon icon={ZoomOut} size={20} />
         </button>
         <span className={sc('lightbox-zoom-level')}>{Math.round(scale * 100)}%</span>
         <button
@@ -85,7 +86,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
           aria-label="Zoom in"
           title="Zoom in (+)"
         >
-          <ZoomIn size={20} />
+          <Icon icon={ZoomIn} size={20} />
         </button>
         <button
           type="button"
@@ -94,7 +95,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
           aria-label="Rotate"
           title="Rotate (R)"
         >
-          <RotateCw size={20} />
+          <Icon icon={RotateCw} size={20} />
         </button>
         <button
           type="button"
@@ -103,7 +104,7 @@ export function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
           aria-label="Close"
           title="Close (Esc)"
         >
-          <X size={20} />
+          <Icon icon={X} size={20} />
         </button>
       </div>
 

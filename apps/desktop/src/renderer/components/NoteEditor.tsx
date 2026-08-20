@@ -1,7 +1,8 @@
 import { useRef, useCallback, useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { FileText, MoreVertical, Link2, Hash } from 'lucide-react';
+import { FileText, MoreVertical, Link2, Hash } from 'lucide';
 import { LayoutZone } from '@dripnex/plugin-api';
 import { toggleNthGfmTask, type MarkdownHeading } from '@dripnex/markdown';
+import { Icon } from '../ui/icons/Icon';
 import { getEditorView } from '../hooks/useCommandRegistry';
 import type { NoteSnapshot, NoteStatus } from '../../preload/index';
 import { useEditorPreferencesStore } from '../stores/editorPreferencesStore';
@@ -456,7 +457,7 @@ export function NoteEditor({
       <main className={sc('note-editor')} aria-label="Note editor">
         <div className={sc('note-editor-empty')} role="status">
           <span className={sc('empty-icon')} aria-hidden="true">
-            <FileText size={48} />
+            <Icon icon={FileText} size={48} />
           </span>
           <p className={sc('empty-title')}>Select a note to edit</p>
           <p className={sc('empty-hint')}>Or press ⌘N to create a new one</p>
@@ -492,7 +493,7 @@ export function NoteEditor({
               aria-label="Toggle outline"
               aria-pressed={outlineOpen}
             >
-              <Hash size={16} />
+              <Icon icon={Hash} size={16} />
             </button>
           </div>
         }
@@ -523,7 +524,7 @@ export function NoteEditor({
               title={`Backlinks${backlinksCount > 0 ? ` (${backlinksCount})` : ''}`}
               aria-label="Open backlinks panel"
             >
-              <Link2 size={18} />
+              <Icon icon={Link2} size={18} />
               {backlinksCount > 0 && <span className={sc('badge')}>{backlinksCount}</span>}
             </button>
             <button
@@ -533,7 +534,7 @@ export function NoteEditor({
               title="More actions"
               aria-label="Open actions panel"
             >
-              <MoreVertical size={18} />
+              <Icon icon={MoreVertical} size={18} />
             </button>
             <LayoutZone name="editor-header-actions" />
           </>

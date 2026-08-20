@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, Plus, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Search, X } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { sc } from './sc';
 
 interface SidebarSectionProps {
@@ -39,7 +40,7 @@ export function SidebarSection({
       <header className={sc('sidebar-section-header')}>
         {searchOpen && searchable ? (
           <div className={sc('sidebar-section-search')}>
-            <Search size={12} aria-hidden="true" />
+            <Icon icon={Search} size={12} aria-hidden="true" />
             <input
               type="search"
               className={sc('sidebar-section-search-input')}
@@ -58,7 +59,7 @@ export function SidebarSection({
               }}
               aria-label="Close search"
             >
-              <X size={12} />
+              <Icon icon={X} size={12} />
             </button>
           </div>
         ) : (
@@ -75,7 +76,7 @@ export function SidebarSection({
                   }}
                   aria-label={`Search ${title}`}
                 >
-                  <Search size={13} />
+                  <Icon icon={Search} size={13} />
                 </button>
               )}
               {onAdd && (
@@ -85,7 +86,7 @@ export function SidebarSection({
                   onClick={onAdd}
                   aria-label={addLabel}
                 >
-                  <Plus size={13} />
+                  <Icon icon={Plus} size={13} />
                 </button>
               )}
               {collapsible && (
@@ -96,7 +97,7 @@ export function SidebarSection({
                   aria-expanded={!isCollapsed}
                   aria-label={isCollapsed ? `Expand ${title}` : `Collapse ${title}`}
                 >
-                  <ChevronDown size={14} />
+                  <Icon icon={isCollapsed ? ChevronRight : ChevronDown} size={14} />
                 </button>
               )}
             </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X } from 'lucide';
+import { Icon } from '../ui/icons/Icon';
 import styles from './UpdateBanner.module.css';
 
 type BannerState =
@@ -133,7 +134,7 @@ export function UpdateBanner() {
         onClick={() => setDismissed(true)}
         aria-label="Dismiss update banner"
       >
-        <X size={14} />
+        <Icon icon={X} size={14} />
       </button>
     </div>
   );

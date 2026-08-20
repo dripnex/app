@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, KeyRound } from 'lucide-react';
+import { ExternalLink, KeyRound } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
 import { Button } from '../../../ui/primitives';
+import { SettingsCard } from '../components/SettingsCard';
+import { SettingsPage } from '../components/SettingsPage';
 import { GitHubCard } from './GitHubCard';
 import { LocalHttpCard } from './LocalHttpCard';
 import { McpCard } from './McpCard';
@@ -65,19 +68,17 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
   };
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h2 className={styles.title}>Integrations</h2>
-        <p className={styles.lede}>Connect tools you already use. Secrets stay on this machine.</p>
-      </header>
-
+    <SettingsPage
+      title="Integrations"
+      lede="Connect tools you already use. Secrets stay on this machine."
+    >
       <LocalHttpCard />
 
       <McpCard />
 
       <GitHubCard />
 
-      <article className={styles.card} data-tone={badgeTone}>
+      <SettingsCard tone={badgeTone}>
         <div className={styles.cardTop}>
           <OnePasswordMark size={36} />
           <div className={styles.cardCopy}>
@@ -145,7 +146,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
               <Button
                 variant="primary"
                 size="sm"
-                icon={<KeyRound size={14} />}
+                icon={<Icon icon={KeyRound} size={14} />}
                 onClick={() => onOpenEncryption?.()}
               >
                 Save passphrase
@@ -172,9 +173,9 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
           rel="noreferrer"
         >
           1Password SDK docs
-          <ExternalLink size={12} />
+          <Icon icon={ExternalLink} size={12} />
         </a>
-      </article>
-    </div>
+      </SettingsCard>
+    </SettingsPage>
   );
 }

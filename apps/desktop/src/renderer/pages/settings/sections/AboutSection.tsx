@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { URLS } from '@dripnex/product-config';
 import logo from '../../../assets/logo.png';
+import { SettingsPage } from '../components/SettingsPage';
 import styles from './Section.module.css';
 
 export function AboutSection() {
@@ -16,9 +17,7 @@ export function AboutSection() {
   }, []);
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>About</h2>
-
+    <SettingsPage title="About">
       <div className={styles.infoBlock}>
         <div className={styles.aboutBrand}>
           <img src={logo} alt="" className={styles.aboutLogo} width={48} height={48} />
@@ -40,6 +39,6 @@ export function AboutSection() {
           GitHub Repository
         </a>
       </div>
-    </div>
+    </SettingsPage>
   );
 }

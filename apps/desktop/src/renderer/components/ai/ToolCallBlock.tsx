@@ -11,7 +11,8 @@ import {
   XCircle,
   ChevronDown,
   ChevronRight,
-} from 'lucide-react';
+} from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { sc } from './sc';
 
 type ToolCallStatus = 'pending_confirmation' | 'executing' | 'complete' | 'rejected' | 'error';
@@ -43,7 +44,7 @@ export function ToolCallBlock({
   onReject,
 }: ToolCallBlockProps) {
   const [expanded, setExpanded] = useState(false);
-  const Icon = TOOL_ICONS[name] ?? Search;
+  const toolIcon = TOOL_ICONS[name] ?? Search;
 
   return (
     <div className={sc('ai-tool-call')}>
@@ -62,13 +63,13 @@ export function ToolCallBlock({
       >
         <div className={sc('ai-tool-call-left')}>
           {status === 'executing' ? (
-            <Loader2 size={14} className={sc('ai-tool-call-spinning')} />
+            <Icon icon={Loader2} size={14} className={sc('ai-tool-call-spinning')} />
           ) : status === 'complete' && result?.ok ? (
-            <CheckCircle size={14} className={sc('ai-tool-call-success')} />
+            <Icon icon={CheckCircle} size={14} className={sc('ai-tool-call-success')} />
           ) : status === 'error' || (status === 'complete' && !result?.ok) ? (
-            <XCircle size={14} className={sc('ai-tool-call-error')} />
+            <Icon icon={XCircle} size={14} className={sc('ai-tool-call-error')} />
           ) : (
-            <Icon size={14} />
+            <Icon icon={toolIcon} size={14} />
           )}
           <span className={sc('ai-tool-call-name')}>{name}</span>
           <span className={sc('ai-tool-call-status')}>
@@ -78,7 +79,7 @@ export function ToolCallBlock({
           </span>
         </div>
         <div className={sc('ai-tool-call-right')}>
-          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          <Icon icon={expanded ? ChevronDown : ChevronRight} size={12} />
         </div>
       </div>
 

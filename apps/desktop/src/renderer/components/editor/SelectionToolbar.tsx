@@ -15,8 +15,9 @@ import {
   CheckSquare,
   PenLine,
   ArrowUp,
-} from 'lucide-react';
+} from 'lucide';
 import { insertGithubAlert, type GithubAlertKind } from '@dripnex/commands';
+import { Icon } from '../../ui/icons/Icon';
 import { dispatchCommand, getEditorView } from '../../hooks/useCommandRegistry';
 import { requestInlineEdit } from '../../editor/inlineAi/request';
 import styles from './SelectionToolbar.module.css';
@@ -223,7 +224,7 @@ export function SelectionToolbar() {
         aria-expanded={aiOpen}
         onClick={() => setAiOpen(open => !open)}
       >
-        <PenLine size={15} />
+        <Icon icon={PenLine} size={15} />
       </button>
       <span className={styles.sep} />
       <button
@@ -232,7 +233,7 @@ export function SelectionToolbar() {
         title="Heading"
         onClick={() => dispatchCommand('editor:insert-heading')}
       >
-        <Hash size={15} />
+        <Icon icon={Hash} size={15} />
       </button>
       <button
         type="button"
@@ -240,7 +241,7 @@ export function SelectionToolbar() {
         title="Bold"
         onClick={() => dispatchCommand('editor:toggle-bold')}
       >
-        <Bold size={15} />
+        <Icon icon={Bold} size={15} />
       </button>
       <button
         type="button"
@@ -248,7 +249,7 @@ export function SelectionToolbar() {
         title="Italic"
         onClick={() => dispatchCommand('editor:toggle-italic')}
       >
-        <Italic size={15} />
+        <Icon icon={Italic} size={15} />
       </button>
       <button
         type="button"
@@ -256,7 +257,7 @@ export function SelectionToolbar() {
         title="Strikethrough"
         onClick={() => dispatchCommand('editor:toggle-strikethrough')}
       >
-        <Strikethrough size={15} />
+        <Icon icon={Strikethrough} size={15} />
       </button>
       <button
         type="button"
@@ -264,7 +265,7 @@ export function SelectionToolbar() {
         title="Highlight"
         onClick={() => wrapSelection('<mark>', '</mark>')}
       >
-        <Highlighter size={15} />
+        <Icon icon={Highlighter} size={15} />
       </button>
       <button
         type="button"
@@ -272,7 +273,7 @@ export function SelectionToolbar() {
         title="Link"
         onClick={() => dispatchCommand('editor:insert-link')}
       >
-        <Link size={15} />
+        <Icon icon={Link} size={15} />
       </button>
       <span className={styles.sep} />
       <button
@@ -281,7 +282,7 @@ export function SelectionToolbar() {
         title="Inline code"
         onClick={() => dispatchCommand('editor:toggle-inline-code')}
       >
-        <Code size={15} />
+        <Icon icon={Code} size={15} />
       </button>
       <button
         type="button"
@@ -289,7 +290,7 @@ export function SelectionToolbar() {
         title="Code block"
         onClick={() => dispatchCommand('editor:insert-code-block')}
       >
-        <Braces size={15} />
+        <Icon icon={Braces} size={15} />
       </button>
       <button
         type="button"
@@ -297,7 +298,7 @@ export function SelectionToolbar() {
         title="Quote"
         onClick={() => dispatchCommand('editor:insert-quote')}
       >
-        <Quote size={15} />
+        <Icon icon={Quote} size={15} />
       </button>
       <button
         type="button"
@@ -318,7 +319,7 @@ export function SelectionToolbar() {
         title="Bullets"
         onClick={() => dispatchCommand('editor:insert-unordered-list')}
       >
-        <List size={15} />
+        <Icon icon={List} size={15} />
       </button>
       <button
         type="button"
@@ -326,7 +327,7 @@ export function SelectionToolbar() {
         title="Numbered list"
         onClick={() => dispatchCommand('editor:insert-ordered-list')}
       >
-        <ListOrdered size={15} />
+        <Icon icon={ListOrdered} size={15} />
       </button>
       <button
         type="button"
@@ -334,7 +335,7 @@ export function SelectionToolbar() {
         title="Checkbox"
         onClick={() => dispatchCommand('editor:insert-checkbox')}
       >
-        <CheckSquare size={15} />
+        <Icon icon={CheckSquare} size={15} />
       </button>
 
       {alertOpen ? (
@@ -375,7 +376,7 @@ export function SelectionToolbar() {
               autoFocus
             />
             <button type="submit" className={styles.aiSend} aria-label="Run" disabled={aiBusy}>
-              <ArrowUp size={14} />
+              <Icon icon={ArrowUp} size={14} />
             </button>
           </form>
           {aiError ? <p className={styles.aiError}>{aiError}</p> : null}
