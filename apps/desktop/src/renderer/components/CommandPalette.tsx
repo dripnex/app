@@ -52,6 +52,7 @@ import {
   notebookPath,
   paletteAriaLabel,
   palettePlaceholder,
+  parsePaletteQuery,
   type PaletteMode,
 } from '../utils/paletteQuery';
 import { cssm } from '../lib/cssm';
@@ -142,15 +143,15 @@ export function CommandPalette({
   const listRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  const parsed = useMemo(() => parsePaletteQuery(query, mode), [query, mode]);
+  const source = parsed.source;
+  const needle = parsed.needle;
+
   const filteredCommands = useMemo(() => {
-    if (mode !== 'commands') return [];
-    return commands.filter(cmd => {
-      if (cmd.showInPalette === false) return false;
-      if (cmd.enabled === false) return false;
-      if (query) return cmd.name.toLowerCase().includes(query.toLowerCase());
-      return true;
-    });
-  }, [commands, query, mode]);
+    if (source !== 'commands') return [];
+    const visible = commands.filter(cmd => cmd.showInPalette !== false && cmd.enabled !== false);
+    return filterByQuery(visible, needle, cmd => `${cmd.name} ${cmd.id}`);
+  }, [commands, needle, source]);
 
   const groups = useMemo(() => {
     const result: {
@@ -166,19 +167,19 @@ export function CommandPalette({
   }, [filteredCommands]);
 
   const notebookHits = useMemo(() => {
-    if (mode !== 'notebooks') return [];
-    return filterByQuery(notebooks, query, nb => notebookPath(notebooks, nb.id));
-  }, [mode, notebooks, query]);
+    if (source !== 'notebooks') return [];
+    return filterByQuery(notebooks, needle, nb => notebookPath(notebooks, nb.id));
+  }, [source, notebooks, needle]);
 
   const tagHits = useMemo(() => {
-    if (mode !== 'tags') return [];
-    return filterByQuery(tags, query, tag => String(tag));
-  }, [mode, tags, query]);
+    if (source !== 'tags') return [];
+    return filterByQuery(tags, needle, tag => String(tag));
+  }, [source, tags, needle]);
 
   const headingHits = useMemo(() => {
-    if (mode !== 'headings') return [];
-    return filterByQuery(headings, query, heading => heading.text);
-  }, [mode, headings, query]);
+    if (source !== 'headings') return [];
+    return filterByQuery(headings, needle, heading => heading.text);
+  }, [source, headings, needle]);
 
   type FlatItem =
     | { type: 'note'; id: string; title: string }
@@ -188,20 +189,20 @@ export function CommandPalette({
     | { type: 'command'; id: string };
 
   const flatItems = useMemo((): FlatItem[] => {
-    if (mode === 'notes') {
+    if (source === 'notes') {
       return noteHits.map(note => ({ type: 'note', id: note.id, title: note.title }));
     }
-    if (mode === 'notebooks') {
+    if (source === 'notebooks') {
       return notebookHits.map(nb => ({
         type: 'notebook',
         id: nb.id,
         title: notebookPath(notebooks, nb.id),
       }));
     }
-    if (mode === 'tags') {
+    if (source === 'tags') {
       return tagHits.map(tag => ({ type: 'tag', id: String(tag), title: String(tag) }));
     }
-    if (mode === 'headings') {
+    if (source === 'headings') {
       return headingHits.map((heading, index) => ({
         type: 'heading' as const,
         id: `${index}:${heading.text}`,
@@ -209,7 +210,7 @@ export function CommandPalette({
       }));
     }
     return groups.flatMap(g => g.commands.map(cmd => ({ type: 'command' as const, id: cmd.id })));
-  }, [mode, noteHits, notebookHits, tagHits, headingHits, notebooks, groups]);
+  }, [source, noteHits, notebookHits, tagHits, headingHits, notebooks, groups]);
 
   useEffect(() => {
     if (isOpen) {
@@ -228,13 +229,13 @@ export function CommandPalette({
   }, [query]);
 
   useEffect(() => {
-    if (!isOpen || mode !== 'notes') return;
-    const needle = query.trim();
+    if (!isOpen || source !== 'notes') return;
+    const searchNeedle = needle.trim();
     let cancelled = false;
     const timer = window.setTimeout(
       () => {
-        const req = needle
-          ? window.dripnex.notes.search(needle, {
+        const req = searchNeedle
+          ? window.dripnex.notes.search(searchNeedle, {
               limit: 12,
               isDeleted: false,
               excludeNotebookIds: ['templates'],
@@ -252,13 +253,13 @@ export function CommandPalette({
           }
         });
       },
-      needle ? 160 : 0
+      searchNeedle ? 160 : 0
     );
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [isOpen, mode, query]);
+  }, [isOpen, source, needle]);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -332,26 +333,30 @@ export function CommandPalette({
         }
         case 'Escape': {
           e.preventDefault();
+          if (parsed.scoped || needle) {
+            setQuery('');
+            break;
+          }
           finish();
           break;
         }
       }
     },
-    [flatItems, selectedIndex, executeItem, finish]
+    [flatItems, selectedIndex, executeItem, finish, parsed.scoped, needle]
   );
 
   if (!isOpen) return null;
 
   const groupLabel =
-    mode === 'notes'
-      ? query.trim()
+    source === 'notes'
+      ? needle.trim()
         ? 'Notes'
         : 'Recent'
-      : mode === 'notebooks'
+      : source === 'notebooks'
         ? 'Notebooks'
-        : mode === 'tags'
+        : source === 'tags'
           ? 'Tags'
-          : mode === 'headings'
+          : source === 'headings'
             ? 'Headings'
             : null;
 
@@ -361,7 +366,7 @@ export function CommandPalette({
       onClick={onClose}
       onKeyDown={handleKeyDown}
       role="dialog"
-      aria-label={paletteAriaLabel(mode)}
+      aria-label={paletteAriaLabel(source)}
       aria-modal="true"
     >
       <div
@@ -380,7 +385,7 @@ export function CommandPalette({
             ref={inputRef}
             className={sc('command-palette-input')}
             type="text"
-            placeholder={palettePlaceholder(mode)}
+            placeholder={palettePlaceholder(source)}
             value={query}
             onChange={e => setQuery(e.target.value)}
             role="combobox"
@@ -402,7 +407,7 @@ export function CommandPalette({
         >
           {flatItems.length === 0 ? (
             <div className={sc('command-palette-empty')}>No matches</div>
-          ) : mode === 'commands' ? (
+          ) : source === 'commands' ? (
             groups.map(group => (
               <div key={group.category} className={sc('command-palette-group')}>
                 <div className={sc('command-palette-group-label')}>{group.label}</div>
