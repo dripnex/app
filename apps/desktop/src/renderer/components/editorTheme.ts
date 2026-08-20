@@ -65,6 +65,7 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
     },
     '.cm-scroller': {
       overflow: 'auto',
+      position: 'relative',
     },
     '.cm-line': {
       padding: '0 4px',
@@ -103,6 +104,41 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
     },
     '.cm-completionLabel': {
       fontWeight: '500',
+    },
+    '.cm-task-checked': {
+      textDecoration: 'line-through',
+      color: 'var(--cm-strikethrough, var(--text-muted))',
+    },
+    '.cm-md-link-tooltip': {
+      backgroundColor: 'var(--cm-tooltip-bg, var(--bg-elevated))',
+      color: 'var(--cm-link, var(--accent))',
+      border: '1px solid var(--cm-tooltip-border, var(--border))',
+      borderRadius: '6px',
+      padding: '4px 8px',
+      fontSize: '12px',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      maxWidth: '360px',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    },
+    '.cm-fence-copy': {
+      position: 'absolute',
+      right: '10px',
+      zIndex: '2',
+      padding: '2px 8px',
+      fontSize: '11px',
+      lineHeight: '1.4',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      color: 'var(--text-secondary)',
+      backgroundColor: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
+      borderRadius: '6px',
+      cursor: 'pointer',
+    },
+    '.cm-fence-copy:hover': {
+      color: 'var(--text-primary)',
+      backgroundColor: 'var(--bg-hover)',
     },
   });
 }

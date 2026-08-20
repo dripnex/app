@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
-import { splitCodeLines } from '../splitCodeLines';
+import { nodeText, splitCodeLines } from '../splitCodeLines';
 
 describe('splitCodeLines', () => {
   it('splits a plain string on newlines and drops a trailing empty line', () => {
@@ -19,5 +19,12 @@ describe('splitCodeLines', () => {
     const span = createElement('span', { className: 'hljs-string' }, '"a\nb"');
     const lines = splitCodeLines(span);
     expect(lines).toHaveLength(2);
+  });
+});
+
+describe('nodeText', () => {
+  it('joins highlighted children into the source string', () => {
+    const keyword = createElement('span', { className: 'hljs-keyword' }, 'const');
+    expect(nodeText([keyword, ' x = 1'])).toBe('const x = 1');
   });
 });
