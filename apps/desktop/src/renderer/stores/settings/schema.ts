@@ -172,8 +172,12 @@ export interface SettingsSchemaV8 extends Omit<SettingsSchemaV7, 'version'> {
   version: 8;
 }
 
+export interface SettingsSchemaV9 extends Omit<SettingsSchemaV8, 'version'> {
+  version: 9;
+}
+
 /** Current settings schema type */
-export type SettingsSchema = SettingsSchemaV8;
+export type SettingsSchema = SettingsSchemaV9;
 
 /** Section keys (excluding version) */
 export type SettingsSection = keyof Omit<SettingsSchema, 'version'>;
