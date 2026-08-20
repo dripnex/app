@@ -23,8 +23,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 10px;
-  min-height: 44px;
+  padding: var(--chrome-header-padding);
+  height: var(--chrome-header-height);
+  min-height: var(--chrome-header-height);
   border-bottom: 1px solid var(--border-subtle);
   -webkit-app-region: drag;
 }

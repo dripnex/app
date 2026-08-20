@@ -387,15 +387,23 @@
   color: white;
 }
 
-/* Sidebar Header - aligned with traffic lights (y: 8) */
+/* Same box as note-list / editor chrome; left inset clears traffic lights. */
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 8px 8px 0 72px;
-  height: 44px;
+  gap: 2px;
+  padding: var(--chrome-header-padding);
+  padding-left: var(--chrome-traffic-inset);
+  height: var(--chrome-header-height);
+  min-height: var(--chrome-header-height);
+  border-bottom: 1px solid var(--border-subtle);
   -webkit-app-region: drag;
   flex-shrink: 0;
+}
+
+.sidebar-header > * {
+  -webkit-app-region: no-drag;
 }
 
 /* New Note Button */

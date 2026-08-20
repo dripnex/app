@@ -9,8 +9,10 @@
 }
 
 .header {
-  height: 52px;
+  height: var(--chrome-header-height);
+  min-height: var(--chrome-header-height);
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
   -webkit-app-region: drag;
 }
 
