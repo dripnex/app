@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RefreshCw, FolderOpen, Download, Search, FileCode, Palette, Keyboard } from 'lucide';
+import { RefreshCw, FolderOpen, Download, Search, FileCode, Palette } from 'lucide';
 import { validateConfigValue } from '@dripnex/plugin-api';
 import { Icon } from '../../../../ui/icons/Icon';
 import type { PluginConfigSchemaField } from '../../../../../preload/index';
@@ -20,6 +20,7 @@ import styles from './Plugins.module.css';
 import type { DiscoveredPluginInfo, BuiltInPluginInfo } from './types';
 import { PluginCard } from './PluginCard';
 import { BrowseTab } from './BrowseTab';
+import { UpdatesTab } from './UpdatesTab';
 import { PluginInspector } from './PluginInspector';
 
 // ============================================================================
@@ -45,8 +46,9 @@ const BUILT_IN_CONFIG_SCHEMAS: Record<string, Record<string, PluginConfigSchemaF
 // PluginsSection
 // ============================================================================
 
-export function PluginsSection() {
-  const [activeTab, setActiveTab] = useState<'installed' | 'browse'>('installed');
+export type PluginsPane = 'installed' | 'install' | 'updates';
+
+export function PluginsSection({ pane = 'installed' }: { pane?: PluginsPane }) {
   const [search, setSearch] = useState('');
   const [plugins, setPlugins] = useState<DiscoveredPluginInfo[]>([]);
   const [pluginsPath, setPluginsPath] = useState('');
@@ -279,73 +281,55 @@ export function PluginsSection() {
     [lowerSearch, plugins]
   );
 
+  const page =
+    pane === 'install'
+      ? {
+          title: 'Install',
+          lede: 'Community plugins are their own git repos. Click Install to fetch the release tarball.',
+        }
+      : pane === 'updates'
+        ? {
+            title: 'Updates',
+            lede: 'Community plugins whose registry version is newer than the one on disk. Built-ins ship with the app.',
+          }
+        : {
+            title: 'Plugins',
+            lede: 'Built-ins ship in the app. Community plugins are their own git repos — Install from the nested page.',
+          };
+
   return (
-    <SettingsPage
-      title="Plugins"
-      lede="Built-ins ship in the app. Community plugins are their own git repos — Browse and click Install."
-    >
-      <SettingGroup title="Customize">
-        <SettingRow
-          label="Init script"
-          description="JavaScript that runs on load. Register commands, listen to notes, extend the editor."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Icon icon={FileCode} size={14} />}
-            onClick={() => void handleOpenUserFile('init')}
-          >
-            Open init.js
-          </Button>
-        </SettingRow>
-        <SettingRow
-          label="User stylesheet"
-          description="CSS applied on top of the app. Save the file — changes apply immediately."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Icon icon={Palette} size={14} />}
-            onClick={() => void handleOpenUserFile('styles')}
-          >
-            Open styles.css
-          </Button>
-        </SettingRow>
-        <SettingRow
-          label="Keymap"
-          description="Override command shortcuts. Save the file — changes apply immediately."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<Icon icon={Keyboard} size={14} />}
-            onClick={() => void handleOpenUserFile('keymap')}
-          >
-            Open keybindings.json
-          </Button>
-        </SettingRow>
-      </SettingGroup>
-
-      {/* Tab bar */}
-      <div className={styles.pluginTabs}>
-        <button
-          type="button"
-          className={`${styles.pluginTab} ${activeTab === 'installed' ? styles.pluginTabActive : ''}`}
-          onClick={() => setActiveTab('installed')}
-        >
-          Installed
-        </button>
-        <button
-          type="button"
-          className={`${styles.pluginTab} ${activeTab === 'browse' ? styles.pluginTabActive : ''}`}
-          onClick={() => setActiveTab('browse')}
-        >
-          Browse
-        </button>
-      </div>
-
-      {activeTab === 'installed' && (
+    <SettingsPage title={page.title} lede={page.lede}>
+      {pane === 'installed' && (
         <>
+          <SettingGroup title="Customize">
+            <SettingRow
+              label="Init script"
+              description="JavaScript that runs on load. Register commands, listen to notes, extend the editor."
+            >
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Icon icon={FileCode} size={14} />}
+                onClick={() => void handleOpenUserFile('init')}
+              >
+                Open init.js
+              </Button>
+            </SettingRow>
+            <SettingRow
+              label="User stylesheet"
+              description="CSS applied on top of the app. Save the file — changes apply immediately."
+            >
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Icon icon={Palette} size={14} />}
+                onClick={() => void handleOpenUserFile('styles')}
+              >
+                Open styles.css
+              </Button>
+            </SettingRow>
+          </SettingGroup>
+
           {/* Search */}
           <div className={styles.pluginSearchWrapper}>
             <Icon icon={Search} size={14} className={styles.pluginSearchIcon} />
@@ -463,7 +447,9 @@ export function PluginsSection() {
         </>
       )}
 
-      {activeTab === 'browse' && <BrowseTab />}
+      {pane === 'install' && <BrowseTab />}
+
+      {pane === 'updates' && <UpdatesTab />}
 
       {import.meta.env.DEV && <PluginInspector />}
     </SettingsPage>

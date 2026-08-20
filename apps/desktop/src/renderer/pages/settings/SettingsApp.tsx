@@ -7,8 +7,10 @@ import styles from './SettingsApp.module.css';
 import { SettingsSidebar } from './components/SettingsSidebar';
 import { GeneralSection } from './sections/GeneralSection';
 import { EditorSection } from './sections/EditorSection';
+import { ThemesSection } from './sections/ThemesSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { AiSection } from './sections/AiSection';
+import { KeybindingsSection } from './sections/KeybindingsSection';
 import { AccountSection } from './sections/AccountSection';
 import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
@@ -20,9 +22,13 @@ import { IntegrationsSection } from './sections/IntegrationsSection';
 export type SettingsSection =
   | 'general'
   | 'editor'
+  | 'themes'
   | 'appearance'
   | 'ai'
+  | 'keybindings'
   | 'plugins'
+  | 'plugins-install'
+  | 'plugins-updates'
   | 'account'
   | 'encryption'
   | 'integrations'
@@ -42,12 +48,20 @@ export function SettingsApp() {
         return <GeneralSection />;
       case 'editor':
         return <EditorSection />;
+      case 'themes':
+        return <ThemesSection />;
       case 'appearance':
         return <AppearanceSection />;
       case 'ai':
         return <AiSection />;
+      case 'keybindings':
+        return <KeybindingsSection />;
       case 'plugins':
-        return <PluginsSection />;
+        return <PluginsSection pane="installed" />;
+      case 'plugins-install':
+        return <PluginsSection pane="install" />;
+      case 'plugins-updates':
+        return <PluginsSection pane="updates" />;
       case 'account':
         return <AccountSection />;
       case 'encryption':
