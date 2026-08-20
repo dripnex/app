@@ -51,6 +51,8 @@ import {
   isBareHttpUrl,
   isInsideMarkdownLink,
   wrapSelectionWithUrl,
+  continueMarkupKeymap,
+  editorLineKeymap,
 } from '@dripnex/commands';
 import {
   createWikilinkHighlighter,
@@ -382,6 +384,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Selection
         drawSelection(),
+        EditorState.allowMultipleSelections.of(true),
 
         // History (undo/redo)
         history(),
@@ -400,8 +403,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         search({ top: true }),
         highlightSelectionMatches(),
 
-        // Keymaps
+        // Keymaps — Enter-continues-markup and F5/Ctrl-J before defaultKeymap
         keymap.of([
+          continueMarkupKeymap,
+          ...editorLineKeymap,
           ...defaultKeymap,
           ...searchKeymap,
           ...foldKeymap,
@@ -413,6 +418,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         markdown({
           base: markdownLanguage,
           codeLanguages: languages,
+        }),
+        markdownLanguage.data.of({
+          commentTokens: { block: { open: '<!--', close: '-->' } },
         }),
 
         // Syntax highlighting

@@ -7,8 +7,31 @@ import {
   type KeyBinding,
 } from '@dripnex/command-registry';
 import { editorCommands } from '@dripnex/command-registry/definitions';
-import { openSearchPanel, findNext, findPrevious } from '@codemirror/search';
+import {
+  openSearchPanel,
+  findNext,
+  findPrevious,
+  selectNextOccurrence,
+  selectSelectionMatches,
+} from '@codemirror/search';
 import { toggleFold, foldAll, unfoldAll } from '@codemirror/language';
+import {
+  copyLineUp,
+  copyLineDown,
+  moveLineUp,
+  moveLineDown,
+  insertBlankLine,
+  selectLine,
+  cursorMatchingBracket,
+  selectMatchingBracket,
+  selectParentSyntax,
+  cursorSubwordBackward,
+  cursorSubwordForward,
+  selectSubwordBackward,
+  selectSubwordForward,
+  toggleComment,
+  toggleLineComment,
+} from '@codemirror/commands';
 import {
   toggleBold,
   toggleItalic,
@@ -24,6 +47,21 @@ import {
   insertHorizontalRule,
   undoChange,
   redoChange,
+  joinLines,
+  sortLines,
+  reverseSortLines,
+  sortLinesInsensitive,
+  reverseSortLinesInsensitive,
+  insertLineBefore,
+  upcaseAtCursor,
+  downcaseAtCursor,
+  findUnder,
+  findUnderPrevious,
+  skipAndSelectNextOccurrence,
+  splitSelectionByLine,
+  scrollLineUp,
+  scrollLineDown,
+  showInCenter,
 } from '@dripnex/commands';
 import { followWikilinkAtCursor } from '../utils/followWikilinkAtCursor';
 import { acceptNes, dismissNes, triggerNes } from '../editor/nes/extension';
@@ -86,6 +124,38 @@ const editorExecutors: Record<string, (view: EditorView) => boolean | void> = {
   'editor:trigger-nes': triggerNes,
   'editor:accept-nes': acceptNes,
   'editor:dismiss-nes': dismissNes,
+  'editor:copy-line-up': copyLineUp,
+  'editor:copy-line-down': copyLineDown,
+  'editor:move-line-up': moveLineUp,
+  'editor:move-line-down': moveLineDown,
+  'editor:insert-blank-line': insertBlankLine,
+  'editor:insert-line-before': insertLineBefore,
+  'editor:select-line': selectLine,
+  'editor:go-matching-bracket': cursorMatchingBracket,
+  'editor:select-matching-bracket': selectMatchingBracket,
+  'editor:select-parent-syntax': selectParentSyntax,
+  'editor:go-subword-left': cursorSubwordBackward,
+  'editor:go-subword-right': cursorSubwordForward,
+  'editor:select-subword-left': selectSubwordBackward,
+  'editor:select-subword-right': selectSubwordForward,
+  'editor:select-next-occurrence': selectNextOccurrence,
+  'editor:select-selection-matches': selectSelectionMatches,
+  'editor:toggle-comment': toggleComment,
+  'editor:toggle-line-comment': toggleLineComment,
+  'editor:sort-lines-insensitive': sortLinesInsensitive,
+  'editor:reverse-sort-lines-insensitive': reverseSortLinesInsensitive,
+  'editor:sort-lines': sortLines,
+  'editor:reverse-sort-lines': reverseSortLines,
+  'editor:join-lines': joinLines,
+  'editor:upcase-at-cursor': upcaseAtCursor,
+  'editor:downcase-at-cursor': downcaseAtCursor,
+  'editor:find-under': findUnder,
+  'editor:find-under-previous': findUnderPrevious,
+  'editor:skip-and-select-next-occurrence': skipAndSelectNextOccurrence,
+  'editor:split-selection-by-line': splitSelectionByLine,
+  'editor:scroll-line-up': scrollLineUp,
+  'editor:scroll-line-down': scrollLineDown,
+  'editor:show-in-center': showInCenter,
 };
 
 for (const def of editorCommands) {
