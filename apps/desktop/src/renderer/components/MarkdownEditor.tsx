@@ -69,6 +69,7 @@ import { scrollBehavior } from '../utils/motion';
 import { useEditorBufferStore } from '../stores/editorBufferStore';
 import { useSettingsStore, selectEditor } from '../stores/settings';
 import { createNesExtension, requestNesCompletion } from '../editor/nes';
+import { editorPolishExtensions } from '../editor/editorPolish';
 import { setEditorView } from '../hooks/useCommandRegistry';
 import { emojiShortcodeCompletions } from '../plugins/emojiShortcodes';
 import {
@@ -441,6 +442,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Embed inline preview (shows images after ![[...]] syntax)
         embedInlinePreview(target => getEmbedUrlRef.current?.(target) ?? null),
+
+        // Checked-task strike, link URL tooltip, fence copy
+        ...editorPolishExtensions,
 
         // Placeholder
         EditorView.contentAttributes.of({ 'data-placeholder': placeholder }),

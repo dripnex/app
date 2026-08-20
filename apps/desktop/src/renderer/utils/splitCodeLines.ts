@@ -45,7 +45,7 @@ export function splitCodeLines(children: ReactNode): ReactNode[][] {
   return lines;
 }
 
-function nodeText(node: ReactNode): string {
+export function nodeText(node: ReactNode): string {
   if (node == null || node === false) return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(nodeText).join('');

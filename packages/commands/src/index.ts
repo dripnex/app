@@ -66,3 +66,12 @@ export {
   sanitizeLinkTitle,
 } from './markdown/urlPaste.js';
 export type { UrlPasteFormat } from './markdown/urlPaste.js';
+
+export {
+  checkedTaskMarks,
+  checkedTaskTextOnLine,
+  fenceAt,
+  markdownLinkAt,
+  markdownLinksInLine,
+} from './markdown/editorPolish.js';
+export type { FenceRange, MarkdownLinkHit, TextSpan } from './markdown/editorPolish.js';

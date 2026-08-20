@@ -276,6 +276,11 @@
   gap: 8px;
 }
 
+.markdown-preview li:global(.task-list-item):has(input:checked) {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
 .markdown-preview input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
@@ -397,6 +402,7 @@
 }
 
 .fence {
+  position: relative;
   margin: 1em 0;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
@@ -414,6 +420,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.fenceCopy {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 1;
+  opacity: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.fence:hover .fenceCopy,
+.fence:focus-within .fenceCopy {
+  opacity: 1;
+}
+
+.fenceCopy:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 .markdown-preview .fence pre {

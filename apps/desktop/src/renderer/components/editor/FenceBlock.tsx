@@ -1,5 +1,12 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
-import { splitCodeLines } from '../../utils/splitCodeLines';
+import {
+  Children,
+  isValidElement,
+  useCallback,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { nodeText, splitCodeLines } from '../../utils/splitCodeLines';
 import styles from './MarkdownPreview.module.css';
 
 interface FenceBlockProps {
@@ -8,6 +15,16 @@ interface FenceBlockProps {
 
 export function FenceBlock({ children }: FenceBlockProps) {
   const code = findCodeElement(children);
+  const [copied, setCopied] = useState(false);
+
+  const copy = useCallback(async () => {
+    if (!code) return;
+    const source = nodeText(code.props.children);
+    await navigator.clipboard.writeText(source.replace(/\n$/, ''));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  }, [code]);
+
   if (!code) {
     return <pre>{children}</pre>;
   }
@@ -19,6 +36,14 @@ export function FenceBlock({ children }: FenceBlockProps) {
   return (
     <div className={styles.fence}>
       {filename ? <div className={styles.fenceChip}>{filename}</div> : null}
+      <button
+        type="button"
+        className={styles.fenceCopy}
+        aria-label="Copy code block"
+        onClick={() => void copy()}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
       <pre>
         <code className={className} {...rest}>
           {lines.map((line, index) => (
