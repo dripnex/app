@@ -45,8 +45,9 @@ export function fuzzyScore(text: string, query: string): number | null {
   const q = query.trim().toLowerCase();
   if (!q) return 0;
   const substring = t.indexOf(q);
-  if (substring === 0) return 2000 - t.length;
-  if (substring > 0) return 1200 - substring - t.length * 0.05;
+  // Tiers so a long prefix still beats any substring / subsequence.
+  if (substring === 0) return 3_000_000 - t.length;
+  if (substring > 0) return 2_000_000 - substring - t.length * 0.05;
 
   let ti = 0;
   let score = 0;

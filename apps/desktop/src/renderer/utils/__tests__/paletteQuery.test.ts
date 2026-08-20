@@ -60,6 +60,14 @@ describe('fuzzyScore', () => {
     expect(prefix!).toBeGreaterThan(sub!);
   });
 
+  it('ranks a long prefix above a short substring', () => {
+    const prefix = fuzzyScore(`Intro ${'x'.repeat(900)}`, 'intro');
+    const sub = fuzzyScore('xintro', 'intro');
+    expect(prefix).not.toBeNull();
+    expect(sub).not.toBeNull();
+    expect(prefix!).toBeGreaterThan(sub!);
+  });
+
   it('rejects a query that is not a subsequence', () => {
     expect(fuzzyScore('Weekly', 'wo')).toBeNull();
   });
