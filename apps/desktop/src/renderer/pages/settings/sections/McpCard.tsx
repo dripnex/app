@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Bot, Check, Copy, Eye, EyeOff } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
-import { Button, Field, Toggle } from '../../../ui/primitives';
+import { Button, Field } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
+import { SettingToggle } from '../components/SettingToggle';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import {
   buildClaudeSnippet,
@@ -107,13 +108,16 @@ export function McpCard() {
             machine.
           </p>
         </div>
-        <Toggle
-          id="mcp-enabled"
-          checked={enabled}
-          disabled={!ready}
-          onChange={checked => updateIntegrations({ mcpEnabled: checked })}
-        />
       </div>
+      <SettingToggle
+        flush
+        label="Enable MCP"
+        description="Start the local MCP server for Claude Code and Codex."
+        htmlFor="mcp-enabled"
+        checked={enabled}
+        disabled={!ready}
+        onChange={checked => updateIntegrations({ mcpEnabled: checked })}
+      />
 
       {!ready ? (
         <p className={styles.callout} data-tone="warn">
@@ -177,22 +181,14 @@ export function McpCard() {
             onCopy={() => void copy('codex', codex)}
           />
 
-          <div className={styles.writesRow}>
-            <div>
-              <label className={styles.fieldLabel} htmlFor="mcp-writes">
-                Allow writes
-              </label>
-              <p className={styles.fieldHint}>
-                Create, update, and trash from agents. Off until you flip this — no need to recopy
-                the snippet.
-              </p>
-            </div>
-            <Toggle
-              id="mcp-writes"
-              checked={integrations.mcpWrites}
-              onChange={checked => updateIntegrations({ mcpWrites: checked })}
-            />
-          </div>
+          <SettingToggle
+            flush
+            label="Allow writes"
+            description="Create, update, and trash from agents. Off until you flip this — no need to recopy the snippet."
+            htmlFor="mcp-writes"
+            checked={integrations.mcpWrites}
+            onChange={checked => updateIntegrations({ mcpWrites: checked })}
+          />
         </div>
       ) : null}
 

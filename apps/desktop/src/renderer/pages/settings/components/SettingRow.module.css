@@ -8,6 +8,11 @@
   transition: background var(--transition-fast);
 }
 
+.flush {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .row:hover {
   background: var(--bg-active);
 }
