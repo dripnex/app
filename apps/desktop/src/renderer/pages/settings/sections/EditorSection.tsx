@@ -8,18 +8,15 @@ import { useSettingsStore, selectEditor } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { SettingToggle } from '../components/SettingToggle';
+import { SettingsPage } from '../components/SettingsPage';
 import { Input, NumberInput } from '../../../ui/primitives';
-import styles from './Section.module.css';
 
 export function EditorSection() {
   const editor = useSettingsStore(selectEditor);
   const updateEditor = useSettingsStore(s => s.updateEditor);
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Editor</h2>
-
-      {/* Interface Group */}
+    <SettingsPage title="Editor">
       <SettingGroup title="Interface">
         <SettingToggle
           label="Line Numbers"
@@ -128,6 +125,6 @@ export function EditorSection() {
           onChange={checked => updateEditor({ indentWithTabs: checked })}
         />
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }

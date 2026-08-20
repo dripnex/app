@@ -3,10 +3,10 @@ import { ExternalLink, KeyRound } from 'lucide-react';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
 import { Button } from '../../../ui/primitives';
+import { SettingsPage } from '../components/SettingsPage';
 import { GitHubCard } from './GitHubCard';
 import { LocalHttpCard } from './LocalHttpCard';
 import { McpCard } from './McpCard';
-import layout from './Section.module.css';
 import styles from './IntegrationsSection.module.css';
 
 interface IntegrationsSectionProps {
@@ -66,10 +66,10 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
   };
 
   return (
-    <div className={layout.section}>
-      <h2 className={layout.title}>Integrations</h2>
-      <p className={layout.lede}>Connect tools you already use. Secrets stay on this machine.</p>
-
+    <SettingsPage
+      title="Integrations"
+      lede="Connect tools you already use. Secrets stay on this machine."
+    >
       <LocalHttpCard />
 
       <McpCard />
@@ -174,6 +174,6 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
           <ExternalLink size={12} />
         </a>
       </article>
-    </div>
+    </SettingsPage>
   );
 }

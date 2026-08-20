@@ -11,8 +11,8 @@ import { useNotebooks } from '../../../hooks/useNotebooks';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { SettingToggle } from '../components/SettingToggle';
+import { SettingsPage } from '../components/SettingsPage';
 import { Button, Select } from '../../../ui/primitives';
-import styles from './Section.module.css';
 
 export function GeneralSection() {
   const general = useSettingsStore(selectGeneral);
@@ -38,9 +38,7 @@ export function GeneralSection() {
   }, []);
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>General</h2>
-
+    <SettingsPage title="General">
       <SettingGroup title="Notes">
         <SettingRow
           label="Default Notebook"
@@ -91,6 +89,6 @@ export function GeneralSection() {
           </Button>
         </SettingRow>
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }

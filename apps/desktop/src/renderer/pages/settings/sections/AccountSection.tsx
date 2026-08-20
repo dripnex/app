@@ -35,6 +35,7 @@ import { SettingDisclosure } from '../components/SettingDisclosure';
 import { MagicLinkFlow } from '../../../components/auth/MagicLinkFlow';
 import { ConflictResolver } from '../../../components/sync/ConflictResolver';
 import { Button } from '../../../ui/primitives';
+import { SettingsPage } from '../components/SettingsPage';
 import { DevicesSection } from './DevicesSection';
 import styles from './Section.module.css';
 
@@ -231,9 +232,7 @@ export function AccountSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Account</h2>
-
+    <SettingsPage title="Account">
       <SettingGroup title="Authentication">
         {isAuthenticated && user ? (
           <>
@@ -407,6 +406,6 @@ export function AccountSection() {
       {showMagicLinkFlow && (
         <MagicLinkFlow onSuccess={handleMagicLinkSuccess} onCancel={handleMagicLinkCancel} />
       )}
-    </div>
+    </SettingsPage>
   );
 }

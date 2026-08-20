@@ -10,6 +10,7 @@ import { useSettingsStore, selectUpdates } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
 import { SettingToggle } from '../components/SettingToggle';
+import { SettingsPage } from '../components/SettingsPage';
 import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
@@ -226,9 +227,7 @@ export function UpdatesSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Updates</h2>
-
+    <SettingsPage title="Updates">
       <SettingGroup title="Automatic Updates">
         <SettingToggle
           label="Check for updates automatically"
@@ -248,6 +247,6 @@ export function UpdatesSection() {
         </SettingRow>
         {renderInfo() ? <div className={styles.inset}>{renderInfo()}</div> : null}
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }

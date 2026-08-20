@@ -9,6 +9,7 @@ import { Download, Upload, Archive, FolderOpen } from 'lucide-react';
 import { useSettingsStore, selectBackup } from '../../../stores/settings';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingsPage } from '../components/SettingsPage';
 import { Button } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
@@ -89,9 +90,7 @@ export function BackupSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Backup & Data</h2>
-
+    <SettingsPage title="Backup & Data">
       <SettingGroup title="Export">
         <SettingRow label="Export All Notes" description="Export all your notes as Markdown files">
           <Button
@@ -149,6 +148,6 @@ export function BackupSection() {
       </SettingGroup>
 
       {message && <div className={styles.checkResult}>{message}</div>}
-    </div>
+    </SettingsPage>
   );
 }

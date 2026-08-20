@@ -13,7 +13,7 @@ import { SettingRow } from '../components/SettingRow';
 import { ACCENT_SWATCHES } from '../../../ui/tokens/palette';
 import { Select } from '../../../ui/primitives';
 import { ColorPicker, type ColorOption } from '../components/controls';
-import styles from './Section.module.css';
+import { SettingsPage } from '../components/SettingsPage';
 import themeStyles from './AppearanceThemes.module.css';
 
 const themeOptions = [
@@ -100,12 +100,10 @@ export function AppearanceSection() {
   };
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Appearance</h2>
-
-      <p className={styles.lede}>
-        Official combinations. A community theme is its own repo — same tokens, no core fork.
-      </p>
+    <SettingsPage
+      title="Appearance"
+      lede="Official combinations. A community theme is its own repo — same tokens, no core fork."
+    >
       <div className={themeStyles.grid}>
         <PaletteCard
           name="Default"
@@ -180,7 +178,7 @@ export function AppearanceSection() {
           />
         </SettingRow>
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }
 

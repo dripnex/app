@@ -13,7 +13,7 @@ import { builtInPlugins } from '../../../../plugins';
 import { Button, toast } from '../../../../ui/primitives';
 import { SettingGroup } from '../../components/SettingGroup';
 import { SettingRow } from '../../components/SettingRow';
-import layout from '../Section.module.css';
+import { SettingsPage } from '../../components/SettingsPage';
 import styles from './Plugins.module.css';
 import type { DiscoveredPluginInfo, BuiltInPluginInfo } from './types';
 import { PluginCard } from './PluginCard';
@@ -278,13 +278,10 @@ export function PluginsSection() {
   );
 
   return (
-    <div className={layout.section}>
-      <h2 className={layout.title}>Plugins</h2>
-      <p className={layout.lede}>
-        Built-ins ship in the app. Community plugins are their own git repos — Browse and click
-        Install.
-      </p>
-
+    <SettingsPage
+      title="Plugins"
+      lede="Built-ins ship in the app. Community plugins are their own git repos — Browse and click Install."
+    >
       <SettingGroup title="Customize">
         <SettingRow
           label="Init script"
@@ -467,6 +464,6 @@ export function PluginsSection() {
       {activeTab === 'browse' && <BrowseTab />}
 
       {import.meta.env.DEV && <PluginInspector />}
-    </div>
+    </SettingsPage>
   );
 }

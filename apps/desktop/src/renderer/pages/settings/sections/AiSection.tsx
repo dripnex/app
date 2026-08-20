@@ -16,6 +16,7 @@ import { FALLBACK_MODELS, PROVIDER_CATALOG, type AiProviderId } from '../ai/prov
 import { ProviderMark } from '../ai/ProviderMark';
 import { OllamaConnect, ProviderConnect } from '../ai/ProviderConnect';
 import { kbIndexDescription, kbStatusLabel } from '../../../components/ai/askNotesCopy';
+import { SettingsPage } from '../components/SettingsPage';
 import styles from './Section.module.css';
 import cardStyles from './AiProviders.module.css';
 
@@ -381,14 +382,10 @@ export function AiSection() {
   }, []);
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>AI Assistant</h2>
-      <p className={styles.lede}>
-        Dripnex AI is included with your account — no key. Other clouds still require a one-time key
-        until those providers open a public OAuth for apps. Keys stay in the keychain. Ollama never
-        leaves this machine.
-      </p>
-
+    <SettingsPage
+      title="AI Assistant"
+      lede="Dripnex AI is included with your account — no key. Other clouds still require a one-time key until those providers open a public OAuth for apps. Keys stay in the keychain. Ollama never leaves this machine."
+    >
       {PROVIDER_GROUPS.map(group => {
         const items = PROVIDER_CATALOG.filter(item => group.kinds.includes(item.kind));
         if (items.length === 0) return null;
@@ -673,6 +670,6 @@ export function AiSection() {
           </div>
         )}
       </SettingGroup>
-    </div>
+    </SettingsPage>
   );
 }
