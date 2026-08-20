@@ -58,6 +58,8 @@ export interface ThemeDefinition {
   colorScheme: 'dark' | 'light';
   tokens: Record<string, string>;
   pluginId?: string;
+  /** Native window vibrancy. Chrome tokens should be translucent. */
+  frosted?: boolean;
 }
 
 /** Check if a token name is in the whitelist or a valid extension scope */

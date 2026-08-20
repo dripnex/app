@@ -25,11 +25,11 @@ export function usePerformanceMode(): void {
 
   useEffect(() => {
     document.documentElement.dataset.perf = mode;
-    // Native vibrancy stays on unless the user picked Low. Auto + Reduce
-    // Motion used to flip this off and paint the window solid black.
-    const frost = saved !== 'low';
-    void window.dripnex?.windows?.setFrosted?.(frost);
-  }, [mode, saved]);
+    // Material is granted at window construction. Never turn it off from
+    // Auto/Low — that painted the view opaque. CSS tokens hide it on solid
+    // palettes; frosted palettes are translucent.
+    void window.dripnex?.windows?.setFrosted?.(true);
+  }, [mode]);
 
   useEffect(() => {
     const auto = detectPerfMode();

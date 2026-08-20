@@ -27,14 +27,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glass: let macOS vibrancy / Windows acrylic show through the chrome.
-   Named-theme tokens stay translucent; this only stops html/body from painting
-   an extra opaque wash on top of the window material. */
-html[data-theme='dripnex-glass'],
-html[data-theme='dripnex-glass'] body,
-html[data-theme='dripnex-glass'] #root {
+/* Frosted palettes: no extra wash on html/body so NSVisualEffectView shows. */
+html[data-frosted='true'],
+html[data-frosted='true'] body,
+html[data-frosted='true'] #root {
   background: transparent;
   background-color: transparent;
+}
+
+html[data-frosted='true'] .app {
+  position: relative;
+  background:
+    radial-gradient(
+      900px 420px at 0% -8%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 58%
+    ),
+    transparent;
 }
 
 /* ===== PERFORMANCE MODES (blur only — colors stay on the theme) ===== */

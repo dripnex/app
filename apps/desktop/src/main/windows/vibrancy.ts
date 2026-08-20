@@ -1,40 +1,60 @@
-import { BrowserWindow, type BrowserWindowConstructorOptions } from 'electron';
+import { BrowserWindow, type BrowserWindowConstructorOptions, type View } from 'electron';
 
 /**
- * Native frosted chrome — the desktop shows through the window.
+ * Native frosted chrome.
  *
- * CSS `backdrop-filter` only blurs in-page pixels. On macOS the real
- * effect is NSVisualEffectView (`vibrancy: 'under-window'`).
+ * On macOS 26 / Electron 30+ this only works if transparency is granted
+ * *at construction* (`transparent: true`). setVibrancy after the fact on
+ * an opaque window is a no-op — the WebContentsView stays a solid fill.
  *
- * Electron docs: window `backgroundColor` alpha (#AARRGGBB) is ignored
- * unless `transparent: true`. `#00000000` without that flag paints
- * opaque black over the vibrancy. Do not set a window backgroundColor
- * while frosted. Clear the Electron 30+ WebContentsView fill instead
- * (`contentView.setBackgroundColor('#00000000')` — View alpha works).
+ * Window `backgroundColor` alpha is ignored unless transparent is true
+ * (#AARRGGBB). The view tree must also be cleared: BrowserWindow's
+ * contentView is a container; the WebContentsView child defaults to white.
  *
- * `transparent: true` is also off: it drops the native shadow and can
- * freeze resize. Docked DevTools paints the page opaque.
+ * CSS backdrop-filter cannot see the desktop. Docked DevTools paints opaque.
  */
 const FROSTED = new WeakMap<BrowserWindow, boolean>();
 const WIRED = new WeakSet<BrowserWindow>();
 
-const VIEW_CLEAR = '#00000000';
+const CLEAR = '#00000000';
 const OPAQUE = '#0a0b0d';
+
+function paintViewTree(view: View | undefined, color: string): void {
+  if (!view) return;
+  try {
+    view.setBackgroundColor(color);
+  } catch {
+    return;
+  }
+  for (const child of view.children ?? []) paintViewTree(child, color);
+}
 
 export function frostedWindowOptions(): Pick<
   BrowserWindowConstructorOptions,
-  'vibrancy' | 'visualEffectState' | 'backgroundMaterial'
+  | 'transparent'
+  | 'backgroundColor'
+  | 'vibrancy'
+  | 'visualEffectState'
+  | 'backgroundMaterial'
+  | 'hasShadow'
 > {
   if (process.platform === 'darwin') {
     return {
+      transparent: true,
+      backgroundColor: CLEAR,
       vibrancy: 'under-window',
       visualEffectState: 'active',
+      hasShadow: true,
     };
   }
   if (process.platform === 'win32') {
-    return { backgroundMaterial: 'acrylic' };
+    return {
+      transparent: true,
+      backgroundColor: CLEAR,
+      backgroundMaterial: 'acrylic',
+    };
   }
-  return {};
+  return { backgroundColor: OPAQUE };
 }
 
 export function applyFrosted(win: BrowserWindow, on: boolean): void {
@@ -52,23 +72,16 @@ export function applyFrosted(win: BrowserWindow, on: boolean): void {
     win.setBackgroundMaterial(on ? 'acrylic' : 'none');
   }
 
-  if (!on) {
-    win.setBackgroundColor(OPAQUE);
-  }
-
-  try {
-    win.contentView?.setBackgroundColor(on ? VIEW_CLEAR : OPAQUE);
-  } catch {
-    /* View.setBackgroundColor is Electron 30+ */
-  }
+  win.setBackgroundColor(on ? CLEAR : OPAQUE);
+  paintViewTree(win.contentView, on ? CLEAR : OPAQUE);
 }
 
-/** Constructor options plus load/DevTools re-apply. Call once per window. */
 export function wireFrosted(win: BrowserWindow, initial = true): void {
   applyFrosted(win, initial);
   if (WIRED.has(win)) return;
   WIRED.add(win);
   const reapply = () => applyFrosted(win, FROSTED.get(win) ?? initial);
   win.webContents.on('did-finish-load', reapply);
+  win.webContents.on('did-navigate', reapply);
   win.webContents.on('devtools-closed', reapply);
 }

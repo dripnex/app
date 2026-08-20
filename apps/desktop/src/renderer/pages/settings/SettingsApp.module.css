@@ -15,7 +15,7 @@
   background: transparent;
 }
 
-:global(html[data-theme='dripnex-glass']) .container {
+:global(html[data-frosted='true']) .container {
   background: transparent;
 }
 

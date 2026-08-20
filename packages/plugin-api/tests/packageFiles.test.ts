@@ -176,6 +176,19 @@ describe('parsePluginTheme', () => {
     expect(parsed.errors.some(e => e.includes('colorScheme'))).toBe(true);
   });
 
+  it('keeps frosted from theme.json', () => {
+    const parsed = parsePluginTheme(
+      JSON.stringify({
+        colorScheme: 'dark',
+        frosted: true,
+        tokens: { '--bg-base': 'rgba(0,0,0,0.2)' },
+      }),
+      'hello'
+    );
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.theme?.frosted).toBe(true);
+  });
+
   it('rejects non-string token values', () => {
     const parsed = parsePluginTheme(
       JSON.stringify({ colorScheme: 'dark', tokens: { '--bg-base': 0 } }),
