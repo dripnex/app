@@ -151,3 +151,26 @@ export function lightenColor(color: string, amount: number): string {
 export function computeHoverColor(color: string): string {
   return darkenColor(color, 0.15);
 }
+
+/**
+ * Multiply a CSS color's alpha by `keep` (0–1). Used to push frosted
+ * surfaces toward the desktop without rewriting the palette.
+ */
+export function scaleCssAlpha(color: string, keep: number): string {
+  const k = Math.min(1, Math.max(0.08, keep));
+  const trimmed = color.trim();
+  const rgba = /^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i.exec(
+    trimmed
+  );
+  if (rgba) {
+    const a = Number((parseFloat(rgba[4]!) * k).toFixed(3));
+    return `rgba(${rgba[1]}, ${rgba[2]}, ${rgba[3]}, ${a})`;
+  }
+  const rgb = /^rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i.exec(trimmed);
+  if (rgb) {
+    return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${k.toFixed(3)})`;
+  }
+  const hex = hexToRgb(trimmed);
+  if (hex) return `rgba(${hex.r}, ${hex.g}, ${hex.b}, ${k.toFixed(3)})`;
+  return color;
+}

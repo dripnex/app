@@ -46,6 +46,11 @@
   border: none;
 }
 
+.rangeSlider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .rangeSlider::-webkit-slider-thumb {
   appearance: none;
   width: 16px;

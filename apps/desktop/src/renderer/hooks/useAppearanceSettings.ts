@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
-import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
+import { computeHoverColor, hexToRgb, scaleCssAlpha } from '../utils/colorUtils';
 
 /**
  * Persisted IPC isDark value from the main process nativeTheme.
@@ -32,6 +33,36 @@ function applyAccent(accentColor: string): void {
       '--accent-muted',
       `rgba(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}, 0.18)`
     );
+  }
+}
+
+const FROST_SURFACE_TOKENS = [
+  '--bg-base',
+  '--bg-surface',
+  '--bg-elevated',
+  '--bg-inset',
+  '--glass-bg',
+] as const;
+
+function clampPercent(value: number): number {
+  if (Number.isNaN(value)) return 40;
+  return Math.min(100, Math.max(0, value));
+}
+
+/** Push frosted surfaces toward the desktop. 0 = palette default, 100 = very clear. */
+function applyFrostTransparency(percent: number): void {
+  const root = document.documentElement;
+  const theme = themeRegistryStore.getState().getActiveTheme();
+  if (!theme?.frosted) {
+    root.style.removeProperty('--frost-transparency');
+    return;
+  }
+  const amount = clampPercent(percent);
+  root.style.setProperty('--frost-transparency', String(amount));
+  const keep = 1 - (amount / 100) * 0.82;
+  for (const token of FROST_SURFACE_TOKENS) {
+    const source = theme.tokens[token];
+    if (source) root.style.setProperty(token, scaleCssAlpha(source, keep));
   }
 }
 
@@ -77,6 +108,11 @@ export function useAppearanceSettings(): void {
   const accentColor = appearance?.accentColor || '#5eead4';
   const zoomLevel = appearance?.zoomLevel || '1.0';
   const paletteActive = Boolean(appearance?.activeThemeId);
+  const frostTransparency = appearance?.frostTransparency ?? 40;
+  const registryThemeId = useSyncExternalStore(
+    themeRegistryStore.subscribe,
+    () => themeRegistryStore.getState().activeThemeId
+  );
 
   // Keep a ref to current values so the IPC callback can access them
   const currentRef = useRef({ theme, accentColor, zoomLevel });
@@ -92,10 +128,11 @@ export function useAppearanceSettings(): void {
   useEffect(() => {
     if (paletteActive) {
       applyAccent(accentColor);
+      applyFrostTransparency(frostTransparency);
       return;
     }
     applyAppearance(theme, accentColor, zoomLevel);
-  }, [theme, accentColor, zoomLevel, paletteActive]);
+  }, [theme, accentColor, zoomLevel, paletteActive, frostTransparency, registryThemeId]);
 
   // Sync nativeTheme source in main process
   useEffect(() => {

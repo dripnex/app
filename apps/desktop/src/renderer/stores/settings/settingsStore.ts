@@ -169,6 +169,20 @@ function migrateSettings(persisted: unknown, version: number): { settings: Setti
     };
   }
 
+  // Migration: v8 -> v9 (frosted palette transparency)
+  if (version < 9) {
+    mutable = {
+      ...mutable,
+      version: 9,
+      appearance: {
+        ...DEFAULT_APPEARANCE,
+        ...mutable.appearance,
+        frostTransparency:
+          mutable.appearance?.frostTransparency ?? DEFAULT_APPEARANCE.frostTransparency,
+      },
+    };
+  }
+
   settings = mutable as SettingsSchema;
   return { settings };
 }

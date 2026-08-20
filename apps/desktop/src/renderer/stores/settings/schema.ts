@@ -16,7 +16,7 @@ import { DEFAULT_MODEL } from '@dripnex/ai-core';
 // Version
 // ============================================================================
 
-export const SETTINGS_VERSION = 8;
+export const SETTINGS_VERSION = 9;
 
 // ============================================================================
 // Section Types
@@ -54,6 +54,8 @@ export interface AppearanceSettings {
   activeThemeId: string | null;
   /** Glass blur. Auto follows hardware / reduced-motion. */
   performanceMode: 'auto' | 'high' | 'medium' | 'low';
+  /** How much desktop shows through frosted palettes. 0 = theme default, 100 = very clear. */
+  frostTransparency: number;
 }
 
 /** Backup settings */
@@ -198,6 +200,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   acrylicBackground: false,
   activeThemeId: null,
   performanceMode: 'auto',
+  frostTransparency: 40,
 };
 
 export const DEFAULT_AI: AiSettings = {
