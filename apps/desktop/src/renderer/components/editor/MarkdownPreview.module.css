@@ -264,6 +264,30 @@
   margin: 0.25em 0;
 }
 
+.markdown-preview li::marker {
+  color: var(--mde-preview-list-marker-color);
+}
+
+.markdown-preview li li::marker {
+  color: var(--mde-preview-list-marker-2-color);
+}
+
+.markdown-preview li li li::marker {
+  color: var(--mde-preview-list-marker-3-color);
+}
+
+.markdown-preview li li li li::marker {
+  color: var(--mde-preview-list-marker-color);
+}
+
+.markdown-preview li li li li li::marker {
+  color: var(--mde-preview-list-marker-2-color);
+}
+
+.markdown-preview li li li li li li::marker {
+  color: var(--mde-preview-list-marker-3-color);
+}
+
 /* Task lists (GFM) */
 .markdown-preview ul:global(.contains-task-list) {
   list-style: none;

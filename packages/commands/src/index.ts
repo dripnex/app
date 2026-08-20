@@ -46,6 +46,16 @@ export {
 } from './markdown/lineCommands.js';
 
 export {
+  parseListLine,
+  formatListLine,
+  indentList,
+  indentListItem,
+  dedentListItem,
+  listIndentKeymap,
+} from './markdown/listIndent.js';
+export type { ParsedListLine, ListKind } from './markdown/listIndent.js';
+
+export {
   SLASH_ITEMS,
   FENCE_LANGUAGES,
   matchSlashLine,

@@ -53,6 +53,7 @@ import {
   wrapSelectionWithUrl,
   continueMarkupKeymap,
   editorLineKeymap,
+  listIndentKeymap,
 } from '@dripnex/commands';
 import {
   createWikilinkHighlighter,
@@ -78,6 +79,7 @@ import {
 } from '../utils/isMissingWikilink';
 import { notebookStyleProps } from '../utils/notebookStyle';
 import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
+import { listMarkHighlighter } from './editor/listMarkDecorations';
 import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
 import { UrlPastePicker } from './editor/UrlPastePicker';
 import styles from './MarkdownEditor.module.css';
@@ -412,6 +414,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           ...searchKeymap,
           ...foldKeymap,
           ...historyKeymap,
+          listIndentKeymap,
           indentWithTab,
         ]),
 
@@ -426,6 +429,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
         // Syntax highlighting
         syntaxHighlighting(markdownHighlighting),
+        listMarkHighlighter,
 
         // Wikilink [[note]] highlighting
         wikilinkHighlightCompartment.of(createWikilinkHighlighter(null)),

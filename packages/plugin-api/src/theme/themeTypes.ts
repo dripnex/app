@@ -40,7 +40,14 @@ export const CORE_THEME_TOKENS = [
 ] as const;
 
 /** Valid extension scope prefixes for non-core tokens */
-export const THEME_EXTENSION_SCOPES = ['--syntax-', '--preview-', '--ui-', '--cm-'] as const;
+export const THEME_EXTENSION_SCOPES = [
+  '--syntax-',
+  '--preview-',
+  '--ui-',
+  '--cm-',
+  '--md-',
+  '--mde-',
+] as const;
 
 /** A complete theme definition */
 export interface ThemeDefinition {
