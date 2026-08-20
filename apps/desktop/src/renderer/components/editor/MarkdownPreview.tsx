@@ -31,6 +31,7 @@ import { cssm } from '../../lib/cssm';
 import { emitLocalDeepLink } from '../../utils/parseDripnexUrl';
 import { isMissingWikilink, type WikilinkTitleResolution } from '../../utils/isMissingWikilink';
 import { notebookStyleProps } from '../../utils/notebookStyle';
+import { useSettingsStore, selectEditor } from '../../stores/settings';
 import { PreviewFindBar } from './PreviewFindBar';
 import { FenceBlock } from './FenceBlock';
 import styles from './MarkdownPreview.module.css';
@@ -89,6 +90,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     },
     ref
   ) {
+    const readableLineLength = useSettingsStore(s => selectEditor(s).readableLineLength);
     const containerRef = useRef<HTMLDivElement>(null);
     const [internalResolvedEmbeds, setInternalResolvedEmbeds] = useState<
       Record<string, string | null>
@@ -355,7 +357,7 @@ export const MarkdownPreview = forwardRef<MarkdownPreviewHandle, MarkdownPreview
     const progressPercent = hasProgress ? (tasks.completed / tasks.total) * 100 : 0;
 
     return (
-      <div className={sc('preview-shell')}>
+      <div className={sc('preview-shell', readableLineLength && 'readable')}>
         {findOpen ? <PreviewFindBar matchCount={findCount} /> : null}
         <div
           ref={containerRef}

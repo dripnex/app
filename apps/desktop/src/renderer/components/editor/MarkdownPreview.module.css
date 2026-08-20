@@ -9,6 +9,12 @@
   flex-direction: column;
 }
 
+.readable {
+  max-width: 46rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
 .markdown-preview :global(mark[data-preview-find]) {
   background: color-mix(in srgb, var(--accent) 28%, transparent);
   color: inherit;
