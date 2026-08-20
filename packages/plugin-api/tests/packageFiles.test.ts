@@ -6,6 +6,8 @@ import { applyPluginPackageFiles } from '../src/packageFiles/applyPluginPackageF
 import { pluginMenuStore } from '../src/menu/pluginMenuStore';
 import { pluginContextMenuStore } from '../src/menu/pluginContextMenuStore';
 import { pluginStyleStore } from '../src/theme/pluginStyleStore';
+import { themeRegistryStore } from '../src/theme/themeRegistryStore';
+import { parsePluginTheme } from '../src/packageFiles/parsePluginTheme';
 
 describe('parsePluginChord', () => {
   it('parses plus and hyphen chords', () => {
@@ -90,6 +92,7 @@ describe('applyPluginPackageFiles', () => {
     pluginMenuStore.getState().removeAll('hello');
     pluginContextMenuStore.getState().removeAll('hello');
     pluginStyleStore.getState().unregisterAll('hello');
+    themeRegistryStore.getState().unregisterAll('hello');
   });
 
   it('adds menus and binds plugin commands only', () => {
@@ -124,6 +127,7 @@ describe('applyPluginPackageFiles', () => {
     expect(result.contextMenuCount).toBe(1);
     expect(result.keymapCount).toBe(1);
     expect(result.styleCount).toBe(0);
+    expect(result.themeCount).toBe(0);
     expect(bound).toEqual(['plugin:hello:say-hello']);
     expect(result.errors.some(e => e.includes('app:new-note'))).toBe(true);
     expect(pluginMenuStore.getState().items).toHaveLength(1);
@@ -144,5 +148,40 @@ describe('applyPluginPackageFiles', () => {
         sources: ['.hello { color: red; }', '.hello button { opacity: 0.8; }'],
       },
     ]);
+  });
+
+  it('registers a package theme.json', () => {
+    const result = applyPluginPackageFiles('hello', {
+      menus: [],
+      keymaps: [],
+      themes: [
+        JSON.stringify({
+          id: 'hello-paper',
+          name: 'Paper',
+          colorScheme: 'light',
+          tokens: { '--bg-base': '#fff8f0', '--accent': '#2a7d6f' },
+        }),
+      ],
+    });
+
+    expect(result.themeCount).toBe(1);
+    expect(themeRegistryStore.getState().themes.some(t => t.id === 'hello-paper')).toBe(true);
+  });
+});
+
+describe('parsePluginTheme', () => {
+  it('rejects a missing colorScheme', () => {
+    const parsed = parsePluginTheme(JSON.stringify({ tokens: { '--bg-base': '#000' } }), 'hello');
+    expect(parsed.theme).toBeNull();
+    expect(parsed.errors.some(e => e.includes('colorScheme'))).toBe(true);
+  });
+
+  it('rejects non-string token values', () => {
+    const parsed = parsePluginTheme(
+      JSON.stringify({ colorScheme: 'dark', tokens: { '--bg-base': 0 } }),
+      'hello'
+    );
+    expect(parsed.theme).toBeNull();
+    expect(parsed.errors.some(e => e.includes('string'))).toBe(true);
   });
 });

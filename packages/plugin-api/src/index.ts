@@ -137,6 +137,7 @@ export type {
   ParsePluginKeymapResult,
 } from './packageFiles/parsePluginKeymap';
 export { parsePluginMenus } from './packageFiles/parsePluginMenus';
+export { parsePluginTheme, createThemeOnlyManifest } from './packageFiles/parsePluginTheme';
 export type {
   PluginPackageMenuItem,
   PluginPackageContextMenuItem,

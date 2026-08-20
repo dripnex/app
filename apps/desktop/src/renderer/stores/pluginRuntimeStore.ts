@@ -11,7 +11,7 @@
 
 import { createStore } from 'zustand/vanilla';
 import type { PluginManifest, PluginPackageFiles } from '@dripnex/plugin-api';
-import { loadPluginFromSource, loadInitScript } from '@dripnex/plugin-api';
+import { loadPluginFromSource, loadInitScript, createThemeOnlyManifest } from '@dripnex/plugin-api';
 
 export interface PluginLoadError {
   pluginId: string;
@@ -90,7 +90,9 @@ async function executeScan(generation: number): Promise<{
       if (!enabled) continue;
 
       const start = performance.now();
-      const manifest = loadPluginFromSource(sp.code, sp.id);
+      const manifest = sp.hasMain
+        ? loadPluginFromSource(sp.code, sp.id)
+        : createThemeOnlyManifest(sp.id, sp.name, sp.version);
       const elapsed = performance.now() - start;
 
       timings.push({ pluginId: sp.id, pluginName: sp.name, loadTimeMs: elapsed });
@@ -98,6 +100,7 @@ async function executeScan(generation: number): Promise<{
         keymaps: sp.keymaps ?? [],
         menus: sp.menus ?? [],
         styles: sp.styles ?? [],
+        themes: sp.themes ?? [],
       };
 
       if (manifest) {
