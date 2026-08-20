@@ -31,9 +31,10 @@ CI on that PR is the gate. When it merges:
 
 - **Release** runs on `main`.
 - It reads commits since the last tag (`feat` → minor, `fix` → patch).
-- It bumps `package.json` + `apps/desktop/package.json`, writes `CHANGELOG.md`,
-  tags `vX.Y.Z`, opens a **draft** GitHub Release. If the What’s New file
-  exists, that body replaces the commit dump.
+- It tags `vX.Y.Z` on the merge SHA and opens a **draft** GitHub Release.
+  It does **not** push a version-bump commit to `main` (branch rules require
+  a PR). Build stamps `package.json` from the tag right before packaging.
+  If `docs/releases/vX.Y.Z.md` exists, that body is the GitHub notes.
 - **Build & Publish** starts from that success (not from the tag push — GitHub
   will not let `GITHUB_TOKEN` trigger another workflow via tags).
 - All three platforms green → the release is published → electron-updater sees

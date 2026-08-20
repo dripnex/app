@@ -32,26 +32,10 @@ export default {
         },
       },
     ],
-    '@semantic-release/changelog',
-    // The @semantic-release/git plugin below only COMMITS files; it does
-    // not mutate them. Without this exec step, package.json and
-    // apps/desktop/package.json stay at the previous version even after
-    // tag/release (the v0.15.0 bug). bump-version.mjs is a pure-ESM,
-    // zero-dependency script that only touches the `version` field of
-    // exactly the two files in scope.
-    [
-      '@semantic-release/exec',
-      {
-        prepareCmd: 'node scripts/bump-version.mjs ${nextRelease.version}',
-      },
-    ],
-    [
-      '@semantic-release/git',
-      {
-        assets: ['CHANGELOG.md', 'package.json', 'apps/desktop/package.json'],
-        message: 'chore(release): v${nextRelease.version} [skip ci]',
-      },
-    ],
+    // Do not commit version bumps to main. Branch rules require a PR;
+    // github-actions cannot push HEAD:main. The tag points at the merge
+    // SHA; Build & Publish runs bump-version.mjs from the tag name before
+    // electron-builder so the binary version is still correct.
     [
       '@semantic-release/github',
       {
