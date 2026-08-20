@@ -25,8 +25,11 @@ export function usePerformanceMode(): void {
 
   useEffect(() => {
     document.documentElement.dataset.perf = mode;
-    void window.dripnex?.windows?.setFrosted?.(mode !== 'low');
-  }, [mode]);
+    // Native vibrancy stays on unless the user picked Low. Auto + Reduce
+    // Motion used to flip this off and paint the window solid black.
+    const frost = saved !== 'low';
+    void window.dripnex?.windows?.setFrosted?.(frost);
+  }, [mode, saved]);
 
   useEffect(() => {
     const auto = detectPerfMode();
