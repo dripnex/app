@@ -19,6 +19,17 @@ const WIRED = new WeakSet<BrowserWindow>();
 const CLEAR = '#00000000';
 const OPAQUE = '#0a0b0d';
 
+/** Last value from `window:setFrosted`. New windows start from this. */
+let lastFrosted = true;
+
+export function preferredFrosted(): boolean {
+  return lastFrosted;
+}
+
+export function rememberFrosted(on: boolean): void {
+  lastFrosted = on;
+}
+
 function paintViewTree(view: View | undefined, color: string): void {
   if (!view) return;
   try {
@@ -76,7 +87,7 @@ export function applyFrosted(win: BrowserWindow, on: boolean): void {
   paintViewTree(win.contentView, on ? CLEAR : OPAQUE);
 }
 
-export function wireFrosted(win: BrowserWindow, initial = true): void {
+export function wireFrosted(win: BrowserWindow, initial = lastFrosted): void {
   applyFrosted(win, initial);
   if (WIRED.has(win)) return;
   WIRED.add(win);

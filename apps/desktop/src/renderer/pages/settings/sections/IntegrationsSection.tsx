@@ -124,8 +124,10 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
                 {accounts.map(name => (
                   <Button
                     key={name}
-                    variant={name === stored || name === draft ? 'secondary' : 'ghost'}
+                    variant="ghost"
                     size="sm"
+                    className={styles.chip}
+                    data-active={name === stored || name === draft ? 'true' : undefined}
                     onClick={() => void saveAccount(name)}
                   >
                     {name}

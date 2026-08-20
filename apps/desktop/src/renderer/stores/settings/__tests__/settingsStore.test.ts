@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_AI, DEFAULT_SETTINGS } from '../schema';
+import { DEFAULT_AI, DEFAULT_SETTINGS, SETTINGS_VERSION } from '../schema';
 import { partializeSettings, useSettingsStore } from '../settingsStore';
 
 describe('settingsStore persistence', () => {
@@ -36,6 +36,6 @@ describe('settingsStore persistence', () => {
 
   it('defaults next-edit suggestions to manual', () => {
     expect(DEFAULT_SETTINGS.ai.nesMode).toBe('manual');
-    expect(DEFAULT_SETTINGS.version).toBe(7);
+    expect(DEFAULT_SETTINGS.version).toBe(SETTINGS_VERSION);
   });
 });

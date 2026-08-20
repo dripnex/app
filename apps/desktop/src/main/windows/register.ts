@@ -5,7 +5,7 @@ import { createMainWindow } from './mainWindow.js';
 import { createNoteWindow } from './noteWindow.js';
 import { createQuickCaptureWindow } from './quickCaptureWindow.js';
 import { createSettingsWindow } from './settingsWindow.js';
-import { applyFrosted } from './vibrancy.js';
+import { applyFrosted, rememberFrosted } from './vibrancy.js';
 
 export function registerWindowHandlers(): void {
   ipcMain.handle('window:openNote', async (_event, noteId: string, noteTitle: string) => {
@@ -34,6 +34,7 @@ export function registerWindowHandlers(): void {
 
   ipcMain.handle('window:setFrosted', (_event, frosted: unknown) => {
     const on = frosted === true;
+    rememberFrosted(on);
     for (const win of BrowserWindow.getAllWindows()) {
       if (win.isDestroyed()) continue;
       applyFrosted(win, on);
