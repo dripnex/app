@@ -3,7 +3,7 @@
 Markdown-first, offline-forever desktop note app.
 
 [![License: MIT](https://img.shields.io/badge/Core-MIT-green.svg)](./LICENSE)
-[![Release](https://img.shields.io/github/v/release/dripnex/readide)](https://github.com/dripnex/readide/releases)
+[![Release](https://img.shields.io/github/v/release/dripnex/app)](https://github.com/dripnex/app/releases)
 
 ## About
 
@@ -13,8 +13,8 @@ This repository contains the **open-source core** of Dripnex. Core packages are 
 
 ```bash
 # Clone
-git clone https://github.com/dripnex/readide.git
-cd readide
+git clone https://github.com/dripnex/app.git
+cd app
 
 # Install
 pnpm install
@@ -43,7 +43,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 - [Website](https://dripnex.app)
 - [Documentation](https://dripnex.app/docs)
-- [Releases](https://github.com/dripnex/readide/releases)
+- [Releases](https://github.com/dripnex/app/releases)
 
 ## License
 

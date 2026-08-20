@@ -6,7 +6,7 @@ packaged-app checklist that CI cannot run.
 
 ## Auto-updater
 
-- **Repository**: `dripnex/readide`
+- **Repository**: `dripnex/app`
 - **Channel**: GitHub Releases (stable tags `vX.Y.Z`)
 - **Auto-download**: no (asks first)
 - **Auto-install**: yes (on quit)

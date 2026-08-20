@@ -1,4 +1,5 @@
 export default {
+  repositoryUrl: 'https://github.com/dripnex/app.git',
   branches: ['main', { name: 'beta', prerelease: true }],
   plugins: [
     [

@@ -12,10 +12,10 @@
   "homepage": "https://dripnex.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dripnex/readide.git"
+    "url": "https://github.com/dripnex/app.git"
   },
   "bugs": {
-    "url": "https://github.com/dripnex/readide/issues"
+    "url": "https://github.com/dripnex/app/issues"
   },
   "keywords": [
     "markdown",
