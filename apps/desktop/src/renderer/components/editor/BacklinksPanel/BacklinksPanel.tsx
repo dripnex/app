@@ -7,7 +7,8 @@
 
 import { memo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Link2, FileText, AlertCircle } from 'lucide-react';
+import { X, Link2, FileText, AlertCircle } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { useBacklinks } from '../../../hooks/useLinks';
 import styles from './BacklinksPanel.module.css';
 
@@ -80,7 +81,7 @@ export const BacklinksPanel = memo(function BacklinksPanel({
     if (error) {
       return (
         <div className={styles.emptyState}>
-          <AlertCircle size={24} className={styles.emptyIcon} />
+          <Icon icon={AlertCircle} size={24} className={styles.emptyIcon} />
           <span className={styles.emptyText}>Failed to load backlinks</span>
         </div>
       );
@@ -89,7 +90,7 @@ export const BacklinksPanel = memo(function BacklinksPanel({
     if (!backlinks || backlinks.length === 0) {
       return (
         <div className={styles.emptyState}>
-          <Link2 size={24} className={styles.emptyIcon} />
+          <Icon icon={Link2} size={24} className={styles.emptyIcon} />
           <span className={styles.emptyText}>No backlinks yet</span>
           <span className={styles.emptyHint}>
             Notes that link to this note using [[wikilinks]] will appear here.
@@ -108,7 +109,7 @@ export const BacklinksPanel = memo(function BacklinksPanel({
             onClick={() => handleBacklinkClick(backlink.noteId)}
           >
             <span className={styles.icon}>
-              <FileText size={16} />
+              <Icon icon={FileText} size={16} />
             </span>
             <span className={styles.itemContent}>
               <span className={styles.itemTitle}>{backlink.noteTitle}</span>
@@ -140,7 +141,7 @@ export const BacklinksPanel = memo(function BacklinksPanel({
         {/* Header */}
         <header className={styles.header}>
           <h2 className={styles.title}>
-            <Link2 size={16} />
+            <Icon icon={Link2} size={16} />
             Backlinks
             {backlinks && backlinks.length > 0 && (
               <span className={styles.count}>{backlinks.length}</span>
@@ -152,7 +153,7 @@ export const BacklinksPanel = memo(function BacklinksPanel({
             onClick={onClose}
             aria-label="Close backlinks panel"
           >
-            <X size={18} />
+            <Icon icon={X} size={18} />
           </button>
         </header>
 

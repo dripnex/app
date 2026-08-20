@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FileStack } from 'lucide-react';
+import { FileStack } from 'lucide';
 import { noteInstruction } from '@dripnex/core';
+import { Icon } from '../../ui/icons/Icon';
 import type { NoteSnapshot } from '../../../preload/index';
 import { useNotes } from '../../hooks/useNotes';
 import styles from '../NotebookPicker/NotebookPicker.module.css';
@@ -62,7 +63,7 @@ export function TemplatePicker({ onSelect, onClose }: TemplatePickerProps) {
     >
       <div ref={pickerRef} className={styles.picker} role="dialog" aria-label="New from template">
         <div className={styles.searchWrapper}>
-          <FileStack size={16} className={styles.searchIcon} />
+          <Icon icon={FileStack} size={16} className={styles.searchIcon} />
           <input
             ref={inputRef}
             type="search"
@@ -83,7 +84,7 @@ export function TemplatePicker({ onSelect, onClose }: TemplatePickerProps) {
               return (
                 <li key={note.id}>
                   <button type="button" className={styles.item} onClick={() => handleSelect(note)}>
-                    <FileStack size={14} />
+                    <Icon icon={FileStack} size={14} />
                     <span className={styles.itemCopy}>
                       <span>{note.title || 'Untitled'}</span>
                       {instruction ? <span className={styles.itemHint}>{instruction}</span> : null}

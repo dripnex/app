@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { toast } from '../../../../ui/primitives';
+import { SettingsCard } from '../../components/SettingsCard';
 import { COMMUNITY_CATALOG } from './communityCatalog';
 import styles from './Plugins.module.css';
 
@@ -123,7 +124,7 @@ export function BrowseTab() {
           const isInstalled = installed.has(plugin.slug);
           const busy = busyId === plugin.slug;
           return (
-            <div key={plugin.slug} className={styles.pluginCard}>
+            <SettingsCard key={plugin.slug} flush>
               <div className={styles.pluginCardHeader}>
                 <div className={styles.pluginCardInfo}>
                   <div className={styles.pluginCardMeta}>
@@ -160,7 +161,7 @@ export function BrowseTab() {
                   )}
                 </div>
               </div>
-            </div>
+            </SettingsCard>
           );
         })}
       </div>

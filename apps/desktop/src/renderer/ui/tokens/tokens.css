@@ -117,6 +117,9 @@
   /* ── Layout ───────────────────────────────────────────────────────────────── */
   --sidebar-width: 200px;
   --list-width: 280px;
+  --chrome-header-height: 44px;
+  --chrome-header-padding: 8px 10px;
+  --chrome-traffic-inset: 72px;
 
   /* ── Radii ────────────────────────────────────────────────────────────────── */
   --radius-sm: 4px;

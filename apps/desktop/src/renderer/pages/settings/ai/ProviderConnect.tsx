@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle, ExternalLink, KeyRound, Loader2 } from 'lucide-react';
+import { CheckCircle, ExternalLink, KeyRound, Loader2 } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { Button, Field, Input } from '../../../ui/primitives';
 import type { ProviderCatalogItem } from './providers';
 import { SaveProviderKey } from './SaveProviderKey';
@@ -58,7 +59,7 @@ export function ProviderConnect({
       <div className={styles.savedBlock}>
         <div className={styles.saved}>
           <div className={styles.savedCopy}>
-            <CheckCircle size={14} className={styles.savedIcon} />
+            <Icon icon={CheckCircle} size={14} className={styles.savedIcon} />
             <div>
               <div className={styles.savedTitle}>Saved in the keychain</div>
               <div className={styles.savedKey}>{maskKey(storedKey || value)}</div>
@@ -82,7 +83,7 @@ export function ProviderConnect({
     <div className={styles.form}>
       <a className={styles.authorize} href={item.keyUrl} target="_blank" rel="noreferrer">
         Continue with {item.name}
-        <ExternalLink size={12} />
+        <Icon icon={ExternalLink} size={12} />
       </a>
       <p className={styles.or}>
         Then paste the key once. Providers do not offer a public OAuth for apps yet.
@@ -90,7 +91,7 @@ export function ProviderConnect({
       <Field
         label={
           <>
-            <KeyRound size={12} />
+            <Icon icon={KeyRound} size={12} />
             API key
           </>
         }
@@ -161,7 +162,7 @@ export function OllamaConnect({
       {connected ? (
         <div className={styles.saved}>
           <div className={styles.savedCopy}>
-            <CheckCircle size={14} className={styles.savedIcon} />
+            <Icon icon={CheckCircle} size={14} className={styles.savedIcon} />
             <div>
               <div className={styles.savedTitle}>Ollama is reachable</div>
               <div className={styles.savedKey}>{url || 'http://127.0.0.1:11434'}</div>
@@ -193,12 +194,12 @@ export function OllamaConnect({
               rel="noreferrer"
             >
               Install Ollama
-              <ExternalLink size={11} />
+              <Icon icon={ExternalLink} size={11} />
             </a>
             <Button variant="primary" size="sm" loading={connecting} onClick={onConnect}>
               {connecting ? (
                 <>
-                  <Loader2 size={12} />
+                  <Icon icon={Loader2} size={12} />
                   Checking…
                 </>
               ) : (

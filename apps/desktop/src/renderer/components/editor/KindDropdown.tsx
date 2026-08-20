@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, memo } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import { NOTE_KINDS, kindMeta, type NoteKind } from '../../lib/knowledge';
 import { useDropdownPosition } from '../../hooks/useDropdownPosition';
 import { sc } from './sc';
@@ -56,7 +57,7 @@ export const KindDropdown = memo(function KindDropdown({ kind, onChange }: KindD
           }}
         />
         <span>{current.label}</span>
-        <ChevronDown size={12} className={sc('chevron-icon')} />
+        <Icon icon={ChevronDown} size={12} className={sc('chevron-icon')} />
       </button>
 
       {isOpen ? (
@@ -95,7 +96,7 @@ export const KindDropdown = memo(function KindDropdown({ kind, onChange }: KindD
               <span className={sc('item-label')}>{item.label}</span>
               {item.id === kind ? (
                 <span className={sc('item-check')}>
-                  <Check size={14} />
+                  <Icon icon={Check} size={14} />
                 </span>
               ) : null}
             </button>

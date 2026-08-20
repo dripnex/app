@@ -7,12 +7,16 @@ import {
   X,
   SquarePen,
   FileStack,
+  Files,
   PanelLeft,
+  PanelLeftClose,
+  Plus,
   Pin,
   PinOff,
   Globe,
-} from 'lucide-react';
+} from 'lucide';
 import { LayoutZone } from '@dripnex/plugin-api';
+import { Icon } from '../ui/icons/Icon';
 import { useNotebookList, useNotebook } from '../hooks/useNotebooks';
 import type { NoteWithExcerpt, SortBy, SortOrder } from '../hooks/useNavigation';
 import type { NoteStatus } from '../../preload/index';
@@ -85,17 +89,17 @@ function NoteListSkeleton() {
 function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-results' }) {
   const content = {
     'no-notes': {
-      icon: <Sparkles size={32} />,
+      icon: <Icon icon={Sparkles} size={32} />,
       title: 'No notes yet',
       hint: 'Press ⌘N to create your first note',
     },
     'no-archived': {
-      icon: <Archive size={32} />,
+      icon: <Icon icon={Archive} size={32} />,
       title: 'Trash is empty',
       hint: 'Deleted notes will appear here',
     },
     'no-results': {
-      icon: <Search size={32} />,
+      icon: <Icon icon={Search} size={32} />,
       title: 'No matches found',
       hint: 'Try a different search term',
     },
@@ -272,25 +276,25 @@ export function NoteList({
             pressed={!sidebarCollapsed}
             onClick={onToggleSidebar}
           >
-            <PanelLeft size={16} aria-hidden="true" />
+            <Icon icon={sidebarCollapsed ? PanelLeft : PanelLeftClose} size={16} />
           </IconButton>
         ) : null}
         <span className={sc('header-title')}>{getHeaderTitle()}</span>
         <LayoutZone name="note-list-header" />
         {onCreateFromTemplate && selectedNotebookId !== 'templates' ? (
           <IconButton label="New from template" onClick={() => setTemplatePickerOpen(true)}>
-            <FileStack size={16} aria-hidden="true" />
+            <Icon icon={FileStack} hoverIcon={Files} size={16} />
           </IconButton>
         ) : null}
         <IconButton label="Create new note" onClick={onNewNote}>
-          <SquarePen size={16} aria-hidden="true" />
+          <Icon icon={SquarePen} hoverIcon={Plus} size={16} />
         </IconButton>
       </div>
 
       {/* Search bar with icon + filter toggle */}
       <div className={sc('note-list-search')}>
         <div className={sc('search-input-wrapper')}>
-          <Filter size={14} className={sc('search-icon')} aria-hidden="true" />
+          <Icon icon={Filter} hoverIcon={Search} size={14} className={sc('search-icon')} />
           <label htmlFor="note-search" className="visually-hidden">
             Filter notes
           </label>
@@ -310,7 +314,7 @@ export function NoteList({
               aria-label="Clear filter"
               type="button"
             >
-              <X size={14} />
+              <Icon icon={X} size={14} />
             </button>
           )}
         </div>
@@ -452,9 +456,15 @@ function NoteListItem({
     >
       <div className={sc('note-list-item-title')}>
         <span className={sc('kind-dot')} style={{ background: kind.color }} title={kind.label} />
-        {note.isPinned && <Pin size={12} className={sc('pin-icon')} aria-label="Pinned" />}
-        {showUnpinEffect && <PinOff size={12} className={sc('unpin-icon')} aria-hidden="true" />}
-        {isShared && <Globe size={12} className={sc('share-icon')} aria-label="Shared" />}
+        {note.isPinned && (
+          <Icon icon={Pin} size={12} className={sc('pin-icon')} aria-label="Pinned" />
+        )}
+        {showUnpinEffect && (
+          <Icon icon={PinOff} size={12} className={sc('unpin-icon')} aria-hidden="true" />
+        )}
+        {isShared && (
+          <Icon icon={Globe} size={12} className={sc('share-icon')} aria-label="Shared" />
+        )}
         {note.title || 'Untitled'}
       </div>
       <div className={sc('note-list-item-meta')}>

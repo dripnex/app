@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import githubLogo from '@lobehub/icons-static-svg/icons/github.svg';
 import { Button, Field, Input } from '../../../ui/primitives';
+import { SettingsCard } from '../components/SettingsCard';
 import { getGitHubApi } from '../../../integrations/host';
 import type { GitHubWatcher } from '../../../../preload/api/integrations';
 import styles from './IntegrationsSection.module.css';
@@ -119,7 +120,7 @@ export function GitHubCard() {
   const connected = Boolean(login);
 
   return (
-    <article className={styles.card} data-tone={connected ? 'ok' : 'idle'}>
+    <SettingsCard tone={connected ? 'ok' : 'idle'}>
       <div className={styles.cardTop}>
         <span className={styles.brandMark} aria-hidden="true">
           <img src={githubLogo} alt="" />
@@ -265,6 +266,6 @@ export function GitHubCard() {
 
       {message ? <p className={styles.hintOk}>{message}</p> : null}
       {error ? <p className={styles.error}>{error}</p> : null}
-    </article>
+    </SettingsCard>
   );
 }

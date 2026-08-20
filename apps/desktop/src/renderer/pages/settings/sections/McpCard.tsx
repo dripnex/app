@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bot, Check, Copy, Eye, EyeOff } from 'lucide-react';
+import { Bot, Check, Copy, Eye, EyeOff } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { Button, Field, Toggle } from '../../../ui/primitives';
+import { SettingsCard } from '../components/SettingsCard';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import {
   buildClaudeSnippet,
@@ -88,10 +90,10 @@ export function McpCard() {
   const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
   return (
-    <article className={styles.card} data-tone={badgeTone}>
+    <SettingsCard tone={badgeTone}>
       <div className={styles.cardTop}>
         <span className={styles.brandMark} aria-hidden="true">
-          <Bot size={18} />
+          <Icon icon={Bot} size={18} />
         </span>
         <div className={styles.cardCopy}>
           <div className={styles.cardNameRow}>
@@ -147,7 +149,7 @@ export function McpCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                icon={showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                icon={showToken ? <Icon icon={EyeOff} size={14} /> : <Icon icon={Eye} size={14} />}
                 onClick={() => setShowToken(v => !v)}
               >
                 {showToken ? 'Hide' : 'Show'}
@@ -195,7 +197,7 @@ export function McpCard() {
       ) : null}
 
       {error ? <p className={styles.error}>{error}</p> : null}
-    </article>
+    </SettingsCard>
   );
 }
 
@@ -212,7 +214,7 @@ function CopyButton({
     <Button
       variant="ghost"
       size="sm"
-      icon={copied ? <Check size={14} /> : <Copy size={14} />}
+      icon={copied ? <Icon icon={Check} size={14} /> : <Icon icon={Copy} size={14} />}
       onClick={onClick}
     >
       {copied ? 'Copied' : label}

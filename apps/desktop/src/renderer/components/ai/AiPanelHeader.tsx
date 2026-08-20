@@ -1,5 +1,6 @@
-import { X, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucide-react';
+import { X, Trash2, ArrowDownToLine, BookOpen, MessageSquare } from 'lucide';
 import type { AiPanelMode } from '@dripnex/ai-core';
+import { Icon } from '../../ui/icons/Icon';
 import { sc } from './sc';
 
 interface AiPanelHeaderProps {
@@ -54,7 +55,11 @@ export function AiPanelHeader({
           onClick={onToggleMode}
           title={mode === 'ask-notes' ? 'Switch to Chat mode' : 'Switch to Ask Notes mode'}
         >
-          {mode === 'ask-notes' ? <MessageSquare size={14} /> : <BookOpen size={14} />}
+          {mode === 'ask-notes' ? (
+            <Icon icon={MessageSquare} size={14} />
+          ) : (
+            <Icon icon={BookOpen} size={14} />
+          )}
         </button>
         {lastAssistantExists && (
           <button
@@ -62,16 +67,16 @@ export function AiPanelHeader({
             onClick={onInsertLast}
             title="Insert last response into note"
           >
-            <ArrowDownToLine size={14} />
+            <Icon icon={ArrowDownToLine} size={14} />
           </button>
         )}
         {hasMessages && (
           <button className={sc('ai-panel-btn')} onClick={onClear} title="Clear conversation">
-            <Trash2 size={14} />
+            <Icon icon={Trash2} size={14} />
           </button>
         )}
         <button className={sc('ai-panel-btn')} onClick={onClose} title="Close">
-          <X size={14} />
+          <Icon icon={X} size={14} />
         </button>
       </div>
     </div>

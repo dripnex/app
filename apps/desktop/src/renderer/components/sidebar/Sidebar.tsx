@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { LayoutZone } from '@dripnex/plugin-api';
-import { ChevronRight, FileStack, Trash2 } from 'lucide-react';
+import { ChevronRight, FileStack, Trash, Trash2 } from 'lucide';
 import { useQueryClient } from '@tanstack/react-query';
+import { Icon } from '../../ui/icons/Icon';
 import { DEFAULT_TEMPLATES } from '../../data/defaultTemplates';
 import { useNoteMutations, useNotebookNotesCount } from '../../hooks/useNotes';
 import { notebookKeys, useNotebookMutations } from '../../hooks/useNotebooks';
@@ -134,6 +135,26 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     (workspaceListAll || (!inWorkspace && !isNotebookContext));
   const showNotebooks = true;
   const showTrash = !inWorkspace;
+  const [binOpen, setBinOpen] = useState(false);
+  const prevDeleted = useRef(globalCounts.deleted);
+  const binTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    const next = globalCounts.deleted;
+    if (next > prevDeleted.current) {
+      setBinOpen(true);
+      if (binTimerRef.current !== null) window.clearTimeout(binTimerRef.current);
+      binTimerRef.current = window.setTimeout(() => {
+        setBinOpen(false);
+        binTimerRef.current = null;
+      }, 520);
+    }
+    prevDeleted.current = next;
+  }, [globalCounts.deleted]);
+  useEffect(() => {
+    return () => {
+      if (binTimerRef.current !== null) window.clearTimeout(binTimerRef.current);
+    };
+  }, []);
 
   const handleSelectNotebook = useCallback(
     (id: string) => {
@@ -228,11 +249,13 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
         className={sc('sidebar-content', 'sidebar-pane', `sidebar-pane--${paneDirection}`)}
         key={workspaceRootId ?? 'root'}
       >
-        <SidebarQuickFilters
-          allNotesCount={scoped.all}
-          allNotesSelected={allNotesSelected}
-          onSelectAll={goToAllInCurrentContext}
-        />
+        {!inWorkspace ? (
+          <SidebarQuickFilters
+            allNotesCount={scoped.all}
+            allNotesSelected={allNotesSelected}
+            onSelectAll={goToAllInCurrentContext}
+          />
+        ) : null}
 
         {!isNotebookContext && (
           <div className={sc('sidebar-templates')}>
@@ -243,7 +266,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
                 onClick={() => void openTemplates()}
               >
                 <span className={sc('sidebar-row-icon')} aria-hidden="true">
-                  <FileStack size={15} />
+                  <Icon icon={FileStack} size={15} />
                 </span>
                 <span className={sc('sidebar-row-label')}>Note Templates</span>
                 {templateCount > 0 ? (
@@ -257,7 +280,8 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
                 title="Switch to workspace view"
               >
                 Detail
-                <ChevronRight
+                <Icon
+                  icon={ChevronRight}
                   size={10}
                   className={sc('sidebar-row-detail-chevron')}
                   aria-hidden="true"
@@ -324,7 +348,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
             aria-pressed={globalFilter === 'trash'}
           >
             <span className={sc('sidebar-row-icon')} aria-hidden="true">
-              <Trash2 size={15} />
+              <Icon icon={binOpen ? Trash : Trash2} hoverIcon={Trash} size={15} />
             </span>
             <span className={sc('sidebar-row-label')}>Trash</span>
             <span className={sc('sidebar-row-count')}>{globalCounts.deleted}</span>

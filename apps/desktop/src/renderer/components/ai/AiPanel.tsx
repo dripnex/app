@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send } from 'lucide-react';
+import { Send } from 'lucide';
 import type { ChatMessage, NoteContext, AiPanelMode } from '@dripnex/ai-core';
+import { Icon } from '../../ui/icons/Icon';
 import { useSettingsStore, selectAi } from '../../stores/settings';
 import { AiMessage } from './AiMessage';
 import { AiPanelHeader } from './AiPanelHeader';
@@ -309,7 +310,7 @@ export function AiPanel({
           disabled={!input.trim() || loading}
           title="Send (Enter)"
         >
-          <Send size={16} />
+          <Icon icon={Send} size={16} />
         </button>
       </div>
     </div>

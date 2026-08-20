@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { Columns2, Eye, PenLine } from 'lucide-react';
+import { Columns2, Eye, PenLine } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import type { EditorViewMode } from '../../stores/editorPreferencesStore';
 import { sc } from '../noteEditorSc';
 
@@ -8,10 +9,10 @@ interface EditorViewToggleProps {
   readonly onModeChange: (mode: EditorViewMode) => void;
 }
 
-const MODES: Array<{ id: EditorViewMode; label: string; Icon: typeof PenLine }> = [
-  { id: 'editor', label: 'Edit', Icon: PenLine },
-  { id: 'split', label: 'Split', Icon: Columns2 },
-  { id: 'preview', label: 'Preview', Icon: Eye },
+const MODES: Array<{ id: EditorViewMode; label: string; icon: typeof PenLine }> = [
+  { id: 'editor', label: 'Edit', icon: PenLine },
+  { id: 'split', label: 'Split', icon: Columns2 },
+  { id: 'preview', label: 'Preview', icon: Eye },
 ];
 
 export const EditorViewToggle = memo(function EditorViewToggle({
@@ -20,7 +21,7 @@ export const EditorViewToggle = memo(function EditorViewToggle({
 }: EditorViewToggleProps) {
   return (
     <div className={sc('editor-view-toggle')} role="group" aria-label="View mode">
-      {MODES.map(({ id, label, Icon }) => (
+      {MODES.map(({ id, label, icon }) => (
         <button
           key={id}
           type="button"
@@ -30,7 +31,7 @@ export const EditorViewToggle = memo(function EditorViewToggle({
           aria-label={label}
           aria-pressed={mode === id}
         >
-          <Icon size={16} />
+          <Icon icon={icon} size={16} />
         </button>
       ))}
     </div>

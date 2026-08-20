@@ -34,10 +34,10 @@ import {
   SquareArrowOutUpRight,
   Sparkles,
   PenLine,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+} from 'lucide';
 import type { CommandCategory } from '@dripnex/command-registry';
 import { LayoutZone } from '@dripnex/plugin-api';
+import { Icon, type IconInput } from '../ui/icons/Icon';
 import {
   useCommandRegistry,
   dispatchCommand,
@@ -75,7 +75,7 @@ interface NoteHit {
   title: string;
 }
 
-const ICON_MAP: Record<string, LucideIcon> = {
+const ICON_MAP: Record<string, IconInput> = {
   Bold,
   Italic,
   Strikethrough,
@@ -375,7 +375,7 @@ export function CommandPalette({
         }}
       >
         <div className={sc('command-palette-input-wrapper')}>
-          <Search size={16} />
+          <Icon icon={Search} size={16} />
           <input
             ref={inputRef}
             className={sc('command-palette-input')}
@@ -429,7 +429,7 @@ export function CommandPalette({
                       onMouseEnter={() => setSelectedIndex(index)}
                     >
                       <span className={sc('command-palette-item-icon')}>
-                        {IconComponent ? <IconComponent size={14} /> : null}
+                        {IconComponent ? <Icon icon={IconComponent} size={14} /> : null}
                       </span>
                       <span className={sc('command-palette-item-name')}>{cmd.name}</span>
                       <span className={sc('command-palette-item-category')}>{group.label}</span>
@@ -448,7 +448,7 @@ export function CommandPalette({
               ) : null}
               {flatItems.map((item, index) => {
                 const isActive = index === selectedIndex;
-                const Icon =
+                const itemIcon =
                   item.type === 'notebook'
                     ? BookMarked
                     : item.type === 'tag' || item.type === 'heading'
@@ -477,7 +477,7 @@ export function CommandPalette({
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <span className={sc('command-palette-item-icon')}>
-                      <Icon size={14} />
+                      <Icon icon={itemIcon} size={14} />
                     </span>
                     <span className={sc('command-palette-item-name')}>
                       {item.type === 'command' ? item.id : item.title}

@@ -6,7 +6,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ForceGraph2D from 'react-force-graph-2d';
-import { X } from 'lucide-react';
+import { X } from 'lucide';
+import { Icon } from '../ui/icons/Icon';
 import { useGraphData } from '../hooks/useLinks';
 import { noteKeys } from '../hooks/useNotes';
 import { Input } from '../ui/primitives';
@@ -494,7 +495,7 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
           </div>
           {onClose ? (
             <button type="button" className={styles.iconBtn} onClick={onClose} title="Close graph">
-              <X size={14} />
+              <Icon icon={X} size={14} />
             </button>
           ) : null}
         </div>

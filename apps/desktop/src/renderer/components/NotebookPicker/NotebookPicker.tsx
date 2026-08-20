@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide';
+import { Icon } from '../../ui/icons/Icon';
 import type { NotebookSnapshot } from '../../../preload/index';
 import styles from './NotebookPicker.module.css';
 
@@ -76,7 +77,7 @@ export function NotebookPicker({
       <div ref={pickerRef} className={styles.picker}>
         {/* Search input */}
         <div className={styles.searchWrapper}>
-          <FolderOpen size={16} className={styles.searchIcon} />
+          <Icon icon={FolderOpen} size={16} className={styles.searchIcon} />
           <input
             ref={inputRef}
             type="text"

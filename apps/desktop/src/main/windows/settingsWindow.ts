@@ -20,7 +20,7 @@ export function createSettingsWindow(): BrowserWindow {
     show: false,
     icon: resolveAppIconPath(),
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
+    trafficLightPosition: { x: 8, y: 8 },
     backgroundColor: '#0a0b0d',
     title: 'Settings',
     webPreferences: {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { startCloudSyncIfReady, selectEmail, useAuthStore } from '../../../stores/authStore';
 import { downloadEmergencyKit, printEmergencyKit } from '../../../utils/emergencyKit';
 import { downloadOnePasswordCsv } from '../../../utils/onePasswordCsv';
@@ -11,6 +12,7 @@ import { SaveToOnePasswordButton } from '../../../components/sync/SaveToOnePassw
 import { formatRecoveryKey, scorePassphrase } from '../../../utils/passphrase';
 import { SettingGroup } from '../components/SettingGroup';
 import { SettingRow } from '../components/SettingRow';
+import { SettingsPage } from '../components/SettingsPage';
 import { Button, Input } from '../../../ui/primitives';
 import styles from './Section.module.css';
 
@@ -171,16 +173,14 @@ export function EncryptionSection() {
       : 'Not set up';
 
   return (
-    <div className={styles.section}>
-      <h2 className={styles.title}>Encryption</h2>
-      <p className={styles.lede}>
-        Notes are encrypted on this device before they sync. The passphrase is never stored.
-      </p>
-
+    <SettingsPage
+      title="Encryption"
+      lede="Notes are encrypted on this device before they sync. The passphrase is never stored."
+    >
       <SettingGroup title="Status">
         <SettingRow label="This device" description={stateLabel}>
           <div className={styles.statusBadge} data-tone={status.ready ? 'ok' : 'warn'}>
-            {status.ready ? <Unlock size={14} /> : <Lock size={14} />}
+            <Icon icon={status.ready ? Unlock : Lock} size={14} />
             <span>{status.ready ? 'Ready' : 'Locked'}</span>
           </div>
         </SettingRow>
@@ -274,7 +274,7 @@ export function EncryptionSection() {
             <Button
               variant="primary"
               size="sm"
-              icon={<Unlock size={14} />}
+              icon={<Icon icon={Unlock} size={14} />}
               loading={busy}
               onClick={() => void handleUnlock()}
             >
@@ -322,6 +322,6 @@ export function EncryptionSection() {
 
       {error ? <p className={styles.errorMessage}>{error}</p> : null}
       {message ? <p className={styles.version}>{message}</p> : null}
-    </div>
+    </SettingsPage>
   );
 }

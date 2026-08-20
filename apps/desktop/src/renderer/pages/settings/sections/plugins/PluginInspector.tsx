@@ -3,7 +3,8 @@
  */
 
 import { useState, useCallback, useSyncExternalStore } from 'react';
-import { RefreshCw, ChevronDown, AlertTriangle } from 'lucide-react';
+import { RefreshCw, ChevronDown, AlertTriangle } from 'lucide';
+import { Icon } from '../../../../ui/icons/Icon';
 import { pluginRuntimeStore } from '../../../../stores/pluginRuntimeStore';
 import { Button } from '../../../../ui/primitives';
 import styles from './Plugins.module.css';
@@ -41,7 +42,8 @@ export function PluginInspector() {
         aria-expanded={open}
         aria-controls="plugin-inspector-panel"
       >
-        <ChevronDown
+        <Icon
+          icon={ChevronDown}
           size={14}
           style={{
             transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
@@ -51,7 +53,7 @@ export function PluginInspector() {
         <span>Developer</span>
         {errors.length > 0 && (
           <span className={styles.inspectorErrorBadge}>
-            <AlertTriangle size={12} />
+            <Icon icon={AlertTriangle} size={12} />
             {errors.length}
           </span>
         )}
@@ -102,7 +104,7 @@ export function PluginInspector() {
             <Button
               variant="secondary"
               size="sm"
-              icon={<RefreshCw size={14} />}
+              icon={<Icon icon={RefreshCw} size={14} />}
               onClick={handleForceReload}
             >
               Force Reload All

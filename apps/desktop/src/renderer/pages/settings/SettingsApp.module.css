@@ -9,7 +9,7 @@
 .content {
   flex: 1;
   min-width: 0;
-  padding: 52px 36px 40px;
+  padding: var(--chrome-header-height) var(--space-8) var(--space-10);
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--bg-base);

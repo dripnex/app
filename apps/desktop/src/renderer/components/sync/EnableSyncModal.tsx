@@ -10,10 +10,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { X } from 'lucide-react';
-import { seedGeneratedPassphrase } from './PassphraseCreateForm';
-import { scorePassphrase } from '../../utils/passphrase';
+import { X } from 'lucide';
 import { getProductConfig } from '@dripnex/product-config';
+import { scorePassphrase } from '../../utils/passphrase';
+import { Icon } from '../../ui/icons/Icon';
 import {
   useAuthStore,
   selectIsAuthenticated,
@@ -22,6 +22,7 @@ import {
   startCloudSyncIfReady,
 } from '../../stores/authStore';
 import { useLicense } from '../../contexts/LicenseContext';
+import { seedGeneratedPassphrase } from './PassphraseCreateForm';
 import {
   CheckingStep,
   EmailStep,
@@ -315,7 +316,7 @@ export function EnableSyncModal({ isOpen, onClose }: EnableSyncModalProps) {
           onClick={handleClose}
           aria-label="Close"
         >
-          <X size={20} />
+          <Icon icon={X} size={20} />
         </button>
 
         <div className={styles.content}>

@@ -11,7 +11,8 @@ import {
   Puzzle,
   RotateCcw,
   Blocks,
-} from 'lucide-react';
+} from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import { toast } from '../../../ui/primitives';
 import { useSettingsStore } from '../../../stores/settings';
 import type { SettingsSection } from '../SettingsApp';
@@ -22,19 +23,18 @@ interface SettingsSidebarProps {
   onSectionChange: (section: SettingsSection) => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sections: { id: SettingsSection; label: string; Icon: any }[] = [
-  { id: 'general', label: 'General', Icon: Settings },
-  { id: 'editor', label: 'Editor', Icon: FileText },
-  { id: 'appearance', label: 'Appearance', Icon: Palette },
-  { id: 'ai', label: 'AI Assistant', Icon: Sparkles },
-  { id: 'plugins', label: 'Plugins', Icon: Puzzle },
-  { id: 'account', label: 'Account', Icon: User },
-  { id: 'encryption', label: 'Encryption', Icon: KeyRound },
-  { id: 'integrations', label: 'Integrations', Icon: Blocks },
-  { id: 'backup', label: 'Backup & Data', Icon: Database },
-  { id: 'updates', label: 'Updates', Icon: Download },
-  { id: 'about', label: 'About', Icon: Info },
+const sections: { id: SettingsSection; label: string; icon: typeof Settings }[] = [
+  { id: 'general', label: 'General', icon: Settings },
+  { id: 'editor', label: 'Editor', icon: FileText },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'ai', label: 'AI Assistant', icon: Sparkles },
+  { id: 'plugins', label: 'Plugins', icon: Puzzle },
+  { id: 'account', label: 'Account', icon: User },
+  { id: 'encryption', label: 'Encryption', icon: KeyRound },
+  { id: 'integrations', label: 'Integrations', icon: Blocks },
+  { id: 'backup', label: 'Backup & Data', icon: Database },
+  { id: 'updates', label: 'Updates', icon: Download },
+  { id: 'about', label: 'About', icon: Info },
 ];
 
 export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSidebarProps) {
@@ -51,24 +51,20 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
     <aside className={styles.sidebar}>
       <div className={styles.header} aria-hidden="true" />
       <nav className={styles.nav}>
-        {sections.map(section => {
-          const { Icon } = section;
-          return (
-            <button
-              key={section.id}
-              className={`${styles.navItem} ${activeSection === section.id ? styles.active : ''}`}
-              onClick={() => onSectionChange(section.id)}
-            >
-              <Icon size={16} className={styles.icon} />
-              <span className={styles.label}>{section.label}</span>
-            </button>
-          );
-        })}
+        {sections.map(section => (
+          <button
+            key={section.id}
+            className={`${styles.navItem} ${activeSection === section.id ? styles.active : ''}`}
+            onClick={() => onSectionChange(section.id)}
+          >
+            <Icon icon={section.icon} size={16} className={styles.icon} />
+            <span className={styles.label}>{section.label}</span>
+          </button>
+        ))}
       </nav>
       <div className={styles.footer}>
-        <div className={styles.separator} />
         <button className={styles.resetButton} onClick={handleResetAll}>
-          <RotateCcw size={14} className={styles.icon} />
+          <Icon icon={RotateCcw} size={16} className={styles.icon} />
           <span>Reset to Defaults</span>
         </button>
       </div>

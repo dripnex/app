@@ -8,7 +8,8 @@
 
 import { memo, useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, History, GitCommitHorizontal, AlertCircle, RotateCcw, Copy, Check } from 'lucide-react';
+import { X, History, GitCommitHorizontal, AlertCircle, RotateCcw, Copy, Check } from 'lucide';
+import { Icon } from '../../../ui/icons/Icon';
 import styles from './RevisionHistoryPanel.module.css';
 
 interface GitCommit {
@@ -221,7 +222,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     if (error) {
       return (
         <div className={styles.emptyState}>
-          <AlertCircle size={24} className={styles.emptyIcon} />
+          <Icon icon={AlertCircle} size={24} className={styles.emptyIcon} />
           <span className={styles.emptyText}>{error}</span>
           <span className={styles.emptyHint}>
             Git must be enabled for this notebook to view revision history.
@@ -233,7 +234,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
     if (commits.length === 0) {
       return (
         <div className={styles.emptyState}>
-          <History size={24} className={styles.emptyIcon} />
+          <Icon icon={History} size={24} className={styles.emptyIcon} />
           <span className={styles.emptyText}>No revisions yet</span>
           <span className={styles.emptyHint}>
             Commits will appear here as you edit notes in this notebook.
@@ -276,7 +277,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
                 </div>
                 <div className={styles.timelineMessage}>{commit.message}</div>
                 <div className={styles.timelineMeta}>
-                  <GitCommitHorizontal size={11} />
+                  <Icon icon={GitCommitHorizontal} size={11} />
                   <span className={styles.commitSha}>{commit.oid.slice(0, 7)}</span>
                   <span
                     className={`${styles.wordDelta} ${
@@ -314,7 +315,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
       >
         <header className={styles.header}>
           <h2 className={styles.title}>
-            <History size={16} />
+            <Icon icon={History} size={16} />
             Revision History
             {commits.length > 0 && <span className={styles.count}>{commits.length}</span>}
           </h2>
@@ -324,7 +325,7 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
             onClick={onClose}
             aria-label="Close revision history"
           >
-            <X size={18} />
+            <Icon icon={X} size={18} />
           </button>
         </header>
 
@@ -398,11 +399,11 @@ export const RevisionHistoryPanel = memo(function RevisionHistoryPanel({
                     className={styles.actionBtnPrimary}
                     onClick={() => handleRestore(selectedCommit)}
                   >
-                    <RotateCcw size={13} />
+                    <Icon icon={RotateCcw} size={13} />
                     Restore this version
                   </button>
                   <button type="button" className={styles.actionBtn} onClick={handleCopyDetails}>
-                    {copied ? <Check size={13} /> : <Copy size={13} />}
+                    {copied ? <Icon icon={Check} size={13} /> : <Icon icon={Copy} size={13} />}
                     {copied ? 'Copied' : 'Copy content'}
                   </button>
                 </div>

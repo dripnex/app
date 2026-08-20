@@ -8,27 +8,11 @@ import {
   Input,
   NumberInput as PrimitiveNumberInput,
   Select as PrimitiveSelect,
-  Toggle as PrimitiveToggle,
   type SelectOption,
 } from '../../../ui/primitives';
 import styles from './controls.module.css';
 
 export type { SelectOption };
-
-// ============================================================================
-// Toggle (Checkbox)
-// ============================================================================
-
-export interface ToggleProps {
-  id?: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  disabled?: boolean;
-}
-
-export function Toggle({ id, checked, onChange, disabled }: ToggleProps) {
-  return <PrimitiveToggle id={id} checked={checked} onChange={onChange} disabled={disabled} />;
-}
 
 // ============================================================================
 // NumberInput
