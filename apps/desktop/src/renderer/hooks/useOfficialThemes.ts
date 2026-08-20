@@ -37,17 +37,22 @@ export function useOfficialThemes(): void {
   }, []);
 
   useEffect(() => {
-    const savedThemeId = appearance?.activeThemeId;
-    if (savedThemeId && registeredThemeCount > 0) {
-      const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
-      if (exists) {
-        themeRegistryStore.getState().setActive(savedThemeId);
-        const palette = themeRegistryStore.getState().getActiveTheme();
-        const paletteAccent = palette?.tokens['--accent'];
-        if (paletteAccent && appearance?.accentColor === '#5eead4') {
-          useSettingsStore.getState().updateAppearance({ accentColor: paletteAccent });
-        }
-      }
+    if (registeredThemeCount === 0) return;
+    const savedThemeId = appearance?.activeThemeId ?? null;
+    // Each window has its own registry. Settings can setActive(null) locally
+    // and broadcast appearance.activeThemeId; the notes window must clear too
+    // or named-palette tokens stay inline and Light never shows.
+    if (savedThemeId === null) {
+      themeRegistryStore.getState().setActive(null);
+      return;
+    }
+    const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
+    if (!exists) return;
+    themeRegistryStore.getState().setActive(savedThemeId);
+    const palette = themeRegistryStore.getState().getActiveTheme();
+    const paletteAccent = palette?.tokens['--accent'];
+    if (paletteAccent && appearance?.accentColor === '#5eead4') {
+      useSettingsStore.getState().updateAppearance({ accentColor: paletteAccent });
     }
   }, [appearance?.activeThemeId, registeredThemeCount]);
 }
