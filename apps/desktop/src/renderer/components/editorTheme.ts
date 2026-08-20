@@ -19,7 +19,7 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
   return EditorView.theme({
     '&': {
       backgroundColor: 'transparent',
-      color: 'var(--cm-text)',
+      color: 'var(--cm-text, var(--text-primary))',
       fontSize: `${fontSize}px`,
       height: '100%',
     },
@@ -155,24 +155,39 @@ export function createEditorTheme(fontSize: number, fontFamily: string, lineHeig
 /** Syntax highlighting for Markdown — uses CSS variables so dark/light works. */
 export const markdownHighlighting = HighlightStyle.define([
   // Headings
-  { tag: tags.heading1, color: 'var(--cm-heading)', fontWeight: '700', fontSize: '1.5em' },
-  { tag: tags.heading2, color: 'var(--cm-heading)', fontWeight: '600', fontSize: '1.3em' },
-  { tag: tags.heading3, color: 'var(--cm-heading)', fontWeight: '600', fontSize: '1.15em' },
-  { tag: tags.heading4, color: 'var(--cm-heading)', fontWeight: '600' },
-  { tag: tags.heading5, color: 'var(--cm-heading)', fontWeight: '600' },
-  { tag: tags.heading6, color: 'var(--cm-heading)', fontWeight: '600' },
+  {
+    tag: tags.heading1,
+    color: 'var(--cm-heading, var(--text-primary))',
+    fontWeight: '700',
+    fontSize: '1.5em',
+  },
+  {
+    tag: tags.heading2,
+    color: 'var(--cm-heading, var(--text-primary))',
+    fontWeight: '600',
+    fontSize: '1.3em',
+  },
+  {
+    tag: tags.heading3,
+    color: 'var(--cm-heading, var(--text-primary))',
+    fontWeight: '600',
+    fontSize: '1.15em',
+  },
+  { tag: tags.heading4, color: 'var(--cm-heading, var(--text-primary))', fontWeight: '600' },
+  { tag: tags.heading5, color: 'var(--cm-heading, var(--text-primary))', fontWeight: '600' },
+  { tag: tags.heading6, color: 'var(--cm-heading, var(--text-primary))', fontWeight: '600' },
 
   // Emphasis
   {
     tag: tags.emphasis,
     fontStyle: 'italic',
-    color: 'var(--cm-emphasis)',
+    color: 'var(--cm-emphasis, var(--text-primary))',
     class: 'cm-em',
   },
   {
     tag: tags.strong,
     fontWeight: '700',
-    color: 'var(--cm-strong)',
+    color: 'var(--cm-strong, var(--text-primary))',
     class: 'cm-strong',
   },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: 'var(--cm-strikethrough)' },
@@ -187,8 +202,8 @@ export const markdownHighlighting = HighlightStyle.define([
   },
 
   // Links
-  { tag: tags.link, color: 'var(--cm-link)', textDecoration: 'underline' },
-  { tag: tags.url, color: 'var(--cm-link)' },
+  { tag: tags.link, color: 'var(--cm-link, var(--accent))', textDecoration: 'underline' },
+  { tag: tags.url, color: 'var(--cm-link, var(--accent))' },
 
   // Lists — marker color comes from listMarkDecorations (.md-list-mark*)
 

@@ -62,7 +62,7 @@ export function AppearanceSection() {
     updateAppearance({
       theme: value as 'dark' | 'light' | 'system',
       activeThemeId: null,
-      accentColor: value === 'light' ? '#0f766e' : '#5eead4',
+      accentColor: value === 'light' ? '#0d8a80' : '#5eead4',
     });
   };
 

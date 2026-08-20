@@ -14,8 +14,8 @@ const missingMark = Decoration.mark({ class: 'cm-wikilink cm-wikilink-missing' }
 
 const wikilinkTheme = EditorView.baseTheme({
   '.cm-wikilink': {
-    color: 'var(--accent)',
-    borderBottom: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+    color: 'var(--cm-link, var(--accent))',
+    borderBottom: '1px solid color-mix(in srgb, var(--cm-link, var(--accent)) 45%, transparent)',
     borderRadius: '2px',
     cursor: 'pointer',
   },

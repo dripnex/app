@@ -10,15 +10,23 @@ import { computeHoverColor, hexToRgb } from '../utils/colorUtils';
 let nativeIsDark: boolean | undefined;
 
 /** Keep --accent-primary in lockstep. A lot of chrome reads that, not --accent. */
-function applyAccent(accentColor: string): void {
-  const root = document.documentElement.style;
-  root.setProperty('--accent', accentColor);
-  root.setProperty('--accent-primary', accentColor);
+const LEGACY_LIGHT_ACCENT = '#0f766e';
+const LIGHT_ACCENT = '#0d8a80';
 
-  const hoverColor = computeHoverColor(accentColor);
+function resolveAccent(accentColor: string): string {
+  return accentColor.toLowerCase() === LEGACY_LIGHT_ACCENT ? LIGHT_ACCENT : accentColor;
+}
+
+function applyAccent(accentColor: string): void {
+  const color = resolveAccent(accentColor);
+  const root = document.documentElement.style;
+  root.setProperty('--accent', color);
+  root.setProperty('--accent-primary', color);
+
+  const hoverColor = computeHoverColor(color);
   root.setProperty('--accent-hover', hoverColor);
 
-  const rgb = hexToRgb(accentColor);
+  const rgb = hexToRgb(color);
   if (rgb) {
     root.setProperty(
       '--accent-muted',
