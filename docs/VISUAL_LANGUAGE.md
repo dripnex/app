@@ -18,11 +18,11 @@ AuthGate is required: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stay
 
 Do **not** copy these. They are not the product.
 
-| Surface | What it is (22 Aug 2026) | Do not take |
-| ------- | ------------------------ | ----------- |
-| [dripnex.app](https://dripnex.app) | GoDaddy parking page | Black CTA, pale-blue tiles, Helvetica |
-| [dripnex.github.io/readide](https://dripnex.github.io/readide) | 404 | Nothing |
-| `docs/archived/plans-2026/2026-02-18-marketing-site-redesign-design.md` | Unshipped violet/Raycast draft | Gradients, Inter 800, indigo accent |
+| Surface                                                                 | What it is (22 Aug 2026)       | Do not take                           |
+| ----------------------------------------------------------------------- | ------------------------------ | ------------------------------------- |
+| [dripnex.app](https://dripnex.app)                                      | GoDaddy parking page           | Black CTA, pale-blue tiles, Helvetica |
+| [dripnex.github.io/readide](https://dripnex.github.io/readide)          | 404                            | Nothing                               |
+| `docs/archived/plans-2026/2026-02-18-marketing-site-redesign-design.md` | Unshipped violet/Raycast draft | Gradients, Inter 800, indigo accent   |
 
 If the public site later becomes real product chrome, still prefer this
 file + `tokens.css` until Tomás says the site is canonical.
@@ -122,8 +122,7 @@ Shipped desktop (v0.16.0 tokens):
 
 `docs/BRAND.md` specifies a muted gray accent (`#6b7280`) and off-white
 `#fafaf9`. The 2026 marketing redesign draft used violet/indigo. Public
-`dripnex.app` is a GoDaddy parking page; `dripnex.github.io/readide` is
-404. **Do not change the shipped teal or logo in polish PRs.** Tomás
+`dripnex.app` is a GoDaddy parking page; `dripnex.github.io/readide` is 404. **Do not change the shipped teal or logo in polish PRs.** Tomás
 owns that call.
 
 Nested markdown list marks still use blue (`#60a5fa`) and violet
@@ -142,13 +141,13 @@ Center in the pane (`flex: 1`), not a 200px stub.
 
 **Copy:**
 
-| State        | Title            | Hint                                      |
-| ------------ | ---------------- | ----------------------------------------- |
-| No notes     | No notes yet     | Press {mod}+N to create one               |
-| Pinned empty | Nothing pinned   | Pin a note to keep it here                |
-| Trash empty  | Trash is empty   | Deleted notes appear here                 |
-| Search empty | No matches       | Try a different search                    |
-| Editor empty | Select a note    | Or press {mod}+N to create one            |
+| State        | Title          | Hint                           |
+| ------------ | -------------- | ------------------------------ |
+| No notes     | No notes yet   | Press {mod}+N to create one    |
+| Pinned empty | Nothing pinned | Pin a note to keep it here     |
+| Trash empty  | Trash is empty | Deleted notes appear here      |
+| Search empty | No matches     | Try a different search         |
+| Editor empty | Select a note  | Or press {mod}+N to create one |
 
 Shortcuts use `modAccel()` (`⌘` on Apple, `Ctrl+` elsewhere).
 No Sparkles. No “found”. No “your first”. Nested lists (notebooks,
