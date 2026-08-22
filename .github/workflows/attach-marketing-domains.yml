@@ -1,0 +1,136 @@
+name: Attach marketing domains
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/attach-marketing-domains.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Uses the same CF secrets as Deploy API. Does not deploy the Worker
+# and never touches api / api.dripnex.app DNS or routes.
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attach dripnex.app and www to dripnex-marketing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ]; then
+            echo "CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is empty"
+            exit 1
+          fi
+          echo "token_len=${#CLOUDFLARE_API_TOKEN} account_len=${#CLOUDFLARE_ACCOUNT_ID}"
+
+          AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+          ACCOUNT="${CLOUDFLARE_ACCOUNT_ID}"
+          TARGET="dripnex-marketing"
+          CF="https://api.cloudflare.com/client/v4"
+
+          cf() {
+            curl -sS "$@" -H "$AUTH" -H "Content-Type: application/json"
+          }
+
+          PROJECTS="$(cf "${CF}/accounts/${ACCOUNT}/pages/projects?per_page=50")"
+          echo "$PROJECTS" | jq -c '{success,errors,names:[.result[]?.name]}'
+          if [ "$(echo "$PROJECTS" | jq -r '.success')" != "true" ]; then
+            echo "$PROJECTS"
+            exit 1
+          fi
+
+          echo "$PROJECTS" | jq -r '.result[]?.name' | while read -r project; do
+            [ -n "$project" ] || continue
+            DOMS="$(cf "${CF}/accounts/${ACCOUNT}/pages/projects/${project}/domains")"
+            echo "$DOMS" | jq -c --arg p "$project" '{project:$p,success,domains:[.result[]?.name]}'
+            [ "$project" = "$TARGET" ] && continue
+            echo "$DOMS" | jq -r '.result[]? | select(.name=="dripnex.app" or .name=="www.dripnex.app") | .name' \
+              | while read -r d; do
+                  echo "detaching ${d} from ${project}"
+                  cf -X DELETE "${CF}/accounts/${ACCOUNT}/pages/projects/${project}/domains/${d}" | jq -c '{success,errors}'
+                done
+          done
+
+          attach() {
+            local host="$1"
+            local resp success
+            resp="$(cf -X POST "${CF}/accounts/${ACCOUNT}/pages/projects/${TARGET}/domains" --data "{\"name\":\"${host}\"}")"
+            echo "$resp" | jq -c '{name:.result.name,status:.result.status,success,errors}'
+            success="$(echo "$resp" | jq -r '.success')"
+            if [ "$success" = "true" ]; then
+              return 0
+            fi
+            if echo "$resp" | jq -e '.errors[]? | select(((.message // "")|ascii_downcase|test("already")) or .code==8000012 or .code==8000014)' >/dev/null; then
+              echo "${host} already attached (ok)"
+              return 0
+            fi
+            echo "failed to attach ${host}"
+            return 1
+          }
+
+          attach dripnex.app
+          attach www.dripnex.app
+
+          ZONE_ID="$(cf "${CF}/zones?name=dripnex.app" | jq -r '.result[0].id // empty')"
+          echo "zone=${ZONE_ID}"
+          [ -n "$ZONE_ID" ]
+
+          ensure_cname() {
+            local fqdn="$1"
+            local recs first keep proxied
+            if [ "$fqdn" = "api.dripnex.app" ] || [ "$fqdn" = "api" ]; then
+              echo "refusing to modify api DNS"
+              return 0
+            fi
+            recs="$(cf "${CF}/zones/${ZONE_ID}/dns_records?name=${fqdn}&per_page=100")"
+            echo "$recs" | jq -c --arg n "$fqdn" '{name:$n,success,records:[.result[]? | {id,type,name,content,proxied}]}'
+
+            keep="$(echo "$recs" | jq -r '.result[]? | select(.type=="CNAME" and ((.content|ascii_downcase)=="dripnex-marketing.pages.dev")) | .id' | head -n1)"
+            if [ -n "$keep" ]; then
+              proxied="$(echo "$recs" | jq -r --arg id "$keep" '.result[]? | select(.id==$id) | .proxied')"
+              if [ "$proxied" != "true" ]; then
+                cf -X PATCH "${CF}/zones/${ZONE_ID}/dns_records/${keep}" \
+                  --data "{\"type\":\"CNAME\",\"name\":\"${fqdn}\",\"content\":\"dripnex-marketing.pages.dev\",\"proxied\":true}" \
+                  | jq -c '{success,errors,updated:.result|{name,type,content,proxied}}'
+              else
+                echo "${fqdn} already proxied CNAME -> dripnex-marketing.pages.dev"
+              fi
+            else
+              first="$(echo "$recs" | jq -r '.result[]? | select(.type=="A" or .type=="AAAA" or .type=="CNAME") | .id' | head -n1)"
+              if [ -n "$first" ]; then
+                keep="$first"
+                cf -X PATCH "${CF}/zones/${ZONE_ID}/dns_records/${first}" \
+                  --data "{\"type\":\"CNAME\",\"name\":\"${fqdn}\",\"content\":\"dripnex-marketing.pages.dev\",\"proxied\":true}" \
+                  | jq -c '{success,errors,updated:.result|{name,type,content,proxied}}'
+              else
+                cf -X POST "${CF}/zones/${ZONE_ID}/dns_records" \
+                  --data "{\"type\":\"CNAME\",\"name\":\"${fqdn}\",\"content\":\"dripnex-marketing.pages.dev\",\"proxied\":true}" \
+                  | jq -c '{success,errors,created:.result|{name,type,content,proxied}}'
+                keep=""
+              fi
+            fi
+
+            recs="$(cf "${CF}/zones/${ZONE_ID}/dns_records?name=${fqdn}&per_page=100")"
+            echo "$recs" | jq -r --arg keep "$keep" '
+              .result[]?
+              | select((.type=="A" or .type=="AAAA" or .type=="CNAME")
+                  and (.id != $keep)
+                  and ((.content|ascii_downcase) != "dripnex-marketing.pages.dev"))
+              | .id' \
+              | while read -r rid; do
+                  [ -n "$rid" ] || continue
+                  echo "deleting leftover ${fqdn} record ${rid}"
+                  cf -X DELETE "${CF}/zones/${ZONE_ID}/dns_records/${rid}" | jq -c '{success,errors}'
+                done
+          }
+
+          ensure_cname dripnex.app
+          ensure_cname www.dripnex.app
+
+          attach dripnex.app || true
+          attach www.dripnex.app || true
