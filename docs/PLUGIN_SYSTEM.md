@@ -3,6 +3,8 @@
 > Plan de implementacion incremental del sistema de plugins de Dripnex.
 > Cada fase se construye sobre la anterior. No saltar fases.
 
+Official first-party research (install/load as of 2026-08, [#547](https://github.com/dripnex/app/issues/547), ranked next editor/GFM packs): [`docs/plugins/`](./plugins/README.md).
+
 ---
 
 ## Phase 1: Foundation (DONE)
@@ -449,6 +451,8 @@ Built-ins stay in `apps/desktop` until they deserve their own repo.
 | **proof** (API examples, hide from the site) | word-count, reading-time, typewriter, focus, active-line | no         |
 
 Do not add more proof plugins to dripnex.app/plugins.
+
+`core` mermaid/math here means the **built-in renderers**. The satellite repos `dripnex/plugin-mermaid` and `dripnex/plugin-math` only insert a fence. Vim is not built-in. Details: [`docs/plugins/official-first-party.md`](./plugins/official-first-party.md).
 
 ---
 
