@@ -46,6 +46,25 @@ export const FIRST_PARTY_PACKAGES = [
     updatedAt: '2026-08-18T00:00:00.000Z',
   },
   {
+    // manifest.id === slug. The GitHub repo is dripnex/plugin-vim (#562).
+    slug: 'dripnex-vim-mode',
+    name: 'Vim Mode',
+    description: 'Vim keybindings, Ex commands, relative line numbers, and clipboard yank.',
+    author: 'Dripnex',
+    version: '1.2.0',
+    category: 'editor',
+    tags: ['vim', 'keymap'],
+    icon: 'terminal',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/plugin-vim/releases/download/v1.2.0/dripnex-vim-mode-1.2.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/plugin-vim',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-20T17:36:18.000Z',
+    updatedAt: '2026-08-20T17:36:18.000Z',
+  },
+  {
     slug: 'mermaid',
     name: 'Mermaid',
     description: 'Insert a mermaid fence at the cursor. Preview rendering ships with Dripnex.',

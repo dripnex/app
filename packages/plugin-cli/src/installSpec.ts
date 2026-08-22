@@ -4,6 +4,21 @@ export type InstallSpec =
   | { kind: 'github'; owner: string; repo: string; tag?: string }
   | { kind: 'registry'; slug: string; tag?: string };
 
+/** Same map as desktop `OFFICIAL_PACK_REPOS` — slug is not a GitHub repo (#562). */
+export const OFFICIAL_PACK_REPOS: Record<string, `${string}/${string}`> = {
+  'dripnex-vim-mode': 'dripnex/plugin-vim',
+  mermaid: 'dripnex/plugin-mermaid',
+  math: 'dripnex/plugin-math',
+  stamp: 'dripnex/plugin-stamp',
+};
+
+export function officialRepoForSlug(slug: string): { owner: string; repo: string } | null {
+  const spec = OFFICIAL_PACK_REPOS[slug];
+  if (!spec) return null;
+  const [owner, repo] = spec.split('/');
+  return owner && repo ? { owner, repo } : null;
+}
+
 /**
  * Resolve what `dripnex-plugin install <spec>` means.
  *
@@ -62,7 +77,13 @@ export function parseInstallSource(
 
   const registry = trimmed.match(/^([a-z][a-z0-9]*(-[a-z0-9]+)*)(?:@(.+))?$/);
   if (registry) {
-    return { kind: 'registry', slug: registry[1] ?? '', tag: registry[3] };
+    const slug = registry[1] ?? '';
+    const tag = registry[3];
+    const official = officialRepoForSlug(slug);
+    if (official) {
+      return { kind: 'github', owner: official.owner, repo: official.repo, tag };
+    }
+    return { kind: 'registry', slug, tag };
   }
 
   return { kind: 'path', path: trimmed };
