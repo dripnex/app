@@ -50,12 +50,12 @@ jobs:
         run: |
           set -o pipefail
           npx semantic-release --dry-run 2>&1 | tee /tmp/sr-dry.log
-          if grep -qE "There are no relevant changes" /tmp/sr-dry.log; then
+          if grep -qE '\[semantic-release\].*There are no relevant changes, so no new version is released' /tmp/sr-dry.log; then
             echo "No release to cut from this push."
             echo "released=false" >> "$GITHUB_ENV"
             exit 0
           fi
-          if ! grep -qE "next release version is" /tmp/sr-dry.log; then
+          if ! grep -qE '\[semantic-release\].*The next release version is [0-9]+\.[0-9]+\.[0-9]+' /tmp/sr-dry.log; then
             echo "::error::semantic-release dry-run did not announce a next release version."
             exit 1
           fi
@@ -71,19 +71,17 @@ jobs:
           GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
         run: npx semantic-release
 
-      - name: Verify version bump
+      - name: Record tag
         if: env.released == 'true'
         run: |
-          expected=$(grep -oE "next release version is [0-9]+\.[0-9]+\.[0-9]+" /tmp/sr-dry.log \
-                     | tail -n 1 | awk '{print $NF}')
-          root_v=$(jq -r .version package.json)
-          desk_v=$(jq -r .version apps/desktop/package.json)
-          if [ "$root_v" != "$expected" ] || [ "$desk_v" != "$expected" ]; then
-            echo "::error::Version mismatch after semantic-release. Expected $expected, got root=$root_v desktop=$desk_v"
+          expected=$(grep -oE '\[semantic-release\].*The next release version is [0-9]+\.[0-9]+\.[0-9]+' /tmp/sr-dry.log \
+                     | tail -n 1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+$')
+          if [ -z "$expected" ]; then
+            echo "::error::Could not read next version from dry-run log."
             exit 1
           fi
           echo "v$expected" > version.txt
-          echo "Version bump verified: $expected"
+          echo "Will tag v$expected (package.json stays on git; Build bumps before packaging)."
 
       - name: Attach What's New
         if: env.released == 'true'
