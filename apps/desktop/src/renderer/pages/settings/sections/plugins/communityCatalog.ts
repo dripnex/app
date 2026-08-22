@@ -49,20 +49,35 @@ export interface CatalogCard {
   repository: string | null;
 }
 
-/** owner/repo when we have it — that is the spec that resolves a GitHub tarball. */
-export function installSpecFor(card: { slug: string; repository: string | null }): string {
-  return card.repository ?? card.slug;
+/**
+ * owner/repo when we have it — that is the spec that resolves a GitHub tarball.
+ * If the live card omitted repository, use the first-party catalog repo for
+ * that slug so vim never installs as `dripnex-vim-mode` (#562).
+ */
+export function installSpecFor(
+  card: { slug: string; repository: string | null },
+  fallback: CatalogPlugin[] = COMMUNITY_CATALOG
+): string {
+  if (card.repository) return card.repository;
+  return fallback.find(p => p.id === card.slug)?.repository ?? card.slug;
 }
 
 /**
- * Keep first-party fallback cards that the live registry omitted.
+ * Keep first-party fallback cards that the live registry omitted, and fill
+ * `repository` on a live row that listed the slug without repositoryUrl.
  * Browse used to replace the fallback entirely, which hid Vim (#562).
  */
 export function mergeFallbackCatalog(
   registry: CatalogCard[],
   fallback: CatalogPlugin[] = COMMUNITY_CATALOG
 ): CatalogCard[] {
-  const slugs = new Set(registry.map(p => p.slug));
+  const byId = new Map(fallback.map(p => [p.id, p]));
+  const filled = registry.map(card => {
+    if (card.repository) return card;
+    const known = byId.get(card.slug);
+    return known ? { ...card, repository: known.repository } : card;
+  });
+  const slugs = new Set(filled.map(p => p.slug));
   const extra = fallback
     .filter(p => !slugs.has(p.id))
     .map(p => ({
@@ -73,5 +88,5 @@ export function mergeFallbackCatalog(
       author: p.author,
       repository: p.repository,
     }));
-  return extra.length === 0 ? registry : [...extra, ...registry];
+  return extra.length === 0 ? filled : [...extra, ...filled];
 }

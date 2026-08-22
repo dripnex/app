@@ -10,8 +10,14 @@ describe('installSpecFor', () => {
     );
   });
 
-  it('falls back to the slug when there is no repository', () => {
-    expect(installSpecFor({ slug: 'stamp', repository: null })).toBe('stamp');
+  it('fills the catalog repo when the live card omitted repositoryUrl', () => {
+    expect(installSpecFor({ slug: 'dripnex-vim-mode', repository: null })).toBe(
+      'dripnex/plugin-vim'
+    );
+  });
+
+  it('falls back to the slug only for packs not in the first-party catalog', () => {
+    expect(installSpecFor({ slug: 'unknown-pack', repository: null })).toBe('unknown-pack');
   });
 });
 
@@ -43,5 +49,22 @@ describe('mergeFallbackCatalog', () => {
       },
     ]);
     expect(merged.filter(p => p.slug === 'dripnex-vim-mode')).toHaveLength(1);
+  });
+
+  it('live dripnex-vim-mode row with no repositoryUrl still installs via dripnex/plugin-vim', () => {
+    const merged = mergeFallbackCatalog([
+      {
+        slug: 'dripnex-vim-mode',
+        name: 'Vim Mode',
+        description: '',
+        version: '1.2.0',
+        author: 'Dripnex',
+        repository: null,
+      },
+    ]);
+    const vim = merged.find(p => p.slug === 'dripnex-vim-mode');
+    expect(merged.filter(p => p.slug === 'dripnex-vim-mode')).toHaveLength(1);
+    expect(vim?.repository).toBe('dripnex/plugin-vim');
+    expect(installSpecFor(vim!)).toBe('dripnex/plugin-vim');
   });
 });

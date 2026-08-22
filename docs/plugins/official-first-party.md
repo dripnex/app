@@ -161,9 +161,9 @@ How Browse / Updates failed (v0.16.0 and `develop` before this PR):
 
 This PR’s small slug fix (same branch, not a new install system):
 
-- Fallback catalog is **merged** into the registry list (`mergeFallbackCatalog`), so Vim stays visible when the API omits it.
+- Fallback catalog is **merged** into the registry list (`mergeFallbackCatalog`), so Vim stays visible when the API omits it. If a live row is `dripnex-vim-mode` **without** `repositoryUrl`, merge fills `dripnex/plugin-vim` — Install must never fall back to the slug.
 - Install / Update send `repository` (`dripnex/plugin-vim`) via `installSpecFor`, not the manifest id.
-- `FIRST_PARTY_PACKAGES` gains slug `dripnex-vim-mode` pointing at the real `plugin-vim` v1.2.0 tarball, so `GET /plugins/dripnex-vim-mode` works after the API deploy. Slug **equals** `manifest.id`; the repo URL is still `dripnex/plugin-vim`.
+- `FIRST_PARTY_PACKAGES` gains slug `dripnex-vim-mode` with `repositoryUrl` `https://github.com/dripnex/plugin-vim` and the real v1.2.0 tarball, so `GET /plugins/dripnex-vim-mode` works after the API deploy. Slug **equals** `manifest.id`; keep `repositoryUrl` on that row.
 
 ### 1.6 CLI vs packaged userData (second install bug)
 

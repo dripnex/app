@@ -24,11 +24,16 @@ describe('plugin registry', () => {
   it('lists first-party packages when the catalog is empty', async () => {
     const res = await app.request('/plugins', {}, env);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { plugins: Array<{ slug: string; bundleUrl: string }> };
+    const body = (await res.json()) as {
+      plugins: Array<{ slug: string; bundleUrl: string; repositoryUrl: string | null }>;
+    };
     expect(body.plugins.some(p => p.slug === 'stamp')).toBe(true);
     expect(body.plugins.find(p => p.slug === 'stamp')?.bundleUrl).toContain('plugin-stamp');
     expect(body.plugins.map(p => p.slug).sort()).toEqual(
       ['dripnex-vim-mode', 'math', 'mermaid', 'stamp', 'theme-parchment'].sort()
+    );
+    expect(body.plugins.find(p => p.slug === 'dripnex-vim-mode')?.repositoryUrl).toBe(
+      'https://github.com/dripnex/plugin-vim'
     );
   });
 
