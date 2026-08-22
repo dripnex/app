@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Button, toast } from '../../../../ui/primitives';
+import { COMMUNITY_CATALOG, installSpecFor } from './communityCatalog';
 import { versionNewer } from './version';
 import styles from './Plugins.module.css';
 
@@ -27,17 +28,22 @@ export function UpdatesTab() {
         window.dripnex.plugins.listRegistry(),
       ]);
       const bySlug = new Map(registry.plugins.map(p => [p.slug, p]));
+      const fallbackById = new Map(COMMUNITY_CATALOG.map(p => [p.id, p]));
       const next: OutdatedPlugin[] = [];
       for (const plugin of scanned) {
         const remote = bySlug.get(plugin.id);
-        if (!remote) continue;
-        if (!versionNewer(remote.version, plugin.version)) continue;
+        const fallback = fallbackById.get(plugin.id);
+        const latest = remote?.version ?? fallback?.version;
+        if (!latest || !versionNewer(latest, plugin.version)) continue;
+        const repository = remote?.repositoryUrl
+          ? remote.repositoryUrl.replace(/^https:\/\/github\.com\//, '')
+          : (fallback?.repository ?? null);
         next.push({
           id: plugin.id,
           name: plugin.name,
           installed: plugin.version,
-          latest: remote.version,
-          spec: remote.slug,
+          latest,
+          spec: installSpecFor({ slug: remote?.slug ?? plugin.id, repository }),
         });
       }
       setRows(next);

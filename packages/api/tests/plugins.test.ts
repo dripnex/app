@@ -28,7 +28,7 @@ describe('plugin registry', () => {
     expect(body.plugins.some(p => p.slug === 'stamp')).toBe(true);
     expect(body.plugins.find(p => p.slug === 'stamp')?.bundleUrl).toContain('plugin-stamp');
     expect(body.plugins.map(p => p.slug).sort()).toEqual(
-      ['math', 'mermaid', 'stamp', 'theme-parchment'].sort()
+      ['dripnex-vim-mode', 'math', 'mermaid', 'stamp', 'theme-parchment'].sort()
     );
   });
 
@@ -37,6 +37,15 @@ describe('plugin registry', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { plugins: Array<{ slug: string }> };
     expect(body.plugins.map(p => p.slug)).toContain('stamp');
+  });
+
+  it('returns vim by manifest id from the first-party fallback', async () => {
+    const res = await app.request('/plugins/dripnex-vim-mode', {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { slug: string; bundleUrl: string; repositoryUrl: string };
+    expect(body.slug).toBe('dripnex-vim-mode');
+    expect(body.repositoryUrl).toBe('https://github.com/dripnex/plugin-vim');
+    expect(body.bundleUrl).toContain('dripnex-vim-mode-1.2.0.tar.gz');
   });
 
   it('returns stamp by slug from the first-party fallback', async () => {

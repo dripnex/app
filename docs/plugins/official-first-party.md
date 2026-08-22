@@ -1,6 +1,6 @@
 # Official first-party plugins — research
 
-Written 2026-08-22 against `develop` (`f155600`) plus live registry QA on [#547](https://github.com/dripnex/app/issues/547). Desktop only. No marketplace. No iOS.
+Written 2026-08-22 against `develop` (`f155600`) plus live registry QA on [#547](https://github.com/dripnex/app/issues/547) and the packaged install bug [#562](https://github.com/dripnex/app/issues/562). Desktop only. No marketplace. No iOS.
 
 This is a sourced inventory and a ranked list of **editor / GFM packs** we could build **after** vim / math / mermaid install-and-update actually works. It does not implement plugins.
 
@@ -10,10 +10,10 @@ This is a sourced inventory and a ranked list of **editor / GFM packs** we could
 
 Two worlds share one `PluginHost`:
 
-| Kind | Where the code lives | How it gets on disk | How it activates |
-| --- | --- | --- | --- |
-| **Built-in** | `apps/desktop/src/renderer/plugins/` | Shipped in the app bundle | `builtInPlugins` in `plugins/index.ts` → `usePluginRuntime` filters `plugin_registry.enabled !== false` |
-| **Discovered** | User-data `plugins/<manifest.id>/` | CLI, Settings Install, or file-picker | Main `scanPlugins()` → renderer `loadPluginFromSource()` → same `PluginHost` |
+| Kind           | Where the code lives                 | How it gets on disk                   | How it activates                                                                                        |
+| -------------- | ------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Built-in**   | `apps/desktop/src/renderer/plugins/` | Shipped in the app bundle             | `builtInPlugins` in `plugins/index.ts` → `usePluginRuntime` filters `plugin_registry.enabled !== false` |
+| **Discovered** | User-data `plugins/<manifest.id>/`   | CLI, Settings Install, or file-picker | Main `scanPlugins()` → renderer `loadPluginFromSource()` → same `PluginHost`                            |
 
 There is no packaged `extraResources` plugin tree (confirmed in [#547](https://github.com/dripnex/app/issues/547) QA). Community / first-party packs are always user-data.
 
@@ -31,21 +31,21 @@ Anything else (including `@replit/codemirror-vim`) must be bundled into `index.j
 
 `PluginContext` (`packages/plugin-api/src/types.ts`) — editor / GFM-relevant hooks:
 
-| Hook | Use |
-| --- | --- |
-| `editor` | `getContent`, `insertAtCursor`, `replaceRange`, `getView()` (live CM6) |
-| `registerExtensions(id, Extension[])` | CM6 compartment — keymaps, widgets, decorations |
-| `decorations` | `addLineHighlight`, `addWidget`, `clear` |
-| `registerCommand` / `dispatchCommand` | Palette + keybindings (`plugin:{id}:{cmd}`) |
-| `registerRemarkPlugin` / `registerRehypePlugin` | Preview pipeline (appends after core) |
-| `registerPreviewComponent(tag, React)` | Replace a preview HTML tag (`table`, …) |
-| `registerCodeBlockRenderer(lang, React)` | Fence languages (`mermaid`, `math`, `latex`) |
-| `registerVim(api)` | Publish `dripnex.vim` for `init.js` |
-| `layout.addComponent(zone, …)` | 9 zones, including `editor-status-bar`, `modal` |
-| `menu.add` / `contextMenu.add` | Plugins menu + editor/note-list context |
-| `config` | SQLite `plugin_config`, sync get / async set |
-| `markdownRenderer` | Inkdrop-shaped remark/rehype/React/fence maps |
-| `clipboard`, `notifications`, `preview.on('a:click' \| 'checkbox:change')` | I/O + preview events |
+| Hook                                                                       | Use                                                                    |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `editor`                                                                   | `getContent`, `insertAtCursor`, `replaceRange`, `getView()` (live CM6) |
+| `registerExtensions(id, Extension[])`                                      | CM6 compartment — keymaps, widgets, decorations                        |
+| `decorations`                                                              | `addLineHighlight`, `addWidget`, `clear`                               |
+| `registerCommand` / `dispatchCommand`                                      | Palette + keybindings (`plugin:{id}:{cmd}`)                            |
+| `registerRemarkPlugin` / `registerRehypePlugin`                            | Preview pipeline (appends after core)                                  |
+| `registerPreviewComponent(tag, React)`                                     | Replace a preview HTML tag (`table`, …)                                |
+| `registerCodeBlockRenderer(lang, React)`                                   | Fence languages (`mermaid`, `math`, `latex`)                           |
+| `registerVim(api)`                                                         | Publish `dripnex.vim` for `init.js`                                    |
+| `layout.addComponent(zone, …)`                                             | 9 zones, including `editor-status-bar`, `modal`                        |
+| `menu.add` / `contextMenu.add`                                             | Plugins menu + editor/note-list context                                |
+| `config`                                                                   | SQLite `plugin_config`, sync get / async set                           |
+| `markdownRenderer`                                                         | Inkdrop-shaped remark/rehype/React/fence maps                          |
+| `clipboard`, `notifications`, `preview.on('a:click' \| 'checkbox:change')` | I/O + preview events                                                   |
 
 Declarative package files (optional, applied after `activate`): `keymaps/*.json`, `menus/*.json`, `styles/*.css`, `theme.json` / `themes/*.json`. Parsed in `packages/plugin-api/src/packageFiles/`.
 
@@ -69,11 +69,11 @@ userData/plugins/<id>/
 
 Desktop userData is `createDataPaths(app.getPath('userData'))` in `apps/desktop/src/main/index.ts`. Packaged `productName` is `Dripnex` (`apps/desktop/package.json`), so the plugins dir is:
 
-| OS | Packaged desktop |
-| --- | --- |
-| macOS | `~/Library/Application Support/Dripnex/plugins` |
-| Linux | `~/.config/Dripnex/plugins` |
-| Windows | `%APPDATA%/Dripnex/plugins` |
+| OS      | Packaged desktop                                |
+| ------- | ----------------------------------------------- |
+| macOS   | `~/Library/Application Support/Dripnex/plugins` |
+| Linux   | `~/.config/Dripnex/plugins`                     |
+| Windows | `%APPDATA%/Dripnex/plugins`                     |
 
 ### 1.3 Install path (three doors, one unpack)
 
@@ -115,32 +115,55 @@ Three different things share those names. Do not collapse them.
 
 #### Built-in renderers (always in the app)
 
-| Manifest id | File | What it does |
-| --- | --- | --- |
-| `dripnex-mermaid` | `apps/desktop/src/renderer/plugins/mermaid.tsx` | `registerCodeBlockRenderer('mermaid')` — SVG, pan/zoom, Expand |
-| `dripnex-math` | `apps/desktop/src/renderer/plugins/math.tsx` | `remark-math` + `rehype-katex` + fence renderers for `math` / `latex` |
-| `dripnex-tables` | `apps/desktop/src/renderer/plugins/tables.tsx` | Insert wizard, CM6 WYSIWYG widget, sortable preview, CSV. See `docs/tables-plugin.md` |
+| Manifest id       | File                                            | What it does                                                                          |
+| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `dripnex-mermaid` | `apps/desktop/src/renderer/plugins/mermaid.tsx` | `registerCodeBlockRenderer('mermaid')` — SVG, pan/zoom, Expand                        |
+| `dripnex-math`    | `apps/desktop/src/renderer/plugins/math.tsx`    | `remark-math` + `rehype-katex` + fence renderers for `math` / `latex`                 |
+| `dripnex-tables`  | `apps/desktop/src/renderer/plugins/tables.tsx`  | Insert wizard, CM6 WYSIWYG widget, sortable preview, CSV. See `docs/tables-plugin.md` |
 
 Toggling these in Settings → Installed is already a reliable on/off. They do not go through the registry.
 
 #### Satellite insert packs (own git repos)
 
-| Repo | Manifest id | Release | What it actually does |
-| --- | --- | --- | --- |
-| [dripnex/plugin-mermaid](https://github.com/dripnex/plugin-mermaid) | `mermaid` | `v0.1.0` tarball | `insertAtCursor('```mermaid…')` + Plugins-menu item. **No renderer.** |
-| [dripnex/plugin-math](https://github.com/dripnex/plugin-math) | `math` | `v0.1.0` tarball | `insertAtCursor('$$\nE = mc^2\n$$')`. **No KaTeX.** |
-| [dripnex/plugin-vim](https://github.com/dripnex/plugin-vim) | `dripnex-vim-mode` | `v1.2.0` tarball | Real `@replit/codemirror-vim`: `registerExtensions`, `registerVim`, Ex, status bar, preview `j`/`k` |
-| [dripnex/plugin-stamp](https://github.com/dripnex/plugin-stamp) | `stamp` | `v0.1.0` | Insert date/timestamp (not editor/GFM; already shipped) |
+| Repo                                                                | Manifest id        | Release          | What it actually does                                                                               |
+| ------------------------------------------------------------------- | ------------------ | ---------------- | --------------------------------------------------------------------------------------------------- |
+| [dripnex/plugin-mermaid](https://github.com/dripnex/plugin-mermaid) | `mermaid`          | `v0.1.0` tarball | `insertAtCursor('```mermaid…')` + Plugins-menu item. **No renderer.**                               |
+| [dripnex/plugin-math](https://github.com/dripnex/plugin-math)       | `math`             | `v0.1.0` tarball | `insertAtCursor('$$\nE = mc^2\n$$')`. **No KaTeX.**                                                 |
+| [dripnex/plugin-vim](https://github.com/dripnex/plugin-vim)         | `dripnex-vim-mode` | `v1.2.0` tarball | Real `@replit/codemirror-vim`: `registerExtensions`, `registerVim`, Ex, status bar, preview `j`/`k` |
+| [dripnex/plugin-stamp](https://github.com/dripnex/plugin-stamp)     | `stamp`            | `v0.1.0`         | Insert date/timestamp (not editor/GFM; already shipped)                                             |
 
 `#339`–`#341` (“extract math/mermaid/vim out of the app”) are **stale**. The satellites exist. Math/mermaid satellites did **not** take the built-in renderers with them — they are insert snippets. Vim never shipped as a built-in (`docs/releases/v0.16.0.md`).
 
-#### Registry vs fallback catalog
+#### Registry vs fallback catalog — [#562](https://github.com/dripnex/app/issues/562)
 
-Live `GET https://api.dripnex.app/plugins` (QA on #547, UA `Dripnex`): `mermaid`, `math`, `theme-parchment`, `stamp`. **No vim.**
+Three strings for Vim are **not** interchangeable. Verified in `dripnex/plugin-vim` `manifest.json` + release `v1.2.0`:
 
-Hardcoded merge when the DB row is missing: `FIRST_PARTY_PACKAGES` in `packages/api/src/routes/plugins.ts` — same four slugs, still no vim.
+| Role                                           | Value                   | Who uses it                               |
+| ---------------------------------------------- | ----------------------- | ----------------------------------------- |
+| **Manifest id** / `scan().id` / install folder | `dripnex-vim-mode`      | Scanner, enable toggle, Installed badge   |
+| **GitHub repo** (working install spec)         | `dripnex/plugin-vim`    | CLI, Other package, GitHub release lookup |
+| **Registry slug** (`GET /plugins/:slug`)       | _(missing on live API)_ | Browse Install button (before this PR)    |
 
-Offline fallback in the app: `COMMUNITY_CATALOG` in `communityCatalog.ts` — `stamp` + `dripnex-vim-mode` (`repository: dripnex/plugin-vim`). **When the registry is reachable, BrowseTab throws this list away.**
+Live `GET https://api.dripnex.app/plugins` (QA on #547 / #562, UA `Dripnex`): `mermaid`, `math`, `theme-parchment`, `stamp`. **No vim.** `GET /plugins/dripnex-vim-mode` → `404 {"error":"Plugin not found"}`.
+
+Working artifact: [v1.2.0](https://github.com/dripnex/plugin-vim/releases/tag/v1.2.0) `dripnex-vim-mode-1.2.0.tar.gz`.
+
+How Browse / Updates failed (v0.16.0 and `develop` before this PR):
+
+1. `COMMUNITY_CATALOG` already had the right pair (`id: dripnex-vim-mode`, `repository: dripnex/plugin-vim`).
+2. `BrowseTab` fetched the live registry. Any non-empty list **replaced** the fallback — Vim card gone.
+3. Install called `installFromSpec(plugin.slug)` → `dripnex-vim-mode`. `parseConnectSpec` treats a kebab string as a **registry** slug (`githubInstall.ts`), not `owner/repo`.
+4. `resolveRegistryBundle` hits `GET /plugins/dripnex-vim-mode` → 404. It never uses the known GitHub repo.
+5. `UpdatesTab` matches `scan().id` to `registry.slug` only. No slug → vim never appears under Updates.
+6. Fallback-only Install still failed: the button sent the catalog **id**, not `dripnex/plugin-vim`.
+
+**Workaround today (packaged 0.16.0, no code change):** Settings → Plugins → Other package → `dripnex/plugin-vim`. Do not type `dripnex-vim-mode`.
+
+This PR’s small slug fix (same branch, not a new install system):
+
+- Fallback catalog is **merged** into the registry list (`mergeFallbackCatalog`), so Vim stays visible when the API omits it.
+- Install / Update send `repository` (`dripnex/plugin-vim`) via `installSpecFor`, not the manifest id.
+- `FIRST_PARTY_PACKAGES` gains slug `dripnex-vim-mode` pointing at the real `plugin-vim` v1.2.0 tarball, so `GET /plugins/dripnex-vim-mode` works after the API deploy. Slug **equals** `manifest.id`; the repo URL is still `dripnex/plugin-vim`.
 
 ### 1.6 CLI vs packaged userData (second install bug)
 
@@ -152,13 +175,13 @@ So `dripnex-plugin install dripnex/plugin-vim` can print success at `~/.config/@
 
 ### 1.7 Docs that already exist
 
-| File | Role |
-| --- | --- |
-| `docs/PLUGIN_SYSTEM.md` | Phase history + hackable files + catalog table. Phase 5 marketplace is later. |
-| `docs/tables-plugin.md` | Built-in tables, not a satellite. |
-| `docs/releases/v0.16.0.md` | User-facing: one repo per plugin, `dripnex-plugin install owner/repo`, Vim is community. |
-| `docs/NOW.md` / `docs/ROADMAP.md` | Still say “built-in Mermaid, Vim, KaTeX” in places — **stale vs v0.16.0** (Vim is not built-in). |
-| `docs/archived/plans-2026/*plugin*` | Marketplace / ecosystem designs. Icebox. |
+| File                                | Role                                                                                             |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `docs/PLUGIN_SYSTEM.md`             | Phase history + hackable files + catalog table. Phase 5 marketplace is later.                    |
+| `docs/tables-plugin.md`             | Built-in tables, not a satellite.                                                                |
+| `docs/releases/v0.16.0.md`          | User-facing: one repo per plugin, `dripnex-plugin install owner/repo`, Vim is community.         |
+| `docs/NOW.md` / `docs/ROADMAP.md`   | Still say “built-in Mermaid, Vim, KaTeX” in places — **stale vs v0.16.0** (Vim is not built-in). |
+| `docs/archived/plans-2026/*plugin*` | Marketplace / ecosystem designs. Icebox.                                                         |
 
 `docs/plugins/` did not exist before this write-up.
 
@@ -166,32 +189,31 @@ So `dripnex-plugin install dripnex/plugin-vim` can print success at `~/.config/@
 
 ## 2. Issue #547 — what it implies
 
-[#547](https://github.com/dripnex/app/issues/547) (parent [#542](https://github.com/dripnex/app/issues/542)):
+[#547](https://github.com/dripnex/app/issues/547) (parent [#542](https://github.com/dripnex/app/issues/542)). Concrete packaged repro: [#562](https://github.com/dripnex/app/issues/562).
 
 > Inkdrop: Preferences → Install, auto-update. Dripnex: `dripnex-plugin install owner/repo`. … Do **not** build a marketplace. Make install + update of vim / mermaid / math a **reliable toggle**. Done when a user can enable Vim (and mermaid/math) without cloning a repo by hand, and updates apply.
 
 QA (same issue, 2026-08-22) already named the gaps. Implications for any **next** official pack:
 
-| Gap | Why a new pack would hit it too |
-| --- | --- |
-| Registry list **replaces** `COMMUNITY_CATALOG` | A pack only in the fallback (vim today) vanishes from Install when the API is up. |
-| Install button uses **slug**, not `owner/repo` | Slug must exist on `GET /plugins/:slug` with a `bundleUrl`. `dripnex-vim-mode` is not a registry slug → fail. `mermaid` / `math` slugs work. |
-| Updates match `scan().id` to `registry.slug` | Vim’s id is `dripnex-vim-mode`; registry has no such slug → never in Updates. Math/mermaid ids (`math`, `mermaid`) match. |
-| CLI writes a **different userData** than packaged Electron on Linux/Windows | `dripnex-plugin install` can succeed and the app still shows nothing. |
-| CLI install **errors if already installed** | Updates are Settings-only (overwrite) or uninstall+reinstall. |
-| Math/mermaid satellites are **insert-only** | “Enable mermaid/math” is already true for **rendering** (built-ins). The satellite is an extra insert command. Do not promise that installing the satellite *is* mermaid/math. |
+| Gap                                                                         | Why a new pack would hit it too                                                                                                                                                   |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Registry list **replaces** `COMMUNITY_CATALOG`                              | [#562](https://github.com/dripnex/app/issues/562): a pack only in the fallback (vim) vanishes from Install when the API is up. This PR merges instead of replacing.               |
+| Install button used **slug**, not `owner/repo`                              | [#562](https://github.com/dripnex/app/issues/562): `dripnex-vim-mode` is not a live registry slug → 404. Working spec is `dripnex/plugin-vim`. This PR installs via `repository`. |
+| Updates match `scan().id` to `registry.slug`                                | Same mismatch: vim never appeared under Updates. This PR also checks the fallback catalog and uses `repository` as the update spec.                                               |
+| CLI writes a **different userData** than packaged Electron on Linux/Windows | `dripnex-plugin install` can succeed and the app still shows nothing.                                                                                                             |
+| CLI install **errors if already installed**                                 | Updates are Settings-only (overwrite) or uninstall+reinstall.                                                                                                                     |
+| Math/mermaid satellites are **insert-only**                                 | “Enable mermaid/math” is already true for **rendering** (built-ins). The satellite is an extra insert command. Do not promise that installing the satellite _is_ mermaid/math.    |
 
-#547 is **path quality**, not new surface. New first-party packs should wait until:
+#547 is **path quality**, not new surface. [#562](https://github.com/dripnex/app/issues/562) is the vim slug bug. This PR’s catalog/merge fix covers (1) and (2) in the desktop; the API first-party row covers `GET /plugins/dripnex-vim-mode` after the Worker deploy. Still open:
 
-1. Vim is on the live registry (or Install uses `repository` / `owner/repo` when slug is missing).
-2. Updates can resolve a pack that is GitHub-only.
-3. CLI and packaged desktop share one plugins dir (add `Dripnex` to `userDataRootCandidates()`, or document `DRIPNEX_DATA_DIR` as required).
+1. CLI and packaged desktop share one plugins dir (add `Dripnex` to `userDataRootCandidates()`, or document `DRIPNEX_DATA_DIR` as required).
+2. CLI `install` still errors if the pack is already present (Settings overwrite is the update path).
 
 Extraction issues #339–#342 stay icebox. Do not delete the built-in mermaid/math/tables renderers as part of #547.
 
 ---
 
-## 3. Gaps vs Inkdrop-style *editor* plugins (GFM only)
+## 3. Gaps vs Inkdrop-style _editor_ plugins (GFM only)
 
 Inkdrop’s loop we already copied: `init.js` / `styles.css` / keymap, one git repo per pack, tarball on a GitHub release, Settings → Install. What we did **not** copy: a store, clipper, graph, AI notetaker.
 
@@ -199,44 +221,44 @@ Stay inside the existing `plugin-api`. Compare **built-in vs pack**.
 
 ### 3.1 Already in the app (do not rebuild as a pack)
 
-| Feature | Where | Notes |
-| --- | --- | --- |
-| GFM tables | Built-in `dripnex-tables` + `packages/tables` | Insert wizard, WYSIWYG, sortable preview, CSV. **Hunch discarded.** |
-| GFM task lists (preview) | `remark-gfm` + `MarkdownPreview` `onCheckboxToggle` → `toggleNthGfmTask` | Click in preview writes `- [ ]` / `- [x]` back. |
-| Task insert | `editor:insert-checkbox`, slash `/task` | Toolbar + Actions panel. |
-| Checked-task strike | Core `editorPolish.ts` (`cm-task-checked`) | Source-mode chrome, not a plugin. |
-| GFM footnotes (preview) | `remark-gfm` + `.footnotes` CSS | Renders `[^id]` / definition list. **No insert command.** |
-| GFM strikethrough, autolinks, tables in preview | `coreRemarkPlugins()` = `remarkGfm` | Always on. |
-| GitHub alerts | `remarkGithubAlert` + slash `/note`… | Core, not a plugin. |
-| `<mark>` highlight | Selection toolbar wrap | Core. |
-| Fence language picker | `FENCE_LANGUAGES` in `slash.ts` | Core. No mermaid/math in that list (special-cased in `packages/markdown`). |
-| Paste as link | Built-in `pasteAsLink` | Mod+Shift+K. |
-| Mermaid / KaTeX **render** | Built-in plugins above | Toggle in Installed. |
-| Outline, wikilinks, embeds, emoji shortcodes | Core packages / editor | Wikilinks are product, not a pack. |
-| Word count, typewriter, focus, reading time, active line | Built-in **proof** plugins | `PLUGIN_SYSTEM.md`: keep off dripnex.app/plugins. |
-| Stamp | Satellite `dripnex/plugin-stamp` | Already a first-party insert pack. |
-| Official themes | Built-in palettes + `theme-parchment` satellite | Themes, not editor/GFM. |
+| Feature                                                  | Where                                                                    | Notes                                                                      |
+| -------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| GFM tables                                               | Built-in `dripnex-tables` + `packages/tables`                            | Insert wizard, WYSIWYG, sortable preview, CSV. **Hunch discarded.**        |
+| GFM task lists (preview)                                 | `remark-gfm` + `MarkdownPreview` `onCheckboxToggle` → `toggleNthGfmTask` | Click in preview writes `- [ ]` / `- [x]` back.                            |
+| Task insert                                              | `editor:insert-checkbox`, slash `/task`                                  | Toolbar + Actions panel.                                                   |
+| Checked-task strike                                      | Core `editorPolish.ts` (`cm-task-checked`)                               | Source-mode chrome, not a plugin.                                          |
+| GFM footnotes (preview)                                  | `remark-gfm` + `.footnotes` CSS                                          | Renders `[^id]` / definition list. **No insert command.**                  |
+| GFM strikethrough, autolinks, tables in preview          | `coreRemarkPlugins()` = `remarkGfm`                                      | Always on.                                                                 |
+| GitHub alerts                                            | `remarkGithubAlert` + slash `/note`…                                     | Core, not a plugin.                                                        |
+| `<mark>` highlight                                       | Selection toolbar wrap                                                   | Core.                                                                      |
+| Fence language picker                                    | `FENCE_LANGUAGES` in `slash.ts`                                          | Core. No mermaid/math in that list (special-cased in `packages/markdown`). |
+| Paste as link                                            | Built-in `pasteAsLink`                                                   | Mod+Shift+K.                                                               |
+| Mermaid / KaTeX **render**                               | Built-in plugins above                                                   | Toggle in Installed.                                                       |
+| Outline, wikilinks, embeds, emoji shortcodes             | Core packages / editor                                                   | Wikilinks are product, not a pack.                                         |
+| Word count, typewriter, focus, reading time, active line | Built-in **proof** plugins                                               | `PLUGIN_SYSTEM.md`: keep off dripnex.app/plugins.                          |
+| Stamp                                                    | Satellite `dripnex/plugin-stamp`                                         | Already a first-party insert pack.                                         |
+| Official themes                                          | Built-in palettes + `theme-parchment` satellite                          | Themes, not editor/GFM.                                                    |
 
 ### 3.2 Real editor / GFM gaps that still fit the API
 
-| Gap | Built-in today? | Fits plugin-api? |
-| --- | --- | --- |
-| Second keymap (emacs) | No. Zero `emacs` / `codemirror-emacs` hits. Vim is the only keymap pack. | Yes — same as vim: bundle `@replit/codemirror-emacs`, `registerExtensions`. No `registerEmacs` today (only `registerVim`). |
-| Footnote **editor** UX | Preview only. No `editor:insert-footnote`. | Yes — `registerCommand` + `insertAtCursor` + decorations / `preview.on('a:click')` to jump. Do not re-register `remark-gfm`. |
-| Task toggle **in the source editor** | Preview click works; source has strike + insert only. | Yes — `registerExtensions` click/keymap on `- [ ]` / `- [x]` + `replaceRange`. Overlaps #542 “list/table/fence feel” (core polish). |
-| CSV / TSV fence as a table | GFM pipe tables only. | Yes — `registerCodeBlockRenderer('csv' \| 'tsv')`. Niche. |
-| Mermaid / math **insert** | Slash/fence picker does not insert those fences. Satellites already do. | Already published. #547 makes them installable, not a new pack. |
+| Gap                                  | Built-in today?                                                          | Fits plugin-api?                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Second keymap (emacs)                | No. Zero `emacs` / `codemirror-emacs` hits. Vim is the only keymap pack. | Yes — same as vim: bundle `@replit/codemirror-emacs`, `registerExtensions`. No `registerEmacs` today (only `registerVim`).          |
+| Footnote **editor** UX               | Preview only. No `editor:insert-footnote`.                               | Yes — `registerCommand` + `insertAtCursor` + decorations / `preview.on('a:click')` to jump. Do not re-register `remark-gfm`.        |
+| Task toggle **in the source editor** | Preview click works; source has strike + insert only.                    | Yes — `registerExtensions` click/keymap on `- [ ]` / `- [x]` + `replaceRange`. Overlaps #542 “list/table/fence feel” (core polish). |
+| CSV / TSV fence as a table           | GFM pipe tables only.                                                    | Yes — `registerCodeBlockRenderer('csv' \| 'tsv')`. Niche.                                                                           |
+| Mermaid / math **insert**            | Slash/fence picker does not insert those fences. Satellites already do.  | Already published. #547 makes them installable, not a new pack.                                                                     |
 
 ### 3.3 Hunches, verified
 
 The starting guess was “tables, footnotes, task-list UX, emacs.” Against the tree:
 
-| Hunch | Verdict |
-| --- | --- |
-| **Tables** | Already a full built-in. Do not ship a second tables pack. Extraction #342 is icebox. |
-| **Footnotes** | Preview is done. A pack would be **insert + jump**, not a renderer. Still valid, thinner than guessed. |
-| **Task-list UX** | Preview toggle + insert + strike already ship. Remaining value is **source-mode click/key toggle**. Could be a pack *or* core editor polish (#542 item 1). |
-| **Emacs** | Strongest **new** pack. Nothing exists. Same install story as vim once #547 works. |
+| Hunch            | Verdict                                                                                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tables**       | Already a full built-in. Do not ship a second tables pack. Extraction #342 is icebox.                                                                      |
+| **Footnotes**    | Preview is done. A pack would be **insert + jump**, not a renderer. Still valid, thinner than guessed.                                                     |
+| **Task-list UX** | Preview toggle + insert + strike already ship. Remaining value is **source-mode click/key toggle**. Could be a pack _or_ core editor polish (#542 item 1). |
+| **Emacs**        | Strongest **new** pack. Nothing exists. Same install story as vim once #547 works.                                                                         |
 
 ### 3.4 Ask Tomás first
 
@@ -274,7 +296,7 @@ Hooks marked **hypothesis** are not implemented.
 
 - **Why:** Preview already checks boxes. Source mode only strikes completed tasks. The leftover is click / `Mod+Enter` on `- [ ]` in the editor.
 - **Hook (hypothesis):** `registerExtensions` with a CM6 click handler + `editor.replaceRange` on the checkbox span. Reuse `toggleNthGfmTask` / `checkedTaskMarks` from `@dripnex/commands` if the pack may `require` it — **today it cannot** (`pluginRequire` whitelist). So either bundle a tiny toggler or add `@dripnex/commands` to the host whitelist (API change, not product shape).
-- **Product-shape decision:** **Ask Tomás** only on *where it lives* (core chrome vs pack). The behavior itself is GFM, not a new product.
+- **Product-shape decision:** **Ask Tomás** only on _where it lives_ (core chrome vs pack). The behavior itself is GFM, not a new product.
 
 ### 4. CSV / TSV fence preview — `dripnex/plugin-csv` (optional)
 
@@ -284,15 +306,15 @@ Hooks marked **hypothesis** are not implemented.
 
 ### Not ranked as “next to build”
 
-| Candidate | Why not |
-| --- | --- |
-| Tables pack | Already built-in. |
-| Mermaid / math **renderers** as satellites | Already built-in. Satellites are insert-only; #547 is enough. |
-| Stamp | Already first-party. |
-| Word count / typewriter / focus / reading time | Proof plugins. |
-| PlantUML / other diagram fences | Same hook as mermaid; mermaid already covers diagrams. Extra renderer deps, little GFM gain. |
-| Definition lists, sub/sup, smart punctuation | Not GFM, or would auto-rewrite markdown (sacred). |
-| Third keymap (sublime/vscode) | After emacs, if anyone asks. Same hook. |
+| Candidate                                      | Why not                                                                                      |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Tables pack                                    | Already built-in.                                                                            |
+| Mermaid / math **renderers** as satellites     | Already built-in. Satellites are insert-only; #547 is enough.                                |
+| Stamp                                          | Already first-party.                                                                         |
+| Word count / typewriter / focus / reading time | Proof plugins.                                                                               |
+| PlantUML / other diagram fences                | Same hook as mermaid; mermaid already covers diagrams. Extra renderer deps, little GFM gain. |
+| Definition lists, sub/sup, smart punctuation   | Not GFM, or would auto-rewrite markdown (sacred).                                            |
+| Third keymap (sublime/vscode)                  | After emacs, if anyone asks. Same hook.                                                      |
 
 ---
 
@@ -316,10 +338,10 @@ Explicit. Do not sneak these into a “plugin” PR:
 
 Copied from the vim failure mode so the next repo does not repeat it:
 
-1. `manifest.id` **===** registry `slug` **===** Install-button argument.
+1. `manifest.id` **===** registry `slug`. Keep `repository` as `owner/repo`. Install must send `owner/repo` (or a slug that exists on `GET /plugins/:slug` with a `bundleUrl`). Do not send the manifest id if it is not a registry slug — that is [#562](https://github.com/dripnex/app/issues/562).
 2. Row on `GET /plugins` with `bundleUrl` pointing at the GitHub release tarball (`dripnex-plugin pack` asset).
-3. Fallback `COMMUNITY_CATALOG` uses that same id (or stop replacing the fallback when merging).
+3. Fallback `COMMUNITY_CATALOG` lists the same `id` + `repository`, and Browse **merges** it (does not replace).
 4. Confirm packaged desktop `userData/plugins` is where the CLI wrote the files.
-5. Updates tab: bump the registry version and check the row appears.
+5. Updates tab: match `scan().id` to slug **or** fallback id; update spec is `repository`.
 
-#547 is the work that makes steps 1–5 true for vim (and keeps them true for math/mermaid insert). New packs come after.
+#547 / #562 are the path. New editor packs come after Install + Updates work for vim without typing Other package.
