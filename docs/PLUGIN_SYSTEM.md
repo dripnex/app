@@ -3,7 +3,7 @@
 > Plan de implementacion incremental del sistema de plugins de Dripnex.
 > Cada fase se construye sobre la anterior. No saltar fases.
 
-Official first-party research (install/load as of 2026-08, [#547](https://github.com/dripnex/app/issues/547), ranked next editor/GFM packs): [`docs/plugins/`](./plugins/README.md).
+Official first-party research (install/load as of 2026-08, [#547](https://github.com/dripnex/app/issues/547), ranked next editor/GFM packs): [`docs/plugins/`](./plugins/README.md). Install contract (slug → repo, shared `Dripnex` userData): [`docs/plugins/install-path.md`](./plugins/install-path.md).
 
 ---
 

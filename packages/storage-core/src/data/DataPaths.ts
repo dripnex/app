@@ -67,39 +67,87 @@ export function ensureDirectory(path: string): void {
 /**
  * Generate backup filename with timestamp.
  */
-/** Default Electron userData roots, most specific first. */
-export function userDataRootCandidates(): string[] {
-  const home = homedir();
-  if (process.platform === 'darwin') {
+export type UserDataPlatform = 'darwin' | 'win32' | 'linux';
+
+export type UserDataRootMarker = 'db' | 'plugins' | 'none';
+
+export interface UserDataRootOptions {
+  platform?: NodeJS.Platform | UserDataPlatform;
+  home?: string;
+  appData?: string;
+  exists?: (path: string) => boolean;
+  env?: NodeJS.ProcessEnv;
+}
+
+/**
+ * Electron userData roots for productName `Dripnex`.
+ * Packaged app first, then the electron-vite scoped name, then legacy lowercase.
+ */
+export function userDataRootCandidates(options: UserDataRootOptions = {}): string[] {
+  const platform = options.platform ?? process.platform;
+  const home = options.home ?? homedir();
+  const env = options.env ?? process.env;
+
+  if (platform === 'darwin') {
+    const support = join(home, 'Library', 'Application Support');
     return [
-      join(home, 'Library', 'Application Support', '@dripnex', 'desktop'),
-      join(home, 'Library', 'Application Support', 'Dripnex'),
-      join(home, 'Library', 'Application Support', 'dripnex'),
+      join(support, 'Dripnex'),
+      join(support, '@dripnex', 'desktop'),
+      join(support, 'dripnex'),
     ];
   }
-  if (process.platform === 'win32') {
-    const roaming = process.env.APPDATA ?? join(home, 'AppData', 'Roaming');
-    return [join(roaming, '@dripnex', 'desktop'), join(roaming, 'dripnex')];
+  if (platform === 'win32') {
+    const roaming = options.appData ?? env.APPDATA ?? join(home, 'AppData', 'Roaming');
+    return [
+      join(roaming, 'Dripnex'),
+      join(roaming, '@dripnex', 'desktop'),
+      join(roaming, 'dripnex'),
+    ];
   }
-  return [join(home, '.config', '@dripnex', 'desktop'), join(home, '.config', 'dripnex')];
+  return [
+    join(home, '.config', 'Dripnex'),
+    join(home, '.config', '@dripnex', 'desktop'),
+    join(home, '.config', 'dripnex'),
+  ];
+}
+
+export function markUserDataRoot(
+  root: string,
+  exists: (path: string) => boolean = existsSync
+): UserDataRootMarker {
+  if (exists(join(root, 'dripnex.db'))) return 'db';
+  if (exists(join(root, 'plugins'))) return 'plugins';
+  return 'none';
+}
+
+/**
+ * Prefer a root that already has the app database, then one with plugins/,
+ * then the packaged `Dripnex` productName path (first candidate).
+ */
+export function pickUserDataRoot(
+  candidates: string[],
+  exists: (path: string) => boolean = existsSync
+): string {
+  const ranked = candidates.map(root => ({ root, marker: markUserDataRoot(root, exists) }));
+  return (
+    ranked.find(r => r.marker === 'db')?.root ??
+    ranked.find(r => r.marker === 'plugins')?.root ??
+    candidates[0] ??
+    join(homedir(), '.dripnex')
+  );
 }
 
 /**
  * Resolve the desktop data directory (where dripnex.db and plugins/ live).
- * Honors DRIPNEX_DATA_DIR. Otherwise picks the first existing candidate,
- * falling back to `@dripnex/desktop`.
+ * Honors DRIPNEX_DATA_DIR. CLI and the packaged app must share this root (#547).
  */
-export function resolveUserDataRoot(override?: string): string {
-  const explicit = override ?? process.env.DRIPNEX_DATA_DIR;
+export function resolveUserDataRoot(override?: string, options: UserDataRootOptions = {}): string {
+  const env = options.env ?? process.env;
+  const explicit = override ?? env.DRIPNEX_DATA_DIR;
   if (explicit) return explicit;
 
-  const candidates = userDataRootCandidates();
-  for (const root of candidates) {
-    if (existsSync(join(root, 'dripnex.db')) || existsSync(join(root, 'plugins'))) {
-      return root;
-    }
-  }
-  return candidates[0] ?? join(homedir(), '.dripnex');
+  const exists = options.exists ?? existsSync;
+  return pickUserDataRoot(userDataRootCandidates(options), exists);
 }
 
 export function generateBackupFilename(prefix: string = 'backup'): string {

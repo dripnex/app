@@ -7,11 +7,16 @@
 // Data paths
 export {
   type DataPaths,
+  type UserDataPlatform,
+  type UserDataRootMarker,
+  type UserDataRootOptions,
   createDataPaths,
   ensureDirectory,
   generateBackupFilename,
   generateMigrationBackupFilename,
   userDataRootCandidates,
+  markUserDataRoot,
+  pickUserDataRoot,
   resolveUserDataRoot,
 } from './DataPaths.js';
 
