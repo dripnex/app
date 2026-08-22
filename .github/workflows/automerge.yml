@@ -59,11 +59,21 @@ jobs:
   disable-automerge:
     runs-on: ubuntu-latest
     permissions:
-      # Only the auto-merge state changes here; no contents write needed.
+      # `pull-requests: write` alone returned FORBIDDEN ("Resource not
+      # accessible by integration") on PR #571. The narrower scope came from
+      # a least-privilege review; the mutation appears to want contents too.
+      # If FORBIDDEN comes back with both scopes granted, the cause is a
+      # repository or org restriction on GITHUB_TOKEN, not this file.
+      contents: write
       pull-requests: write
+    # Only where a queued merge could still land somewhere unprotected: a
+    # draft, or a base that is neither develop nor main. A PR retargeted onto
+    # main is a release promotion, and main is protected — there is nothing
+    # dangerous to undo, so firing there was pure noise.
     if: >-
       github.event.pull_request.draft == true ||
-      github.event.pull_request.base.ref != 'develop'
+      (github.event.pull_request.base.ref != 'develop' &&
+      github.event.pull_request.base.ref != 'main')
     steps:
       - name: Disable auto-merge for drafts and non-develop bases
         env:
