@@ -23,6 +23,7 @@ import { useWikilinkPeek } from '../hooks/useWikilinkPeek';
 import { useNotebook } from '../hooks/useNotebooks';
 import { isKindTag, normalizeTag, type NoteKind } from '../lib/knowledge';
 import { notebookStyleProps } from '../utils/notebookStyle';
+import { modAccel } from '../utils/modAccel';
 import { WikilinkPeek } from './editor/WikilinkPeek';
 import type { MarkdownEditorHandle } from './MarkdownEditor';
 import type { MarkdownPreviewHandle, ToolbarVisibility } from './editor';
@@ -457,10 +458,10 @@ export function NoteEditor({
       <main className={sc('note-editor')} aria-label="Note editor">
         <div className={sc('note-editor-empty')} role="status">
           <span className={sc('empty-icon')} aria-hidden="true">
-            <Icon icon={FileText} size={48} />
+            <Icon icon={FileText} size={28} />
           </span>
-          <p className={sc('empty-title')}>Select a note to edit</p>
-          <p className={sc('empty-hint')}>Or press ⌘N to create a new one</p>
+          <p className={sc('empty-title')}>Select a note</p>
+          <p className={sc('empty-hint')}>Or press {modAccel('N')} to create one</p>
         </div>
       </main>
     );
