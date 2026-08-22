@@ -2,6 +2,26 @@
 
 Newest first. Not release notes (those stay in [`docs/releases/`](../releases/)).
 
+```mermaid
+flowchart LR
+  now[Now]
+  next[Next]
+  later[Later]
+  done[Done]
+  now --> next --> later
+  now -.-> done
+```
+
+**Now:** [#542](https://github.com/dripnex/app/issues/542) analysis, [#545](https://github.com/dripnex/app/issues/545) AuthGate, [#546](https://github.com/dripnex/app/issues/546) What's New + site, [#547](https://github.com/dripnex/app/issues/547) plugin install.
+
+**Next:** [#548](https://github.com/dripnex/app/issues/548) statuses/search/revisions, [#549](https://github.com/dripnex/app/issues/549) sync merge, [#550](https://github.com/dripnex/app/issues/550) coverage floor.
+
+**Later:** [#551](https://github.com/dripnex/app/issues/551) mobile + clipper.
+
+**Done:** [#543](https://github.com/dripnex/app/issues/543) e2e CM, [#544](https://github.com/dripnex/app/issues/544) Dependabot e2e.
+
+Board: [dripnex/projects/3](https://github.com/orgs/dripnex/projects/3). Not Linear.
+
 ## 2026-08-22
 
 - Mobile **started**. Tomás said go. `dripnex/ios` created (private). Reuse is `NoteSnapshot` + `sync-core` wire. Contract: `docs/mobile/CONTRACT.md`. Two-profile desktop sync stays a P3 risk, not a P1 blocker.
@@ -15,6 +35,15 @@ Newest first. Not release notes (those stay in [`docs/releases/`](../releases/))
 The sections below are the long form behind those calls, from the Dripnex Indie sweep.
 
 ### AuthGate stays
+
+```mermaid
+flowchart TD
+  acct[Create Inkdrop or Dripnex account]
+  login[Login screen]
+  write[Write to local SQLite]
+  sync[Optional sync / Don't Sync]
+  acct --> login --> write --> sync
+```
 
 Inkdrop **has** an AuthGate. [Get started](https://docs.inkdrop.app/start-guide): create account, download, then "You'll see a login screen." [Privacy 5.4](https://docs.inkdrop.app/privacy): "you must have an Inkdrop account to use the Inkdrop client apps." Offline and Don't Sync are after login.
 
@@ -32,15 +61,6 @@ Existing `packages/mcp-server` (stdio to SQLite, writes off by default) stays as
 
 - [#541](https://github.com/dripnex/app/pull/541) merged: Playwright types into CodeMirror. Closed [#543](https://github.com/dripnex/app/issues/543).
 - [#552](https://github.com/dripnex/app/pull/552) merged: e2e + commitlint rewrite git SSH to HTTPS so Dependabot lockfiles can `pnpm install`. Closed [#544](https://github.com/dripnex/app/issues/544). **No release** (workflow only). Existing Dependabot PRs still need rebase onto `develop` before automerge.
-
-### Roadmap home
-
-GitHub Project only: [dripnex/projects/3](https://github.com/orgs/dripnex/projects/3). Not Linear. Default repo `dripnex/app`.
-
-Now: #542 analysis, #545 AuthGate, #546 What's New + site, #547 plugin install.
-Next: #548 statuses/search/revisions, #549 sync merge, #550 coverage floor.
-Later: #551 mobile + clipper.
-Done: #543 e2e, #544 Dependabot e2e.
 
 ### Architecture calls (do not reopen)
 
