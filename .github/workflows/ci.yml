@@ -164,6 +164,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      # Same rewrite as the setup job. Dependabot-regenerated lockfiles
+      # resolve @electron/node-gyp as git@github.com: (SSH). Runners have
+      # no deploy key, so install dies in ~20s with "Permission denied
+      # (publickey)" — that is why Dependabot PRs fail e2e while develop
+      # (HTTPS tarball in the lockfile) stays green. See #544.
+      - name: Force HTTPS for GitHub git dependencies
+        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
+
       - name: Install dependencies (with postinstall scripts)
         run: pnpm install --frozen-lockfile
 
