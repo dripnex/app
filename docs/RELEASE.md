@@ -31,9 +31,10 @@ CI on that PR is the gate. When it merges:
 
 - **Release** runs on `main`.
 - It reads commits since the last tag (`feat` → minor, `fix` → patch).
-- It bumps `package.json` + `apps/desktop/package.json`, writes `CHANGELOG.md`,
-  tags `vX.Y.Z`, opens a **draft** GitHub Release. If the What’s New file
-  exists, that body replaces the commit dump.
+- It tags `vX.Y.Z` on the merge SHA and opens a **draft** GitHub Release.
+  It does **not** push a version-bump commit to `main` (branch rules require
+  a PR). Build stamps `package.json` from the tag right before packaging.
+  If `docs/releases/vX.Y.Z.md` exists, that body is the GitHub notes.
 - **Build & Publish** starts from that success (not from the tag push — GitHub
   will not let `GITHUB_TOKEN` trigger another workflow via tags).
 - All three platforms green → the release is published → electron-updater sees
@@ -53,7 +54,7 @@ gh workflow run "Build & Publish" -f tag=v0.16.0
 
 | What we did                        | What actually happened                                    |
 | ---------------------------------- | --------------------------------------------------------- |
-| PAT `GH_TOKEN` as `tomymaritano`   | 403 on `dripnex/readide`. Tokens expire. Bots do not.     |
+| PAT `GH_TOKEN` as `tomymaritano`   | 403. Tokens expire. Bots do not.                          |
 | **Run workflow** by hand           | Easy to forget. 0.16.0 sat on `main` with no tag.         |
 | Squash the promotion PR            | All `feat` commits vanish. No minor bump.                 |
 | Title `feat(release): cut v0.15.x` | One fake Feature. The real changelog is a single line.    |
