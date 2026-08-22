@@ -2,12 +2,18 @@ name: Auto-merge
 
 on:
   pull_request:
-    types:
-      [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
-permissions:
-  contents: write
-  pull-requests: write
+# Least privilege: nothing at the workflow level, scoped per job below.
+permissions: {}
+
+# Serialize per pull request. Without this, an older run holding a stale event
+# snapshot can enable auto-merge after a newer run disabled it. Runs queue
+# rather than cancel: cancelling could kill the disable job and leave
+# auto-merge switched on.
+concurrency:
+  group: automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   # Non-draft PRs into develop: enable GitHub auto-merge (squash).
@@ -16,6 +22,11 @@ jobs:
   # instant merge). Dependabot is included by the same rule. No label.
   automerge:
     runs-on: ubuntu-latest
+    permissions:
+      # `gh pr merge --auto` writes the merge queue entry.
+      contents: write
+      # ...and the auto-merge state on the pull request.
+      pull-requests: write
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.base.ref == 'develop'
@@ -24,12 +35,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
+        # The `if:` above reads the event payload, which is a snapshot from when
+        # the run was queued. Re-read the live state so a PR drafted or
+        # retargeted in the meantime cannot have auto-merge switched back on.
+        run: |
+          set -euo pipefail
+          state="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,baseRefName --jq '"\(.isDraft) \(.baseRefName)"')"
+          if [ "$state" != "false develop" ]; then
+            echo "Skipping: PR #$PR_NUMBER is now [$state], not [false develop]."
+            exit 0
+          fi
+          gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
 
   # Drop auto-merge if the PR is drafted or retargeted off develop, so a
   # previously queued merge cannot land on an unprotected feature branch.
   disable-automerge:
     runs-on: ubuntu-latest
+    permissions:
+      # Only the auto-merge state changes here; no contents write needed.
+      pull-requests: write
     if: >-
       github.event.pull_request.draft == true ||
       github.event.pull_request.base.ref != 'develop'
