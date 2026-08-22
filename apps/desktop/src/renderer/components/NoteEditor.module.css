@@ -18,24 +18,25 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 24px;
+  padding: var(--space-8) var(--space-6);
 }
 
 .note-editor-empty .empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  display: flex;
+  color: var(--text-faint);
+  margin-bottom: var(--space-3);
 }
 
 .note-editor-empty .empty-title {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-1);
 }
 
 .note-editor-empty .empty-hint {
-  font-size: 13px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
   color: var(--text-muted);
   margin: 0;
 }
@@ -108,13 +109,13 @@
   min-width: 0;
   background: transparent;
   border: none;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-tight);
   color: var(--text-primary);
   outline: none;
   padding: 2px 0;
   -webkit-app-region: no-drag;
-  transition: color var(--transition-fast);
 }
 
 .title-input::placeholder {
@@ -122,7 +123,7 @@
 }
 
 .title-input:focus {
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 .note-editor-title {

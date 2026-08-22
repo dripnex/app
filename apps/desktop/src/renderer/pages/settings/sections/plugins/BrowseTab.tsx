@@ -103,8 +103,8 @@ export function BrowseTab() {
     <div className={styles.pluginConnect}>
       <h3 className={styles.pluginConnectTitle}>Registry</h3>
       <p className={styles.pluginConnectCopy}>
-        Click Install. The app asks the registry for the package and downloads its tarball — same as{' '}
-        <code>ipm install</code> on Inkdrop.
+        Click Install. Official packs download their GitHub release tarball — same as{' '}
+        <code>dripnex-plugin install owner/repo</code>.
         {source === 'fallback'
           ? ' Showing the first-party catalog until the API is reachable.'
           : null}

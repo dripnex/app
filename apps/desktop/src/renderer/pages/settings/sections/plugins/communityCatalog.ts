@@ -23,20 +23,36 @@ export interface CatalogPlugin {
 
 export const COMMUNITY_CATALOG: CatalogPlugin[] = [
   {
-    id: 'stamp',
-    name: 'Stamp',
-    description: 'Insert the current date or timestamp at the cursor.',
-    version: '0.1.0',
-    author: 'Dripnex',
-    repository: 'dripnex/plugin-stamp',
-  },
-  {
     id: 'dripnex-vim-mode',
     name: 'Vim Mode',
     description: 'Vim keybindings, Ex commands, relative line numbers, and clipboard yank.',
     version: '1.2.0',
     author: 'Dripnex',
     repository: 'dripnex/plugin-vim',
+  },
+  {
+    id: 'mermaid',
+    name: 'Mermaid',
+    description: 'Insert a mermaid fence at the cursor. Preview rendering ships with Dripnex.',
+    version: '0.1.0',
+    author: 'Dripnex',
+    repository: 'dripnex/plugin-mermaid',
+  },
+  {
+    id: 'math',
+    name: 'Math',
+    description: 'Insert a LaTeX math fence at the cursor. KaTeX rendering ships with Dripnex.',
+    version: '0.1.0',
+    author: 'Dripnex',
+    repository: 'dripnex/plugin-math',
+  },
+  {
+    id: 'stamp',
+    name: 'Stamp',
+    description: 'Insert the current date or timestamp at the cursor.',
+    version: '0.1.0',
+    author: 'Dripnex',
+    repository: 'dripnex/plugin-stamp',
   },
 ];
 
@@ -89,4 +105,55 @@ export function mergeFallbackCatalog(
       repository: p.repository,
     }));
   return extra.length === 0 ? filled : [...extra, ...filled];
+}
+
+export function githubRepoFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const path = trimmed
+    .replace(/^https:\/\/github\.com\//i, '')
+    .replace(/\.git$/i, '')
+    .replace(/\/+$/, '');
+  const [owner, repo] = path.split('/');
+  return owner && repo ? `${owner}/${repo}` : null;
+}
+
+export interface RemoteCatalogRow {
+  slug: string;
+  version: string;
+  name?: string;
+  repository?: string | null;
+  repositoryUrl?: string | null;
+}
+
+/**
+ * Match an installed pack to a registry (or fallback) row by id/slug **or**
+ * GitHub repository. Vim's scan().id is dripnex-vim-mode; a live row might
+ * only share dripnex/plugin-vim (#547 / #562).
+ */
+export function matchRemoteForInstalled(
+  installedId: string,
+  registry: RemoteCatalogRow[],
+  fallback: CatalogPlugin[] = COMMUNITY_CATALOG
+): RemoteCatalogRow | null {
+  const known = fallback.find(p => p.id === installedId);
+  const bySlug = registry.find(p => p.slug === installedId);
+  if (bySlug) return bySlug;
+
+  const repo = known?.repository;
+  if (repo) {
+    const byRepo = registry.find(p => {
+      const remoteRepo = p.repository ?? githubRepoFromUrl(p.repositoryUrl);
+      return remoteRepo === repo;
+    });
+    if (byRepo) return byRepo;
+    return {
+      slug: known.id,
+      version: known.version,
+      name: known.name,
+      repository: known.repository,
+    };
+  }
+
+  return null;
 }

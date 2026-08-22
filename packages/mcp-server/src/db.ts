@@ -20,6 +20,15 @@ export function resolveDbPath(override?: string): string {
   return findDbPath();
 }
 
+/** Resolve the DB path without throwing — used for the write-gate sidecar when talking HTTP. */
+export function tryResolveDbPath(override?: string): string | undefined {
+  try {
+    return resolveDbPath(override);
+  } catch {
+    return undefined;
+  }
+}
+
 function findDbPath(): string {
   if (process.env.DRIPNEX_DB_PATH) {
     return process.env.DRIPNEX_DB_PATH;

@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { tryResolveDbPath } from '../db';
 import { extractTitle, markExternalWrite, readPackageVersion } from '../notes';
 
 describe('mcp note helpers', () => {
@@ -12,6 +13,10 @@ describe('mcp note helpers', () => {
 
   it('reads version from package.json', () => {
     expect(readPackageVersion(join(import.meta.dirname, '../..'))).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it('tryResolveDbPath returns an override and swallows lookup failures', () => {
+    expect(tryResolveDbPath(':memory:')).toBe(':memory:');
   });
 
   it('writes an external-write signal next to the db', () => {
