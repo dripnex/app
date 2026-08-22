@@ -291,7 +291,7 @@ export class LocalHttpClient {
 
     if (!res.ok) {
       const message =
-        data && typeof data === 'object' && data !== null && 'error' in data
+        data && typeof data === 'object' && 'error' in data
           ? String((data as { error: unknown }).error)
           : `Local HTTP ${res.status}`;
       throw new LocalHttpError(message, res.status, data);
