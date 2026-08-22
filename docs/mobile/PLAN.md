@@ -1,48 +1,50 @@
 # Mobile plan
 
-Status: **plan only**. Later, not v1. Do not open `dripnex/ios` until the gate below is green.
-Issue: [#551](https://github.com/dripnex/app/issues/551). Decision: [ADR 005](../adr/005-mobile-own-repo.md).
+Status: **started**. Tomás said go on 2026-08-22. P1 is [`dripnex/ios`](https://github.com/dripnex/ios) (private, created the same day). No iOS code in `dripnex/app`.
+Issue: [#551](https://github.com/dripnex/app/issues/551). Decision: [ADR 005](../adr/005-mobile-own-repo.md). Contract: [CONTRACT.md](./CONTRACT.md).
 
 Inkdrop ships iOS/Android after the same account login. Copy that product shape, not a guest-only phone editor.
 
-## Why not now
+## Why not a daily driver yet
 
-Desktop still has to prove the write path and sync (two desktop profiles / two machines). Mobile without that is a second offline silo. Clipper stays with mobile as Later, not a side quest.
+Desktop still has to prove the write path and sync (two desktop profiles / two machines). That is a **P3 risk**, not a P1 blocker: if people write on the phone before merge is proven, mobile is a second offline silo. Clipper stays Later, not a side quest.
 
 ```mermaid
 flowchart TD
-  gate[Desktop sync works on two profiles]
-  repo[Create dripnex/ios]
+  repo[dripnex/ios P1 skeleton]
   auth[AuthGate + magic link]
   read[Read notes + notebooks]
   write[Editor write path]
   sync[E2E sync with desktop]
   ipad[iPad layout]
   android[Android later]
-  gate --> repo --> auth --> read --> write --> sync --> ipad --> android
+  repo --> auth --> read --> write --> sync --> ipad --> android
 ```
 
-## Gate (must be true first)
+## Gate
+
+Satisfied for P1 (2026-08-22):
 
 1. AuthGate stays on desktop (ADR 002).
-2. Two desktop profiles can edit the same account and merge without data loss (#549).
-3. Local HTTP + MCP are the agent path on desktop (ADR 004). Phone does not need MCP v1.
-4. Tomas says go. Ask only for that / release / signing.
+2. Local HTTP + MCP are the agent path on desktop (ADR 004). Phone does not need MCP v1.
+3. Tomás said go. Ask only for release / signing / TestFlight.
+
+**P3 risk (not a skeleton blocker):** two desktop profiles can edit the same account and merge without data loss (#549). Keep it on the P3 dogfood phase. Do not wait on it to start P1 in `dripnex/ios`.
 
 ## Repo and stack
 
-| | Choice | Why |
-| --- | --- | --- |
-| Repo | `dripnex/ios` (new, private) | Never inside `dripnex/app` |
-| First OS | iPhone, then iPad | Inkdrop-shaped; Android after dogfood |
-| UI | SwiftUI | Native, one store, no Electron in a phone |
-| Notes DB | SQLite on device | ADR 003. Same fields as desktop |
-| Editor | GFM in a WKWebView CodeMirror 6 shell, or a native markdown TextView if CM is too heavy | Editor is the product. Do not invent a WYSIWYG |
-| Auth | Same account / magic link as desktop | AuthGate on first launch |
-| Sync | `api.dripnex.app` after login, Don't Sync valid | Same as desktop |
-| Plugins | Not v1 | Desktop plugin path (#547) first |
+|          | Choice                                                                                  | Why                                            |
+| -------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Repo     | `dripnex/ios` (private, created 2026-08-22)                                             | Never inside `dripnex/app`                     |
+| First OS | iPhone, then iPad                                                                       | Inkdrop-shaped; Android after dogfood          |
+| UI       | SwiftUI                                                                                 | Native, one store, no Electron in a phone      |
+| Notes DB | SQLite on device                                                                        | ADR 003. Same fields as desktop                |
+| Editor   | GFM in a WKWebView CodeMirror 6 shell, or a native markdown TextView if CM is too heavy | Editor is the product. Do not invent a WYSIWYG |
+| Auth     | Same account / magic link as desktop                                                    | AuthGate on first launch                       |
+| Sync     | `api.dripnex.app` after login, Don't Sync valid                                         | Same as desktop                                |
+| Plugins  | Not v1                                                                                  | Desktop plugin path (#547) first               |
 
-Do not use Capacitor wrapping the desktop app. Do not put React Native inside `dripnex/app`.
+Do not use Capacitor wrapping the desktop app. Do not put React Native inside `dripnex/app`. iOS copies [CONTRACT.md](./CONTRACT.md); it does not invent note or sync fields.
 
 ## Product shape (v1 phone)
 
@@ -68,17 +70,17 @@ flowchart LR
 
 ## Phases
 
-**P0 — desktop (now, still in dripnex/app)**
-Prove sync merge + attachments (#549). No iOS repo yet.
+**P0 — desktop (still in dripnex/app)**
+Prove sync merge + attachments (#549). That work stays here. It does not block the P1 skeleton.
 
-**P1 — skeleton (`dripnex/ios`)**
-Xcode project, AuthGate, empty Inbox, read-only notes from sync. TestFlight internal.
+**P1 — skeleton (`dripnex/ios`, started)**
+Xcode project, AuthGate, empty Inbox, local SQLite. Read-only notes when sync exists; do not block the skeleton on two-profile desktop sync. No iOS sources in this repo. TestFlight only with Tomás.
 
 **P2 — write path**
 Create / edit / trash. Titles = first non-empty line. Templates if desktop templates already sync.
 
 **P3 — sync dogfood**
-Same account: type on phone, see it on desktop, and the reverse. Conflict UI: keep this / keep other / open both (desktop already has this).
+Same account: type on phone, see it on desktop, and the reverse. Conflict UI: keep this / keep other / open both (desktop already has this). Two-profile desktop merge (#549) is the quality risk in this phase.
 
 **P4 — iPad**
 Three-pane optional. Not a new app.
@@ -90,8 +92,8 @@ Only after iOS is a daily driver. Clipper can be a share extension on iOS first,
 
 - Marketplace, graph, AI-notetaker, hosted note MCP on the phone
 - Building inside `dripnex/app`
-- Starting P1 before the gate
+- Treating two-profile desktop sync as a P1 gate
 
 ## Done when (later)
 
-Tomas can jot a note on iPhone after login, open it on desktop, and the markdown is the same. Until then this file is the plan, not a build ticket.
+Tomas can jot a note on iPhone after login, open it on desktop, and the markdown is the same. Until then P1 is the skeleton in `dripnex/ios`, not a daily-driver ticket.
