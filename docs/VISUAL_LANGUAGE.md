@@ -1,11 +1,31 @@
 # Desktop visual language
 
-Rules for Dripnex desktop chrome. Tokens live in
-`apps/desktop/src/renderer/ui/tokens/tokens.css`. This file is the
-decision log so later polish does not invent a second system.
+Rules for Dripnex desktop chrome. This file is the decision log so later
+polish does not invent a second system.
 
-Brand voice and anti-values: [`docs/BRAND.md`](./BRAND.md).
+**Source of truth (in this order):**
+
+1. `apps/desktop/src/renderer/ui/tokens/tokens.css` — shipped type, space, color
+2. This file — AuthGate / list / editor / empty-state rules
+3. Existing desktop CSS modules and primitives (`Button`, `Input`)
+4. [`docs/BRAND.md`](./BRAND.md) — voice and anti-values, not a new palette
+
 AuthGate is required: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stays.md).
+
+---
+
+## Not a source of truth
+
+Do **not** copy these. They are not the product.
+
+| Surface | What it is (22 Aug 2026) | Do not take |
+| ------- | ------------------------ | ----------- |
+| [dripnex.app](https://dripnex.app) | GoDaddy parking page | Black CTA, pale-blue tiles, Helvetica |
+| [dripnex.github.io/readide](https://dripnex.github.io/readide) | 404 | Nothing |
+| `docs/archived/plans-2026/2026-02-18-marketing-site-redesign-design.md` | Unshipped violet/Raycast draft | Gradients, Inter 800, indigo accent |
+
+If the public site later becomes real product chrome, still prefer this
+file + `tokens.css` until Tomás says the site is canonical.
 
 ---
 
@@ -16,7 +36,7 @@ AuthGate is required: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stay
    steer (no accent timestamps, no accent title-on-focus).
 3. If a change would “grab attention”, it is probably wrong.
 4. If it is a brand call (accent hue, logo, mesh vs still wash), ask
-   Tomás. Do not guess.
+   Tomás. Do not guess a palette.
 
 ---
 
@@ -40,12 +60,13 @@ Prefer:
 | Focus ring  | `--accent` + `--accent-muted` glow            |
 | Danger      | `--danger`                                    |
 
-Accent (`--accent`) is for focus, selection underline, links, and
-active toggles. It is not a fill for every primary button.
+Accent (`--accent`) is for focus, selection underline, links, active
+toggles, and the `Button` primary fill. Do not invent a second primary
+(no black CTA, no pale-blue tile).
 
-**AuthGate primary action** is ink-on-paper: `--text-primary` on
-`--bg-base` (inverted). Settings / in-app `Button` primary still uses
-accent fill. Do not mix the two on the same screen.
+**AuthGate primary action** matches `Button` primary: `--accent` fill,
+`--bg-base` label, `--accent-hover` on hover. Secondary / “Continue
+locally” matches `Button` secondary (border, no fill).
 
 ---
 
@@ -67,8 +88,10 @@ AuthGate copy.
 
 `body` is 14px. Do not invent a sixth size in a module.
 
-Font: `--font-sans` (system UI). Editor body: user preference, default
-`--font-mono`. If a font “speaks”, it is wrong.
+Font: `--font-sans` (system UI stack already in tokens). Editor body:
+user preference, default `--font-mono`. Do not set Helvetica as the
+first family to mimic the parking page. If a font “speaks”, it is wrong.
+Replacing the stack is a Tomás call.
 
 ---
 
@@ -99,9 +122,9 @@ Shipped desktop (v0.16.0 tokens):
 
 `docs/BRAND.md` specifies a muted gray accent (`#6b7280`) and off-white
 `#fafaf9`. The 2026 marketing redesign draft used violet/indigo. Public
-`dripnex.app` (22 Aug 2026) is a stub that redirects to `/lander`
-(Cloudflare 525 when fetched). **Do not change the shipped teal or
-logo in polish PRs.** Tomás owns that call.
+`dripnex.app` is a GoDaddy parking page; `dripnex.github.io/readide` is
+404. **Do not change the shipped teal or logo in polish PRs.** Tomás
+owns that call.
 
 Nested markdown list marks still use blue (`#60a5fa`) and violet
 (`#c4b5fd`). That violates the brand “no SaaS blue / no AI purple”
@@ -146,7 +169,7 @@ Visual rules:
 - Follows `data-color-scheme` like the rest of the app.
 - Tabs sit on `--bg-inset`; active tab is `--bg-elevated`.
 - Input focus matches the Input primitive (accent border + muted ring).
-- Primary button is inverted ink, not accent fill.
+- Primary button matches `Button` primary (`--accent` fill). No black CTA.
 
 Whether the mesh stays at all is a Tomás call (brand says no
 gradients). Polish may quiet it; do not remove the gate.

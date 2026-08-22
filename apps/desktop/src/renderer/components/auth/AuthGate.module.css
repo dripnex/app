@@ -7,6 +7,7 @@
   padding: var(--space-10) var(--space-5) var(--space-8);
   background: var(--bg-base);
   overflow: hidden;
+  font-family: var(--font-sans);
   -webkit-app-region: drag;
 }
 
@@ -135,20 +136,24 @@
 
 .submit {
   margin-top: var(--space-2);
-  border: 0;
+  border: 1px solid var(--accent);
   border-radius: var(--radius-lg);
-  background: var(--text-primary);
+  background: var(--accent);
   padding: 10px var(--space-4);
   color: var(--bg-base);
   font: inherit;
   font-size: var(--text-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background var(--transition-fast), opacity var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
 .submit:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text-primary) 88%, var(--bg-base));
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .submit:focus-visible {
