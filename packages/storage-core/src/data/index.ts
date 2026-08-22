@@ -7,12 +7,21 @@
 // Data paths
 export {
   type DataPaths,
+  type UserDataPlatform,
+  type UserDataRootMarker,
+  type UserDataRootOptions,
+  type ElectronUserDataResolution,
   createDataPaths,
   ensureDirectory,
   generateBackupFilename,
   generateMigrationBackupFilename,
   userDataRootCandidates,
+  markUserDataRoot,
+  pickUserDataRoot,
   resolveUserDataRoot,
+  PRODUCT_APP_NAME,
+  hasExplicitUserDataDir,
+  resolveElectronUserData,
 } from './DataPaths.js';
 
 // Backup system

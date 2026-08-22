@@ -7,32 +7,21 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Button, toast } from '../../../../ui/primitives';
 import { SettingsCard } from '../../components/SettingsCard';
-import { COMMUNITY_CATALOG } from './communityCatalog';
+import {
+  COMMUNITY_CATALOG,
+  installSpecFor,
+  mergeFallbackCatalog,
+  type CatalogCard,
+} from './communityCatalog';
 import styles from './Plugins.module.css';
-
-interface RegistryCard {
-  slug: string;
-  name: string;
-  description: string;
-  version: string;
-  author: string;
-  repository: string | null;
-}
 
 export function BrowseTab() {
   const [spec, setSpec] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [installed, setInstalled] = useState<Set<string>>(new Set());
-  const [catalog, setCatalog] = useState<RegistryCard[]>(
-    COMMUNITY_CATALOG.map(p => ({
-      slug: p.id,
-      name: p.name,
-      description: p.description,
-      version: p.version,
-      author: p.author,
-      repository: p.repository,
-    }))
+  const [catalog, setCatalog] = useState<CatalogCard[]>(
+    mergeFallbackCatalog([], COMMUNITY_CATALOG)
   );
   const [source, setSource] = useState<'registry' | 'fallback'>('fallback');
 
@@ -58,16 +47,18 @@ export function BrowseTab() {
       if (result.plugins.length === 0) return;
       setSource(result.source);
       setCatalog(
-        result.plugins.map(p => ({
-          slug: p.slug,
-          name: p.name,
-          description: p.description,
-          version: p.version,
-          author: p.author,
-          repository: p.repositoryUrl
-            ? p.repositoryUrl.replace(/^https:\/\/github\.com\//, '')
-            : null,
-        }))
+        mergeFallbackCatalog(
+          result.plugins.map(p => ({
+            slug: p.slug,
+            name: p.name,
+            description: p.description,
+            version: p.version,
+            author: p.author,
+            repository: p.repositoryUrl
+              ? p.repositoryUrl.replace(/^https:\/\/github\.com\//, '')
+              : null,
+          }))
+        )
       );
     });
   }, []);
@@ -112,8 +103,8 @@ export function BrowseTab() {
     <div className={styles.pluginConnect}>
       <h3 className={styles.pluginConnectTitle}>Registry</h3>
       <p className={styles.pluginConnectCopy}>
-        Click Install. The app asks the registry for the package and downloads its tarball — same as{' '}
-        <code>ipm install</code> on Inkdrop.
+        Click Install. Official packs download their GitHub release tarball — same as{' '}
+        <code>dripnex-plugin install owner/repo</code>.
         {source === 'fallback'
           ? ' Showing the first-party catalog until the API is reachable.'
           : null}
@@ -154,7 +145,7 @@ export function BrowseTab() {
                       variant="primary"
                       size="sm"
                       disabled={busyId !== null}
-                      onClick={() => void install(plugin.slug, plugin.slug)}
+                      onClick={() => void install(installSpecFor(plugin), plugin.slug)}
                     >
                       {busy ? 'Installing…' : 'Install'}
                     </Button>
