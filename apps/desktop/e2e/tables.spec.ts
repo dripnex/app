@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { launchApp } from './fixtures.js';
+import { launchApp, openFirstNote } from './fixtures.js';
 
 const WIDE_TABLE = [
   '# Wide table',
@@ -19,10 +19,7 @@ test.describe('tables overflow', () => {
   test('editor widget stays within the content pane', async () => {
     const { window, cleanup } = await launchApp();
     try {
-      await window.getByRole('button', { name: 'Create Your First Note' }).click();
-
-      const content = window.locator('.cm-content');
-      await expect(content).toBeVisible({ timeout: 15_000 });
+      const content = await openFirstNote(window);
       await content.click();
       await window.keyboard.press('ControlOrMeta+A');
       await window.keyboard.insertText(WIDE_TABLE);
