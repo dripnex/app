@@ -184,7 +184,7 @@
     "publish": {
       "provider": "github",
       "owner": "dripnex",
-      "repo": "readide"
+      "repo": "app"
     }
   }
 }

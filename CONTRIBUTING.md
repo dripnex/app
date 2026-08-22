@@ -84,7 +84,7 @@ pnpm build            # Build all packages
 
 ## Questions?
 
-- Open a [GitHub Discussion](https://github.com/dripnex/readide/discussions)
+- Open a [GitHub Discussion](https://github.com/dripnex/app/discussions)
 - Check existing issues before creating new ones
 
 ## License
