@@ -25,17 +25,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          echo "token_len=${#CLOUDFLARE_API_TOKEN} account_len=${#CLOUDFLARE_ACCOUNT_ID}" | tee /tmp/attach.log
-          gh api repos/dripnex/app/issues/565/comments -f body="preflight token_len=${#CLOUDFLARE_API_TOKEN} account_len=${#CLOUDFLARE_ACCOUNT_ID}"
-          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ]; then
-            echo "missing CF secrets" | tee -a /tmp/attach.log
-            exit 1
-          fi
           AUTH="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
           ACCOUNT="${CLOUDFLARE_ACCOUNT_ID}"
           CF="https://api.cloudflare.com/client/v4"
           TARGET="dripnex-marketing"
-          PROJECTS=$(curl -sS "${CF}/accounts/${ACCOUNT}/pages/projects?per_page=50" -H "$AUTH")
+          : > /tmp/attach.log
+          log() { echo "$1" | tee -a /tmp/attach.log; }
+          log "token_len=${#CLOUDFLARE_API_TOKEN} account_len=${#CLOUDFLARE_ACCOUNT_ID}"
+          PROJECTS=$(curl -sS "${CF}/accounts/${ACCOUNT}/pages/projects" -H "$AUTH")
           echo "$PROJECTS" | jq -c '{success,errors,names:[.result[]?.name]}' | tee -a /tmp/attach.log
           echo "$PROJECTS" | jq -r '.result[]?.name' | while read -r project; do
             [ -n "$project" ] || continue
@@ -43,29 +40,20 @@ jobs:
             echo "$DOMS" | jq -c --arg p "$project" '{project:$p,success,errors,domains:[.result[]?.name]}' | tee -a /tmp/attach.log
             [ "$project" = "$TARGET" ] && continue
             echo "$DOMS" | jq -r '.result[]? | select(.name=="dripnex.app" or .name=="www.dripnex.app") | .name' | while read -r d; do
-              echo "detaching ${d} from ${project}" | tee -a /tmp/attach.log
+              log "detaching ${d} from ${project}"
               curl -sS -X DELETE "${CF}/accounts/${ACCOUNT}/pages/projects/${project}/domains/${d}" -H "$AUTH" | jq -c '{success,errors}' | tee -a /tmp/attach.log
             done
           done
+          for extra in dripnex-web readied-web dripnex-docs; do
+            for host in dripnex.app www.dripnex.app; do
+              log "DELETE ${host} from ${extra} (best-effort)"
+              curl -sS -X DELETE "${CF}/accounts/${ACCOUNT}/pages/projects/${extra}/domains/${host}" -H "$AUTH" | jq -c --arg p "$extra" --arg h "$host" '{project:$p,host:$h,success,errors}' | tee -a /tmp/attach.log
+            done
+          done
           for host in dripnex.app www.dripnex.app; do
-            echo "POST ${host}" | tee -a /tmp/attach.log
+            log "POST ${host} -> ${TARGET}"
             curl -sS -X POST "${CF}/accounts/${ACCOUNT}/pages/projects/${TARGET}/domains" -H "$AUTH" -H "Content-Type: application/json" --data "{\"name\":\"${host}\"}" | jq -c '{name:.result.name,status:.result.status,success,errors}' | tee -a /tmp/attach.log
           done
-          ZONE=$(curl -sS "${CF}/zones?name=dripnex.app" -H "$AUTH")
-          echo "$ZONE" | jq -c '{success,errors,id:(.result[0].id),name:(.result[0].name)}' | tee -a /tmp/attach.log
-          ZONE_ID=$(echo "$ZONE" | jq -r '.result[0].id // empty')
-          for fqdn in dripnex.app www.dripnex.app; do
-            recs=$(curl -sS "${CF}/zones/${ZONE_ID}/dns_records?name=${fqdn}&per_page=100" -H "$AUTH")
-            echo "$recs" | jq -c --arg n "$fqdn" '{name:$n,success,errors,records:[.result[]?|{id,type,name,content,proxied}]}' | tee -a /tmp/attach.log
-            first=$(echo "$recs" | jq -r '.result[]? | select(.type=="A" or .type=="AAAA" or .type=="CNAME") | .id' | head -n1)
-            if echo "$recs" | jq -e '.result[]? | select(.type=="CNAME" and ((.content|ascii_downcase)=="dripnex-marketing.pages.dev") and .proxied==true)' >/dev/null; then
-              echo "${fqdn} already ok" | tee -a /tmp/attach.log
-            elif [ -n "$first" ]; then
-              echo "PATCH ${fqdn} ${first}" | tee -a /tmp/attach.log
-              curl -sS -X PATCH "${CF}/zones/${ZONE_ID}/dns_records/${first}" -H "$AUTH" -H "Content-Type: application/json" --data "{\"type\":\"CNAME\",\"name\":\"${fqdn}\",\"content\":\"dripnex-marketing.pages.dev\",\"proxied\":true}" | jq -c '{success,errors,updated:.result|{name,type,content,proxied}}' | tee -a /tmp/attach.log
-            else
-              echo "POST CNAME ${fqdn}" | tee -a /tmp/attach.log
-              curl -sS -X POST "${CF}/zones/${ZONE_ID}/dns_records" -H "$AUTH" -H "Content-Type: application/json" --data "{\"type\":\"CNAME\",\"name\":\"${fqdn}\",\"content\":\"dripnex-marketing.pages.dev\",\"proxied\":true}" | jq -c '{success,errors,created:.result|{name,type,content,proxied}}' | tee -a /tmp/attach.log
-            fi
-          done
+          TARGET_DOMS=$(curl -sS "${CF}/accounts/${ACCOUNT}/pages/projects/${TARGET}/domains" -H "$AUTH")
+          echo "$TARGET_DOMS" | jq -c '{project:"dripnex-marketing",success,errors,domains:[.result[]?|{name,status,verification_data}]}' | tee -a /tmp/attach.log
           gh api repos/dripnex/app/issues/565/comments -f body="$(cat /tmp/attach.log)"
