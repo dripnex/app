@@ -58,34 +58,38 @@ fi
 NODE_BIN_DIR="$(dirname "$NODE_BIN")"
 echo "==> Using Node $("$NODE_BIN" -v) (FTS5 enabled) from $NODE_BIN_DIR"
 
-# Make the FTS5 node the default `node`/`npx` for every shell (login or not).
-# The Cursor daemon's PATH places /exec-daemon (FTS5-less node) ahead of the
-# nvm bin, so a plain `node` would be wrong. We inspect the *current* PATH
-# (before we touch it): if the FTS5 node bin already precedes /exec-daemon,
-# nothing is needed; otherwise we symlink the toolchain into the first writable
-# PATH entry that precedes /exec-daemon (/usr/local/cargo/bin is world-writable
-# in the base image and qualifies). Symlinks live on disk so they survive into
-# environment builds/snapshots.
-SHIM_DIR=""
-NEED_SHIM=1
+# Make the FTS5 node the default `node`/`npx` for every shell.
+#
+# The Cursor daemon's runtime PATH places /exec-daemon (which ships an
+# FTS5-less node) AHEAD of the nvm bin, so a plain `node` would be wrong at
+# agent runtime. Crucially, the install-time PATH can differ from the agent
+# runtime PATH (install may run with nvm already ahead), so we cannot skip
+# based on the current ordering — we ALWAYS place shims. We symlink the
+# toolchain into every writable PATH dir that precedes /exec-daemon, plus
+# /usr/local/cargo/bin (world-writable in the base image and consistently
+# ahead of /exec-daemon at runtime). Symlinks live on disk, so they survive
+# into environment builds/snapshots and win over /exec-daemon's node.
+declare -a SHIM_CANDIDATES=()
 IFS=':' read -r -a _path_entries <<< "$PATH"
 for d in "${_path_entries[@]}"; do
   case "$d" in */exec-daemon*) break ;; esac
-  if [ "$d" = "$NODE_BIN_DIR" ]; then NEED_SHIM=0; break; fi
-  if [ -z "$SHIM_DIR" ] && [ -d "$d" ] && [ -w "$d" ]; then SHIM_DIR="$d"; fi
+  SHIM_CANDIDATES+=("$d")
 done
+SHIM_CANDIDATES+=("/usr/local/cargo/bin")
 
-if [ "$NEED_SHIM" = "0" ]; then
-  echo "==> FTS5 node bin already precedes /exec-daemon on PATH; no shim needed"
-else
-  [ -z "$SHIM_DIR" ] && SHIM_DIR="/usr/local/cargo/bin"
-  mkdir -p "$SHIM_DIR" 2>/dev/null || sudo mkdir -p "$SHIM_DIR"
-  echo "==> Linking node toolchain into $SHIM_DIR"
+_shimmed=""
+for d in "${SHIM_CANDIDATES[@]}"; do
+  [ "$d" = "$NODE_BIN_DIR" ] && continue          # never clobber the node bin itself
+  case " $_shimmed " in *" $d "*) continue ;; esac # dedupe
+  mkdir -p "$d" 2>/dev/null || sudo mkdir -p "$d" 2>/dev/null || true
+  [ -d "$d" ] && [ -w "$d" ] || continue
   for b in node npm npx corepack pnpm pnpx yarn yarnpkg; do
-    src="$NODE_BIN_DIR/$b"; dest="$SHIM_DIR/$b"
+    src="$NODE_BIN_DIR/$b"; dest="$d/$b"
     [ -e "$src" ] && [ "$src" != "$dest" ] && ln -sfn "$src" "$dest" 2>/dev/null || true
   done
-fi
+  echo "==> Linked node toolchain into $d"
+  _shimmed="$_shimmed $d"
+done
 
 # Ensure the rest of THIS script uses the FTS5 node too.
 export PATH="$NODE_BIN_DIR:$PATH"
