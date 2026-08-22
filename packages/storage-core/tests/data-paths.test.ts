@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { join } from 'path';
+import { describe, expect, it } from 'vitest';
 import {
   PRODUCT_APP_NAME,
   hasExplicitUserDataDir,
