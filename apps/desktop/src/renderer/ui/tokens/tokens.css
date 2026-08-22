@@ -2,6 +2,9 @@
    DRIPNEX DESIGN TOKENS
    Single source of truth for all visual properties.
 
+   Decision log: docs/VISUAL_LANGUAGE.md
+   Brand contract: docs/BRAND.md
+
    RULES:
    - Every CSS custom property used in the app MUST be defined here
    - No hardcoded colors in component CSS — use tokens
