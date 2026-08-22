@@ -3,6 +3,24 @@ export type ConnectSpec =
   | { kind: 'url'; url: string }
   | { kind: 'registry'; slug: string; tag?: string };
 
+/**
+ * First-party packs whose manifest id / registry slug is not `owner/repo`.
+ * Install must hit the GitHub tarball even when GET /plugins/:slug 404s (#562).
+ */
+export const OFFICIAL_PACK_REPOS: Record<string, `${string}/${string}`> = {
+  'dripnex-vim-mode': 'dripnex/plugin-vim',
+  mermaid: 'dripnex/plugin-mermaid',
+  math: 'dripnex/plugin-math',
+  stamp: 'dripnex/plugin-stamp',
+};
+
+export function officialRepoForSlug(slug: string): { owner: string; repo: string } | null {
+  const spec = OFFICIAL_PACK_REPOS[slug];
+  if (!spec) return null;
+  const [owner, repo] = spec.split('/');
+  return owner && repo ? { owner, repo } : null;
+}
+
 export const PLUGIN_REGISTRY_URLS = [
   process.env.DRIPNEX_API_URL,
   'https://api.dripnex.app',
@@ -57,7 +75,13 @@ export function parseConnectSpec(source: string): ConnectSpec | { error: string 
 
   const registry = trimmed.match(/^([a-z][a-z0-9]*(-[a-z0-9]+)*)(?:@(.+))?$/);
   if (registry) {
-    return { kind: 'registry', slug: registry[1] ?? '', tag: registry[3] };
+    const slug = registry[1] ?? '';
+    const tag = registry[3];
+    const official = officialRepoForSlug(slug);
+    if (official) {
+      return { kind: 'github', owner: official.owner, repo: official.repo, tag };
+    }
+    return { kind: 'registry', slug, tag };
   }
 
   return { error: 'Use a package name (stamp), owner/repo, or a GitHub release URL' };
