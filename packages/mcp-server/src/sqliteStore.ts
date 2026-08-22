@@ -36,7 +36,7 @@ function queryOne(
 }
 
 /** Escape and prepare a query string for FTS5 MATCH syntax */
-export function prepareFtsQuery(input: string): string {
+function prepareFtsQuery(input: string): string {
   const escaped = input.replace(/["*^()]/g, ' ').trim();
   const terms = escaped.split(/\s+/).filter(t => t.length > 0);
   if (terms.length === 0) return '""';
