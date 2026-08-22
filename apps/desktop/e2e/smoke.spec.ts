@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { launchApp } from './fixtures.js';
+import { launchApp, openFirstNote } from './fixtures.js';
 
 test.describe('app launch (smoke)', () => {
   test('launches and shows the main window', async () => {
@@ -71,10 +71,7 @@ test.describe('app launch (smoke)', () => {
     window.on('pageerror', err => consoleErrors.push(`pageerror: ${err.message}`));
 
     try {
-      await window.getByRole('button', { name: 'Create Your First Note' }).click();
-
-      const content = window.locator('.cm-content');
-      await expect(content).toBeVisible({ timeout: 15_000 });
+      const content = await openFirstNote(window);
       await expect(content).toContainText('Untitled');
 
       const codeMirrorErrors = consoleErrors.filter(line => /\[CodeMirror\]/.test(line));

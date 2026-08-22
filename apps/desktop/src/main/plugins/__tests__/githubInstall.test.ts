@@ -18,11 +18,40 @@ describe('parseConnectSpec', () => {
   });
 
   it('parses a registry slug', () => {
-    expect(parseConnectSpec('stamp')).toEqual({ kind: 'registry', slug: 'stamp' });
-    expect(parseConnectSpec('stamp@0.1.0')).toEqual({
+    expect(parseConnectSpec('acme-plug')).toEqual({ kind: 'registry', slug: 'acme-plug' });
+    expect(parseConnectSpec('acme-plug@0.1.0')).toEqual({
       kind: 'registry',
-      slug: 'stamp',
+      slug: 'acme-plug',
       tag: '0.1.0',
+    });
+  });
+
+  it('resolves official slugs to the GitHub owner/repo (#562)', () => {
+    expect(parseConnectSpec('dripnex-vim-mode')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-vim',
+    });
+    expect(parseConnectSpec('dripnex-vim-mode@1.2.0')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-vim',
+      tag: '1.2.0',
+    });
+    expect(parseConnectSpec('mermaid')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-mermaid',
+    });
+    expect(parseConnectSpec('math')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-math',
+    });
+    expect(parseConnectSpec('dripnex/plugin-vim')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-vim',
     });
   });
 

@@ -39,6 +39,11 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
+      # Dependabot lockfiles resolve @electron/node-gyp as git@github.com:.
+      # Without this rewrite, `pnpm install` dies on SSH (see #544 / e2e).
+      - name: Force HTTPS for GitHub git dependencies
+        run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
+
       # Title check only needs commitlint + its config — no workspace
       # native deps, no postinstall.
       - name: Install commitlint

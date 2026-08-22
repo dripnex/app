@@ -42,11 +42,30 @@ describe('parseInstallSource', () => {
     expect(parseInstallSource(url, none)).toEqual({ kind: 'url', url });
   });
 
-  it('treats a kebab name as a registry slug', () => {
-    expect(parseInstallSource('stamp', none)).toEqual({ kind: 'registry', slug: 'stamp' });
-    expect(parseInstallSource('stamp@0.1.0', none)).toEqual({
+  it('treats an unknown kebab name as a registry slug', () => {
+    expect(parseInstallSource('acme-plug', none)).toEqual({ kind: 'registry', slug: 'acme-plug' });
+    expect(parseInstallSource('acme-plug@0.1.0', none)).toEqual({
       kind: 'registry',
-      slug: 'stamp',
+      slug: 'acme-plug',
+      tag: '0.1.0',
+    });
+  });
+
+  it('resolves official slugs to the GitHub owner/repo', () => {
+    expect(parseInstallSource('dripnex-vim-mode', none)).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-vim',
+    });
+    expect(parseInstallSource('dripnex/plugin-vim', none)).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-vim',
+    });
+    expect(parseInstallSource('mermaid@0.1.0', none)).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'plugin-mermaid',
       tag: '0.1.0',
     });
   });

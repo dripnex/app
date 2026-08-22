@@ -80,11 +80,15 @@ jobs:
           fi
 
       - name: Migrate Turso
-        if: ${{ secrets.TURSO_DATABASE_URL != '' }}
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: pnpm --filter @dripnex/api db:migrate
+        run: |
+          if [ -z "${TURSO_DATABASE_URL}" ]; then
+            echo "TURSO_DATABASE_URL unset — skip migrate"
+            exit 0
+          fi
+          pnpm --filter @dripnex/api db:migrate
 
       - name: Deploy to Cloudflare Workers
         env:
