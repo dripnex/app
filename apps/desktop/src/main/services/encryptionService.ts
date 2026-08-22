@@ -21,6 +21,7 @@ import { join } from 'path';
 import { readFile, writeFile, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import { safeStorage } from 'electron';
+import { unwrapKey as aesKeyUnwrap, wrapKey as aesKeyWrap } from './aesKeyWrap';
 
 // ============================================================================
 // Constants
@@ -32,9 +33,6 @@ const KEY_LENGTH = 32; // 256 bits
 const SALT_LENGTH = 32; // 256 bits
 const KDF_ITERATIONS = 600_000;
 const KDF_HASH = 'sha256';
-
-// AES Key Wrap (RFC 3394) default IV
-const AES_KW_DEFAULT_IV = Buffer.from('A6A6A6A6A6A6A6A6', 'hex');
 
 // ============================================================================
 // KDF Parameters
@@ -420,11 +418,10 @@ export class EncryptionService {
 
   /**
    * Wrap a key using AES-256-KW (RFC 3394).
-   * Uses Node.js crypto aes-256-wrap with the standard IV.
+   * Not Node's `aes-256-wrap`: BoringSSL (Electron) has no such cipher.
    */
   private wrapKey(wrappingKey: Buffer, keyToWrap: Buffer): Buffer {
-    const cipher = createCipheriv('aes-256-wrap' as string, wrappingKey, AES_KW_DEFAULT_IV);
-    return Buffer.concat([cipher.update(keyToWrap), cipher.final()]);
+    return aesKeyWrap(wrappingKey, keyToWrap);
   }
 
   /**
@@ -432,12 +429,7 @@ export class EncryptionService {
    * Throws if the wrapping key is incorrect.
    */
   private unwrapKey(wrappingKey: Buffer, wrappedKey: Buffer): Buffer {
-    try {
-      const decipher = createDecipheriv('aes-256-wrap' as string, wrappingKey, AES_KW_DEFAULT_IV);
-      return Buffer.concat([decipher.update(wrappedKey), decipher.final()]);
-    } catch {
-      throw new Error('Failed to unwrap key — incorrect passphrase or corrupted data');
-    }
+    return aesKeyUnwrap(wrappingKey, wrappedKey);
   }
 
   /**
