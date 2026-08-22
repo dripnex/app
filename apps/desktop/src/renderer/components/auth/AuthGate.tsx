@@ -88,7 +88,7 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
           <>
             <p className={styles.copy}>
               {mode === 'signup'
-                ? 'Free to start. We’ll email you a link — no password.'
+                ? 'We’ll email you a link. No password.'
                 : 'We’ll email you a one-time link. Leave this window open.'}
             </p>
 
