@@ -29,21 +29,27 @@ npx playwright install --with-deps
 
 Set `DRIPNEX_E2E_KEEP_USERDATA=1` to keep the temp dir on failure for post-mortem inspection.
 
+`openFirstNote()` clicks **Create Your First Note** and waits for `.cm-content`. Isolated e2e sets `DRIPNEX_E2E=1` so the auth gate does not block that path.
+
 ## What we test
 
 | Spec            | What it covers                                                                                                                                                                                                                                |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `smoke.spec.ts` | App launches, main window renders, IPC bridge present, no uncaught console errors during initial mount. This is the regression catch for #266 (editor mount crashes producing blank windows).                                                 |
-| `notes.spec.ts` | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. We deliberately drive the **preload bridge** (`window.dripnex.notes.*`) rather than the editor UI; selectors churn but the contract is stable. |
+| `smoke.spec.ts` | App launches, main window renders, IPC bridge present, no uncaught console errors during initial mount. Opening a note loads CodeMirror without `[CodeMirror] plugin error` (regression for #311).                                          |
+| `notes.spec.ts` | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. Driven through the **preload bridge** (`window.dripnex.notes.*`), not the editor UI, so the contract survives renderer refactors.              |
+| `editor.spec.ts` | Types into `.cm-content` after creating a note, and Enter on a bullet list (continue-markup). Clicks the last `.cm-line` / uses `keyboard.type` — not `fill()`, which CodeMirror's contenteditable does not accept.                         |
+| `tables.spec.ts` | Wide GFM table widget stays inside the scroller. **Skipped on CI** (`CI` env) — insert + leave-table decorations are still flaky under xvfb. Run headed locally.                                                                               |
 
-## What we deliberately don't test (yet)
+## What we still don't test
 
-- **Editor UI interactions** (typing, formatting, hotkeys). The CodeMirror surface is too prone to flake without per-spec selectors. Worth doing once the editor is split (see PR-G in the audit).
+- **Slash command / autocomplete UI** and other decoration-heavy editor widgets (table WYSIWYG). Worth a follow-up once those are stable under xvfb.
 - **AI panel streaming.** Needs a mock provider and is more useful as a vitest test against `@dripnex/ai-core`.
 - **Sync flows.** Need a fake server.
 
-These will be follow-ups once the basics are stable in CI.
+## Packaged vs `out/`
+
+`pnpm e2e` launches `out/`, not an electron-builder asar / `.app`. The historical packaged-only crash (`tags is not iterable` / `[CodeMirror] plugin error`) is documented in [`RELEASES.md`](../RELEASES.md) and issue #311. Renderer bundling (`manualChunks` / `@lezer/common` pin) lives in `electron.vite.config.ts`. Smoke + `editor.spec.ts` load the lazy `MarkdownEditor` chunk against `out/`; they cannot replace a signed `.app` check.
 
 ## CI
 
-The `e2e` job in `.github/workflows/ci.yml` runs on Linux + xvfb. It starts as `continue-on-error: true` — the goal of this PR is to land the infrastructure, not to gate every PR on E2E green. Once the suite is verified end-to-end on a real CI run, flip the flag off in a follow-up.
+The `e2e` job in `.github/workflows/ci.yml` runs on Linux + xvfb and is **required** (no `continue-on-error`). Failures upload `apps/desktop/playwright-report/`.

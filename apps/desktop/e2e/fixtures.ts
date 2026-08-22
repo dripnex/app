@@ -10,7 +10,7 @@
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
+import { _electron as electron, type ElectronApplication, type Locator, type Page } from '@playwright/test';
 
 interface LaunchedApp {
   app: ElectronApplication;
@@ -62,4 +62,17 @@ export async function launchApp(): Promise<LaunchedApp> {
       }
     },
   };
+}
+
+/**
+ * First-run welcome → create a note → wait for the CodeMirror surface.
+ * New notes start as `# Untitled\\n\\n` (see useNoteActions).
+ */
+export async function openFirstNote(window: Page): Promise<Locator> {
+  const create = window.getByRole('button', { name: 'Create Your First Note' });
+  await create.waitFor({ state: 'visible', timeout: 15_000 });
+  await create.click();
+  const content = window.locator('.cm-content');
+  await content.waitFor({ state: 'visible', timeout: 15_000 });
+  return content;
 }
