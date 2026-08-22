@@ -10,7 +10,12 @@
 import { mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { _electron as electron, type ElectronApplication, type Locator, type Page } from '@playwright/test';
+import {
+  _electron as electron,
+  type ElectronApplication,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 
 interface LaunchedApp {
   app: ElectronApplication;
