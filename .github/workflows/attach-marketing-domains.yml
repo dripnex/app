@@ -2,7 +2,9 @@ name: Attach marketing domains
 
 on:
   push:
-    branches: [develop]
+    branches:
+      - develop
+      - cursor/attach-marketing-domains
     paths:
       - '.github/workflows/attach-marketing-domains.yml'
   workflow_dispatch:
