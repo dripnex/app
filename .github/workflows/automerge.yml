@@ -27,9 +27,15 @@ jobs:
       contents: write
       # ...and the auto-merge state on the pull request.
       pull-requests: write
+    # Release back-merges are excluded. They exist for their topology, not
+    # their content: squashing one replays main's changes as a fresh commit,
+    # so main never becomes an ancestor of develop and the develop -> main
+    # promotion PR stays BEHIND forever. Merge those by hand, with a merge
+    # commit. See docs/RELEASE.md.
     if: >-
       github.event.pull_request.draft == false &&
-      github.event.pull_request.base.ref == 'develop'
+      github.event.pull_request.base.ref == 'develop' &&
+      !startsWith(github.event.pull_request.head.ref, 'chore/backmerge-')
     steps:
       - name: Enable auto-merge for non-draft PRs into develop
         env:

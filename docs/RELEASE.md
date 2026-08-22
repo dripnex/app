@@ -27,6 +27,20 @@ You never bump `package.json`, never push a tag, never click **Run workflow**.
 3. **Merge commit. Never squash.** Squash collapses every `feat` into one
    `chore` and semantic-release will not bump.
 
+If that PR sits at **BEHIND**, `main` has commits `develop` never received and
+`main` requires branches to be up to date. Back-merge first:
+
+```bash
+git checkout -b chore/backmerge-main origin/develop
+git merge origin/main -m "chore(release): merge main into develop"
+git push -u origin chore/backmerge-main
+```
+
+Open it against `develop` and **merge it with a merge commit**. A squash
+replays `main`'s changes as a new commit, so `main` never becomes an ancestor
+and the promotion stays BEHIND. Branches named `chore/backmerge-*` are excluded
+from the squash auto-merge for exactly this reason.
+
 CI on that PR is the gate. When it merges:
 
 - **Release** runs on `main`.
