@@ -15,7 +15,7 @@ You never bump `package.json`, never push a tag, never click **Run workflow**.
 
 ## Every day
 
-1. Branch off `develop`. Feature PRs **squash-merge**.
+1. Branch off `develop`. Non-draft PRs into `develop` **squash auto-merge** when CI is green ([`docs/ci.md`](./ci.md)).
 2. Title is the commit (`feat(desktop): …`, `fix(ai): …`). That title is what
    semantic-release reads.
 
@@ -26,6 +26,20 @@ You never bump `package.json`, never push a tag, never click **Run workflow**.
 2. Open a PR **`develop` → `main`** titled `chore(release): promote X.Y.Z`.
 3. **Merge commit. Never squash.** Squash collapses every `feat` into one
    `chore` and semantic-release will not bump.
+
+If that PR sits at **BEHIND**, `main` has commits `develop` never received and
+`main` requires branches to be up to date. Back-merge first:
+
+```bash
+git checkout -b chore/backmerge-main origin/develop
+git merge origin/main -m "chore(release): merge main into develop"
+git push -u origin chore/backmerge-main
+```
+
+Open it against `develop` and **merge it with a merge commit**. A squash
+replays `main`'s changes as a new commit, so `main` never becomes an ancestor
+and the promotion stays BEHIND. Branches named `chore/backmerge-*` are excluded
+from the squash auto-merge for exactly this reason.
 
 CI on that PR is the gate. When it merges:
 

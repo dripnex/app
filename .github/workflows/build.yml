@@ -66,6 +66,24 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Building $tag"
 
+      - name: Ensure release is draft
+        if: steps.resolve.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # electron-builder --publish always uploads only to a draft
+          # GitHub Release. After notes are already published (or a
+          # retry), the tag is existingType=release and every asset is
+          # skipped: "existing type not compatible with publishing type".
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG_NAME" --draft --repo "$GITHUB_REPOSITORY"
+            echo "Marked $TAG_NAME as draft so electron-builder can upload."
+          else
+            echo "No existing release for $TAG_NAME; electron-builder will create one."
+          fi
+
   build:
     needs: meta
     if: needs.meta.result == 'success' && needs.meta.outputs.tag != ''

@@ -1,5 +1,6 @@
 {
   "name": "@dripnex/desktop",
+  "productName": "Dripnex",
   "version": "0.15.2",
   "private": true,
   "description": "Markdown-first, offline-forever note app for developers",
@@ -105,6 +106,9 @@
   "build": {
     "appId": "app.dripnex.desktop",
     "productName": "Dripnex",
+    "extraMetadata": {
+      "productName": "Dripnex"
+    },
     "directories": {
       "output": "release",
       "buildResources": "resources"

@@ -10,6 +10,7 @@ export {
   type UserDataPlatform,
   type UserDataRootMarker,
   type UserDataRootOptions,
+  type ElectronUserDataResolution,
   createDataPaths,
   ensureDirectory,
   generateBackupFilename,
@@ -18,6 +19,9 @@ export {
   markUserDataRoot,
   pickUserDataRoot,
   resolveUserDataRoot,
+  PRODUCT_APP_NAME,
+  hasExplicitUserDataDir,
+  resolveElectronUserData,
 } from './DataPaths.js';
 
 // Backup system
