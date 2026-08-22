@@ -63,11 +63,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+        # The query is single-quoted on purpose: $id is a GraphQL variable and
+        # must not be expanded by the shell (shellcheck SC2016 is expected).
         run: |
-          gh api graphql -f query='
+          set -euo pipefail
+          if err="$(gh api graphql -f query='
             mutation($id: ID!) {
               disablePullRequestAutoMerge(input: { pullRequestId: $id }) {
                 clientMutationId
               }
             }
-          ' -f id="$PR_NODE_ID" || true
+          ' -f id="$PR_NODE_ID" 2>&1)"; then
+            echo "Auto-merge disabled."
+            exit 0
+          fi
+          # Tolerate only the expected case: it was never enabled. Swallowing
+          # permission, API or network failures would leave auto-merge on for a
+          # PR that is now a draft or points somewhere other than develop.
+          if printf '%s' "$err" | grep -qi 'not enabled'; then
+            echo "Auto-merge was not enabled; nothing to disable."
+            exit 0
+          fi
+          echo "Failed to disable auto-merge: $err" >&2
+          exit 1
