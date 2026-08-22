@@ -30,6 +30,31 @@ describe('resolveLocalHttpConfig', () => {
     });
   });
 
+  it('strips trailing slashes in linear time (CodeQL js/polynomial-redos)', () => {
+    // A `/+$` regex backtracks quadratically on a long run of slashes that is
+    // not at the end of the string. 40k slashes took ~1.3s before this was
+    // rewritten as a scan; the budget below fails loudly if it comes back.
+    const pathological = `http://127.0.0.1:29168${'/'.repeat(40_000)}a`;
+    const started = performance.now();
+
+    const config = resolveLocalHttpConfig({
+      DRIPNEX_LOCAL_SERVER_URL: pathological,
+      DRIPNEX_LOCAL_TOKEN: 'placeholder-token',
+    });
+
+    expect(performance.now() - started).toBeLessThan(100);
+    expect(config?.baseUrl).toBe(pathological);
+  });
+
+  it('strips every trailing slash, not just the last', () => {
+    expect(
+      resolveLocalHttpConfig({
+        DRIPNEX_LOCAL_SERVER_URL: 'http://127.0.0.1:29168///',
+        DRIPNEX_LOCAL_TOKEN: 'placeholder-token',
+      })?.baseUrl
+    ).toBe('http://127.0.0.1:29168');
+  });
+
   it('accepts localhost', () => {
     expect(
       resolveLocalHttpConfig({

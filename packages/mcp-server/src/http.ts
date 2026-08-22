@@ -109,7 +109,21 @@ export function resolveLocalHttpConfig(
     );
   }
 
-  return { baseUrl: rawUrl.replace(/\/+$/, ''), token };
+  return { baseUrl: stripTrailingSlashes(rawUrl), token };
+}
+
+/**
+ * Strip trailing slashes with a scan rather than a `/+$` regex.
+ * The regex backtracks quadratically on a long run of slashes that is not at
+ * the end of the string (CodeQL js/polynomial-redos).
+ */
+function stripTrailingSlashes(value: string): string {
+  const SLASH = 47;
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === SLASH) {
+    end--;
+  }
+  return value.slice(0, end);
 }
 
 export type FetchLike = (input: URL, init?: RequestInit) => Promise<Response>;
