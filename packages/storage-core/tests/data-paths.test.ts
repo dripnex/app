@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'path';
 import {
+  PRODUCT_APP_NAME,
+  hasExplicitUserDataDir,
   pickUserDataRoot,
+  resolveElectronUserData,
   resolveUserDataRoot,
   userDataRootCandidates,
 } from '../src/data/DataPaths.js';
@@ -75,5 +78,87 @@ describe('resolveUserDataRoot', () => {
         exists: () => false,
       })
     ).toBe('/tmp/override');
+  });
+});
+
+describe('resolveElectronUserData', () => {
+  it('names the app Dripnex and uses the packaged Linux folder when nothing exists', () => {
+    expect(
+      resolveElectronUserData('/home/tomas/.config/@dripnex/desktop', {
+        platform: 'linux',
+        home: '/home/tomas',
+        exists: () => false,
+        argv: ['electron'],
+      })
+    ).toEqual({
+      name: PRODUCT_APP_NAME,
+      userData: '/home/tomas/.config/Dripnex',
+      setUserDataPath: true,
+    });
+  });
+
+  it('uses the packaged Windows and macOS folders when nothing exists', () => {
+    expect(
+      resolveElectronUserData('C:\\Users\\tomas\\AppData\\Roaming\\@dripnex\\desktop', {
+        platform: 'win32',
+        home: 'C:\\Users\\tomas',
+        appData: 'C:\\Users\\tomas\\AppData\\Roaming',
+        exists: () => false,
+        argv: ['electron'],
+      }).userData
+    ).toBe(join('C:\\Users\\tomas\\AppData\\Roaming', 'Dripnex'));
+    expect(
+      resolveElectronUserData('/Users/tomas/Library/Application Support/@dripnex/desktop', {
+        platform: 'darwin',
+        home: '/Users/tomas',
+        exists: () => false,
+        argv: ['electron'],
+      }).userData
+    ).toBe('/Users/tomas/Library/Application Support/Dripnex');
+  });
+
+  it('keeps an existing scoped folder that already has dripnex.db (no silent migrate)', () => {
+    const scoped = '/home/tomas/.config/@dripnex/desktop';
+    expect(
+      resolveElectronUserData(scoped, {
+        platform: 'linux',
+        home: '/home/tomas',
+        exists: path => path === `${scoped}/dripnex.db`,
+        argv: ['electron'],
+      })
+    ).toEqual({
+      name: PRODUCT_APP_NAME,
+      userData: scoped,
+      setUserDataPath: true,
+    });
+  });
+
+  it('honors DRIPNEX_DATA_DIR the same way as the CLI', () => {
+    expect(
+      resolveElectronUserData('/home/tomas/.config/@dripnex/desktop', {
+        env: { DRIPNEX_DATA_DIR: '/tmp/explicit' },
+        platform: 'linux',
+        home: '/home/tomas',
+        exists: () => false,
+        argv: ['electron'],
+      }).userData
+    ).toBe('/tmp/explicit');
+  });
+
+  it('leaves Chromium --user-data-dir alone', () => {
+    const current = '/tmp/dripnex-e2e-abc';
+    expect(
+      resolveElectronUserData(current, {
+        platform: 'linux',
+        home: '/home/tomas',
+        exists: () => false,
+        argv: ['electron', `--user-data-dir=${current}`],
+      })
+    ).toEqual({
+      name: PRODUCT_APP_NAME,
+      userData: current,
+      setUserDataPath: false,
+    });
+    expect(hasExplicitUserDataDir(['electron', '--user-data-dir', current])).toBe(true);
   });
 });

@@ -4,6 +4,10 @@
  */
 
 // eslint-disable-next-line import-x/order
+import { applyProductUserData } from './applyUserData';
+applyProductUserData();
+
+// eslint-disable-next-line import-x/order
 import { initSentry } from './sentry';
 initSentry();
 

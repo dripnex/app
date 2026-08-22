@@ -14,4 +14,4 @@ Three strings are not interchangeable:
 
 Browse merges the first-party catalog into the live list so Vim cannot vanish when the API omits it. Updates match `scan().id` to registry slug **or** the same GitHub repository.
 
-**userData:** packaged `productName` is `Dripnex`. CLI `resolveUserDataRoot` uses that folder first (`~/.config/Dripnex`, `%APPDATA%/Dripnex`, `~/Library/Application Support/Dripnex`), then `@dripnex/desktop`, then legacy `dripnex`. If more than one exists, prefer the one with `dripnex.db`, then `plugins/`. Override: `DRIPNEX_DATA_DIR`.
+**userData:** CLI and the packaged app share one folder. Electron would follow package.json `name` `@dripnex/desktop` (`~/.config/@dripnex/desktop`) unless main calls `app.setName('Dripnex')` and `app.setPath('userData', resolveUserDataRoot())` before `createDataPaths` (#572). Default: `~/.config/Dripnex`, `%APPDATA%/Dripnex`, `~/Library/Application Support/Dripnex`. Then `@dripnex/desktop`, then legacy `dripnex`. If more than one exists, prefer `dripnex.db`, then `plugins/` — no silent copy. Overrides: `DRIPNEX_DATA_DIR`, `--user-data-dir`.

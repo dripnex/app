@@ -80,6 +80,21 @@ export interface UserDataRootOptions {
 }
 
 /**
+ * Electron/product name for userData (`~/.config/Dripnex`, etc.).
+ * Distinct from the workspace package name `@dripnex/desktop` (#572).
+ */
+export const PRODUCT_APP_NAME = 'Dripnex';
+
+export interface ElectronUserDataResolution {
+  /** Value for `app.setName`. */
+  name: string;
+  /** Value for `app.setPath('userData')` / `createDataPaths`. */
+  userData: string;
+  /** When true, main must call `app.setPath('userData', userData)`. */
+  setUserDataPath: boolean;
+}
+
+/**
  * Electron userData roots for productName `Dripnex`.
  * Packaged app first, then the electron-vite scoped name, then legacy lowercase.
  */
@@ -148,6 +163,42 @@ export function resolveUserDataRoot(override?: string, options: UserDataRootOpti
 
   const exists = options.exists ?? existsSync;
   return pickUserDataRoot(userDataRootCandidates(options), exists);
+}
+
+/**
+ * Chromium `--user-data-dir` / `--user-data-dir=path` already owns userData
+ * (e2e, QA flags). Do not call `app.setPath('userData')` in that case.
+ */
+export function hasExplicitUserDataDir(argv: readonly string[]): boolean {
+  return argv.some(arg => arg === '--user-data-dir' || arg.startsWith('--user-data-dir='));
+}
+
+/**
+ * Resolve the Electron app name and userData root (#572).
+ *
+ * Packaged Electron follows package.json `name` (`@dripnex/desktop`) unless
+ * `app.setName(PRODUCT_APP_NAME)` runs before `app.getPath('userData')`.
+ * Same folder as CLI `resolveUserDataRoot`. Does not copy existing
+ * `@dripnex/desktop` data — `pickUserDataRoot` keeps that folder if it
+ * already has `dripnex.db` or `plugins/`.
+ */
+export function resolveElectronUserData(
+  currentUserData: string,
+  options: UserDataRootOptions & { argv?: readonly string[] } = {}
+): ElectronUserDataResolution {
+  const argv = options.argv ?? process.argv;
+  if (hasExplicitUserDataDir(argv)) {
+    return {
+      name: PRODUCT_APP_NAME,
+      userData: currentUserData,
+      setUserDataPath: false,
+    };
+  }
+  return {
+    name: PRODUCT_APP_NAME,
+    userData: resolveUserDataRoot(undefined, options),
+    setUserDataPath: true,
+  };
 }
 
 export function generateBackupFilename(prefix: string = 'backup'): string {
