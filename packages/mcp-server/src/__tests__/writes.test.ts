@@ -37,4 +37,13 @@ describe('writesEnabled', () => {
     expect(writesEnabled(dbPath, { DRIPNEX_MCP_WRITES: '1' })).toBe(true);
     expect(writesEnabled(dbInTmp(true), { DRIPNEX_MCP_WRITES: '0' })).toBe(false);
   });
+
+  it('does not treat Local HTTP env as a write grant', () => {
+    expect(
+      writesEnabled(undefined, {
+        DRIPNEX_LOCAL_SERVER_URL: 'http://127.0.0.1:29168',
+        DRIPNEX_LOCAL_TOKEN: 'placeholder-token',
+      })
+    ).toBe(false);
+  });
 });
