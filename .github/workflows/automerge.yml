@@ -2,36 +2,47 @@ name: Auto-merge
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types:
+      [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  # Owner PRs are auto-merged ONLY when explicitly opted in with the `automerge`
-  # label. This prevents PRs from merging before review (e.g. before CodeRabbit
-  # comments are resolved) and prevents stacked PRs targeting an unprotected
-  # feature branch from merging the instant CI passes. Add the label when the PR
-  # is actually ready to merge; don't add it (or remove it) to hold.
-  automerge-owner:
+  # Non-draft PRs into develop: enable GitHub auto-merge (squash).
+  # `--auto` waits for required status checks — red CI does not merge.
+  # Drafts stay out. PRs targeting a feature branch stay out (no stacked-PR
+  # instant merge). Dependabot is included by the same rule. No label.
+  automerge:
     runs-on: ubuntu-latest
     if: >-
-      github.event.pull_request.user.login == 'tomymaritano' &&
-      contains(github.event.pull_request.labels.*.name, 'automerge')
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.base.ref == 'develop'
     steps:
-      - name: Enable auto-merge for opted-in owner PRs
+      - name: Enable auto-merge for non-draft PRs into develop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
 
-  automerge-dependabot:
+  # Drop auto-merge if the PR is drafted or retargeted off develop, so a
+  # previously queued merge cannot land on an unprotected feature branch.
+  disable-automerge:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    if: >-
+      github.event.pull_request.draft == true ||
+      github.event.pull_request.base.ref != 'develop'
     steps:
-      - name: Enable auto-merge for dependabot PRs
+      - name: Disable auto-merge for drafts and non-develop bases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
+          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+        run: |
+          gh api graphql -f query='
+            mutation($id: ID!) {
+              disablePullRequestAutoMerge(input: { pullRequestId: $id }) {
+                clientMutationId
+              }
+            }
+          ' -f id="$PR_NODE_ID" || true

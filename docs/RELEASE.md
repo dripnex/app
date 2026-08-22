@@ -15,7 +15,7 @@ You never bump `package.json`, never push a tag, never click **Run workflow**.
 
 ## Every day
 
-1. Branch off `develop`. Feature PRs **squash-merge**.
+1. Branch off `develop`. Non-draft PRs into `develop` **squash auto-merge** when CI is green ([`docs/ci.md`](./ci.md)).
 2. Title is the commit (`feat(desktop): …`, `fix(ai): …`). That title is what
    semantic-release reads.
 
