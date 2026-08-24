@@ -73,5 +73,10 @@ describe('parseInstallSource', () => {
       owner: 'dripnex',
       repo: 'theme-parchment',
     });
+    expect(parseInstallSource('theme-harbor-dusk', none)).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'theme-harbor-dusk',
+    });
   });
 });

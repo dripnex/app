@@ -13,6 +13,19 @@ export const OFFICIAL_PACK_REPOS: Record<string, `${string}/${string}`> = {
   math: 'dripnex/plugin-math',
   stamp: 'dripnex/plugin-stamp',
   'theme-parchment': 'dripnex/theme-parchment',
+  'theme-harbor-dusk': 'dripnex/theme-harbor-dusk',
+  'theme-wave': 'dripnex/theme-wave',
+  'theme-night': 'dripnex/theme-night',
+  'theme-solarized-dark': 'dripnex/theme-solarized-dark',
+  'theme-solarized-light': 'dripnex/theme-solarized-light',
+  'theme-gruvbox': 'dripnex/theme-gruvbox',
+  'theme-glass': 'dripnex/theme-glass',
+  'theme-midnight': 'dripnex/theme-midnight',
+  'theme-ember': 'dripnex/theme-ember',
+  'theme-ion': 'dripnex/theme-ion',
+  'theme-matcha': 'dripnex/theme-matcha',
+  'theme-phosphor': 'dripnex/theme-phosphor',
+  'theme-fog': 'dripnex/theme-fog',
 };
 
 export function officialRepoForSlug(slug: string): { owner: string; repo: string } | null {

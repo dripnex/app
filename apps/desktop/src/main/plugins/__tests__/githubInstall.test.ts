@@ -53,6 +53,11 @@ describe('parseConnectSpec', () => {
       owner: 'dripnex',
       repo: 'theme-parchment',
     });
+    expect(parseConnectSpec('theme-harbor-dusk')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'theme-harbor-dusk',
+    });
     expect(parseConnectSpec('dripnex/plugin-vim')).toEqual({
       kind: 'github',
       owner: 'dripnex',

@@ -30,7 +30,26 @@ describe('plugin registry', () => {
     expect(body.plugins.some(p => p.slug === 'stamp')).toBe(true);
     expect(body.plugins.find(p => p.slug === 'stamp')?.bundleUrl).toContain('plugin-stamp');
     expect(body.plugins.map(p => p.slug).sort()).toEqual(
-      ['dripnex-vim-mode', 'math', 'mermaid', 'stamp', 'theme-parchment'].sort()
+      [
+        'dripnex-vim-mode',
+        'math',
+        'mermaid',
+        'stamp',
+        'theme-ember',
+        'theme-fog',
+        'theme-glass',
+        'theme-gruvbox',
+        'theme-harbor-dusk',
+        'theme-ion',
+        'theme-matcha',
+        'theme-midnight',
+        'theme-night',
+        'theme-parchment',
+        'theme-phosphor',
+        'theme-solarized-dark',
+        'theme-solarized-light',
+        'theme-wave',
+      ].sort()
     );
     expect(body.plugins.find(p => p.slug === 'dripnex-vim-mode')?.repositoryUrl).toBe(
       'https://github.com/dripnex/plugin-vim'
@@ -59,8 +78,23 @@ describe('plugin registry', () => {
     expect(body.bundleUrl).toContain('dripnex-vim-mode-1.2.0.tar.gz');
   });
 
-  it('returns parchment by slug from the first-party fallback', async () => {
-    const res = await app.request('/plugins/theme-parchment', {}, env);
+  it.each([
+    'theme-parchment',
+    'theme-harbor-dusk',
+    'theme-wave',
+    'theme-night',
+    'theme-solarized-dark',
+    'theme-solarized-light',
+    'theme-gruvbox',
+    'theme-glass',
+    'theme-midnight',
+    'theme-ember',
+    'theme-ion',
+    'theme-matcha',
+    'theme-phosphor',
+    'theme-fog',
+  ] as const)('returns %s by slug from the first-party fallback', async slug => {
+    const res = await app.request(`/plugins/${slug}`, {}, env);
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       slug: string;
@@ -68,11 +102,11 @@ describe('plugin registry', () => {
       bundleUrl: string;
       repositoryUrl: string;
     };
-    expect(body.slug).toBe('theme-parchment');
+    expect(body.slug).toBe(slug);
     expect(body.category).toBe('theme');
-    expect(body.repositoryUrl).toBe('https://github.com/dripnex/theme-parchment');
+    expect(body.repositoryUrl).toBe(`https://github.com/dripnex/${slug}`);
     expect(body.bundleUrl).toContain(
-      'dripnex/theme-parchment/releases/download/v0.1.0/theme-parchment-0.1.0.tar.gz'
+      `dripnex/${slug}/releases/download/v0.1.0/${slug}-0.1.0.tar.gz`
     );
   });
 

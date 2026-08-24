@@ -90,9 +90,27 @@ describe('mergeFallbackCatalog', () => {
     );
   });
 
-  it('keeps parchment when the live registry omitted it', () => {
-    const parchment = COMMUNITY_CATALOG.find(p => p.id === 'theme-parchment');
-    expect(parchment?.repository).toBe('dripnex/theme-parchment');
+  it('keeps packed satellite themes when the live registry omitted them', () => {
+    const packed = [
+      'theme-parchment',
+      'theme-harbor-dusk',
+      'theme-wave',
+      'theme-night',
+      'theme-solarized-dark',
+      'theme-solarized-light',
+      'theme-gruvbox',
+      'theme-glass',
+      'theme-midnight',
+      'theme-ember',
+      'theme-ion',
+      'theme-matcha',
+      'theme-phosphor',
+      'theme-fog',
+    ];
+    for (const id of packed) {
+      const row = COMMUNITY_CATALOG.find(p => p.id === id);
+      expect(row?.repository).toBe(`dripnex/${id}`);
+    }
     const merged = mergeFallbackCatalog([
       {
         slug: 'stamp',
@@ -103,11 +121,11 @@ describe('mergeFallbackCatalog', () => {
         repository: 'dripnex/plugin-stamp',
       },
     ]);
-    expect(merged.find(p => p.slug === 'theme-parchment')?.repository).toBe(
-      'dripnex/theme-parchment'
+    expect(merged.find(p => p.slug === 'theme-harbor-dusk')?.repository).toBe(
+      'dripnex/theme-harbor-dusk'
     );
-    expect(installSpecFor(merged.find(p => p.slug === 'theme-parchment')!)).toBe(
-      'dripnex/theme-parchment'
+    expect(installSpecFor(merged.find(p => p.slug === 'theme-harbor-dusk')!)).toBe(
+      'dripnex/theme-harbor-dusk'
     );
   });
 });
