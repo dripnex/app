@@ -72,11 +72,15 @@ export function McpCard() {
     return () => window.clearTimeout(id);
   }, [copied]);
 
+  const httpOn = integrations.httpApiEnabled || integrations.mcpEnabled || Boolean(info?.running);
   const launch = info
     ? launchFromConnection({
         dbPath: info.dbPath,
         mcpCommand: info.mcpCommand,
         mcpArgs: info.mcpArgs,
+        url: info.url,
+        token: info.token,
+        httpEnabled: httpOn,
       })
     : null;
   const claude = launch ? buildClaudeSnippet(launch) : '';

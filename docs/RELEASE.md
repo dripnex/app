@@ -15,7 +15,7 @@ You never bump `package.json`, never push a tag, never click **Run workflow**.
 
 ## Every day
 
-1. Branch off `develop`. Feature PRs **squash-merge**.
+1. Branch off `develop`. Non-draft PRs into `develop` **squash auto-merge** when CI is green ([`docs/ci.md`](./ci.md)).
 2. Title is the commit (`feat(desktop): …`, `fix(ai): …`). That title is what
    semantic-release reads.
 
@@ -27,13 +27,28 @@ You never bump `package.json`, never push a tag, never click **Run workflow**.
 3. **Merge commit. Never squash.** Squash collapses every `feat` into one
    `chore` and semantic-release will not bump.
 
+If that PR sits at **BEHIND**, `main` has commits `develop` never received and
+`main` requires branches to be up to date. Back-merge first:
+
+```bash
+git checkout -b chore/backmerge-main origin/develop
+git merge origin/main -m "chore(release): merge main into develop"
+git push -u origin chore/backmerge-main
+```
+
+Open it against `develop` and **merge it with a merge commit**. A squash
+replays `main`'s changes as a new commit, so `main` never becomes an ancestor
+and the promotion stays BEHIND. Branches named `chore/backmerge-*` are excluded
+from the squash auto-merge for exactly this reason.
+
 CI on that PR is the gate. When it merges:
 
 - **Release** runs on `main`.
 - It reads commits since the last tag (`feat` → minor, `fix` → patch).
-- It bumps `package.json` + `apps/desktop/package.json`, writes `CHANGELOG.md`,
-  tags `vX.Y.Z`, opens a **draft** GitHub Release. If the What’s New file
-  exists, that body replaces the commit dump.
+- It tags `vX.Y.Z` on the merge SHA and opens a **draft** GitHub Release.
+  It does **not** push a version-bump commit to `main` (branch rules require
+  a PR). Build stamps `package.json` from the tag right before packaging.
+  If `docs/releases/vX.Y.Z.md` exists, that body is the GitHub notes.
 - **Build & Publish** starts from that success (not from the tag push — GitHub
   will not let `GITHUB_TOKEN` trigger another workflow via tags).
 - All three platforms green → the release is published → electron-updater sees
@@ -53,7 +68,7 @@ gh workflow run "Build & Publish" -f tag=v0.16.0
 
 | What we did                        | What actually happened                                    |
 | ---------------------------------- | --------------------------------------------------------- |
-| PAT `GH_TOKEN` as `tomymaritano`   | 403 on `dripnex/readide`. Tokens expire. Bots do not.     |
+| PAT `GH_TOKEN` as `tomymaritano`   | 403. Tokens expire. Bots do not.                          |
 | **Run workflow** by hand           | Easy to forget. 0.16.0 sat on `main` with no tag.         |
 | Squash the promotion PR            | All `feat` commits vanish. No minor bump.                 |
 | Title `feat(release): cut v0.15.x` | One fake Feature. The real changelog is a single line.    |

@@ -1,0 +1,12 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.veil {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg-base) 48%, transparent);
+}

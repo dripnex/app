@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  Sparkles,
   Archive,
   Search,
   Filter,
@@ -14,6 +13,7 @@ import {
   Pin,
   PinOff,
   Globe,
+  FileText,
 } from 'lucide';
 import { LayoutZone } from '@dripnex/plugin-api';
 import { Icon } from '../ui/icons/Icon';
@@ -28,6 +28,7 @@ import { cssm } from '../lib/cssm';
 import { dispatchCommand } from '../hooks/useCommandRegistry';
 import { IconButton } from '../ui/primitives';
 import { noteListNavDirection } from '../utils/noteListKeys';
+import { modAccel } from '../utils/modAccel';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
@@ -86,22 +87,31 @@ function NoteListSkeleton() {
 }
 
 /** Empty state with icon and context-aware messaging */
-function EmptyState({ variant }: { variant: 'no-notes' | 'no-archived' | 'no-results' }) {
+function EmptyState({
+  variant,
+}: {
+  variant: 'no-notes' | 'no-archived' | 'no-results' | 'no-pinned';
+}) {
   const content = {
     'no-notes': {
-      icon: <Icon icon={Sparkles} size={32} />,
+      icon: <Icon icon={FileText} size={28} />,
       title: 'No notes yet',
-      hint: 'Press ⌘N to create your first note',
+      hint: `Press ${modAccel('N')} to create one`,
     },
     'no-archived': {
-      icon: <Icon icon={Archive} size={32} />,
+      icon: <Icon icon={Archive} size={28} />,
       title: 'Trash is empty',
-      hint: 'Deleted notes will appear here',
+      hint: 'Deleted notes appear here',
     },
     'no-results': {
-      icon: <Icon icon={Search} size={32} />,
-      title: 'No matches found',
-      hint: 'Try a different search term',
+      icon: <Icon icon={Search} size={28} />,
+      title: 'No matches',
+      hint: 'Try a different search',
+    },
+    'no-pinned': {
+      icon: <Icon icon={Pin} size={28} />,
+      title: 'Nothing pinned',
+      hint: 'Pin a note to keep it here',
     },
   };
 
@@ -230,7 +240,7 @@ export function NoteList({
   const getEmptyVariant = () => {
     if (searchQuery) return 'no-results';
     if (selectedQuickFilter === 'trash') return 'no-archived';
-    if (selectedQuickFilter === 'pinned') return 'no-notes';
+    if (selectedQuickFilter === 'pinned') return 'no-pinned';
     return 'no-notes';
   };
 

@@ -2,36 +2,103 @@ name: Auto-merge
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
-permissions:
-  contents: write
-  pull-requests: write
+# Least privilege: nothing at the workflow level, scoped per job below.
+permissions: {}
+
+# Serialize per pull request. Without this, an older run holding a stale event
+# snapshot can enable auto-merge after a newer run disabled it. Runs queue
+# rather than cancel: cancelling could kill the disable job and leave
+# auto-merge switched on.
+concurrency:
+  group: automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
-  # Owner PRs are auto-merged ONLY when explicitly opted in with the `automerge`
-  # label. This prevents PRs from merging before review (e.g. before CodeRabbit
-  # comments are resolved) and prevents stacked PRs targeting an unprotected
-  # feature branch from merging the instant CI passes. Add the label when the PR
-  # is actually ready to merge; don't add it (or remove it) to hold.
-  automerge-owner:
+  # Non-draft PRs into develop: enable GitHub auto-merge (squash).
+  # `--auto` waits for required status checks — red CI does not merge.
+  # Drafts stay out. PRs targeting a feature branch stay out (no stacked-PR
+  # instant merge). Dependabot is included by the same rule. No label.
+  automerge:
     runs-on: ubuntu-latest
+    permissions:
+      # `gh pr merge --auto` writes the merge queue entry.
+      contents: write
+      # ...and the auto-merge state on the pull request.
+      pull-requests: write
+    # Release back-merges are excluded. They exist for their topology, not
+    # their content: squashing one replays main's changes as a fresh commit,
+    # so main never becomes an ancestor of develop and the develop -> main
+    # promotion PR stays BEHIND forever. Merge those by hand, with a merge
+    # commit. See docs/RELEASE.md.
     if: >-
-      github.event.pull_request.user.login == 'tomymaritano' &&
-      contains(github.event.pull_request.labels.*.name, 'automerge')
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.base.ref == 'develop' &&
+      !startsWith(github.event.pull_request.head.ref, 'chore/backmerge-')
     steps:
-      - name: Enable auto-merge for opted-in owner PRs
+      - name: Enable auto-merge for non-draft PRs into develop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
+        # The `if:` above reads the event payload, which is a snapshot from when
+        # the run was queued. Re-read the live state so a PR drafted or
+        # retargeted in the meantime cannot have auto-merge switched back on.
+        run: |
+          set -euo pipefail
+          state="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,baseRefName --jq '"\(.isDraft) \(.baseRefName)"')"
+          if [ "$state" != "false develop" ]; then
+            echo "Skipping: PR #$PR_NUMBER is now [$state], not [false develop]."
+            exit 0
+          fi
+          gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
 
-  automerge-dependabot:
+  # Drop auto-merge if the PR is drafted or retargeted off develop, so a
+  # previously queued merge cannot land on an unprotected feature branch.
+  disable-automerge:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      # `pull-requests: write` alone returned FORBIDDEN ("Resource not
+      # accessible by integration") on PR #571. The narrower scope came from
+      # a least-privilege review; the mutation appears to want contents too.
+      # If FORBIDDEN comes back with both scopes granted, the cause is a
+      # repository or org restriction on GITHUB_TOKEN, not this file.
+      contents: write
+      pull-requests: write
+    # Only where a queued merge could still land somewhere unprotected: a
+    # draft, or a base that is neither develop nor main. A PR retargeted onto
+    # main is a release promotion, and main is protected — there is nothing
+    # dangerous to undo, so firing there was pure noise.
+    if: >-
+      github.event.pull_request.draft == true ||
+      (github.event.pull_request.base.ref != 'develop' &&
+      github.event.pull_request.base.ref != 'main')
     steps:
-      - name: Enable auto-merge for dependabot PRs
+      - name: Disable auto-merge for drafts and non-develop bases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh pr merge "$PR_NUMBER" --auto --squash --repo "$GITHUB_REPOSITORY"
+          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+        # The query is single-quoted on purpose: $id is a GraphQL variable and
+        # must not be expanded by the shell (shellcheck SC2016 is expected).
+        run: |
+          set -euo pipefail
+          if err="$(gh api graphql -f query='
+            mutation($id: ID!) {
+              disablePullRequestAutoMerge(input: { pullRequestId: $id }) {
+                clientMutationId
+              }
+            }
+          ' -f id="$PR_NODE_ID" 2>&1)"; then
+            echo "Auto-merge disabled."
+            exit 0
+          fi
+          # Tolerate only the expected case: it was never enabled. Swallowing
+          # permission, API or network failures would leave auto-merge on for a
+          # PR that is now a draft or points somewhere other than develop.
+          if printf '%s' "$err" | grep -qi 'not enabled'; then
+            echo "Auto-merge was not enabled; nothing to disable."
+            exit 0
+          fi
+          echo "Failed to disable auto-merge: $err" >&2
+          exit 1
