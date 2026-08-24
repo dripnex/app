@@ -218,23 +218,53 @@ jobs:
     if: needs.publish.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Create sync PR
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # A `develop <- main` PR cannot merge: develop requires the head branch
+      # to be up to date, and main is behind develop the moment anything lands
+      # after the release. Push a branch descended from develop with main
+      # merged into it instead — that satisfies the rule and, unlike a squash,
+      # actually makes main an ancestor of develop so the next promotion is
+      # not stuck at BEHIND.
+      - name: Open the back-merge PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.meta.outputs.tag }}
         run: |
           set -euo pipefail
-          if ! pr_count="$(gh pr list --base develop --head main --repo "$GITHUB_REPOSITORY" --json number --jq 'length')"; then
-            echo "::error::Unable to check for an existing sync PR."
-            exit 1
+          git fetch origin main develop
+
+          if git merge-base --is-ancestor origin/main origin/develop; then
+            echo "main is already an ancestor of develop; nothing to sync."
+            exit 0
           fi
-          if [ "$pr_count" -eq 0 ]; then
-            gh pr create \
-              --base develop \
-              --head main \
-              --title "chore: sync release $TAG_NAME back to develop" \
-              --body "Auto sync of release commit and changelog from $TAG_NAME." \
-              --repo "$GITHUB_REPOSITORY"
-          else
-            echo "Sync PR already open; nothing to create."
+
+          # The chore/backmerge- prefix keeps this out of the squash
+          # auto-merge in automerge.yml. Squashing it would defeat the point.
+          branch="chore/backmerge-main-${TAG_NAME}"
+
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "$branch already exists; leaving the open PR alone."
+            exit 0
           fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch" origin/develop
+          git merge origin/main -m "chore(release): merge main into develop"
+          git push origin "$branch"
+
+          gh pr create \
+            --base develop \
+            --head "$branch" \
+            --title "chore(release): merge main into develop" \
+            --body "Back-merge of $TAG_NAME so main stays an ancestor of develop and the next promotion PR is not stuck at BEHIND.
+
+          Merge this with a **merge commit**. A squash replays the content as a new commit and does not establish ancestry." \
+            --repo "$GITHUB_REPOSITORY"
+
+          # Explicitly a merge commit. automerge.yml skips chore/backmerge-*,
+          # so nothing else will arm this with --squash.
+          gh pr merge "$branch" --auto --merge --repo "$GITHUB_REPOSITORY"

@@ -1,0 +1,4 @@
+{
+  "name": "Dripnex",
+  "install": "bash .cursor/install.sh"
+}
