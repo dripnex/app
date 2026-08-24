@@ -96,7 +96,9 @@ jobs:
           # Tolerate only the expected case: it was never enabled. Swallowing
           # permission, API or network failures would leave auto-merge on for a
           # PR that is now a draft or points somewhere other than develop.
-          if printf '%s' "$err" | grep -qi 'not enabled'; then
+          # GitHub's wording is not stable: older payloads said "not enabled";
+          # current ones say "Can't disable auto-merge for this pull request."
+          if printf '%s' "$err" | grep -qiE 'not enabled|can.t disable auto-merge'; then
             echo "Auto-merge was not enabled; nothing to disable."
             exit 0
           fi
