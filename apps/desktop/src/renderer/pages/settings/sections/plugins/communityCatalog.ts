@@ -4,6 +4,11 @@
  * only list plugins that actually exist as public repos WITH a GitHub Release
  * tarball (`{id}-{version}.tar.gz`). A git tag alone is not enough.
  *
+ * Live Browse comes from GET /plugins on the Worker (dripnex theme-* /
+ * plugin-* repos with a packed Release tarball). This array is the offline
+ * fallback when that API is unreachable — do not generate it from GitHub
+ * in the renderer.
+ *
  * Three strings are not interchangeable (#562):
  *   id          — manifest.json / scan().id (folder name after install)
  *   repository  — GitHub owner/repo. This is the working install spec.

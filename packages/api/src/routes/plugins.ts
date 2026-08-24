@@ -9,10 +9,11 @@
  * Auth (Bearer JWT):
  *   POST /plugins              publish / update a package you own
  *
- * First-party packages (e.g. stamp) are merged in when missing from the DB
- * so Browse works before Turso is seeded. Only include a satellite that has a
- * packed GitHub Release tarball (`{id}-{version}.tar.gz`). A git tag is not
- * enough — Settings → Plugins → Browse Install would 404.
+ * First-party packs: GitHub org `dripnex` repos named `theme-*` / `plugin-*`
+ * with a packed Release `.tar.gz` are the live list. FIRST_PARTY_PACKAGES is
+ * the seed (GitHub down) and the slug/name/description override map — not a
+ * second catalog to keep in lockstep with daily theme satellites. Only a
+ * packed `{id}-{version}.tar.gz` is listed; a git tag is not enough.
  */
 
 import { Hono } from 'hono';
@@ -22,12 +23,20 @@ import { eq, like, and, desc, asc } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
 import { pluginCatalog, pluginVersions } from '../db/schema.js';
 import { authMiddleware } from '../middleware/auth.js';
+import {
+  discoverDripnexPacks,
+  humanizeRepoName,
+  normalizeGithubRepoUrl,
+  resolveDiscoveredSlug,
+  type DiscoveredPack,
+} from '../services/githubPacks.js';
 
 const plugins = new Hono<{ Bindings: Env }>();
 
 const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const SEMVER_RE = /^\d+\.\d+\.\d+(-[\w.]+)?(\+[\w.]+)?$/;
 
+/** Seed + slug/name/icon overrides. GitHub discovery is the live list. */
 export const FIRST_PARTY_PACKAGES = [
   {
     slug: 'stamp',
@@ -410,30 +419,7 @@ function parseTags(raw: string): string[] {
   }
 }
 
-function mergeFirstParty(rows: ListedPlugin[]): ListedPlugin[] {
-  const have = new Set(rows.map(r => r.slug));
-  const extra = FIRST_PARTY_PACKAGES.filter(p => !have.has(p.slug)).map(p => ({
-    slug: p.slug,
-    name: p.name,
-    description: p.description,
-    author: p.author,
-    version: p.version,
-    category: p.category,
-    tags: [...p.tags],
-    icon: p.icon,
-    downloads: p.downloads,
-    bundleUrl: p.bundleUrl,
-    repositoryUrl: p.repositoryUrl,
-    isBuiltIn: p.isBuiltIn,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-  }));
-  return [...extra, ...rows];
-}
-
-function firstPartyBySlug(slug: string): ListedPlugin | null {
-  const p = FIRST_PARTY_PACKAGES.find(item => item.slug === slug);
-  if (!p) return null;
+function listedFromSeed(p: (typeof FIRST_PARTY_PACKAGES)[number]): ListedPlugin {
   return {
     slug: p.slug,
     name: p.name,
@@ -450,6 +436,55 @@ function firstPartyBySlug(slug: string): ListedPlugin | null {
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
+}
+
+function seedByRepository(htmlUrl: string): (typeof FIRST_PARTY_PACKAGES)[number] | undefined {
+  const key = normalizeGithubRepoUrl(htmlUrl);
+  return FIRST_PARTY_PACKAGES.find(p => normalizeGithubRepoUrl(p.repositoryUrl) === key);
+}
+
+async function listedFromDiscovered(
+  pack: DiscoveredPack,
+  fetchImpl: typeof fetch
+): Promise<ListedPlugin> {
+  const override = seedByRepository(pack.htmlUrl);
+  const slug = await resolveDiscoveredSlug(pack, override?.slug, fetchImpl);
+  const isTheme = pack.kind === 'theme';
+  return {
+    slug,
+    name: override?.name ?? humanizeRepoName(pack.repoName),
+    description: override?.description ?? pack.description,
+    author: override?.author ?? 'Dripnex',
+    version: pack.version,
+    category: override?.category ?? (isTheme ? 'theme' : 'editor'),
+    tags: override ? [...override.tags] : isTheme ? ['theme'] : [],
+    icon: override?.icon ?? (isTheme ? 'palette' : 'puzzle'),
+    downloads: override?.downloads ?? 0,
+    bundleUrl: pack.bundleUrl,
+    repositoryUrl: pack.htmlUrl,
+    isBuiltIn: false,
+    createdAt: override?.createdAt ?? pack.createdAt,
+    updatedAt: pack.updatedAt,
+  };
+}
+
+function mergeBySlug(primary: ListedPlugin[], extras: ListedPlugin[]): ListedPlugin[] {
+  const have = new Set(primary.map(r => r.slug));
+  const extra = extras.filter(p => !have.has(p.slug));
+  return [...extra, ...primary];
+}
+
+/**
+ * Live first-party list: GitHub discovery with seed overrides, or the static
+ * seed alone when GitHub is down. Seed rows still fill gaps (vim/parchment)
+ * if a matching repo was skipped (no Release asset).
+ */
+async function firstPartyCatalog(env: Env): Promise<ListedPlugin[]> {
+  const seed = FIRST_PARTY_PACKAGES.map(listedFromSeed);
+  const discovered = await discoverDripnexPacks({ token: env.GITHUB_TOKEN, fetchImpl: fetch });
+  if (!discovered) return seed;
+  const live = await Promise.all(discovered.map(pack => listedFromDiscovered(pack, fetch)));
+  return mergeBySlug(live, seed);
 }
 
 plugins.get('/', zValidator('query', listQuerySchema), async c => {
@@ -507,7 +542,7 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
     rows = [];
   }
 
-  let pluginsOut = mergeFirstParty(rows);
+  let pluginsOut = mergeBySlug(rows, await firstPartyCatalog(c.env));
   if (query) {
     const qLower = query.toLowerCase();
     pluginsOut = pluginsOut.filter(
@@ -670,7 +705,8 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
   } catch {
     // table missing — fall through
   }
-  return firstPartyBySlug(slug);
+  const catalog = await firstPartyCatalog(env);
+  return catalog.find(p => p.slug === slug) ?? null;
 }
 
 export { plugins };

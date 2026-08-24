@@ -58,6 +58,9 @@ RESEND_API_KEY="re_your_key_here"
 # Stripe (get from: https://dashboard.stripe.com/webhooks)
 STRIPE_WEBHOOK_SECRET="whsec_your_secret_here"
 
+# Optional: GitHub token for first-party Browse discovery
+# GITHUB_TOKEN="ghp_..."
+
 # Environment
 ENVIRONMENT="development"
 ```
