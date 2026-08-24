@@ -35,6 +35,12 @@ describe('plugin registry', () => {
     expect(body.plugins.find(p => p.slug === 'dripnex-vim-mode')?.repositoryUrl).toBe(
       'https://github.com/dripnex/plugin-vim'
     );
+    expect(body.plugins.find(p => p.slug === 'theme-parchment')?.repositoryUrl).toBe(
+      'https://github.com/dripnex/theme-parchment'
+    );
+    expect(body.plugins.find(p => p.slug === 'theme-parchment')?.bundleUrl).toContain(
+      'theme-parchment-0.1.0.tar.gz'
+    );
   });
 
   it('serves the same index on /packages', async () => {
@@ -51,6 +57,23 @@ describe('plugin registry', () => {
     expect(body.slug).toBe('dripnex-vim-mode');
     expect(body.repositoryUrl).toBe('https://github.com/dripnex/plugin-vim');
     expect(body.bundleUrl).toContain('dripnex-vim-mode-1.2.0.tar.gz');
+  });
+
+  it('returns parchment by slug from the first-party fallback', async () => {
+    const res = await app.request('/plugins/theme-parchment', {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      slug: string;
+      category: string;
+      bundleUrl: string;
+      repositoryUrl: string;
+    };
+    expect(body.slug).toBe('theme-parchment');
+    expect(body.category).toBe('theme');
+    expect(body.repositoryUrl).toBe('https://github.com/dripnex/theme-parchment');
+    expect(body.bundleUrl).toContain(
+      'dripnex/theme-parchment/releases/download/v0.1.0/theme-parchment-0.1.0.tar.gz'
+    );
   });
 
   it('returns stamp by slug from the first-party fallback', async () => {
