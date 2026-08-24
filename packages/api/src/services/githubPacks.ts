@@ -144,11 +144,7 @@ function githubHeaders(token?: string): Record<string, string> {
   return headers;
 }
 
-async function githubGet(
-  path: string,
-  fetchImpl: typeof fetch,
-  token?: string
-): Promise<Response> {
+async function githubGet(path: string, fetchImpl: typeof fetch, token?: string): Promise<Response> {
   return fetchImpl(`${API}${path}`, { headers: githubHeaders(token) });
 }
 
@@ -158,10 +154,7 @@ function isPackCandidate(repo: GhRepo): repo is GhRepo & { name: string; html_ur
   return isFirstPartyRepoName(repo.name);
 }
 
-async function listOrgPackRepos(
-  fetchImpl: typeof fetch,
-  token?: string
-): Promise<GhRepo[] | null> {
+async function listOrgPackRepos(fetchImpl: typeof fetch, token?: string): Promise<GhRepo[] | null> {
   const repos: GhRepo[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     const res = await githubGet(
@@ -250,7 +243,8 @@ export async function discoverDripnexPacks(options: {
       if (result.status === 'fulfilled' && result.value) {
         packs.push(result.value);
       } else if (result.status === 'rejected') {
-        const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        const message =
+          result.reason instanceof Error ? result.reason.message : String(result.reason);
         if (message.includes('rate limited')) rateLimited = true;
       }
     }

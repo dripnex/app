@@ -436,4 +436,3 @@ describe('plugin registry', () => {
     expect(body.plugins.map(p => p.slug)).toContain('dripnex-vim-mode');
   });
 });
-
