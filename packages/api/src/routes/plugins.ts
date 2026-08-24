@@ -10,7 +10,9 @@
  *   POST /plugins              publish / update a package you own
  *
  * First-party packages (e.g. stamp) are merged in when missing from the DB
- * so Browse works before Turso is seeded.
+ * so Browse works before Turso is seeded. Only include a satellite that has a
+ * packed GitHub Release tarball (`{id}-{version}.tar.gz`). A git tag is not
+ * enough — Settings → Plugins → Browse Install would 404.
  */
 
 import { Hono } from 'hono';

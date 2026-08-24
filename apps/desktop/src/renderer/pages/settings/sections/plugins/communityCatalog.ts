@@ -1,7 +1,8 @@
 /**
  * First-party community plugins. Same shape as Inkdrop: one git repo per
  * plugin, installed from its GitHub release tarball. Not a fake marketplace —
- * only list plugins that actually exist as public repos with a release.
+ * only list plugins that actually exist as public repos WITH a GitHub Release
+ * tarball (`{id}-{version}.tar.gz`). A git tag alone is not enough.
  *
  * Three strings are not interchangeable (#562):
  *   id          — manifest.json / scan().id (folder name after install)
@@ -53,6 +54,14 @@ export const COMMUNITY_CATALOG: CatalogPlugin[] = [
     version: '0.1.0',
     author: 'Dripnex',
     repository: 'dripnex/plugin-stamp',
+  },
+  {
+    id: 'theme-parchment',
+    name: 'Parchment',
+    description: 'Warm paper palette. Official Dripnex theme.',
+    version: '0.1.0',
+    author: 'Dripnex',
+    repository: 'dripnex/theme-parchment',
   },
 ];
 

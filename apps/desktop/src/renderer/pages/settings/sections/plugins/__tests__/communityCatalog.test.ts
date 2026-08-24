@@ -89,6 +89,27 @@ describe('mergeFallbackCatalog', () => {
       expect.arrayContaining(['dripnex-vim-mode', 'mermaid', 'math'])
     );
   });
+
+  it('keeps parchment when the live registry omitted it', () => {
+    const parchment = COMMUNITY_CATALOG.find(p => p.id === 'theme-parchment');
+    expect(parchment?.repository).toBe('dripnex/theme-parchment');
+    const merged = mergeFallbackCatalog([
+      {
+        slug: 'stamp',
+        name: 'Stamp',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repository: 'dripnex/plugin-stamp',
+      },
+    ]);
+    expect(merged.find(p => p.slug === 'theme-parchment')?.repository).toBe(
+      'dripnex/theme-parchment'
+    );
+    expect(installSpecFor(merged.find(p => p.slug === 'theme-parchment')!)).toBe(
+      'dripnex/theme-parchment'
+    );
+  });
 });
 
 describe('matchRemoteForInstalled', () => {

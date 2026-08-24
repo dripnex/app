@@ -12,6 +12,7 @@ export const OFFICIAL_PACK_REPOS: Record<string, `${string}/${string}`> = {
   mermaid: 'dripnex/plugin-mermaid',
   math: 'dripnex/plugin-math',
   stamp: 'dripnex/plugin-stamp',
+  'theme-parchment': 'dripnex/theme-parchment',
 };
 
 export function officialRepoForSlug(slug: string): { owner: string; repo: string } | null {

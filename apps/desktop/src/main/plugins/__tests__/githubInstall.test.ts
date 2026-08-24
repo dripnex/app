@@ -48,6 +48,11 @@ describe('parseConnectSpec', () => {
       owner: 'dripnex',
       repo: 'plugin-math',
     });
+    expect(parseConnectSpec('theme-parchment')).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'theme-parchment',
+    });
     expect(parseConnectSpec('dripnex/plugin-vim')).toEqual({
       kind: 'github',
       owner: 'dripnex',

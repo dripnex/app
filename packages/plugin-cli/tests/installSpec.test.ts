@@ -68,5 +68,10 @@ describe('parseInstallSource', () => {
       repo: 'plugin-mermaid',
       tag: '0.1.0',
     });
+    expect(parseInstallSource('theme-parchment', none)).toEqual({
+      kind: 'github',
+      owner: 'dripnex',
+      repo: 'theme-parchment',
+    });
   });
 });
