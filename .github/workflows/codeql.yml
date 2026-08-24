@@ -1,5 +1,11 @@
 name: CodeQL
 
+# Single in-repo CodeQL source (advanced setup). GitHub default setup
+# (Actions path dynamic/github-code-scanning/codeql, shown as
+# "Code Quality: PR #N") must stay disabled — see docs/ci.md.
+#
+# Job name is "CodeQL" so the develop ruleset context of the same name
+# still reports on release back-merges when the scan itself is skipped.
 on:
   push:
     branches: [main, develop]
@@ -14,21 +20,49 @@ concurrency:
 
 jobs:
   analyze:
-    name: Analyze (JavaScript/TypeScript)
+    name: CodeQL
     runs-on: ubuntu-latest
     permissions:
       security-events: write
     steps:
+      - id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+        run: |
+          skip=false
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            case "$HEAD_REF" in
+              chore/backmerge-*) skip=true ;;
+            esac
+            if [ "$PR_TITLE" = "chore(release): merge main into develop" ] && \
+               [ "$PR_USER" = "github-actions[bot]" ]; then
+              skip=true
+            fi
+          fi
+          echo "skip_heavy=${skip}" >> "$GITHUB_OUTPUT"
+          echo "skip_heavy=${skip}"
+
+      - name: Skip CodeQL for release back-merge
+        if: steps.gate.outputs.skip_heavy == 'true'
+        run: echo "Back-merge PR — required check CodeQL reports success without a scan."
+
       - name: Checkout
+        if: steps.gate.outputs.skip_heavy != 'true'
         uses: actions/checkout@v5
 
       - name: Initialize CodeQL
+        if: steps.gate.outputs.skip_heavy != 'true'
         uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
 
       - name: Autobuild
+        if: steps.gate.outputs.skip_heavy != 'true'
         uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
+        if: steps.gate.outputs.skip_heavy != 'true'
         uses: github/codeql-action/analyze@v4
