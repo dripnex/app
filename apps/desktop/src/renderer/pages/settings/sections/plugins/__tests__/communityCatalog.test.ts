@@ -89,6 +89,45 @@ describe('mergeFallbackCatalog', () => {
       expect.arrayContaining(['dripnex-vim-mode', 'mermaid', 'math'])
     );
   });
+
+  it('keeps packed satellite themes when the live registry omitted them', () => {
+    const packed = [
+      'theme-parchment',
+      'theme-harbor-dusk',
+      'theme-wave',
+      'theme-night',
+      'theme-solarized-dark',
+      'theme-solarized-light',
+      'theme-gruvbox',
+      'theme-glass',
+      'theme-midnight',
+      'theme-ember',
+      'theme-ion',
+      'theme-matcha',
+      'theme-phosphor',
+      'theme-fog',
+    ];
+    for (const id of packed) {
+      const row = COMMUNITY_CATALOG.find(p => p.id === id);
+      expect(row?.repository).toBe(`dripnex/${id}`);
+    }
+    const merged = mergeFallbackCatalog([
+      {
+        slug: 'stamp',
+        name: 'Stamp',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repository: 'dripnex/plugin-stamp',
+      },
+    ]);
+    expect(merged.find(p => p.slug === 'theme-harbor-dusk')?.repository).toBe(
+      'dripnex/theme-harbor-dusk'
+    );
+    expect(installSpecFor(merged.find(p => p.slug === 'theme-harbor-dusk')!)).toBe(
+      'dripnex/theme-harbor-dusk'
+    );
+  });
 });
 
 describe('matchRemoteForInstalled', () => {
