@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMMUNITY_CATALOG,
+  cardsFromRegistry,
   githubRepoFromUrl,
   installSpecFor,
+  installTargetFor,
   matchRemoteForInstalled,
   mergeFallbackCatalog,
 } from '../communityCatalog';
@@ -127,6 +129,300 @@ describe('mergeFallbackCatalog', () => {
     expect(installSpecFor(merged.find(p => p.slug === 'theme-harbor-dusk')!)).toBe(
       'dripnex/theme-harbor-dusk'
     );
+  });
+
+  it('keeps live extras such as limestone when GET /plugins returns 30', () => {
+    const live = [
+      ...COMMUNITY_CATALOG.map(p => ({
+        slug: p.id,
+        name: p.name,
+        description: p.description,
+        version: p.version,
+        author: p.author,
+        repositoryUrl: `https://github.com/${p.repository}`,
+        bundleUrl: `https://github.com/${p.repository}/releases/download/v0.1.0/${p.id}-0.1.0.tar.gz`,
+      })),
+      {
+        slug: 'theme-dune',
+        name: 'Dune',
+        description: 'Desert afternoon.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-dune',
+        bundleUrl:
+          'https://github.com/dripnex/theme-dune/releases/download/v0.1.0/theme-dune-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-noir',
+        name: 'Noir',
+        description: 'Cinema black.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-noir',
+        bundleUrl:
+          'https://github.com/dripnex/theme-noir/releases/download/v0.1.0/theme-noir-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-sakura',
+        name: 'Sakura',
+        description: 'Cherry-blossom paper.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-sakura',
+        bundleUrl:
+          'https://github.com/dripnex/theme-sakura/releases/download/v0.1.0/theme-sakura-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-limestone',
+        name: 'Limestone',
+        description: 'Warm stone.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+        bundleUrl:
+          'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-walnut',
+        name: 'Walnut',
+        description: 'Dark wood.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-walnut',
+        bundleUrl:
+          'https://github.com/dripnex/theme-walnut/releases/download/v0.1.0/theme-walnut-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-ash',
+        name: 'Ash',
+        description: 'Pale timber.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-ash',
+        bundleUrl:
+          'https://github.com/dripnex/theme-ash/releases/download/v0.1.0/theme-ash-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-quartz',
+        name: 'Quartz',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-quartz',
+        bundleUrl:
+          'https://github.com/dripnex/theme-quartz/releases/download/v0.1.0/theme-quartz-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-cove',
+        name: 'Cove',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-cove',
+        bundleUrl:
+          'https://github.com/dripnex/theme-cove/releases/download/v0.1.0/theme-cove-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-velvet',
+        name: 'Velvet',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-velvet',
+        bundleUrl:
+          'https://github.com/dripnex/theme-velvet/releases/download/v0.1.0/theme-velvet-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-ink',
+        name: 'Ink',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-ink',
+        bundleUrl:
+          'https://github.com/dripnex/theme-ink/releases/download/v0.1.0/theme-ink-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-pine',
+        name: 'Pine',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-pine',
+        bundleUrl:
+          'https://github.com/dripnex/theme-pine/releases/download/v0.1.0/theme-pine-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-saffron',
+        name: 'Saffron',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-saffron',
+        bundleUrl:
+          'https://github.com/dripnex/theme-saffron/releases/download/v0.1.0/theme-saffron-0.1.0.tar.gz',
+      },
+    ];
+    expect(live).toHaveLength(30);
+    const catalog = mergeFallbackCatalog(cardsFromRegistry(live));
+    const slugs = catalog.map(p => p.slug);
+    expect(slugs).toContain('theme-limestone');
+    expect(slugs).toContain('theme-walnut');
+    expect(slugs).toContain('theme-ash');
+    expect(catalog).toHaveLength(30);
+    const limestone = catalog.find(p => p.slug === 'theme-limestone');
+    expect(limestone?.repository).toBe('dripnex/theme-limestone');
+    expect(installTargetFor(limestone!)).toContain('theme-limestone-0.1.0.tar.gz');
+    expect(installTargetFor(limestone!)).toMatch(/^https:\/\//);
+  });
+
+  it('drops a squatted first-party card whose bundle is not a dripnex release', () => {
+    const catalog = cardsFromRegistry([
+      {
+        slug: 'theme-limestone',
+        name: 'Limestone (hijack)',
+        description: '',
+        version: '9.9.9',
+        author: 'attacker',
+        repositoryUrl: 'https://github.com/attacker/theme-limestone',
+        bundleUrl:
+          'https://github.com/attacker/theme-limestone/releases/download/v9.9.9/theme-limestone-9.9.9.tar.gz',
+      },
+      {
+        slug: 'hello-notes',
+        name: 'Hello Notes',
+        description: '',
+        version: '1.0.0',
+        author: 'acme',
+        repositoryUrl: 'https://github.com/acme/hello-notes',
+        bundleUrl:
+          'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz',
+      },
+    ]);
+    expect(catalog.map(p => p.slug)).toEqual(['hello-notes']);
+  });
+
+  it('does not install a first-party card from an attacker bundleUrl', () => {
+    const target = installTargetFor({
+      slug: 'theme-limestone',
+      name: 'Limestone',
+      description: '',
+      version: '0.1.0',
+      author: 'Dripnex',
+      repository: 'dripnex/theme-limestone',
+      bundleUrl:
+        'https://github.com/attacker/theme-limestone/releases/download/v9.9.9/theme-limestone-9.9.9.tar.gz',
+    });
+    expect(target).toBe('dripnex/theme-limestone');
+    expect(target).not.toContain('attacker');
+  });
+
+  it('drops a community card that displays a dripnex pack repo', () => {
+    const catalog = cardsFromRegistry([
+      {
+        slug: 'limestone',
+        name: 'Limestone',
+        description: '',
+        version: '9.9.9',
+        author: 'attacker',
+        repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+        bundleUrl:
+          'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+      },
+      {
+        slug: 'limestone-case',
+        name: 'Limestone',
+        description: '',
+        version: '9.9.9',
+        author: 'attacker',
+        repositoryUrl: 'https://github.com/dripnex/Theme-limestone',
+        bundleUrl:
+          'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+      },
+      {
+        slug: 'hello-notes',
+        name: 'Hello Notes',
+        description: '',
+        version: '1.0.0',
+        author: 'acme',
+        repositoryUrl: 'https://github.com/acme/hello-notes',
+        bundleUrl:
+          'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz',
+      },
+    ]);
+    expect(catalog.map(p => p.slug)).toEqual(['hello-notes']);
+  });
+
+  it('does not install from an attacker bundle when the card shows a dripnex repo', () => {
+    const target = installTargetFor({
+      slug: 'limestone',
+      name: 'Limestone',
+      description: '',
+      version: '9.9.9',
+      author: 'attacker',
+      repository: 'dripnex/theme-limestone',
+      bundleUrl:
+        'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+    });
+    expect(target).toBe('dripnex/theme-limestone');
+    expect(target).not.toContain('attacker');
+
+    const mixed = installTargetFor({
+      slug: 'limestone-case',
+      name: 'Limestone',
+      description: '',
+      version: '9.9.9',
+      author: 'attacker',
+      repository: 'dripnex/Theme-limestone',
+      bundleUrl:
+        'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+    });
+    expect(mixed).toBe('dripnex/Theme-limestone');
+    expect(mixed).not.toContain('attacker');
+  });
+
+  it('does not install a mismatched bundleUrl for a non-pack GitHub identity', () => {
+    const target = installTargetFor({
+      slug: 'notes',
+      name: 'Notes',
+      description: '',
+      version: '9.9.9',
+      author: 'attacker',
+      repository: 'dripnex/app',
+      bundleUrl: 'https://github.com/attacker/notes/releases/download/v9.9.9/notes-9.9.9.tar.gz',
+    });
+    expect(target).toBe('dripnex/app');
+    expect(target).not.toContain('attacker');
+  });
+
+  it('does not install a mismatched bundleUrl for a community GitHub identity', () => {
+    const target = installTargetFor({
+      slug: 'hello-notes',
+      name: 'Hello Notes',
+      description: '',
+      version: '1.0.0',
+      author: 'acme',
+      repository: 'acme/hello-notes',
+      bundleUrl: 'https://github.com/evil/x/releases/download/v9.9.9/x-9.9.9.tar.gz',
+    });
+    expect(target).toBe('acme/hello-notes');
+    expect(target).not.toContain('evil');
+  });
+
+  it('still follows a community bundleUrl that belongs to the displayed repo', () => {
+    const bundle =
+      'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz';
+    expect(
+      installTargetFor({
+        slug: 'hello-notes',
+        name: 'Hello Notes',
+        description: '',
+        version: '1.0.0',
+        author: 'acme',
+        repository: 'acme/hello-notes',
+        bundleUrl: bundle,
+      })
+    ).toBe(bundle);
   });
 });
 

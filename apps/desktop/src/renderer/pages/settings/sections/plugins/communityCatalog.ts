@@ -16,6 +16,16 @@
  * Install must send `repository` (`dripnex/plugin-vim`), not `id`.
  */
 
+import {
+  catalogBundleUrlForInstall,
+  githubRepoFromUrl,
+  isDripnexPackRepository,
+  isReservedFirstPartySlug,
+  isTrustedFirstPartyBundleUrl,
+} from '../../../../../shared/firstPartyPacks';
+
+export { githubRepoFromUrl };
+
 export interface CatalogPlugin {
   /** manifest.json id — what scan() returns after install */
   id: string;
@@ -181,6 +191,7 @@ export interface CatalogCard {
   version: string;
   author: string;
   repository: string | null;
+  bundleUrl?: string | null;
 }
 
 /**
@@ -197,9 +208,48 @@ export function installSpecFor(
 }
 
 /**
+ * Live GET /plugins rows become Browse cards. No slug allowlist — extras
+ * such as theme-limestone must appear when the Worker returns them.
+ */
+export function cardsFromRegistry(
+  plugins: Array<{
+    slug: string;
+    name: string;
+    description: string;
+    version: string;
+    author: string;
+    repositoryUrl?: string | null;
+    bundleUrl?: string | null;
+  }>
+): CatalogCard[] {
+  return plugins.flatMap(p => {
+    const repository = githubRepoFromUrl(p.repositoryUrl);
+    if (repository && isDripnexPackRepository(repository) && !isReservedFirstPartySlug(p.slug)) {
+      return [];
+    }
+    if (isReservedFirstPartySlug(p.slug)) {
+      if (p.bundleUrl && !isTrustedFirstPartyBundleUrl(p.bundleUrl)) return [];
+      if (repository && !isDripnexPackRepository(repository)) return [];
+    }
+    return [
+      {
+        slug: p.slug,
+        name: p.name,
+        description: p.description,
+        version: p.version,
+        author: p.author,
+        repository,
+        bundleUrl: p.bundleUrl ?? null,
+      },
+    ];
+  });
+}
+
+/**
  * Keep first-party fallback cards that the live registry omitted, and fill
  * `repository` on a live row that listed the slug without repositoryUrl.
  * Browse used to replace the fallback entirely, which hid Vim (#562).
+ * Live extras not in COMMUNITY_CATALOG are kept as-is.
  */
 export function mergeFallbackCatalog(
   registry: CatalogCard[],
@@ -221,19 +271,20 @@ export function mergeFallbackCatalog(
       version: p.version,
       author: p.author,
       repository: p.repository,
+      bundleUrl: null as string | null,
     }));
   return extra.length === 0 ? filled : [...extra, ...filled];
 }
 
-export function githubRepoFromUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const trimmed = url.trim();
-  const path = trimmed
-    .replace(/^https:\/\/github\.com\//i, '')
-    .replace(/\.git$/i, '')
-    .replace(/\/+$/, '');
-  const [owner, repo] = path.split('/');
-  return owner && repo ? `${owner}/${repo}` : null;
+/**
+ * Prefer the Worker catalog tarball so Install does not call api.github.com,
+ * but only when that URL belongs to the card's GitHub identity. Official pack
+ * cards only follow a dripnex GitHub release tarball for that repo.
+ */
+export function installTargetFor(card: CatalogCard): string {
+  return (
+    catalogBundleUrlForInstall(card.slug, card.repository, card.bundleUrl) ?? installSpecFor(card)
+  );
 }
 
 export interface RemoteCatalogRow {

@@ -88,4 +88,5 @@ simple = { limit = 60, period = 60 }
 #   release with the new public key FIRST — see that file's comment.
 # Optional:
 # GITHUB_TOKEN - GitHub token for first-party Browse discovery (theme-*/plugin-*).
-#   Unauthenticated public requests still work; the token raises the rate limit.
+#   Used for GraphQL org listing (one query) and REST fallback. Without it,
+#   unauthenticated public requests still work but are easier to rate-limit.
