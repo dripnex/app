@@ -8,6 +8,13 @@ type ContextTarget = {
 
 export type LiveCommandContext = Extract<CommandContext, 'editor' | 'note-list' | 'app'>;
 
+/** Settings (and similar chrome) must work while an email field is focused. */
+const FORM_SAFE_APP_COMMANDS = new Set(['app:open-settings']);
+
+export function allowsAppCommandInForm(commandId: string): boolean {
+  return FORM_SAFE_APP_COMMANDS.has(commandId);
+}
+
 export function resolveCommandContext(
   target: unknown,
   root?: { querySelector: (selector: string) => unknown } | null

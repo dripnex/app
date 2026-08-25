@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCommandContext } from '../commandContext';
+import { allowsAppCommandInForm, resolveCommandContext } from '../commandContext';
 
 function el(closestMatch?: string, tagName = 'DIV') {
   return {
@@ -30,5 +30,12 @@ describe('resolveCommandContext', () => {
 
   it('is app when there is no note list', () => {
     expect(resolveCommandContext(el(), { querySelector: () => null })).toBe('app');
+  });
+});
+
+describe('allowsAppCommandInForm', () => {
+  it('lets Open Settings through while typing in a field', () => {
+    expect(allowsAppCommandInForm('app:open-settings')).toBe(true);
+    expect(allowsAppCommandInForm('app:new-note')).toBe(false);
   });
 });
