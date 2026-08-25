@@ -3,7 +3,11 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import app from '../src/index.js';
 import { createDb } from '../src/db/client.js';
 import { pluginCatalog } from '../src/db/schema.js';
-import { isReservedFirstPartySlug, isDripnexPackRepositoryUrl } from '../src/routes/plugins.js';
+import {
+  isReservedFirstPartySlug,
+  isDripnexPackRepositoryUrl,
+  isTrustedFirstPartyBundleUrl,
+} from '../src/routes/plugins.js';
 import {
   discoverDripnexPacks,
   fallbackSlug,
@@ -56,6 +60,29 @@ describe('first-party pack discovery helpers', () => {
     expect(isDripnexPackRepositoryUrl('https://github.com/Dripnex/PLUGIN-vim')).toBe(true);
     expect(isDripnexPackRepositoryUrl('https://github.com/attacker/theme-limestone')).toBe(false);
     expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/app')).toBe(false);
+    expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/theme-limestone.git/')).toBe(
+      true
+    );
+    expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/plugin-vim.git/')).toBe(true);
+  });
+
+  it('agrees with desktop first-party slug and trusted-bundle rules', () => {
+    expect(isReservedFirstPartySlug('stamp')).toBe(true);
+    expect(isReservedFirstPartySlug('dripnex-vim-mode')).toBe(true);
+    expect(isReservedFirstPartySlug('theme-limestone')).toBe(true);
+    expect(isReservedFirstPartySlug('plugin-stamp')).toBe(true);
+    expect(isReservedFirstPartySlug('hello-notes')).toBe(false);
+    expect(isReservedFirstPartySlug('calendar')).toBe(false);
+    expect(
+      isTrustedFirstPartyBundleUrl(
+        'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz'
+      )
+    ).toBe(true);
+    expect(
+      isTrustedFirstPartyBundleUrl(
+        'https://github.com/attacker/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz'
+      )
+    ).toBe(false);
   });
 
   it('picks the packed Release asset, never a git source tarball stand-in', () => {
@@ -117,7 +144,14 @@ function graphqlPackedNode(name: string) {
     latestRelease: {
       tagName: 'v0.1.0',
       publishedAt: '2026-08-25T00:00:00.000Z',
-      releaseAssets: { nodes: [{ name: `${name}-0.1.0.tar.gz` }] },
+      releaseAssets: {
+        nodes: [
+          {
+            name: `${name}-0.1.0.tar.gz`,
+            downloadUrl: `https://github.com/dripnex/${name}/releases/download/v0.1.0/${name}-0.1.0.tar.gz`,
+          },
+        ],
+      },
     },
   };
 }
@@ -272,6 +306,103 @@ describe('discoverDripnexPacks cache', () => {
     expect(packs?.find(p => p.repoName === 'theme-limestone')?.bundleUrl).toContain(
       'theme-limestone-0.1.0.tar.gz'
     );
+    const graphqlCall = fetchImpl.mock.calls.find(c => String(c[0]).includes('/graphql'));
+    const payload = JSON.parse(String(graphqlCall?.[1]?.body ?? '{}')) as {
+      variables?: { org?: string; perPage?: number };
+    };
+    expect(payload.variables?.org).toBe('dripnex');
+    expect(payload.variables?.perPage).toBe(100);
+  });
+
+  it('uses GraphQL asset downloadUrl instead of reconstructing the tarball path', async () => {
+    const downloadUrl =
+      'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/custom-limestone.tar.gz';
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [
+                  {
+                    name: 'theme-limestone',
+                    url: 'https://github.com/dripnex/theme-limestone',
+                    description: 'stone',
+                    isArchived: false,
+                    createdAt: '2026-08-25T00:00:00.000Z',
+                    updatedAt: '2026-08-25T00:00:00.000Z',
+                    defaultBranchRef: { name: 'main' },
+                    latestRelease: {
+                      tagName: 'v0.1.0',
+                      publishedAt: '2026-08-25T00:00:00.000Z',
+                      releaseAssets: {
+                        nodes: [{ name: 'theme-limestone-0.1.0.tar.gz', downloadUrl }],
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const packs = await discoverDripnexPacks({ fetchImpl, now: 4, cacheStore: null });
+    expect(packs).toHaveLength(1);
+    expect(packs?.[0]?.bundleUrl).toBe(downloadUrl);
+  });
+
+  it('does not overwrite last-good with an empty successful scan', async () => {
+    const t0 = 4_000_000;
+    const shared = createMemoryPacksCache();
+    const fullFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone'), graphqlPackedNode('theme-walnut')],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const first = await discoverDripnexPacks({ fetchImpl: fullFetch, now: t0, cacheStore: shared });
+    expect(first?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+
+    resetGithubPacksCache();
+    const emptyFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const afterEmpty = await discoverDripnexPacks({
+      fetchImpl: emptyFetch,
+      now: t0 + GITHUB_PACKS_TTL_MS + 1,
+      cacheStore: shared,
+    });
+    expect(afterEmpty?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
   });
 
   it('returns null on a rate-limited first scan so the seed catalog is used', async () => {
@@ -524,6 +655,7 @@ describe('plugin registry', () => {
     expect(res.status).toBe(403);
     const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/reserved/i);
+    expect(body.error).toMatch(/package name/i);
   });
 
   it('does not serve a Turso row that squats an official slug', async () => {
@@ -613,6 +745,8 @@ describe('plugin registry', () => {
       env
     );
     expect(res.status).toBe(403);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/repositoryUrl/i);
   });
 
   it('rejects publish that impersonates a mixed-case dripnex pack repository', async () => {
@@ -637,6 +771,34 @@ describe('plugin registry', () => {
       env
     );
     expect(res.status).toBe(403);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/repositoryUrl/i);
+  });
+
+  it('rejects publish that claims an official dripnex pack tarball', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'bundle-squatter@evil.test');
+    const token = await createAccessToken(userId, 'bundle-squatter@evil.test');
+
+    const res = await app.request(
+      '/plugins',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+        body: JSON.stringify({
+          slug: 'hello-limestone',
+          name: 'Hello Limestone',
+          version: '9.9.9',
+          repositoryUrl: 'https://github.com/attacker/hello-limestone',
+          bundleUrl:
+            'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
+        }),
+      },
+      env
+    );
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/bundleUrl/i);
   });
 
   it('does not list a community row whose GitHub link is a dripnex pack', async () => {
@@ -943,5 +1105,94 @@ describe('plugin registry', () => {
     );
     expect(slugs).toContain('dripnex-vim-mode');
     expect(body.total).toBeGreaterThanOrEqual(5);
+  });
+
+  it('does not let a community row claim a stripped plugin-* discovery slug', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'calendar-squatter@evil.test');
+    const now = new Date().toISOString();
+    const attackerBundle =
+      'https://github.com/attacker/calendar/releases/download/v9.9.9/calendar-9.9.9.tar.gz';
+    await createDb(env).insert(pluginCatalog).values({
+      id: randomUUID(),
+      slug: 'calendar',
+      name: 'Calendar (hijack)',
+      description: 'attacker',
+      author: 'calendar-squatter@evil.test',
+      version: '9.9.9',
+      category: 'editor',
+      tags: '[]',
+      icon: 'puzzle',
+      repositoryUrl: 'https://github.com/attacker/calendar',
+      bundleUrl: attackerBundle,
+      ownerUserId: userId,
+      downloads: 99,
+      isBuiltIn: false,
+      status: 'published',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    stubGithub(url => {
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('plugin-calendar')],
+              },
+            },
+          },
+        });
+      }
+      return null;
+    });
+    resetGithubPacksCache();
+
+    const official =
+      'https://github.com/dripnex/plugin-calendar/releases/download/v0.1.0/plugin-calendar-0.1.0.tar.gz';
+    const listed = await app.request('/plugins', {}, env);
+    expect(listed.status).toBe(200);
+    const listBody = (await listed.json()) as {
+      plugins: Array<{
+        slug: string;
+        bundleUrl: string | null;
+        name: string;
+        repositoryUrl: string | null;
+      }>;
+    };
+    const calendarRows = listBody.plugins.filter(p => p.slug === 'calendar');
+    expect(calendarRows).toHaveLength(1);
+    expect(calendarRows[0]?.bundleUrl).toBe(official);
+    expect(calendarRows[0]?.name).not.toContain('hijack');
+    expect(calendarRows[0]?.repositoryUrl).toBe('https://github.com/dripnex/plugin-calendar');
+    expect(listBody.plugins.some(p => p.bundleUrl === attackerBundle)).toBe(false);
+
+    const detail = await app.request('/plugins/calendar', {}, env);
+    expect(detail.status).toBe(200);
+    const detailBody = (await detail.json()) as { bundleUrl: string; name: string };
+    expect(detailBody.bundleUrl).toBe(official);
+    expect(detailBody.name).not.toContain('hijack');
+
+    const token = await createAccessToken(userId, 'calendar-squatter@evil.test');
+    const publish = await app.request(
+      '/plugins',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+        body: JSON.stringify({
+          slug: 'calendar',
+          name: 'Calendar',
+          version: '9.9.9',
+          repositoryUrl: 'https://github.com/attacker/calendar',
+          bundleUrl: attackerBundle,
+        }),
+      },
+      env
+    );
+    expect(publish.status).toBe(403);
+    const publishBody = (await publish.json()) as { error: string };
+    expect(publishBody.error).toMatch(/reserved/i);
   });
 });

@@ -16,7 +16,11 @@
  * second catalog to keep in lockstep with daily theme satellites. Only a
  * packed `{id}-{version}.tar.gz` is listed; a git tag is not enough.
  * Turso `plugin_catalog` rows cannot claim those slugs, dripnex pack
- * repositories, or official release tarball URLs.
+ * repositories, or official release tarball URLs. GET /plugins stays
+ * `Cache-Control: private, no-store` so a colo/isolate cannot serve a
+ * stale 21-row seed while live discovery has 30 (QA isolate flicker).
+ *
+ * Keep slug / URL / bundle rules in sync with apps/desktop/src/shared/firstPartyPacks.ts.
  */
 
 import { Hono } from 'hono';
@@ -437,11 +441,9 @@ function githubRepoFromHttpsUrl(url: string | null | undefined): string | null {
     if (parsed.protocol !== 'https:') return null;
     if (parsed.hostname !== 'github.com') return null;
     if (parsed.username || parsed.password) return null;
-    const [owner, repo] = parsed.pathname
-      .replace(/^\//, '')
-      .replace(/\.git$/i, '')
-      .replace(/\/+$/, '')
-      .split('/');
+    const parts = parsed.pathname.replace(/^\//, '').replace(/\/+$/, '').split('/');
+    const owner = parts[0];
+    const repo = parts[1]?.replace(/\.git$/i, '');
     return owner && repo ? `${owner}/${repo}` : null;
   } catch {
     return null;
@@ -659,10 +661,14 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
   }
 
   const firstParty = await firstPartyCatalog(c.env);
+  const firstPartySlugs = new Set(firstParty.map(row => row.slug));
   const community = rows.filter(
-    row => !isReservedFirstPartySlug(row.slug) && !impersonatesOfficialPack(row)
+    row =>
+      !isReservedFirstPartySlug(row.slug) &&
+      !firstPartySlugs.has(row.slug) &&
+      !impersonatesOfficialPack(row)
   );
-  let pluginsOut = mergeBySlug(community, firstParty);
+  let pluginsOut = mergeBySlug(firstParty, community);
   if (query) {
     const qLower = query.toLowerCase();
     pluginsOut = pluginsOut.filter(
@@ -717,12 +723,21 @@ plugins.get('/:slug', async c => {
 
 plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => {
   const body = c.req.valid('json');
-  if (
-    isReservedFirstPartySlug(body.slug) ||
-    isDripnexPackRepositoryUrl(body.repositoryUrl) ||
-    isTrustedFirstPartyBundleUrl(body.bundleUrl)
-  ) {
+  if (isReservedFirstPartySlug(body.slug)) {
     return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
+  }
+  const firstParty = await firstPartyCatalog(c.env);
+  if (firstParty.some(p => p.slug === body.slug)) {
+    return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
+  }
+  if (isDripnexPackRepositoryUrl(body.repositoryUrl)) {
+    return c.json(
+      { error: 'repositoryUrl must not point to an official Dripnex pack repository.' },
+      403
+    );
+  }
+  if (isTrustedFirstPartyBundleUrl(body.bundleUrl)) {
+    return c.json({ error: 'bundleUrl must not point to an official Dripnex pack release.' }, 403);
   }
   const user = c.get('user');
   const db = createDb(c.env);

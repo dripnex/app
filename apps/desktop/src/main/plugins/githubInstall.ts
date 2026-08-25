@@ -1,4 +1,5 @@
 import {
+  githubRepoFromUrl,
   isDripnexPackRepository,
   isReservedFirstPartySlug,
   isTrustedFirstPartyBundleUrl,
@@ -125,6 +126,7 @@ const REGISTRY_HEADERS = {
   'User-Agent': 'Dripnex',
   'Cache-Control': 'no-cache',
 };
+const REGISTRY_TIMEOUT_MS = 10_000;
 
 export type RegistryPlugin = {
   slug: string;
@@ -141,21 +143,22 @@ export function isFirstPartyGithubRepo(owner: string, repo: string): boolean {
 }
 
 export function fallbackSlug(repoName: string): string {
-  if (repoName === 'plugin-vim') return 'dripnex-vim-mode';
-  if (repoName.startsWith('theme-')) return repoName;
-  if (repoName.startsWith('plugin-')) return repoName.slice('plugin-'.length);
-  return repoName;
+  const name = repoName.toLowerCase();
+  if (name === 'plugin-vim') return 'dripnex-vim-mode';
+  if (name.startsWith('theme-')) return name;
+  if (name.startsWith('plugin-')) return name.slice('plugin-'.length);
+  return name;
 }
 
 export function firstPartySlugCandidates(owner: string, repo: string): string[] {
   const slugs: string[] = [];
-  const needle = `${owner.toLowerCase()}/${repo}`;
+  const needle = `${owner}/${repo}`.toLowerCase();
   for (const [slug, spec] of Object.entries(OFFICIAL_PACK_REPOS)) {
     if (spec.toLowerCase() === needle) slugs.push(slug);
   }
-  slugs.push(repo);
+  slugs.push(repo.toLowerCase());
   const fallback = fallbackSlug(repo);
-  if (fallback !== repo) slugs.push(fallback);
+  if (!slugs.includes(fallback)) slugs.push(fallback);
   return [...new Set(slugs)];
 }
 
@@ -168,7 +171,11 @@ export async function resolveRegistryBundle(
     try {
       const res = await fetchImpl(
         `${base.replace(/\/$/, '')}/plugins/${encodeURIComponent(slug)}`,
-        { headers: REGISTRY_HEADERS, cache: 'no-store' }
+        {
+          headers: REGISTRY_HEADERS,
+          cache: 'no-store',
+          signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
+        }
       );
       if (res.status === 404) {
         lastError = `Package "${slug}" is not in the registry`;
@@ -220,6 +227,7 @@ export async function fetchRegistryOnce(
     const res = await fetchImpl(`${base.replace(/\/$/, '')}/plugins`, {
       headers: REGISTRY_HEADERS,
       cache: 'no-store',
+      signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     return parseRegistryPlugins(await res.json());
@@ -255,17 +263,16 @@ export async function resolveFirstPartyBundle(
     if ('url' in resolved && isTrustedFirstPartyBundleUrl(resolved.url)) return resolved;
   }
   const catalog = await fetchRegistryCatalog(fetchImpl);
-  const repoUrl = `https://github.com/${owner}/${repo}`.toLowerCase();
+  const needle = `${owner}/${repo}`.toLowerCase();
   const hit = catalog?.find(p => {
-    const remote = (p.repositoryUrl ?? '')
-      .replace(/\.git$/i, '')
-      .replace(/\/+$/, '')
-      .toLowerCase();
-    return remote === repoUrl || p.slug === repo;
+    const remote = githubRepoFromUrl(p.repositoryUrl);
+    return remote?.toLowerCase() === needle || p.slug.toLowerCase() === repo.toLowerCase();
   });
   if (hit?.bundleUrl && isTrustedFirstPartyBundleUrl(hit.bundleUrl)) {
     return { url: hit.bundleUrl };
   }
+  const release = await resolveGithubRelease(owner, repo, undefined, fetchImpl);
+  if ('url' in release && isTrustedFirstPartyBundleUrl(release.url)) return release;
   return { error: `Package ${owner}/${repo} is not in the Dripnex registry` };
 }
 

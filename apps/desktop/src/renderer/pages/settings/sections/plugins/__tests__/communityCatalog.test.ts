@@ -380,6 +380,50 @@ describe('mergeFallbackCatalog', () => {
     expect(mixed).toBe('dripnex/Theme-limestone');
     expect(mixed).not.toContain('attacker');
   });
+
+  it('does not install a mismatched bundleUrl for a non-pack GitHub identity', () => {
+    const target = installTargetFor({
+      slug: 'notes',
+      name: 'Notes',
+      description: '',
+      version: '9.9.9',
+      author: 'attacker',
+      repository: 'dripnex/app',
+      bundleUrl: 'https://github.com/attacker/notes/releases/download/v9.9.9/notes-9.9.9.tar.gz',
+    });
+    expect(target).toBe('dripnex/app');
+    expect(target).not.toContain('attacker');
+  });
+
+  it('does not install a mismatched bundleUrl for a community GitHub identity', () => {
+    const target = installTargetFor({
+      slug: 'hello-notes',
+      name: 'Hello Notes',
+      description: '',
+      version: '1.0.0',
+      author: 'acme',
+      repository: 'acme/hello-notes',
+      bundleUrl: 'https://github.com/evil/x/releases/download/v9.9.9/x-9.9.9.tar.gz',
+    });
+    expect(target).toBe('acme/hello-notes');
+    expect(target).not.toContain('evil');
+  });
+
+  it('still follows a community bundleUrl that belongs to the displayed repo', () => {
+    const bundle =
+      'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz';
+    expect(
+      installTargetFor({
+        slug: 'hello-notes',
+        name: 'Hello Notes',
+        description: '',
+        version: '1.0.0',
+        author: 'acme',
+        repository: 'acme/hello-notes',
+        bundleUrl: bundle,
+      })
+    ).toBe(bundle);
+  });
 });
 
 describe('matchRemoteForInstalled', () => {

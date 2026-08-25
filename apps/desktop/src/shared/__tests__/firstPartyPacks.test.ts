@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  catalogBundleUrlForInstall,
   githubRepoFromUrl,
   isDripnexPackRepository,
   isOfficialLookingCatalogCard,
@@ -79,6 +80,12 @@ describe('githubRepoFromUrl', () => {
     expect(githubRepoFromUrl('https://github.com/dripnex/plugin-vim.git')).toBe(
       'dripnex/plugin-vim'
     );
+    expect(githubRepoFromUrl('https://github.com/dripnex/theme-limestone.git/')).toBe(
+      'dripnex/theme-limestone'
+    );
+    expect(githubRepoFromUrl('https://github.com/dripnex/plugin-vim.git/')).toBe(
+      'dripnex/plugin-vim'
+    );
     expect(githubRepoFromUrl('https://github.com.evil.example/dripnex/theme-limestone')).toBeNull();
     expect(githubRepoFromUrl('https://attacker.example/dripnex/theme-limestone')).toBeNull();
   });
@@ -90,5 +97,48 @@ describe('isOfficialLookingCatalogCard', () => {
     expect(isOfficialLookingCatalogCard('limestone', 'dripnex/Theme-limestone')).toBe(true);
     expect(isOfficialLookingCatalogCard('hello-notes', 'acme/hello-notes')).toBe(false);
     expect(isOfficialLookingCatalogCard('theme-limestone', null)).toBe(true);
+  });
+});
+
+describe('catalogBundleUrlForInstall', () => {
+  it('rejects a bundleUrl that does not belong to the displayed GitHub repo', () => {
+    expect(
+      catalogBundleUrlForInstall(
+        'notes',
+        'dripnex/app',
+        'https://github.com/attacker/notes/releases/download/v9.9.9/notes-9.9.9.tar.gz'
+      )
+    ).toBeNull();
+    expect(
+      catalogBundleUrlForInstall(
+        'hello-notes',
+        'acme/hello-notes',
+        'https://github.com/evil/x/releases/download/v9.9.9/x-9.9.9.tar.gz'
+      )
+    ).toBeNull();
+  });
+});
+
+describe('API and desktop first-party trust contract', () => {
+  it('keeps the same reserved-slug and trusted-bundle outcomes as packages/api', () => {
+    expect(isReservedFirstPartySlug('stamp')).toBe(true);
+    expect(isReservedFirstPartySlug('dripnex-vim-mode')).toBe(true);
+    expect(isReservedFirstPartySlug('theme-limestone')).toBe(true);
+    expect(isReservedFirstPartySlug('plugin-stamp')).toBe(true);
+    expect(isReservedFirstPartySlug('hello-notes')).toBe(false);
+    expect(isReservedFirstPartySlug('calendar')).toBe(false);
+    expect(
+      isTrustedFirstPartyBundleUrl(
+        'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz'
+      )
+    ).toBe(true);
+    expect(
+      isTrustedFirstPartyBundleUrl(
+        'https://github.com/attacker/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz'
+      )
+    ).toBe(false);
+    expect(githubRepoFromUrl('https://github.com/dripnex/theme-limestone.git/')).toBe(
+      'dripnex/theme-limestone'
+    );
   });
 });

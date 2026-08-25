@@ -3,6 +3,9 @@
  * Community POST /plugins must not claim these slugs or impersonate those
  * repos. Install must not follow a registry `bundleUrl` that is not a
  * dripnex GitHub release tarball for an official-looking card.
+ *
+ * Keep slug / URL / bundle rules in sync with packages/api/src/routes/plugins.ts.
+ * Desktop cannot import the Worker package; both sides share this contract via tests.
  */
 
 const FIRST_PARTY_PLUGIN_SLUGS = new Set(['stamp', 'mermaid', 'math', 'dripnex-vim-mode']);
@@ -20,6 +23,10 @@ export function isDripnexPackRepository(ownerRepo: string): boolean {
   return name.startsWith('theme-') || name.startsWith('plugin-');
 }
 
+export function sameGithubRepo(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
 /** `owner/repo` from an https://github.com/... URL. Hostname must be github.com. */
 export function githubRepoFromUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -28,11 +35,9 @@ export function githubRepoFromUrl(url: string | null | undefined): string | null
     if (parsed.protocol !== 'https:') return null;
     if (parsed.hostname !== 'github.com') return null;
     if (parsed.username || parsed.password) return null;
-    const [owner, repo] = parsed.pathname
-      .replace(/^\//, '')
-      .replace(/\.git$/i, '')
-      .replace(/\/+$/, '')
-      .split('/');
+    const parts = parsed.pathname.replace(/^\//, '').replace(/\/+$/, '').split('/');
+    const owner = parts[0];
+    const repo = parts[1]?.replace(/\.git$/i, '');
     return owner && repo ? `${owner}/${repo}` : null;
   } catch {
     return null;
@@ -66,4 +71,34 @@ export function isTrustedFirstPartyBundleUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Live catalog `bundleUrl` only when it belongs to the card's GitHub identity.
+ * Official pack cards (reserved slug, dripnex theme/plugin repo, or a dripnex
+ * pack tarball) may only follow a trusted dripnex release URL for that repo.
+ */
+export function catalogBundleUrlForInstall(
+  slug: string,
+  repository: string | null | undefined,
+  bundleUrl: string | null | undefined
+): string | null {
+  if (!bundleUrl?.startsWith('https://')) return null;
+  const bundleRepo = githubRepoFromUrl(bundleUrl);
+  const displayed = typeof repository === 'string' && repository.length > 0 ? repository : null;
+  const official =
+    isOfficialLookingCatalogCard(slug, displayed) ||
+    (bundleRepo != null && isDripnexPackRepository(bundleRepo));
+
+  if (official) {
+    if (!isTrustedFirstPartyBundleUrl(bundleUrl)) return null;
+    if (displayed && bundleRepo && !sameGithubRepo(displayed, bundleRepo)) return null;
+    return bundleUrl;
+  }
+
+  if (displayed) {
+    return bundleRepo && sameGithubRepo(displayed, bundleRepo) ? bundleUrl : null;
+  }
+
+  return bundleRepo ? bundleUrl : null;
 }

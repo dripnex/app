@@ -45,9 +45,9 @@ const MAX_PAGES = 5;
 const LAST_GOOD_CACHE_URL = 'https://api.dripnex.app/__internal/github-packs/last-good';
 
 const GRAPHQL_ORG_REPOS = /* GraphQL */ `
-  query DripnexPackRepos($cursor: String) {
-    organization(login: "dripnex") {
-      repositories(first: 100, after: $cursor, privacy: PUBLIC, isFork: false) {
+  query DripnexPackRepos($org: String!, $perPage: Int!, $cursor: String) {
+    organization(login: $org) {
+      repositories(first: $perPage, after: $cursor, privacy: PUBLIC, isFork: false) {
         pageInfo {
           hasNextPage
           endCursor
@@ -68,6 +68,7 @@ const GRAPHQL_ORG_REPOS = /* GraphQL */ `
             releaseAssets(first: 20) {
               nodes {
                 name
+                downloadUrl
               }
             }
           }
@@ -209,6 +210,11 @@ async function rememberSuccess(
   packs: DiscoveredPack[],
   store: PacksCacheStore | null
 ): Promise<DiscoveredPack[]> {
+  if (packs.length === 0) {
+    if (!lastGoodFull) lastGoodFull = await readLastGood(store);
+    cache = { until: now + GITHUB_PACKS_TTL_MS, packs: lastGoodFull ?? packs };
+    return lastGoodFull ?? packs;
+  }
   lastGoodFull = packs;
   cache = { until: now + GITHUB_PACKS_TTL_MS, packs };
   await writeLastGood(store, packs);
@@ -250,8 +256,8 @@ export function versionFromTag(tag: string): string {
 export function normalizeGithubRepoUrl(url: string): string {
   return url
     .trim()
-    .replace(/\.git$/i, '')
     .replace(/\/+$/, '')
+    .replace(/\.git$/i, '')
     .toLowerCase();
 }
 
@@ -360,7 +366,9 @@ type GraphqlNode = {
   latestRelease?: {
     tagName?: string | null;
     publishedAt?: string | null;
-    releaseAssets?: { nodes?: Array<{ name?: string | null } | null> | null } | null;
+    releaseAssets?: {
+      nodes?: Array<{ name?: string | null; downloadUrl?: string | null } | null> | null;
+    } | null;
   } | null;
 };
 
@@ -379,10 +387,16 @@ function packFromGraphqlNode(node: GraphqlNode): DiscoveredPack | null {
   const version = versionFromTag(tagName);
   if (!version) return null;
   const assets = (release?.releaseAssets?.nodes ?? [])
-    .filter((a): a is { name: string } => !!a && typeof a.name === 'string')
+    .filter(
+      (a): a is { name: string; downloadUrl: string } =>
+        !!a &&
+        typeof a.name === 'string' &&
+        typeof a.downloadUrl === 'string' &&
+        a.downloadUrl.length > 0
+    )
     .map(a => ({
       name: a.name,
-      browser_download_url: `https://github.com/${ORG}/${name}/releases/download/${tagName}/${a.name}`,
+      browser_download_url: a.downloadUrl,
     }));
   const bundleUrl = pickPackedTarball(assets, [name, fallbackSlug(name)], version);
   if (!bundleUrl) return null;
@@ -408,7 +422,10 @@ async function discoverViaGraphql(fetchImpl: typeof fetch, token?: string): Prom
       res = await fetchImpl(`${API}/graphql`, {
         method: 'POST',
         headers: { ...githubHeaders(token), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: GRAPHQL_ORG_REPOS, variables: { cursor } }),
+        body: JSON.stringify({
+          query: GRAPHQL_ORG_REPOS,
+          variables: { org: ORG, perPage: REPOS_PER_PAGE, cursor },
+        }),
       });
     } catch {
       return { status: 'unavailable' };

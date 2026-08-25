@@ -17,9 +17,9 @@
  */
 
 import {
+  catalogBundleUrlForInstall,
   githubRepoFromUrl,
   isDripnexPackRepository,
-  isOfficialLookingCatalogCard,
   isReservedFirstPartySlug,
   isTrustedFirstPartyBundleUrl,
 } from '../../../../../shared/firstPartyPacks';
@@ -277,21 +277,14 @@ export function mergeFallbackCatalog(
 }
 
 /**
- * Prefer the Worker catalog tarball so Install does not call api.github.com.
- * Official-looking cards (reserved slug or dripnex theme/plugin repo) only
- * follow a dripnex GitHub release URL — a community row must not display
- * dripnex/theme-* while Install follows an attacker bundleUrl.
+ * Prefer the Worker catalog tarball so Install does not call api.github.com,
+ * but only when that URL belongs to the card's GitHub identity. Official pack
+ * cards only follow a dripnex GitHub release tarball for that repo.
  */
 export function installTargetFor(card: CatalogCard): string {
-  if (card.bundleUrl?.startsWith('https://')) {
-    if (
-      !isOfficialLookingCatalogCard(card.slug, card.repository) ||
-      isTrustedFirstPartyBundleUrl(card.bundleUrl)
-    ) {
-      return card.bundleUrl;
-    }
-  }
-  return installSpecFor(card);
+  return (
+    catalogBundleUrlForInstall(card.slug, card.repository, card.bundleUrl) ?? installSpecFor(card)
+  );
 }
 
 export interface RemoteCatalogRow {

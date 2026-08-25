@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   fetchRegistryCatalog,
+  firstPartySlugCandidates,
   isAllowedPluginHost,
   isFirstPartyGithubRepo,
   parseConnectSpec,
@@ -126,6 +127,16 @@ describe('isFirstPartyGithubRepo', () => {
     expect(isFirstPartyGithubRepo('acme', 'theme-limestone')).toBe(false);
     expect(isFirstPartyGithubRepo('dripnex', 'app')).toBe(false);
   });
+
+  it('normalizes mixed-case first-party repos to official slugs', () => {
+    expect(firstPartySlugCandidates('Dripnex', 'PLUGIN-vim')).toEqual([
+      'dripnex-vim-mode',
+      'plugin-vim',
+    ]);
+    expect(firstPartySlugCandidates('Dripnex', 'PLUGIN-vim')).toEqual(
+      firstPartySlugCandidates('dripnex', 'plugin-vim')
+    );
+  });
 });
 
 describe('fetchRegistryCatalog', () => {
@@ -181,6 +192,24 @@ describe('fetchRegistryCatalog', () => {
     const catalog = await fetchRegistryCatalog(fetchImpl);
     expect(catalog).toHaveLength(30);
     expect(catalog?.some(p => p.slug === 'theme-limestone')).toBe(true);
+  });
+
+  it('bounds each registry list request with a timeout signal', async () => {
+    const signals: AbortSignal[] = [];
+    const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.signal) signals.push(init.signal);
+      const url = String(input);
+      if (pathnameOf(url) === '/plugins') {
+        return new Response(JSON.stringify({ plugins: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+    };
+    await fetchRegistryCatalog(fetchImpl);
+    expect(signals.length).toBeGreaterThan(0);
+    expect(signals.every(s => s instanceof AbortSignal)).toBe(true);
   });
 });
 
@@ -260,7 +289,29 @@ describe('resolveConnectUrl', () => {
     if ('error' in resolved) {
       expect(resolved.error).toMatch(/not in the Dripnex registry/i);
     }
-    expect(called.every(u => hostnameOf(u) !== 'api.github.com')).toBe(true);
+    expect(called.some(u => hostnameOf(u) === 'api.github.com')).toBe(true);
+  });
+
+  it('falls back to the GitHub release API when the registry has no trusted bundle', async () => {
+    const trusted =
+      'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz';
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (hostnameOf(url) === 'api.github.com') {
+        return new Response(
+          JSON.stringify({
+            tag_name: 'v0.1.0',
+            assets: [{ name: 'theme-limestone-0.1.0.tar.gz', browser_download_url: trusted }],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+    };
+    const spec = parseConnectSpec('dripnex/theme-limestone');
+    expect('error' in spec).toBe(false);
+    if ('error' in spec) return;
+    expect(await resolveConnectUrl(spec, fetchImpl)).toEqual({ url: trusted });
   });
 
   it('keeps a known GitHub tarball URL without calling GitHub API', async () => {
