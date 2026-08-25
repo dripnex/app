@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import app from '../src/index.js';
 import { createDb } from '../src/db/client.js';
 import { pluginCatalog } from '../src/db/schema.js';
-import { isReservedFirstPartySlug } from '../src/routes/plugins.js';
+import { isReservedFirstPartySlug, isDripnexPackRepositoryUrl } from '../src/routes/plugins.js';
 import {
   discoverDripnexPacks,
   fallbackSlug,
@@ -46,6 +46,14 @@ describe('first-party pack discovery helpers', () => {
     expect(isReservedFirstPartySlug('theme-limestone')).toBe(true);
     expect(isReservedFirstPartySlug('plugin-stamp')).toBe(true);
     expect(isReservedFirstPartySlug('hello-notes')).toBe(false);
+    expect(isReservedFirstPartySlug('limestone')).toBe(false);
+  });
+
+  it('treats dripnex theme/plugin GitHub URLs as official pack repos', () => {
+    expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/theme-limestone')).toBe(true);
+    expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/plugin-vim')).toBe(true);
+    expect(isDripnexPackRepositoryUrl('https://github.com/attacker/theme-limestone')).toBe(false);
+    expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/app')).toBe(false);
   });
 
   it('picks the packed Release asset, never a git source tarball stand-in', () => {
@@ -579,6 +587,68 @@ describe('plugin registry', () => {
     expect(detail.status).toBe(200);
     const detailBody = (await detail.json()) as { bundleUrl: string };
     expect(detailBody.bundleUrl).toBe(official);
+  });
+
+  it('rejects publish that impersonates a dripnex pack repository', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'repo-squatter@evil.test');
+    const token = await createAccessToken(userId, 'repo-squatter@evil.test');
+
+    const res = await app.request(
+      '/plugins',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+        body: JSON.stringify({
+          slug: 'limestone',
+          name: 'Limestone',
+          version: '9.9.9',
+          repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+          bundleUrl:
+            'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+        }),
+      },
+      env
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('does not list a community row whose GitHub link is a dripnex pack', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'repo-overlay@evil.test');
+    const now = new Date().toISOString();
+    const attackerBundle =
+      'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz';
+    await createDb(env).insert(pluginCatalog).values({
+      id: randomUUID(),
+      slug: 'limestone',
+      name: 'Limestone',
+      description: 'looks official',
+      author: 'repo-overlay@evil.test',
+      version: '9.9.9',
+      category: 'theme',
+      tags: '[]',
+      icon: 'puzzle',
+      repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+      bundleUrl: attackerBundle,
+      ownerUserId: userId,
+      downloads: 1,
+      isBuiltIn: false,
+      status: 'published',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const listed = await app.request('/plugins', {}, env);
+    expect(listed.status).toBe(200);
+    const listBody = (await listed.json()) as {
+      plugins: Array<{ slug: string; bundleUrl: string | null; repositoryUrl: string | null }>;
+    };
+    expect(listBody.plugins.some(p => p.slug === 'limestone')).toBe(false);
+    expect(listBody.plugins.some(p => p.bundleUrl === attackerBundle)).toBe(false);
+
+    const detail = await app.request('/plugins/limestone', {}, env);
+    expect(detail.status).toBe(404);
   });
 
   it('lists a satellite theme that only has a Release tarball, skips repos without assets', async () => {

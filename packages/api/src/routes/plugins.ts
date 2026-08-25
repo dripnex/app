@@ -15,7 +15,8 @@
  * the seed (GitHub down) and the slug/name/description override map — not a
  * second catalog to keep in lockstep with daily theme satellites. Only a
  * packed `{id}-{version}.tar.gz` is listed; a git tag is not enough.
- * Turso `plugin_catalog` rows cannot claim or overlay those slugs.
+ * Turso `plugin_catalog` rows cannot claim those slugs, dripnex pack
+ * repositories, or official release tarball URLs.
  */
 
 import { Hono } from 'hono';
@@ -422,10 +423,63 @@ export const FIRST_PARTY_PACKAGES = [
 
 const FIRST_PARTY_PACK_SLUG_RE = /^(theme|plugin)-[a-z0-9]+(-[a-z0-9]+)*$/;
 const FIRST_PARTY_SLUGS: ReadonlySet<string> = new Set(FIRST_PARTY_PACKAGES.map(p => p.slug));
+const TRUSTED_FIRST_PARTY_BUNDLE_PATH = /^\/dripnex\/(?:theme|plugin)-[^/]+\/releases\/download\//;
 
 /** Official extras community POST /plugins must not claim. */
 export function isReservedFirstPartySlug(slug: string): boolean {
   return FIRST_PARTY_SLUGS.has(slug) || FIRST_PARTY_PACK_SLUG_RE.test(slug);
+}
+
+function githubRepoFromHttpsUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return null;
+    if (parsed.hostname !== 'github.com') return null;
+    if (parsed.username || parsed.password) return null;
+    const [owner, repo] = parsed.pathname
+      .replace(/^\//, '')
+      .replace(/\.git$/i, '')
+      .replace(/\/+$/, '')
+      .split('/');
+    return owner && repo ? `${owner}/${repo}` : null;
+  } catch {
+    return null;
+  }
+}
+
+/** github.com/dripnex/theme-* or github.com/dripnex/plugin-* */
+export function isDripnexPackRepositoryUrl(url: string | null | undefined): boolean {
+  const repo = githubRepoFromHttpsUrl(url);
+  if (!repo) return false;
+  const [owner, name] = repo.split('/');
+  return (
+    owner?.toLowerCase() === 'dripnex' &&
+    typeof name === 'string' &&
+    (name.startsWith('theme-') || name.startsWith('plugin-'))
+  );
+}
+
+export function isTrustedFirstPartyBundleUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    if (parsed.hostname !== 'github.com') return false;
+    if (parsed.username || parsed.password) return false;
+    return TRUSTED_FIRST_PARTY_BUNDLE_PATH.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function impersonatesOfficialPack(row: {
+  repositoryUrl: string | null;
+  bundleUrl: string | null;
+}): boolean {
+  return (
+    isDripnexPackRepositoryUrl(row.repositoryUrl) || isTrustedFirstPartyBundleUrl(row.bundleUrl)
+  );
 }
 
 const listQuerySchema = z.object({
@@ -607,7 +661,9 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
   }
 
   const firstParty = await firstPartyCatalog(c.env);
-  const community = rows.filter(row => !isReservedFirstPartySlug(row.slug));
+  const community = rows.filter(
+    row => !isReservedFirstPartySlug(row.slug) && !impersonatesOfficialPack(row)
+  );
   let pluginsOut = mergeBySlug(community, firstParty);
   if (query) {
     const qLower = query.toLowerCase();
@@ -663,7 +719,11 @@ plugins.get('/:slug', async c => {
 
 plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => {
   const body = c.req.valid('json');
-  if (isReservedFirstPartySlug(body.slug)) {
+  if (
+    isReservedFirstPartySlug(body.slug) ||
+    isDripnexPackRepositoryUrl(body.repositoryUrl) ||
+    isTrustedFirstPartyBundleUrl(body.bundleUrl)
+  ) {
     return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
   }
   const user = c.get('user');
@@ -761,7 +821,7 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
       .where(and(eq(pluginCatalog.slug, slug), eq(pluginCatalog.status, 'published')))
       .limit(1);
     if (plugin) {
-      return {
+      const listed = {
         slug: plugin.slug,
         name: plugin.name,
         description: plugin.description,
@@ -777,6 +837,8 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
         createdAt: plugin.createdAt,
         updatedAt: plugin.updatedAt,
       };
+      if (impersonatesOfficialPack(listed)) return null;
+      return listed;
     }
   } catch {
     // table missing — fall through
