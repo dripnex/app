@@ -18,7 +18,7 @@ Required on `develop`: `lint`, `test`, `typecheck`, `e2e`, `security` (from `.gi
 
 It does **not** run on `push` to `develop`. Every change already ran as a PR; a squash-merge would otherwise pay the full suite a second time.
 
-Release back-merges (`chore/backmerge-*`, or github-actions titled `chore(release): merge main into develop`) skip the heavy jobs. Required check names still report success so the PR can merge with a **merge commit**, never squash ([`docs/RELEASE.md`](./RELEASE.md)).
+Release back-merges skip the heavy jobs only when the PR is from `github-actions[bot]` into `develop` (`chore/backmerge-*`, or titled `chore(release): merge main into develop`). Required check names still report success so the PR can merge with a **merge commit**, never squash ([`docs/RELEASE.md`](./RELEASE.md)).
 
 ## CodeQL
 

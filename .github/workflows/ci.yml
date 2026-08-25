@@ -20,8 +20,9 @@ env:
 jobs:
   # Release back-merges exist for ancestry (docs/RELEASE.md), not product
   # changes. Skip the heavy suite but keep required check names green:
-  # lint, test, typecheck, e2e, security. Branch prefix matches
-  # automerge.yml; title+bot covers github-actions sync-develop PRs.
+  # lint, test, typecheck, e2e, security. Trusted PRs only: github-actions[bot]
+  # into develop. Branch prefix matches automerge.yml; title covers
+  # github-actions sync-develop PRs. Do not trust the prefix alone.
   ci-gate:
     runs-on: ubuntu-latest
     outputs:
@@ -31,16 +32,18 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_USER: ${{ github.event.pull_request.user.login }}
         run: |
           skip=false
-          if [ "$EVENT_NAME" = "pull_request" ]; then
+          if [ "$EVENT_NAME" = "pull_request" ] && \
+             [ "$PR_USER" = "github-actions[bot]" ] && \
+             [ "$BASE_REF" = "develop" ]; then
             case "$HEAD_REF" in
               chore/backmerge-*) skip=true ;;
             esac
-            if [ "$PR_TITLE" = "chore(release): merge main into develop" ] && \
-               [ "$PR_USER" = "github-actions[bot]" ]; then
+            if [ "$PR_TITLE" = "chore(release): merge main into develop" ]; then
               skip=true
             fi
           fi
