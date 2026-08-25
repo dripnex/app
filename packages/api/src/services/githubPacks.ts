@@ -16,7 +16,10 @@
  *      other `plugin-*` → name with the `plugin-` prefix stripped
  *
  * Optional `GITHUB_TOKEN` raises the GitHub REST rate limit. Unauthenticated
- * public requests still work. Successful lists are cached for ~12 minutes.
+ * public requests still work. Complete successful lists are cached for ~12
+ * minutes. A rate-limited or otherwise incomplete scan is not stored as a
+ * success: we keep the last complete list (short retry) or return null so
+ * the seed catalog is used.
  */
 
 const ORG = 'dripnex';
@@ -29,7 +32,7 @@ const API_VERSION = '2022-11-28';
 /** Successful GitHub lists live this long in-process. */
 export const GITHUB_PACKS_TTL_MS = 12 * 60 * 1000;
 /** Failed lookups retry after a short pause so we do not hammer a 403. */
-const GITHUB_PACKS_FAILURE_TTL_MS = 60 * 1000;
+export const GITHUB_PACKS_FAILURE_TTL_MS = 60 * 1000;
 const REPOS_PER_PAGE = 100;
 const MAX_PAGES = 5;
 
@@ -67,9 +70,17 @@ type GhRelease = {
 type CacheEntry = { until: number; packs: DiscoveredPack[] | null };
 
 let cache: CacheEntry | null = null;
+/** Last complete org scan. Partial / rate-limited results never overwrite this. */
+let lastGoodFull: DiscoveredPack[] | null = null;
 
 export function resetGithubPacksCache(): void {
   cache = null;
+  lastGoodFull = null;
+}
+
+function rememberFailure(now: number): DiscoveredPack[] | null {
+  cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: lastGoodFull };
+  return lastGoodFull;
 }
 
 export function isFirstPartyRepoName(name: string): boolean {
@@ -154,8 +165,12 @@ function isPackCandidate(repo: GhRepo): repo is GhRepo & { name: string; html_ur
   return isFirstPartyRepoName(repo.name);
 }
 
-async function listOrgPackRepos(fetchImpl: typeof fetch, token?: string): Promise<GhRepo[] | null> {
+async function listOrgPackRepos(
+  fetchImpl: typeof fetch,
+  token?: string
+): Promise<{ repos: GhRepo[]; truncated: boolean } | null> {
   const repos: GhRepo[] = [];
+  let truncated = false;
   for (let page = 1; page <= MAX_PAGES; page++) {
     const res = await githubGet(
       `/orgs/${ORG}/repos?type=public&per_page=${REPOS_PER_PAGE}&page=${page}&sort=full_name`,
@@ -166,9 +181,13 @@ async function listOrgPackRepos(fetchImpl: typeof fetch, token?: string): Promis
     const pageRepos = (await res.json()) as unknown;
     if (!Array.isArray(pageRepos)) return null;
     repos.push(...(pageRepos as GhRepo[]));
-    if (pageRepos.length < REPOS_PER_PAGE) break;
+    if (pageRepos.length < REPOS_PER_PAGE) {
+      truncated = false;
+      break;
+    }
+    if (page === MAX_PAGES) truncated = true;
   }
-  return repos.filter(isPackCandidate);
+  return { repos: repos.filter(isPackCandidate), truncated };
 }
 
 async function latestPackedRelease(
@@ -199,7 +218,8 @@ async function latestPackedRelease(
 }
 
 /**
- * @returns discovered packs, or `null` when GitHub is unreachable / rate limited
+ * @returns discovered packs, the last complete list when a scan is incomplete,
+ * or `null` when GitHub is unreachable / rate limited with no last-good list
  * so the caller can fall back to the static seed.
  */
 export async function discoverDripnexPacks(options: {
@@ -212,12 +232,10 @@ export async function discoverDripnexPacks(options: {
 
   const fetchImpl = options.fetchImpl ?? fetch;
   try {
-    const repos = await listOrgPackRepos(fetchImpl, options.token);
-    if (!repos) {
-      cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: null };
-      return null;
-    }
+    const listed = await listOrgPackRepos(fetchImpl, options.token);
+    if (!listed) return rememberFailure(now);
 
+    const { repos, truncated } = listed;
     const packs: DiscoveredPack[] = [];
     const results = await Promise.allSettled(
       repos.map(async repo => {
@@ -238,27 +256,24 @@ export async function discoverDripnexPacks(options: {
       })
     );
 
-    let rateLimited = false;
+    let rejected = false;
     for (const result of results) {
       if (result.status === 'fulfilled' && result.value) {
         packs.push(result.value);
       } else if (result.status === 'rejected') {
-        const message =
-          result.reason instanceof Error ? result.reason.message : String(result.reason);
-        if (message.includes('rate limited')) rateLimited = true;
+        rejected = true;
       }
     }
 
-    if (rateLimited && packs.length === 0) {
-      cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: null };
-      return null;
-    }
+    // Rate-limit (403/429) throws; other throws are also an incomplete scan.
+    // Do not publish a shorter list as a 12-minute success.
+    if (rejected || truncated) return rememberFailure(now);
 
+    lastGoodFull = packs;
     cache = { until: now + GITHUB_PACKS_TTL_MS, packs };
     return packs;
   } catch {
-    cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: null };
-    return null;
+    return rememberFailure(now);
   }
 }
 
