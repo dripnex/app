@@ -15,8 +15,8 @@ import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider } from './components/Toast';
 import { Toaster } from './ui/primitives';
 import { Welcome } from './components/Welcome';
-import { AuthGate } from './components/auth/AuthGate';
-import { useAuthStore, selectIsAuthenticated, selectSessionHydrated } from './stores/authStore';
+import { useAuthStore } from './stores/authStore';
+import { resolveAppShell } from './utils/appShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   useNavigation,
@@ -78,9 +78,6 @@ function NotesApp() {
   const [showWelcome, setShowWelcome] = useState(
     () => !localStorage.getItem('dripnex-onboarding-done')
   );
-  const sessionHydrated = useAuthStore(selectSessionHydrated);
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
-  const skipAuthGate = window.dripnex?.app?.isE2E?.() === true;
 
   // Resizable layout
   const {
@@ -403,25 +400,7 @@ function NotesApp() {
     [handleNewNote]
   );
 
-  if (!skipAuthGate && !sessionHydrated) {
-    return (
-      <ToastProvider>
-        <AuthGate hydrating />
-        <Toaster />
-      </ToastProvider>
-    );
-  }
-
-  if (!skipAuthGate && !isAuthenticated) {
-    return (
-      <ToastProvider>
-        <AuthGate />
-        <Toaster />
-      </ToastProvider>
-    );
-  }
-
-  if (showWelcome && skipAuthGate) {
+  if (resolveAppShell({ onboardingComplete: !showWelcome }) === 'welcome') {
     return (
       <ToastProvider>
         <Welcome onComplete={handleWelcomeComplete} />

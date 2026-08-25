@@ -10,7 +10,7 @@ polish does not invent a second system.
 3. Existing desktop CSS modules and primitives (`Button`, `Input`)
 4. [`docs/BRAND.md`](./BRAND.md) — voice and anti-values, not a new palette
 
-AuthGate is required: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stays.md).
+AuthGate chrome is optional sign-in, not a launch gate: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stays.md).
 
 ---
 

@@ -3,9 +3,11 @@
  * Plugins contribute items under Plugins via IPC.
  */
 
-import { BrowserWindow, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain } from 'electron';
 import type { MenuItemConstructorOptions } from 'electron';
 import { openUserHackFile } from '../userHackFiles.js';
+import { createSettingsWindow } from './settingsWindow.js';
+import { fileMenuSlots } from './menuLayout.js';
 
 export interface PluginMenuContribution {
   pluginId: string;
@@ -29,6 +31,26 @@ function invokeIn(win: BrowserWindow | undefined, commandId: string): void {
 function targetWindow(browserWindow: unknown): BrowserWindow | null {
   if (browserWindow instanceof BrowserWindow) return browserWindow;
   return BrowserWindow.getFocusedWindow();
+}
+
+function settingsMenuItem(): MenuItemConstructorOptions {
+  return {
+    label: 'Settings…',
+    accelerator: 'CommandOrControl+,',
+    click: () => {
+      createSettingsWindow();
+    },
+  };
+}
+
+function fileMenu(): MenuItemConstructorOptions {
+  const items: MenuItemConstructorOptions[] = fileMenuSlots(process.platform).map(slot => {
+    if (slot === 'settings') return settingsMenuItem();
+    if (slot === 'separator') return { type: 'separator' };
+    if (slot === 'close') return { role: 'close' };
+    return { role: 'quit' };
+  });
+  return { label: 'File', submenu: items };
 }
 
 function buildTemplate(): MenuItemConstructorOptions[] {
@@ -77,9 +99,26 @@ function buildTemplate(): MenuItemConstructorOptions[] {
     ...(contributed.length > 0 ? contributed : [{ label: 'No plugin commands', enabled: false }]),
   ];
 
+  const darwinAppMenu: MenuItemConstructorOptions = {
+    label: app.name,
+    submenu: [
+      { role: 'about' },
+      { type: 'separator' },
+      settingsMenuItem(),
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideOthers' },
+      { role: 'unhide' },
+      { type: 'separator' },
+      { role: 'quit' },
+    ],
+  };
+
   const template: MenuItemConstructorOptions[] = [
-    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
-    { role: 'fileMenu' },
+    ...(process.platform === 'darwin' ? [darwinAppMenu] : []),
+    fileMenu(),
     {
       label: 'Note',
       submenu: [

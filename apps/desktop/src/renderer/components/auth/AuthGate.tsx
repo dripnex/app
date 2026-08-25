@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuthStore, selectError } from '../../stores/authStore';
+import logo from '../../assets/logo.png';
 import { LoginBackdrop } from './LoginBackdrop';
 import styles from './AuthGate.module.css';
-import logo from '../../assets/logo.png';
 
 /**
- * Full-window sign-in. Account is required even on the free plan
- * so every install maps to a user.
+ * Magic-link card for optional sync. Must not be used as a hard launch gate —
+ * local notes, Settings, and plugins work without an account.
  */
 export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
   const requestMagicLink = useAuthStore(state => state.requestMagicLink);
