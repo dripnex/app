@@ -302,6 +302,10 @@ describe('discoverDripnexPacks cache', () => {
 
     const packs = await discoverDripnexPacks({ fetchImpl, now: 3, cacheStore: null });
     expect(packs?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+    expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/graphql'))).toBe(true);
+    expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/orgs/dripnex/repos'))).toBe(
+      false
+    );
     expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/releases/latest'))).toBe(false);
     expect(packs?.find(p => p.repoName === 'theme-limestone')?.bundleUrl).toContain(
       'theme-limestone-0.1.0.tar.gz'
@@ -403,6 +407,104 @@ describe('discoverDripnexPacks cache', () => {
       cacheStore: shared,
     });
     expect(afterEmpty?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+  });
+
+  it('falls back to REST when GraphQL is 403 and discovers packed extras', async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(403, { message: 'Resource not accessible by personal access token' });
+      }
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [
+          packedRepo('theme-limestone'),
+          packedRepo('theme-walnut'),
+          packedRepo('theme-ash'),
+        ]);
+      }
+      if (url.includes('/repos/dripnex/theme-limestone/releases/latest')) {
+        return packedRelease('theme-limestone');
+      }
+      if (url.includes('/repos/dripnex/theme-walnut/releases/latest')) {
+        return packedRelease('theme-walnut');
+      }
+      if (url.includes('/repos/dripnex/theme-ash/releases/latest')) {
+        return packedRelease('theme-ash');
+      }
+      return jsonResponse(404, { message: 'Not Found' });
+    });
+
+    const packs = await discoverDripnexPacks({ fetchImpl, now: 5, cacheStore: null });
+    expect(packs?.map(p => p.repoName).sort()).toEqual([
+      'theme-ash',
+      'theme-limestone',
+      'theme-walnut',
+    ]);
+    expect(packs?.find(p => p.repoName === 'theme-limestone')?.bundleUrl).toContain(
+      'theme-limestone-0.1.0.tar.gz'
+    );
+    expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/graphql'))).toBe(true);
+    expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/orgs/dripnex/repos'))).toBe(true);
+    expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/releases/latest'))).toBe(true);
+  });
+
+  it('does not write last-good when GraphQL 403 is followed by incomplete REST', async () => {
+    const t0 = 6_000_000;
+    const shared = createMemoryPacksCache();
+    const fullFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone'), graphqlPackedNode('theme-walnut')],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const first = await discoverDripnexPacks({ fetchImpl: fullFetch, now: t0, cacheStore: shared });
+    expect(first?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+
+    resetGithubPacksCache();
+    const incompleteFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(403, { message: 'Resource not accessible by personal access token' });
+      }
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [packedRepo('theme-limestone'), packedRepo('theme-walnut')]);
+      }
+      if (url.includes('/repos/dripnex/theme-limestone/releases/latest')) {
+        return packedRelease('theme-limestone');
+      }
+      return jsonResponse(403, { message: 'API rate limit exceeded' });
+    });
+
+    const afterIncomplete = await discoverDripnexPacks({
+      fetchImpl: incompleteFetch,
+      now: t0 + GITHUB_PACKS_TTL_MS + 1,
+      cacheStore: shared,
+    });
+    expect(afterIncomplete?.map(p => p.repoName).sort()).toEqual([
+      'theme-limestone',
+      'theme-walnut',
+    ]);
+    expect(afterIncomplete).toHaveLength(2);
+
+    resetGithubPacksCache();
+    const blockedFetch = vi.fn(async () => jsonResponse(503, { message: 'down' }));
+    const cold = await discoverDripnexPacks({
+      fetchImpl: blockedFetch,
+      now: t0 + GITHUB_PACKS_TTL_MS * 2,
+      cacheStore: shared,
+    });
+    expect(cold?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
   });
 
   it('returns null on a rate-limited first scan so the seed catalog is used', async () => {
@@ -1072,6 +1174,47 @@ describe('plugin registry', () => {
     expect(slugs).toContain('dripnex-vim-mode');
   });
 
+  it('lists live extras from REST when GraphQL is 403, not only the seed', async () => {
+    stubGithub(url => {
+      if (url.includes('/graphql')) {
+        return jsonResponse(403, { message: 'Resource not accessible by personal access token' });
+      }
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [
+          packedRepo('theme-limestone'),
+          packedRepo('theme-walnut'),
+          packedRepo('theme-ash'),
+          packedRepo('theme-parchment'),
+        ]);
+      }
+      if (url.includes('/repos/dripnex/theme-limestone/releases/latest')) {
+        return packedRelease('theme-limestone');
+      }
+      if (url.includes('/repos/dripnex/theme-walnut/releases/latest')) {
+        return packedRelease('theme-walnut');
+      }
+      if (url.includes('/repos/dripnex/theme-ash/releases/latest')) {
+        return packedRelease('theme-ash');
+      }
+      if (url.includes('/repos/dripnex/theme-parchment/releases/latest')) {
+        return packedRelease('theme-parchment');
+      }
+      return null;
+    });
+
+    const res = await app.request('/plugins', {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { plugins: Array<{ slug: string }>; total: number };
+    const slugs = body.plugins.map(p => p.slug);
+    expect(slugs).toEqual(
+      expect.arrayContaining(['theme-limestone', 'theme-walnut', 'theme-ash', 'theme-parchment'])
+    );
+    expect(body.total).toBeGreaterThan(21);
+    const fetched = vi.mocked(globalThis.fetch).mock.calls.map(c => String(c[0]));
+    expect(fetched.some(u => u.includes('/graphql'))).toBe(true);
+    expect(fetched.some(u => u.includes('/orgs/dripnex/repos'))).toBe(true);
+  });
+
   it('lists live extras such as limestone from a GraphQL scan, not only the seed', async () => {
     stubGithub(url => {
       if (url.includes('/graphql')) {
@@ -1105,6 +1248,10 @@ describe('plugin registry', () => {
     );
     expect(slugs).toContain('dripnex-vim-mode');
     expect(body.total).toBeGreaterThanOrEqual(5);
+    const fetched = vi.mocked(globalThis.fetch).mock.calls.map(c => String(c[0]));
+    expect(fetched.some(u => u.includes('/graphql'))).toBe(true);
+    expect(fetched.some(u => u.includes('/orgs/dripnex/repos'))).toBe(false);
+    expect(fetched.some(u => u.includes('/releases/latest'))).toBe(false);
   });
 
   it('does not let a community row claim a stripped plugin-* discovery slug', async () => {

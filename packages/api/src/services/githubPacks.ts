@@ -18,7 +18,10 @@
  * Optional `GITHUB_TOKEN` raises the GitHub REST/GraphQL rate limit.
  * Discovery prefers one GraphQL org query (latestRelease + assets) so a
  * Worker isolate does not N+1 `releases/latest` and 403/429 mid-scan.
- * REST remains the fallback when GraphQL is unavailable.
+ * REST is the fallback when GraphQL is unavailable or incomplete (403/429).
+ * Fine-grained PATs often 403 GraphQL `organization { repositories }` while
+ * REST `GET /orgs/dripnex/repos` + `releases/latest` still work. Incomplete
+ * GraphQL must not skip REST and must never overwrite last-good.
  *
  * Complete lists are stored in-process (~12 min) and in the Cloudflare
  * Cache API (shared across isolates in a colo). In-memory alone is why
@@ -516,7 +519,6 @@ export async function discoverDripnexPacks(options: {
   try {
     const graphql = await discoverViaGraphql(fetchImpl, options.token);
     if (graphql.status === 'ok') return rememberSuccess(now, graphql.packs, store);
-    if (graphql.status === 'incomplete') return rememberFailure(now, store);
 
     const rest = await discoverViaRest(fetchImpl, options.token);
     if (rest.status === 'ok') return rememberSuccess(now, rest.packs, store);
