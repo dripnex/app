@@ -9,6 +9,22 @@ import {
   uniqueReleaseTags,
 } from '../githubInstall';
 
+function hostnameOf(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+function pathnameOf(url: string): string | null {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return null;
+  }
+}
+
 describe('parseConnectSpec', () => {
   it('parses owner/repo and tag', () => {
     expect(parseConnectSpec('acme/plug')).toEqual({ kind: 'github', owner: 'acme', repo: 'plug' });
@@ -143,13 +159,15 @@ describe('fetchRegistryCatalog', () => {
 
     const fetchImpl = async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.startsWith('https://api.dripnex.app/plugins') && !url.includes('/plugins/')) {
+      const host = hostnameOf(url);
+      const path = pathnameOf(url);
+      if (host === 'api.dripnex.app' && path === '/plugins') {
         return new Response(JSON.stringify({ plugins: seed21, total: 21 }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
       }
-      if (url.includes('workers.dev/plugins') && !url.includes('/plugins/theme')) {
+      if (host === 'readied-api-production.readied.workers.dev' && path === '/plugins') {
         return new Response(JSON.stringify({ plugins: live30, total: 30 }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -170,7 +188,7 @@ describe('resolveConnectUrl', () => {
     const fetchImpl = async (input: RequestInfo | URL) => {
       const url = String(input);
       called.push(url);
-      if (url.includes('/plugins/theme-limestone')) {
+      if (hostnameOf(url) === 'api.dripnex.app' && pathnameOf(url) === '/plugins/theme-limestone') {
         return new Response(
           JSON.stringify({
             slug: 'theme-limestone',
@@ -190,8 +208,12 @@ describe('resolveConnectUrl', () => {
     expect(resolved).toEqual({
       url: 'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
     });
-    expect(called.some(u => u.includes('api.github.com'))).toBe(false);
-    expect(called.some(u => u.includes('api.dripnex.app/plugins/theme-limestone'))).toBe(true);
+    expect(called.every(u => hostnameOf(u) !== 'api.github.com')).toBe(true);
+    expect(
+      called.some(
+        u => hostnameOf(u) === 'api.dripnex.app' && pathnameOf(u) === '/plugins/theme-limestone'
+      )
+    ).toBe(true);
   });
 
   it('keeps a known GitHub tarball URL without calling GitHub API', async () => {
@@ -236,9 +258,12 @@ describe('resolveConnectUrl', () => {
     expect(resolved).toEqual({
       url: 'https://github.com/acme/plug/releases/download/v1.0.0/plug-1.0.0.tar.gz',
     });
-    expect(called.some(u => u.includes('api.github.com/repos/acme/plug/releases/latest'))).toBe(
-      true
-    );
+    expect(
+      called.some(
+        u =>
+          hostnameOf(u) === 'api.github.com' && pathnameOf(u) === '/repos/acme/plug/releases/latest'
+      )
+    ).toBe(true);
   });
 });
 
