@@ -25,6 +25,8 @@ export type Env = {
   STRIPE_PRICE_ANNUAL?: string;
   SITE_URL?: string;
   ADMIN_TOKEN?: string;
+  /** Optional. Raises GitHub REST rate limits for first-party Browse discovery. */
+  GITHUB_TOKEN?: string;
   ENVIRONMENT: string;
   // Rate limiting bindings (optional so unit tests / local runs without the
   // binding fail open rather than crash — see middleware/rateLimit.ts).

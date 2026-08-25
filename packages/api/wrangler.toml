@@ -86,3 +86,6 @@ simple = { limit = 60, period = 60 }
 #   embedded in apps/desktop/src/main/services/fileLicenseStorage.ts
 #   (SUBSCRIPTION_PUBLIC_KEY). Rotation requires shipping a new desktop
 #   release with the new public key FIRST — see that file's comment.
+# Optional:
+# GITHUB_TOKEN - GitHub token for first-party Browse discovery (theme-*/plugin-*).
+#   Unauthenticated public requests still work; the token raises the rate limit.
