@@ -46,7 +46,8 @@ export function ThemesSection() {
     <div className={styles.section}>
       <h2 className={styles.title}>Themes</h2>
       <p className={styles.lede}>
-        Official combinations. A community theme is its own repo — same tokens, no core fork.
+        Default uses the built-in appearance. Named palettes come from installed theme packs — same
+        tokens, no core fork.
       </p>
       <div className={themeStyles.grid}>
         <PaletteCard

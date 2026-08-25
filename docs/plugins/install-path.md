@@ -24,7 +24,7 @@ Inkdrop-style: the registry is the index, the GitHub Release tarball is the arti
    - Live `GET /plugins`: `FIRST_PARTY_PACKAGES` in `packages/api/src/routes/plugins.ts`. Deploy with `packages/api` — production is `pnpm --filter @dripnex/api deploy:production` / `.github/workflows/deploy-api.yml` on `main`.
    - Browse fallback: `COMMUNITY_CATALOG` in `apps/desktop/src/renderer/pages/settings/sections/plugins/communityCatalog.ts`. `id` must equal `manifest.json` `id`; `repository` is `owner/repo`.
 
-Do not list a pack until the Release has the packed tarball — Browse Install would 404. A git tag alone is not enough. Official palettes stay in `OFFICIAL_THEMES`; satellite themes are packs, not core.
+Do not list a pack until the Release has the packed tarball — Browse Install would 404. A git tag alone is not enough. Named palettes ship as satellite packs, not core. Settings → Themes shows the `tokens.css` default plus installed plugin themes.
 
 Same three-string rule as Vim. Parchment: id `theme-parchment`, repo `dripnex/theme-parchment`, asset `theme-parchment-0.1.0.tar.gz` on `v0.1.0`.
 

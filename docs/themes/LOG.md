@@ -1,7 +1,8 @@
 # Official theme log
 
 Daily theme runs append one line per new official palette so later runs
-do not reuse ids or topics.
+do not reuse ids or topics. These ids are retired from desktop core;
+named palettes ship as `dripnex/theme-<slug>` satellite packs.
 
 Format: `YYYY-MM-DD | id | name | topic | colorScheme`
 
