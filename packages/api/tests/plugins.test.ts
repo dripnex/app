@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import app from '../src/index.js';
 import {
+  discoverDripnexPacks,
   fallbackSlug,
+  GITHUB_PACKS_FAILURE_TTL_MS,
+  GITHUB_PACKS_TTL_MS,
   isFirstPartyRepoName,
   pickPackedTarball,
   resetGithubPacksCache,
@@ -50,6 +53,110 @@ describe('first-party pack discovery helpers', () => {
     ).toBe(
       'https://github.com/dripnex/theme-newpack/releases/download/v0.1.0/theme-newpack-0.1.0.tar.gz'
     );
+  });
+});
+
+function packedRepo(name: string) {
+  return {
+    name,
+    html_url: `https://github.com/dripnex/${name}`,
+    description: name,
+    default_branch: 'main',
+    created_at: '2026-08-25T00:00:00.000Z',
+    updated_at: '2026-08-25T00:00:00.000Z',
+    archived: false,
+    fork: false,
+    private: false,
+  };
+}
+
+function packedRelease(name: string): Response {
+  return jsonResponse(200, {
+    tag_name: 'v0.1.0',
+    published_at: '2026-08-25T00:00:00.000Z',
+    assets: [
+      {
+        name: `${name}-0.1.0.tar.gz`,
+        browser_download_url: `https://github.com/dripnex/${name}/releases/download/v0.1.0/${name}-0.1.0.tar.gz`,
+      },
+    ],
+  });
+}
+
+describe('discoverDripnexPacks cache', () => {
+  beforeEach(() => {
+    resetGithubPacksCache();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetGithubPacksCache();
+  });
+
+  it('does not cache a mid-scan 403 as a shorter success list', async () => {
+    const t0 = 1_000_000;
+    let phase: 'full' | 'partial' = 'full';
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [packedRepo('theme-alpha'), packedRepo('theme-beta')]);
+      }
+      if (url.includes('/repos/dripnex/theme-alpha/releases/latest')) {
+        return packedRelease('theme-alpha');
+      }
+      if (url.includes('/repos/dripnex/theme-beta/releases/latest')) {
+        if (phase === 'partial') {
+          return jsonResponse(403, { message: 'API rate limit exceeded' });
+        }
+        return packedRelease('theme-beta');
+      }
+      return jsonResponse(404, { message: 'Not Found' });
+    });
+
+    const first = await discoverDripnexPacks({ fetchImpl, now: t0 });
+    expect(first?.map(p => p.repoName).sort()).toEqual(['theme-alpha', 'theme-beta']);
+
+    phase = 'partial';
+    const afterTtl = await discoverDripnexPacks({
+      fetchImpl,
+      now: t0 + GITHUB_PACKS_TTL_MS + 1,
+    });
+    expect(afterTtl?.map(p => p.repoName).sort()).toEqual(['theme-alpha', 'theme-beta']);
+    expect(afterTtl).toHaveLength(2);
+
+    const fetchCountAfterPartial = fetchImpl.mock.calls.length;
+    const withinSuccessTtl = await discoverDripnexPacks({
+      fetchImpl,
+      now: t0 + GITHUB_PACKS_TTL_MS + 2,
+    });
+    expect(withinSuccessTtl?.map(p => p.repoName).sort()).toEqual(['theme-alpha', 'theme-beta']);
+    expect(withinSuccessTtl).toHaveLength(2);
+    expect(fetchImpl.mock.calls.length).toBe(fetchCountAfterPartial);
+
+    await discoverDripnexPacks({
+      fetchImpl,
+      now: t0 + GITHUB_PACKS_TTL_MS + 1 + GITHUB_PACKS_FAILURE_TTL_MS + 1,
+    });
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(fetchCountAfterPartial);
+  });
+
+  it('returns null on a rate-limited first scan so the seed catalog is used', async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [packedRepo('theme-alpha'), packedRepo('theme-beta')]);
+      }
+      if (url.includes('/repos/dripnex/theme-alpha/releases/latest')) {
+        return packedRelease('theme-alpha');
+      }
+      if (url.includes('/repos/dripnex/theme-beta/releases/latest')) {
+        return jsonResponse(403, { message: 'API rate limit exceeded' });
+      }
+      return jsonResponse(404, { message: 'Not Found' });
+    });
+
+    const result = await discoverDripnexPacks({ fetchImpl, now: 1 });
+    expect(result).toBeNull();
   });
 });
 
@@ -108,6 +215,7 @@ describe('plugin registry', () => {
         'math',
         'mermaid',
         'stamp',
+        'theme-dune',
         'theme-ember',
         'theme-fog',
         'theme-glass',
@@ -117,8 +225,10 @@ describe('plugin registry', () => {
         'theme-matcha',
         'theme-midnight',
         'theme-night',
+        'theme-noir',
         'theme-parchment',
         'theme-phosphor',
+        'theme-sakura',
         'theme-solarized-dark',
         'theme-solarized-light',
         'theme-wave',
@@ -166,6 +276,9 @@ describe('plugin registry', () => {
     'theme-matcha',
     'theme-phosphor',
     'theme-fog',
+    'theme-dune',
+    'theme-noir',
+    'theme-sakura',
   ] as const)('returns %s by slug from the first-party fallback', async slug => {
     const res = await app.request(`/plugins/${slug}`, {}, env);
     expect(res.status).toBe(200);
@@ -434,5 +547,34 @@ describe('plugin registry', () => {
     expect(authorization).toBe('Bearer test-github-token');
     const body = (await res.json()) as { plugins: Array<{ slug: string }> };
     expect(body.plugins.map(p => p.slug)).toContain('dripnex-vim-mode');
+  });
+
+  it('falls back to seed including noir/sakura when a first scan is rate-limited', async () => {
+    stubGithub(url => {
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [
+          packedRepo('theme-dune'),
+          packedRepo('theme-noir'),
+          packedRepo('theme-sakura'),
+        ]);
+      }
+      if (url.includes('/repos/dripnex/theme-dune/releases/latest')) {
+        return packedRelease('theme-dune');
+      }
+      if (url.includes('/repos/dripnex/theme-noir/releases/latest')) {
+        return jsonResponse(403, { message: 'API rate limit exceeded' });
+      }
+      if (url.includes('/repos/dripnex/theme-sakura/releases/latest')) {
+        return packedRelease('theme-sakura');
+      }
+      return null;
+    });
+
+    const res = await app.request('/plugins', {}, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { plugins: Array<{ slug: string }> };
+    const slugs = body.plugins.map(p => p.slug);
+    expect(slugs).toEqual(expect.arrayContaining(['theme-dune', 'theme-noir', 'theme-sakura']));
+    expect(slugs).toContain('dripnex-vim-mode');
   });
 });

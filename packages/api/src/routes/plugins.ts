@@ -362,6 +362,60 @@ export const FIRST_PARTY_PACKAGES = [
     createdAt: '2026-08-24T18:14:02.000Z',
     updatedAt: '2026-08-24T18:14:02.000Z',
   },
+  {
+    slug: 'theme-dune',
+    name: 'Dune',
+    description: 'Desert afternoon. Sand paper, terracotta marks.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-dune/releases/download/v0.1.0/theme-dune-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-dune',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-25T00:56:46.000Z',
+    updatedAt: '2026-08-25T00:58:04.000Z',
+  },
+  {
+    slug: 'theme-noir',
+    name: 'Noir',
+    description: 'Cinema black. Cool silver, a single crimson mark.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-noir/releases/download/v0.1.0/theme-noir-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-noir',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-25T00:56:48.000Z',
+    updatedAt: '2026-08-25T00:58:43.000Z',
+  },
+  {
+    slug: 'theme-sakura',
+    name: 'Sakura',
+    description: 'Cherry-blossom paper. Pale rose, quiet ink.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-sakura/releases/download/v0.1.0/theme-sakura-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-sakura',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-25T00:56:50.000Z',
+    updatedAt: '2026-08-25T00:58:57.000Z',
+  },
 ] as const;
 
 const listQuerySchema = z.object({
@@ -476,8 +530,8 @@ function mergeBySlug(primary: ListedPlugin[], extras: ListedPlugin[]): ListedPlu
 
 /**
  * Live first-party list: GitHub discovery with seed overrides, or the static
- * seed alone when GitHub is down. Seed rows still fill gaps (vim/parchment)
- * if a matching repo was skipped (no Release asset).
+ * seed alone when GitHub is down / the scan was incomplete. Seed rows still
+ * fill gaps (vim, parchment, dune/noir/sakura) if a matching repo was skipped.
  */
 async function firstPartyCatalog(env: Env): Promise<ListedPlugin[]> {
   const seed = FIRST_PARTY_PACKAGES.map(listedFromSeed);
