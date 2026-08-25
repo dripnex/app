@@ -16,6 +16,12 @@
  * Install must send `repository` (`dripnex/plugin-vim`), not `id`.
  */
 
+import {
+  isDripnexPackRepository,
+  isReservedFirstPartySlug,
+  isTrustedFirstPartyBundleUrl,
+} from '../../../../../shared/firstPartyPacks';
+
 export interface CatalogPlugin {
   /** manifest.json id — what scan() returns after install */
   id: string;
@@ -212,15 +218,24 @@ export function cardsFromRegistry(
     bundleUrl?: string | null;
   }>
 ): CatalogCard[] {
-  return plugins.map(p => ({
-    slug: p.slug,
-    name: p.name,
-    description: p.description,
-    version: p.version,
-    author: p.author,
-    repository: githubRepoFromUrl(p.repositoryUrl),
-    bundleUrl: p.bundleUrl ?? null,
-  }));
+  return plugins.flatMap(p => {
+    const repository = githubRepoFromUrl(p.repositoryUrl);
+    if (isReservedFirstPartySlug(p.slug)) {
+      if (p.bundleUrl && !isTrustedFirstPartyBundleUrl(p.bundleUrl)) return [];
+      if (repository && !isDripnexPackRepository(repository)) return [];
+    }
+    return [
+      {
+        slug: p.slug,
+        name: p.name,
+        description: p.description,
+        version: p.version,
+        author: p.author,
+        repository,
+        bundleUrl: p.bundleUrl ?? null,
+      },
+    ];
+  });
 }
 
 /**
@@ -256,10 +271,15 @@ export function mergeFallbackCatalog(
 
 /**
  * Prefer the Worker catalog tarball so Install does not call api.github.com.
- * Fall back to owner/repo (first-party still resolves via GET /plugins/:slug).
+ * First-party slugs only follow a dripnex GitHub release URL — a squatted
+ * catalog row must not become the Install spec (kind: url bypasses the Worker).
  */
 export function installTargetFor(card: CatalogCard): string {
-  if (card.bundleUrl?.startsWith('https://')) return card.bundleUrl;
+  if (card.bundleUrl?.startsWith('https://')) {
+    if (!isReservedFirstPartySlug(card.slug) || isTrustedFirstPartyBundleUrl(card.bundleUrl)) {
+      return card.bundleUrl;
+    }
+  }
   return installSpecFor(card);
 }
 

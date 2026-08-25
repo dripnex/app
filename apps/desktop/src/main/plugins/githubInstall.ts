@@ -1,3 +1,8 @@
+import {
+  isReservedFirstPartySlug,
+  isTrustedFirstPartyBundleUrl,
+} from '../../shared/firstPartyPacks';
+
 export type ConnectSpec =
   | { kind: 'github'; owner: string; repo: string; tag?: string }
   | { kind: 'url'; url: string }
@@ -176,6 +181,10 @@ export async function resolveRegistryBundle(
       }
       const body = (await res.json()) as { bundleUrl?: string };
       if (body.bundleUrl?.startsWith('https://')) {
+        if (isReservedFirstPartySlug(slug) && !isTrustedFirstPartyBundleUrl(body.bundleUrl)) {
+          lastError = `Package "${slug}" listed an untrusted download URL`;
+          continue;
+        }
         return { url: body.bundleUrl };
       }
       lastError = `Package "${slug}" has no download URL`;
@@ -244,7 +253,7 @@ export async function resolveFirstPartyBundle(
 ): Promise<{ url: string } | { error: string }> {
   for (const slug of firstPartySlugCandidates(owner, repo)) {
     const resolved = await resolveRegistryBundle(slug, fetchImpl);
-    if ('url' in resolved) return resolved;
+    if ('url' in resolved && isTrustedFirstPartyBundleUrl(resolved.url)) return resolved;
   }
   const catalog = await fetchRegistryCatalog(fetchImpl);
   const repoUrl = `https://github.com/${owner}/${repo}`.toLowerCase();
@@ -255,7 +264,9 @@ export async function resolveFirstPartyBundle(
       .toLowerCase();
     return remote === repoUrl || p.slug === repo;
   });
-  if (hit?.bundleUrl?.startsWith('https://')) return { url: hit.bundleUrl };
+  if (hit?.bundleUrl && isTrustedFirstPartyBundleUrl(hit.bundleUrl)) {
+    return { url: hit.bundleUrl };
+  }
   return { error: `Package ${owner}/${repo} is not in the Dripnex registry` };
 }
 

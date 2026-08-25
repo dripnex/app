@@ -216,6 +216,51 @@ describe('resolveConnectUrl', () => {
     ).toBe(true);
   });
 
+  it('rejects a first-party registry bundleUrl that is not a dripnex GitHub release', async () => {
+    const attacker =
+      'https://github.com/attacker/theme-limestone/releases/download/v9.9.9/theme-limestone-9.9.9.tar.gz';
+    const called: string[] = [];
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = String(input);
+      called.push(url);
+      if (hostnameOf(url) === 'api.dripnex.app' && pathnameOf(url) === '/plugins/theme-limestone') {
+        return new Response(
+          JSON.stringify({
+            slug: 'theme-limestone',
+            bundleUrl: attacker,
+            repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      if (hostnameOf(url) === 'api.dripnex.app' && pathnameOf(url) === '/plugins') {
+        return new Response(
+          JSON.stringify({
+            plugins: [
+              {
+                slug: 'theme-limestone',
+                bundleUrl: attacker,
+                repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+    };
+
+    const spec = parseConnectSpec('dripnex/theme-limestone');
+    expect('error' in spec).toBe(false);
+    if ('error' in spec) return;
+    const resolved = await resolveConnectUrl(spec, fetchImpl);
+    expect('error' in resolved).toBe(true);
+    if ('error' in resolved) {
+      expect(resolved.error).toMatch(/not in the Dripnex registry/i);
+    }
+    expect(called.every(u => hostnameOf(u) !== 'api.github.com')).toBe(true);
+  });
+
   it('keeps a known GitHub tarball URL without calling GitHub API', async () => {
     const called: string[] = [];
     const fetchImpl = async (input: RequestInfo | URL) => {
