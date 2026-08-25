@@ -17,10 +17,14 @@
  */
 
 import {
+  githubRepoFromUrl,
   isDripnexPackRepository,
+  isOfficialLookingCatalogCard,
   isReservedFirstPartySlug,
   isTrustedFirstPartyBundleUrl,
 } from '../../../../../shared/firstPartyPacks';
+
+export { githubRepoFromUrl };
 
 export interface CatalogPlugin {
   /** manifest.json id — what scan() returns after install */
@@ -220,6 +224,9 @@ export function cardsFromRegistry(
 ): CatalogCard[] {
   return plugins.flatMap(p => {
     const repository = githubRepoFromUrl(p.repositoryUrl);
+    if (repository && isDripnexPackRepository(repository) && !isReservedFirstPartySlug(p.slug)) {
+      return [];
+    }
     if (isReservedFirstPartySlug(p.slug)) {
       if (p.bundleUrl && !isTrustedFirstPartyBundleUrl(p.bundleUrl)) return [];
       if (repository && !isDripnexPackRepository(repository)) return [];
@@ -271,27 +278,20 @@ export function mergeFallbackCatalog(
 
 /**
  * Prefer the Worker catalog tarball so Install does not call api.github.com.
- * First-party slugs only follow a dripnex GitHub release URL — a squatted
- * catalog row must not become the Install spec (kind: url bypasses the Worker).
+ * Official-looking cards (reserved slug or dripnex theme/plugin repo) only
+ * follow a dripnex GitHub release URL — a community row must not display
+ * dripnex/theme-* while Install follows an attacker bundleUrl.
  */
 export function installTargetFor(card: CatalogCard): string {
   if (card.bundleUrl?.startsWith('https://')) {
-    if (!isReservedFirstPartySlug(card.slug) || isTrustedFirstPartyBundleUrl(card.bundleUrl)) {
+    if (
+      !isOfficialLookingCatalogCard(card.slug, card.repository) ||
+      isTrustedFirstPartyBundleUrl(card.bundleUrl)
+    ) {
       return card.bundleUrl;
     }
   }
   return installSpecFor(card);
-}
-
-export function githubRepoFromUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const trimmed = url.trim();
-  const path = trimmed
-    .replace(/^https:\/\/github\.com\//i, '')
-    .replace(/\.git$/i, '')
-    .replace(/\/+$/, '');
-  const [owner, repo] = path.split('/');
-  return owner && repo ? `${owner}/${repo}` : null;
 }
 
 export interface RemoteCatalogRow {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  githubRepoFromUrl,
   isDripnexPackRepository,
+  isOfficialLookingCatalogCard,
   isReservedFirstPartySlug,
   isTrustedFirstPartyBundleUrl,
 } from '../firstPartyPacks';
@@ -59,5 +61,26 @@ describe('isDripnexPackRepository', () => {
     expect(isDripnexPackRepository('dripnex/plugin-vim')).toBe(true);
     expect(isDripnexPackRepository('attacker/theme-limestone')).toBe(false);
     expect(isDripnexPackRepository('dripnex/app')).toBe(false);
+  });
+});
+
+describe('githubRepoFromUrl', () => {
+  it('parses github.com owner/repo via hostname, not substring', () => {
+    expect(githubRepoFromUrl('https://github.com/dripnex/theme-limestone')).toBe(
+      'dripnex/theme-limestone'
+    );
+    expect(githubRepoFromUrl('https://github.com/dripnex/plugin-vim.git')).toBe(
+      'dripnex/plugin-vim'
+    );
+    expect(githubRepoFromUrl('https://github.com.evil.example/dripnex/theme-limestone')).toBeNull();
+    expect(githubRepoFromUrl('https://attacker.example/dripnex/theme-limestone')).toBeNull();
+  });
+});
+
+describe('isOfficialLookingCatalogCard', () => {
+  it('treats a dripnex pack repository as official even when the slug is not reserved', () => {
+    expect(isOfficialLookingCatalogCard('limestone', 'dripnex/theme-limestone')).toBe(true);
+    expect(isOfficialLookingCatalogCard('hello-notes', 'acme/hello-notes')).toBe(false);
+    expect(isOfficialLookingCatalogCard('theme-limestone', null)).toBe(true);
   });
 });

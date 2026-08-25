@@ -1,7 +1,8 @@
 /**
  * Official Dripnex extras: GitHub org `dripnex`, repos `theme-*` / `plugin-*`.
- * Community POST /plugins must not claim these slugs, and Install must not
- * follow a registry `bundleUrl` that is not a dripnex GitHub release tarball.
+ * Community POST /plugins must not claim these slugs or impersonate those
+ * repos. Install must not follow a registry `bundleUrl` that is not a
+ * dripnex GitHub release tarball for an official-looking card.
  */
 
 const FIRST_PARTY_PLUGIN_SLUGS = new Set(['stamp', 'mermaid', 'math', 'dripnex-vim-mode']);
@@ -18,6 +19,41 @@ export function isDripnexPackRepository(ownerRepo: string): boolean {
     owner?.toLowerCase() === 'dripnex' &&
     typeof repo === 'string' &&
     (repo.startsWith('theme-') || repo.startsWith('plugin-'))
+  );
+}
+
+/** `owner/repo` from an https://github.com/... URL. Hostname must be github.com. */
+export function githubRepoFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== 'https:') return null;
+    if (parsed.hostname !== 'github.com') return null;
+    if (parsed.username || parsed.password) return null;
+    const [owner, repo] = parsed.pathname
+      .replace(/^\//, '')
+      .replace(/\.git$/i, '')
+      .replace(/\/+$/, '')
+      .split('/');
+    return owner && repo ? `${owner}/${repo}` : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isDripnexPackRepositoryUrl(url: string | null | undefined): boolean {
+  const repo = githubRepoFromUrl(url);
+  return repo != null && isDripnexPackRepository(repo);
+}
+
+/** Slug reserved, or the visible GitHub repo is a dripnex theme/plugin satellite. */
+export function isOfficialLookingCatalogCard(
+  slug: string,
+  repository: string | null | undefined
+): boolean {
+  return (
+    isReservedFirstPartySlug(slug) ||
+    (typeof repository === 'string' && isDripnexPackRepository(repository))
   );
 }
 

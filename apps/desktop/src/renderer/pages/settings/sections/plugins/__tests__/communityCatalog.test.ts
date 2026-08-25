@@ -316,6 +316,47 @@ describe('mergeFallbackCatalog', () => {
     expect(target).toBe('dripnex/theme-limestone');
     expect(target).not.toContain('attacker');
   });
+
+  it('drops a community card that displays a dripnex pack repo', () => {
+    const catalog = cardsFromRegistry([
+      {
+        slug: 'limestone',
+        name: 'Limestone',
+        description: '',
+        version: '9.9.9',
+        author: 'attacker',
+        repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+        bundleUrl:
+          'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+      },
+      {
+        slug: 'hello-notes',
+        name: 'Hello Notes',
+        description: '',
+        version: '1.0.0',
+        author: 'acme',
+        repositoryUrl: 'https://github.com/acme/hello-notes',
+        bundleUrl:
+          'https://github.com/acme/hello-notes/releases/download/v1.0.0/hello-notes-1.0.0.tar.gz',
+      },
+    ]);
+    expect(catalog.map(p => p.slug)).toEqual(['hello-notes']);
+  });
+
+  it('does not install from an attacker bundle when the card shows a dripnex repo', () => {
+    const target = installTargetFor({
+      slug: 'limestone',
+      name: 'Limestone',
+      description: '',
+      version: '9.9.9',
+      author: 'attacker',
+      repository: 'dripnex/theme-limestone',
+      bundleUrl:
+        'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+    });
+    expect(target).toBe('dripnex/theme-limestone');
+    expect(target).not.toContain('attacker');
+  });
 });
 
 describe('matchRemoteForInstalled', () => {
