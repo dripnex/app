@@ -15,11 +15,16 @@
  *   3. `theme-*` → repository name; `plugin-vim` → `dripnex-vim-mode`;
  *      other `plugin-*` → name with the `plugin-` prefix stripped
  *
- * Optional `GITHUB_TOKEN` raises the GitHub REST rate limit. Unauthenticated
- * public requests still work. Complete successful lists are cached for ~12
- * minutes. A rate-limited or otherwise incomplete scan is not stored as a
- * success: we keep the last complete list (short retry) or return null so
- * the seed catalog is used.
+ * Optional `GITHUB_TOKEN` raises the GitHub REST/GraphQL rate limit.
+ * Discovery prefers one GraphQL org query (latestRelease + assets) so a
+ * Worker isolate does not N+1 `releases/latest` and 403/429 mid-scan.
+ * REST remains the fallback when GraphQL is unavailable.
+ *
+ * Complete lists are stored in-process (~12 min) and in the Cloudflare
+ * Cache API (shared across isolates in a colo). In-memory alone is why
+ * one isolate can serve 30 packs while another falls back to the 21-row
+ * seed. Incomplete scans never overwrite a complete list; they reuse
+ * last-good (Cache API, then memory) or return null for the seed.
  */
 
 const ORG = 'dripnex';
@@ -33,8 +38,50 @@ const API_VERSION = '2022-11-28';
 export const GITHUB_PACKS_TTL_MS = 12 * 60 * 1000;
 /** Failed lookups retry after a short pause so we do not hammer a 403. */
 export const GITHUB_PACKS_FAILURE_TTL_MS = 60 * 1000;
+/** Shared last-good list (Cache API) outlives a single isolate. */
+export const GITHUB_PACKS_LAST_GOOD_TTL_MS = 24 * 60 * 60 * 1000;
 const REPOS_PER_PAGE = 100;
 const MAX_PAGES = 5;
+const LAST_GOOD_CACHE_URL = 'https://api.dripnex.app/__internal/github-packs/last-good';
+
+const GRAPHQL_ORG_REPOS = /* GraphQL */ `
+  query DripnexPackRepos($cursor: String) {
+    organization(login: "dripnex") {
+      repositories(first: 100, after: $cursor, privacy: PUBLIC, isFork: false) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          name
+          url
+          description
+          isArchived
+          createdAt
+          updatedAt
+          defaultBranchRef {
+            name
+          }
+          latestRelease {
+            tagName
+            publishedAt
+            releaseAssets(first: 20) {
+              nodes {
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** Minimal Cache API subset used to share last-good lists across isolates. */
+export type PacksCacheStore = {
+  match(request: string | URL | Request): Promise<Response | undefined>;
+  put(request: string | URL | Request, response: Response): Promise<void>;
+};
 
 export type DiscoveredPack = {
   repoName: string;
@@ -78,9 +125,94 @@ export function resetGithubPacksCache(): void {
   lastGoodFull = null;
 }
 
-function rememberFailure(now: number): DiscoveredPack[] | null {
+function defaultCacheStore(): PacksCacheStore | null {
+  try {
+    const stores = (globalThis as { caches?: { default?: PacksCacheStore } }).caches;
+    return stores?.default ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function parseCachedPacks(body: unknown): DiscoveredPack[] | null {
+  if (!Array.isArray(body) || body.length === 0) return null;
+  const packs: DiscoveredPack[] = [];
+  for (const row of body) {
+    if (!row || typeof row !== 'object') return null;
+    const p = row as Partial<DiscoveredPack>;
+    if (
+      typeof p.repoName !== 'string' ||
+      typeof p.htmlUrl !== 'string' ||
+      typeof p.bundleUrl !== 'string' ||
+      typeof p.version !== 'string'
+    ) {
+      return null;
+    }
+    packs.push({
+      repoName: p.repoName,
+      htmlUrl: p.htmlUrl,
+      description: typeof p.description === 'string' ? p.description : '',
+      defaultBranch: typeof p.defaultBranch === 'string' ? p.defaultBranch : 'main',
+      createdAt: typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString(),
+      updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt : new Date().toISOString(),
+      version: p.version,
+      bundleUrl: p.bundleUrl,
+      kind: p.kind === 'plugin' ? 'plugin' : 'theme',
+    });
+  }
+  return packs;
+}
+
+async function readLastGood(store: PacksCacheStore | null): Promise<DiscoveredPack[] | null> {
+  if (!store) return null;
+  try {
+    const hit = await store.match(LAST_GOOD_CACHE_URL);
+    if (!hit) return null;
+    return parseCachedPacks(await hit.json());
+  } catch {
+    return null;
+  }
+}
+
+async function writeLastGood(
+  store: PacksCacheStore | null,
+  packs: DiscoveredPack[]
+): Promise<void> {
+  if (!store) return;
+  try {
+    const maxAge = Math.floor(GITHUB_PACKS_LAST_GOOD_TTL_MS / 1000);
+    await store.put(
+      LAST_GOOD_CACHE_URL,
+      new Response(JSON.stringify(packs), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': `max-age=${maxAge}`,
+        },
+      })
+    );
+  } catch {
+    // Cache API is best-effort; in-memory last-good still applies in this isolate.
+  }
+}
+
+async function rememberFailure(
+  now: number,
+  store: PacksCacheStore | null
+): Promise<DiscoveredPack[] | null> {
+  if (!lastGoodFull) lastGoodFull = await readLastGood(store);
   cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: lastGoodFull };
   return lastGoodFull;
+}
+
+async function rememberSuccess(
+  now: number,
+  packs: DiscoveredPack[],
+  store: PacksCacheStore | null
+): Promise<DiscoveredPack[]> {
+  lastGoodFull = packs;
+  cache = { until: now + GITHUB_PACKS_TTL_MS, packs };
+  await writeLastGood(store, packs);
+  return packs;
 }
 
 export function isFirstPartyRepoName(name: string): boolean {
@@ -217,6 +349,137 @@ async function latestPackedRelease(
   };
 }
 
+type GraphqlNode = {
+  name?: string | null;
+  url?: string | null;
+  description?: string | null;
+  isArchived?: boolean | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  defaultBranchRef?: { name?: string | null } | null;
+  latestRelease?: {
+    tagName?: string | null;
+    publishedAt?: string | null;
+    releaseAssets?: { nodes?: Array<{ name?: string | null } | null> | null } | null;
+  } | null;
+};
+
+type ScanResult =
+  | { status: 'ok'; packs: DiscoveredPack[] }
+  | { status: 'incomplete' }
+  | { status: 'unavailable' };
+
+function packFromGraphqlNode(node: GraphqlNode): DiscoveredPack | null {
+  const name = node.name ?? '';
+  const htmlUrl = node.url ?? '';
+  if (!name || !htmlUrl || node.isArchived) return null;
+  if (!isFirstPartyRepoName(name)) return null;
+  const release = node.latestRelease;
+  const tagName = release?.tagName ?? '';
+  const version = versionFromTag(tagName);
+  if (!version) return null;
+  const assets = (release?.releaseAssets?.nodes ?? [])
+    .filter((a): a is { name: string } => !!a && typeof a.name === 'string')
+    .map(a => ({
+      name: a.name,
+      browser_download_url: `https://github.com/${ORG}/${name}/releases/download/${tagName}/${a.name}`,
+    }));
+  const bundleUrl = pickPackedTarball(assets, [name, fallbackSlug(name)], version);
+  if (!bundleUrl) return null;
+  return {
+    repoName: name,
+    htmlUrl,
+    description: node.description ?? '',
+    defaultBranch: node.defaultBranchRef?.name ?? 'main',
+    createdAt: node.createdAt ?? new Date().toISOString(),
+    updatedAt: release?.publishedAt ?? node.updatedAt ?? new Date().toISOString(),
+    version,
+    bundleUrl,
+    kind: packKind(name),
+  };
+}
+
+async function discoverViaGraphql(fetchImpl: typeof fetch, token?: string): Promise<ScanResult> {
+  const packs: DiscoveredPack[] = [];
+  let cursor: string | null = null;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    let res: Response;
+    try {
+      res = await fetchImpl(`${API}/graphql`, {
+        method: 'POST',
+        headers: { ...githubHeaders(token), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: GRAPHQL_ORG_REPOS, variables: { cursor } }),
+      });
+    } catch {
+      return { status: 'unavailable' };
+    }
+    if (res.status === 401 || res.status === 404) return { status: 'unavailable' };
+    if (res.status === 403 || res.status === 429) return { status: 'incomplete' };
+    if (!res.ok) return { status: 'unavailable' };
+    const body = (await res.json()) as {
+      errors?: unknown;
+      data?: {
+        organization?: {
+          repositories?: {
+            pageInfo?: { hasNextPage?: boolean; endCursor?: string | null };
+            nodes?: Array<GraphqlNode | null> | null;
+          };
+        } | null;
+      };
+    };
+    if (body.errors || !body.data?.organization?.repositories) return { status: 'unavailable' };
+    const conn = body.data.organization.repositories;
+    for (const node of conn.nodes ?? []) {
+      if (!node) continue;
+      const pack = packFromGraphqlNode(node);
+      if (pack) packs.push(pack);
+    }
+    if (!conn.pageInfo?.hasNextPage) return { status: 'ok', packs };
+    cursor = conn.pageInfo.endCursor ?? null;
+    if (!cursor) return { status: 'ok', packs };
+    if (page === MAX_PAGES) return { status: 'incomplete' };
+  }
+  return { status: 'ok', packs };
+}
+
+async function discoverViaRest(fetchImpl: typeof fetch, token?: string): Promise<ScanResult> {
+  const listed = await listOrgPackRepos(fetchImpl, token);
+  if (!listed) return { status: 'unavailable' };
+
+  const { repos, truncated } = listed;
+  const packs: DiscoveredPack[] = [];
+  const results = await Promise.allSettled(
+    repos.map(async repo => {
+      const release = await latestPackedRelease(repo.name!, fetchImpl, token);
+      if (!release) return null;
+      const pack: DiscoveredPack = {
+        repoName: repo.name!,
+        htmlUrl: repo.html_url!,
+        description: repo.description ?? '',
+        defaultBranch: repo.default_branch ?? 'main',
+        createdAt: repo.created_at ?? new Date().toISOString(),
+        updatedAt: release.publishedAt,
+        version: release.version,
+        bundleUrl: release.bundleUrl,
+        kind: packKind(repo.name!),
+      };
+      return pack;
+    })
+  );
+
+  let rejected = false;
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      packs.push(result.value);
+    } else if (result.status === 'rejected') {
+      rejected = true;
+    }
+  }
+
+  if (rejected || truncated) return { status: 'incomplete' };
+  return { status: 'ok', packs };
+}
+
 /**
  * @returns discovered packs, the last complete list when a scan is incomplete,
  * or `null` when GitHub is unreachable / rate limited with no last-good list
@@ -226,54 +489,23 @@ export async function discoverDripnexPacks(options: {
   token?: string;
   fetchImpl?: typeof fetch;
   now?: number;
+  cacheStore?: PacksCacheStore | null;
 }): Promise<DiscoveredPack[] | null> {
   const now = options.now ?? Date.now();
   if (cache && now < cache.until) return cache.packs;
 
   const fetchImpl = options.fetchImpl ?? fetch;
+  const store = options.cacheStore === undefined ? defaultCacheStore() : options.cacheStore;
   try {
-    const listed = await listOrgPackRepos(fetchImpl, options.token);
-    if (!listed) return rememberFailure(now);
+    const graphql = await discoverViaGraphql(fetchImpl, options.token);
+    if (graphql.status === 'ok') return rememberSuccess(now, graphql.packs, store);
+    if (graphql.status === 'incomplete') return rememberFailure(now, store);
 
-    const { repos, truncated } = listed;
-    const packs: DiscoveredPack[] = [];
-    const results = await Promise.allSettled(
-      repos.map(async repo => {
-        const release = await latestPackedRelease(repo.name!, fetchImpl, options.token);
-        if (!release) return null;
-        const pack: DiscoveredPack = {
-          repoName: repo.name!,
-          htmlUrl: repo.html_url!,
-          description: repo.description ?? '',
-          defaultBranch: repo.default_branch ?? 'main',
-          createdAt: repo.created_at ?? new Date().toISOString(),
-          updatedAt: release.publishedAt,
-          version: release.version,
-          bundleUrl: release.bundleUrl,
-          kind: packKind(repo.name!),
-        };
-        return pack;
-      })
-    );
-
-    let rejected = false;
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        packs.push(result.value);
-      } else if (result.status === 'rejected') {
-        rejected = true;
-      }
-    }
-
-    // Rate-limit (403/429) throws; other throws are also an incomplete scan.
-    // Do not publish a shorter list as a 12-minute success.
-    if (rejected || truncated) return rememberFailure(now);
-
-    lastGoodFull = packs;
-    cache = { until: now + GITHUB_PACKS_TTL_MS, packs };
-    return packs;
+    const rest = await discoverViaRest(fetchImpl, options.token);
+    if (rest.status === 'ok') return rememberSuccess(now, rest.packs, store);
+    return rememberFailure(now, store);
   } catch {
-    return rememberFailure(now);
+    return rememberFailure(now, store);
   }
 }
 

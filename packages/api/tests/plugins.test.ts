@@ -9,6 +9,7 @@ import {
   isFirstPartyRepoName,
   pickPackedTarball,
   resetGithubPacksCache,
+  type PacksCacheStore,
 } from '../src/services/githubPacks.js';
 import {
   createTestEnv,
@@ -83,6 +84,44 @@ function packedRelease(name: string): Response {
   });
 }
 
+function graphqlPackedNode(name: string) {
+  return {
+    name,
+    url: `https://github.com/dripnex/${name}`,
+    description: name,
+    isArchived: false,
+    createdAt: '2026-08-25T00:00:00.000Z',
+    updatedAt: '2026-08-25T00:00:00.000Z',
+    defaultBranchRef: { name: 'main' },
+    latestRelease: {
+      tagName: 'v0.1.0',
+      publishedAt: '2026-08-25T00:00:00.000Z',
+      releaseAssets: { nodes: [{ name: `${name}-0.1.0.tar.gz` }] },
+    },
+  };
+}
+
+function createMemoryPacksCache(): PacksCacheStore {
+  const map = new Map<string, { body: string; until: number }>();
+  const keyOf = (req: string | URL | Request) =>
+    typeof req === 'string' ? req : req instanceof Request ? req.url : String(req);
+  return {
+    async match(req) {
+      const hit = map.get(keyOf(req));
+      if (!hit || Date.now() > hit.until) return undefined;
+      return new Response(hit.body, { headers: { 'Content-Type': 'application/json' } });
+    },
+    async put(req, response) {
+      const cc = response.headers.get('Cache-Control') ?? '';
+      const maxAge = Number(/max-age=(\d+)/.exec(cc)?.[1] ?? '3600');
+      map.set(keyOf(req), {
+        body: await response.clone().text(),
+        until: Date.now() + maxAge * 1000,
+      });
+    },
+  };
+}
+
 describe('discoverDripnexPacks cache', () => {
   beforeEach(() => {
     resetGithubPacksCache();
@@ -138,6 +177,80 @@ describe('discoverDripnexPacks cache', () => {
       now: t0 + GITHUB_PACKS_TTL_MS + 1 + GITHUB_PACKS_FAILURE_TTL_MS + 1,
     });
     expect(fetchImpl.mock.calls.length).toBeGreaterThan(fetchCountAfterPartial);
+  });
+
+  it('reuses a shared last-good list when a cold isolate would otherwise seed', async () => {
+    const t0 = 2_000_000;
+    const shared = createMemoryPacksCache();
+    const fullFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) return jsonResponse(404, { message: 'Not Found' });
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [packedRepo('theme-limestone'), packedRepo('theme-walnut')]);
+      }
+      if (url.includes('/repos/dripnex/theme-limestone/releases/latest')) {
+        return packedRelease('theme-limestone');
+      }
+      if (url.includes('/repos/dripnex/theme-walnut/releases/latest')) {
+        return packedRelease('theme-walnut');
+      }
+      return jsonResponse(404, { message: 'Not Found' });
+    });
+
+    const first = await discoverDripnexPacks({ fetchImpl: fullFetch, now: t0, cacheStore: shared });
+    expect(first?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+
+    resetGithubPacksCache();
+    const limitedFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) return jsonResponse(403, { message: 'rate limit' });
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [packedRepo('theme-limestone'), packedRepo('theme-walnut')]);
+      }
+      return jsonResponse(403, { message: 'API rate limit exceeded' });
+    });
+
+    const cold = await discoverDripnexPacks({
+      fetchImpl: limitedFetch,
+      now: t0 + GITHUB_PACKS_TTL_MS + 1,
+      cacheStore: shared,
+    });
+    expect(cold?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+  });
+
+  it('discovers packed repos from one GraphQL query without REST releases/latest', async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [
+                  graphqlPackedNode('theme-limestone'),
+                  graphqlPackedNode('theme-walnut'),
+                  {
+                    name: 'app',
+                    url: 'https://github.com/dripnex/app',
+                    isArchived: false,
+                    latestRelease: null,
+                  },
+                ],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const packs = await discoverDripnexPacks({ fetchImpl, now: 3, cacheStore: null });
+    expect(packs?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+    expect(fetchImpl.mock.calls.some(c => String(c[0]).includes('/releases/latest'))).toBe(false);
+    expect(packs?.find(p => p.repoName === 'theme-limestone')?.bundleUrl).toContain(
+      'theme-limestone-0.1.0.tar.gz'
+    );
   });
 
   it('returns null on a rate-limited first scan so the seed catalog is used', async () => {
@@ -576,5 +689,40 @@ describe('plugin registry', () => {
     const slugs = body.plugins.map(p => p.slug);
     expect(slugs).toEqual(expect.arrayContaining(['theme-dune', 'theme-noir', 'theme-sakura']));
     expect(slugs).toContain('dripnex-vim-mode');
+  });
+
+  it('lists live extras such as limestone from a GraphQL scan, not only the seed', async () => {
+    stubGithub(url => {
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [
+                  graphqlPackedNode('theme-limestone'),
+                  graphqlPackedNode('theme-walnut'),
+                  graphqlPackedNode('theme-ash'),
+                  graphqlPackedNode('theme-parchment'),
+                  graphqlPackedNode('plugin-vim'),
+                ],
+              },
+            },
+          },
+        });
+      }
+      return null;
+    });
+
+    const res = await app.request('/plugins', {}, env);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Cache-Control')).toContain('no-store');
+    const body = (await res.json()) as { plugins: Array<{ slug: string }>; total: number };
+    const slugs = body.plugins.map(p => p.slug);
+    expect(slugs).toEqual(
+      expect.arrayContaining(['theme-limestone', 'theme-walnut', 'theme-ash', 'theme-parchment'])
+    );
+    expect(slugs).toContain('dripnex-vim-mode');
+    expect(body.total).toBeGreaterThanOrEqual(5);
   });
 });

@@ -610,7 +610,9 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
     pluginsOut = pluginsOut.filter(p => p.category === category);
   }
 
-  return c.json({ plugins: pluginsOut, total: pluginsOut.length });
+  return c.json({ plugins: pluginsOut, total: pluginsOut.length }, 200, {
+    'Cache-Control': 'private, no-store',
+  });
 });
 
 plugins.get('/:slug/download', async c => {
