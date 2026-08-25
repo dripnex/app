@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  fetchRegistryCatalog,
   isAllowedPluginHost,
+  isFirstPartyGithubRepo,
   parseConnectSpec,
   pickReleaseTarball,
+  resolveConnectUrl,
   uniqueReleaseTags,
 } from '../githubInstall';
 
@@ -95,6 +98,147 @@ describe('uniqueReleaseTags', () => {
   it('tries v-prefixed and bare tags', () => {
     expect(uniqueReleaseTags('1.0.0')).toEqual(['1.0.0', 'v1.0.0']);
     expect(uniqueReleaseTags('v1.0.0')).toEqual(['v1.0.0', '1.0.0']);
+  });
+});
+
+describe('isFirstPartyGithubRepo', () => {
+  it('matches dripnex theme and plugin satellites', () => {
+    expect(isFirstPartyGithubRepo('dripnex', 'theme-limestone')).toBe(true);
+    expect(isFirstPartyGithubRepo('dripnex', 'plugin-vim')).toBe(true);
+    expect(isFirstPartyGithubRepo('acme', 'theme-limestone')).toBe(false);
+    expect(isFirstPartyGithubRepo('dripnex', 'app')).toBe(false);
+  });
+});
+
+describe('fetchRegistryCatalog', () => {
+  it('keeps the longest GET /plugins list across registry hosts', async () => {
+    const seed21 = Array.from({ length: 21 }, (_, i) => ({
+      slug: i === 0 ? 'theme-parchment' : `seed-${i}`,
+      name: `Seed ${i}`,
+      description: '',
+      version: '0.1.0',
+      author: 'Dripnex',
+    }));
+    const live30 = [
+      ...seed21,
+      {
+        slug: 'theme-limestone',
+        name: 'Limestone',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+        bundleUrl:
+          'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
+      },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        slug: `extra-${i}`,
+        name: `Extra ${i}`,
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+      })),
+    ];
+    expect(live30).toHaveLength(30);
+
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('https://api.dripnex.app/plugins') && !url.includes('/plugins/')) {
+        return new Response(JSON.stringify({ plugins: seed21, total: 21 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      if (url.includes('workers.dev/plugins') && !url.includes('/plugins/theme')) {
+        return new Response(JSON.stringify({ plugins: live30, total: 30 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+    };
+
+    const catalog = await fetchRegistryCatalog(fetchImpl);
+    expect(catalog).toHaveLength(30);
+    expect(catalog?.some(p => p.slug === 'theme-limestone')).toBe(true);
+  });
+});
+
+describe('resolveConnectUrl', () => {
+  it('resolves dripnex/theme-* via the Worker catalog, never api.github.com', async () => {
+    const called: string[] = [];
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = String(input);
+      called.push(url);
+      if (url.includes('/plugins/theme-limestone')) {
+        return new Response(
+          JSON.stringify({
+            slug: 'theme-limestone',
+            bundleUrl:
+              'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
+    };
+
+    const spec = parseConnectSpec('dripnex/theme-limestone');
+    expect('error' in spec).toBe(false);
+    if ('error' in spec) return;
+    const resolved = await resolveConnectUrl(spec, fetchImpl);
+    expect(resolved).toEqual({
+      url: 'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
+    });
+    expect(called.some(u => u.includes('api.github.com'))).toBe(false);
+    expect(called.some(u => u.includes('api.dripnex.app/plugins/theme-limestone'))).toBe(true);
+  });
+
+  it('keeps a known GitHub tarball URL without calling GitHub API', async () => {
+    const called: string[] = [];
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      called.push(String(input));
+      return new Response('nope', { status: 500 });
+    };
+    const url =
+      'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz';
+    const spec = parseConnectSpec(url);
+    expect('error' in spec).toBe(false);
+    if ('error' in spec) return;
+    const resolved = await resolveConnectUrl(spec, fetchImpl);
+    expect(resolved).toEqual({ url });
+    expect(called).toEqual([]);
+  });
+
+  it('still uses GitHub API for third-party owner/repo', async () => {
+    const called: string[] = [];
+    const fetchImpl = async (input: RequestInfo | URL) => {
+      const url = String(input);
+      called.push(url);
+      return new Response(
+        JSON.stringify({
+          tag_name: 'v1.0.0',
+          assets: [
+            {
+              name: 'plug-1.0.0.tar.gz',
+              browser_download_url:
+                'https://github.com/acme/plug/releases/download/v1.0.0/plug-1.0.0.tar.gz',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    };
+    const spec = parseConnectSpec('acme/plug');
+    expect('error' in spec).toBe(false);
+    if ('error' in spec) return;
+    const resolved = await resolveConnectUrl(spec, fetchImpl);
+    expect(resolved).toEqual({
+      url: 'https://github.com/acme/plug/releases/download/v1.0.0/plug-1.0.0.tar.gz',
+    });
+    expect(called.some(u => u.includes('api.github.com/repos/acme/plug/releases/latest'))).toBe(
+      true
+    );
   });
 });
 

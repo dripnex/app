@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMMUNITY_CATALOG,
+  cardsFromRegistry,
   githubRepoFromUrl,
   installSpecFor,
+  installTargetFor,
   matchRemoteForInstalled,
   mergeFallbackCatalog,
 } from '../communityCatalog';
@@ -127,6 +129,151 @@ describe('mergeFallbackCatalog', () => {
     expect(installSpecFor(merged.find(p => p.slug === 'theme-harbor-dusk')!)).toBe(
       'dripnex/theme-harbor-dusk'
     );
+  });
+
+  it('keeps live extras such as limestone when GET /plugins returns 30', () => {
+    const live = [
+      ...COMMUNITY_CATALOG.map(p => ({
+        slug: p.id,
+        name: p.name,
+        description: p.description,
+        version: p.version,
+        author: p.author,
+        repositoryUrl: `https://github.com/${p.repository}`,
+        bundleUrl: `https://github.com/${p.repository}/releases/download/v0.1.0/${p.id}-0.1.0.tar.gz`,
+      })),
+      {
+        slug: 'theme-dune',
+        name: 'Dune',
+        description: 'Desert afternoon.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-dune',
+        bundleUrl:
+          'https://github.com/dripnex/theme-dune/releases/download/v0.1.0/theme-dune-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-noir',
+        name: 'Noir',
+        description: 'Cinema black.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-noir',
+        bundleUrl:
+          'https://github.com/dripnex/theme-noir/releases/download/v0.1.0/theme-noir-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-sakura',
+        name: 'Sakura',
+        description: 'Cherry-blossom paper.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-sakura',
+        bundleUrl:
+          'https://github.com/dripnex/theme-sakura/releases/download/v0.1.0/theme-sakura-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-limestone',
+        name: 'Limestone',
+        description: 'Warm stone.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-limestone',
+        bundleUrl:
+          'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-walnut',
+        name: 'Walnut',
+        description: 'Dark wood.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-walnut',
+        bundleUrl:
+          'https://github.com/dripnex/theme-walnut/releases/download/v0.1.0/theme-walnut-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-ash',
+        name: 'Ash',
+        description: 'Pale timber.',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-ash',
+        bundleUrl:
+          'https://github.com/dripnex/theme-ash/releases/download/v0.1.0/theme-ash-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-quartz',
+        name: 'Quartz',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-quartz',
+        bundleUrl:
+          'https://github.com/dripnex/theme-quartz/releases/download/v0.1.0/theme-quartz-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-cove',
+        name: 'Cove',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-cove',
+        bundleUrl:
+          'https://github.com/dripnex/theme-cove/releases/download/v0.1.0/theme-cove-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-velvet',
+        name: 'Velvet',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-velvet',
+        bundleUrl:
+          'https://github.com/dripnex/theme-velvet/releases/download/v0.1.0/theme-velvet-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-ink',
+        name: 'Ink',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-ink',
+        bundleUrl:
+          'https://github.com/dripnex/theme-ink/releases/download/v0.1.0/theme-ink-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-pine',
+        name: 'Pine',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-pine',
+        bundleUrl:
+          'https://github.com/dripnex/theme-pine/releases/download/v0.1.0/theme-pine-0.1.0.tar.gz',
+      },
+      {
+        slug: 'theme-saffron',
+        name: 'Saffron',
+        description: '',
+        version: '0.1.0',
+        author: 'Dripnex',
+        repositoryUrl: 'https://github.com/dripnex/theme-saffron',
+        bundleUrl:
+          'https://github.com/dripnex/theme-saffron/releases/download/v0.1.0/theme-saffron-0.1.0.tar.gz',
+      },
+    ];
+    expect(live).toHaveLength(30);
+    const catalog = mergeFallbackCatalog(cardsFromRegistry(live));
+    const slugs = catalog.map(p => p.slug);
+    expect(slugs).toContain('theme-limestone');
+    expect(slugs).toContain('theme-walnut');
+    expect(slugs).toContain('theme-ash');
+    expect(catalog).toHaveLength(30);
+    const limestone = catalog.find(p => p.slug === 'theme-limestone');
+    expect(limestone?.repository).toBe('dripnex/theme-limestone');
+    expect(installTargetFor(limestone!)).toContain('theme-limestone-0.1.0.tar.gz');
+    expect(installTargetFor(limestone!)).toMatch(/^https:\/\//);
   });
 });
 

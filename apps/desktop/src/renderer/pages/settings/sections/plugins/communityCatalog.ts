@@ -181,6 +181,7 @@ export interface CatalogCard {
   version: string;
   author: string;
   repository: string | null;
+  bundleUrl?: string | null;
 }
 
 /**
@@ -197,9 +198,36 @@ export function installSpecFor(
 }
 
 /**
+ * Live GET /plugins rows become Browse cards. No slug allowlist — extras
+ * such as theme-limestone must appear when the Worker returns them.
+ */
+export function cardsFromRegistry(
+  plugins: Array<{
+    slug: string;
+    name: string;
+    description: string;
+    version: string;
+    author: string;
+    repositoryUrl?: string | null;
+    bundleUrl?: string | null;
+  }>
+): CatalogCard[] {
+  return plugins.map(p => ({
+    slug: p.slug,
+    name: p.name,
+    description: p.description,
+    version: p.version,
+    author: p.author,
+    repository: githubRepoFromUrl(p.repositoryUrl),
+    bundleUrl: p.bundleUrl ?? null,
+  }));
+}
+
+/**
  * Keep first-party fallback cards that the live registry omitted, and fill
  * `repository` on a live row that listed the slug without repositoryUrl.
  * Browse used to replace the fallback entirely, which hid Vim (#562).
+ * Live extras not in COMMUNITY_CATALOG are kept as-is.
  */
 export function mergeFallbackCatalog(
   registry: CatalogCard[],
@@ -221,8 +249,18 @@ export function mergeFallbackCatalog(
       version: p.version,
       author: p.author,
       repository: p.repository,
+      bundleUrl: null as string | null,
     }));
   return extra.length === 0 ? filled : [...extra, ...filled];
+}
+
+/**
+ * Prefer the Worker catalog tarball so Install does not call api.github.com.
+ * Fall back to owner/repo (first-party still resolves via GET /plugins/:slug).
+ */
+export function installTargetFor(card: CatalogCard): string {
+  if (card.bundleUrl?.startsWith('https://')) return card.bundleUrl;
+  return installSpecFor(card);
 }
 
 export function githubRepoFromUrl(url: string | null | undefined): string | null {
