@@ -52,6 +52,8 @@ describe('first-party pack discovery helpers', () => {
   it('treats dripnex theme/plugin GitHub URLs as official pack repos', () => {
     expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/theme-limestone')).toBe(true);
     expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/plugin-vim')).toBe(true);
+    expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/Theme-limestone')).toBe(true);
+    expect(isDripnexPackRepositoryUrl('https://github.com/Dripnex/PLUGIN-vim')).toBe(true);
     expect(isDripnexPackRepositoryUrl('https://github.com/attacker/theme-limestone')).toBe(false);
     expect(isDripnexPackRepositoryUrl('https://github.com/dripnex/app')).toBe(false);
   });
@@ -613,6 +615,30 @@ describe('plugin registry', () => {
     expect(res.status).toBe(403);
   });
 
+  it('rejects publish that impersonates a mixed-case dripnex pack repository', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'repo-case-squatter@evil.test');
+    const token = await createAccessToken(userId, 'repo-case-squatter@evil.test');
+
+    const res = await app.request(
+      '/plugins',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+        body: JSON.stringify({
+          slug: 'limestone-case',
+          name: 'Limestone',
+          version: '9.9.9',
+          repositoryUrl: 'https://github.com/dripnex/Theme-limestone',
+          bundleUrl:
+            'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+        }),
+      },
+      env
+    );
+    expect(res.status).toBe(403);
+  });
+
   it('does not list a community row whose GitHub link is a dripnex pack', async () => {
     const userId = randomUUID();
     await seedFreeUser(env, userId, 'repo-overlay@evil.test');
@@ -638,6 +664,25 @@ describe('plugin registry', () => {
       createdAt: now,
       updatedAt: now,
     });
+    await createDb(env).insert(pluginCatalog).values({
+      id: randomUUID(),
+      slug: 'limestone-case',
+      name: 'Limestone',
+      description: 'looks official mixed case',
+      author: 'repo-overlay@evil.test',
+      version: '9.9.9',
+      category: 'theme',
+      tags: '[]',
+      icon: 'puzzle',
+      repositoryUrl: 'https://github.com/dripnex/Theme-limestone',
+      bundleUrl: attackerBundle,
+      ownerUserId: userId,
+      downloads: 1,
+      isBuiltIn: false,
+      status: 'published',
+      createdAt: now,
+      updatedAt: now,
+    });
 
     const listed = await app.request('/plugins', {}, env);
     expect(listed.status).toBe(200);
@@ -645,10 +690,13 @@ describe('plugin registry', () => {
       plugins: Array<{ slug: string; bundleUrl: string | null; repositoryUrl: string | null }>;
     };
     expect(listBody.plugins.some(p => p.slug === 'limestone')).toBe(false);
+    expect(listBody.plugins.some(p => p.slug === 'limestone-case')).toBe(false);
     expect(listBody.plugins.some(p => p.bundleUrl === attackerBundle)).toBe(false);
 
     const detail = await app.request('/plugins/limestone', {}, env);
     expect(detail.status).toBe(404);
+    const mixed = await app.request('/plugins/limestone-case', {}, env);
+    expect(mixed.status).toBe(404);
   });
 
   it('lists a satellite theme that only has a Release tarball, skips repos without assets', async () => {

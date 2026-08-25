@@ -453,11 +453,9 @@ export function isDripnexPackRepositoryUrl(url: string | null | undefined): bool
   const repo = githubRepoFromHttpsUrl(url);
   if (!repo) return false;
   const [owner, name] = repo.split('/');
-  return (
-    owner?.toLowerCase() === 'dripnex' &&
-    typeof name === 'string' &&
-    (name.startsWith('theme-') || name.startsWith('plugin-'))
-  );
+  if (owner?.toLowerCase() !== 'dripnex' || typeof name !== 'string') return false;
+  const pack = name.toLowerCase();
+  return pack.startsWith('theme-') || pack.startsWith('plugin-');
 }
 
 export function isTrustedFirstPartyBundleUrl(url: string | null | undefined): boolean {
@@ -467,7 +465,7 @@ export function isTrustedFirstPartyBundleUrl(url: string | null | undefined): bo
     if (parsed.protocol !== 'https:') return false;
     if (parsed.hostname !== 'github.com') return false;
     if (parsed.username || parsed.password) return false;
-    return TRUSTED_FIRST_PARTY_BUNDLE_PATH.test(parsed.pathname);
+    return TRUSTED_FIRST_PARTY_BUNDLE_PATH.test(parsed.pathname.toLowerCase());
   } catch {
     return false;
   }

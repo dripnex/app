@@ -15,11 +15,9 @@ export function isReservedFirstPartySlug(slug: string): boolean {
 
 export function isDripnexPackRepository(ownerRepo: string): boolean {
   const [owner, repo] = ownerRepo.split('/');
-  return (
-    owner?.toLowerCase() === 'dripnex' &&
-    typeof repo === 'string' &&
-    (repo.startsWith('theme-') || repo.startsWith('plugin-'))
-  );
+  if (owner?.toLowerCase() !== 'dripnex' || typeof repo !== 'string') return false;
+  const name = repo.toLowerCase();
+  return name.startsWith('theme-') || name.startsWith('plugin-');
 }
 
 /** `owner/repo` from an https://github.com/... URL. Hostname must be github.com. */
@@ -64,7 +62,7 @@ export function isTrustedFirstPartyBundleUrl(url: string): boolean {
     if (parsed.protocol !== 'https:') return false;
     if (parsed.hostname !== 'github.com') return false;
     if (parsed.username || parsed.password) return false;
-    return TRUSTED_FIRST_PARTY_BUNDLE_PATH.test(parsed.pathname);
+    return TRUSTED_FIRST_PARTY_BUNDLE_PATH.test(parsed.pathname.toLowerCase());
   } catch {
     return false;
   }

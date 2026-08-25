@@ -1,4 +1,5 @@
 import {
+  isDripnexPackRepository,
   isReservedFirstPartySlug,
   isTrustedFirstPartyBundleUrl,
 } from '../../shared/firstPartyPacks';
@@ -136,9 +137,7 @@ export type RegistryPlugin = {
 };
 
 export function isFirstPartyGithubRepo(owner: string, repo: string): boolean {
-  return (
-    owner.toLowerCase() === 'dripnex' && (repo.startsWith('theme-') || repo.startsWith('plugin-'))
-  );
+  return isDripnexPackRepository(`${owner}/${repo}`);
 }
 
 export function fallbackSlug(repoName: string): string {

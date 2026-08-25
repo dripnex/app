@@ -330,6 +330,16 @@ describe('mergeFallbackCatalog', () => {
           'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
       },
       {
+        slug: 'limestone-case',
+        name: 'Limestone',
+        description: '',
+        version: '9.9.9',
+        author: 'attacker',
+        repositoryUrl: 'https://github.com/dripnex/Theme-limestone',
+        bundleUrl:
+          'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+      },
+      {
         slug: 'hello-notes',
         name: 'Hello Notes',
         description: '',
@@ -356,6 +366,19 @@ describe('mergeFallbackCatalog', () => {
     });
     expect(target).toBe('dripnex/theme-limestone');
     expect(target).not.toContain('attacker');
+
+    const mixed = installTargetFor({
+      slug: 'limestone-case',
+      name: 'Limestone',
+      description: '',
+      version: '9.9.9',
+      author: 'attacker',
+      repository: 'dripnex/Theme-limestone',
+      bundleUrl:
+        'https://github.com/attacker/limestone/releases/download/v9.9.9/limestone-9.9.9.tar.gz',
+    });
+    expect(mixed).toBe('dripnex/Theme-limestone');
+    expect(mixed).not.toContain('attacker');
   });
 });
 

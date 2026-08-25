@@ -121,6 +121,8 @@ describe('isFirstPartyGithubRepo', () => {
   it('matches dripnex theme and plugin satellites', () => {
     expect(isFirstPartyGithubRepo('dripnex', 'theme-limestone')).toBe(true);
     expect(isFirstPartyGithubRepo('dripnex', 'plugin-vim')).toBe(true);
+    expect(isFirstPartyGithubRepo('dripnex', 'Theme-limestone')).toBe(true);
+    expect(isFirstPartyGithubRepo('Dripnex', 'PLUGIN-vim')).toBe(true);
     expect(isFirstPartyGithubRepo('acme', 'theme-limestone')).toBe(false);
     expect(isFirstPartyGithubRepo('dripnex', 'app')).toBe(false);
   });
