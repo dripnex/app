@@ -8,12 +8,14 @@
  *
  * Auth (Bearer JWT):
  *   POST /plugins              publish / update a package you own
+ *                              (first-party slugs are reserved)
  *
  * First-party packs: GitHub org `dripnex` repos named `theme-*` / `plugin-*`
  * with a packed Release `.tar.gz` are the live list. FIRST_PARTY_PACKAGES is
  * the seed (GitHub down) and the slug/name/description override map — not a
  * second catalog to keep in lockstep with daily theme satellites. Only a
  * packed `{id}-{version}.tar.gz` is listed; a git tag is not enough.
+ * Turso `plugin_catalog` rows cannot claim or overlay those slugs.
  */
 
 import { Hono } from 'hono';
@@ -418,6 +420,14 @@ export const FIRST_PARTY_PACKAGES = [
   },
 ] as const;
 
+const FIRST_PARTY_PACK_SLUG_RE = /^(theme|plugin)-[a-z0-9]+(-[a-z0-9]+)*$/;
+const FIRST_PARTY_SLUGS: ReadonlySet<string> = new Set(FIRST_PARTY_PACKAGES.map(p => p.slug));
+
+/** Official extras community POST /plugins must not claim. */
+export function isReservedFirstPartySlug(slug: string): boolean {
+  return FIRST_PARTY_SLUGS.has(slug) || FIRST_PARTY_PACK_SLUG_RE.test(slug);
+}
+
 const listQuerySchema = z.object({
   category: z.string().optional(),
   search: z.string().optional(),
@@ -596,7 +606,9 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
     rows = [];
   }
 
-  let pluginsOut = mergeBySlug(rows, await firstPartyCatalog(c.env));
+  const firstParty = await firstPartyCatalog(c.env);
+  const community = rows.filter(row => !isReservedFirstPartySlug(row.slug));
+  let pluginsOut = mergeBySlug(community, firstParty);
   if (query) {
     const qLower = query.toLowerCase();
     pluginsOut = pluginsOut.filter(
@@ -651,6 +663,9 @@ plugins.get('/:slug', async c => {
 
 plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => {
   const body = c.req.valid('json');
+  if (isReservedFirstPartySlug(body.slug)) {
+    return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
+  }
   const user = c.get('user');
   const db = createDb(c.env);
   const now = new Date().toISOString();
@@ -733,6 +748,11 @@ plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => 
 });
 
 async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null> {
+  const catalog = await firstPartyCatalog(env);
+  const official = catalog.find(p => p.slug === slug);
+  if (official) return official;
+  if (isReservedFirstPartySlug(slug)) return null;
+
   try {
     const db = createDb(env);
     const [plugin] = await db
@@ -761,8 +781,7 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
   } catch {
     // table missing — fall through
   }
-  const catalog = await firstPartyCatalog(env);
-  return catalog.find(p => p.slug === slug) ?? null;
+  return null;
 }
 
 export { plugins };

@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import app from '../src/index.js';
+import { createDb } from '../src/db/client.js';
+import { pluginCatalog } from '../src/db/schema.js';
+import { isReservedFirstPartySlug } from '../src/routes/plugins.js';
 import {
   discoverDripnexPacks,
   fallbackSlug,
@@ -35,6 +38,14 @@ describe('first-party pack discovery helpers', () => {
     expect(fallbackSlug('theme-newpack')).toBe('theme-newpack');
     expect(fallbackSlug('plugin-vim')).toBe('dripnex-vim-mode');
     expect(fallbackSlug('plugin-stamp')).toBe('stamp');
+  });
+
+  it('reserves first-party plugin and theme slugs', () => {
+    expect(isReservedFirstPartySlug('stamp')).toBe(true);
+    expect(isReservedFirstPartySlug('dripnex-vim-mode')).toBe(true);
+    expect(isReservedFirstPartySlug('theme-limestone')).toBe(true);
+    expect(isReservedFirstPartySlug('plugin-stamp')).toBe(true);
+    expect(isReservedFirstPartySlug('hello-notes')).toBe(false);
   });
 
   it('picks the packed Release asset, never a git source tarball stand-in', () => {
@@ -478,6 +489,96 @@ describe('plugin registry', () => {
       env
     );
     expect(res.status).toBe(403);
+  });
+
+  it('rejects publish of a reserved first-party slug', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'squatter@evil.test');
+    const token = await createAccessToken(userId, 'squatter@evil.test');
+
+    const res = await app.request(
+      '/plugins',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+        body: JSON.stringify({
+          slug: 'theme-limestone',
+          name: 'Limestone',
+          version: '9.9.9',
+          bundleUrl:
+            'https://github.com/attacker/theme-limestone/releases/download/v9.9.9/theme-limestone-9.9.9.tar.gz',
+        }),
+      },
+      env
+    );
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/reserved/i);
+  });
+
+  it('does not serve a Turso row that squats an official slug', async () => {
+    const userId = randomUUID();
+    await seedFreeUser(env, userId, 'catalog-squatter@evil.test');
+    const now = new Date().toISOString();
+    const attackerBundle =
+      'https://github.com/attacker/theme-limestone/releases/download/v9.9.9/theme-limestone-9.9.9.tar.gz';
+    await createDb(env).insert(pluginCatalog).values({
+      id: randomUUID(),
+      slug: 'theme-limestone',
+      name: 'Limestone (hijack)',
+      description: 'attacker',
+      author: 'catalog-squatter@evil.test',
+      version: '9.9.9',
+      category: 'theme',
+      tags: '[]',
+      icon: 'puzzle',
+      repositoryUrl: 'https://github.com/attacker/theme-limestone',
+      bundleUrl: attackerBundle,
+      ownerUserId: userId,
+      downloads: 99,
+      isBuiltIn: false,
+      status: 'published',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const missing = await app.request('/plugins/theme-limestone', {}, env);
+    expect(missing.status).toBe(404);
+
+    const listed = await app.request('/plugins', {}, env);
+    expect(listed.status).toBe(200);
+    const listBody = (await listed.json()) as {
+      plugins: Array<{ slug: string; bundleUrl: string | null }>;
+    };
+    expect(listBody.plugins.some(p => p.slug === 'theme-limestone')).toBe(false);
+    expect(listBody.plugins.some(p => p.bundleUrl === attackerBundle)).toBe(false);
+
+    stubGithub(url => {
+      if (url.includes('/orgs/dripnex/repos')) {
+        return jsonResponse(200, [packedRepo('theme-limestone')]);
+      }
+      if (url.includes('/repos/dripnex/theme-limestone/releases/latest')) {
+        return packedRelease('theme-limestone');
+      }
+      return null;
+    });
+    resetGithubPacksCache();
+
+    const official =
+      'https://github.com/dripnex/theme-limestone/releases/download/v0.1.0/theme-limestone-0.1.0.tar.gz';
+    const liveList = await app.request('/plugins', {}, env);
+    expect(liveList.status).toBe(200);
+    const liveBody = (await liveList.json()) as {
+      plugins: Array<{ slug: string; bundleUrl: string | null; name: string }>;
+    };
+    const limestone = liveBody.plugins.find(p => p.slug === 'theme-limestone');
+    expect(limestone?.bundleUrl).toBe(official);
+    expect(limestone?.name).not.toContain('hijack');
+
+    const detail = await app.request('/plugins/theme-limestone', {}, env);
+    expect(detail.status).toBe(200);
+    const detailBody = (await detail.json()) as { bundleUrl: string };
+    expect(detailBody.bundleUrl).toBe(official);
   });
 
   it('lists a satellite theme that only has a Release tarball, skips repos without assets', async () => {
