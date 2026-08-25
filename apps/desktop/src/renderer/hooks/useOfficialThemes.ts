@@ -1,7 +1,12 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { setHostThemeActive, themeRegistryStore } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../stores/settings';
-import { registerOfficialThemes } from '../themes/officialThemes';
+import {
+  persistClearedThemeIfNeeded,
+  registerOfficialThemes,
+  restoreSavedTheme,
+  syncInstalledPluginThemes,
+} from '../themes/officialThemes';
 
 /** Persist a palette the same way Settings → Appearance does. */
 export function applyHostTheme(id: string | null): boolean {
@@ -22,7 +27,7 @@ export function applyHostTheme(id: string | null): boolean {
   return true;
 }
 
-/** Register first-party palettes and restore the last chosen one. */
+/** Restore the last chosen palette and register installed plugin themes. */
 export function useOfficialThemes(): void {
   const appearance = useSettingsStore(selectAppearance);
   const registeredThemeCount = useSyncExternalStore(
@@ -33,22 +38,26 @@ export function useOfficialThemes(): void {
   useEffect(() => {
     registerOfficialThemes();
     setHostThemeActive(applyHostTheme);
-    return () => setHostThemeActive(null);
+    void syncInstalledPluginThemes();
+    const offReload = window.dripnex?.ipc?.on('plugins:reload', () => {
+      void syncInstalledPluginThemes();
+    });
+    return () => {
+      setHostThemeActive(null);
+      offReload?.();
+    };
   }, []);
 
   useEffect(() => {
-    if (registeredThemeCount === 0) return;
     const savedThemeId = appearance?.activeThemeId ?? null;
     // Each window has its own registry. Settings can setActive(null) locally
     // and broadcast appearance.activeThemeId; the notes window must clear too
     // or named-palette tokens stay inline and Light never shows.
-    if (savedThemeId === null) {
-      themeRegistryStore.getState().setActive(null);
-      return;
-    }
-    const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
-    if (!exists) return;
-    themeRegistryStore.getState().setActive(savedThemeId);
+    const result = restoreSavedTheme(savedThemeId);
+    persistClearedThemeIfNeeded(savedThemeId, result, id => {
+      useSettingsStore.getState().updateAppearance({ activeThemeId: id });
+    });
+    if (result !== 'activated') return;
     const palette = themeRegistryStore.getState().getActiveTheme();
     const paletteAccent = palette?.tokens['--accent'];
     if (paletteAccent && appearance?.accentColor === '#5eead4') {
