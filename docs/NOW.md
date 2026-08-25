@@ -8,7 +8,7 @@ Updated: 2026-08-20. Version in tree: 0.15.2. 0.16.0 story is drafted.
 
 ## Now (true today)
 
-- Desktop is the product. Account required (AuthGate). Sync is optional E2E.
+- Desktop is the product. No account to open a file. Sync is optional E2E.
 - Magic link + React Email. API on Cloudflare (`api.dripnex.app`).
 - AI on notes (local providers). Ask-notes and `search_notes` share one hybrid retriever.
 - Dripnex AI is hosted Claude (product key). Dev builds show “Not in this build”.
