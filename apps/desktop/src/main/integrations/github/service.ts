@@ -3,6 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import {
+  formatGithubBlobMarkdown,
+  GITHUB_CONNECT_REQUIRED,
+  parseGithubPasteUrl,
+  sliceFileLines,
+  type GithubBlobRef,
+  type GithubPasteTarget,
+} from '../../../shared/githubBlob.js';
 import { AiKeyStorage } from '../../services/aiKeyStorage.js';
 
 const execFileAsync = promisify(execFile);
@@ -105,22 +113,54 @@ async function readGhCliToken(): Promise<string | null> {
   }
 }
 
-export async function githubRequest<T>(token: string, path: string): Promise<T> {
-  const response = await fetch(`https://api.github.com${path}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'Dripnex',
-    },
-  });
-  if (!response.ok) {
-    if (response.status === 401) throw new Error('GitHub token was rejected.');
-    if (response.status === 404) throw new Error('Not found, or this token cannot see it.');
-    throw new Error(`GitHub returned ${response.status}.`);
+export class GitHubConnectRequiredError extends Error {
+  constructor() {
+    super(GITHUB_CONNECT_REQUIRED);
+    this.name = 'GitHubConnectRequiredError';
   }
+}
+
+const MAX_FILE_BYTES = 512 * 1024;
+
+async function githubFetch(token: string | null, path: string, accept: string): Promise<Response> {
+  const headers: Record<string, string> = {
+    Accept: accept,
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'Dripnex',
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return fetch(`https://api.github.com${path}`, { headers });
+}
+
+function throwIfNotOk(response: Response, hasToken: boolean): void {
+  if (response.ok) return;
+  if (response.status === 401) throw new Error('GitHub token was rejected.');
+  if (response.status === 404) {
+    if (!hasToken) throw new GitHubConnectRequiredError();
+    throw new Error('Not found, or this token cannot see it.');
+  }
+  throw new Error(`GitHub returned ${response.status}.`);
+}
+
+export async function githubRequest<T>(token: string | null, path: string): Promise<T> {
+  const response = await githubFetch(token, path, 'application/vnd.github+json');
+  throwIfNotOk(response, Boolean(token));
   return (await response.json()) as T;
 }
+
+export async function githubRequestText(token: string | null, path: string): Promise<string> {
+  const response = await githubFetch(token, path, 'application/vnd.github.raw');
+  throwIfNotOk(response, Boolean(token));
+  const length = Number(response.headers.get('content-length') ?? '0');
+  if (length > MAX_FILE_BYTES) throw new Error('That file is too large to embed.');
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength > MAX_FILE_BYTES) throw new Error('That file is too large to embed.');
+  return new TextDecoder('utf-8').decode(buffer);
+}
+
+export type GitHubPasteResult =
+  | { success: true; markdown: string; kind: 'embed' | 'link' }
+  | { success: false; error: string; connectRequired?: boolean };
 
 interface WatcherStore {
   watchers: GitHubWatcher[];
@@ -230,6 +270,76 @@ export function createGitHubService(dataDir: string, notes?: GitHubNoteSink) {
     return result.items.filter(issue => !issue.pull_request);
   };
 
+  const contentsPath = (blob: GithubBlobRef): string => {
+    const encoded = blob.path
+      .split('/')
+      .map(segment => encodeURIComponent(segment))
+      .join('/');
+    return `/repos/${blob.owner}/${blob.repo}/contents/${encoded}?ref=${encodeURIComponent(blob.ref)}`;
+  };
+
+  const embedBlob = async (blob: GithubBlobRef): Promise<GitHubPasteResult> => {
+    if (blob.startLine == null) {
+      const label = `${blob.owner}/${blob.repo}/${blob.path}`;
+      return { success: true, kind: 'link', markdown: `[${label}](${blob.url})` };
+    }
+    const token = (await keys.getKey(PROVIDER)) || null;
+    try {
+      const text = await githubRequestText(token, contentsPath(blob));
+      const sliced = sliceFileLines(text, blob.startLine, blob.endLine ?? blob.startLine);
+      if (!sliced) return { success: false, error: 'Those lines are not in that file.' };
+      return {
+        success: true,
+        kind: 'embed',
+        markdown: formatGithubBlobMarkdown(blob, sliced),
+      };
+    } catch (error) {
+      if (error instanceof GitHubConnectRequiredError) {
+        return { success: false, error: error.message, connectRequired: true };
+      }
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Could not load that file.',
+      };
+    }
+  };
+
+  const titleLink = async (
+    target: Exclude<GithubPasteTarget, GithubBlobRef>
+  ): Promise<GitHubPasteResult> => {
+    const token = (await keys.getKey(PROVIDER)) || null;
+    try {
+      let title: string | null = null;
+      if (target.kind === 'issue') {
+        const issue = await githubRequest<{ title: string }>(
+          token,
+          `/repos/${target.owner}/${target.repo}/issues/${target.number}`
+        );
+        title = issue.title;
+      } else if (target.kind === 'pull') {
+        const pull = await githubRequest<{ title: string }>(
+          token,
+          `/repos/${target.owner}/${target.repo}/pulls/${target.number}`
+        );
+        title = pull.title;
+      } else {
+        const commit = await githubRequest<{ commit: { message: string } }>(
+          token,
+          `/repos/${target.owner}/${target.repo}/commits/${target.sha}`
+        );
+        title = commit.commit.message.split('\n')[0]?.trim() ?? null;
+      }
+      if (!title) return { success: false, error: 'Could not load that GitHub page.' };
+      const safe = title
+        .replace(/[\r\n]+/g, ' ')
+        .replace(/]/g, '')
+        .trim();
+      return { success: true, kind: 'link', markdown: `[${safe}](${target.url})` };
+    } catch {
+      return { success: false, error: 'Could not load that GitHub page.' };
+    }
+  };
+
   return {
     async status(): Promise<{ connected: boolean; login: string | null; via: 'token' | null }> {
       const token = await keys.getKey(PROVIDER);
@@ -256,6 +366,13 @@ export function createGitHubService(dataDir: string, notes?: GitHubNoteSink) {
 
     async disconnect(): Promise<void> {
       await keys.removeKey(PROVIDER);
+    },
+
+    async resolvePaste(url: string): Promise<GitHubPasteResult> {
+      const parsed = parseGithubPasteUrl(url);
+      if (!parsed) return { success: false, error: 'Paste a GitHub URL.' };
+      if (parsed.kind === 'blob') return embedBlob(parsed);
+      return titleLink(parsed);
     },
 
     async importIssue(url: string): Promise<{ title: string; content: string; htmlUrl: string }> {
