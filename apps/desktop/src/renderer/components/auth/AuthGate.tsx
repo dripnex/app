@@ -43,6 +43,7 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
       <LoginBackdrop />
       <div className={styles.card}>
         <img src={logo} alt="" width={40} height={40} className={styles.logo} />
+        <p className={styles.kicker}>The hackable AI note taker</p>
         <div className={styles.tabs} role="tablist">
           <button
             type="button"
@@ -72,8 +73,8 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
           <>
             <p className={styles.copy}>
               {mode === 'signup'
-                ? 'The hackable AI note taker. We’ll email you a link. No password.'
-                : 'The hackable AI note taker. We’ll email you a one-time link. Leave this window open.'}
+                ? 'Messy input becomes a document you send. Hack via init.js and styles.css. We’ll email a link — no password.'
+                : 'Messy input becomes a document you send. Hack via init.js and styles.css. We’ll email a one-time link. Leave this window open.'}
             </p>
 
             {sent ? (
