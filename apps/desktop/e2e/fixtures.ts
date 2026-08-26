@@ -25,6 +25,14 @@ interface LaunchedApp {
   cleanup: () => Promise<void>;
 }
 
+export interface LaunchAppOptions {
+  /**
+   * Playwright default: skip AuthGate (`DRIPNEX_E2E=1`).
+   * Production launches must not set this. Pass false to assert the gate.
+   */
+  skipAuthGate?: boolean;
+}
+
 /**
  * Launches the desktop app and waits for the first window to be ready.
  *
@@ -32,8 +40,9 @@ interface LaunchedApp {
  * time. Set DRIPNEX_E2E_KEEP_USERDATA=1 to keep the dir on failure for
  * post-mortem.
  */
-export async function launchApp(): Promise<LaunchedApp> {
+export async function launchApp(options: LaunchAppOptions = {}): Promise<LaunchedApp> {
   const userDataDir = await mkdtemp(join(tmpdir(), 'dripnex-e2e-'));
+  const skipAuthGate = options.skipAuthGate !== false;
 
   const app = await electron.launch({
     args: [
@@ -45,7 +54,7 @@ export async function launchApp(): Promise<LaunchedApp> {
     env: {
       ...process.env,
       NODE_ENV: 'test',
-      DRIPNEX_E2E: '1',
+      ...(skipAuthGate ? { DRIPNEX_E2E: '1' } : { DRIPNEX_E2E: '' }),
       // Pin the data root explicitly so the app uses our temp dir for
       // its SQLite database too, not just for Electron's userData.
       DRIPNEX_DATA_DIR: userDataDir,

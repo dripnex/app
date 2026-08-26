@@ -33,12 +33,13 @@ Set `DRIPNEX_E2E_KEEP_USERDATA=1` to keep the temp dir on failure for post-morte
 
 ## What we test
 
-| Spec             | What it covers                                                                                                                                                                                                                   |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `smoke.spec.ts`  | App launches, main window renders, IPC bridge present, no uncaught console errors during initial mount. Opening a note loads CodeMirror without `[CodeMirror] plugin error` (regression for #311).                               |
-| `notes.spec.ts`  | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. Driven through the **preload bridge** (`window.dripnex.notes.*`), not the editor UI, so the contract survives renderer refactors. |
-| `editor.spec.ts` | Types into `.cm-content` after creating a note, and Enter on a bullet list (continue-markup). Clicks the last `.cm-line` / uses `keyboard.type` — not `fill()`, which CodeMirror's contenteditable does not accept.              |
-| `tables.spec.ts` | Wide GFM table widget stays inside the scroller. **Skipped on CI** (`CI` env) — insert + leave-table decorations are still flaky under xvfb. Run headed locally.                                                                 |
+| Spec               | What it covers                                                                                                                                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authgate.spec.ts` | Unsigned launch (no `DRIPNEX_E2E`) shows AuthGate: magic-link Sign in, no Welcome, no continue-locally.                                                                                                                          |
+| `smoke.spec.ts`    | App launches, main window renders, IPC bridge present, no uncaught console errors during initial mount. Opening a note loads CodeMirror without `[CodeMirror] plugin error` (regression for #311).                               |
+| `notes.spec.ts`    | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. Driven through the **preload bridge** (`window.dripnex.notes.*`), not the editor UI, so the contract survives renderer refactors. |
+| `editor.spec.ts`   | Types into `.cm-content` after creating a note, and Enter on a bullet list (continue-markup). Clicks the last `.cm-line` / uses `keyboard.type` — not `fill()`, which CodeMirror's contenteditable does not accept.              |
+| `tables.spec.ts`   | Wide GFM table widget stays inside the scroller. **Skipped on CI** (`CI` env) — insert + leave-table decorations are still flaky under xvfb. Run headed locally.                                                                 |
 
 ## What we still don't test
 
