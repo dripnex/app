@@ -1,8 +1,8 @@
 /**
- * Welcome — First-run onboarding screen
+ * Welcome — First-run onboarding after AuthGate.
  *
  * Shown once on first launch. Offers to create the user's first note
- * or skip straight into the app.
+ * or skip straight into the app. Never a guest path around the account.
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -15,22 +15,27 @@ interface WelcomeProps {
   onComplete: (createNote: boolean) => void;
 }
 
-const features = [
+export const WELCOME_HEADLINE = 'The hackable AI note taker';
+
+export const WELCOME_LEDE =
+  'Messy input becomes a document a person will send. Not a model dump.';
+
+export const WELCOME_FEATURES = [
   {
-    title: 'Local-First',
-    desc: 'Works fully offline. Optional end-to-end encrypted sync.',
+    title: 'SQLite is the store',
+    desc: 'Notes live in a local database. Markdown is export, not the product.',
   },
   {
-    title: 'Pure Markdown',
-    desc: 'Standard .md under the hood. No lock-in.',
+    title: 'Hackable',
+    desc: 'init.js, styles.css, and satellite packs. Official themes stay empty.',
   },
   {
-    title: 'Extensible',
-    desc: 'Plugins, themes, and AI built in.',
+    title: 'Account first',
+    desc: 'AuthGate is the first window. Sync is optional and end-to-end after you sign in.',
   },
   {
-    title: 'Import Your Notes',
-    desc: 'Import from Obsidian, Markdown folders, or other apps.',
+    title: 'Sendable, not a dump',
+    desc: 'AI helps turn messy input into something you would actually send.',
   },
 ] as const;
 
@@ -69,11 +74,13 @@ export function Welcome({ onComplete }: WelcomeProps) {
         </div>
 
         <h1 id="welcome-heading" className={styles.headline}>
-          Your Markdown. Your Machine. Your&nbsp;Rules.
+          {WELCOME_HEADLINE}
         </h1>
 
+        <p className={styles.lede}>{WELCOME_LEDE}</p>
+
         <div className={styles.cards}>
-          {features.map(f => (
+          {WELCOME_FEATURES.map(f => (
             <div key={f.title} className={styles.card}>
               <p className={styles.cardTitle}>{f.title}</p>
               <p className={styles.cardDesc}>{f.desc}</p>
