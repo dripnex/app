@@ -14,18 +14,36 @@ import {
   Blocks,
   Keyboard,
   Paintbrush,
+  Code,
 } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
 import { Button, toast } from '../../../ui/primitives';
 import { useSettingsStore } from '../../../stores/settings';
 import { versionNewer } from '../sections/plugins/version';
-import type { SettingsSection } from '../SettingsApp';
+import { SETTINGS_NAV_ITEMS, type SettingsNavId, type SettingsSection } from '../settingsNav';
 import styles from './SettingsSidebar.module.css';
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
 }
+
+const NAV_ICONS: Record<SettingsNavId, typeof Settings> = {
+  general: Settings,
+  editor: FileText,
+  themes: Paintbrush,
+  appearance: Palette,
+  ai: Sparkles,
+  keybindings: Keyboard,
+  hack: Code,
+  plugins: Puzzle,
+  account: User,
+  encryption: KeyRound,
+  integrations: Blocks,
+  backup: Database,
+  updates: Download,
+  about: Info,
+};
 
 function usePluginUpdateCount(): number {
   const [count, setCount] = useState(0);
@@ -82,116 +100,47 @@ export function SettingsSidebar({ activeSection, onSectionChange }: SettingsSide
     <aside className={styles.sidebar}>
       <div className={styles.header} aria-hidden="true" />
       <nav className={styles.nav}>
-        <NavButton
-          id="general"
-          label="General"
-          icon={Settings}
-          active={activeSection === 'general'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="editor"
-          label="Editor"
-          icon={FileText}
-          active={activeSection === 'editor'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="themes"
-          label="Themes"
-          icon={Paintbrush}
-          active={activeSection === 'themes'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="appearance"
-          label="Appearance"
-          icon={Palette}
-          active={activeSection === 'appearance'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="ai"
-          label="AI Assistant"
-          icon={Sparkles}
-          active={activeSection === 'ai'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="keybindings"
-          label="Keybindings"
-          icon={Keyboard}
-          active={activeSection === 'keybindings'}
-          onClick={onSectionChange}
-        />
+        {SETTINGS_NAV_ITEMS.map(item => {
+          if (item.id === 'plugins') {
+            return (
+              <div className={styles.group} key={item.id}>
+                <NavButton
+                  id="plugins"
+                  label={item.label}
+                  icon={NAV_ICONS.plugins}
+                  active={pluginsActive && activeSection === 'plugins'}
+                  onClick={onSectionChange}
+                />
+                <button
+                  type="button"
+                  className={`${styles.childItem} ${activeSection === 'plugins-install' ? styles.active : ''}`}
+                  onClick={() => onSectionChange('plugins-install')}
+                >
+                  <span className={styles.label}>Install</span>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.childItem} ${activeSection === 'plugins-updates' ? styles.active : ''}`}
+                  onClick={() => onSectionChange('plugins-updates')}
+                >
+                  <span className={styles.label}>Updates</span>
+                  {pluginUpdates > 0 ? <span className={styles.badge}>{pluginUpdates}</span> : null}
+                </button>
+              </div>
+            );
+          }
 
-        <div className={styles.group}>
-          <NavButton
-            id="plugins"
-            label="Plugins"
-            icon={Puzzle}
-            active={pluginsActive && activeSection === 'plugins'}
-            onClick={onSectionChange}
-          />
-          <button
-            type="button"
-            className={`${styles.childItem} ${activeSection === 'plugins-install' ? styles.active : ''}`}
-            onClick={() => onSectionChange('plugins-install')}
-          >
-            <span className={styles.label}>Install</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.childItem} ${activeSection === 'plugins-updates' ? styles.active : ''}`}
-            onClick={() => onSectionChange('plugins-updates')}
-          >
-            <span className={styles.label}>Updates</span>
-            {pluginUpdates > 0 ? <span className={styles.badge}>{pluginUpdates}</span> : null}
-          </button>
-        </div>
-
-        <NavButton
-          id="account"
-          label="Account"
-          icon={User}
-          active={activeSection === 'account'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="encryption"
-          label="Encryption"
-          icon={KeyRound}
-          active={activeSection === 'encryption'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="integrations"
-          label="Integrations"
-          icon={Blocks}
-          active={activeSection === 'integrations'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="backup"
-          label="Backup & Data"
-          icon={Database}
-          active={activeSection === 'backup'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="updates"
-          label="Updates"
-          icon={Download}
-          active={activeSection === 'updates'}
-          onClick={onSectionChange}
-        />
-        <NavButton
-          id="about"
-          label="About"
-          icon={Info}
-          active={activeSection === 'about'}
-          onClick={onSectionChange}
-        />
+          return (
+            <NavButton
+              key={item.id}
+              id={item.id}
+              label={item.label}
+              icon={NAV_ICONS[item.id]}
+              active={activeSection === item.id}
+              onClick={onSectionChange}
+            />
+          );
+        })}
       </nav>
       <div className={styles.footer}>
         <Button variant="ghost" size="sm" className={styles.resetButton} onClick={handleResetAll}>

@@ -11,6 +11,8 @@ import { writeFile } from 'fs/promises';
 import { ipcMain, dialog, BrowserWindow, net } from 'electron';
 import { z } from 'zod';
 import {
+  OPEN_USER_FILE_CHANNEL,
+  USER_HACK_KINDS,
   USER_INIT_FILE,
   USER_KEYMAP_FILE,
   USER_STYLES_FILE,
@@ -313,8 +315,8 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   });
 
   defineIpcHandler({
-    channel: 'plugins:openUserFile',
-    args: z.tuple([z.enum(['init', 'styles', 'keymap'])]),
+    channel: OPEN_USER_FILE_CHANNEL,
+    args: z.tuple([z.enum(USER_HACK_KINDS)]),
     handler: async kind => openUserHackFile(paths.root, kind),
   });
 
