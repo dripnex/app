@@ -12,6 +12,7 @@ import { ThemesSection } from './sections/ThemesSection';
 import { AppearanceSection } from './sections/AppearanceSection';
 import { AiSection } from './sections/AiSection';
 import { KeybindingsSection } from './sections/KeybindingsSection';
+import { HackSection } from './sections/HackSection';
 import { AccountSection } from './sections/AccountSection';
 import { BackupSection } from './sections/BackupSection';
 import { AboutSection } from './sections/AboutSection';
@@ -19,23 +20,9 @@ import { UpdatesSection } from './sections/UpdatesSection';
 import { PluginsSection } from './sections/PluginsSection';
 import { EncryptionSection } from './sections/EncryptionSection';
 import { IntegrationsSection } from './sections/IntegrationsSection';
+import type { SettingsSection } from './settingsNav';
 
-export type SettingsSection =
-  | 'general'
-  | 'editor'
-  | 'themes'
-  | 'appearance'
-  | 'ai'
-  | 'keybindings'
-  | 'plugins'
-  | 'plugins-install'
-  | 'plugins-updates'
-  | 'account'
-  | 'encryption'
-  | 'integrations'
-  | 'backup'
-  | 'updates'
-  | 'about';
+export type { SettingsSection };
 
 export function SettingsApp() {
   usePerformanceMode();
@@ -58,6 +45,8 @@ export function SettingsApp() {
         return <AiSection />;
       case 'keybindings':
         return <KeybindingsSection />;
+      case 'hack':
+        return <HackSection />;
       case 'plugins':
         return <PluginsSection pane="installed" />;
       case 'plugins-install':
