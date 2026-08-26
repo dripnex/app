@@ -10,6 +10,7 @@ import {
   type ConfigBridge,
   type SetDefaultKeybindingFn,
 } from './PluginRegistry';
+import { nextPluginHostActions } from './pluginHostActions';
 import { sortPlugins } from './sortPlugins';
 
 interface PluginHostProps {
@@ -27,6 +28,8 @@ interface PluginHostProps {
 /**
  * Headless React component that manages plugin lifecycle.
  * Loads and activates plugins on mount, deactivates on unmount.
+ * Re-scans are incremental: a newly installed pack is activated without
+ * unloading the rest (full teardown is unmount only).
  *
  * Usage:
  * ```tsx
@@ -56,66 +59,7 @@ export function PluginHost({
     registryRef.current = new PluginRegistry();
   }
 
-  useEffect(() => {
-    const registry = registryRef.current!;
-    let cancelled = false;
-
-    // Sort plugins by dependency order and check API version compatibility
-    const { sorted, skipped } = sortPlugins(plugins);
-    for (const { plugin, missingDeps } of skipped) {
-      console.warn(
-        `[PluginHost] Skipping "${plugin.id}": missing dependencies: ${missingDeps.join(', ')}`
-      );
-    }
-
-    // Load and activate all plugins (async for config hydration).
-    // Re-check cancelled after each await to avoid activating on stale entries
-    // when cleanup runs mid-loop (e.g. plugin reload while config hydration is in-flight).
-    const activateAll = async () => {
-      for (const manifest of sorted) {
-        if (cancelled) return;
-
-        // API version check
-        if (manifest.apiVersion && manifest.apiVersion !== PLUGIN_API_VERSION) {
-          console.warn(
-            `[PluginHost] Plugin "${manifest.id}" targets API v${manifest.apiVersion} but current is v${PLUGIN_API_VERSION}, skipping`
-          );
-          continue;
-        }
-
-        const loaded = registry.load(manifest);
-        if (!loaded) continue; // validation failed, skip
-        try {
-          await registry.activate(
-            manifest.id,
-            editorAPI,
-            appAPI,
-            dataAPI,
-            registerCommand,
-            configBridge,
-            getView,
-            packageFiles?.[manifest.id],
-            setDefaultKeybinding
-          );
-        } catch (error) {
-          // Individual plugin failure should not prevent other plugins from loading
-          console.error(`[PluginHost] Failed to activate ${manifest.id}:`, error);
-        }
-        if (cancelled) return; // cleanup started during activate — stop
-      }
-    };
-
-    void activateAll();
-
-    return () => {
-      cancelled = true;
-      // Deactivate all on unmount
-      for (const manifest of plugins) {
-        registry.unload(manifest.id);
-      }
-    };
-  }, [
-    plugins,
+  const apisRef = useRef({
     editorAPI,
     appAPI,
     dataAPI,
@@ -124,7 +68,96 @@ export function PluginHost({
     getView,
     packageFiles,
     setDefaultKeybinding,
-  ]);
+  });
+  apisRef.current = {
+    editorAPI,
+    appAPI,
+    dataAPI,
+    registerCommand,
+    configBridge,
+    getView,
+    packageFiles,
+    setDefaultKeybinding,
+  };
+
+  const pluginsRef = useRef(plugins);
+  pluginsRef.current = plugins;
+
+  // Load/unload by id. A new `plugins` array from a re-scan must not
+  // deactivate every plugin — that remount raced theme activation and
+  // exited the Linux AppImage after Settings → Themes → Install.
+  const pluginIdKey = plugins.map(p => p.id).join('\0');
+
+  useEffect(() => {
+    const registry = registryRef.current!;
+    let cancelled = false;
+    const next = pluginsRef.current;
+    const loadedIds = registry.getLoadedIds();
+    const activeIds = loadedIds.filter(id => registry.isActive(id));
+    const { unload, activate } = nextPluginHostActions(loadedIds, activeIds, next);
+
+    for (const id of unload) {
+      registry.unload(id);
+    }
+
+    const { sorted, skipped } = sortPlugins(activate);
+    for (const { plugin, missingDeps } of skipped) {
+      console.warn(
+        `[PluginHost] Skipping "${plugin.id}": missing dependencies: ${missingDeps.join(', ')}`
+      );
+    }
+
+    const activateNew = async () => {
+      const apis = apisRef.current;
+      for (const manifest of sorted) {
+        if (cancelled) return;
+
+        if (manifest.apiVersion && manifest.apiVersion !== PLUGIN_API_VERSION) {
+          console.warn(
+            `[PluginHost] Plugin "${manifest.id}" targets API v${manifest.apiVersion} but current is v${PLUGIN_API_VERSION}, skipping`
+          );
+          continue;
+        }
+
+        if (!registry.getLoadedIds().includes(manifest.id)) {
+          const loaded = registry.load(manifest);
+          if (!loaded) continue;
+        }
+        if (registry.isActive(manifest.id)) continue;
+        try {
+          await registry.activate(
+            manifest.id,
+            apis.editorAPI,
+            apis.appAPI,
+            apis.dataAPI,
+            apis.registerCommand,
+            apis.configBridge,
+            apis.getView,
+            apis.packageFiles?.[manifest.id],
+            apis.setDefaultKeybinding
+          );
+        } catch (error) {
+          console.error(`[PluginHost] Failed to activate ${manifest.id}:`, error);
+        }
+        if (cancelled) return;
+      }
+    };
+
+    void activateNew();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pluginIdKey]);
+
+  useEffect(() => {
+    const registry = registryRef.current!;
+    return () => {
+      for (const id of registry.getLoadedIds()) {
+        registry.unload(id);
+      }
+    };
+  }, []);
 
   // Headless - renders nothing
   return null;

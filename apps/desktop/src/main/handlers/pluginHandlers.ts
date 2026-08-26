@@ -26,6 +26,7 @@ import {
   resolveConnectUrl,
 } from '../plugins/githubInstall.js';
 import { extractArchiveSafely } from '../plugins/extractArchive.js';
+import { reloadPluginWindows } from '../plugins/pluginReload.js';
 import type { DataPaths, Database } from './types.js';
 
 export interface PluginHandlerDeps {
@@ -466,15 +467,8 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
 
   // plugins:requestReload uses ipcMain.on (fire-and-forget, not invoke),
   // so defineIpcHandler doesn't apply — left raw.
+  // Broadcast only: never app.quit / process.exit / win.close (Linux AppImage).
   ipcMain.on('plugins:requestReload', () => {
-    for (const win of BrowserWindow.getAllWindows()) {
-      try {
-        if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
-          win.webContents.send('plugins:reload');
-        }
-      } catch {
-        // Window destroyed during iteration
-      }
-    }
+    reloadPluginWindows(BrowserWindow.getAllWindows());
   });
 }
