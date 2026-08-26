@@ -1,7 +1,6 @@
 export const WELCOME_HEADLINE = 'The hackable AI note taker';
 
-export const WELCOME_LEDE =
-  'Messy input becomes a document a person will send. Not a model dump.';
+export const WELCOME_LEDE = 'Messy input becomes a document a person will send. Not a model dump.';
 
 export const WELCOME_FEATURES = [
   {

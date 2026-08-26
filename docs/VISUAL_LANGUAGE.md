@@ -141,13 +141,13 @@ Center in the pane (`flex: 1`), not a 200px stub.
 
 **Copy:**
 
-| State        | Title          | Hint                           |
-| ------------ | -------------- | ------------------------------ |
+| State        | Title          | Hint                                 |
+| ------------ | -------------- | ------------------------------------ |
 | No notes     | No notes yet   | Press {mod}+N. Messy input is enough |
-| Pinned empty | Nothing pinned | Pin a note to keep it here     |
-| Trash empty  | Trash is empty | Deleted notes appear here      |
-| Search empty | No matches     | Try a different search         |
-| Editor empty | Select a note  | Or press {mod}+N to create one |
+| Pinned empty | Nothing pinned | Pin a note to keep it here           |
+| Trash empty  | Trash is empty | Deleted notes appear here            |
+| Search empty | No matches     | Try a different search               |
+| Editor empty | Select a note  | Or press {mod}+N to create one       |
 
 Shortcuts use `modAccel()` (`⌘` on Apple, `Ctrl+` elsewhere).
 No Sparkles. No “found”. No “your first”. Nested lists (notebooks,
