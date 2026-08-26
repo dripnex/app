@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bold,
@@ -17,59 +17,17 @@ import {
   ArrowUp,
 } from 'lucide';
 import { insertGithubAlert, type GithubAlertKind } from '@dripnex/commands';
+import { aiCommandStore } from '@dripnex/plugin-api';
 import { Icon } from '../../ui/icons/Icon';
 import { dispatchCommand, getEditorView } from '../../hooks/useCommandRegistry';
 import { requestInlineEdit } from '../../editor/inlineAi/request';
+import {
+  editorAiContext,
+  listSelectionAiCommands,
+  selectionAiInstruction,
+  type SelectionAiAction,
+} from './selectionAiCommands';
 import styles from './SelectionToolbar.module.css';
-
-const AI_ACTIONS = [
-  {
-    id: 'mermaid',
-    label: 'Create a Mermaid diagram',
-    instruction: 'Convert the selection into a mermaid diagram.',
-    keepFence: true,
-  },
-  {
-    id: 'table',
-    label: 'Convert to Markdown table',
-    instruction: 'Convert the selection into a GitHub-flavored markdown table.',
-  },
-  {
-    id: 'proofread',
-    label: 'Proofread',
-    instruction: 'Fix grammar and spelling. Keep the meaning and markdown.',
-  },
-  {
-    id: 'reformat',
-    label: 'Reformat',
-    instruction: 'Clean the markdown structure. Do not change meaning.',
-  },
-  {
-    id: 'improve',
-    label: 'Improve writing',
-    instruction: 'Improve clarity and rhythm. Keep the author voice and markdown.',
-  },
-  {
-    id: 'summarize',
-    label: 'Summarize',
-    instruction: 'Condense the selection into a concise summary.',
-  },
-  {
-    id: 'bullets',
-    label: 'Convert to bullet list',
-    instruction: 'Rewrite the selection as a Markdown bulleted list.',
-  },
-  {
-    id: 'tasks',
-    label: 'Convert to task list',
-    instruction: 'Rewrite the selection as a Markdown task list (- [ ] items).',
-  },
-  {
-    id: 'headings',
-    label: 'Add headings',
-    instruction: 'Reorganize the selection with appropriate Markdown headings.',
-  },
-] as const;
 
 function wrapSelection(before: string, after: string): void {
   const view = getEditorView();
@@ -95,6 +53,11 @@ export function SelectionToolbar() {
   const barRef = useRef<HTMLDivElement>(null);
   const aiOpenRef = useRef(false);
   aiOpenRef.current = aiOpen;
+  const registrations = useSyncExternalStore(
+    cb => aiCommandStore.subscribe(cb),
+    () => aiCommandStore.getState().registrations
+  );
+  const aiActions = listSelectionAiCommands(registrations);
 
   const update = useCallback(() => {
     const view = getEditorView();
@@ -173,13 +136,14 @@ export function SelectionToolbar() {
     if (!view || aiBusy) return;
     const { from, to } = view.state.selection.main;
     const initialContent = view.state.doc.toString();
+    const ctx = editorAiContext(initialContent, from, to);
     setAiBusy(true);
     setAiError(null);
     const result = await requestInlineEdit({
       content: initialContent,
       from,
       to,
-      title: '',
+      title: ctx.title,
       instruction,
       keepFence,
     });
@@ -204,6 +168,15 @@ export function SelectionToolbar() {
     view.focus();
     setAiOpen(false);
     setAiPrompt('');
+  };
+
+  const runSelectionAction = (action: SelectionAiAction) => {
+    const view = getEditorView();
+    if (!view || aiBusy) return;
+    const { from, to } = view.state.selection.main;
+    const ctx = editorAiContext(view.state.doc.toString(), from, to);
+    const { instruction, keepFence } = selectionAiInstruction(action, ctx);
+    void runAi(instruction, keepFence);
   };
 
   if (!visible) return null;
@@ -380,15 +353,13 @@ export function SelectionToolbar() {
             </button>
           </form>
           {aiError ? <p className={styles.aiError}>{aiError}</p> : null}
-          {AI_ACTIONS.map(action => (
+          {aiActions.map(action => (
             <button
               key={action.id}
               type="button"
               className={styles.aiItem}
               disabled={aiBusy}
-              onClick={() =>
-                void runAi(action.instruction, 'keepFence' in action && action.keepFence)
-              }
+              onClick={() => runSelectionAction(action)}
             >
               {action.label}
             </button>

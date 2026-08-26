@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PluginRegistry, MAX_CRASH_COUNT } from '../src/lifecycle/PluginRegistry';
 import type { PluginManifest, EditorAPI, AppAPI } from '../src/types';
 import type { RegisterCommandFn, ConfigBridge } from '../src/lifecycle/PluginRegistry';
@@ -7,6 +7,8 @@ import { rehypePluginStore } from '../src/preview/rehypePluginStore';
 import { previewComponentStore } from '../src/preview/previewComponentStore';
 import { codeBlockStore } from '../src/preview/codeBlockStore';
 import { pluginStyleStore } from '../src/theme/pluginStyleStore';
+import { aiCommandStore } from '../src/ai/aiCommandStore';
+import { loadInitScript } from '../src/loader/loadInitScript';
 
 function makeManifest(overrides: Partial<PluginManifest> = {}): PluginManifest {
   return {
@@ -722,6 +724,84 @@ describe('PluginRegistry', () => {
       expect(pluginStyleStore.getState().sheets).toHaveLength(1);
       registry.deactivate('test-plugin');
       expect(pluginStyleStore.getState().sheets).toHaveLength(0);
+    });
+  });
+
+  describe('registerAiCommand', () => {
+    afterEach(() => {
+      for (const registration of [...aiCommandStore.getState().registrations]) {
+        aiCommandStore.getState().unregister(registration.id);
+      }
+    });
+
+    it('writes plugin AI commands into aiCommandStore', async () => {
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerAiCommand({
+              id: 'fix-grammar',
+              name: 'Fix Grammar',
+              systemPrompt: 'Fix grammar.',
+              userPromptTemplate: '{{selection}}',
+              outputTarget: 'replace',
+            });
+          },
+        })
+      );
+
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+
+      const regs = aiCommandStore.getState().registrations;
+      expect(regs).toHaveLength(1);
+      expect(regs[0]).toMatchObject({
+        id: 'test-plugin:fix-grammar',
+        pluginId: 'test-plugin',
+        name: 'Fix Grammar',
+        outputTarget: 'replace',
+      });
+    });
+
+    it('loads free-form init.js registerAiCommand into the store', async () => {
+      const manifest = loadInitScript(`
+        dripnex.registerAiCommand({
+          id: 'make-this-sendable',
+          name: 'Make this sendable',
+          systemPrompt: 'Turn messy notes into something sendable.',
+          userPromptTemplate: '{{selection}}\\n{{note}}',
+          outputTarget: 'replace',
+        });
+      `);
+      expect(manifest).not.toBeNull();
+      expect(registry.load(manifest!)).toBe(true);
+      await registry.activate('user-init', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+
+      expect(aiCommandStore.getState().registrations).toEqual([
+        expect.objectContaining({
+          id: 'user-init:make-this-sendable',
+          pluginId: 'user-init',
+          name: 'Make this sendable',
+        }),
+      ]);
+    });
+
+    it('deactivate unregisters AI commands', async () => {
+      registry.load(
+        makeManifest({
+          activate: ctx => {
+            ctx.registerAiCommand({
+              id: 'fix-grammar',
+              name: 'Fix Grammar',
+              systemPrompt: 'Fix grammar.',
+              userPromptTemplate: '{{selection}}',
+            });
+          },
+        })
+      );
+      await registry.activate('test-plugin', makeEditorAPI(), makeAppAPI(), mockDataAPI);
+      expect(aiCommandStore.getState().registrations).toHaveLength(1);
+
+      registry.deactivate('test-plugin');
+      expect(aiCommandStore.getState().registrations).toHaveLength(0);
     });
   });
 
