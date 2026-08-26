@@ -9,6 +9,7 @@ import {
   persistClearedThemeIfNeeded,
   registerOfficialThemes,
   restoreSavedTheme,
+  themePickerIds,
 } from '../officialThemes';
 
 const SAMPLE_THEME_JSON = JSON.stringify({
@@ -17,6 +18,27 @@ const SAMPLE_THEME_JSON = JSON.stringify({
   colorScheme: 'light',
   tokens: { '--bg-base': '#f3ead4', '--accent': '#2a7d6f' },
 });
+
+/** Satellite pack: scan().themes is [], registerTheme in activate(). */
+const DUNE_PLUGIN_JS = `
+module.exports = {
+  id: 'theme-dune',
+  name: 'Dune',
+  version: '0.1.0',
+  description: 'Desert afternoon.',
+  activate(context) {
+    const remove = context.registerTheme({
+      id: 'dripnex-dune',
+      name: 'Dune',
+      description: 'Clay walls, ink on sand.',
+      author: 'Dripnex',
+      colorScheme: 'light',
+      tokens: { '--bg-base': '#f0e4d0', '--accent': '#c45c26' },
+    });
+    return { dispose() { remove(); } };
+  },
+};
+`;
 
 function resetRegistry(): void {
   applyInstalledThemes([]);
@@ -46,6 +68,7 @@ describe('OFFICIAL_THEMES', () => {
     expect(RETIRED_BUNDLED_THEME_IDS).toContain('dripnex-harbor-dusk');
     expect(isRetiredBundledThemeId('dripnex-wave')).toBe(true);
     expect(isRetiredBundledThemeId('theme-parchment')).toBe(false);
+    expect(isRetiredBundledThemeId('dripnex-dune')).toBe(false);
   });
 });
 
@@ -128,5 +151,116 @@ describe('parseInstalledThemes / applyInstalledThemes', () => {
     );
     applyInstalledThemes([]);
     expect(themeRegistryStore.getState().themes).toHaveLength(0);
+  });
+
+  it('harvests registerTheme from activate() when scan().themes is empty', () => {
+    const defs = parseInstalledThemes(
+      [{ id: 'theme-dune', themes: [], code: DUNE_PLUGIN_JS }],
+      new Map()
+    );
+    expect(defs.map(t => t.id)).toEqual(['dripnex-dune']);
+    expect(defs[0]?.name).toBe('Dune');
+    expect(defs[0]?.pluginId).toBe('theme-dune');
+    applyInstalledThemes(defs);
+    expect(themePickerIds(themeRegistryStore.getState().themes)).toEqual([null, 'dripnex-dune']);
+    expect(restoreSavedTheme('dripnex-dune')).toBe('activated');
+    expect(themeRegistryStore.getState().activeThemeId).toBe('dripnex-dune');
+  });
+
+  it('skips a disabled JS theme pack', () => {
+    const defs = parseInstalledThemes(
+      [{ id: 'theme-dune', themes: [], code: DUNE_PLUGIN_JS }],
+      new Map([['theme-dune', false]])
+    );
+    expect(defs).toEqual([]);
+  });
+
+  it('does not crash on missing or malformed theme.json', () => {
+    expect(() =>
+      parseInstalledThemes(
+        [
+          { id: 'no-theme', themes: [] },
+          { id: 'bad-json', themes: ['not-json{'] },
+          {
+            id: 'empty-tokens',
+            themes: [JSON.stringify({ id: 'empty-tokens', colorScheme: 'dark', tokens: {} })],
+          },
+        ],
+        new Map()
+      )
+    ).not.toThrow();
+    expect(
+      parseInstalledThemes(
+        [
+          { id: 'no-theme', themes: [] },
+          { id: 'bad-json', themes: ['not-json{'] },
+          {
+            id: 'empty-tokens',
+            themes: [JSON.stringify({ id: 'empty-tokens', colorScheme: 'dark', tokens: {} })],
+          },
+        ],
+        new Map()
+      )
+    ).toEqual([]);
+  });
+
+  it('does not crash when activate() is missing or throws', () => {
+    const boom = `
+module.exports = {
+  id: 'theme-boom',
+  name: 'Boom',
+  version: '0.1.0',
+  activate() { throw new Error('nope'); },
+};
+`;
+    const notAPlugin = 'module.exports = { nope: true };';
+    expect(() =>
+      parseInstalledThemes(
+        [
+          { id: 'theme-boom', themes: [], code: boom },
+          { id: 'theme-junk', themes: [], code: notAPlugin },
+          { id: 'theme-dune', themes: [], code: DUNE_PLUGIN_JS },
+        ],
+        new Map()
+      )
+    ).not.toThrow();
+    const defs = parseInstalledThemes(
+      [
+        { id: 'theme-boom', themes: [], code: boom },
+        { id: 'theme-junk', themes: [], code: notAPlugin },
+        { id: 'theme-dune', themes: [], code: DUNE_PLUGIN_JS },
+      ],
+      new Map()
+    );
+    expect(defs.map(t => t.id)).toEqual(['dripnex-dune']);
+  });
+
+  it('falls back to activate() when theme.json is malformed', () => {
+    const defs = parseInstalledThemes(
+      [{ id: 'theme-dune', themes: ['not-json{'], code: DUNE_PLUGIN_JS }],
+      new Map()
+    );
+    expect(defs.map(t => t.id)).toEqual(['dripnex-dune']);
+  });
+
+  it('prefers theme.json over activate() when both exist', () => {
+    const defs = parseInstalledThemes(
+      [
+        {
+          id: 'theme-dune',
+          themes: [
+            JSON.stringify({
+              id: 'theme-dune',
+              name: 'Dune JSON',
+              colorScheme: 'light',
+              tokens: { '--bg-base': '#fff' },
+            }),
+          ],
+          code: DUNE_PLUGIN_JS,
+        },
+      ],
+      new Map()
+    );
+    expect(defs.map(t => t.id)).toEqual(['theme-dune']);
   });
 });
