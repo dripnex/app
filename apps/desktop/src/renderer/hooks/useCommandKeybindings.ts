@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { KeyModifier, KeyBinding } from '@dripnex/command-registry';
-import { resolveCommandContext } from '../utils/commandContext';
+import { allowsAppCommandInForm, resolveCommandContext } from '../utils/commandContext';
 import { registry, getEditorView } from './useCommandRegistry';
 
 /**
@@ -68,8 +68,14 @@ export function useCommandKeybindings(options?: UseCommandKeybindingsOptions): v
         if (!view) command = undefined;
       }
 
-      // For app commands, skip if user is in a form input (but not CodeMirror)
-      if (command?.context === 'app' && context !== 'editor' && isFormInput(e.target)) {
+      // For app commands, skip if user is in a form input (but not CodeMirror).
+      // Settings stays available so Ctrl/Cmd+, works from an email field.
+      if (
+        command?.context === 'app' &&
+        context !== 'editor' &&
+        isFormInput(e.target) &&
+        !allowsAppCommandInForm(command.id)
+      ) {
         return;
       }
 

@@ -32,10 +32,13 @@ jobs:
     # so main never becomes an ancestor of develop and the develop -> main
     # promotion PR stays BEHIND forever. Merge those by hand, with a merge
     # commit. See docs/RELEASE.md.
+    # cursor/backmerge-* is the Cloud Agent equivalent of chore/backmerge-*
+    # (agent branches must use the cursor/ prefix).
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.base.ref == 'develop' &&
-      !startsWith(github.event.pull_request.head.ref, 'chore/backmerge-')
+      !startsWith(github.event.pull_request.head.ref, 'chore/backmerge-') &&
+      !startsWith(github.event.pull_request.head.ref, 'cursor/backmerge-')
     steps:
       - name: Enable auto-merge for non-draft PRs into develop
         env:

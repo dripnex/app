@@ -12,10 +12,13 @@ describe('hostBridges', () => {
     });
     setHostVim({ map: () => {} });
 
+    const registerAiCommand = () => () => {};
     const api = createInitApi({
       registerCommand: () => () => {},
+      registerAiCommand,
     } as never);
 
+    expect(api.registerAiCommand).toBe(registerAiCommand);
     expect(api.vim).toEqual({ map: expect.any(Function) });
     expect(api.store.getState()).toEqual(EMPTY_STORE_SNAPSHOT);
     setHostStoreSnapshot(() => ({

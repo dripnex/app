@@ -1,512 +1,155 @@
-import { themeRegistryStore, type ThemeDefinition } from '@dripnex/plugin-api';
+import { parsePluginTheme, themeRegistryStore, type ThemeDefinition } from '@dripnex/plugin-api';
+import { collectThemesFromPluginCode } from './collectPluginThemes';
 
 /**
- * First-party palettes. Thin token layers over tokens.css — same contract
- * a community theme repo uses. Do not fork the stylesheet.
+ * Named palettes ship as satellite packs (`dripnex/theme-<slug>`), not core.
+ * Default appearance is tokens.css (`activeThemeId: null`).
  */
-export const OFFICIAL_THEMES: ThemeDefinition[] = [
-  {
-    id: 'dripnex-parchment',
-    name: 'Parchment',
-    description: 'Warm paper. Reading notes, long sessions.',
-    author: 'Dripnex',
-    colorScheme: 'light',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#f3ead4',
-      '--bg-surface': '#ebe0c4',
-      '--bg-elevated': '#faf3e3',
-      '--bg-inset': '#e6d9b8',
-      '--bg-hover': 'rgba(58, 50, 36, 0.06)',
-      '--bg-active': 'rgba(58, 50, 36, 0.1)',
-      '--text-primary': '#3a3224',
-      '--text-secondary': 'rgba(58, 50, 36, 0.74)',
-      '--text-muted': 'rgba(58, 50, 36, 0.52)',
-      '--text-faint': 'rgba(58, 50, 36, 0.34)',
-      '--border': 'rgba(58, 50, 36, 0.12)',
-      '--border-subtle': 'rgba(58, 50, 36, 0.07)',
-      '--border-strong': 'rgba(58, 50, 36, 0.18)',
-      '--accent': '#2a7d6f',
-      '--accent-hover': '#21675c',
-      '--accent-muted': 'rgba(42, 125, 111, 0.16)',
-      '--accent-subtle': 'rgba(42, 125, 111, 0.1)',
-      '--glass-bg': 'rgba(243, 234, 212, 0.9)',
-      '--glass-border': 'rgba(58, 50, 36, 0.1)',
-      '--glass-bg-menu': 'rgba(250, 243, 227, 0.96)',
-      '--glass-border-menu': 'rgba(58, 50, 36, 0.1)',
-      '--status-active': '#2a7d6f',
-      '--status-on-hold': '#c27a1a',
-      '--status-completed': '#3d8b4a',
-      '--status-dropped': '#c44b4b',
-    },
-  },
-  {
-    id: 'dripnex-wave',
-    name: 'Wave',
-    description: 'Ink and paper, after dark.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#1f1f28',
-      '--bg-surface': '#16161d',
-      '--bg-elevated': '#2a2a37',
-      '--bg-inset': '#121218',
-      '--bg-hover': 'rgba(220, 215, 186, 0.06)',
-      '--bg-active': 'rgba(220, 215, 186, 0.1)',
-      '--text-primary': '#dcd7ba',
-      '--text-secondary': 'rgba(220, 215, 186, 0.74)',
-      '--text-muted': 'rgba(220, 215, 186, 0.5)',
-      '--text-faint': 'rgba(220, 215, 186, 0.32)',
-      '--border': 'rgba(220, 215, 186, 0.1)',
-      '--border-subtle': 'rgba(220, 215, 186, 0.06)',
-      '--border-strong': 'rgba(220, 215, 186, 0.16)',
-      '--accent': '#7e9cd8',
-      '--accent-hover': '#9aacd8',
-      '--accent-muted': 'rgba(126, 156, 216, 0.18)',
-      '--accent-subtle': 'rgba(126, 156, 216, 0.1)',
-      '--glass-bg': 'rgba(31, 31, 40, 0.88)',
-      '--glass-border': 'rgba(220, 215, 186, 0.08)',
-      '--glass-bg-menu': 'rgba(42, 42, 55, 0.94)',
-      '--glass-border-menu': 'rgba(220, 215, 186, 0.08)',
-      '--status-active': '#7e9cd8',
-      '--status-on-hold': '#e6c384',
-      '--status-completed': '#98bb6c',
-      '--status-dropped': '#e46876',
-    },
-  },
-  {
-    id: 'dripnex-night',
-    name: 'Night',
-    description: 'Violet dusk. Focused writing after hours.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#161221',
-      '--bg-surface': '#1c1729',
-      '--bg-elevated': '#261f38',
-      '--bg-inset': '#110e1a',
-      '--bg-hover': 'rgba(236, 230, 245, 0.06)',
-      '--bg-active': 'rgba(236, 230, 245, 0.1)',
-      '--text-primary': '#ece6f5',
-      '--text-secondary': 'rgba(236, 230, 245, 0.74)',
-      '--text-muted': 'rgba(236, 230, 245, 0.5)',
-      '--text-faint': 'rgba(236, 230, 245, 0.32)',
-      '--border': 'rgba(236, 230, 245, 0.1)',
-      '--border-subtle': 'rgba(236, 230, 245, 0.06)',
-      '--border-strong': 'rgba(236, 230, 245, 0.16)',
-      '--accent': '#c4a7e7',
-      '--accent-hover': '#d4bdf0',
-      '--accent-muted': 'rgba(196, 167, 231, 0.2)',
-      '--accent-subtle': 'rgba(196, 167, 231, 0.1)',
-      '--glass-bg': 'rgba(22, 18, 33, 0.9)',
-      '--glass-border': 'rgba(236, 230, 245, 0.08)',
-      '--glass-bg-menu': 'rgba(38, 31, 56, 0.95)',
-      '--glass-border-menu': 'rgba(236, 230, 245, 0.08)',
-      '--status-active': '#c4a7e7',
-      '--status-on-hold': '#f0c674',
-      '--status-completed': '#8bd5a0',
-      '--status-dropped': '#e07a7a',
-    },
-  },
-  {
-    id: 'dripnex-solarized-dark',
-    name: 'Solarized Dark',
-    description: 'Ethan Schoonover. The Vim classic.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#002b36',
-      '--bg-surface': '#073642',
-      '--bg-elevated': '#0a4452',
-      '--bg-inset': '#00212b',
-      '--bg-hover': 'rgba(131, 148, 150, 0.08)',
-      '--bg-active': 'rgba(131, 148, 150, 0.14)',
-      '--text-primary': '#93a1a1',
-      '--text-secondary': '#839496',
-      '--text-muted': '#657b83',
-      '--text-faint': '#586e75',
-      '--border': 'rgba(147, 161, 161, 0.16)',
-      '--border-subtle': 'rgba(147, 161, 161, 0.08)',
-      '--border-strong': 'rgba(147, 161, 161, 0.24)',
-      '--accent': '#2aa198',
-      '--accent-hover': '#3dbdb3',
-      '--accent-muted': 'rgba(42, 161, 152, 0.2)',
-      '--accent-subtle': 'rgba(42, 161, 152, 0.12)',
-      '--glass-bg': 'rgba(0, 43, 54, 0.92)',
-      '--glass-border': 'rgba(147, 161, 161, 0.12)',
-      '--glass-bg-menu': 'rgba(7, 54, 66, 0.96)',
-      '--glass-border-menu': 'rgba(147, 161, 161, 0.12)',
-      '--status-active': '#2aa198',
-      '--status-on-hold': '#b58900',
-      '--status-completed': '#859900',
-      '--status-dropped': '#dc322f',
-    },
-  },
-  {
-    id: 'dripnex-solarized-light',
-    name: 'Solarized Light',
-    description: 'Cream paper, cyan marks. Same palette, daylight.',
-    author: 'Dripnex',
-    colorScheme: 'light',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#fdf6e3',
-      '--bg-surface': '#eee8d5',
-      '--bg-elevated': '#fffdf6',
-      '--bg-inset': '#e6dfc8',
-      '--bg-hover': 'rgba(101, 123, 131, 0.08)',
-      '--bg-active': 'rgba(101, 123, 131, 0.14)',
-      '--text-primary': '#586e75',
-      '--text-secondary': '#657b83',
-      '--text-muted': '#839496',
-      '--text-faint': '#93a1a1',
-      '--border': 'rgba(88, 110, 117, 0.16)',
-      '--border-subtle': 'rgba(88, 110, 117, 0.08)',
-      '--border-strong': 'rgba(88, 110, 117, 0.24)',
-      '--accent': '#268bd2',
-      '--accent-hover': '#1a73b3',
-      '--accent-muted': 'rgba(38, 139, 210, 0.16)',
-      '--accent-subtle': 'rgba(38, 139, 210, 0.1)',
-      '--glass-bg': 'rgba(253, 246, 227, 0.92)',
-      '--glass-border': 'rgba(88, 110, 117, 0.12)',
-      '--glass-bg-menu': 'rgba(255, 253, 246, 0.96)',
-      '--glass-border-menu': 'rgba(88, 110, 117, 0.12)',
-      '--status-active': '#268bd2',
-      '--status-on-hold': '#b58900',
-      '--status-completed': '#859900',
-      '--status-dropped': '#dc322f',
-    },
-  },
-  {
-    id: 'dripnex-gruvbox',
-    name: 'Gruvbox',
-    description: 'Retro groove. The other Vim default.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#282828',
-      '--bg-surface': '#1d2021',
-      '--bg-elevated': '#3c3836',
-      '--bg-inset': '#1d2021',
-      '--bg-hover': 'rgba(235, 219, 178, 0.07)',
-      '--bg-active': 'rgba(235, 219, 178, 0.12)',
-      '--text-primary': '#ebdbb2',
-      '--text-secondary': '#d5c4a1',
-      '--text-muted': '#a89984',
-      '--text-faint': '#7c6f64',
-      '--border': 'rgba(235, 219, 178, 0.12)',
-      '--border-subtle': 'rgba(235, 219, 178, 0.06)',
-      '--border-strong': 'rgba(235, 219, 178, 0.2)',
-      '--accent': '#fe8019',
-      '--accent-hover': '#ff9a3c',
-      '--accent-muted': 'rgba(254, 128, 25, 0.18)',
-      '--accent-subtle': 'rgba(254, 128, 25, 0.1)',
-      '--glass-bg': 'rgba(40, 40, 40, 0.92)',
-      '--glass-border': 'rgba(235, 219, 178, 0.1)',
-      '--glass-bg-menu': 'rgba(60, 56, 54, 0.96)',
-      '--glass-border-menu': 'rgba(235, 219, 178, 0.1)',
-      '--status-active': '#fe8019',
-      '--status-on-hold': '#fabd2f',
-      '--status-completed': '#b8bb26',
-      '--status-dropped': '#fb4934',
-    },
-  },
-  {
-    id: 'dripnex-glass',
-    name: 'Glass',
-    description: 'Ice. The desktop shows through.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    frosted: true,
-    tokens: {
-      '--bg-base': 'rgba(8, 10, 16, 0.18)',
-      '--bg-surface': 'rgba(14, 16, 24, 0.28)',
-      '--bg-elevated': 'rgba(20, 24, 34, 0.36)',
-      '--bg-inset': 'rgba(6, 8, 12, 0.22)',
-      '--bg-hover': 'rgba(186, 230, 253, 0.08)',
-      '--bg-active': 'rgba(186, 230, 253, 0.14)',
-      '--text-primary': '#e8f4ff',
-      '--text-secondary': 'rgba(232, 244, 255, 0.74)',
-      '--text-muted': 'rgba(232, 244, 255, 0.5)',
-      '--text-faint': 'rgba(232, 244, 255, 0.32)',
-      '--border': 'rgba(186, 230, 253, 0.16)',
-      '--border-subtle': 'rgba(186, 230, 253, 0.08)',
-      '--border-strong': 'rgba(186, 230, 253, 0.28)',
-      '--accent': '#7dd3fc',
-      '--accent-hover': '#bae6fd',
-      '--accent-muted': 'rgba(125, 211, 252, 0.22)',
-      '--accent-subtle': 'rgba(125, 211, 252, 0.12)',
-      '--glass-bg': 'rgba(14, 18, 28, 0.42)',
-      '--glass-border': 'rgba(186, 230, 253, 0.16)',
-      '--glass-bg-menu': 'rgba(16, 22, 34, 0.78)',
-      '--glass-border-menu': 'rgba(186, 230, 253, 0.14)',
-      '--status-active': '#7dd3fc',
-      '--status-on-hold': '#fbbf24',
-      '--status-completed': '#86efac',
-      '--status-dropped': '#fb7185',
-    },
-  },
-  {
-    id: 'dripnex-midnight',
-    name: 'Midnight',
-    description: 'OLED navy, electric blue. Frosted.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    frosted: true,
-    tokens: {
-      '--bg-base': 'rgba(2, 6, 18, 0.2)',
-      '--bg-surface': 'rgba(6, 12, 28, 0.32)',
-      '--bg-elevated': 'rgba(10, 22, 48, 0.42)',
-      '--bg-inset': 'rgba(1, 4, 12, 0.28)',
-      '--bg-hover': 'rgba(96, 165, 250, 0.1)',
-      '--bg-active': 'rgba(96, 165, 250, 0.16)',
-      '--text-primary': '#dbeafe',
-      '--text-secondary': 'rgba(219, 234, 254, 0.74)',
-      '--text-muted': 'rgba(219, 234, 254, 0.5)',
-      '--text-faint': 'rgba(219, 234, 254, 0.32)',
-      '--border': 'rgba(96, 165, 250, 0.18)',
-      '--border-subtle': 'rgba(96, 165, 250, 0.08)',
-      '--border-strong': 'rgba(96, 165, 250, 0.3)',
-      '--accent': '#60a5fa',
-      '--accent-hover': '#93c5fd',
-      '--accent-muted': 'rgba(96, 165, 250, 0.22)',
-      '--accent-subtle': 'rgba(96, 165, 250, 0.12)',
-      '--glass-bg': 'rgba(6, 14, 32, 0.44)',
-      '--glass-border': 'rgba(96, 165, 250, 0.18)',
-      '--glass-bg-menu': 'rgba(8, 16, 36, 0.82)',
-      '--glass-border-menu': 'rgba(96, 165, 250, 0.16)',
-      '--status-active': '#60a5fa',
-      '--status-on-hold': '#fbbf24',
-      '--status-completed': '#34d399',
-      '--status-dropped': '#f87171',
-    },
-  },
-  {
-    id: 'dripnex-ember',
-    name: 'Ember',
-    description: 'Warm black, copper light. Frosted.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    frosted: true,
-    tokens: {
-      '--bg-base': 'rgba(16, 8, 4, 0.22)',
-      '--bg-surface': 'rgba(28, 14, 8, 0.34)',
-      '--bg-elevated': 'rgba(40, 20, 10, 0.44)',
-      '--bg-inset': 'rgba(10, 5, 2, 0.28)',
-      '--bg-hover': 'rgba(232, 168, 124, 0.1)',
-      '--bg-active': 'rgba(232, 168, 124, 0.16)',
-      '--text-primary': '#fde7d4',
-      '--text-secondary': 'rgba(253, 231, 212, 0.74)',
-      '--text-muted': 'rgba(253, 231, 212, 0.5)',
-      '--text-faint': 'rgba(253, 231, 212, 0.32)',
-      '--border': 'rgba(232, 168, 124, 0.18)',
-      '--border-subtle': 'rgba(232, 168, 124, 0.08)',
-      '--border-strong': 'rgba(232, 168, 124, 0.3)',
-      '--accent': '#e8a87c',
-      '--accent-hover': '#f3c4a3',
-      '--accent-muted': 'rgba(232, 168, 124, 0.22)',
-      '--accent-subtle': 'rgba(232, 168, 124, 0.12)',
-      '--glass-bg': 'rgba(28, 14, 8, 0.46)',
-      '--glass-border': 'rgba(232, 168, 124, 0.18)',
-      '--glass-bg-menu': 'rgba(32, 16, 10, 0.84)',
-      '--glass-border-menu': 'rgba(232, 168, 124, 0.16)',
-      '--status-active': '#e8a87c',
-      '--status-on-hold': '#f5c16c',
-      '--status-completed': '#9fd4a3',
-      '--status-dropped': '#e07a6a',
-    },
-  },
-  {
-    id: 'dripnex-ion',
-    name: 'Ion',
-    description: 'Violet glass. Linear-adjacent, frosted.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    frosted: true,
-    tokens: {
-      '--bg-base': 'rgba(8, 6, 16, 0.2)',
-      '--bg-surface': 'rgba(16, 12, 28, 0.32)',
-      '--bg-elevated': 'rgba(28, 20, 44, 0.42)',
-      '--bg-inset': 'rgba(6, 4, 12, 0.26)',
-      '--bg-hover': 'rgba(167, 139, 250, 0.1)',
-      '--bg-active': 'rgba(167, 139, 250, 0.16)',
-      '--text-primary': '#f3e8ff',
-      '--text-secondary': 'rgba(243, 232, 255, 0.74)',
-      '--text-muted': 'rgba(243, 232, 255, 0.5)',
-      '--text-faint': 'rgba(243, 232, 255, 0.32)',
-      '--border': 'rgba(167, 139, 250, 0.2)',
-      '--border-subtle': 'rgba(167, 139, 250, 0.08)',
-      '--border-strong': 'rgba(167, 139, 250, 0.32)',
-      '--accent': '#a78bfa',
-      '--accent-hover': '#c4b5fd',
-      '--accent-muted': 'rgba(167, 139, 250, 0.24)',
-      '--accent-subtle': 'rgba(167, 139, 250, 0.12)',
-      '--glass-bg': 'rgba(18, 12, 32, 0.44)',
-      '--glass-border': 'rgba(167, 139, 250, 0.2)',
-      '--glass-bg-menu': 'rgba(20, 14, 36, 0.84)',
-      '--glass-border-menu': 'rgba(167, 139, 250, 0.16)',
-      '--status-active': '#a78bfa',
-      '--status-on-hold': '#f0c674',
-      '--status-completed': '#6ee7b7',
-      '--status-dropped': '#f472b6',
-    },
-  },
-  {
-    id: 'dripnex-matcha',
-    name: 'Matcha',
-    description: 'Green-tea paper. Calm reading.',
-    author: 'Dripnex',
-    colorScheme: 'light',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#e7edd4',
-      '--bg-surface': '#dce4c6',
-      '--bg-elevated': '#f3f6e6',
-      '--bg-inset': '#d0d9b6',
-      '--bg-hover': 'rgba(44, 52, 34, 0.06)',
-      '--bg-active': 'rgba(44, 52, 34, 0.1)',
-      '--text-primary': '#2c3422',
-      '--text-secondary': 'rgba(44, 52, 34, 0.74)',
-      '--text-muted': 'rgba(44, 52, 34, 0.52)',
-      '--text-faint': 'rgba(44, 52, 34, 0.34)',
-      '--border': 'rgba(44, 52, 34, 0.12)',
-      '--border-subtle': 'rgba(44, 52, 34, 0.07)',
-      '--border-strong': 'rgba(44, 52, 34, 0.18)',
-      '--accent': '#4a7c45',
-      '--accent-hover': '#3c6738',
-      '--accent-muted': 'rgba(74, 124, 69, 0.16)',
-      '--accent-subtle': 'rgba(74, 124, 69, 0.1)',
-      '--glass-bg': 'rgba(231, 237, 212, 0.9)',
-      '--glass-border': 'rgba(44, 52, 34, 0.1)',
-      '--glass-bg-menu': 'rgba(243, 246, 230, 0.96)',
-      '--glass-border-menu': 'rgba(44, 52, 34, 0.1)',
-      '--status-active': '#4a7c45',
-      '--status-on-hold': '#b8862a',
-      '--status-completed': '#3d8b4a',
-      '--status-dropped': '#c44b4b',
-    },
-  },
-  {
-    id: 'dripnex-phosphor',
-    name: 'Phosphor',
-    description: 'Amber CRT. Terminal glow after midnight.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#0e0d08',
-      '--bg-surface': '#16140c',
-      '--bg-elevated': '#1f1c12',
-      '--bg-inset': '#090807',
-      '--bg-hover': 'rgba(232, 212, 138, 0.07)',
-      '--bg-active': 'rgba(232, 212, 138, 0.12)',
-      '--text-primary': '#e8d48a',
-      '--text-secondary': 'rgba(232, 212, 138, 0.74)',
-      '--text-muted': 'rgba(232, 212, 138, 0.5)',
-      '--text-faint': 'rgba(232, 212, 138, 0.32)',
-      '--border': 'rgba(232, 212, 138, 0.12)',
-      '--border-subtle': 'rgba(232, 212, 138, 0.06)',
-      '--border-strong': 'rgba(232, 212, 138, 0.2)',
-      '--accent': '#f0b429',
-      '--accent-hover': '#ffc94a',
-      '--accent-muted': 'rgba(240, 180, 41, 0.2)',
-      '--accent-subtle': 'rgba(240, 180, 41, 0.1)',
-      '--glass-bg': 'rgba(14, 13, 8, 0.92)',
-      '--glass-border': 'rgba(232, 212, 138, 0.1)',
-      '--glass-bg-menu': 'rgba(31, 28, 18, 0.96)',
-      '--glass-border-menu': 'rgba(232, 212, 138, 0.1)',
-      '--status-active': '#f0b429',
-      '--status-on-hold': '#e6c384',
-      '--status-completed': '#98bb6c',
-      '--status-dropped': '#e46876',
-    },
-  },
-  {
-    id: 'dripnex-fog',
-    name: 'Fog',
-    description: 'Coastal gray morning. Muted blue marks.',
-    author: 'Dripnex',
-    colorScheme: 'light',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#e8ecef',
-      '--bg-surface': '#dee3e8',
-      '--bg-elevated': '#f3f5f7',
-      '--bg-inset': '#d4dae0',
-      '--bg-hover': 'rgba(44, 52, 60, 0.06)',
-      '--bg-active': 'rgba(44, 52, 60, 0.1)',
-      '--text-primary': '#2c343c',
-      '--text-secondary': 'rgba(44, 52, 60, 0.74)',
-      '--text-muted': 'rgba(44, 52, 60, 0.52)',
-      '--text-faint': 'rgba(44, 52, 60, 0.34)',
-      '--border': 'rgba(44, 52, 60, 0.12)',
-      '--border-subtle': 'rgba(44, 52, 60, 0.07)',
-      '--border-strong': 'rgba(44, 52, 60, 0.18)',
-      '--accent': '#5a7d96',
-      '--accent-hover': '#4a6a80',
-      '--accent-muted': 'rgba(90, 125, 150, 0.16)',
-      '--accent-subtle': 'rgba(90, 125, 150, 0.1)',
-      '--glass-bg': 'rgba(232, 236, 239, 0.9)',
-      '--glass-border': 'rgba(44, 52, 60, 0.1)',
-      '--glass-bg-menu': 'rgba(243, 245, 247, 0.96)',
-      '--glass-border-menu': 'rgba(44, 52, 60, 0.1)',
-      '--status-active': '#5a7d96',
-      '--status-on-hold': '#b8862a',
-      '--status-completed': '#3d8b4a',
-      '--status-dropped': '#c44b4b',
-    },
-  },
-  {
-    id: 'dripnex-harbor-dusk',
-    name: 'Harbor Dusk',
-    description: 'Coastal evening. Mist text, muted teal, amber lanterns.',
-    author: 'Dripnex',
-    colorScheme: 'dark',
-    pluginId: 'dripnex',
-    tokens: {
-      '--bg-base': '#141c26',
-      '--bg-surface': '#10161e',
-      '--bg-elevated': '#1c2633',
-      '--bg-inset': '#0c1218',
-      '--bg-hover': 'rgba(205, 214, 222, 0.06)',
-      '--bg-active': 'rgba(205, 214, 222, 0.1)',
-      '--text-primary': '#cdd6de',
-      '--text-secondary': 'rgba(205, 214, 222, 0.74)',
-      '--text-muted': 'rgba(205, 214, 222, 0.5)',
-      '--text-faint': 'rgba(205, 214, 222, 0.32)',
-      '--border': 'rgba(205, 214, 222, 0.1)',
-      '--border-subtle': 'rgba(205, 214, 222, 0.06)',
-      '--border-strong': 'rgba(205, 214, 222, 0.16)',
-      '--accent': '#5e9a92',
-      '--accent-hover': '#74aea6',
-      '--accent-muted': 'rgba(94, 154, 146, 0.2)',
-      '--accent-subtle': 'rgba(94, 154, 146, 0.1)',
-      '--glass-bg': 'rgba(20, 28, 38, 0.9)',
-      '--glass-border': 'rgba(205, 214, 222, 0.08)',
-      '--glass-bg-menu': 'rgba(28, 38, 51, 0.95)',
-      '--glass-border-menu': 'rgba(205, 214, 222, 0.08)',
-      '--status-active': '#5e9a92',
-      '--status-on-hold': '#d4a05a',
-      '--status-completed': '#7aad8a',
-      '--status-dropped': '#c46b6b',
-      '--cm-link': '#d4a05a',
-    },
-  },
-];
+export const OFFICIAL_THEMES: ThemeDefinition[] = [];
 
+/**
+ * Former bundled palette ids. A saved id in this list falls back to Default
+ * so a leftover setting cannot leave a blank UI. Live satellites register
+ * their own ids in activate() (e.g. dripnex-dune), which are not in this list.
+ */
+export const RETIRED_BUNDLED_THEME_IDS = [
+  'dripnex-parchment',
+  'dripnex-wave',
+  'dripnex-night',
+  'dripnex-solarized-dark',
+  'dripnex-solarized-light',
+  'dripnex-gruvbox',
+  'dripnex-glass',
+  'dripnex-midnight',
+  'dripnex-ember',
+  'dripnex-ion',
+  'dripnex-matcha',
+  'dripnex-phosphor',
+  'dripnex-fog',
+  'dripnex-harbor-dusk',
+] as const;
+
+export type RetiredBundledThemeId = (typeof RETIRED_BUNDLED_THEME_IDS)[number];
+
+export function isRetiredBundledThemeId(id: string): boolean {
+  return (RETIRED_BUNDLED_THEME_IDS as readonly string[]).includes(id);
+}
+
+/** No-op: core does not register named palettes. Kept so call sites stay stable. */
 export function registerOfficialThemes(): void {
   const { themes, register } = themeRegistryStore.getState();
   for (const theme of OFFICIAL_THEMES) {
     if (themes.some(t => t.id === theme.id)) continue;
     register(theme);
+  }
+}
+
+export type RestoreSavedThemeResult = 'activated' | 'cleared' | 'pending';
+
+/**
+ * Restore a persisted palette, or drop a retired bundled id so tokens.css
+ * is the default instead of a blank/broken UI.
+ */
+export function restoreSavedTheme(savedThemeId: string | null): RestoreSavedThemeResult {
+  if (savedThemeId === null) {
+    themeRegistryStore.getState().setActive(null);
+    return 'cleared';
+  }
+  const exists = themeRegistryStore.getState().themes.some(t => t.id === savedThemeId);
+  if (exists) {
+    themeRegistryStore.getState().setActive(savedThemeId);
+    return 'activated';
+  }
+  if (isRetiredBundledThemeId(savedThemeId)) {
+    themeRegistryStore.getState().setActive(null);
+    return 'cleared';
+  }
+  return 'pending';
+}
+
+export function persistClearedThemeIfNeeded(
+  savedThemeId: string | null,
+  result: RestoreSavedThemeResult,
+  persist: (id: null) => void
+): void {
+  if (result === 'cleared' && savedThemeId !== null) {
+    persist(null);
+  }
+}
+
+export interface ScannedThemePack {
+  id: string;
+  themes?: string[];
+  /** Plugin source from scan(). Satellite packs register palettes in activate(). */
+  code?: string;
+}
+
+/**
+ * Picker order: Default (tokens.css, id null) then registered palettes.
+ * ThemesSection prepends Default; this helper is the tested contract.
+ */
+export function themePickerIds(themes: ThemeDefinition[]): Array<string | null> {
+  return [null, ...themes.map(t => t.id)];
+}
+
+export function parseInstalledThemes(
+  scanned: Array<ScannedThemePack>,
+  enabledById: Map<string, boolean>,
+  options?: { require?: (id: string) => unknown }
+): ThemeDefinition[] {
+  const result: ThemeDefinition[] = [];
+  for (const sp of scanned) {
+    try {
+      if (!(enabledById.get(sp.id) ?? true)) continue;
+
+      const fromJson: ThemeDefinition[] = [];
+      for (const source of sp.themes ?? []) {
+        const parsed = parsePluginTheme(source, sp.id);
+        if (!parsed.theme) continue;
+        fromJson.push({ ...parsed.theme, pluginId: sp.id });
+      }
+      if (fromJson.length > 0) {
+        result.push(...fromJson);
+        continue;
+      }
+
+      // Existing satellites (Dune, Limestone, …) ship dist/index.js and
+      // registerTheme() in activate() — scan().themes is []. Harvest those.
+      if (typeof sp.code === 'string' && sp.code.trim()) {
+        result.push(...collectThemesFromPluginCode(sp.code, sp.id, options));
+      }
+    } catch {
+      // Missing or malformed theme.json / activate() must not crash the picker.
+    }
+  }
+  return result;
+}
+
+/** Theme ids last applied from a plugin scan (not PluginHost activate()). */
+let syncedThemeIds = new Set<string>();
+
+export function applyInstalledThemes(defs: ThemeDefinition[]): void {
+  const nextIds = new Set<string>();
+  const { register, unregister } = themeRegistryStore.getState();
+  for (const theme of defs) {
+    register(theme);
+    nextIds.add(theme.id);
+  }
+  for (const id of syncedThemeIds) {
+    if (!nextIds.has(id)) unregister(id);
+  }
+  syncedThemeIds = nextIds;
+}
+
+export async function syncInstalledPluginThemes(): Promise<void> {
+  const plugins = typeof window !== 'undefined' ? window.dripnex?.plugins : undefined;
+  if (!plugins?.scan || !plugins.listState) return;
+  try {
+    const [scanned, stateList] = await Promise.all([plugins.scan(), plugins.listState()]);
+    const enabledById = new Map(stateList.map(s => [s.pluginId, s.enabled]));
+    applyInstalledThemes(parseInstalledThemes(scanned, enabledById));
+  } catch {
+    // Keep whatever PluginHost or the last successful scan registered.
   }
 }
 

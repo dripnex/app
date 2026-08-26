@@ -9,27 +9,43 @@ export const USER_INIT_FILE = 'init.js';
 export const USER_STYLES_FILE = 'styles.css';
 export const USER_KEYMAP_FILE = 'keybindings.json';
 
-export type UserHackKind = 'init' | 'styles' | 'keymap';
+export const USER_HACK_KINDS = ['init', 'styles', 'keymap'] as const;
+export type UserHackKind = (typeof USER_HACK_KINDS)[number];
+
+export const OPEN_USER_FILE_CHANNEL = 'plugins:openUserFile' as const;
 
 export const INIT_JS_TEMPLATE = `// Dripnex init.js — runs on load. Save this file to apply.
-// Paste as Link is already a built-in (Plugins menu / Mod+Shift+K).
+// Lives in the data directory with styles.css and keybindings.json.
 
-dripnex.menu.add({
-  label: 'Insert Date',
-  accelerator: 'Mod+Shift+D',
-  click: () => {
-    dripnex.editor.insertAtCursor(new Date().toISOString().slice(0, 10));
-    return true;
-  },
+dripnex.registerAiCommand({
+  id: 'make-this-sendable',
+  name: 'Make this sendable',
+  description: 'Turn this note into a document a person would actually send.',
+  systemPrompt:
+    'Turn messy notes into a document a person would actually send. ' +
+    'Clear, specific, human. Not a model dump. Preserve facts. Cut filler. ' +
+    'Match the implied genre (email, message, brief, post).',
+  userPromptTemplate:
+    'Turn the following into a document a person would actually send.\\n\\n' +
+    'Title: {{title}}\\n\\n' +
+    'Selection (if any):\\n{{selection}}\\n\\n' +
+    'Full note:\\n{{note}}',
+  outputTarget: 'replace',
+  category: 'writing',
 });
 
+// Palette command (not AI), if you want one:
+// dripnex.commands.add('insert-date', 'Insert Date', () => {
+//   dripnex.editor.insertAtCursor(new Date().toISOString().slice(0, 10));
+// });
+
 // UI: dripnex.components.Dialog / Modal / Button
-// ctx.layout.addComponent('modal', { id: 'hello', component: Hello })
 // Markdown: dripnex.markdownRenderer.remarkPlugins.push(yourPlugin)
 // Editor view (CM6): dripnex.editor.getView() / dripnex.getActiveEditor().cm
-// Palettes: dripnex.themes.list() / getActive() / setActive('dripnex-parchment')
+// Palettes: dripnex.themes.list() / getActive() / setActive('theme-parchment')
+// (install dripnex/theme-parchment first — named palettes are packs, not core)
 
-// Vim (install dripnex/plugin-vim, then enable it). Same surface as Inkdrop:
+// Vim (install dripnex/plugin-vim, then enable it):
 // const Vim = dripnex.vim
 // if (Vim) {
 //   Vim.map('jj', '<Esc>', 'insert')
@@ -90,7 +106,7 @@ export const KEYBINDINGS_TEMPLATE = `{
   // command id → chord. null unbinds the default.
   // Contexts: editor (CodeMirror), note-list (j/k next/prev note), app, global.
   // note-list chords do not fire when the editor is focused.
-  // Save this file to apply. Open from Plugins → Open Keymap.
+  // Save this file to apply. Open from Settings → Hack.
 
   // "app:next-note": "j",
   // "app:prev-note": "k",

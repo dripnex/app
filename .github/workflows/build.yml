@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
+      release_id: ${{ steps.draft.outputs.release_id }}
     steps:
       - name: Resolve tag
         id: resolve
@@ -67,6 +68,7 @@ jobs:
           echo "Building $tag"
 
       - name: Ensure release is draft
+        id: draft
         if: steps.resolve.outputs.tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,6 +84,18 @@ jobs:
             echo "Marked $TAG_NAME as draft so electron-builder can upload."
           else
             echo "No existing release for $TAG_NAME; electron-builder will create one."
+          fi
+
+          # Draft releases stay untagged until published, so
+          # GET /releases/tags/$TAG_NAME 404s. Record the numeric id
+          # (list endpoint includes drafts) for the publish job.
+          id=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq "[.[] | select(.tag_name == \"$TAG_NAME\") | .id] | first")
+          if [ -n "$id" ] && [ "$id" != "null" ]; then
+            echo "release_id=$id" >> "$GITHUB_OUTPUT"
+            echo "Resolved $TAG_NAME to release id $id"
+          else
+            echo "No release id yet; publish will look it up after builds."
           fi
 
   build:
@@ -211,7 +225,34 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.meta.outputs.tag }}
-        run: gh release edit "$TAG_NAME" --draft=false --repo "$GITHUB_REPOSITORY"
+          RELEASE_ID: ${{ needs.meta.outputs.release_id }}
+        run: |
+          set -euo pipefail
+          # `gh release edit $TAG --draft=false` looks up
+          # GET /releases/tags/$TAG, which 404s for drafts. v0.19.1
+          # built mac/win/linux then failed publish with "release not
+          # found" because the draft was still untagged. PATCH by id.
+          id="${RELEASE_ID:-}"
+          if [ -z "$id" ] || [ "$id" = "null" ]; then
+            for attempt in 1 2 3 4 5 6; do
+              id=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+                --jq "[.[] | select(.tag_name == \"$TAG_NAME\") | .id] | first")
+              if [ -n "$id" ] && [ "$id" != "null" ]; then
+                break
+              fi
+              echo "Release $TAG_NAME not listed yet (attempt $attempt); retrying..."
+              sleep 5
+              id=""
+            done
+          fi
+          if [ -z "$id" ] || [ "$id" = "null" ]; then
+            echo "::error::No GitHub Release found for $TAG_NAME (including drafts)."
+            exit 1
+          fi
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/${id}" \
+            -F draft=false \
+            -f tag_name="$TAG_NAME" \
+            --jq '"Published \(.tag_name) -> \(.html_url)"'
 
   sync-develop:
     needs: [meta, publish]

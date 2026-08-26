@@ -8,9 +8,19 @@
  *
  * Auth (Bearer JWT):
  *   POST /plugins              publish / update a package you own
+ *                              (first-party slugs are reserved)
  *
- * First-party packages (e.g. stamp) are merged in when missing from the DB
- * so Browse works before Turso is seeded.
+ * First-party packs: GitHub org `dripnex` repos named `theme-*` / `plugin-*`
+ * with a packed Release `.tar.gz` are the live list. FIRST_PARTY_PACKAGES is
+ * the seed (GitHub down) and the slug/name/description override map — not a
+ * second catalog to keep in lockstep with daily theme satellites. Only a
+ * packed `{id}-{version}.tar.gz` is listed; a git tag is not enough.
+ * Turso `plugin_catalog` rows cannot claim those slugs, dripnex pack
+ * repositories, or official release tarball URLs. GET /plugins stays
+ * `Cache-Control: private, no-store` so a colo/isolate cannot serve a
+ * stale 21-row seed while live discovery has 30 (QA isolate flicker).
+ *
+ * Keep slug / URL / bundle rules in sync with apps/desktop/src/shared/firstPartyPacks.ts.
  */
 
 import { Hono } from 'hono';
@@ -20,12 +30,20 @@ import { eq, like, and, desc, asc } from 'drizzle-orm';
 import { createDb, type Env } from '../db/client.js';
 import { pluginCatalog, pluginVersions } from '../db/schema.js';
 import { authMiddleware } from '../middleware/auth.js';
+import {
+  discoverDripnexPacks,
+  humanizeRepoName,
+  normalizeGithubRepoUrl,
+  resolveDiscoveredSlug,
+  type DiscoveredPack,
+} from '../services/githubPacks.js';
 
 const plugins = new Hono<{ Bindings: Env }>();
 
 const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 const SEMVER_RE = /^\d+\.\d+\.\d+(-[\w.]+)?(\+[\w.]+)?$/;
 
+/** Seed + slug/name/icon overrides. GitHub discovery is the live list. */
 export const FIRST_PARTY_PACKAGES = [
   {
     slug: 'stamp',
@@ -117,7 +135,352 @@ export const FIRST_PARTY_PACKAGES = [
     createdAt: '2026-08-18T00:00:00.000Z',
     updatedAt: '2026-08-18T00:00:00.000Z',
   },
+  {
+    slug: 'theme-harbor-dusk',
+    name: 'Harbor Dusk',
+    description: 'Coastal evening palette for long writing sessions.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-harbor-dusk/releases/download/v0.1.0/theme-harbor-dusk-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-harbor-dusk',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:05.000Z',
+    updatedAt: '2026-08-24T18:13:05.000Z',
+  },
+  {
+    slug: 'theme-wave',
+    name: 'Wave',
+    description: 'Ink and paper, after dark.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-wave/releases/download/v0.1.0/theme-wave-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-wave',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:09.000Z',
+    updatedAt: '2026-08-24T18:13:09.000Z',
+  },
+  {
+    slug: 'theme-night',
+    name: 'Night',
+    description: 'Violet dusk. Focused writing after hours.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-night/releases/download/v0.1.0/theme-night-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-night',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:10.000Z',
+    updatedAt: '2026-08-24T18:13:10.000Z',
+  },
+  {
+    slug: 'theme-solarized-dark',
+    name: 'Solarized Dark',
+    description: 'Ethan Schoonover. The Vim classic.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-solarized-dark/releases/download/v0.1.0/theme-solarized-dark-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-solarized-dark',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:13.000Z',
+    updatedAt: '2026-08-24T18:13:13.000Z',
+  },
+  {
+    slug: 'theme-solarized-light',
+    name: 'Solarized Light',
+    description: 'Cream paper, cyan marks. Same palette, daylight.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-solarized-light/releases/download/v0.1.0/theme-solarized-light-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-solarized-light',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:13.000Z',
+    updatedAt: '2026-08-24T18:13:13.000Z',
+  },
+  {
+    slug: 'theme-gruvbox',
+    name: 'Gruvbox',
+    description: 'Retro groove. The other Vim default.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-gruvbox/releases/download/v0.1.0/theme-gruvbox-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-gruvbox',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:17.000Z',
+    updatedAt: '2026-08-24T18:13:17.000Z',
+  },
+  {
+    slug: 'theme-glass',
+    name: 'Glass',
+    description: 'Ice. The desktop shows through.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-glass/releases/download/v0.1.0/theme-glass-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-glass',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:51.000Z',
+    updatedAt: '2026-08-24T18:13:51.000Z',
+  },
+  {
+    slug: 'theme-midnight',
+    name: 'Midnight',
+    description: 'OLED navy, electric blue. Frosted.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-midnight/releases/download/v0.1.0/theme-midnight-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-midnight',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:50.000Z',
+    updatedAt: '2026-08-24T18:13:50.000Z',
+  },
+  {
+    slug: 'theme-ember',
+    name: 'Ember',
+    description: 'Warm black, copper light. Frosted.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-ember/releases/download/v0.1.0/theme-ember-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-ember',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:54.000Z',
+    updatedAt: '2026-08-24T18:13:54.000Z',
+  },
+  {
+    slug: 'theme-ion',
+    name: 'Ion',
+    description: 'Violet glass. Linear-adjacent, frosted.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-ion/releases/download/v0.1.0/theme-ion-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-ion',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:53.000Z',
+    updatedAt: '2026-08-24T18:13:53.000Z',
+  },
+  {
+    slug: 'theme-matcha',
+    name: 'Matcha',
+    description: 'Green-tea paper. Calm reading.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-matcha/releases/download/v0.1.0/theme-matcha-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-matcha',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:13:57.000Z',
+    updatedAt: '2026-08-24T18:13:57.000Z',
+  },
+  {
+    slug: 'theme-phosphor',
+    name: 'Phosphor',
+    description: 'Amber CRT. Terminal glow after midnight.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-phosphor/releases/download/v0.1.0/theme-phosphor-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-phosphor',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:14:03.000Z',
+    updatedAt: '2026-08-24T18:14:03.000Z',
+  },
+  {
+    slug: 'theme-fog',
+    name: 'Fog',
+    description: 'Coastal gray morning. Muted blue marks.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-fog/releases/download/v0.1.0/theme-fog-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-fog',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-24T18:14:02.000Z',
+    updatedAt: '2026-08-24T18:14:02.000Z',
+  },
+  {
+    slug: 'theme-dune',
+    name: 'Dune',
+    description: 'Desert afternoon. Sand paper, terracotta marks.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-dune/releases/download/v0.1.0/theme-dune-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-dune',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-25T00:56:46.000Z',
+    updatedAt: '2026-08-25T00:58:04.000Z',
+  },
+  {
+    slug: 'theme-noir',
+    name: 'Noir',
+    description: 'Cinema black. Cool silver, a single crimson mark.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'dark'],
+    icon: 'moon',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-noir/releases/download/v0.1.0/theme-noir-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-noir',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-25T00:56:48.000Z',
+    updatedAt: '2026-08-25T00:58:43.000Z',
+  },
+  {
+    slug: 'theme-sakura',
+    name: 'Sakura',
+    description: 'Cherry-blossom paper. Pale rose, quiet ink.',
+    author: 'Dripnex',
+    version: '0.1.0',
+    category: 'theme',
+    tags: ['theme', 'light'],
+    icon: 'sun',
+    downloads: 0,
+    bundleUrl:
+      'https://github.com/dripnex/theme-sakura/releases/download/v0.1.0/theme-sakura-0.1.0.tar.gz',
+    repositoryUrl: 'https://github.com/dripnex/theme-sakura',
+    isBuiltIn: false,
+    status: 'published',
+    createdAt: '2026-08-25T00:56:50.000Z',
+    updatedAt: '2026-08-25T00:58:57.000Z',
+  },
 ] as const;
+
+const FIRST_PARTY_PACK_SLUG_RE = /^(theme|plugin)-[a-z0-9]+(-[a-z0-9]+)*$/;
+const FIRST_PARTY_SLUGS: ReadonlySet<string> = new Set(FIRST_PARTY_PACKAGES.map(p => p.slug));
+const TRUSTED_FIRST_PARTY_BUNDLE_PATH = /^\/dripnex\/(?:theme|plugin)-[^/]+\/releases\/download\//;
+
+/** Official extras community POST /plugins must not claim. */
+export function isReservedFirstPartySlug(slug: string): boolean {
+  return FIRST_PARTY_SLUGS.has(slug) || FIRST_PARTY_PACK_SLUG_RE.test(slug);
+}
+
+function githubRepoFromHttpsUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return null;
+    if (parsed.hostname !== 'github.com') return null;
+    if (parsed.username || parsed.password) return null;
+    const parts = parsed.pathname.replace(/^\//, '').replace(/\/+$/, '').split('/');
+    const owner = parts[0];
+    const repo = parts[1]?.replace(/\.git$/i, '');
+    return owner && repo ? `${owner}/${repo}` : null;
+  } catch {
+    return null;
+  }
+}
+
+/** github.com/dripnex/theme-* or github.com/dripnex/plugin-* */
+export function isDripnexPackRepositoryUrl(url: string | null | undefined): boolean {
+  const repo = githubRepoFromHttpsUrl(url);
+  if (!repo) return false;
+  const [owner, name] = repo.split('/');
+  if (owner?.toLowerCase() !== 'dripnex' || typeof name !== 'string') return false;
+  const pack = name.toLowerCase();
+  return pack.startsWith('theme-') || pack.startsWith('plugin-');
+}
+
+export function isTrustedFirstPartyBundleUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    if (parsed.hostname !== 'github.com') return false;
+    if (parsed.username || parsed.password) return false;
+    return TRUSTED_FIRST_PARTY_BUNDLE_PATH.test(parsed.pathname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function impersonatesOfficialPack(row: {
+  repositoryUrl: string | null;
+  bundleUrl: string | null;
+}): boolean {
+  return (
+    isDripnexPackRepositoryUrl(row.repositoryUrl) || isTrustedFirstPartyBundleUrl(row.bundleUrl)
+  );
+}
 
 const listQuerySchema = z.object({
   category: z.string().optional(),
@@ -174,30 +537,7 @@ function parseTags(raw: string): string[] {
   }
 }
 
-function mergeFirstParty(rows: ListedPlugin[]): ListedPlugin[] {
-  const have = new Set(rows.map(r => r.slug));
-  const extra = FIRST_PARTY_PACKAGES.filter(p => !have.has(p.slug)).map(p => ({
-    slug: p.slug,
-    name: p.name,
-    description: p.description,
-    author: p.author,
-    version: p.version,
-    category: p.category,
-    tags: [...p.tags],
-    icon: p.icon,
-    downloads: p.downloads,
-    bundleUrl: p.bundleUrl,
-    repositoryUrl: p.repositoryUrl,
-    isBuiltIn: p.isBuiltIn,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-  }));
-  return [...extra, ...rows];
-}
-
-function firstPartyBySlug(slug: string): ListedPlugin | null {
-  const p = FIRST_PARTY_PACKAGES.find(item => item.slug === slug);
-  if (!p) return null;
+function listedFromSeed(p: (typeof FIRST_PARTY_PACKAGES)[number]): ListedPlugin {
   return {
     slug: p.slug,
     name: p.name,
@@ -214,6 +554,55 @@ function firstPartyBySlug(slug: string): ListedPlugin | null {
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
+}
+
+function seedByRepository(htmlUrl: string): (typeof FIRST_PARTY_PACKAGES)[number] | undefined {
+  const key = normalizeGithubRepoUrl(htmlUrl);
+  return FIRST_PARTY_PACKAGES.find(p => normalizeGithubRepoUrl(p.repositoryUrl) === key);
+}
+
+async function listedFromDiscovered(
+  pack: DiscoveredPack,
+  fetchImpl: typeof fetch
+): Promise<ListedPlugin> {
+  const override = seedByRepository(pack.htmlUrl);
+  const slug = await resolveDiscoveredSlug(pack, override?.slug, fetchImpl);
+  const isTheme = pack.kind === 'theme';
+  return {
+    slug,
+    name: override?.name ?? humanizeRepoName(pack.repoName),
+    description: override?.description ?? pack.description,
+    author: override?.author ?? 'Dripnex',
+    version: pack.version,
+    category: override?.category ?? (isTheme ? 'theme' : 'editor'),
+    tags: override ? [...override.tags] : isTheme ? ['theme'] : [],
+    icon: override?.icon ?? (isTheme ? 'palette' : 'puzzle'),
+    downloads: override?.downloads ?? 0,
+    bundleUrl: pack.bundleUrl,
+    repositoryUrl: pack.htmlUrl,
+    isBuiltIn: false,
+    createdAt: override?.createdAt ?? pack.createdAt,
+    updatedAt: pack.updatedAt,
+  };
+}
+
+function mergeBySlug(primary: ListedPlugin[], extras: ListedPlugin[]): ListedPlugin[] {
+  const have = new Set(primary.map(r => r.slug));
+  const extra = extras.filter(p => !have.has(p.slug));
+  return [...extra, ...primary];
+}
+
+/**
+ * Live first-party list: GitHub discovery with seed overrides, or the static
+ * seed alone when GitHub is down / the scan was incomplete. Seed rows still
+ * fill gaps (vim, parchment, dune/noir/sakura) if a matching repo was skipped.
+ */
+async function firstPartyCatalog(env: Env): Promise<ListedPlugin[]> {
+  const seed = FIRST_PARTY_PACKAGES.map(listedFromSeed);
+  const discovered = await discoverDripnexPacks({ token: env.GITHUB_TOKEN, fetchImpl: fetch });
+  if (!discovered) return seed;
+  const live = await Promise.all(discovered.map(pack => listedFromDiscovered(pack, fetch)));
+  return mergeBySlug(live, seed);
 }
 
 plugins.get('/', zValidator('query', listQuerySchema), async c => {
@@ -271,7 +660,15 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
     rows = [];
   }
 
-  let pluginsOut = mergeFirstParty(rows);
+  const firstParty = await firstPartyCatalog(c.env);
+  const firstPartySlugs = new Set(firstParty.map(row => row.slug));
+  const community = rows.filter(
+    row =>
+      !isReservedFirstPartySlug(row.slug) &&
+      !firstPartySlugs.has(row.slug) &&
+      !impersonatesOfficialPack(row)
+  );
+  let pluginsOut = mergeBySlug(firstParty, community);
   if (query) {
     const qLower = query.toLowerCase();
     pluginsOut = pluginsOut.filter(
@@ -285,7 +682,9 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
     pluginsOut = pluginsOut.filter(p => p.category === category);
   }
 
-  return c.json({ plugins: pluginsOut, total: pluginsOut.length });
+  return c.json({ plugins: pluginsOut, total: pluginsOut.length }, 200, {
+    'Cache-Control': 'private, no-store',
+  });
 });
 
 plugins.get('/:slug/download', async c => {
@@ -324,6 +723,22 @@ plugins.get('/:slug', async c => {
 
 plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => {
   const body = c.req.valid('json');
+  if (isReservedFirstPartySlug(body.slug)) {
+    return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
+  }
+  const firstParty = await firstPartyCatalog(c.env);
+  if (firstParty.some(p => p.slug === body.slug)) {
+    return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
+  }
+  if (isDripnexPackRepositoryUrl(body.repositoryUrl)) {
+    return c.json(
+      { error: 'repositoryUrl must not point to an official Dripnex pack repository.' },
+      403
+    );
+  }
+  if (isTrustedFirstPartyBundleUrl(body.bundleUrl)) {
+    return c.json({ error: 'bundleUrl must not point to an official Dripnex pack release.' }, 403);
+  }
   const user = c.get('user');
   const db = createDb(c.env);
   const now = new Date().toISOString();
@@ -406,6 +821,11 @@ plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => 
 });
 
 async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null> {
+  const catalog = await firstPartyCatalog(env);
+  const official = catalog.find(p => p.slug === slug);
+  if (official) return official;
+  if (isReservedFirstPartySlug(slug)) return null;
+
   try {
     const db = createDb(env);
     const [plugin] = await db
@@ -414,7 +834,7 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
       .where(and(eq(pluginCatalog.slug, slug), eq(pluginCatalog.status, 'published')))
       .limit(1);
     if (plugin) {
-      return {
+      const listed = {
         slug: plugin.slug,
         name: plugin.name,
         description: plugin.description,
@@ -430,11 +850,13 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
         createdAt: plugin.createdAt,
         updatedAt: plugin.updatedAt,
       };
+      if (impersonatesOfficialPack(listed)) return null;
+      return listed;
     }
   } catch {
     // table missing — fall through
   }
-  return firstPartyBySlug(slug);
+  return null;
 }
 
 export { plugins };
