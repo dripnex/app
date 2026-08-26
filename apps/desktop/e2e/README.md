@@ -29,7 +29,7 @@ npx playwright install --with-deps
 
 Set `DRIPNEX_E2E_KEEP_USERDATA=1` to keep the temp dir on failure for post-mortem inspection.
 
-`openFirstNote()` clicks **Create Your First Note** and waits for `.cm-content`. Isolated e2e sets `DRIPNEX_E2E=1` so the auth gate does not block that path.
+`openFirstNote()` clicks **Create Your First Note** and waits for `.cm-content`. Isolated e2e sets `DRIPNEX_E2E=1` so Playwright can skip AuthGate. That flag is test-only, not a production bypass. Human QA blocked by AuthGate is accepted.
 
 ## What we test
 

@@ -10,7 +10,7 @@ polish does not invent a second system.
 3. Existing desktop CSS modules and primitives (`Button`, `Input`)
 4. [`docs/BRAND.md`](./BRAND.md) — voice and anti-values, not a new palette
 
-AuthGate chrome is optional sign-in, not a launch gate: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stays.md).
+AuthGate is the first window: [`docs/adr/002-authgate-stays.md`](./adr/002-authgate-stays.md).
 
 ---
 
@@ -65,8 +65,8 @@ toggles, and the `Button` primary fill. Do not invent a second primary
 (no black CTA, no pale-blue tile).
 
 **AuthGate primary action** matches `Button` primary: `--accent` fill,
-`--bg-base` label, `--accent-hover` on hover. Secondary / “Continue
-locally” matches `Button` secondary (border, no fill).
+`--bg-base` label, `--accent-hover` on hover. Secondary (“Request a new
+link”) matches `Button` secondary (border, no fill).
 
 ---
 
@@ -143,7 +143,7 @@ Center in the pane (`flex: 1`), not a 200px stub.
 
 | State        | Title          | Hint                           |
 | ------------ | -------------- | ------------------------------ |
-| No notes     | No notes yet   | Press {mod}+N to create one    |
+| No notes     | No notes yet   | Press {mod}+N. Messy input is enough |
 | Pinned empty | Nothing pinned | Pin a note to keep it here     |
 | Trash empty  | Trash is empty | Deleted notes appear here      |
 | Search empty | No matches     | Try a different search         |
@@ -157,8 +157,8 @@ tags) stay text-only.
 
 ## AuthGate
 
-Keep the flow. Sign in / Sign up tabs, magic-link email, optional
-Continue locally. See ADR 002 and #545.
+AuthGate is the first window. Sign in / Sign up tabs, magic-link email.
+No guest skip. See ADR 002.
 
 Visual rules:
 
