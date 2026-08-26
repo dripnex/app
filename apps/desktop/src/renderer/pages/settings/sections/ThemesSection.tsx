@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { themeRegistryStore, type ThemeDefinition } from '@dripnex/plugin-api';
 import { useSettingsStore, selectAppearance } from '../../../stores/settings';
+import { finishThemePackInstall } from '../../../themes/finishThemePackInstall';
 import { syncInstalledPluginThemes, themePickerIds } from '../../../themes/officialThemes';
 import { SettingsPage } from '../components/SettingsPage';
 import { Button, toast } from '../../../ui/primitives';
@@ -122,15 +123,15 @@ export function ThemesSection() {
           return;
         }
         toast.success(`${card.name} installed.`);
-        window.dripnex.plugins.requestReload();
-        window.dispatchEvent(new CustomEvent('dripnex:plugins:refresh'));
-        await refreshInstalled();
-        await syncInstalledPluginThemes();
-        const pluginId = result.pluginId ?? card.slug;
-        const registered = themeRegistryStore
-          .getState()
-          .themes.find(t => t.pluginId === pluginId || t.id === pluginId);
-        if (registered) handlePalette(registered);
+        await finishThemePackInstall({
+          pluginId: result.pluginId ?? card.slug,
+          notifyRefresh: () => window.dispatchEvent(new CustomEvent('dripnex:plugins:refresh')),
+          refreshInstalled,
+          syncThemes: syncInstalledPluginThemes,
+          themes: () => themeRegistryStore.getState().themes,
+          activate: handlePalette,
+          requestReload: () => window.dripnex.plugins.requestReload(),
+        });
       } catch {
         installFail(card.name);
       } finally {

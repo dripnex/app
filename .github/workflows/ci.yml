@@ -1,8 +1,12 @@
 name: CI
 
+# Triggers (see docs/ci.md):
+# - pull_request into develop or main — this is where required checks run
+# - push to main — post-promotion record; Release does not wait on this workflow
+# Push to develop is omitted so a squash-merge does not pay the suite twice.
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main, develop]
 
@@ -14,8 +18,46 @@ env:
   NODE_VERSION: '22'
 
 jobs:
+  # Release back-merges exist for ancestry (docs/RELEASE.md), not product
+  # changes. Skip the heavy suite but keep required check names green:
+  # lint, test, typecheck, e2e, security. Trusted PRs only: github-actions[bot]
+  # into develop. Branch prefix matches automerge.yml; title covers
+  # github-actions sync-develop PRs. Do not trust the prefix alone.
+  ci-gate:
+    runs-on: ubuntu-latest
+    outputs:
+      skip_heavy: ${{ steps.detect.outputs.skip_heavy }}
+    steps:
+      - id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+        run: |
+          skip=false
+          if [ "$EVENT_NAME" = "pull_request" ] && \
+             [ "$PR_USER" = "github-actions[bot]" ] && \
+             [ "$BASE_REF" = "develop" ]; then
+            case "$HEAD_REF" in
+              chore/backmerge-*) skip=true ;;
+            esac
+            if [ "$PR_TITLE" = "chore(release): merge main into develop" ]; then
+              skip=true
+            fi
+          fi
+          echo "skip_heavy=${skip}" >> "$GITHUB_OUTPUT"
+          if [ "$skip" = "true" ]; then
+            echo "Release back-merge — heavy CI will report success without install/test/e2e."
+          else
+            echo "Full CI."
+          fi
+
   # ── Shared install + cache ─────────────────────────
   setup:
+    needs: ci-gate
+    if: needs.ci-gate.outputs.skip_heavy != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -54,16 +96,27 @@ jobs:
 
   # ── Tier 1: Lint + Format ──────────────────────────
   lint:
-    needs: setup
+    needs: [ci-gate, setup]
+    # always() is required so a skipped setup (back-merge) does not skip
+    # this job. needs.setup.result == 'success' still blocks a failed setup.
+    if: ${{ always() && !cancelled() && needs.ci-gate.result == 'success' && (needs.ci-gate.outputs.skip_heavy == 'true' || needs.setup.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip heavy CI for release back-merge
+        if: needs.ci-gate.outputs.skip_heavy == 'true'
+        run: echo "Back-merge PR — required check lint reports success without the suite."
+
       - uses: actions/checkout@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: pnpm/action-setup@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: actions/setup-node@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Restore node_modules
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         uses: actions/cache/restore@v5
         with:
           path: |
@@ -73,9 +126,11 @@ jobs:
           key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: ESLint
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm lint
 
       - name: Prettier
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm format:check
 
       # PR title commitlint moved to .github/workflows/pr-title.yml so it
@@ -84,16 +139,25 @@ jobs:
 
   # ── Tier 1: Tests + Coverage ───────────────────────
   test:
-    needs: setup
+    needs: [ci-gate, setup]
+    if: ${{ always() && !cancelled() && needs.ci-gate.result == 'success' && (needs.ci-gate.outputs.skip_heavy == 'true' || needs.setup.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip heavy CI for release back-merge
+        if: needs.ci-gate.outputs.skip_heavy == 'true'
+        run: echo "Back-merge PR — required check test reports success without the suite."
+
       - uses: actions/checkout@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: pnpm/action-setup@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: actions/setup-node@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Restore node_modules
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         uses: actions/cache/restore@v5
         with:
           path: |
@@ -103,13 +167,15 @@ jobs:
           key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Run tests
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm test
 
       - name: Build packages
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm build
 
       - name: Upload coverage
-        if: always()
+        if: ${{ always() && needs.ci-gate.outputs.skip_heavy != 'true' }}
         uses: actions/upload-artifact@v5
         with:
           name: coverage-report
@@ -120,16 +186,25 @@ jobs:
 
   # ── Tier 1: Typecheck ──────────────────────────────
   typecheck:
-    needs: setup
+    needs: [ci-gate, setup]
+    if: ${{ always() && !cancelled() && needs.ci-gate.result == 'success' && (needs.ci-gate.outputs.skip_heavy == 'true' || needs.setup.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip heavy CI for release back-merge
+        if: needs.ci-gate.outputs.skip_heavy == 'true'
+        run: echo "Back-merge PR — required check typecheck reports success without the suite."
+
       - uses: actions/checkout@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: pnpm/action-setup@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: actions/setup-node@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Restore node_modules
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         uses: actions/cache/restore@v5
         with:
           path: |
@@ -139,12 +214,15 @@ jobs:
           key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Build packages first
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm build
 
       - name: Typecheck all packages
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm -r typecheck
 
       - name: Typecheck desktop
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         working-directory: apps/desktop
         run: pnpm typecheck
 
@@ -154,12 +232,20 @@ jobs:
   # scripts + the two explicit materialize steps is what makes electron.launch
   # work. This job is required (no continue-on-error).
   e2e:
-    needs: setup
+    needs: [ci-gate, setup]
+    if: ${{ always() && !cancelled() && needs.ci-gate.result == 'success' && (needs.ci-gate.outputs.skip_heavy == 'true' || needs.setup.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip heavy CI for release back-merge
+        if: needs.ci-gate.outputs.skip_heavy == 'true'
+        run: echo "Back-merge PR — required check e2e reports success without Playwright."
+
       - uses: actions/checkout@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: pnpm/action-setup@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: actions/setup-node@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -170,33 +256,40 @@ jobs:
       # (publickey)" — that is why Dependabot PRs fail e2e while develop
       # (HTTPS tarball in the lockfile) stays green. See #544.
       - name: Force HTTPS for GitHub git dependencies
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: git config --global 'url.https://github.com/.insteadOf' 'git@github.com:'
 
       - name: Install dependencies (with postinstall scripts)
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Materialize Electron binary
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         working-directory: apps/desktop
         run: node node_modules/electron/install.js
 
       - name: Rebuild native modules for Electron
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm --filter @dripnex/desktop exec electron-builder install-app-deps
 
       - name: Install Playwright system deps
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         working-directory: apps/desktop
         run: npx playwright install-deps chromium
 
       - name: Build desktop bundle
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm --filter @dripnex/desktop build
 
       - name: Run Playwright E2E (xvfb)
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         working-directory: apps/desktop
         run: xvfb-run --auto-servernum pnpm e2e
         env:
           CI: 'true'
 
       - name: Upload Playwright report on failure
-        if: failure()
+        if: ${{ failure() && needs.ci-gate.outputs.skip_heavy != 'true' }}
         uses: actions/upload-artifact@v5
         with:
           name: playwright-report
@@ -205,16 +298,25 @@ jobs:
 
   # ── Tier 3: Security audit ─────────────────────────
   security:
-    needs: setup
+    needs: [ci-gate, setup]
+    if: ${{ always() && !cancelled() && needs.ci-gate.result == 'success' && (needs.ci-gate.outputs.skip_heavy == 'true' || needs.setup.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Skip heavy CI for release back-merge
+        if: needs.ci-gate.outputs.skip_heavy == 'true'
+        run: echo "Back-merge PR — required check security reports success without the audit."
+
       - uses: actions/checkout@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: pnpm/action-setup@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
       - uses: actions/setup-node@v5
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Restore node_modules
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         uses: actions/cache/restore@v5
         with:
           path: |
@@ -224,17 +326,19 @@ jobs:
           key: modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Audit dependencies
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: pnpm audit --prod --audit-level=high || true
 
       - name: Check licenses
+        if: needs.ci-gate.outputs.skip_heavy != 'true'
         run: |
           npx license-checker --production --failOn "GPL-3.0;AGPL-3.0;SSPL-1.0" --summary || true
 
   # ── Tier 2: Bundle size tracking ───────────────────
   bundle-size:
-    needs: setup
+    needs: [ci-gate, setup]
+    if: github.event_name == 'pull_request' && needs.ci-gate.outputs.skip_heavy != 'true'
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
