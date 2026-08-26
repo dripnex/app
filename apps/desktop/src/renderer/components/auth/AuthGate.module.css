@@ -1,5 +1,6 @@
 .screen {
   position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8,7 +9,7 @@
   background: var(--bg-base);
   overflow: hidden;
   font-family: var(--font-sans);
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;
 }
 
 .card {
@@ -23,7 +24,8 @@
   padding: var(--space-6) var(--space-6) var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  background: var(--glass-bg);
+  /* Fallback first: backdrop-filter on Linux can composite the card away. */
+  background: var(--glass-bg-fallback);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   box-shadow: var(--shadow-lg);
 }
