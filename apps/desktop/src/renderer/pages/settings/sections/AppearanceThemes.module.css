@@ -105,3 +105,67 @@
   color: var(--text-muted);
   line-height: var(--leading-tight);
 }
+
+.block {
+  margin-bottom: var(--space-6);
+}
+
+.blockTitle {
+  margin: 0 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.blockHint {
+  margin: 0 0 var(--space-3);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.catalogError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.availableList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.availableCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--bg-elevated);
+}
+
+.availableMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.availableTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.availableVersion {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}

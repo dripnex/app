@@ -136,6 +136,7 @@ export type RegistryPlugin = {
   author: string;
   repositoryUrl: string | null;
   bundleUrl: string | null;
+  category: string | null;
 };
 
 export function isFirstPartyGithubRepo(owner: string, repo: string): boolean {
@@ -215,6 +216,7 @@ export function parseRegistryPlugins(body: unknown): RegistryPlugin[] | null {
       author: typeof p.author === 'string' ? p.author : '',
       repositoryUrl: typeof p.repositoryUrl === 'string' ? p.repositoryUrl : null,
       bundleUrl: typeof p.bundleUrl === 'string' ? p.bundleUrl : null,
+      category: typeof p.category === 'string' ? p.category : null,
     }))
     .filter(p => p.slug.length > 0);
 }
