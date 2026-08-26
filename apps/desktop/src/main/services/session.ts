@@ -3,6 +3,8 @@
  *
  * Tokens stay on disk unless the API says they are expired (401).
  * A network blip must not log the user out.
+ * Leftover continue-locally identity is not a session — AuthGate requires
+ * a consumed magic-link (JWT in TokenStorage).
  */
 
 import { ApiError } from './apiClient.js';
@@ -38,12 +40,10 @@ export async function resolveSession(deps: {
   getCurrentUser: () => Promise<SessionUser>;
   getAccessToken: () => Promise<string | null>;
   clearTokens: () => Promise<void>;
-  readLocal: () => Promise<SessionUser | null>;
 }): Promise<{ user: SessionUser } | null> {
   const hasTokens = await deps.hasTokens();
   if (!hasTokens) {
-    const local = await deps.readLocal();
-    return local ? { user: local } : null;
+    return null;
   }
 
   try {
@@ -51,15 +51,11 @@ export async function resolveSession(deps: {
   } catch (error) {
     if (isUnauthorizedError(error)) {
       await deps.clearTokens();
-      const local = await deps.readLocal();
-      return local ? { user: local } : null;
+      return null;
     }
 
     const token = await deps.getAccessToken();
     const fromJwt = token ? userFromAccessToken(token) : null;
-    if (fromJwt) return { user: fromJwt };
-
-    const local = await deps.readLocal();
-    return local ? { user: local } : null;
+    return fromJwt ? { user: fromJwt } : null;
   }
 }

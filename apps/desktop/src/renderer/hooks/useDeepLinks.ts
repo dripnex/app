@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import type { DripnexDeepLink } from '../utils/parseDripnexUrl';
 import { dispatchCommand } from './useCommandRegistry';
 import { useNavigationActions } from './useNavigation';
@@ -18,15 +17,9 @@ export function useDeepLinks() {
 
   useEffect(() => {
     const apply = (link: DripnexDeepLink) => {
-      if (link.kind === 'auth-verify') {
-        void useAuthStore
-          .getState()
-          .verifyToken(link.token)
-          .catch(error => {
-            console.error('Deep link auth verification failed:', error);
-          });
-        return;
-      }
+      // Auth tokens are consumed in NotesApp via useAuthSessionEvents so
+      // AuthGate can verify before SignedInApp mounts.
+      if (link.kind === 'auth-verify') return;
       if (link.kind === 'note') {
         void dispatchCommand('app:open-note', {
           noteId: link.noteId,
@@ -53,15 +46,10 @@ export function useDeepLinks() {
     };
 
     const offIpc = window.dripnex.ipc.on('app:deep-link', onIpc);
-    const offAuth = window.dripnex.ipc.on('auth:verify-token', (...args: unknown[]) => {
-      const token = typeof args[0] === 'string' ? args[0] : '';
-      if (token) apply({ kind: 'auth-verify', token });
-    });
     window.addEventListener('dripnex:open', onLocal);
 
     return () => {
       offIpc();
-      offAuth();
       window.removeEventListener('dripnex:open', onLocal);
     };
   }, [goToNotebook, goToTag]);

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { LayoutZone, useThemeOverrides } from '@dripnex/plugin-api';
 import { useAppearanceSettings } from '../../hooks/useAppearanceSettings';
-import { usePerformanceMode } from '../../hooks/usePerformanceMode';
+import { useAuthSessionEvents } from '../../hooks/useAuthSessionEvents';
 import { useOfficialThemes } from '../../hooks/useOfficialThemes';
+import { usePerformanceMode } from '../../hooks/usePerformanceMode';
 import { Toaster } from '../../ui/primitives';
 import styles from './SettingsApp.module.css';
 import { SettingsSidebar } from './components/SettingsSidebar';
@@ -29,6 +30,7 @@ export function SettingsApp() {
   useOfficialThemes();
   useThemeOverrides();
   useAppearanceSettings();
+  useAuthSessionEvents();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   const renderSection = () => {
