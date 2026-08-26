@@ -65,8 +65,8 @@ export function LoginBackdrop() {
 
     const loop = startLetterGlitchLoop({
       reduceMotion,
-      requestAnimationFrame,
-      cancelAnimationFrame,
+      requestAnimationFrame: cb => window.requestAnimationFrame(cb),
+      cancelAnimationFrame: id => window.cancelAnimationFrame(id),
       onFrame: () => {
         const now = Date.now();
         if (now - lastGlitch >= GLITCH_SPEED_MS) {

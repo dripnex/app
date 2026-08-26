@@ -121,4 +121,10 @@ describe('letter-glitch reduced motion', () => {
     expect(queued).toHaveLength(1);
     result.stop();
   });
+
+  it('invokes requestAnimationFrame as a window method, not an unbound extract', () => {
+    expect(src).toContain('window.requestAnimationFrame(cb)');
+    expect(src).toContain('window.cancelAnimationFrame(id)');
+    expect(src).not.toMatch(/startLetterGlitchLoop\(\{[^}]*requestAnimationFrame,/s);
+  });
 });
