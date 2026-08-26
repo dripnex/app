@@ -27,8 +27,11 @@ describe('AuthGate form is in the tree when unauthenticated', () => {
   });
 
   it('isolates stacking so the canvas cannot cover the card', () => {
+    expect(AUTH_GATE_FORM_Z_INDEX).toBe(1);
     expect(screenCss).toMatch(/\.screen\s*\{[^}]*isolation:\s*isolate/s);
-    expect(screenCss).toMatch(/\.card\s*\{[^}]*z-index:\s*1/s);
+    const cardBlock = /\.card\s*\{[^}]*\}/s.exec(screenCss)?.[0];
+    expect(cardBlock).toBeDefined();
+    expect(cardBlock).toMatch(/z-index:\s*1;/);
     expect(screenCss).toContain('background: var(--glass-bg-fallback)');
     expect(screenCss).not.toMatch(/-webkit-app-region:\s*drag/);
   });

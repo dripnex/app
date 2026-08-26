@@ -14,6 +14,7 @@
 
 .card {
   position: relative;
+  /* Keep in sync with AUTH_GATE_FORM_Z_INDEX (also set inline). Linux needs this. */
   z-index: 1;
   -webkit-app-region: no-drag;
   display: flex;
