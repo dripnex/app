@@ -24,7 +24,7 @@ Hackability is `init.js`, `styles.css`, and satellite packs. Official themes sta
 
 AuthGate is the first window. An account is required. Sync is optional and end-to-end after that. Encryption and passphrase flows stay.
 
-Never offer a guest workspace. Never claim the app opens without an account.
+Never offer a guest workspace. AuthGate is required.
 
 ---
 

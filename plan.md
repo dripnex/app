@@ -1,6 +1,6 @@
 # DRIPNEX — Technical Architecture v1.0
 
-> Intelligent, offline-first desktop note app.
+> The hackable AI note taker. Local SQLite. Markdown is export.
 > Solid core. Extensible. Monetizable. Maintainable 3-5 years.
 
 ---
@@ -11,9 +11,9 @@
 
 **What Dripnex IS:**
 
-- Offline-first desktop app (Electron)
-- Markdown-based with smart features (backlinks, tags, graph)
-- Single-user, local-first (sync optional later)
+- Desktop app (Electron). AuthGate is the first window; the workspace is offline after login
+- Hackable AI note taker (backlinks, tags, graph; `init.js` / `styles.css` / packs)
+- Single-user, local SQLite (sync optional and E2E after account)
 - Premium product with clear monetization
 
 **What Dripnex is NOT:**
@@ -24,31 +24,31 @@
 
 ### 1.1 Product Identity
 
-**Thesis:** Dripnex is a Markdown-first app that happens to be smart — not a smart system that happens to use Markdown.
+**Thesis:** Dripnex is the hackable AI note taker. SQLite is the store. `.md` is export only.
 
 **This means:**
 
-- Markdown preservation > intelligence features
-- Export fidelity > internal efficiency
-- User trust > clever optimization
+- Messy input becomes a document a person will send — not a model dump
+- AuthGate is required. Sync is optional E2E after account
+- Hackability is `init.js` / `styles.css` / satellite packs, not a files-on-disk romanticism
 
-**One-liner:** "Your notes survive the app."
+**One-liner:** "The hackable AI note taker."
 
 **Competitive position:**
 
-- Not competing with Inkdrop (closed DB, sync-first)
-- Competing with: Obsidian (but more coherent), VS Code + Markdown (but real product), "my folder of notes I don't want to lose"
+- Not a files-first Markdown editor
+- Competing with: Inkdrop-shaped AI note apps you can hack; Obsidian-like depth without treating the vault as the product
 
 ---
 
 ## 2. Non-Negotiables
 
-| Principle             | Rule                                                                       |
-| --------------------- | -------------------------------------------------------------------------- |
-| **Core first**        | Core runs without Electron, React, or UI. Testable in pure Node.           |
-| **Offline-first**     | 100% functional without internet. Sync is a feature, not a requirement.    |
-| **Strict separation** | Core ≠ UI ≠ Infra ≠ Packaging. React never decides domain logic.           |
-| **Minimal deps**      | Every library needs written justification. No "just in case" abstractions. |
+| Principle               | Rule                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| **Core first**          | Core runs without Electron, React, or UI. Testable in pure Node.                       |
+| **Offline after login** | Workspace works without internet after AuthGate. Sync is a feature, not a requirement. |
+| **Strict separation**   | Core ≠ UI ≠ Infra ≠ Packaging. React never decides domain logic.                       |
+| **Minimal deps**        | Every library needs written justification. No "just in case" abstractions.             |
 
 ---
 
@@ -914,20 +914,20 @@ describe('IPC Contract', () => {
 
 ### 17.1 Explicit Non-Goals (v0.x - v1.0)
 
-| Feature                   | Status          | Rationale                                     |
-| ------------------------- | --------------- | --------------------------------------------- |
-| Real-time collaboration   | Never (v1)      | Different product                             |
-| Cloud sync                | Deferred        | Focus on offline-first                        |
-| Mobile app                | Deferred        | Desktop-first                                 |
-| Arbitrary plugins         | Never           | Security + maintenance                        |
-| Block-based editing       | Never           | Markdown-first identity                       |
-| Multi-user / teams        | Never (v1)      | Single-user product                           |
-| AI features               | Deferred        | Not core value prop                           |
-| Web version               | Deferred        | Desktop is the product                        |
-| Attachments / images      | Deferred (v0.2) | Adds complexity; markdown text first          |
-| Image embeds (`![[img]]`) | Deferred (v0.2) | Requires attachment handling                  |
-| PDF export                | Deferred        | Not core value                                |
-| Attachments in DB         | Never           | Always filesystem-based, never embedded blobs |
+| Feature                   | Status          | Rationale                                           |
+| ------------------------- | --------------- | --------------------------------------------------- |
+| Real-time collaboration   | Never (v1)      | Different product                                   |
+| Cloud sync                | Deferred        | Focus on offline-first                              |
+| Mobile app                | Deferred        | Desktop-first                                       |
+| Arbitrary plugins         | Never           | Security + maintenance                              |
+| Block-based editing       | Never           | CodeMirror edits markdown text; SQLite is the store |
+| Multi-user / teams        | Never (v1)      | Single-user product                                 |
+| AI features               | Deferred        | Not core value prop                                 |
+| Web version               | Deferred        | Desktop is the product                              |
+| Attachments / images      | Deferred (v0.2) | Adds complexity; markdown text first                |
+| Image embeds (`![[img]]`) | Deferred (v0.2) | Requires attachment handling                        |
+| PDF export                | Deferred        | Not core value                                      |
+| Attachments in DB         | Never           | Always filesystem-based, never embedded blobs       |
 
 ### 17.2 Why This Matters
 
