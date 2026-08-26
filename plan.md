@@ -260,13 +260,13 @@ interface NoteRepository {
 **Stages:**
 | Stage | Trigger | Action |
 |-------|---------|--------|
-| 0 | Now | No backend. Free works 100% offline. |
+| 0 | Now | Local SQLite after AuthGate. `.md` is export. |
 | 1 | Pro feature (Sync) | Backend MVP + Stripe integration |
 | 2 | 1000+ Pro users | Sync, teams, dashboard |
 
 **Principles:**
 
-- Free tier never requires account
+- AuthGate is required. Sync is optional E2E after account.
 - Pro tier requires account for subscription management
 - No DRM, no hardware fingerprinting
 - Soft device limits (warning at 4, block at 5)
@@ -917,12 +917,12 @@ describe('IPC Contract', () => {
 | Feature                   | Status          | Rationale                                           |
 | ------------------------- | --------------- | --------------------------------------------------- |
 | Real-time collaboration   | Never (v1)      | Different product                                   |
-| Cloud sync                | Deferred        | Focus on offline-first                              |
+| Cloud sync                | Optional        | E2E after AuthGate; workspace is local SQLite       |
 | Mobile app                | Deferred        | Desktop-first                                       |
 | Arbitrary plugins         | Never           | Security + maintenance                              |
 | Block-based editing       | Never           | CodeMirror edits markdown text; SQLite is the store |
 | Multi-user / teams        | Never (v1)      | Single-user product                                 |
-| AI features               | Deferred        | Not core value prop                                 |
+| AI features               | Shipped         | Core identity: hackable AI note taker               |
 | Web version               | Deferred        | Desktop is the product                              |
 | Attachments / images      | Deferred (v0.2) | Adds complexity; markdown text first                |
 | Image embeds (`![[img]]`) | Deferred (v0.2) | Requires attachment handling                        |
@@ -966,7 +966,7 @@ Non-goals reviewed at major versions:
 - Free tier ensures notes are never held hostage
 - Subscription funds continued development sustainably
 - Users upgrade for convenience (sync), not necessity (access to their data)
-- Aligns with offline-first principle: core functionality works without internet
+- Aligns with offline after login: the workspace works without internet once you have an account
 
 ### 18.2 How It Works
 

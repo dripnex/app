@@ -64,9 +64,6 @@ import { useHeadingJumpStore } from './stores/headingJumpStore';
 function NotesApp() {
   usePerformanceMode();
   useOfficialThemes();
-  useEnsureNowBoard();
-  useRefreshOnWindowFocus();
-  useMcpLocalPath();
   useThemeOverrides();
   useAppearanceSettings();
   useCssVariables();
@@ -78,6 +75,45 @@ function NotesApp() {
   const sessionHydrated = useAuthStore(selectSessionHydrated);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isE2E = window.dripnex?.app?.isE2E?.() === true;
+
+  useEffect(() => {
+    void useAuthStore.getState().loadSession();
+  }, []);
+
+  const shell = resolveAppShell({
+    onboardingComplete: !showWelcome,
+    isAuthenticated,
+    sessionHydrated,
+    isE2E,
+  });
+
+  if (shell === 'auth') {
+    return (
+      <ToastProvider>
+        <AuthGate hydrating={!sessionHydrated} />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
+
+  return (
+    <SignedInApp
+      showWelcome={shell === 'welcome'}
+      onFinishedOnboarding={() => setShowWelcome(false)}
+    />
+  );
+}
+
+function SignedInApp({
+  showWelcome,
+  onFinishedOnboarding,
+}: {
+  showWelcome: boolean;
+  onFinishedOnboarding: () => void;
+}) {
+  useEnsureNowBoard();
+  useRefreshOnWindowFocus();
+  useMcpLocalPath();
 
   const {
     sidebarWidth,
@@ -114,10 +150,6 @@ function NotesApp() {
 
   useEffect(() => {
     void useTagColorsStore.getState().loadColors();
-  }, []);
-
-  useEffect(() => {
-    void useAuthStore.getState().loadSession();
   }, []);
 
   useEffect(() => {
@@ -375,31 +407,15 @@ function NotesApp() {
   const handleWelcomeComplete = useCallback(
     (createNote: boolean) => {
       localStorage.setItem('dripnex-onboarding-done', 'true');
-      setShowWelcome(false);
+      onFinishedOnboarding();
       if (createNote) {
         void handleNewNote();
       }
     },
-    [handleNewNote]
+    [handleNewNote, onFinishedOnboarding]
   );
 
-  const shell = resolveAppShell({
-    onboardingComplete: !showWelcome,
-    isAuthenticated,
-    sessionHydrated,
-    isE2E,
-  });
-
-  if (shell === 'auth') {
-    return (
-      <ToastProvider>
-        <AuthGate hydrating={!sessionHydrated} />
-        <Toaster />
-      </ToastProvider>
-    );
-  }
-
-  if (shell === 'welcome') {
+  if (showWelcome) {
     return (
       <ToastProvider>
         <Welcome onComplete={handleWelcomeComplete} />

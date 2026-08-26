@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
-import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
+import { rendererHtmlPath, rendererWebPreferences } from './paths.js';
 import { forgetClosable, trackClosable } from './closable.js';
 import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
@@ -24,12 +24,7 @@ export function createSettingsWindow(): BrowserWindow {
     trafficLightPosition: { x: 8, y: 8 },
     ...frostedWindowOptions(),
     title: 'Settings',
-    webPreferences: {
-      preload: rendererPreloadPath(),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
+    webPreferences: rendererWebPreferences(),
   });
 
   wireFrosted(settingsWindow);
