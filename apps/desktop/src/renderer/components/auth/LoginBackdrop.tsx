@@ -1,9 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { LOGIN_BACKDROP_Z_INDEX } from './authGateStacking';
-import { paintTunnel } from './paintTunnel';
+import {
+  ACCENT_FALLBACK,
+  GLITCH_SPEED_MS,
+  createLetterGrid,
+  glitchColorsFromAccent,
+  paintLetterGlitch,
+  startLetterGlitchLoop,
+  stepSmoothColors,
+  updateLetters,
+  type LetterGrid,
+} from './letterGlitch';
 import styles from './LoginBackdrop.module.css';
-
-const CYCLE_MS = 16000;
 
 function readToken(name: string, fallback: string): string {
   if (typeof document === 'undefined') return fallback;
@@ -16,9 +24,14 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+function readGlitchColors() {
+  return glitchColorsFromAccent(readToken('--accent', ACCENT_FALLBACK));
+}
+
 /**
- * Perspective corridor of paper-and-ink frames behind AuthGate.
- * Slow forward motion. Frozen to one frame when the user prefers reduced motion.
+ * Matrix-style letter grid behind AuthGate.
+ * Adapted from React Bits Letter Glitch (DavidHDev/react-bits).
+ * Frozen to one frame when the user prefers reduced motion.
  */
 export function LoginBackdrop() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,55 +39,65 @@ export function LoginBackdrop() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     const reduceMotion = prefersReducedMotion();
-    let raf = 0;
-    let start = performance.now();
+    let grid: LetterGrid = createLetterGrid(1, 1, readGlitchColors());
+    let lastGlitch = Date.now();
+
+    const paint = () => {
+      paintLetterGlitch(ctx, grid, canvas.clientWidth, canvas.clientHeight);
+    };
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      canvas.width = Math.max(1, Math.floor(w * dpr));
-      canvas.height = Math.max(1, Math.floor(h * dpr));
+      const w = Math.max(1, canvas.clientWidth);
+      const h = Math.max(1, canvas.clientHeight);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      grid = createLetterGrid(w, h, readGlitchColors());
+      paint();
     };
 
-    const draw = (phase: number) => {
-      resize();
-      paintTunnel(
-        ctx,
-        canvas.clientWidth,
-        canvas.clientHeight,
-        phase,
-        readToken('--accent', '#5eead4')
-      );
-    };
+    resize();
 
-    if (reduceMotion) {
-      draw(0.38);
-      return;
-    }
+    const loop = startLetterGlitchLoop({
+      reduceMotion,
+      requestAnimationFrame,
+      cancelAnimationFrame,
+      onFrame: () => {
+        const now = Date.now();
+        if (now - lastGlitch >= GLITCH_SPEED_MS) {
+          updateLetters(grid);
+          paint();
+          lastGlitch = now;
+        } else if (stepSmoothColors(grid)) {
+          paint();
+        }
+      },
+    });
 
-    const loop = (now: number) => {
-      draw(((now - start) / CYCLE_MS) % 1);
-      raf = requestAnimationFrame(loop);
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(resize, 100);
     };
-    raf = requestAnimationFrame(loop);
+    window.addEventListener('resize', handleResize);
 
-    const onScheme = () => {
-      start = performance.now();
-    };
-    const observer = new MutationObserver(onScheme);
+    const observer = new MutationObserver(() => {
+      grid.colors = readGlitchColors();
+    });
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-color-scheme'],
     });
 
     return () => {
-      cancelAnimationFrame(raf);
+      loop.stop();
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
       observer.disconnect();
     };
   }, []);
