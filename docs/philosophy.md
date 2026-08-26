@@ -24,12 +24,12 @@ Hackability is `init.js`, `styles.css`, and satellite packs. Official themes sta
 
 AuthGate is the first window. An account is required. Sync is optional and end-to-end after that. Encryption and passphrase flows stay.
 
-Never say “no account to open a file.”
+Never offer a guest workspace. Never claim the app opens without an account.
 
 ---
 
 ## What that is not
 
-This is not a manifesto for shipping less, or for “your notes remain files.”
+This is not a manifesto about reducing the ship rate, or about notes living on disk as files.
 
 Those lines are dead. The product is the hackable AI note taker.

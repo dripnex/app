@@ -4,7 +4,7 @@
 
 **Identity:** Dripnex is the hackable AI note taker. SQLite is the store. `.md` is export. AuthGate is first. `init.js` / `styles.css` / satellite packs are the hack.
 
-Do not badge it “AI-powered.” Do not say notes remain files.
+Do not badge it “AI-powered.” Do not treat notes as files on disk.
 
 ---
 
@@ -66,9 +66,9 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 - Urgency
 - Aggressive comparisons
 - Inflated adjectives
-- “No account to open a file”
-- “Your notes remain files”
-- Manifesto lines about shipping less
+- Guest-open / no-account launch claims
+- Files-as-identity claims
+- Manifesto lines about reducing the ship rate
 
 **Test:** If a sentence could appear in a pitch deck, delete it.
 
@@ -152,6 +152,6 @@ Before any design or copy decision, ask:
 2. Does this grab attention?
 3. Could this appear in a pitch deck?
 4. Does this communicate energy or ambition?
-5. Does this say notes are files, or that no account is needed?
+5. Does this treat notes as files, or claim the app opens without an account?
 
 If yes to any → don't do it.
