@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuthStore, selectError } from '../../stores/authStore';
 import logo from '../../assets/logo.png';
 import { LoginBackdrop } from './LoginBackdrop';
+import { AUTH_GATE_FORM_Z_INDEX } from './authGateStacking';
 import styles from './AuthGate.module.css';
 
 /**
@@ -39,9 +40,9 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
   );
 
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-auth-gate="screen">
       <LoginBackdrop />
-      <div className={styles.card}>
+      <div className={styles.card} style={{ zIndex: AUTH_GATE_FORM_Z_INDEX }} data-auth-gate="form">
         <img src={logo} alt="" width={40} height={40} className={styles.logo} />
         <p className={styles.kicker}>The hackable AI note taker</p>
         <div className={styles.tabs} role="tablist">
