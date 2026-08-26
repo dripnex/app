@@ -4,12 +4,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  isolation: isolate;
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -23,12 +23,15 @@
 }
 
 .dialog {
-  background: var(--bg-primary);
+  background: var(--glass-bg-fallback);
+  border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 90%;
   max-width: 450px;
   position: relative;
+  z-index: 1;
+  isolation: isolate;
   animation: slideUp 0.3s ease-out;
 }
 
@@ -128,6 +131,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-muted);
+  text-align: left;
 }
 
 .input {
