@@ -2,6 +2,10 @@
 
 > Internal document. Not for publication. Consult before every decision.
 
+**Identity:** Dripnex is the hackable AI note taker. SQLite is the store. `.md` is export. AuthGate is first. `init.js` / `styles.css` / satellite packs are the hack.
+
+Do not badge it “AI-powered.” Do not say notes remain files.
+
 ---
 
 ## Anti-values (what Dripnex is NOT)
@@ -14,8 +18,9 @@ Dripnex is not:
 - "Intelligent"
 - "Fast"
 - "Futuristic"
-- "AI-powered"
+- "AI-powered" (hype badge — the product still is an AI note taker)
 - "An ecosystem"
+- A files-first Markdown editor
 
 If something visual or verbal communicates any of these — it's wrong, even if it's "nice".
 
@@ -40,7 +45,7 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 1. We explain decisions, not features
 2. We prefer being boring over being clever
 3. We optimize for long-term trust, not short-term conversion
-4. We ship less, but keep it working longer
+4. SQLite is identity. Markdown is export. AuthGate is first.
 5. If a choice adds dependency, we don't make it
 
 ---
@@ -61,6 +66,9 @@ If something visual or verbal communicates any of these — it's wrong, even if 
 - Urgency
 - Aggressive comparisons
 - Inflated adjectives
+- “No account to open a file”
+- “Your notes remain files”
+- Manifesto lines about shipping less
 
 **Test:** If a sentence could appear in a pitch deck, delete it.
 
@@ -144,5 +152,6 @@ Before any design or copy decision, ask:
 2. Does this grab attention?
 3. Could this appear in a pitch deck?
 4. Does this communicate energy or ambition?
+5. Does this say notes are files, or that no account is needed?
 
 If yes to any → don't do it.
