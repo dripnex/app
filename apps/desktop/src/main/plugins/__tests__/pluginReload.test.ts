@@ -1,24 +1,32 @@
 import { describe, expect, it, vi } from 'vitest';
 import { reloadPluginWindows, type PluginReloadWindow } from '../pluginReload';
 
-function fakeWindow(overrides?: {
-  destroyed?: boolean;
-  contentsDestroyed?: boolean;
-}): PluginReloadWindow & { send: ReturnType<typeof vi.fn> } {
-  const send = vi.fn();
-  const close = vi.fn();
-  const destroy = vi.fn();
-  const reload = vi.fn();
+function fakeWindow(overrides?: { destroyed?: boolean; contentsDestroyed?: boolean }): {
+  window: PluginReloadWindow;
+  send: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+  destroy: ReturnType<typeof vi.fn>;
+  reload: ReturnType<typeof vi.fn>;
+} {
+  const send = vi.fn(() => {});
+  const close = vi.fn(() => {});
+  const destroy = vi.fn(() => {});
+  const reload = vi.fn(() => {});
   return {
+    window: {
+      isDestroyed: () => overrides?.destroyed === true,
+      close,
+      destroy,
+      webContents: {
+        isDestroyed: () => overrides?.contentsDestroyed === true,
+        send,
+        reload,
+      },
+    },
     send,
-    isDestroyed: () => overrides?.destroyed === true,
     close,
     destroy,
-    webContents: {
-      isDestroyed: () => overrides?.contentsDestroyed === true,
-      send,
-      reload,
-    },
+    reload,
   };
 }
 
@@ -28,7 +36,7 @@ describe('reloadPluginWindows', () => {
     const settings = fakeWindow();
     const notes = fakeWindow();
 
-    reloadPluginWindows([settings, notes]);
+    reloadPluginWindows([settings.window, notes.window]);
 
     expect(settings.send).toHaveBeenCalledTimes(1);
     expect(settings.send).toHaveBeenCalledWith('plugins:reload');
@@ -37,10 +45,11 @@ describe('reloadPluginWindows', () => {
     expect(settings.destroy).not.toHaveBeenCalled();
     expect(notes.close).not.toHaveBeenCalled();
     expect(notes.destroy).not.toHaveBeenCalled();
-    expect(settings.webContents.reload).not.toHaveBeenCalled();
-    expect(notes.webContents.reload).not.toHaveBeenCalled();
+    expect(settings.reload).not.toHaveBeenCalled();
+    expect(notes.reload).not.toHaveBeenCalled();
     expect(exit).not.toHaveBeenCalled();
-    expect([settings, notes].every(w => !w.isDestroyed())).toBe(true);
+    expect(settings.window.isDestroyed()).toBe(false);
+    expect(notes.window.isDestroyed()).toBe(false);
     exit.mockRestore();
   });
 
@@ -49,7 +58,7 @@ describe('reloadPluginWindows', () => {
     const contentsGone = fakeWindow({ contentsDestroyed: true });
     const alive = fakeWindow();
 
-    reloadPluginWindows([gone, contentsGone, alive]);
+    reloadPluginWindows([gone.window, contentsGone.window, alive.window]);
 
     expect(gone.send).not.toHaveBeenCalled();
     expect(contentsGone.send).not.toHaveBeenCalled();
@@ -58,6 +67,6 @@ describe('reloadPluginWindows', () => {
     expect(gone.destroy).not.toHaveBeenCalled();
     expect(alive.close).not.toHaveBeenCalled();
     expect(alive.destroy).not.toHaveBeenCalled();
-    expect(alive.isDestroyed()).toBe(false);
+    expect(alive.window.isDestroyed()).toBe(false);
   });
 });

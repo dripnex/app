@@ -11,19 +11,32 @@ const limestone: ThemeDefinition = {
   tokens: { '--bg-base': '#e8e4dc', '--accent': '#8a7a62' },
 };
 
-function livingWindow(): PluginReloadWindow & {
+function livingWindow(): {
+  window: PluginReloadWindow;
   close: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
+  send: ReturnType<typeof vi.fn>;
+  reload: ReturnType<typeof vi.fn>;
 } {
+  const close = vi.fn(() => {});
+  const destroy = vi.fn(() => {});
+  const send = vi.fn(() => {});
+  const reload = vi.fn(() => {});
   return {
-    isDestroyed: () => false,
-    close: vi.fn(),
-    destroy: vi.fn(),
-    webContents: {
+    window: {
       isDestroyed: () => false,
-      send: vi.fn(),
-      reload: vi.fn(),
+      close,
+      destroy,
+      webContents: {
+        isDestroyed: () => false,
+        send,
+        reload,
+      },
     },
+    close,
+    destroy,
+    send,
+    reload,
   };
 }
 
@@ -50,7 +63,7 @@ describe('finishThemePackInstall', () => {
       activate,
       requestReload: () => {
         order.push('reload');
-        reloadPluginWindows([settings, notes]);
+        reloadPluginWindows([settings.window, notes.window]);
       },
     });
 
@@ -63,16 +76,16 @@ describe('finishThemePackInstall', () => {
       'reload',
     ]);
     expect(activate).toHaveBeenCalledWith(limestone);
-    expect(settings.webContents.send).toHaveBeenCalledWith('plugins:reload');
-    expect(notes.webContents.send).toHaveBeenCalledWith('plugins:reload');
+    expect(settings.send).toHaveBeenCalledWith('plugins:reload');
+    expect(notes.send).toHaveBeenCalledWith('plugins:reload');
     expect(settings.close).not.toHaveBeenCalled();
     expect(settings.destroy).not.toHaveBeenCalled();
     expect(notes.close).not.toHaveBeenCalled();
     expect(notes.destroy).not.toHaveBeenCalled();
-    expect(settings.webContents.reload).not.toHaveBeenCalled();
+    expect(settings.reload).not.toHaveBeenCalled();
     expect(exit).not.toHaveBeenCalled();
-    expect(settings.isDestroyed()).toBe(false);
-    expect(notes.isDestroyed()).toBe(false);
+    expect(settings.window.isDestroyed()).toBe(false);
+    expect(notes.window.isDestroyed()).toBe(false);
     exit.mockRestore();
   });
 
