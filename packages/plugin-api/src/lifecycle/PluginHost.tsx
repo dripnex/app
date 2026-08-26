@@ -10,8 +10,7 @@ import {
   type ConfigBridge,
   type SetDefaultKeybindingFn,
 } from './PluginRegistry';
-import { nextPluginHostActions } from './pluginHostActions';
-import { sortPlugins } from './sortPlugins';
+import { planPluginHostSync } from './pluginHostActions';
 
 interface PluginHostProps {
   plugins: PluginManifest[];
@@ -94,13 +93,12 @@ export function PluginHost({
     const next = pluginsRef.current;
     const loadedIds = registry.getLoadedIds();
     const activeIds = loadedIds.filter(id => registry.isActive(id));
-    const { unload, activate } = nextPluginHostActions(loadedIds, activeIds, next);
+    const { unload, activate, skipped } = planPluginHostSync(loadedIds, activeIds, next);
 
     for (const id of unload) {
       registry.unload(id);
     }
 
-    const { sorted, skipped } = sortPlugins(activate);
     for (const { plugin, missingDeps } of skipped) {
       console.warn(
         `[PluginHost] Skipping "${plugin.id}": missing dependencies: ${missingDeps.join(', ')}`
@@ -109,7 +107,7 @@ export function PluginHost({
 
     const activateNew = async () => {
       const apis = apisRef.current;
-      for (const manifest of sorted) {
+      for (const manifest of activate) {
         if (cancelled) return;
 
         if (manifest.apiVersion && manifest.apiVersion !== PLUGIN_API_VERSION) {

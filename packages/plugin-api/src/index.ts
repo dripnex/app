@@ -165,8 +165,8 @@ export { parsePluginChord } from './packageFiles/chords';
 export type { PluginChord } from './packageFiles/chords';
 export { applyPluginConfig } from './lifecycle/configRuntime';
 export { PluginHost } from './lifecycle/PluginHost';
-export { nextPluginHostActions } from './lifecycle/pluginHostActions';
-export type { PluginHostActions } from './lifecycle/pluginHostActions';
+export { nextPluginHostActions, planPluginHostSync } from './lifecycle/pluginHostActions';
+export type { PluginHostActions, PluginHostPlan } from './lifecycle/pluginHostActions';
 export { sortPlugins } from './lifecycle/sortPlugins';
 export type { SortResult } from './lifecycle/sortPlugins';
 

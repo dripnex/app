@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { nextPluginHostActions } from '../src/lifecycle/pluginHostActions';
+import { nextPluginHostActions, planPluginHostSync } from '../src/lifecycle/pluginHostActions';
 import type { PluginManifest } from '../src/types';
 
-function plugin(id: string): PluginManifest {
-  return { id, name: id, version: '1.0.0', activate: () => {} };
+function plugin(id: string, deps?: Record<string, string>): PluginManifest {
+  return { id, name: id, version: '1.0.0', dependencies: deps, activate: () => {} };
 }
 
 describe('nextPluginHostActions', () => {
@@ -45,5 +45,25 @@ describe('nextPluginHostActions', () => {
     const actions = nextPluginHostActions(['theme-limestone'], [], [limestone]);
     expect(actions.unload).toEqual([]);
     expect(actions.activate.map(p => p.id)).toEqual(['theme-limestone']);
+  });
+});
+
+describe('planPluginHostSync', () => {
+  const base = plugin('base');
+  const extension = plugin('extension', { base: '*' });
+
+  it('activates a new extension whose base is already active', () => {
+    const plan = planPluginHostSync(['base'], ['base'], [base, extension]);
+    expect(plan.unload).toEqual([]);
+    expect(plan.skipped).toEqual([]);
+    expect(plan.activate.map(p => p.id)).toEqual(['extension']);
+  });
+
+  it('unloads an extension whose base disappeared', () => {
+    const plan = planPluginHostSync(['base', 'extension'], ['base', 'extension'], [extension]);
+    expect(plan.activate).toEqual([]);
+    expect(plan.skipped.map(s => s.plugin.id)).toEqual(['extension']);
+    expect(plan.skipped[0]?.missingDeps).toEqual(['base']);
+    expect(plan.unload).toEqual(['base', 'extension']);
   });
 });
