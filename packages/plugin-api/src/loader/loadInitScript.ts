@@ -34,7 +34,7 @@ function looksLikeCjsSource(code: string): boolean {
 }
 
 export function loadInitScript(code: string): PluginManifest | null {
-  // Default init.js is free-form (`dripnex.menu.add`). Do not probe-eval it:
+  // Default init.js is free-form (`dripnex.registerAiCommand`). Do not probe-eval it:
   // `dripnex` is window.dripnex (preload) and has no .menu.
   if (!looksLikeCjsSource(code)) {
     return wrapFreeForm(code);

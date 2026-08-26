@@ -9,3 +9,8 @@ export const safeStorage = {
   encryptString: (value: string) => Buffer.from(value),
   decryptString: (value: Buffer) => value.toString('utf8'),
 };
+
+/** Empty string = success, matching Electron's `shell.openPath`. */
+export const shell = {
+  openPath: async (_filePath: string) => '',
+};
