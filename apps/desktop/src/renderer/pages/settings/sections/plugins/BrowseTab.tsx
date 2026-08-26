@@ -9,7 +9,8 @@ import { Button, toast } from '../../../../ui/primitives';
 import { SettingsCard } from '../../components/SettingsCard';
 import {
   COMMUNITY_CATALOG,
-  installSpecFor,
+  cardsFromRegistry,
+  installTargetFor,
   mergeFallbackCatalog,
   type CatalogCard,
 } from './communityCatalog';
@@ -43,24 +44,16 @@ export function BrowseTab() {
 
   useEffect(() => {
     if (!window.dripnex.plugins.listRegistry) return;
-    void window.dripnex.plugins.listRegistry().then(result => {
-      if (result.plugins.length === 0) return;
-      setSource(result.source);
-      setCatalog(
-        mergeFallbackCatalog(
-          result.plugins.map(p => ({
-            slug: p.slug,
-            name: p.name,
-            description: p.description,
-            version: p.version,
-            author: p.author,
-            repository: p.repositoryUrl
-              ? p.repositoryUrl.replace(/^https:\/\/github\.com\//, '')
-              : null,
-          }))
-        )
-      );
-    });
+    void window.dripnex.plugins
+      .listRegistry()
+      .then(result => {
+        if (result.plugins.length === 0) return;
+        setSource(result.source);
+        setCatalog(mergeFallbackCatalog(cardsFromRegistry(result.plugins)));
+      })
+      .catch(() => {
+        // Keep the bundled fallback. A failed GET must not blank Browse.
+      });
   }, []);
 
   const install = useCallback(
@@ -145,7 +138,7 @@ export function BrowseTab() {
                       variant="primary"
                       size="sm"
                       disabled={busyId !== null}
-                      onClick={() => void install(installSpecFor(plugin), plugin.slug)}
+                      onClick={() => void install(installTargetFor(plugin), plugin.slug)}
                     >
                       {busy ? 'Installing…' : 'Install'}
                     </Button>

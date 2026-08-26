@@ -20,12 +20,10 @@ import { defineIpcHandler } from '../ipc/registry.js';
 import { broadcastToWindows } from '../windows/broadcast.js';
 import { scanPlugins } from '../pluginScanner.js';
 import {
+  fetchRegistryCatalog,
   isAllowedPluginHost,
   parseConnectSpec,
-  pickReleaseTarball,
-  PLUGIN_REGISTRY_URLS,
-  resolveRegistryBundle,
-  uniqueReleaseTags,
+  resolveConnectUrl,
 } from '../plugins/githubInstall.js';
 import { extractArchiveSafely } from '../plugins/extractArchive.js';
 import type { DataPaths, Database } from './types.js';
@@ -171,61 +169,8 @@ async function installPluginFromHttpsUrl(
   }
 }
 
-async function resolveConnectUrl(
-  spec: Exclude<ReturnType<typeof parseConnectSpec>, { error: string }>
-): Promise<{ url: string } | { error: string }> {
-  if (spec.kind === 'registry') {
-    return resolveRegistryBundle(spec.slug, (input, init) =>
-      net.fetch(typeof input === 'string' ? input : String(input), init)
-    );
-  }
-
-  if (spec.kind === 'url') {
-    let hostname: string;
-    try {
-      hostname = new URL(spec.url).hostname;
-    } catch {
-      return { error: 'Invalid URL' };
-    }
-    if (!isAllowedPluginHost(hostname)) {
-      return { error: 'Only GitHub release archives are allowed' };
-    }
-    return { url: spec.url };
-  }
-
-  const headers = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'Dripnex',
-  };
-  const urls = spec.tag
-    ? uniqueReleaseTags(spec.tag).map(
-        t =>
-          `https://api.github.com/repos/${spec.owner}/${spec.repo}/releases/tags/${encodeURIComponent(t)}`
-      )
-    : [`https://api.github.com/repos/${spec.owner}/${spec.repo}/releases/latest`];
-
-  let lastStatus = 0;
-  for (const api of urls) {
-    const res = await net.fetch(api, { headers });
-    lastStatus = res.status;
-    if (res.status === 404) continue;
-    if (!res.ok) return { error: `GitHub returned ${res.status} for ${spec.owner}/${spec.repo}` };
-    const body = (await res.json()) as {
-      tag_name?: string;
-      assets?: Array<{ name?: string; browser_download_url?: string }>;
-    };
-    const tarball = pickReleaseTarball(body.assets ?? []);
-    if (!tarball) {
-      return {
-        error: `Release ${body.tag_name ?? spec.tag ?? 'latest'} of ${spec.owner}/${spec.repo} has no .tar.gz. Authors: dripnex-plugin pack.`,
-      };
-    }
-    return { url: tarball };
-  }
-
-  return {
-    error: `No GitHub release found for ${spec.owner}/${spec.repo}${spec.tag ? `@${spec.tag}` : ''}${lastStatus ? ` (${lastStatus})` : ''}.`,
-  };
+function electronFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return net.fetch(typeof input === 'string' ? input : String(input), init) as Promise<Response>;
 }
 
 export function registerPluginHandlers(deps: PluginHandlerDeps): void {
@@ -469,40 +414,9 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
     channel: 'plugins:listRegistry',
     args: z.tuple([]),
     handler: async () => {
-      for (const base of [...new Set(PLUGIN_REGISTRY_URLS)]) {
-        try {
-          const res = await net.fetch(`${base.replace(/\/$/, '')}/plugins`, {
-            headers: { Accept: 'application/json', 'User-Agent': 'Dripnex' },
-          });
-          if (!res.ok) continue;
-          const body = (await res.json()) as {
-            plugins?: Array<{
-              slug: string;
-              name: string;
-              description: string;
-              version: string;
-              author: string;
-              repositoryUrl?: string | null;
-              bundleUrl?: string | null;
-            }>;
-          };
-          if (Array.isArray(body.plugins)) {
-            return {
-              source: 'registry' as const,
-              plugins: body.plugins.map(p => ({
-                slug: p.slug,
-                name: p.name,
-                description: p.description,
-                version: p.version,
-                author: p.author,
-                repositoryUrl: p.repositoryUrl ?? null,
-                bundleUrl: p.bundleUrl ?? null,
-              })),
-            };
-          }
-        } catch {
-          continue;
-        }
+      const plugins = await fetchRegistryCatalog(electronFetch);
+      if (plugins && plugins.length > 0) {
+        return { source: 'registry' as const, plugins };
       }
       return { source: 'fallback' as const, plugins: [] };
     },
@@ -516,7 +430,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
       if ('error' in spec) {
         return { success: false, error: spec.error };
       }
-      const resolved = await resolveConnectUrl(spec);
+      const resolved = await resolveConnectUrl(spec, electronFetch);
       if ('error' in resolved) {
         return { success: false, error: resolved.error };
       }
