@@ -37,8 +37,11 @@ describe('Settings → Hack nav', () => {
 
   it('keeps Plugins → Open init.js / styles.css on the same IPC', () => {
     const plugins = readFileSync(join(here, '../sections/plugins/index.tsx'), 'utf-8');
-    const handlers = readFileSync(join(here, '../../../main/handlers/pluginHandlers.ts'), 'utf-8');
-    const preload = readFileSync(join(here, '../../../preload/api/plugins.ts'), 'utf-8');
+    const handlers = readFileSync(
+      join(here, '../../../../main/handlers/pluginHandlers.ts'),
+      'utf-8'
+    );
+    const preload = readFileSync(join(here, '../../../../preload/api/plugins.ts'), 'utf-8');
 
     expect(plugins).toContain("handleOpenUserFile('init')");
     expect(plugins).toContain("handleOpenUserFile('styles')");
