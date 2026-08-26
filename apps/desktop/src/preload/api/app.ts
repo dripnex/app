@@ -1,9 +1,13 @@
 import { ipcRenderer } from 'electron';
+import { allowPlaywrightAuthBypass, isPackagedFromArgv } from '../../shared/playwrightAuthBypass';
 import type { BacklinkInfo, OutgoingLinkInfo, GraphData } from './types';
 
 export interface AppVersionAPI {
   version: () => Promise<string>;
-  /** Isolated e2e runs set DRIPNEX_E2E=1 so the auth gate does not block tests. */
+  /**
+   * Unpackaged Playwright only. Packaged builds always return false,
+   * even if DRIPNEX_E2E=1 is set in the environment.
+   */
   isE2E: () => boolean;
 }
 
@@ -67,9 +71,10 @@ export interface ShareAPI {
 }
 
 export function createAppApi(): AppVersionAPI {
+  const packaged = isPackagedFromArgv(process.argv);
   return {
     version: () => ipcRenderer.invoke('app:version'),
-    isE2E: () => process.env.DRIPNEX_E2E === '1',
+    isE2E: () => allowPlaywrightAuthBypass(process.env.DRIPNEX_E2E, packaged),
   };
 }
 

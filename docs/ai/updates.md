@@ -22,6 +22,12 @@ flowchart LR
 
 Board: [dripnex/projects/3](https://github.com/orgs/dripnex/projects/3). Not Linear.
 
+## 2026-08-26
+
+- Identity SSOT: Dripnex is 100% the hackable AI note taker. SQLite is the store. `.md` is export. Hack via `init.js` / `styles.css` / satellite packs. `OFFICIAL_THEMES` stays []. No public marketplace.
+- AuthGate is the first window. ADR 002 rewritten (supersedes 2026-08-25 optional-auth). No guest path. Sync stays E2E after account. Playwright `DRIPNEX_E2E=1` may skip the gate; that is not a production bypass. Human QA blocked by AuthGate is accepted.
+- Do not rewrite `dripnex/marketing` in this stream.
+
 ## 2026-08-22
 
 - Mobile **started**. Tomás said go. `dripnex/ios` created (private). Reuse is `NoteSnapshot` + `sync-core` wire. Contract: `docs/mobile/CONTRACT.md`. Two-profile desktop sync stays a P3 risk, not a P1 blocker.

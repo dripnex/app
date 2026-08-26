@@ -1,38 +1,22 @@
 /**
- * Welcome — First-run onboarding screen
+ * Welcome — First-run onboarding after AuthGate.
  *
  * Shown once on first launch. Offers to create the user's first note
- * or skip straight into the app.
+ * or skip straight into the app. Never a guest path around the account.
  */
 
 import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '../ui/primitives';
 import logo from '../assets/logo.png';
 import styles from './Welcome.module.css';
+import { WELCOME_FEATURES, WELCOME_HEADLINE, WELCOME_LEDE } from './welcomeCopy';
+
+export { WELCOME_FEATURES, WELCOME_HEADLINE, WELCOME_LEDE } from './welcomeCopy';
 
 interface WelcomeProps {
   /** Called when user finishes onboarding. `createNote` is true when they click the CTA. */
   onComplete: (createNote: boolean) => void;
 }
-
-const features = [
-  {
-    title: 'Local-First',
-    desc: 'Works fully offline. Optional end-to-end encrypted sync.',
-  },
-  {
-    title: 'Pure Markdown',
-    desc: 'Standard .md under the hood. No lock-in.',
-  },
-  {
-    title: 'Extensible',
-    desc: 'Plugins, themes, and AI built in.',
-  },
-  {
-    title: 'Import Your Notes',
-    desc: 'Import from Obsidian, Markdown folders, or other apps.',
-  },
-] as const;
 
 export function Welcome({ onComplete }: WelcomeProps) {
   const primaryRef = useRef<HTMLButtonElement>(null);
@@ -69,11 +53,13 @@ export function Welcome({ onComplete }: WelcomeProps) {
         </div>
 
         <h1 id="welcome-heading" className={styles.headline}>
-          Your Markdown. Your Machine. Your&nbsp;Rules.
+          {WELCOME_HEADLINE}
         </h1>
 
+        <p className={styles.lede}>{WELCOME_LEDE}</p>
+
         <div className={styles.cards}>
-          {features.map(f => (
+          {WELCOME_FEATURES.map(f => (
             <div key={f.title} className={styles.card}>
               <p className={styles.cardTitle}>{f.title}</p>
               <p className={styles.cardDesc}>{f.desc}</p>

@@ -3,7 +3,7 @@
   "productName": "Dripnex",
   "version": "0.15.2",
   "private": true,
-  "description": "Markdown-first, offline-forever note app for developers",
+  "description": "The hackable AI note taker. Local SQLite. Markdown is export.",
   "author": {
     "name": "Dripnex",
     "email": "hello@dripnex.app"

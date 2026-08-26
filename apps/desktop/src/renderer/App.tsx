@@ -15,7 +15,8 @@ import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider } from './components/Toast';
 import { Toaster } from './ui/primitives';
 import { Welcome } from './components/Welcome';
-import { useAuthStore } from './stores/authStore';
+import { AuthGate } from './components/auth/AuthGate';
+import { useAuthStore, selectIsAuthenticated, selectSessionHydrated } from './stores/authStore';
 import { resolveAppShell } from './utils/appShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
@@ -60,26 +61,60 @@ import type { PaletteMode } from './utils/paletteQuery';
 import { useEditorBufferStore, selectContentForNote } from './stores/editorBufferStore';
 import { useHeadingJumpStore } from './stores/headingJumpStore';
 
-/**
- * Main Notes Application
- */
 function NotesApp() {
   usePerformanceMode();
   useOfficialThemes();
-  useEnsureNowBoard();
-  useRefreshOnWindowFocus();
-  useMcpLocalPath();
   useThemeOverrides();
   useAppearanceSettings();
   useCssVariables();
   usePluginStyles();
 
-  // First-run onboarding
   const [showWelcome, setShowWelcome] = useState(
     () => !localStorage.getItem('dripnex-onboarding-done')
   );
+  const sessionHydrated = useAuthStore(selectSessionHydrated);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const isE2E = window.dripnex?.app?.isE2E?.() === true;
 
-  // Resizable layout
+  useEffect(() => {
+    void useAuthStore.getState().loadSession();
+  }, []);
+
+  const shell = resolveAppShell({
+    onboardingComplete: !showWelcome,
+    isAuthenticated,
+    sessionHydrated,
+    isE2E,
+  });
+
+  if (shell === 'auth') {
+    return (
+      <ToastProvider>
+        <AuthGate hydrating={!sessionHydrated} />
+        <Toaster />
+      </ToastProvider>
+    );
+  }
+
+  return (
+    <SignedInApp
+      showWelcome={shell === 'welcome'}
+      onFinishedOnboarding={() => setShowWelcome(false)}
+    />
+  );
+}
+
+function SignedInApp({
+  showWelcome,
+  onFinishedOnboarding,
+}: {
+  showWelcome: boolean;
+  onFinishedOnboarding: () => void;
+}) {
+  useEnsureNowBoard();
+  useRefreshOnWindowFocus();
+  useMcpLocalPath();
+
   const {
     sidebarWidth,
     notelistWidth,
@@ -97,14 +132,12 @@ function NotesApp() {
   useEffect(() => {
     const setVisibility = window.dripnex.windows.setButtonVisibility;
     if (typeof setVisibility !== 'function') return;
-    // Hide native traffic lights when the first column is gone.
     void setVisibility(!hideSidebar);
     return () => {
       void setVisibility(true);
     };
   }, [hideSidebar]);
 
-  // Navigation state from Zustand
   const navigation = useNavigation();
   const filteredNotes = useFilteredNotes();
   const selectedNotebookId = useSelectedNotebookId();
@@ -115,32 +148,22 @@ function NotesApp() {
   const sortOrder = useSortOrder();
   const { goToTag, setSort, enterWorkspace, setTagFilter } = useNavigationActions();
 
-  // Load tag colors on mount (once)
   useEffect(() => {
     void useTagColorsStore.getState().loadColors();
   }, []);
 
-  // Load auth session on mount (once)
-  useEffect(() => {
-    void useAuthStore.getState().loadSession();
-  }, []);
-
-  // Auto-resume sync on network reconnect
   useEffect(() => {
     const cleanup = useSyncStore.getState().initNetworkListeners();
     return cleanup;
   }, []);
 
-  // Listen for sync status events pushed from main process
   useEffect(() => {
     const cleanup = useSyncStore.getState().initSyncStatusListener();
     return cleanup;
   }, []);
 
-  // Handle deep link auth verification
   useDeepLinks();
 
-  // Local UI state
   const [selectedNote, setSelectedNote] = useState<NoteSnapshot | null>(null);
   const liveNoteContent = useEditorBufferStore(selectContentForNote(selectedNote?.id ?? null));
   const paletteHeadings = useMemo(
@@ -273,7 +296,6 @@ function NotesApp() {
 
   const isLoading = searchNotesQuery.isFetching && searchNotesQuery.isLoading;
 
-  // Note CRUD actions (extracted hook)
   const {
     handleNewNote,
     handleSelectNote,
@@ -319,10 +341,8 @@ function NotesApp() {
     return () => window.removeEventListener('dripnex:follow-wikilink', onFollow);
   }, [handleWikilinkClick]);
 
-  // Flush pending saves before window close
   useAutoSave(handleUpdateNote);
 
-  // Commands, AI panel, keyboard shortcuts (extracted hook)
   const {
     isAiPanelOpen,
     aiPanelMode,
@@ -361,13 +381,9 @@ function NotesApp() {
     },
   });
 
-  // Determine selected quick filter for NoteList header
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
-
-  // AI Panel callbacks -- wired to existing app state
   const aiConfigCache = useRef<Record<string, unknown>>({});
 
-  // Load AI plugin config; stay current when Settings writes a key
   useEffect(() => {
     void window.dripnex.pluginConfig.getAll('dripnex-ai-assistant').then(config => {
       aiConfigCache.current = config ?? {};
@@ -388,19 +404,18 @@ function NotesApp() {
     return aiConfigCache.current[key] as T | undefined;
   }, []);
 
-  // Welcome screen completion handler
   const handleWelcomeComplete = useCallback(
     (createNote: boolean) => {
       localStorage.setItem('dripnex-onboarding-done', 'true');
-      setShowWelcome(false);
+      onFinishedOnboarding();
       if (createNote) {
         void handleNewNote();
       }
     },
-    [handleNewNote]
+    [handleNewNote, onFinishedOnboarding]
   );
 
-  if (resolveAppShell({ onboardingComplete: !showWelcome }) === 'welcome') {
+  if (showWelcome) {
     return (
       <ToastProvider>
         <Welcome onComplete={handleWelcomeComplete} />
@@ -537,7 +552,6 @@ function NotesApp() {
               )}
             </main>
 
-            {/* AI Assistant Panel -- right side */}
             {isAiPanelOpen && (
               <aside className="app__ai-panel">
                 <AiPanel
@@ -583,11 +597,9 @@ function NotesApp() {
 }
 
 export function App() {
-  // Check for note window mode via URL query param
   const urlParams = new URLSearchParams(window.location.search);
   const noteWindowId = urlParams.get('noteWindow');
 
-  // If this is a note window, render just the note editor
   if (noteWindowId) {
     return (
       <ErrorBoundary>
@@ -596,7 +608,6 @@ export function App() {
     );
   }
 
-  // Main app
   return (
     <ErrorBoundary>
       <NotesApp />
