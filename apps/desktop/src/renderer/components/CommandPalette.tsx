@@ -120,6 +120,7 @@ const CATEGORY_ORDER: { category: CommandCategory; label: string }[] = [
   { category: 'navigation', label: 'Navigation' },
   { category: 'app', label: 'App' },
   { category: 'data', label: 'Data' },
+  { category: 'ai', label: 'AI' },
   { category: 'plugin', label: 'Plugins' },
 ];
 
