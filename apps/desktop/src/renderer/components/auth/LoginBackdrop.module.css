@@ -19,7 +19,10 @@
 .veil {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at center, transparent 18%, color-mix(in srgb, var(--bg-base) 55%, transparent) 100%),
-    color-mix(in srgb, var(--bg-base) 22%, transparent);
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    transparent 60%,
+    color-mix(in srgb, var(--bg-base) 85%, transparent) 100%
+  );
 }
