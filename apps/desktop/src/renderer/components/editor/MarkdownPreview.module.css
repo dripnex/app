@@ -311,7 +311,7 @@
   text-decoration: line-through;
 }
 
-.markdown-preview input[type="checkbox"] {
+.markdown-preview input[type='checkbox'] {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -326,12 +326,12 @@
   vertical-align: middle;
 }
 
-.markdown-preview input[type="checkbox"]:checked {
+.markdown-preview input[type='checkbox']:checked {
   background: var(--accent);
   border-color: var(--accent);
 }
 
-.markdown-preview input[type="checkbox"]:checked::after {
+.markdown-preview input[type='checkbox']:checked::after {
   content: '';
   position: absolute;
   left: 4px;
@@ -513,6 +513,15 @@
   font-size: 0.85em;
   line-height: 1.6;
   white-space: pre;
+}
+
+.fenceLineHighlight {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.fenceLineHighlight .fenceGutter {
+  color: var(--accent);
+  opacity: 1;
 }
 
 /* Tables (GFM) */
@@ -787,71 +796,76 @@
 }
 
 /* ===== LIGHT THEME OVERRIDES ===== */
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-keyword),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-selector)-tag {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-keyword),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector)-tag {
   color: #7c3aed;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-string),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-template)-tag,
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-template)-variable {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-string),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-template)-tag,
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-template)-variable {
   color: #16a34a;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-number),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-literal) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-number),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-literal) {
   color: #ea580c;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-built_in),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-type) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-built_in),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-type) {
   color: #ca8a04;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-title),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-title):global(.function_) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-title),
+:global(:root[data-color-scheme='light'])
+  .markdown-preview
+  :global(.hljs-title):global(.function_) {
   color: #2563eb;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-comment),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-doctag) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-comment),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-doctag) {
   color: var(--text-muted);
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-punctuation),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-operator) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-punctuation),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-operator) {
   color: #0891b2;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-regexp) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-regexp) {
   color: #0891b2;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-tag),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-name) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-tag),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-name) {
   color: #dc2626;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-selector)-class,
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-selector)-id {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector)-class,
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector)-id {
   color: #ca8a04;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-property) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-property) {
   color: #2563eb;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-meta),
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-meta) :global(.hljs-keyword) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-meta),
+:global(:root[data-color-scheme='light'])
+  .markdown-preview
+  :global(.hljs-meta)
+  :global(.hljs-keyword) {
   color: #0891b2;
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-deletion) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-deletion) {
   color: #dc2626;
   background: rgba(220, 38, 38, 0.1);
 }
 
-:global(:root[data-color-scheme="light"]) .markdown-preview :global(.hljs-addition) {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-addition) {
   color: #16a34a;
   background: rgba(22, 163, 74, 0.1);
 }

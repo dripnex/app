@@ -31,6 +31,9 @@ export function FenceBlock({ children }: FenceBlockProps) {
 
   const { className, children: codeKids, node: _node, ...rest } = code.props;
   const filename = readFilename(rest);
+  const startLine = readPositiveInt(rest, ['data-start-line', 'dataStartLine']) ?? 1;
+  const highlightStart = readPositiveInt(rest, ['data-highlight-start', 'dataHighlightStart']);
+  const highlightEnd = readPositiveInt(rest, ['data-highlight-end', 'dataHighlightEnd']);
   const lines = splitCodeLines(codeKids);
 
   return (
@@ -46,14 +49,27 @@ export function FenceBlock({ children }: FenceBlockProps) {
       </button>
       <pre>
         <code className={className} {...rest}>
-          {lines.map((line, index) => (
-            <span key={index} className={styles.fenceLine}>
-              <span className={styles.fenceGutter} aria-hidden="true">
-                {index + 1}
+          {lines.map((line, index) => {
+            const lineNumber = startLine + index;
+            const highlighted =
+              highlightStart != null &&
+              highlightEnd != null &&
+              lineNumber >= highlightStart &&
+              lineNumber <= highlightEnd;
+            return (
+              <span
+                key={index}
+                className={[styles.fenceLine, highlighted ? styles.fenceLineHighlight : '']
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <span className={styles.fenceGutter} aria-hidden="true">
+                  {lineNumber}
+                </span>
+                <span className={styles.fenceSrc}>{line.length > 0 ? line : '\n'}</span>
               </span>
-              <span className={styles.fenceSrc}>{line.length > 0 ? line : '\n'}</span>
-            </span>
-          ))}
+            );
+          })}
         </code>
       </pre>
     </div>
@@ -76,4 +92,13 @@ function findCodeElement(children: ReactNode): ReactElement<CodeProps> | null {
 function readFilename(props: Record<string, unknown>): string | null {
   const value = props['data-filename'] ?? props.dataFilename;
   return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function readPositiveInt(props: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = props[key];
+    const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+    if (Number.isInteger(n) && n >= 1) return n;
+  }
+  return null;
 }
