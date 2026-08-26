@@ -78,6 +78,9 @@ import {
   type WikilinkTitleResolution,
 } from '../utils/isMissingWikilink';
 import { notebookStyleProps } from '../utils/notebookStyle';
+import { getGitHubApi } from '../integrations/host';
+import { toast } from '../ui/primitives';
+import { markdownFromGithubPasteResult, shouldHandleGithubPaste } from './editor/githubPaste';
 import { createEditorTheme, markdownHighlighting, SCROLL_PAST_END_PADDING } from './editorTheme.js';
 import { listMarkHighlighter } from './editor/listMarkDecorations';
 import { fenceLanguageCompletions, slashCompletions } from './editor/slashCompletions';
@@ -591,6 +594,31 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             view.dispatch({
               changes: { from, to, insert: next },
               selection: EditorSelection.cursor(from + next.length),
+              userEvent: 'input.paste',
+            });
+            return;
+          }
+
+          if (shouldHandleGithubPaste(plainText)) {
+            view.dispatch({
+              changes: { from, to, insert: plainText },
+              selection: EditorSelection.cursor(from + plainText.length),
+              userEvent: 'input.paste',
+            });
+            const api = getGitHubApi();
+            if (!api?.resolvePaste) {
+              toast.error('Restart Dripnex to load the GitHub bridge.');
+              return;
+            }
+            const result = await api.resolvePaste(plainText);
+            const next = markdownFromGithubPasteResult(plainText, result);
+            if (next.error) toast.error(next.error);
+            if (next.insert === plainText) return;
+            const current = view.state.doc.sliceString(from, from + plainText.length);
+            if (current !== plainText) return;
+            view.dispatch({
+              changes: { from, to: from + plainText.length, insert: next.insert },
+              selection: EditorSelection.cursor(from + next.insert.length),
               userEvent: 'input.paste',
             });
             return;
