@@ -42,6 +42,8 @@ describe('authStore sign-out and magic-link request', () => {
     requestMagicLink: ReturnType<typeof vi.fn>;
     logout: ReturnType<typeof vi.fn>;
     getSession: ReturnType<typeof vi.fn>;
+    verifyToken: ReturnType<typeof vi.fn>;
+    continueLocally: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -50,6 +52,8 @@ describe('authStore sign-out and magic-link request', () => {
       requestMagicLink: vi.fn(async () => ({ success: true })),
       logout: vi.fn(async () => ({ success: true })),
       getSession: vi.fn(async () => null),
+      verifyToken: vi.fn(async () => ({ success: true, user })),
+      continueLocally: vi.fn(async () => ({ success: true, user })),
     };
     vi.stubGlobal('window', {
       localStorage: storage,
@@ -153,5 +157,32 @@ describe('authStore sign-out and magic-link request', () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().user).toBeNull();
     expect(signedInShell(false)).toBe('auth');
+  });
+
+  it('does not restore a session from an in-flight verifyToken after sign-out', async () => {
+    let resolveVerify!: (value: { success: boolean; user: typeof user }) => void;
+    auth.verifyToken.mockReturnValue(
+      new Promise(resolve => {
+        resolveVerify = resolve;
+      })
+    );
+
+    storage.setItem('dripnex-auth', JSON.stringify({ accessToken: 'a', refreshToken: 'r' }));
+    useAuthStore.setState({
+      user,
+      isAuthenticated: true,
+      sessionHydrated: true,
+    });
+
+    const pending = useAuthStore.getState().verifyToken('magic-link-token');
+    await useAuthStore.getState().logout();
+    resolveVerify({ success: true, user });
+    await pending;
+
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
+    expect(leftoverAuthKeys(storage)).toEqual([]);
+    expect(signedInShell(state.isAuthenticated, state.sessionHydrated)).toBe('auth');
   });
 });

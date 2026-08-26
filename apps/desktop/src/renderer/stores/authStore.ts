@@ -39,7 +39,7 @@ interface AuthState {
 // Signed-out reset
 // ============================================================================
 
-/** Bumped on Sign Out so an in-flight getSession cannot restore the shell. */
+/** Bumped on Sign Out so in-flight loadSession / verifyToken / continueLocally cannot restore the shell. */
 let sessionEpoch = 0;
 
 function rendererStorage(): Storage | null {
@@ -100,9 +100,11 @@ export const useAuthStore = create<AuthState>()(set => ({
    * Create a local-only identity when the cloud API is unreachable.
    */
   continueLocally: async (email: string) => {
+    const epoch = sessionEpoch;
     set({ isLoading: true, error: null });
     try {
       const result = await window.dripnex.auth.continueLocally(email);
+      if (epoch !== sessionEpoch) return;
       if (!result.success || !result.user) {
         throw new Error(result.error || 'Failed to continue locally');
       }
@@ -112,6 +114,7 @@ export const useAuthStore = create<AuthState>()(set => ({
         isLoading: false,
       });
     } catch (error) {
+      if (epoch !== sessionEpoch) return;
       set({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to continue locally',
@@ -124,9 +127,11 @@ export const useAuthStore = create<AuthState>()(set => ({
    * Verify magic link token and authenticate
    */
   verifyToken: async (token: string) => {
+    const epoch = sessionEpoch;
     set({ isLoading: true, error: null });
     try {
       const result = await window.dripnex.auth.verifyToken(token);
+      if (epoch !== sessionEpoch) return;
       if (result.success && result.user) {
         set({
           user: result.user,
@@ -139,6 +144,7 @@ export const useAuthStore = create<AuthState>()(set => ({
         throw new Error(result.error || 'Verification failed');
       }
     } catch (error) {
+      if (epoch !== sessionEpoch) return;
       let errorMessage = 'Failed to verify token';
 
       if (error instanceof Error) {
