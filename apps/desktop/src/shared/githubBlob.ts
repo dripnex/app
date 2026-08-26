@@ -81,6 +81,51 @@ const LANG_BY_EXT: Record<string, string> = {
   svelte: 'svelte',
 };
 
+const WELL_KNOWN_REFS = new Set(['main', 'master', 'develop', 'trunk', 'head', 'gh-pages']);
+
+const PATH_ROOTS = new Set([
+  'src',
+  'lib',
+  'app',
+  'apps',
+  'packages',
+  'test',
+  'tests',
+  'docs',
+  'scripts',
+  'internal',
+  'cmd',
+  'pkg',
+  'web',
+  'server',
+  'client',
+  'frontend',
+  'backend',
+  'crates',
+  'modules',
+  'components',
+  'include',
+  'bin',
+  'e2e',
+  'fixtures',
+  'examples',
+  'config',
+  'configs',
+]);
+
+const EXTLESS_FILES = new Set([
+  'makefile',
+  'dockerfile',
+  'license',
+  'copying',
+  'readme',
+  'changelog',
+  'gemfile',
+  'rakefile',
+  'procfile',
+  'jenkinsfile',
+]);
+
 /** Parse `https://github.com/owner/repo/blob/<ref>/path#L10-L20`. */
 export function parseGithubBlobUrl(raw: string): GithubBlobRef | null {
   const parsed = parseGithubPasteUrl(raw);
@@ -113,36 +158,129 @@ export function parseGithubPasteUrl(raw: string): GithubPasteTarget | null {
   const repo = parts[1]!;
   const kind = parts[2]!;
   const rest = parts.slice(3);
-  const url = raw.trim();
 
   if (kind === 'blob') {
-    if (rest.length < 2) return null;
-    const ref = rest[0]!;
-    const path = rest.slice(1).join('/');
-    if (!path) return null;
+    const split = splitBlobRefAndPath(rest);
+    if (!split) return null;
     const range = parseGithubLineRange(parsed.hash);
     return {
       kind: 'blob',
       owner,
       repo,
-      ref,
-      path,
+      ref: split.ref,
+      path: split.path,
       startLine: range?.start ?? null,
       endLine: range?.end ?? null,
-      url,
+      url: canonicalBlobUrl(owner, repo, split.ref, split.path, range),
     };
   }
 
   if (kind === 'issues' && rest[0] && /^\d+$/.test(rest[0])) {
-    return { kind: 'issue', owner, repo, number: Number(rest[0]), url };
+    return {
+      kind: 'issue',
+      owner,
+      repo,
+      number: Number(rest[0]),
+      url: canonicalGithubResourceUrl(owner, repo, 'issues', rest[0]),
+    };
   }
   if (kind === 'pull' && rest[0] && /^\d+$/.test(rest[0])) {
-    return { kind: 'pull', owner, repo, number: Number(rest[0]), url };
+    return {
+      kind: 'pull',
+      owner,
+      repo,
+      number: Number(rest[0]),
+      url: canonicalGithubResourceUrl(owner, repo, 'pull', rest[0]),
+    };
   }
   if ((kind === 'commit' || kind === 'commits') && rest[0]) {
-    return { kind: 'commit', owner, repo, sha: rest[0], url };
+    return {
+      kind: 'commit',
+      owner,
+      repo,
+      sha: rest[0],
+      url: canonicalGithubResourceUrl(owner, repo, 'commit', rest[0]),
+    };
   }
   return null;
+}
+
+/**
+ * GitHub blob URLs are `/blob/<ref>/<path>` and `<ref>` may contain slashes.
+ * At parse time we cannot list refs, so: SHA / main|master|develop as a single
+ * segment, otherwise the last filename (plus conventional source-root dirs)
+ * is the path and the rest is the ref.
+ */
+export function splitBlobRefAndPath(rest: string[]): { ref: string; path: string } | null {
+  if (rest.length < 2) return null;
+  const first = rest[0]!;
+  if (isGitSha(first) || isWellKnownRef(first)) {
+    return { ref: first, path: rest.slice(1).join('/') };
+  }
+
+  let fileIdx = -1;
+  for (let i = rest.length - 1; i >= 1; i--) {
+    if (looksLikeFilename(rest[i]!)) {
+      fileIdx = i;
+      break;
+    }
+  }
+  if (fileIdx < 1) {
+    return { ref: rest[0]!, path: rest.slice(1).join('/') };
+  }
+
+  let pathStart = fileIdx;
+  while (pathStart > 1 && PATH_ROOTS.has(rest[pathStart - 1]!.toLowerCase())) {
+    pathStart -= 1;
+  }
+  return {
+    ref: rest.slice(0, pathStart).join('/'),
+    path: rest.slice(pathStart).join('/'),
+  };
+}
+
+function isGitSha(seg: string): boolean {
+  return /^[0-9a-f]{7,40}$/i.test(seg);
+}
+
+function isWellKnownRef(seg: string): boolean {
+  if (WELL_KNOWN_REFS.has(seg.toLowerCase())) return true;
+  return /^v?\d+\.\d+(\.\d+)?(-[\w.]+)?$/i.test(seg);
+}
+
+function looksLikeFilename(seg: string): boolean {
+  if (EXTLESS_FILES.has(seg.toLowerCase())) return true;
+  const dot = seg.lastIndexOf('.');
+  return dot >= 0 && dot < seg.length - 1;
+}
+
+function encodeGithubPath(segments: string[]): string {
+  return segments.map(segment => encodeURIComponent(segment)).join('/');
+}
+
+function canonicalBlobUrl(
+  owner: string,
+  repo: string,
+  ref: string,
+  filePath: string,
+  range: GithubLineRange | null
+): string {
+  const path = encodeGithubPath([owner, repo, 'blob', ...ref.split('/'), ...filePath.split('/')]);
+  const hash = range
+    ? range.start === range.end
+      ? `#L${range.start}`
+      : `#L${range.start}-L${range.end}`
+    : '';
+  return `https://github.com/${path}${hash}`;
+}
+
+function canonicalGithubResourceUrl(
+  owner: string,
+  repo: string,
+  kind: 'issues' | 'pull' | 'commit',
+  id: string
+): string {
+  return `https://github.com/${encodeGithubPath([owner, repo, kind, id])}`;
 }
 
 export function parseGithubLineRange(hash: string): GithubLineRange | null {
@@ -197,7 +335,36 @@ export function formatGithubBlobMarkdown(
   const hash =
     sliced.start === sliced.end ? `#L${sliced.start}` : `#L${sliced.start}-L${sliced.end}`;
   const label = `${blob.owner}/${blob.repo}/${blob.path}${hash}`;
-  return `[${label}](${blob.url})\n\n${ticks}${info}\n${sliced.text}\n${ticks}`;
+  return `${githubMarkdownLink(label, blob.url)}\n\n${ticks}${info}\n${sliced.text}\n${ticks}`;
+}
+
+/** `[label](<https://github.com/...>)` — never interpolates a raw URL into the destination. */
+export function githubMarkdownLink(label: string, href: string): string {
+  const dest = safeGithubHref(href);
+  if (!dest) return escapeMarkdownLinkLabel(label);
+  return `[${escapeMarkdownLinkLabel(label)}](<${dest}>)`;
+}
+
+function safeGithubHref(raw: string): string | null {
+  const parsed = parseGithubPasteUrl(raw);
+  if (parsed) return parsed.url;
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (u.hostname.replace(/^www\./i, '').toLowerCase() !== 'github.com') return null;
+    return `https://github.com${u.pathname}`;
+  } catch {
+    return null;
+  }
+}
+
+function escapeMarkdownLinkLabel(label: string): string {
+  return label
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/\[/g, '\\[')
+    .replace(/]/g, '\\]')
+    .trim();
 }
 
 function fenceTicks(body: string): string {

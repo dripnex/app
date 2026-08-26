@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import {
   formatGithubBlobMarkdown,
   GITHUB_CONNECT_REQUIRED,
+  githubMarkdownLink,
   parseGithubPasteUrl,
   sliceFileLines,
   type GithubBlobRef,
@@ -281,7 +282,7 @@ export function createGitHubService(dataDir: string, notes?: GitHubNoteSink) {
   const embedBlob = async (blob: GithubBlobRef): Promise<GitHubPasteResult> => {
     if (blob.startLine == null) {
       const label = `${blob.owner}/${blob.repo}/${blob.path}`;
-      return { success: true, kind: 'link', markdown: `[${label}](${blob.url})` };
+      return { success: true, kind: 'link', markdown: githubMarkdownLink(label, blob.url) };
     }
     const token = (await keys.getKey(PROVIDER)) || null;
     try {
@@ -330,11 +331,7 @@ export function createGitHubService(dataDir: string, notes?: GitHubNoteSink) {
         title = commit.commit.message.split('\n')[0]?.trim() ?? null;
       }
       if (!title) return { success: false, error: 'Could not load that GitHub page.' };
-      const safe = title
-        .replace(/[\r\n]+/g, ' ')
-        .replace(/]/g, '')
-        .trim();
-      return { success: true, kind: 'link', markdown: `[${safe}](${target.url})` };
+      return { success: true, kind: 'link', markdown: githubMarkdownLink(title, target.url) };
     } catch {
       return { success: false, error: 'Could not load that GitHub page.' };
     }

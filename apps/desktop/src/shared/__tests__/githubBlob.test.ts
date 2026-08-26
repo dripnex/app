@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatGithubBlobMarkdown,
+  githubMarkdownLink,
   languageFromPath,
   parseGithubBlobUrl,
   parseGithubPasteUrl,
@@ -44,6 +45,21 @@ describe('parseGithubBlobUrl', () => {
     expect(parseGithubBlobUrl('https://github.com/acme/app/issues/12')).toBeNull();
     expect(parseGithubBlobUrl('https://github.com/acme/app/pull/12')).toBeNull();
     expect(parseGithubBlobUrl('not-a-url')).toBeNull();
+  });
+
+  it('keeps slash-containing refs instead of eating the first path segment', () => {
+    expect(
+      parseGithubBlobUrl('https://github.com/acme/app/blob/feature/auth/src/a.ts#L2-L3')
+    ).toEqual({
+      kind: 'blob',
+      owner: 'acme',
+      repo: 'app',
+      ref: 'feature/auth',
+      path: 'src/a.ts',
+      startLine: 2,
+      endLine: 3,
+      url: 'https://github.com/acme/app/blob/feature/auth/src/a.ts#L2-L3',
+    });
   });
 });
 
@@ -98,7 +114,9 @@ describe('formatGithubBlobMarkdown', () => {
       start: 10,
       end: 20,
     });
-    expect(md).toContain(`[owner/repo/path/to/file.ts#L10-L20](${BLOB})`);
+    expect(md).toContain(
+      '[owner/repo/path/to/file.ts#L10-L20](<https://github.com/owner/repo/blob/main/path/to/file.ts#L10-L20>)'
+    );
     expect(md).toContain('```ts title=path/to/file.ts startLine=10 {10-20}');
     expect(md).toContain('const x = 1;');
     expect(md).not.toContain('line 9');
@@ -107,5 +125,36 @@ describe('formatGithubBlobMarkdown', () => {
   it('maps a file extension to a fence language', () => {
     expect(languageFromPath('src/a.ts')).toBe('ts');
     expect(languageFromPath('main.py')).toBe('python');
+  });
+});
+
+describe('githubMarkdownLink', () => {
+  it('wraps a normalized destination in angle brackets', () => {
+    expect(githubMarkdownLink('Fix the sync retry', 'https://github.com/acme/app/issues/12')).toBe(
+      '[Fix the sync retry](<https://github.com/acme/app/issues/12>)'
+    );
+  });
+
+  it('drops fragment injection from issue and blob URLs', () => {
+    const issue = 'https://github.com/acme/app/issues/12#)[x](https://attacker.invalid)';
+    expect(parseGithubPasteUrl(issue)?.url).toBe('https://github.com/acme/app/issues/12');
+    expect(githubMarkdownLink('Fix', issue)).toBe('[Fix](<https://github.com/acme/app/issues/12>)');
+    expect(githubMarkdownLink('Fix', issue)).not.toContain('attacker');
+
+    const blob =
+      'https://github.com/owner/repo/blob/main/a.ts#L10-L20)[x](https://attacker.invalid)';
+    const parsed = parseGithubBlobUrl(blob);
+    expect(parsed?.url).toBe('https://github.com/owner/repo/blob/main/a.ts#L10-L20');
+    const md = formatGithubBlobMarkdown(parsed!, { text: 'x', start: 10, end: 20 });
+    expect(md).toContain(
+      '[owner/repo/a.ts#L10-L20](<https://github.com/owner/repo/blob/main/a.ts#L10-L20>)'
+    );
+    expect(md).not.toContain('attacker');
+  });
+
+  it('escapes label brackets', () => {
+    expect(githubMarkdownLink('See [docs]', 'https://github.com/acme/app/issues/1')).toBe(
+      '[See \\[docs\\]](<https://github.com/acme/app/issues/1>)'
+    );
   });
 });

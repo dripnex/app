@@ -673,14 +673,14 @@
 
 /* Keywords: if, else, return, const, let, function, class, import, export */
 .markdown-preview :global(.hljs-keyword),
-.markdown-preview :global(.hljs-selector)-tag {
+.markdown-preview :global(.hljs-selector-tag) {
   color: #c792ea;
 }
 
 /* Strings */
 .markdown-preview :global(.hljs-string),
-.markdown-preview :global(.hljs-template)-tag,
-.markdown-preview :global(.hljs-template)-variable {
+.markdown-preview :global(.hljs-template-tag),
+.markdown-preview :global(.hljs-template-variable) {
   color: #c3e88d;
 }
 
@@ -742,8 +742,8 @@
 }
 
 /* CSS selectors, properties */
-.markdown-preview :global(.hljs-selector)-class,
-.markdown-preview :global(.hljs-selector)-id {
+.markdown-preview :global(.hljs-selector-class),
+.markdown-preview :global(.hljs-selector-id) {
   color: #ffcb6b;
 }
 
@@ -797,13 +797,13 @@
 
 /* ===== LIGHT THEME OVERRIDES ===== */
 :global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-keyword),
-:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector)-tag {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector-tag) {
   color: #7c3aed;
 }
 
 :global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-string),
-:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-template)-tag,
-:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-template)-variable {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-template-tag),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-template-variable) {
   color: #16a34a;
 }
 
@@ -843,8 +843,8 @@
   color: #dc2626;
 }
 
-:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector)-class,
-:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector)-id {
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector-class),
+:global(:root[data-color-scheme='light']) .markdown-preview :global(.hljs-selector-id) {
   color: #ca8a04;
 }
 

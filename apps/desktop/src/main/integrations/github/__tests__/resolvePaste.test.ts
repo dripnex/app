@@ -123,7 +123,21 @@ describe('GitHub resolvePaste / status token boundary', () => {
     expect(result).toEqual({
       success: true,
       kind: 'link',
-      markdown: '[Fix the sync retry](https://github.com/acme/app/issues/12)',
+      markdown: '[Fix the sync retry](<https://github.com/acme/app/issues/12>)',
     });
+  });
+
+  it('does not turn an issue fragment into a second markdown link', async () => {
+    fetchMock.mockImplementation(async () => jsonResponse({ title: 'Fix' }));
+    const result = await service.resolvePaste(
+      'https://github.com/acme/app/issues/12#)[x](https://attacker.invalid)'
+    );
+    expect(result).toEqual({
+      success: true,
+      kind: 'link',
+      markdown: '[Fix](<https://github.com/acme/app/issues/12>)',
+    });
+    if (!result.success) return;
+    expect(result.markdown).not.toContain('attacker');
   });
 });
