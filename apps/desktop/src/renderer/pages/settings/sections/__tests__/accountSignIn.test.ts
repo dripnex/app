@@ -23,5 +23,12 @@ describe('Settings → Account Sign In', () => {
     expect(magicLink).toContain('htmlFor="settings-auth-email"');
     expect(magicLink).toContain('Send Magic Link');
     expect(magicLink).toContain('data-auth-gate="magic-link"');
+    const css = readFileSync(
+      join(here, '../../../../components/auth/MagicLinkFlow.module.css'),
+      'utf8'
+    );
+    expect(css).not.toMatch(/backdrop-filter/);
+    expect(css).toContain('background: var(--glass-bg-fallback)');
+    expect(css).toMatch(/\.overlay\s*\{[^}]*isolation:\s*isolate/s);
   });
 });
