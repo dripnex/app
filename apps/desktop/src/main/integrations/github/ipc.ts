@@ -37,6 +37,12 @@ export function registerGitHubHandlers(deps: { dataDir: string; notes?: GitHubNo
   });
 
   defineIpcHandler({
+    channel: 'integrations:github:resolvePaste',
+    args: z.tuple([z.string().min(1).max(2048)]),
+    handler: url => github.resolvePaste(url),
+  });
+
+  defineIpcHandler({
     channel: 'integrations:github:importIssue',
     args: z.tuple([z.string().max(512)]),
     handler: async url => {
