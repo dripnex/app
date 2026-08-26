@@ -1,6 +1,6 @@
 # Dripnex
 
-Markdown-first, offline-forever desktop note app.
+The hackable AI note taker. Local SQLite. Markdown is export.
 
 [![License: MIT](https://img.shields.io/badge/Core-MIT-green.svg)](./LICENSE)
 [![Release](https://img.shields.io/github/v/release/dripnex/app)](https://github.com/dripnex/app/releases)
@@ -8,6 +8,8 @@ Markdown-first, offline-forever desktop note app.
 ## About
 
 This repository contains the **open-source core** of Dripnex. Core packages are licensed under MIT for community use and contributions. The desktop application and some commercial features remain proprietary.
+
+Dripnex is an AI note taker you can hack (`init.js` / `styles.css` / satellite packs). AuthGate is the first window. Sync is optional and end-to-end after account. Official themes stay empty. There is no public marketplace.
 
 ## Quick Start
 

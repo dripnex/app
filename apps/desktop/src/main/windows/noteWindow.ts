@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
-import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
+import { rendererHtmlPath, rendererWebPreferences } from './paths.js';
 import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
 export function createNoteWindow(noteId: string, noteTitle: string): BrowserWindow {
@@ -16,12 +16,7 @@ export function createNoteWindow(noteId: string, noteTitle: string): BrowserWind
     trafficLightPosition: { x: 8, y: 8 },
     ...frostedWindowOptions(),
     title: noteTitle || 'Note',
-    webPreferences: {
-      preload: rendererPreloadPath(),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
+    webPreferences: rendererWebPreferences(),
   });
 
   wireFrosted(noteWindow);

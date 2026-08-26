@@ -4,6 +4,12 @@ import { Button, Field, Input } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { getGitHubApi } from '../../../integrations/host';
 import type { GitHubWatcher } from '../../../../preload/api/integrations';
+import {
+  GITHUB_CONNECT_BUTTON,
+  GITHUB_DISCONNECT_BUTTON,
+  githubBadgeText,
+  githubConnectUiState,
+} from './githubCardCopy';
 import styles from './IntegrationsSection.module.css';
 
 export function GitHubCard() {
@@ -36,20 +42,22 @@ export function GitHubCard() {
     setError(null);
     setMessage(null);
     const result = await api.connect(token.trim() || null);
+    const next = githubConnectUiState(result);
     setBusy(false);
-    if (result.success) {
-      setLogin(result.login);
-      setToken('');
-      setMessage(`Connected as @${result.login}`);
+    if (next.ok) {
+      setLogin(next.login);
+      setToken(next.token);
+      setMessage(`Connected as @${next.login}`);
       return;
     }
-    setError(result.error);
+    setError(next.error);
   };
 
   const disconnect = async () => {
     if (!api) return;
     await api.disconnect();
     setLogin(null);
+    setToken('');
     setMessage(null);
   };
 
@@ -129,14 +137,28 @@ export function GitHubCard() {
           <div className={styles.cardNameRow}>
             <h3 className={styles.cardName}>GitHub</h3>
             <span className={styles.badge} data-tone={connected ? 'ok' : 'idle'}>
-              {connected ? `@${login}` : 'Not connected'}
+              {githubBadgeText(login)}
             </span>
           </div>
           <p className={styles.cardDesc}>
-            Connect, import one issue, or watch a repo. Pull writes notes to Inbox and refreshes
-            them from GitHub.
+            {connected
+              ? 'Paste a blob URL in a note to embed the selected lines. Import or watch issues below.'
+              : 'Paste a GitHub blob URL in a note to embed selected lines. Connect for private repos.'}
           </p>
         </div>
+        {api && connected ? (
+          <div className={styles.cardAction}>
+            <Button variant="ghost" size="sm" onClick={() => void disconnect()}>
+              {GITHUB_DISCONNECT_BUTTON}
+            </Button>
+          </div>
+        ) : api ? (
+          <div className={styles.cardAction}>
+            <Button variant="primary" size="sm" loading={busy} onClick={() => void connect()}>
+              {GITHUB_CONNECT_BUTTON}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {!api ? (
@@ -162,9 +184,6 @@ export function GitHubCard() {
               onClick={() => void importIssue()}
             >
               Import to Inbox
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => void disconnect()}>
-              Disconnect
             </Button>
           </div>
           <Field label="Watch" htmlFor="gh-watch">
@@ -248,19 +267,14 @@ export function GitHubCard() {
               autoComplete="off"
             />
           </Field>
-          <div className={styles.actions}>
-            <Button variant="primary" size="sm" loading={busy} onClick={() => void connect()}>
-              Connect GitHub
-            </Button>
-            <a
-              className={styles.docLink}
-              href="https://github.com/settings/tokens"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Create a token
-            </a>
-          </div>
+          <a
+            className={styles.docLink}
+            href="https://github.com/settings/tokens"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Create a token
+          </a>
         </div>
       )}
 

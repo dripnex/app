@@ -32,7 +32,15 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.kicker {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-tight);
+  color: var(--accent);
 }
 
 .tabs {

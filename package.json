@@ -3,7 +3,7 @@
   "version": "0.15.2",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
-  "description": "Markdown-first, offline-forever desktop note app",
+  "description": "The hackable AI note taker. Local SQLite. Markdown is export.",
   "author": {
     "name": "Tomy Maritano",
     "email": "hello@dripnex.app",
@@ -18,13 +18,11 @@
     "url": "https://github.com/dripnex/app/issues"
   },
   "keywords": [
-    "markdown",
     "notes",
-    "editor",
-    "offline",
+    "ai",
+    "sqlite",
     "electron",
-    "pkm",
-    "zettelkasten"
+    "hackable"
   ],
   "type": "module",
   "scripts": {

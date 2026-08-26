@@ -96,7 +96,7 @@ function EmptyState({
     'no-notes': {
       icon: <Icon icon={FileText} size={28} />,
       title: 'No notes yet',
-      hint: `Press ${modAccel('N')} to create one`,
+      hint: `Press ${modAccel('N')}. Messy input is enough`,
     },
     'no-archived': {
       icon: <Icon icon={Archive} size={28} />,

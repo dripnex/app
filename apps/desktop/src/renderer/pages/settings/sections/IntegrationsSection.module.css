@@ -27,6 +27,11 @@
   gap: var(--space-3);
 }
 
+.cardAction {
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .cardCopy {
   min-width: 0;
   flex: 1;
@@ -295,5 +300,3 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
-
-

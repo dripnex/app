@@ -4,8 +4,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "../../out/preload",
-    "rootDir": ".",
+    "rootDir": "..",
     "noEmit": true
   },
-  "include": ["**/*.ts", "**/*.d.ts"]
+  "include": ["./**/*.ts", "./**/*.d.ts", "../shared/**/*.ts"]
 }
