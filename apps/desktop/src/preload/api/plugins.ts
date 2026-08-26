@@ -46,6 +46,7 @@ export interface PluginsAPI {
       author: string;
       repositoryUrl: string | null;
       bundleUrl: string | null;
+      category: string | null;
     }>;
     source: 'registry' | 'fallback';
   }>;
