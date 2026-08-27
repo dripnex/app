@@ -53,3 +53,9 @@ export function createSettingsWindow(): BrowserWindow {
 
   return settingsWindow;
 }
+
+export function closeSettingsWindow(): void {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.close();
+  }
+}
