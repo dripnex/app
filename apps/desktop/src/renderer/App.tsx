@@ -49,6 +49,7 @@ import {
   historyForward,
   visitNote,
 } from './utils/noteHistory';
+import { useAuthSessionEvents } from './hooks/useAuthSessionEvents';
 import { useDeepLinks } from './hooks/useDeepLinks';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useNoteActions } from './hooks/useNoteActions';
@@ -75,6 +76,8 @@ function NotesApp() {
   const sessionHydrated = useAuthStore(selectSessionHydrated);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isE2E = window.dripnex?.app?.isE2E?.() === true;
+
+  useAuthSessionEvents({ consumeMagicLink: true });
 
   useEffect(() => {
     void useAuthStore.getState().loadSession();

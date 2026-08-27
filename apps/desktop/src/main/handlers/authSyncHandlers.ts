@@ -26,6 +26,7 @@ export interface AuthSyncHandlerDeps {
   encryptionService: EncryptionService | null;
   localIdentity: LocalIdentity;
   broadcastToWindows: BroadcastFn;
+  closeSettingsWindow?: () => void;
 }
 
 const EmailSchema = z.string().email().max(254);
@@ -117,7 +118,6 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
         getCurrentUser: () => client.getCurrentUser(),
         getAccessToken: () => storage.getAccessToken(),
         clearTokens: () => storage.clearTokens(),
-        readLocal: () => localIdentity.read(),
       }),
   });
 
@@ -129,6 +129,8 @@ export function registerAuthSyncHandlers(deps: AuthSyncHandlerDeps): void {
         sync?.stopAutoSync();
         await storage.clearTokens();
         await localIdentity.clear();
+        deps.broadcastToWindows('auth:signed-out');
+        deps.closeSettingsWindow?.();
         return { success: true };
       } catch (error) {
         return {

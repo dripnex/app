@@ -84,6 +84,7 @@ import {
   createMainWindow,
   registerQuickCaptureShortcut,
   registerWindowHandlers,
+  closeSettingsWindow,
 } from './windows/register.js';
 import {
   applyDevelopmentModeFromSettings,
@@ -541,6 +542,7 @@ app
           encryptionService,
           localIdentity: new LocalIdentity(dataPaths.root),
           broadcastToWindows,
+          closeSettingsWindow,
         });
         log.info(
           { encryptionAvailable: safeStorage.isEncryptionAvailable() },
