@@ -13,7 +13,7 @@ test.describe('AuthGate is the first window', () => {
       await expect(page.getByRole('button', { name: 'Email me a link' })).toBeVisible();
       await expect(page.locator('canvas')).toHaveCount(1);
 
-      await expect(page.getByRole('button', { name: 'Create Your First Note' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Create a note' })).toHaveCount(0);
       await expect(page.getByRole('button', { name: /continue locally/i })).toHaveCount(0);
 
       const [settings] = await Promise.all([
