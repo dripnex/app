@@ -1,6 +1,15 @@
+import { modAccel } from '../utils/modAccel';
+
 export const WELCOME_HEADLINE = 'The hackable AI note taker';
 
 export const WELCOME_LEDE = 'Messy input becomes a document a person will send. Not a model dump.';
+
+export const WELCOME_CREATE = 'Create a note';
+export const WELCOME_SKIP = 'Skip';
+
+export function welcomeHint(): string {
+  return `Press ${modAccel('K')} to open the command palette`;
+}
 
 export const WELCOME_FEATURES = [
   {

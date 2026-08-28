@@ -13,6 +13,7 @@ import * as cmSearch from '@codemirror/search';
 import * as cmState from '@codemirror/state';
 import * as cmView from '@codemirror/view';
 import * as pluginApi from '@dripnex/plugin-api';
+import gsap from 'gsap';
 
 function asCjs(mod: object): unknown {
   const rec = mod as Record<string, unknown>;
@@ -30,6 +31,7 @@ const HOST_MODULES: Record<string, unknown> = {
   '@codemirror/commands': asCjs(cmCommands),
   '@codemirror/search': asCjs(cmSearch),
   '@dripnex/plugin-api': asCjs(pluginApi),
+  gsap: Object.assign(gsap, { default: gsap }),
 };
 
 export function createPluginRequire(): (id: string) => unknown {
@@ -37,7 +39,7 @@ export function createPluginRequire(): (id: string) => unknown {
     const mod = HOST_MODULES[id];
     if (mod) return mod;
     throw new Error(
-      `[plugin] cannot require '${id}'. Bundle it, or use a host-provided module (react, @codemirror/*, @dripnex/plugin-api).`
+      `[plugin] cannot require '${id}'. Bundle it, or use a host-provided module (react, @codemirror/*, @dripnex/plugin-api, gsap).`
     );
   };
 }

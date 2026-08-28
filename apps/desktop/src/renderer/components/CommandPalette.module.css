@@ -44,7 +44,6 @@
   border-radius: 12px;
   box-shadow: var(--shadow-xl);
   overflow: hidden;
-  animation: command-palette-slide-in 150ms ease-out;
 }
 
 :global(:root[data-color-scheme='light']) .command-palette {

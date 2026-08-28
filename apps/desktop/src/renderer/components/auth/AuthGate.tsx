@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { useAuthStore, selectError } from '../../stores/authStore';
+import { playMotion } from '../../motion/gsapRuntime';
 import logo from '../../assets/logo.png';
 import { LoginBackdrop } from './LoginBackdrop';
 import { AUTH_GATE_FORM_Z_INDEX } from './authGateStacking';
@@ -17,6 +18,11 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
   const [pending, setPending] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    playMotion('gate-in', cardRef.current);
+  }, []);
 
   useEffect(() => {
     if (authError) setLocalError(authError);
@@ -42,7 +48,12 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
   return (
     <div className={styles.screen} data-auth-gate="screen">
       <LoginBackdrop />
-      <div className={styles.card} style={{ zIndex: AUTH_GATE_FORM_Z_INDEX }} data-auth-gate="form">
+      <div
+        ref={cardRef}
+        className={styles.card}
+        style={{ zIndex: AUTH_GATE_FORM_Z_INDEX }}
+        data-auth-gate="form"
+      >
         <img src={logo} alt="" width={40} height={40} className={styles.logo} />
         <p className={styles.kicker}>The hackable AI note taker</p>
         <div className={styles.tabs} role="tablist">

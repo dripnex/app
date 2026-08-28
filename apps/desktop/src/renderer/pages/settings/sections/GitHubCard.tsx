@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import githubLogo from '@lobehub/icons-static-svg/icons/github.svg';
-import { Button, Field, Input } from '../../../ui/primitives';
+import { Button, Field, Input, toast } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { getGitHubApi } from '../../../integrations/host';
 import type { GitHubWatcher } from '../../../../preload/api/integrations';
 import {
   GITHUB_CONNECT_BUTTON,
   GITHUB_DISCONNECT_BUTTON,
+  GITHUB_WATCHERS_EMPTY,
   githubBadgeText,
   githubConnectUiState,
+  githubImportedMessage,
+  githubPulledLabel,
+  githubPulledMessage,
+  githubWatchingMessage,
 } from './githubCardCopy';
 import styles from './IntegrationsSection.module.css';
 
@@ -48,6 +53,7 @@ export function GitHubCard() {
       setLogin(next.login);
       setToken(next.token);
       setMessage(`Connected as @${next.login}`);
+      toast.success(`Connected as @${next.login}`);
       return;
     }
     setError(next.error);
@@ -82,7 +88,8 @@ export function GitHubCard() {
       return;
     }
     setIssueUrl('');
-    setMessage(`Imported “${fetched.title}” into Inbox.`);
+    setMessage(githubImportedMessage(fetched.title));
+    toast.success(githubImportedMessage(fetched.title));
   };
 
   const addWatcher = async () => {
@@ -98,7 +105,9 @@ export function GitHubCard() {
     }
     setWatchSpec('');
     await refreshWatchers();
-    setMessage(`Watching ${added.watcher.label}.`);
+    const watching = githubWatchingMessage(added.watcher.label);
+    setMessage(watching);
+    toast.success(watching);
   };
 
   const pullWatchers = async (watcherId?: string) => {
@@ -113,9 +122,9 @@ export function GitHubCard() {
       return;
     }
     await refreshWatchers();
-    const bits = [`${pulled.created} new`, `${pulled.updated} updated`];
-    if (pulled.skipped) bits.push(`${pulled.skipped} unchanged`);
-    setMessage(`Pulled ${bits.join(', ')}.`);
+    const pulledCopy = githubPulledMessage(pulled);
+    setMessage(pulledCopy);
+    toast.success(pulledCopy);
     if (pulled.errors.length > 0) setError(pulled.errors.join(' · '));
   };
 
@@ -172,6 +181,9 @@ export function GitHubCard() {
               id="gh-issue"
               value={issueUrl}
               onChange={event => setIssueUrl(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' && issueUrl.trim()) void importIssue();
+              }}
               placeholder="https://github.com/org/repo/issues/12"
             />
           </Field>
@@ -191,6 +203,9 @@ export function GitHubCard() {
               id="gh-watch"
               value={watchSpec}
               onChange={event => setWatchSpec(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' && watchSpec.trim()) void addWatcher();
+              }}
               placeholder="owner/repo or repo:org/name is:open"
             />
           </Field>
@@ -223,9 +238,7 @@ export function GitHubCard() {
                     <span className={styles.watchMeta}>
                       {watcher.lastError
                         ? watcher.lastError
-                        : watcher.lastPulledAt
-                          ? `Pulled ${watcher.lastPulledAt.slice(0, 16).replace('T', ' ')}`
-                          : 'Not pulled yet'}
+                        : githubPulledLabel(watcher.lastPulledAt)}
                     </span>
                   </div>
                   <div className={styles.actions}>
@@ -248,7 +261,9 @@ export function GitHubCard() {
                 </li>
               ))}
             </ul>
-          ) : null}
+          ) : (
+            <p className={styles.fieldHint}>{GITHUB_WATCHERS_EMPTY}</p>
+          )}
         </div>
       ) : (
         <div className={styles.body}>

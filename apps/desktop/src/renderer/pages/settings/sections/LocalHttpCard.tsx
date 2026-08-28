@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Copy, Eye, EyeOff, Server } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
-import { Button, Field } from '../../../ui/primitives';
+import { Button, Field, toast } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingToggle } from '../components/SettingToggle';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import type { LocalServerConnectionInfo } from '../../../../preload/api/localServer';
+import {
+  COPY_FAILED,
+  HTTP_DID_NOT_START,
+  HTTP_LOAD_ERROR,
+  HTTP_STARTING,
+  LOCAL_SERVER_BRIDGE_STALE,
+  LOCAL_SERVER_MAX_START_POLLS,
+  LOCAL_SERVER_START_POLL_MS,
+  localServerBodyState,
+} from './localServerCopy';
 import styles from './IntegrationsSection.module.css';
 
 async function copyText(value: string): Promise<boolean> {
@@ -52,7 +62,7 @@ export function LocalHttpCard() {
       setInfo(await api.connectionInfo());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load local HTTP status.');
+      setError(err instanceof Error ? err.message : HTTP_LOAD_ERROR);
     }
   }, [api]);
 
@@ -64,15 +74,40 @@ export function LocalHttpCard() {
   }, [ready, refresh, enabled]);
 
   useEffect(() => {
+    if (!ready || !enabled || info?.running) return;
+    let attempts = 0;
+    const id = window.setInterval(() => {
+      attempts += 1;
+      if (attempts > LOCAL_SERVER_MAX_START_POLLS) {
+        window.clearInterval(id);
+        setError(HTTP_DID_NOT_START);
+        return;
+      }
+      void refresh();
+    }, LOCAL_SERVER_START_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [ready, refresh, enabled, info?.running]);
+
+  useEffect(() => {
     if (!copied) return;
     const id = window.setTimeout(() => setCopied(null), 1600);
     return () => window.clearTimeout(id);
   }, [copied]);
 
   const copy = async (key: string, value: string) => {
-    if (await copyText(value)) setCopied(key);
+    if (await copyText(value)) {
+      setCopied(key);
+      return;
+    }
+    toast.error(COPY_FAILED);
   };
 
+  const bodyState = localServerBodyState({
+    ready,
+    enabled,
+    running: Boolean(info?.running),
+    error,
+  });
   const badge = !ready ? 'Restart Dripnex' : enabled ? (info?.running ? 'On' : 'Starting') : 'Off';
   const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
@@ -104,13 +139,21 @@ export function LocalHttpCard() {
         onChange={checked => updateIntegrations({ httpApiEnabled: checked })}
       />
 
-      {error ? (
+      {bodyState === 'stale' ? (
+        <p className={styles.callout} data-tone="warn">
+          {LOCAL_SERVER_BRIDGE_STALE}
+        </p>
+      ) : null}
+
+      {bodyState === 'starting' ? <p className={styles.statusHint}>{HTTP_STARTING}</p> : null}
+
+      {bodyState === 'error' ? (
         <p className={styles.callout} data-tone="warn">
           {error}
         </p>
       ) : null}
 
-      {ready && enabled && info ? (
+      {bodyState === 'running' && info ? (
         <div className={styles.body}>
           <Field label="URL" htmlFor="http-url">
             <div className={styles.copyRow}>

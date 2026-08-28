@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { Send } from 'lucide';
 import type { ChatMessage, NoteContext, AiPanelMode } from '@dripnex/ai-core';
-import { Icon } from '../../ui/icons/Icon';
+import { playMotion } from '../../motion/gsapRuntime';
 import { useSettingsStore, selectAi } from '../../stores/settings';
+import { Icon } from '../../ui/icons/Icon';
 import { AiMessage } from './AiMessage';
 import { AiPanelHeader } from './AiPanelHeader';
 import { ToolCallBlock } from './ToolCallBlock';
@@ -58,6 +59,7 @@ export function AiPanel({
   const [embeddedCount, setEmbeddedCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const activeRequestRef = useRef<string | null>(null);
   const commandActiveRef = useRef(false);
 
@@ -91,6 +93,10 @@ export function AiPanel({
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useLayoutEffect(() => {
+    playMotion('panel-in', panelRef.current);
   }, []);
 
   useEffect(() => {
@@ -220,7 +226,7 @@ export function AiPanel({
   }, []);
 
   return (
-    <div className={sc('ai-panel')}>
+    <div ref={panelRef} className={sc('ai-panel')}>
       <AiPanelHeader
         mode={mode}
         contextCount={contextCount}
