@@ -1,6 +1,5 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
+import { FENCE, lineAtOffset } from './sourceScan';
 const HR = /^( {0,3})([-*_])(?:\s*\2){2,}\s*$/;
 const SETEXT = /^( {0,3})(=+|-+)[ \t]*$/;
 const ATX = /^( {0,3}(?:> ?)* {0,3})#{1,6}(?:[ \t]+|$)/;
@@ -9,33 +8,6 @@ const QUOTE = /^((?: {0,3}> ?)*)(.*)$/;
 const TASK = /^([ \t]*)([-*+]|\d+[.)])[ \t]+\[([ xX])\](?:[ \t]+|(?=$))(.*)$/;
 const OL = /^([ \t]*)(\d+[.)])[ \t]+(.*)$/;
 const UL = /^([ \t]*)([-*+])[ \t]+(.*)$/;
-
-function lineAtOffset(
-  content: string,
-  offset: number
-): { line: string; from: number; to: number; inFence: boolean; next: string | null } | null {
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? '';
-    const end = cursor + line.length;
-    const opensFence = FENCE.test(line);
-    if (offset >= cursor && offset <= end + 1) {
-      return {
-        line,
-        from: cursor,
-        to: end,
-        inFence: inFence || opensFence,
-        next: lines[i + 1] ?? null,
-      };
-    }
-    if (opensFence) inFence = !inFence;
-    cursor = end + 1;
-  }
-  return null;
-}
 
 /** Bullet → numbered → task → unwrap. Headings, fences, setext, tables, and indented code stay put. */
 export function cycleListLine(line: string, nextLine?: string | null): string | null {

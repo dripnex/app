@@ -1,22 +1,10 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
+import { walkSourceLines } from './sourceScan';
 
 function fenceOpenHits(content: string): Array<{ from: number; to: number }> {
-  const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (opensFence && !inFence) {
-      hits.push({ from: cursor, to: cursor + line.length });
-    }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
-  }
-  return hits;
+  return walkSourceLines(content)
+    .filter(row => row.isFenceOpener)
+    .map(row => ({ from: row.from, to: row.to }));
 }
 
 /** Next fence opener at or after offset, wrapping. Closers skipped. Does not rewrite. */

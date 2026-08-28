@@ -1,21 +1,15 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const ATX = /^( {0,3}(?:> ?)* {0,3})(#{1,6})(?:[ \t]+|(?=$))/;
 
 function headingHits(content: string): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (!inFence && !opensFence && ATX.test(line) && !/^ {4,}/.test(line) && !/^\t/.test(line)) {
-      hits.push({ from: cursor, to: cursor + line.length });
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    if (ATX.test(row.line) && !/^ {4,}/.test(row.line) && !/^\t/.test(row.line)) {
+      hits.push({ from: row.from, to: row.to });
     }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
   }
   return hits;
 }

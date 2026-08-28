@@ -51,22 +51,22 @@ function BacklinksPanel({ meta }: ZoneComponentProps) {
 
   useEffect(() => {
     if (!ctx) return;
-    let cancelled = false;
+    let seq = 0;
     const load = async () => {
+      const token = ++seq;
       const note = ctx.app.getCurrentNote();
       if (!note) {
-        if (!cancelled) setItems([]);
+        if (token === seq) setItems([]);
         return;
       }
       const links = await ctx.data.getBacklinks(note.id);
-      if (!cancelled) {
-        setItems(links.map(link => ({ id: link.noteId, title: link.noteTitle || 'Untitled' })));
-      }
+      if (token !== seq) return;
+      setItems(links.map(link => ({ id: link.noteId, title: link.noteTitle || 'Untitled' })));
     };
     void load();
     const unsub = ctx.app.onNoteSelected(() => void load());
     return () => {
-      cancelled = true;
+      seq += 1;
       unsub();
     };
   }, [ctx]);
@@ -88,20 +88,22 @@ function RelatedPanel({ meta }: ZoneComponentProps) {
 
   useEffect(() => {
     if (!ctx) return;
-    let cancelled = false;
+    let seq = 0;
     const load = async () => {
+      const token = ++seq;
       const note = ctx.app.getCurrentNote();
       if (!note) {
-        if (!cancelled) setItems([]);
+        if (token === seq) setItems([]);
         return;
       }
       const [tags, listed] = await Promise.all([ctx.app.getNoteTags(note.id), ctx.app.listNotes()]);
-      if (!cancelled) setItems(relatedBySharedTags(note.id, tags, listed));
+      if (token !== seq) return;
+      setItems(relatedBySharedTags(note.id, tags, listed));
     };
     void load();
     const unsub = ctx.app.onNoteSelected(() => void load());
     return () => {
-      cancelled = true;
+      seq += 1;
       unsub();
     };
   }, [ctx]);

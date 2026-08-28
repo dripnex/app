@@ -1,5 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { lineAtOffset } from './sourceScan';
 
 const TASK = /^([ \t]*[-*]\s+)\[([ xX])\]/;
 
@@ -7,21 +8,14 @@ export function toggleTaskAtOffset(
   content: string,
   offset: number
 ): { from: number; to: number; text: string } | null {
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  for (const line of lines) {
-    const end = cursor + line.length;
-    if (offset >= cursor && offset <= end + 1) {
-      const match = line.match(TASK);
-      if (!match) return null;
-      const prefix = match[1] ?? '';
-      const mark = match[2] === 'x' || match[2] === 'X' ? ' ' : 'x';
-      const from = cursor + prefix.length;
-      return { from, to: from + 3, text: `[${mark}]` };
-    }
-    cursor = end + 1;
-  }
-  return null;
+  const here = lineAtOffset(content, offset);
+  if (!here || here.inFence) return null;
+  const match = here.line.match(TASK);
+  if (!match) return null;
+  const prefix = match[1] ?? '';
+  const mark = match[2] === 'x' || match[2] === 'X' ? ' ' : 'x';
+  const from = here.from + prefix.length;
+  return { from, to: from + 3, text: `[${mark}]` };
 }
 
 /** Click only toggles when the pointer is on `[ ]` / `[x]`, not the rest of the line. */

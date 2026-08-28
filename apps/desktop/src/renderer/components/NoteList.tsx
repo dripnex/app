@@ -213,7 +213,7 @@ export function NoteList({
       playMotion('list-select', document.getElementById(`note-${selectedId}`));
     }
     prevSelectedIdRef.current = selectedId;
-  }, [noteIdsKey, selectedId]);
+  }, [noteIdsKey, selectedId, isLoading]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

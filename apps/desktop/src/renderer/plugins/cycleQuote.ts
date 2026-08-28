@@ -1,36 +1,9 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { FENCE, lineAtOffset } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const SETEXT = /^( {0,3})(=+|-+)[ \t]*$/;
 const QUOTE = /^((?: {0,3}> ?)*)(.*)$/;
 const MAX_LEVEL = 3;
-
-function lineAtOffset(
-  content: string,
-  offset: number
-): { line: string; from: number; to: number; inFence: boolean; next: string | null } | null {
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? '';
-    const end = cursor + line.length;
-    const opensFence = FENCE.test(line);
-    if (offset >= cursor && offset <= end + 1) {
-      return {
-        line,
-        from: cursor,
-        to: end,
-        inFence: inFence || opensFence,
-        next: lines[i + 1] ?? null,
-      };
-    }
-    if (opensFence) inFence = !inFence;
-    cursor = end + 1;
-  }
-  return null;
-}
 
 /** `>` → `> >` → unwrap at 3. Fences, setext, and indented code stay put. */
 export function cycleQuoteLine(line: string, nextLine?: string | null): string | null {

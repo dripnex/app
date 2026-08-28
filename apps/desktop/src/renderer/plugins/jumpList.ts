@@ -1,6 +1,5 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
+import { FENCE, walkSourceLines } from './sourceScan';
 const HR = /^( {0,3})([-*_])(?:\s*\2){2,}\s*$/;
 const SETEXT = /^( {0,3})(=+|-+)[ \t]*$/;
 const ATX = /^( {0,3}(?:> ?)* {0,3})#{1,6}(?:[ \t]+|$)/;
@@ -18,29 +17,20 @@ function isListLine(line: string): boolean {
 
 function listOpenHits(content: string): Array<{ from: number; to: number; blockEnd: number }> {
   const hits: Array<{ from: number; to: number; blockEnd: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
   let open: { from: number; to: number; blockEnd: number } | null = null;
 
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    const end = cursor + line.length;
-    const isList = !inFence && !opensFence && isListLine(line);
-
+  for (const row of walkSourceLines(content)) {
+    const isList = !row.inFence && isListLine(row.line);
     if (isList) {
       if (!open) {
-        open = { from: cursor, to: end, blockEnd: end };
+        open = { from: row.from, to: row.to, blockEnd: row.to };
         hits.push(open);
       } else {
-        open.blockEnd = end;
+        open.blockEnd = row.to;
       }
     } else {
       open = null;
     }
-
-    if (opensFence) inFence = !inFence;
-    cursor = end + 1;
   }
   return hits;
 }

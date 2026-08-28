@@ -10,6 +10,7 @@ import {
   MCP_DID_NOT_START,
   MCP_STARTING,
   localServerBodyState,
+  shouldApplyStartPollResult,
 } from '../localServerCopy';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,13 @@ describe('MCP / Local HTTP copy', () => {
     expect(HTTP_DID_NOT_START.toLowerCase()).toContain('did not start');
     expect(COPY_FAILED).toBe('Could not copy.');
     expect(LOCAL_SERVER_BRIDGE_STALE).toMatch(/Quit Dripnex/);
+  });
+
+  it('ignores a late refresh after the start poll timed out', () => {
+    expect(shouldApplyStartPollResult(true)).toBe(false);
+    expect(shouldApplyStartPollResult(false)).toBe(true);
+    expect(httpSrc).toContain('ignore: () => timedOut');
+    expect(mcpSrc).toContain('ignore: () => timedOut');
   });
 
   it('wires empty and error states in both cards', () => {

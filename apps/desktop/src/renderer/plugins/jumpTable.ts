@@ -1,33 +1,43 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
-const TABLE = /^( {0,3}(?:> ?)* {0,3})\|/;
+function isDelimiterRow(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.includes('-')) return false;
+  const inner = trimmed.replace(/^\|/, '').replace(/\|$/, '');
+  const cells = inner.split('|');
+  return cells.length > 0 && cells.every(cell => /^\s*:?-{3,}:?\s*$/.test(cell));
+}
+
+function isTableRow(line: string): boolean {
+  return line.includes('|');
+}
 
 function tableOpenHits(content: string): Array<{ from: number; to: number; blockEnd: number }> {
   const hits: Array<{ from: number; to: number; blockEnd: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
+  const rows = walkSourceLines(content);
   let open: { from: number; to: number; blockEnd: number } | null = null;
 
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    const end = cursor + line.length;
-    const isTable = !inFence && !opensFence && TABLE.test(line);
-
-    if (isTable) {
-      if (!open) {
-        open = { from: cursor, to: end, blockEnd: end };
-        hits.push(open);
-      } else {
-        open.blockEnd = end;
-      }
-    } else {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    const next = rows[i + 1];
+    if (row.inFence) {
       open = null;
+      continue;
     }
-
-    if (opensFence) inFence = !inFence;
-    cursor = end + 1;
+    const starts =
+      isTableRow(row.line) && next != null && !next.inFence && isDelimiterRow(next.line);
+    const continues = open && isTableRow(row.line);
+    if (starts) {
+      open = { from: row.from, to: row.to, blockEnd: next!.to };
+      hits.push(open);
+      continue;
+    }
+    if (continues && open) {
+      open.blockEnd = row.to;
+      continue;
+    }
+    open = null;
   }
   return hits;
 }

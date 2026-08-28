@@ -1,27 +1,18 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 /** Same GFM list mark as `scanMarkdown` / task toggle: `-` or `*`. */
 const OPEN_TASK = /^([ \t]*[-*]\s+)\[ \]/;
 const DONE_TASK = /^([ \t]*[-*]\s+)\[[xX]\]/;
 
 function taskHits(content: string, mark: RegExp): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (!inFence && !opensFence) {
-      const match = line.match(mark);
-      if (match) {
-        const from = cursor + (match[1]?.length ?? 0);
-        hits.push({ from, to: from + 3 });
-      }
-    }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    const match = row.line.match(mark);
+    if (!match) continue;
+    const from = row.from + (match[1]?.length ?? 0);
+    hits.push({ from, to: from + 3 });
   }
   return hits;
 }

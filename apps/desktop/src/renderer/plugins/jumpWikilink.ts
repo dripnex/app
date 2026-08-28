@@ -1,29 +1,21 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const WIKI = /\[\[([^[\]|#]{1,200})(?:#[^[\]|]{1,200})?(?:\|[^\]]{1,200})?\]\]/g;
 
 function wikilinkHits(content: string): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (!inFence && !opensFence) {
-      WIKI.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = WIKI.exec(line)) !== null) {
-        if (match.index > 0 && line[match.index - 1] === '!') continue;
-        const target = (match[1] ?? '').trim();
-        if (!target) continue;
-        const from = cursor + match.index;
-        hits.push({ from, to: from + match[0].length });
-      }
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    WIKI.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = WIKI.exec(row.line)) !== null) {
+      if (match.index > 0 && row.line[match.index - 1] === '!') continue;
+      const target = (match[1] ?? '').trim();
+      if (!target) continue;
+      const from = row.from + match.index;
+      hits.push({ from, to: from + match[0].length });
     }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
   }
   return hits;
 }

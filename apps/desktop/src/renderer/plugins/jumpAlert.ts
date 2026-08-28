@@ -1,41 +1,32 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const QUOTE = /^( {0,3}> ?)/;
 const ALERT = /^( {0,3}> ?\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*)(.*)$/i;
 
 function alertOpenHits(content: string): Array<{ from: number; to: number; blockEnd: number }> {
   const hits: Array<{ from: number; to: number; blockEnd: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
   let inQuote = false;
   let open: { from: number; to: number; blockEnd: number } | null = null;
 
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    const end = cursor + line.length;
-    const isQuote = !inFence && !opensFence && QUOTE.test(line);
-
+  for (const row of walkSourceLines(content)) {
+    const isQuote = !row.inFence && QUOTE.test(row.line);
     if (isQuote) {
       if (!inQuote) {
         inQuote = true;
-        if (ALERT.test(line)) {
-          open = { from: cursor, to: end, blockEnd: end };
+        if (ALERT.test(row.line)) {
+          open = { from: row.from, to: row.to, blockEnd: row.to };
           hits.push(open);
         } else {
           open = null;
         }
       } else if (open) {
-        open.blockEnd = end;
+        open.blockEnd = row.to;
       }
     } else {
       inQuote = false;
       open = null;
     }
-
-    if (opensFence) inFence = !inFence;
-    cursor = end + 1;
   }
   return hits;
 }

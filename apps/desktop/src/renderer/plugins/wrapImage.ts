@@ -1,25 +1,8 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { offsetInFence } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(\?[^\s]*)?$/i;
 const IMAGE = /!\[([^\]\n]{0,200})\]\((<[^>\n]+>|[^)\s]*)(?:\s+"[^"\n]*")?\)/g;
-
-function inFence(content: string, offset: number): boolean {
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let fenced = false;
-
-  for (const line of lines) {
-    const end = cursor + line.length;
-    const opensFence = FENCE.test(line);
-    if (offset >= cursor && offset <= end + 1) {
-      return fenced || opensFence;
-    }
-    if (opensFence) fenced = !fenced;
-    cursor = end + 1;
-  }
-  return false;
-}
 
 function looksLikeUrl(value: string): boolean {
   if (/^https?:\/\/\S+$/i.test(value)) return true;
@@ -37,7 +20,7 @@ export function wrapImagePlan(
   from: number,
   to: number
 ): { from: number; to: number; text: string; cursor: number } | null {
-  if (inFence(content, from) || inFence(content, to)) return null;
+  if (offsetInFence(content, from) || offsetInFence(content, to)) return null;
 
   const selected = content.slice(from, to);
   if (/\r|\n/.test(selected)) return null;
@@ -55,8 +38,8 @@ export function wrapImagePlan(
     return { from, to, text, cursor: from + text.length };
   }
 
-  const alt = inner.replace(/]/g, '');
-  if (!alt) return null;
+  if (/[[\]]/.test(inner)) return null;
+  const alt = inner;
   const text = `![${alt}]()`;
   return { from, to, text, cursor: from + text.length - 1 };
 }
@@ -68,7 +51,7 @@ export function unwrapImagePlan(
   to: number
 ): { from: number; to: number; text: string; cursor: number } | null {
   if (from > to) return null;
-  if (inFence(content, from) || inFence(content, to)) return null;
+  if (offsetInFence(content, from) || offsetInFence(content, to)) return null;
 
   const lineStart = content.lastIndexOf('\n', from - 1) + 1;
   const nl = content.indexOf('\n', from);

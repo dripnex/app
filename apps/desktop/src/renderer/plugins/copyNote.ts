@@ -21,7 +21,12 @@ export const copyNotePlugin: PluginManifest = {
         context.notifications.addWarning('Nothing to copy');
         return false;
       }
-      await context.clipboard.writeText(content);
+      try {
+        await context.clipboard.writeText(content);
+      } catch {
+        context.notifications.addError('Could not copy markdown');
+        return false;
+      }
       context.notifications.addSuccess('Copied markdown');
       return true;
     };
@@ -32,7 +37,12 @@ export const copyNotePlugin: PluginManifest = {
         context.notifications.addWarning('This note has no title');
         return false;
       }
-      await context.clipboard.writeText(mark);
+      try {
+        await context.clipboard.writeText(mark);
+      } catch {
+        context.notifications.addError('Could not copy wikilink');
+        return false;
+      }
       context.notifications.addSuccess(`Copied ${mark}`);
       return true;
     };

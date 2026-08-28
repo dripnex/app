@@ -1,6 +1,6 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const TAG = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 
 function maskInlineCode(line: string): string {
@@ -9,27 +9,19 @@ function maskInlineCode(line: string): string {
 
 function tagHits(content: string): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (!inFence && !opensFence) {
-      const searchable = maskInlineCode(line);
-      TAG.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = TAG.exec(searchable)) !== null) {
-        const name = match[1];
-        if (!name) continue;
-        const hash = match[0].indexOf('#');
-        if (hash < 0) continue;
-        const from = cursor + match.index + hash;
-        hits.push({ from, to: from + 1 + name.length });
-      }
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    const searchable = maskInlineCode(row.line);
+    TAG.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = TAG.exec(searchable)) !== null) {
+      const name = match[1];
+      if (!name) continue;
+      const hash = match[0].indexOf('#');
+      if (hash < 0) continue;
+      const from = row.from + match.index + hash;
+      hits.push({ from, to: from + 1 + name.length });
     }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
   }
   return hits;
 }

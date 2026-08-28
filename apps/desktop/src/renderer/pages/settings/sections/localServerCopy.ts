@@ -18,6 +18,11 @@ export const LOCAL_SERVER_MAX_START_POLLS = 20;
 
 export type LocalServerBodyState = 'stale' | 'off' | 'starting' | 'running' | 'error';
 
+/** False when the start-poll window already timed out; a late refresh must not clear the error. */
+export function shouldApplyStartPollResult(timedOut: boolean): boolean {
+  return !timedOut;
+}
+
 export function localServerBodyState(args: {
   ready: boolean;
   enabled: boolean;

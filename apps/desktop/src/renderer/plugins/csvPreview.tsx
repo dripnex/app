@@ -14,11 +14,63 @@ export function csvFencePlan(
 }
 
 export function parseDelimited(code: string, delimiter: ',' | '\t'): string[][] {
-  return code
-    .split(/\r?\n/)
-    .map(line => line.trimEnd())
-    .filter(line => line.length > 0)
-    .map(line => line.split(delimiter).map(cell => cell.trim()));
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let quoted = false;
+  let i = 0;
+
+  const flushCell = () => {
+    row.push(cell.trim());
+    cell = '';
+  };
+  const flushRow = () => {
+    flushCell();
+    if (row.some(value => value.length > 0)) rows.push(row);
+    row = [];
+  };
+
+  while (i < code.length) {
+    const ch = code[i] ?? '';
+    if (quoted) {
+      if (ch === '"') {
+        if (code[i + 1] === '"') {
+          cell += '"';
+          i += 2;
+          continue;
+        }
+        quoted = false;
+        i += 1;
+        continue;
+      }
+      cell += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '"') {
+      quoted = true;
+      i += 1;
+      continue;
+    }
+    if (ch === delimiter) {
+      flushCell();
+      i += 1;
+      continue;
+    }
+    if (ch === '\r') {
+      i += 1;
+      continue;
+    }
+    if (ch === '\n') {
+      flushRow();
+      i += 1;
+      continue;
+    }
+    cell += ch;
+    i += 1;
+  }
+  if (cell.length > 0 || row.length > 0) flushRow();
+  return rows;
 }
 
 function CsvTable({ code, language }: CodeBlockRendererProps) {

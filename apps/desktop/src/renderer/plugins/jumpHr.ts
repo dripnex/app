@@ -1,31 +1,24 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { FENCE, walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const HR = /^( {0,3})([-*_])(?:\s*\2){2,}\s*$/;
 const SETEXT = /^( {0,3})(=+|-+)[ \t]*$/;
 
 function hrHits(content: string): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
   let prev: string | null = null;
 
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    const end = cursor + line.length;
+  for (const row of walkSourceLines(content)) {
     const setext =
-      SETEXT.test(line) &&
+      SETEXT.test(row.line) &&
       prev != null &&
       prev.trim().length > 0 &&
       !HR.test(prev) &&
       !FENCE.test(prev);
-    if (!inFence && !opensFence && HR.test(line) && !setext) {
-      hits.push({ from: cursor, to: end });
+    if (!row.inFence && HR.test(row.line) && !setext) {
+      hits.push({ from: row.from, to: row.to });
     }
-    if (opensFence) inFence = !inFence;
-    prev = line;
-    cursor = end + 1;
+    prev = row.line;
   }
   return hits;
 }

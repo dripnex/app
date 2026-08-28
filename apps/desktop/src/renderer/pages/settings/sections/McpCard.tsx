@@ -20,6 +20,7 @@ import {
   MCP_LOAD_ERROR,
   MCP_STARTING,
   localServerBodyState,
+  shouldApplyStartPollResult,
 } from './localServerCopy';
 import styles from './IntegrationsSection.module.css';
 
@@ -43,15 +44,21 @@ export function McpCard() {
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    if (!api?.connectionInfo) return;
-    try {
-      setInfo(await api.connectionInfo());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : MCP_LOAD_ERROR);
-    }
-  }, [api]);
+  const refresh = useCallback(
+    async (opts?: { ignore?: () => boolean }) => {
+      if (!api?.connectionInfo) return;
+      try {
+        const next = await api.connectionInfo();
+        if (opts?.ignore && !shouldApplyStartPollResult(opts.ignore())) return;
+        setInfo(next);
+        setError(null);
+      } catch (err) {
+        if (opts?.ignore && !shouldApplyStartPollResult(opts.ignore())) return;
+        setError(err instanceof Error ? err.message : MCP_LOAD_ERROR);
+      }
+    },
+    [api]
+  );
 
   useEffect(() => {
     if (!ready) return;
@@ -61,16 +68,21 @@ export function McpCard() {
   useEffect(() => {
     if (!ready || !integrations.mcpEnabled || info?.running) return;
     let attempts = 0;
+    let timedOut = false;
     const id = window.setInterval(() => {
       attempts += 1;
       if (attempts > LOCAL_SERVER_MAX_START_POLLS) {
         window.clearInterval(id);
+        timedOut = true;
         setError(MCP_DID_NOT_START);
         return;
       }
-      void refresh();
+      void refresh({ ignore: () => timedOut });
     }, LOCAL_SERVER_START_POLL_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      timedOut = true;
+      window.clearInterval(id);
+    };
   }, [ready, refresh, integrations.mcpEnabled, info?.running]);
 
   useEffect(() => {

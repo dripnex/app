@@ -1,24 +1,6 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
+import { offsetInFence, walkSourceLines } from './sourceScan';
 const DISPLAY = /\$\$([^$\n]+)\$\$/g;
-
-function inFence(content: string, offset: number): boolean {
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let fenced = false;
-
-  for (const line of lines) {
-    const end = cursor + line.length;
-    const opensFence = FENCE.test(line);
-    if (offset >= cursor && offset <= end + 1) {
-      return fenced || opensFence;
-    }
-    if (opensFence) fenced = !fenced;
-    cursor = end + 1;
-  }
-  return false;
-}
 
 function covered(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
   return ranges.some(r => from < r.to && to > r.from);
@@ -70,19 +52,11 @@ function mathHitsOnLine(line: string): Array<{ from: number; to: number; inner: 
 /** `$math$` / `$$math$$` ranges outside fences. Spaced dollars skipped. Does not rewrite. */
 export function mathHits(content: string): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (!inFence && !opensFence) {
-      for (const hit of mathHitsOnLine(line)) {
-        hits.push({ from: cursor + hit.from, to: cursor + hit.to });
-      }
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    for (const hit of mathHitsOnLine(row.line)) {
+      hits.push({ from: row.from + hit.from, to: row.from + hit.to });
     }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
   }
   return hits;
 }
@@ -93,7 +67,7 @@ export function wrapMathPlan(
   from: number,
   to: number
 ): { from: number; to: number; text: string; cursor: number } | null {
-  if (inFence(content, from) || inFence(content, to)) return null;
+  if (offsetInFence(content, from) || offsetInFence(content, to)) return null;
 
   const selected = content.slice(from, to);
   if (/\r|\n/.test(selected)) return null;
@@ -116,7 +90,7 @@ export function unwrapMathPlan(
   to: number
 ): { from: number; to: number; text: string; cursor: number } | null {
   if (from > to) return null;
-  if (inFence(content, from) || inFence(content, to)) return null;
+  if (offsetInFence(content, from) || offsetInFence(content, to)) return null;
 
   const lineStart = content.lastIndexOf('\n', from - 1) + 1;
   const nl = content.indexOf('\n', from);

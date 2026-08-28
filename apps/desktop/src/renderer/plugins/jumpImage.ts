@@ -1,26 +1,18 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { walkSourceLines } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const IMAGE = /!\[([^\]\n]{0,200})\]\((<[^>\n]+>|[^)\s]+)(?:\s+"[^"\n]*")?\)/g;
 
 function imageHits(content: string): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (const line of lines) {
-    const opensFence = FENCE.test(line);
-    if (!inFence && !opensFence) {
-      IMAGE.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = IMAGE.exec(line)) !== null) {
-        const from = cursor + match.index;
-        hits.push({ from, to: from + match[0].length });
-      }
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    IMAGE.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = IMAGE.exec(row.line)) !== null) {
+      const from = row.from + match.index;
+      hits.push({ from, to: from + match[0].length });
     }
-    if (opensFence) inFence = !inFence;
-    cursor = cursor + line.length + 1;
   }
   return hits;
 }

@@ -1,38 +1,11 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { FENCE, lineAtOffset } from './sourceScan';
 
-const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 const LIST = /^( {0,3})([-*+]|\d+[.)])(\s|$)/;
 const HR = /^( {0,3})([-*_])(?:\s*\2){2,}\s*$/;
 const SETEXT = /^( {0,3})(=+|-+)[ \t]*$/;
 const TOO_MANY_HASHES = /^( {0,3}(?:> ?)* {0,3})#{7,}/;
 const ATX = /^( {0,3}(?:> ?)* {0,3})(#{1,6})(?:[ \t]+(.*?)(?:[ \t]+#+)?)?[ \t]*$/;
-
-function lineAtOffset(
-  content: string,
-  offset: number
-): { line: string; from: number; to: number; inFence: boolean; next: string | null } | null {
-  const lines = content.split(/\r?\n/);
-  let cursor = 0;
-  let inFence = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? '';
-    const end = cursor + line.length;
-    const opensFence = FENCE.test(line);
-    if (offset >= cursor && offset <= end + 1) {
-      return {
-        line,
-        from: cursor,
-        to: end,
-        inFence: inFence || opensFence,
-        next: lines[i + 1] ?? null,
-      };
-    }
-    if (opensFence) inFence = !inFence;
-    cursor = end + 1;
-  }
-  return null;
-}
 
 /** Cycle ATX marks on one line. Lists, fences, setext, and `#######` stay put. */
 export function cycleHeadingLine(line: string, nextLine?: string | null): string | null {

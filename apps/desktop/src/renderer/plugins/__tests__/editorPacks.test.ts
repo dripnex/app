@@ -111,6 +111,9 @@ describe('taskToggle', () => {
     expect(toggleTaskAtOffset(md, 3)).toEqual({ from: 2, to: 5, text: '[x]' });
     expect(toggleTaskAtOffset(md, 14)?.text).toBe('[ ]');
     expect(toggleTaskAtOffset('plain', 0)).toBeNull();
+    const fenced = '```\n- [ ] code\n```\n- [ ] real';
+    expect(toggleTaskAtOffset(fenced, fenced.indexOf('[ ] code') + 1)).toBeNull();
+    expect(toggleTaskAtOffset(fenced, fenced.indexOf('[ ] real') + 1)?.text).toBe('[x]');
   });
 
   it('click only toggles when the pointer is on the checkbox mark', () => {
@@ -262,6 +265,8 @@ describe('jumpTable', () => {
     expect(previousTableRange(md, a)).toEqual({ from: c, to: c + '| c | d |'.length });
     expect(nextTableRange('para | not a table', 0)).toBeNull();
     expect(previousTableRange('para only', 0)).toBeNull();
+    const loose = 'a | b\n--- | ---\nc | d';
+    expect(nextTableRange(loose, 0)).toEqual({ from: 0, to: 'a | b'.length });
   });
 });
 
@@ -325,6 +330,7 @@ describe('wrapImage', () => {
     });
     expect(wrapImagePlan('![cat](x.png)', 0, 13)).toBeNull();
     expect(wrapImagePlan('a\nb', 0, 3)).toBeNull();
+    expect(wrapImagePlan('a[b', 0, 3)).toBeNull();
   });
 
   it('skips fences', () => {
@@ -368,6 +374,7 @@ describe('wrapLink', () => {
       text: '[cat]()',
       cursor: 10,
     });
+    expect(wrapLinkPlan('a]b', 0, 3)).toBeNull();
     expect(wrapLinkPlan('Hello', 5, 5)).toEqual({
       from: 5,
       to: 5,
@@ -982,6 +989,10 @@ describe('csvPreview', () => {
     expect(parseDelimited('a\tb\n1\t2', '\t')).toEqual([
       ['a', 'b'],
       ['1', '2'],
+    ]);
+    expect(parseDelimited('"last, first",email\n"a,b",x', ',')).toEqual([
+      ['last, first', 'email'],
+      ['a,b', 'x'],
     ]);
   });
 });
