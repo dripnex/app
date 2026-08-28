@@ -786,7 +786,7 @@ describe('wrapStrike', () => {
 
 describe('jumpStrike', () => {
   it('jumps to the next strikethrough and skips fences and tilde runs', () => {
-    const md = 'See ~~gone~~ and ~~old~~\n~~~\n~~fake~~\n~~~\n~~~gone~~~ ~~keep~~';
+    const md = 'See ~~gone~~ and ~~old~~\n~~~\n~~fake~~\n~~~\nSee ~~~gone~~~ ~~keep~~';
     const gone = md.indexOf('~~gone~~');
     const old = md.indexOf('~~old~~');
     const keep = md.indexOf('~~keep~~');
