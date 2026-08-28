@@ -63,11 +63,17 @@ describe('MCP / Local HTTP copy', () => {
     expect(LOCAL_SERVER_BRIDGE_STALE).toMatch(/Quit Dripnex/);
   });
 
-  it('ignores a late refresh after the start poll timed out', () => {
+  it('ignores a late refresh after the start poll timed out, including the initial request', () => {
     expect(shouldApplyStartPollResult(true)).toBe(false);
     expect(shouldApplyStartPollResult(false)).toBe(true);
-    expect(httpSrc).toContain('ignore: () => timedOut');
-    expect(mcpSrc).toContain('ignore: () => timedOut');
+    expect(httpSrc).toContain('timedOutRef');
+    expect(mcpSrc).toContain('timedOutRef');
+    expect(httpSrc).toContain('void refresh({ ignore: () => timedOutRef.current })');
+    expect(mcpSrc).toContain('void refresh({ ignore: () => timedOutRef.current })');
+    expect(httpSrc.match(/ignore: \(\) => timedOutRef\.current/g)?.length).toBeGreaterThanOrEqual(
+      2
+    );
+    expect(mcpSrc.match(/ignore: \(\) => timedOutRef\.current/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
   it('wires empty and error states in both cards', () => {

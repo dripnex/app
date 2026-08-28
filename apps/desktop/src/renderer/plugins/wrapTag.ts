@@ -1,12 +1,8 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-import { offsetInFence } from './sourceScan';
+import { maskInlineCode, offsetInFence } from './sourceScan';
 
 const TAG = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 const NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
-
-function maskInlineCode(line: string): string {
-  return line.replace(/`[^`\n]+`/g, mark => ' '.repeat(mark.length));
-}
 
 function isBoundary(ch: string | undefined): boolean {
   return !ch || /[\s]/.test(ch);

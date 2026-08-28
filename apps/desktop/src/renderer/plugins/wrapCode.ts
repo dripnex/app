@@ -1,7 +1,5 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-import { offsetInFence } from './sourceScan';
-
-const INLINE = /`([^`\n]+)`/g;
+import { inlineCodeSpans, offsetInFence } from './sourceScan';
 
 /** Wrap the selection (or the cursor) as `` `code` ``. Does not rewrite the rest of the note. */
 export function wrapCodePlan(
@@ -38,16 +36,11 @@ export function unwrapCodePlan(
   const nl = content.indexOf('\n', from);
   const line = content.slice(lineStart, nl === -1 ? content.length : nl);
 
-  INLINE.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = INLINE.exec(line)) !== null) {
-    if (match.index > 0 && line[match.index - 1] === '`') continue;
-    const after = match.index + match[0].length;
-    if (after < line.length && line[after] === '`') continue;
-    const hitFrom = lineStart + match.index;
-    const hitTo = hitFrom + match[0].length;
+  for (const span of inlineCodeSpans(line)) {
+    const hitFrom = lineStart + span.from;
+    const hitTo = lineStart + span.to;
     if (from < hitFrom || to > hitTo) continue;
-    const text = (match[1] ?? '').trim();
+    const text = line.slice(span.innerFrom, span.innerTo).trim();
     if (!text) continue;
     return { from: hitFrom, to: hitTo, text, cursor: hitFrom + text.length };
   }

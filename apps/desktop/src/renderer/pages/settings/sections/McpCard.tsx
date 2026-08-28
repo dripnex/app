@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bot, Check, Copy, Eye, EyeOff } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
 import { Button, Field, toast } from '../../../ui/primitives';
@@ -43,6 +43,7 @@ export function McpCard() {
   const [error, setError] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const timedOutRef = useRef(false);
 
   const refresh = useCallback(
     async (opts?: { ignore?: () => boolean }) => {
@@ -62,25 +63,25 @@ export function McpCard() {
 
   useEffect(() => {
     if (!ready) return;
-    void refresh();
+    void refresh({ ignore: () => timedOutRef.current });
   }, [ready, refresh, integrations.mcpEnabled]);
 
   useEffect(() => {
     if (!ready || !integrations.mcpEnabled || info?.running) return;
     let attempts = 0;
-    let timedOut = false;
+    timedOutRef.current = false;
     const id = window.setInterval(() => {
       attempts += 1;
       if (attempts > LOCAL_SERVER_MAX_START_POLLS) {
         window.clearInterval(id);
-        timedOut = true;
+        timedOutRef.current = true;
         setError(MCP_DID_NOT_START);
         return;
       }
-      void refresh({ ignore: () => timedOut });
+      void refresh({ ignore: () => timedOutRef.current });
     }, LOCAL_SERVER_START_POLL_MS);
     return () => {
-      timedOut = true;
+      timedOutRef.current = true;
       window.clearInterval(id);
     };
   }, [ready, refresh, integrations.mcpEnabled, info?.running]);

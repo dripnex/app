@@ -1,8 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import type { PluginManifest } from '@dripnex/plugin-api';
-import { lineAtOffset } from './sourceScan';
-
-const TASK = /^([ \t]*[-*]\s+)\[([ xX])\]/;
+import { lineAtOffset, TASK_LINE } from './sourceScan';
 
 export function toggleTaskAtOffset(
   content: string,
@@ -10,7 +8,7 @@ export function toggleTaskAtOffset(
 ): { from: number; to: number; text: string } | null {
   const here = lineAtOffset(content, offset);
   if (!here || here.inFence) return null;
-  const match = here.line.match(TASK);
+  const match = here.line.match(TASK_LINE);
   if (!match) return null;
   const prefix = match[1] ?? '';
   const mark = match[2] === 'x' || match[2] === 'X' ? ' ' : 'x';

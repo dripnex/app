@@ -1,14 +1,81 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
 import { offsetInFence } from './sourceScan';
 
-const LINK = /\[([^\]\n]{0,200})\]\((<[^>\n]+>|[^)\s]*)(?:\s+"[^"\n]*")?\)/g;
-
 function looksLikeUrl(value: string): boolean {
   return /^https?:\/\/\S+$/i.test(value);
 }
 
 function hrefFor(url: string): string {
   return url.includes(')') ? `<${url}>` : url;
+}
+
+interface LineLink {
+  from: number;
+  to: number;
+  label: string;
+  href: string;
+}
+
+/** Parse `[label](dest)` on one line. Bare destinations keep balanced parentheses. */
+function parseLinkAt(line: string, start: number): LineLink | null {
+  if (line[start] !== '[') return null;
+  let i = start + 1;
+  let label = '';
+  while (i < line.length && line[i] !== ']' && line[i] !== '\n') {
+    if (label.length >= 200) return null;
+    label += line[i];
+    i += 1;
+  }
+  if (line[i] !== ']') return null;
+  i += 1;
+  if (line[i] !== '(') return null;
+  i += 1;
+
+  let href: string;
+  if (line[i] === '<') {
+    const close = line.indexOf('>', i + 1);
+    if (close < 0 || line.slice(i + 1, close).includes('\n')) return null;
+    href = line.slice(i + 1, close);
+    i = close + 1;
+  } else {
+    const hrefStart = i;
+    let depth = 0;
+    while (i < line.length) {
+      const ch = line[i];
+      if (ch === ' ' || ch === '\t' || ch === '\n') break;
+      if (ch === '(') depth += 1;
+      else if (ch === ')') {
+        if (depth === 0) break;
+        depth -= 1;
+      }
+      i += 1;
+    }
+    href = line.slice(hrefStart, i);
+  }
+
+  while (line[i] === ' ' || line[i] === '\t') i += 1;
+  if (line[i] === '"') {
+    i += 1;
+    while (i < line.length && line[i] !== '"' && line[i] !== '\n') i += 1;
+    if (line[i] !== '"') return null;
+    i += 1;
+    while (line[i] === ' ' || line[i] === '\t') i += 1;
+  }
+  if (line[i] !== ')') return null;
+  return { from: start, to: i + 1, label, href };
+}
+
+function linksOnLine(line: string): LineLink[] {
+  const hits: LineLink[] = [];
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] !== '[') continue;
+    if (i > 0 && line[i - 1] === '!') continue;
+    const parsed = parseLinkAt(line, i);
+    if (!parsed) continue;
+    hits.push(parsed);
+    i = parsed.to - 1;
+  }
+  return hits;
 }
 
 /** Wrap the selection (or the cursor) as `[text](url)`. Does not rewrite the rest of the note. */
@@ -55,16 +122,12 @@ export function unwrapLinkPlan(
   const nl = content.indexOf('\n', from);
   const line = content.slice(lineStart, nl === -1 ? content.length : nl);
 
-  LINK.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = LINK.exec(line)) !== null) {
-    if (match.index > 0 && line[match.index - 1] === '!') continue;
-    const hitFrom = lineStart + match.index;
-    const hitTo = hitFrom + match[0].length;
+  for (const match of linksOnLine(line)) {
+    const hitFrom = lineStart + match.from;
+    const hitTo = lineStart + match.to;
     if (from < hitFrom || to > hitTo) continue;
-    const label = (match[1] ?? '').trim();
-    const rawHref = (match[2] ?? '').trim();
-    const href = rawHref.replace(/^<|>$/g, '').trim();
+    const label = match.label.trim();
+    const href = match.href.trim();
     const text = label || href;
     if (!text) continue;
     return { from: hitFrom, to: hitTo, text, cursor: hitFrom + text.length };

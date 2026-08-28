@@ -1,9 +1,5 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-import { walkSourceLines } from './sourceScan';
-
-/** Same GFM list mark as `scanMarkdown` / task toggle: `-` or `*`. */
-const OPEN_TASK = /^([ \t]*[-*]\s+)\[ \]/;
-const DONE_TASK = /^([ \t]*[-*]\s+)\[[xX]\]/;
+import { DONE_TASK_LINE, OPEN_TASK_LINE, walkSourceLines } from './sourceScan';
 
 function taskHits(content: string, mark: RegExp): Array<{ from: number; to: number }> {
   const hits: Array<{ from: number; to: number }> = [];
@@ -18,11 +14,11 @@ function taskHits(content: string, mark: RegExp): Array<{ from: number; to: numb
 }
 
 function incompleteTaskHits(content: string): Array<{ from: number; to: number }> {
-  return taskHits(content, OPEN_TASK);
+  return taskHits(content, OPEN_TASK_LINE);
 }
 
 function completedTaskHits(content: string): Array<{ from: number; to: number }> {
-  return taskHits(content, DONE_TASK);
+  return taskHits(content, DONE_TASK_LINE);
 }
 
 /** Next open GFM task at or after offset, wrapping. Fences and `[x]` skipped. Does not rewrite. */

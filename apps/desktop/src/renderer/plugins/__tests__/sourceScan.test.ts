@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { lineAtOffset, offsetInFence, walkSourceLines } from '../sourceScan';
+import {
+  inlineCodeSpans,
+  lineAtOffset,
+  maskInlineCode,
+  offsetInFence,
+  walkSourceLines,
+} from '../sourceScan';
 
 describe('walkSourceLines', () => {
   it('keeps CRLF widths so the second line starts after both bytes', () => {
@@ -35,5 +41,28 @@ describe('walkSourceLines', () => {
     expect(offsetInFence(md, 0)).toBe(true);
     expect(offsetInFence(md, md.indexOf('hi'))).toBe(true);
     expect(offsetInFence(md, md.lastIndexOf('```'))).toBe(true);
+  });
+
+  it('does not close a fence when non-whitespace follows the closer marker', () => {
+    const md = '```\n```ts\nstill\n```\nafter';
+    expect(offsetInFence(md, md.indexOf('still'))).toBe(true);
+    expect(offsetInFence(md, md.indexOf('after'))).toBe(false);
+    expect(
+      walkSourceLines(md)
+        .filter(r => r.isFenceCloser)
+        .map(r => r.line)
+    ).toEqual(['```']);
+  });
+});
+
+describe('inlineCodeSpans', () => {
+  it('pairs delimiter runs of the same length', () => {
+    const inner = 'literal `' + ' #tag';
+    const line = 'See ``' + inner + '`` end';
+    expect(inlineCodeSpans(line)).toEqual([
+      { from: 4, to: 4 + 2 + inner.length + 2, innerFrom: 6, innerTo: 6 + inner.length },
+    ]);
+    expect(maskInlineCode(line)).toBe('See ' + ' '.repeat(2 + inner.length + 2) + ' end');
+    expect(inlineCodeSpans('See `cat`')).toEqual([{ from: 4, to: 9, innerFrom: 5, innerTo: 8 }]);
   });
 });

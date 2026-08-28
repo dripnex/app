@@ -114,6 +114,9 @@ describe('taskToggle', () => {
     const fenced = '```\n- [ ] code\n```\n- [ ] real';
     expect(toggleTaskAtOffset(fenced, fenced.indexOf('[ ] code') + 1)).toBeNull();
     expect(toggleTaskAtOffset(fenced, fenced.indexOf('[ ] real') + 1)?.text).toBe('[x]');
+    expect(toggleTaskAtOffset('+ [ ] plus', 4)?.text).toBe('[x]');
+    expect(toggleTaskAtOffset('1. [ ] numbered', 5)?.text).toBe('[x]');
+    expect(toggleTaskAtOffset('1) [x] paren', 5)?.text).toBe('[ ]');
   });
 
   it('click only toggles when the pointer is on the checkbox mark', () => {
@@ -425,6 +428,12 @@ describe('wrapLink', () => {
     });
     expect(unwrapLinkPlan('See []()', 6, 6)).toBeNull();
     expect(unwrapLinkPlan('See ![cat](x.png)', 6, 6)).toBeNull();
+    expect(unwrapLinkPlan('See [lab](https://example.test/a_(b))', 6, 6)).toEqual({
+      from: 4,
+      to: 37,
+      text: 'lab',
+      cursor: 7,
+    });
     const fenced = 'para\n```\n[cat](x.png)\n```\n';
     expect(
       unwrapLinkPlan(fenced, fenced.indexOf('[cat]') + 2, fenced.indexOf('[cat]') + 2)
@@ -464,7 +473,20 @@ describe('wrapCode', () => {
       cursor: 7,
     });
     expect(unwrapCodePlan('See ``', 4, 6)).toBeNull();
-    expect(unwrapCodePlan('See ```foo```', 8, 8)).toBeNull();
+    expect(unwrapCodePlan('See ```foo```', 8, 8)).toEqual({
+      from: 4,
+      to: 13,
+      text: 'foo',
+      cursor: 7,
+    });
+    const inner = 'literal `' + ' #tag';
+    const nested = 'See ``' + inner + '``';
+    expect(unwrapCodePlan(nested, nested.indexOf('#tag'), nested.indexOf('#tag'))).toEqual({
+      from: 4,
+      to: nested.length,
+      text: inner,
+      cursor: 4 + inner.length,
+    });
     const fenced = 'para\n```\n`cat`\n```\n';
     expect(
       unwrapCodePlan(fenced, fenced.indexOf('`cat`') + 2, fenced.indexOf('`cat`') + 2)
@@ -674,6 +696,7 @@ describe('wrapTag', () => {
     });
     expect(unwrapTagPlan('# Title only', 0, 0)).toBeNull();
     expect(unwrapTagPlan('See `#code`', 6, 6)).toBeNull();
+    expect(unwrapTagPlan('See ``' + 'literal `' + ' #tag' + '``', 16, 16)).toBeNull();
     expect(unwrapTagPlan('See [[Note#H]]', 10, 10)).toBeNull();
     const fenced = 'para\n```\n#inbox\n```\n';
     expect(
@@ -820,6 +843,8 @@ describe('jumpTask', () => {
     expect(previousIncompleteTaskRange(md, 10)).toEqual({ from: 2, to: 5 });
     expect(nextIncompleteTaskRange('- [x] done\n- [X] also', 0)).toBeNull();
     expect(previousIncompleteTaskRange('para only', 0)).toBeNull();
+    expect(nextIncompleteTaskRange('+ [ ] plus\n1. [ ] numbered', 0)).toEqual({ from: 2, to: 5 });
+    expect(nextIncompleteTaskRange('+ [ ] plus\n1. [ ] numbered', 2)).toEqual({ from: 14, to: 17 });
   });
 
   it('jumps to the next checked GFM task and skips fences and open items', () => {
