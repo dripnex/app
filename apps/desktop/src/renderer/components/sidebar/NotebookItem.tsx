@@ -368,6 +368,7 @@ export const NotebookItem = memo(function NotebookItem({
           dropPosition && `drop-${dropPosition}`,
           isDragging && 'dragging'
         )}
+        data-chrome-press=""
         style={depth > 0 ? { paddingLeft: `${8 + depth * 16}px` } : undefined}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
