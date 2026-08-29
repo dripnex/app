@@ -69,6 +69,11 @@ describe('gsapRuntime', () => {
     expect(sidebar?.vars.duration).toBeCloseTo(0.18);
     expect(sidebar?.vars.x).toBe(0);
     gsap.killTweensOf(row);
+
+    const panel = playMotion('panel-in', target);
+    expect(panel?.vars.duration).toBeCloseTo(0.18);
+    expect(panel?.vars.x).toBe(0);
+    gsap.killTweensOf(row);
   });
 
   it('snaps gate-in when Performance is Low', () => {

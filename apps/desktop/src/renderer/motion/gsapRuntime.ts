@@ -167,6 +167,19 @@ export function playMotion(
       }
     );
   }
+  if (name === 'panel-in') {
+    return gsap.fromTo(
+      target,
+      { opacity: 0, x: 8 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: scaledDuration(180),
+        ease,
+        onComplete: options.onComplete,
+      }
+    );
+  }
   if (name === 'welcome-in' || name === 'gate-in') {
     return gsap.fromTo(
       target,
