@@ -3,7 +3,7 @@ import { ExternalLink, KeyRound } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, setOnePasswordAccount } from '../../../integrations/onepassword';
-import { Button, Field, Input } from '../../../ui/primitives';
+import { Button, Field, Input, toast } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingsPage } from '../components/SettingsPage';
 import { GitHubCard } from './GitHubCard';
@@ -65,6 +65,7 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
     setStored(trimmed);
     setDraft(trimmed);
     setAccountMessage('Account remembered. Next save goes here.');
+    toast.success('1Password account remembered');
   };
 
   return (

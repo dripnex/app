@@ -1,5 +1,19 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { WELCOME_FEATURES, WELCOME_HEADLINE, WELCOME_LEDE } from '../welcomeCopy';
+import {
+  WELCOME_CREATE,
+  WELCOME_FEATURES,
+  WELCOME_HEADLINE,
+  WELCOME_LEDE,
+  WELCOME_SKIP,
+  welcomeHint,
+} from '../welcomeCopy';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const welcomeSrc = readFileSync(join(here, '../Welcome.tsx'), 'utf8');
+const welcomeCss = readFileSync(join(here, '../Welcome.module.css'), 'utf8');
 
 /** Split so a repo grep of the dead slogans stays clean. */
 const KILLED = [
@@ -31,5 +45,18 @@ describe('welcome copy', () => {
     for (const line of KILLED) {
       expect(blob.includes(line), line).toBe(false);
     }
+  });
+
+  it('keeps the CTA dry and uses a real accelerator', () => {
+    expect(WELCOME_CREATE.toLowerCase()).not.toMatch(/first/);
+    expect(WELCOME_SKIP).toBe('Skip');
+    expect(welcomeHint()).toMatch(/⌘K|Ctrl\+K/);
+    expect(welcomeHint().toLowerCase()).not.toContain('pro tip');
+  });
+
+  it('plays GSAP welcome-in instead of a 400ms CSS stagger', () => {
+    expect(welcomeSrc).toContain("playMotion('welcome-in'");
+    expect(welcomeCss).not.toMatch(/@keyframes fade-in/);
+    expect(welcomeCss).not.toMatch(/animation:\s*fade-in 400ms/);
   });
 });

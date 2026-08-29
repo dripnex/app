@@ -84,7 +84,7 @@ export async function launchApp({
  * New notes start as `# Untitled\\n\\n` (see useNoteActions).
  */
 export async function openFirstNote(window: Page): Promise<Locator> {
-  const create = window.getByRole('button', { name: 'Create Your First Note' });
+  const create = window.getByRole('button', { name: 'Create a note' });
   await create.waitFor({ state: 'visible', timeout: 15_000 });
   await create.click();
   const content = window.locator('.cm-content');

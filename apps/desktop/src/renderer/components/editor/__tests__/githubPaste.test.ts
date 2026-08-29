@@ -25,7 +25,7 @@ describe('markdownFromGithubPasteResult', () => {
     ).toEqual({ insert: '```ts\nx\n```', error: null });
   });
 
-  it('fails visibly when a private blob needs Connect', () => {
+  it('keeps the pasted URL when a private blob needs Connect', () => {
     expect(
       markdownFromGithubPasteResult(url, {
         success: false,
@@ -33,7 +33,7 @@ describe('markdownFromGithubPasteResult', () => {
         connectRequired: true,
       })
     ).toEqual({
-      insert: `${url}\n\n> ${GITHUB_CONNECT_REQUIRED}`,
+      insert: url,
       error: GITHUB_CONNECT_REQUIRED,
     });
   });

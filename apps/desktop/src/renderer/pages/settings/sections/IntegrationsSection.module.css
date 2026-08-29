@@ -96,6 +96,13 @@
   color: var(--text-primary);
 }
 
+.statusHint {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
+}
+
 .body {
   display: flex;
   flex-direction: column;

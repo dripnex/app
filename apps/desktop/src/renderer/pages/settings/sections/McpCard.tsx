@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bot, Check, Copy, Eye, EyeOff } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
-import { Button, Field } from '../../../ui/primitives';
+import { Button, Field, toast } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingToggle } from '../components/SettingToggle';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
@@ -11,10 +11,19 @@ import {
   launchFromConnection,
 } from '../../../utils/mcpSnippets';
 import type { LocalServerConnectionInfo } from '../../../../preload/api/localServer';
+import {
+  COPY_FAILED,
+  LOCAL_SERVER_BRIDGE_STALE,
+  LOCAL_SERVER_MAX_START_POLLS,
+  LOCAL_SERVER_START_POLL_MS,
+  MCP_DID_NOT_START,
+  MCP_LOAD_ERROR,
+  MCP_STARTING,
+  isCurrentStartGeneration,
+  localServerBodyState,
+  shouldApplyStartPollResult,
+} from './localServerCopy';
 import styles from './IntegrationsSection.module.css';
-
-const START_POLL_MS = 750;
-const MAX_START_POLLS = 20;
 
 async function copyText(value: string): Promise<boolean> {
   try {
@@ -35,35 +44,53 @@ export function McpCard() {
   const [error, setError] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const startGenRef = useRef(0);
 
-  const refresh = useCallback(async () => {
-    if (!api?.connectionInfo) return;
-    try {
-      setInfo(await api.connectionInfo());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load MCP connection.');
-    }
-  }, [api]);
+  const refresh = useCallback(
+    async (opts?: { ignore?: () => boolean }) => {
+      if (!api?.connectionInfo) return;
+      try {
+        const next = await api.connectionInfo();
+        if (opts?.ignore && !shouldApplyStartPollResult(opts.ignore())) return;
+        setInfo(next);
+        setError(null);
+      } catch (err) {
+        if (opts?.ignore && !shouldApplyStartPollResult(opts.ignore())) return;
+        setError(err instanceof Error ? err.message : MCP_LOAD_ERROR);
+      }
+    },
+    [api]
+  );
 
   useEffect(() => {
     if (!ready) return;
-    void refresh();
+    const gen = ++startGenRef.current;
+    void refresh({ ignore: () => !isCurrentStartGeneration(gen, startGenRef.current) });
+    return () => {
+      if (startGenRef.current === gen) startGenRef.current += 1;
+    };
   }, [ready, refresh, integrations.mcpEnabled]);
 
   useEffect(() => {
     if (!ready || !integrations.mcpEnabled || info?.running) return;
+    const gen = ++startGenRef.current;
     let attempts = 0;
     const id = window.setInterval(() => {
       attempts += 1;
-      if (attempts > MAX_START_POLLS) {
+      if (attempts > LOCAL_SERVER_MAX_START_POLLS) {
         window.clearInterval(id);
-        setError('The local MCP server did not start.');
+        if (startGenRef.current === gen) {
+          startGenRef.current += 1;
+          setError(MCP_DID_NOT_START);
+        }
         return;
       }
-      void refresh();
-    }, START_POLL_MS);
-    return () => window.clearInterval(id);
+      void refresh({ ignore: () => !isCurrentStartGeneration(gen, startGenRef.current) });
+    }, LOCAL_SERVER_START_POLL_MS);
+    return () => {
+      window.clearInterval(id);
+      if (startGenRef.current === gen) startGenRef.current += 1;
+    };
   }, [ready, refresh, integrations.mcpEnabled, info?.running]);
 
   useEffect(() => {
@@ -87,10 +114,20 @@ export function McpCard() {
   const codex = launch ? buildCodexSnippet(launch) : '';
 
   const copy = async (key: string, value: string) => {
-    if (await copyText(value)) setCopied(key);
+    if (await copyText(value)) {
+      setCopied(key);
+      return;
+    }
+    toast.error(COPY_FAILED);
   };
 
   const enabled = integrations.mcpEnabled;
+  const bodyState = localServerBodyState({
+    ready,
+    enabled,
+    running: Boolean(info?.running),
+    error,
+  });
   const badge = !ready ? 'Restart Dripnex' : enabled ? (info?.running ? 'On' : 'Starting') : 'Off';
   const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
@@ -123,14 +160,15 @@ export function McpCard() {
         onChange={checked => updateIntegrations({ mcpEnabled: checked })}
       />
 
-      {!ready ? (
+      {bodyState === 'stale' ? (
         <p className={styles.callout} data-tone="warn">
-          This window opened before the MCP bridge loaded. Quit Dripnex completely and open it again
-          — Settings does not pick up preload changes on refresh.
+          {LOCAL_SERVER_BRIDGE_STALE}
         </p>
       ) : null}
 
-      {ready && enabled && info ? (
+      {bodyState === 'starting' ? <p className={styles.statusHint}>{MCP_STARTING}</p> : null}
+
+      {bodyState === 'running' && info ? (
         <div className={styles.body}>
           <Field label="Local URL" htmlFor="mcp-url" hint="Scripts and the later clipper use this.">
             <div className={styles.copyRow}>

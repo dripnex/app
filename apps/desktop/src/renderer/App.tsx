@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { useCssVariables, usePluginStyles, useThemeOverrides } from '@dripnex/plugin-api';
 import { scanMarkdown } from '@dripnex/markdown';
 import type { NoteSnapshot } from '../preload/index';
@@ -61,10 +61,25 @@ import { useMcpLocalPath } from './hooks/useMcpLocalPath';
 import type { PaletteMode } from './utils/paletteQuery';
 import { useEditorBufferStore, selectContentForNote } from './stores/editorBufferStore';
 import { useHeadingJumpStore } from './stores/headingJumpStore';
+import { initGsapRuntime, playMotion, setPerformanceLow } from './motion/gsapRuntime';
+import { shouldPlaySidebarIn } from './motion/sidebarIn';
+import { usePerformanceStore } from './stores/performanceStore';
 
 function NotesApp() {
   usePerformanceMode();
   useOfficialThemes();
+
+  useEffect(() => {
+    const stop = initGsapRuntime();
+    setPerformanceLow(usePerformanceStore.getState().mode === 'low');
+    const unsub = usePerformanceStore.subscribe(state => {
+      setPerformanceLow(state.mode === 'low');
+    });
+    return () => {
+      stop();
+      unsub();
+    };
+  }, []);
   useThemeOverrides();
   useAppearanceSettings();
   useCssVariables();
@@ -131,6 +146,15 @@ function SignedInApp({
 
   const hideSidebar = sidebarCollapsed || distractionFree;
   const hideNoteList = distractionFree;
+  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarWasHiddenRef = useRef(hideSidebar);
+
+  useLayoutEffect(() => {
+    if (shouldPlaySidebarIn(sidebarWasHiddenRef.current, hideSidebar)) {
+      playMotion('sidebar-in', sidebarRef.current);
+    }
+    sidebarWasHiddenRef.current = hideSidebar;
+  }, [hideSidebar]);
 
   useEffect(() => {
     const setVisibility = window.dripnex.windows.setButtonVisibility;
@@ -434,6 +458,7 @@ function SignedInApp({
           <UpdateBanner />
           <div className="app__layout">
             <aside
+              ref={sidebarRef}
               className="app__sidebar"
               data-collapsed={hideSidebar ? 'true' : 'false'}
               style={{ width: sidebarWidth }}

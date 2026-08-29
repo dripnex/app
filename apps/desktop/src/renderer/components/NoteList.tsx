@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   Archive,
   Search,
@@ -29,6 +29,8 @@ import { dispatchCommand } from '../hooks/useCommandRegistry';
 import { IconButton } from '../ui/primitives';
 import { noteListNavDirection } from '../utils/noteListKeys';
 import { modAccel } from '../utils/modAccel';
+import { playListEnter, playMotion } from '../motion/gsapRuntime';
+import { elementsForNoteIds, planListEnter } from '../motion/listEnter';
 import type { QuickFilterType } from './sidebar';
 import { NoteListContextMenu } from './NoteListContextMenu';
 import { NotebookPicker } from './NotebookPicker';
@@ -178,11 +180,40 @@ export function NoteList({
   const { data: notebooks = [] } = useNotebookList();
   const { data: notebook } = useNotebook(selectedNotebookId);
   const listItemsRef = useRef<HTMLUListElement | null>(null);
+  const seenNoteIdsRef = useRef(new Set<string>());
+  const prevSelectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const selected = listItemsRef.current?.querySelector('[aria-selected="true"]');
     selected?.scrollIntoView({ block: 'nearest' });
   }, [selectedId]);
+
+  const noteIdsKey = notes.map(n => n.id).join('\0');
+
+  useLayoutEffect(() => {
+    const noteIds = noteIdsKey ? noteIdsKey.split('\0') : [];
+    if (!listItemsRef.current) {
+      if (noteIds.length === 0) seenNoteIdsRef.current = new Set();
+      return;
+    }
+
+    const plan = planListEnter({
+      noteIds,
+      seenIds: seenNoteIdsRef.current,
+    });
+    seenNoteIdsRef.current = new Set(noteIds);
+
+    if (plan.mode !== 'none') {
+      playListEnter(elementsForNoteIds(plan.ids));
+      prevSelectedIdRef.current = selectedId;
+      return;
+    }
+
+    if (selectedId && selectedId !== prevSelectedIdRef.current) {
+      playMotion('list-select', document.getElementById(`note-${selectedId}`));
+    }
+    prevSelectedIdRef.current = selectedId;
+  }, [noteIdsKey, selectedId, isLoading]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -349,11 +380,10 @@ export function NoteList({
             aria-label="Notes"
             aria-activedescendant={selectedId ? `note-${selectedId}` : undefined}
           >
-            {notes.map((note, index) => (
+            {notes.map(note => (
               <NoteListItem
                 key={note.id}
                 note={note}
-                index={index}
                 isSelected={note.id === selectedId}
                 onSelect={onSelect}
                 onTagClick={onTagClick}
@@ -412,7 +442,6 @@ export function NoteList({
 
 interface NoteListItemProps {
   note: NoteWithExcerpt;
-  index: number;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onTagClick: (tag: string) => void;
@@ -421,7 +450,6 @@ interface NoteListItemProps {
 
 function NoteListItem({
   note,
-  index,
   isSelected,
   onSelect,
   onTagClick,
@@ -453,7 +481,6 @@ function NoteListItem({
       role="option"
       aria-selected={isSelected}
       className={sc('note-list-item', isSelected && 'selected')}
-      style={{ '--item-index': Math.min(index, 10) } as React.CSSProperties}
       onClick={() => onSelect(note.id)}
       onContextMenu={e => onContextMenu(e, note)}
       onKeyDown={e => {
