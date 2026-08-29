@@ -117,6 +117,8 @@ describe('taskToggle', () => {
     expect(toggleTaskAtOffset('+ [ ] plus', 4)?.text).toBe('[x]');
     expect(toggleTaskAtOffset('1. [ ] numbered', 5)?.text).toBe('[x]');
     expect(toggleTaskAtOffset('1) [x] paren', 5)?.text).toBe('[ ]');
+    expect(toggleTaskAtOffset('- [ ]text', 3)).toBeNull();
+    expect(toggleTaskAtOffset('- [ ]', 3)?.text).toBe('[x]');
   });
 
   it('click only toggles when the pointer is on the checkbox mark', () => {
@@ -434,6 +436,12 @@ describe('wrapLink', () => {
       text: 'lab',
       cursor: 7,
     });
+    expect(unwrapLinkPlan('See [a [b] c](x)', 8, 8)).toEqual({
+      from: 4,
+      to: 16,
+      text: 'a [b] c',
+      cursor: 11,
+    });
     const fenced = 'para\n```\n[cat](x.png)\n```\n';
     expect(
       unwrapLinkPlan(fenced, fenced.indexOf('[cat]') + 2, fenced.indexOf('[cat]') + 2)
@@ -491,6 +499,13 @@ describe('wrapCode', () => {
     expect(
       unwrapCodePlan(fenced, fenced.indexOf('`cat`') + 2, fenced.indexOf('`cat`') + 2)
     ).toBeNull();
+    const across = 'See `literal\n#tag`';
+    expect(unwrapCodePlan(across, across.indexOf('#tag'), across.indexOf('#tag'))).toEqual({
+      from: 4,
+      to: across.length,
+      text: 'literal\n#tag',
+      cursor: 4 + 'literal\n#tag'.length,
+    });
   });
 });
 
@@ -697,6 +712,7 @@ describe('wrapTag', () => {
     expect(unwrapTagPlan('# Title only', 0, 0)).toBeNull();
     expect(unwrapTagPlan('See `#code`', 6, 6)).toBeNull();
     expect(unwrapTagPlan('See ``' + 'literal `' + ' #tag' + '``', 16, 16)).toBeNull();
+    expect(unwrapTagPlan('See `literal\n#tag`', 13, 13)).toBeNull();
     expect(unwrapTagPlan('See [[Note#H]]', 10, 10)).toBeNull();
     const fenced = 'para\n```\n#inbox\n```\n';
     expect(

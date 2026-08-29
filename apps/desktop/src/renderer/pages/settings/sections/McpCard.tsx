@@ -19,6 +19,7 @@ import {
   MCP_DID_NOT_START,
   MCP_LOAD_ERROR,
   MCP_STARTING,
+  isCurrentStartGeneration,
   localServerBodyState,
   shouldApplyStartPollResult,
 } from './localServerCopy';
@@ -43,7 +44,7 @@ export function McpCard() {
   const [error, setError] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const timedOutRef = useRef(false);
+  const startGenRef = useRef(0);
 
   const refresh = useCallback(
     async (opts?: { ignore?: () => boolean }) => {
@@ -63,26 +64,32 @@ export function McpCard() {
 
   useEffect(() => {
     if (!ready) return;
-    void refresh({ ignore: () => timedOutRef.current });
+    const gen = ++startGenRef.current;
+    void refresh({ ignore: () => !isCurrentStartGeneration(gen, startGenRef.current) });
+    return () => {
+      if (startGenRef.current === gen) startGenRef.current += 1;
+    };
   }, [ready, refresh, integrations.mcpEnabled]);
 
   useEffect(() => {
     if (!ready || !integrations.mcpEnabled || info?.running) return;
+    const gen = ++startGenRef.current;
     let attempts = 0;
-    timedOutRef.current = false;
     const id = window.setInterval(() => {
       attempts += 1;
       if (attempts > LOCAL_SERVER_MAX_START_POLLS) {
         window.clearInterval(id);
-        timedOutRef.current = true;
-        setError(MCP_DID_NOT_START);
+        if (startGenRef.current === gen) {
+          startGenRef.current += 1;
+          setError(MCP_DID_NOT_START);
+        }
         return;
       }
-      void refresh({ ignore: () => timedOutRef.current });
+      void refresh({ ignore: () => !isCurrentStartGeneration(gen, startGenRef.current) });
     }, LOCAL_SERVER_START_POLL_MS);
     return () => {
-      timedOutRef.current = true;
       window.clearInterval(id);
+      if (startGenRef.current === gen) startGenRef.current += 1;
     };
   }, [ready, refresh, integrations.mcpEnabled, info?.running]);
 

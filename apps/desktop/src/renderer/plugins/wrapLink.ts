@@ -21,12 +21,19 @@ function parseLinkAt(line: string, start: number): LineLink | null {
   if (line[start] !== '[') return null;
   let i = start + 1;
   let label = '';
-  while (i < line.length && line[i] !== ']' && line[i] !== '\n') {
+  let depth = 1;
+  while (i < line.length && line[i] !== '\n') {
     if (label.length >= 200) return null;
-    label += line[i];
+    const ch = line[i];
+    if (ch === '[') depth += 1;
+    else if (ch === ']') {
+      depth -= 1;
+      if (depth === 0) break;
+    }
+    label += ch;
     i += 1;
   }
-  if (line[i] !== ']') return null;
+  if (depth !== 0 || line[i] !== ']') return null;
   i += 1;
   if (line[i] !== '(') return null;
   i += 1;

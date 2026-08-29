@@ -23,6 +23,11 @@ export function shouldApplyStartPollResult(timedOut: boolean): boolean {
   return !timedOut;
 }
 
+/** False when the request belongs to a previous enable/timeout generation. */
+export function isCurrentStartGeneration(requestGen: number, currentGen: number): boolean {
+  return requestGen === currentGen;
+}
+
 export function localServerBodyState(args: {
   ready: boolean;
   enabled: boolean;

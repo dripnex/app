@@ -32,17 +32,11 @@ export function unwrapCodePlan(
   if (from > to) return null;
   if (offsetInFence(content, from) || offsetInFence(content, to)) return null;
 
-  const lineStart = content.lastIndexOf('\n', from - 1) + 1;
-  const nl = content.indexOf('\n', from);
-  const line = content.slice(lineStart, nl === -1 ? content.length : nl);
-
-  for (const span of inlineCodeSpans(line)) {
-    const hitFrom = lineStart + span.from;
-    const hitTo = lineStart + span.to;
-    if (from < hitFrom || to > hitTo) continue;
-    const text = line.slice(span.innerFrom, span.innerTo).trim();
+  for (const span of inlineCodeSpans(content)) {
+    if (from < span.from || to > span.to) continue;
+    const text = content.slice(span.innerFrom, span.innerTo).trim();
     if (!text) continue;
-    return { from: hitFrom, to: hitTo, text, cursor: hitFrom + text.length };
+    return { from: span.from, to: span.to, text, cursor: span.from + text.length };
   }
   return null;
 }

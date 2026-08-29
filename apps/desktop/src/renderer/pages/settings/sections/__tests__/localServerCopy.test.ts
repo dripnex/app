@@ -9,6 +9,7 @@ import {
   LOCAL_SERVER_BRIDGE_STALE,
   MCP_DID_NOT_START,
   MCP_STARTING,
+  isCurrentStartGeneration,
   localServerBodyState,
   shouldApplyStartPollResult,
 } from '../localServerCopy';
@@ -63,17 +64,21 @@ describe('MCP / Local HTTP copy', () => {
     expect(LOCAL_SERVER_BRIDGE_STALE).toMatch(/Quit Dripnex/);
   });
 
-  it('ignores a late refresh after the start poll timed out, including the initial request', () => {
+  it('ignores a late refresh after the start poll timed out, including a previous startup', () => {
     expect(shouldApplyStartPollResult(true)).toBe(false);
     expect(shouldApplyStartPollResult(false)).toBe(true);
-    expect(httpSrc).toContain('timedOutRef');
-    expect(mcpSrc).toContain('timedOutRef');
-    expect(httpSrc).toContain('void refresh({ ignore: () => timedOutRef.current })');
-    expect(mcpSrc).toContain('void refresh({ ignore: () => timedOutRef.current })');
-    expect(httpSrc.match(/ignore: \(\) => timedOutRef\.current/g)?.length).toBeGreaterThanOrEqual(
-      2
-    );
-    expect(mcpSrc.match(/ignore: \(\) => timedOutRef\.current/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(isCurrentStartGeneration(3, 3)).toBe(true);
+    expect(isCurrentStartGeneration(3, 4)).toBe(false);
+    expect(httpSrc).toContain('startGenRef');
+    expect(mcpSrc).toContain('startGenRef');
+    expect(httpSrc).toContain('isCurrentStartGeneration(gen, startGenRef.current)');
+    expect(mcpSrc).toContain('isCurrentStartGeneration(gen, startGenRef.current)');
+    expect(
+      httpSrc.match(/isCurrentStartGeneration\(gen, startGenRef\.current\)/g)?.length
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      mcpSrc.match(/isCurrentStartGeneration\(gen, startGenRef\.current\)/g)?.length
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it('wires empty and error states in both cards', () => {

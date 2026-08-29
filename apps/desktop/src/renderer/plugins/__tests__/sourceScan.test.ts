@@ -65,4 +65,10 @@ describe('inlineCodeSpans', () => {
     expect(maskInlineCode(line)).toBe('See ' + ' '.repeat(2 + inner.length + 2) + ' end');
     expect(inlineCodeSpans('See `cat`')).toEqual([{ from: 4, to: 9, innerFrom: 5, innerTo: 8 }]);
   });
+
+  it('pairs delimiter runs across a line ending', () => {
+    const md = 'See `literal\n#tag` after';
+    expect(inlineCodeSpans(md)).toEqual([{ from: 4, to: 18, innerFrom: 5, innerTo: 17 }]);
+    expect(maskInlineCode(md).slice(md.indexOf('#tag'), md.indexOf('#tag') + 4)).toBe('    ');
+  });
 });

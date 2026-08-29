@@ -41,10 +41,7 @@ export function unwrapTagPlan(
   if (from > to) return null;
   if (offsetInFence(content, from) || offsetInFence(content, to)) return null;
 
-  const lineStart = content.lastIndexOf('\n', from - 1) + 1;
-  const nl = content.indexOf('\n', from);
-  const line = content.slice(lineStart, nl === -1 ? content.length : nl);
-  const searchable = maskInlineCode(line);
+  const searchable = maskInlineCode(content);
 
   TAG.lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -53,7 +50,7 @@ export function unwrapTagPlan(
     if (!name) continue;
     const hash = match[0].indexOf('#');
     if (hash < 0) continue;
-    const hitFrom = lineStart + match.index + hash;
+    const hitFrom = match.index + hash;
     const hitTo = hitFrom + 1 + name.length;
     if (from < hitFrom || to > hitTo) continue;
     return { from: hitFrom, to: hitTo, text: name, cursor: hitFrom + name.length };

@@ -3,9 +3,9 @@ export const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 
 /** GFM task-list prefix: indent, then `-` `+` `*` or `1.` / `1)`, then spaces or tabs. */
 export const TASK_LIST_PREFIX = String.raw`[ \t]*(?:[-+*]|[0-9]{1,9}[.)])[ \t]+`;
-export const TASK_LINE = new RegExp(`^(${TASK_LIST_PREFIX})\\[([ \\txX])\\]`);
-export const OPEN_TASK_LINE = new RegExp(`^(${TASK_LIST_PREFIX})\\[([ \\t])\\]`);
-export const DONE_TASK_LINE = new RegExp(`^(${TASK_LIST_PREFIX})\\[([xX])\\]`);
+export const TASK_LINE = new RegExp(`^(${TASK_LIST_PREFIX})\\[([ \\txX])\\](?=[ \\t]|$)`);
+export const OPEN_TASK_LINE = new RegExp(`^(${TASK_LIST_PREFIX})\\[([ \\t])\\](?=[ \\t]|$)`);
+export const DONE_TASK_LINE = new RegExp(`^(${TASK_LIST_PREFIX})\\[([xX])\\](?=[ \\t]|$)`);
 
 export interface SourceLine {
   line: string;
@@ -100,7 +100,7 @@ export function offsetInFence(content: string, offset: number): boolean {
   return lineAtOffset(content, offset)?.inFence ?? false;
 }
 
-/** CommonMark code spans: a run of n backticks closed by a run of the same length. */
+/** CommonMark code spans: a run of n backticks closed by a run of the same length. Newlines are allowed. */
 export function inlineCodeSpans(line: string): InlineCodeSpan[] {
   const spans: InlineCodeSpan[] = [];
   let i = 0;
