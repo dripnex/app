@@ -16,6 +16,7 @@ import { useShareStore, selectShareInfo } from '../stores/shareStore';
 import { findHeadingForAnchor } from '../utils/outlineActive';
 import { useScrollSync } from '../hooks/useScrollSync';
 import { useManualTags } from '../hooks/useManualTags';
+import { stripHashTag } from '../plugins/wrapTag';
 import { useEmbedResolver } from '../hooks/useEmbedResolver';
 import { useBacklinks } from '../hooks/useLinks';
 import { useResolvedWikilinkTargets } from '../hooks/useResolvedWikilinkTargets';
@@ -152,6 +153,18 @@ export function NoteEditor({
     inlineTags: note?.tags ?? [],
     onNoteUpdate,
   });
+
+  const handleRemoveTag = useCallback(
+    async (tag: string) => {
+      await removeTag(tag);
+      if (!note) return;
+      const buffer = useEditorBufferStore.getState();
+      const live = buffer.noteId === note.id ? buffer.liveContent : note.content;
+      const next = stripHashTag(live, tag);
+      if (next !== live) onUpdate(next);
+    },
+    [note, onUpdate, removeTag]
+  );
 
   const handleKindChange = useCallback(
     async (kind: NoteKind) => {
@@ -553,7 +566,7 @@ export function NoteEditor({
           onMoveToNotebook={onMoveToNotebook}
           onStatusChange={onStatusChange}
           onAddTag={addTag}
-          onRemoveTag={removeTag}
+          onRemoveTag={tag => void handleRemoveTag(tag)}
           onKindChange={kind => void handleKindChange(kind)}
         />
       )}
