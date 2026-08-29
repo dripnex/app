@@ -2,13 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide';
 import { Icon } from '../ui/icons/Icon';
 import styles from './UpdateBanner.module.css';
+import { updaterBannerErrorKind } from './updateBannerState';
 
 type BannerState =
   | { kind: 'hidden' }
   | { kind: 'available'; version: string }
   | { kind: 'downloading'; version: string; percent: number }
   | { kind: 'ready'; version: string }
-  | { kind: 'error'; version: string; message?: string };
+  | { kind: 'download-error'; version: string; message?: string }
+  | { kind: 'install-error'; version: string; message?: string };
+
+function versionOf(state: BannerState): string {
+  return 'version' in state ? state.version : '';
+}
 
 export function UpdateBanner() {
   const [state, setState] = useState<BannerState>({ kind: 'hidden' });
@@ -31,7 +37,7 @@ export function UpdateBanner() {
             ? prev
             : {
                 kind: 'downloading',
-                version: (prev as { version: string }).version,
+                version: versionOf(prev),
                 percent: Math.round(p.percent),
               }
         );
@@ -51,8 +57,8 @@ export function UpdateBanner() {
           prev.kind === 'hidden'
             ? prev
             : {
-                kind: 'error',
-                version: (prev as { version: string }).version,
+                kind: updaterBannerErrorKind(prev.kind),
+                version: versionOf(prev),
                 message: err?.message,
               }
         );
@@ -71,8 +77,8 @@ export function UpdateBanner() {
           prev.kind === 'hidden'
             ? prev
             : {
-                kind: 'error',
-                version: (prev as { version: string }).version,
+                kind: 'download-error',
+                version: versionOf(prev),
                 message: result.error ?? 'Download failed',
               }
         );
@@ -82,8 +88,8 @@ export function UpdateBanner() {
         prev.kind === 'hidden'
           ? prev
           : {
-              kind: 'error',
-              version: (prev as { version: string }).version,
+              kind: 'download-error',
+              version: versionOf(prev),
               message: err instanceof Error ? err.message : undefined,
             }
       );
@@ -99,8 +105,8 @@ export function UpdateBanner() {
             prev.kind === 'hidden'
               ? prev
               : {
-                  kind: 'error',
-                  version: (prev as { version: string }).version,
+                  kind: 'install-error',
+                  version: versionOf(prev),
                   message: result.error,
                 }
           );
@@ -108,9 +114,7 @@ export function UpdateBanner() {
       })
       .catch(() => {
         setState(prev =>
-          prev.kind === 'hidden'
-            ? prev
-            : { kind: 'error', version: (prev as { version: string }).version }
+          prev.kind === 'hidden' ? prev : { kind: 'install-error', version: versionOf(prev) }
         );
       });
   }, []);
@@ -132,12 +136,22 @@ export function UpdateBanner() {
           Downloading v{state.version}... {state.percent}%
         </span>
       )}
-      {state.kind === 'error' && (
+      {state.kind === 'download-error' && (
         <>
           <span className={styles.text}>
             Download failed{state.message ? `: ${state.message}` : ''}
           </span>
           <button className={styles.action} onClick={handleDownload}>
+            Retry
+          </button>
+        </>
+      )}
+      {state.kind === 'install-error' && (
+        <>
+          <span className={styles.text}>
+            Install failed{state.message ? `: ${state.message}` : ''}
+          </span>
+          <button className={styles.action} onClick={handleInstall}>
             Retry
           </button>
         </>
