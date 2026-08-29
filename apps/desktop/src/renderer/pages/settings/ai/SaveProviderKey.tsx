@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { OnePasswordMark } from '../../../integrations/OnePasswordMark';
 import { discoverOnePassword, saveSecretToOnePassword } from '../../../integrations/onepassword';
-import { Button } from '../../../ui/primitives';
+import {
+  ONE_PASSWORD_NEED_ACCOUNT,
+  ONE_PASSWORD_UNREACHABLE,
+  ONE_PASSWORD_WAITING,
+  onePasswordSavedStatus,
+  onePasswordSavedToast,
+} from '../../../integrations/onePasswordCopy';
+import { Button, toast } from '../../../ui/primitives';
 import styles from '../../../components/sync/SaveToOnePasswordButton.module.css';
 import type { ProviderCatalogItem } from './providers';
 
@@ -55,18 +62,22 @@ export function SaveProviderKey({ item, apiKey }: SaveProviderKeyProps) {
         });
         if (result.success) {
           setNeedsAccount(false);
-          setStatus(`Saved in ${result.vaultTitle}`);
+          setStatus(onePasswordSavedStatus(result.vaultTitle));
+          toast.success(onePasswordSavedToast(result.vaultTitle));
           return;
         }
         if ('needsAccount' in result && result.needsAccount) {
           setNeedsAccount(true);
           setAccounts(result.accounts);
-          setError('Enter the account name at the top of the 1Password sidebar.');
+          setError(ONE_PASSWORD_NEED_ACCOUNT);
           return;
         }
         setError(result.error);
+        toast.error(result.error);
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : 'Could not reach 1Password.');
+        const message = caught instanceof Error ? caught.message : ONE_PASSWORD_UNREACHABLE;
+        setError(message);
+        toast.error(message);
       } finally {
         setBusy(false);
       }
@@ -76,7 +87,7 @@ export function SaveProviderKey({ item, apiKey }: SaveProviderKeyProps) {
 
   if (!available && !status) return null;
 
-  const caption = busy ? 'Waiting for 1Password…' : (status ?? 'Save to 1Password');
+  const caption = busy ? ONE_PASSWORD_WAITING : (status ?? 'Save to 1Password');
 
   return (
     <div className={styles.wrap}>

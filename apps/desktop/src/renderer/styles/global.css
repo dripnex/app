@@ -11,7 +11,9 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   overflow: hidden;
   background: transparent;
@@ -47,17 +49,17 @@ html[data-frosted='true'] .app {
 }
 
 /* ===== PERFORMANCE MODES (blur only — colors stay on the theme) ===== */
-:root[data-perf="high"] {
+:root[data-perf='high'] {
   --glass-blur: 32px;
   --glass-saturate: 200%;
 }
 
-:root[data-perf="medium"] {
+:root[data-perf='medium'] {
   --glass-blur: 18px;
   --glass-saturate: 150%;
 }
 
-:root[data-perf="low"] {
+:root[data-perf='low'] {
   --glass-blur: 0px;
   --glass-saturate: 100%;
   --glass-bg: var(--glass-bg-fallback);
@@ -92,7 +94,6 @@ html[data-frosted='true'] .app {
 .app__sidebar {
   flex-shrink: 0;
   overflow: hidden;
-  transition: width var(--transition-normal);
   background: transparent;
 }
 
@@ -159,7 +160,6 @@ input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-
 
 /* Scrollbar */
 ::-webkit-scrollbar {

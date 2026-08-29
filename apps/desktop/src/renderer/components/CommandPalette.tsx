@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bold,
@@ -55,6 +55,7 @@ import {
   parsePaletteQuery,
   type PaletteMode,
 } from '../utils/paletteQuery';
+import { playMotion } from '../motion/gsapRuntime';
 import { cssm } from '../lib/cssm';
 import styles from './CommandPalette.module.css';
 
@@ -142,6 +143,7 @@ export function CommandPalette({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const parsed = useMemo(() => parsePaletteQuery(query, mode), [query, mode]);
@@ -224,6 +226,11 @@ export function CommandPalette({
       });
     }
   }, [isOpen, mode]);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    playMotion('palette-in', paletteRef.current);
+  }, [isOpen]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -371,6 +378,7 @@ export function CommandPalette({
       aria-modal="true"
     >
       <div
+        ref={paletteRef}
         className={sc('command-palette')}
         onClick={e => e.stopPropagation()}
         style={{

@@ -13,11 +13,6 @@ export function markdownFromGithubPasteResult(
   result: GithubPasteIpcResult
 ): { insert: string; error: string | null } {
   if (result.success) return { insert: result.markdown, error: null };
-  if (result.connectRequired) {
-    return {
-      insert: `${url}\n\n> ${GITHUB_CONNECT_REQUIRED}`,
-      error: GITHUB_CONNECT_REQUIRED,
-    };
-  }
-  return { insert: url, error: result.error };
+  // Keep the pasted URL. Do not write Settings copy into the note.
+  return { insert: url, error: result.error || GITHUB_CONNECT_REQUIRED };
 }

@@ -32,4 +32,11 @@ describe('AuthGate form is in the tree when unauthenticated', () => {
     expect(screenCss).toContain('background: var(--glass-bg-fallback)');
     expect(screenCss).not.toMatch(/-webkit-app-region:\s*drag/);
   });
+
+  it('plays GSAP gate-in on the card, not a CSS keyframe', () => {
+    expect(authGate).toContain("playMotion('gate-in'");
+    expect(authGate).toContain('cardRef');
+    expect(screenCss).not.toMatch(/@keyframes/);
+    expect(screenCss).not.toMatch(/animation:/);
+  });
 });

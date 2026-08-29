@@ -1,11 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Copy, Eye, EyeOff, Server } from 'lucide';
 import { Icon } from '../../../ui/icons/Icon';
-import { Button, Field } from '../../../ui/primitives';
+import { Button, Field, toast } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { SettingToggle } from '../components/SettingToggle';
 import { useSettingsStore, selectIntegrations } from '../../../stores/settings';
 import type { LocalServerConnectionInfo } from '../../../../preload/api/localServer';
+import {
+  COPY_FAILED,
+  HTTP_DID_NOT_START,
+  HTTP_LOAD_ERROR,
+  HTTP_STARTING,
+  LOCAL_SERVER_BRIDGE_STALE,
+  LOCAL_SERVER_MAX_START_POLLS,
+  LOCAL_SERVER_START_POLL_MS,
+  isCurrentStartGeneration,
+  localServerBodyState,
+  shouldApplyStartPollResult,
+} from './localServerCopy';
 import styles from './IntegrationsSection.module.css';
 
 async function copyText(value: string): Promise<boolean> {
@@ -45,23 +57,56 @@ export function LocalHttpCard() {
   const [error, setError] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const startGenRef = useRef(0);
 
-  const refresh = useCallback(async () => {
-    if (!api?.connectionInfo) return;
-    try {
-      setInfo(await api.connectionInfo());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load local HTTP status.');
-    }
-  }, [api]);
+  const refresh = useCallback(
+    async (opts?: { ignore?: () => boolean }) => {
+      if (!api?.connectionInfo) return;
+      try {
+        const next = await api.connectionInfo();
+        if (opts?.ignore && !shouldApplyStartPollResult(opts.ignore())) return;
+        setInfo(next);
+        setError(null);
+      } catch (err) {
+        if (opts?.ignore && !shouldApplyStartPollResult(opts.ignore())) return;
+        setError(err instanceof Error ? err.message : HTTP_LOAD_ERROR);
+      }
+    },
+    [api]
+  );
 
   const enabled = integrations.httpApiEnabled || integrations.mcpEnabled;
 
   useEffect(() => {
     if (!ready) return;
-    void refresh();
+    const gen = ++startGenRef.current;
+    void refresh({ ignore: () => !isCurrentStartGeneration(gen, startGenRef.current) });
+    return () => {
+      if (startGenRef.current === gen) startGenRef.current += 1;
+    };
   }, [ready, refresh, enabled]);
+
+  useEffect(() => {
+    if (!ready || !enabled || info?.running) return;
+    const gen = ++startGenRef.current;
+    let attempts = 0;
+    const id = window.setInterval(() => {
+      attempts += 1;
+      if (attempts > LOCAL_SERVER_MAX_START_POLLS) {
+        window.clearInterval(id);
+        if (startGenRef.current === gen) {
+          startGenRef.current += 1;
+          setError(HTTP_DID_NOT_START);
+        }
+        return;
+      }
+      void refresh({ ignore: () => !isCurrentStartGeneration(gen, startGenRef.current) });
+    }, LOCAL_SERVER_START_POLL_MS);
+    return () => {
+      window.clearInterval(id);
+      if (startGenRef.current === gen) startGenRef.current += 1;
+    };
+  }, [ready, refresh, enabled, info?.running]);
 
   useEffect(() => {
     if (!copied) return;
@@ -70,9 +115,19 @@ export function LocalHttpCard() {
   }, [copied]);
 
   const copy = async (key: string, value: string) => {
-    if (await copyText(value)) setCopied(key);
+    if (await copyText(value)) {
+      setCopied(key);
+      return;
+    }
+    toast.error(COPY_FAILED);
   };
 
+  const bodyState = localServerBodyState({
+    ready,
+    enabled,
+    running: Boolean(info?.running),
+    error,
+  });
   const badge = !ready ? 'Restart Dripnex' : enabled ? (info?.running ? 'On' : 'Starting') : 'Off';
   const badgeTone = !ready ? 'warn' : enabled && info?.running ? 'ok' : 'idle';
 
@@ -104,13 +159,21 @@ export function LocalHttpCard() {
         onChange={checked => updateIntegrations({ httpApiEnabled: checked })}
       />
 
-      {error ? (
+      {bodyState === 'stale' ? (
+        <p className={styles.callout} data-tone="warn">
+          {LOCAL_SERVER_BRIDGE_STALE}
+        </p>
+      ) : null}
+
+      {bodyState === 'starting' ? <p className={styles.statusHint}>{HTTP_STARTING}</p> : null}
+
+      {bodyState === 'error' ? (
         <p className={styles.callout} data-tone="warn">
           {error}
         </p>
       ) : null}
 
-      {ready && enabled && info ? (
+      {bodyState === 'running' && info ? (
         <div className={styles.body}>
           <Field label="URL" htmlFor="http-url">
             <div className={styles.copyRow}>
