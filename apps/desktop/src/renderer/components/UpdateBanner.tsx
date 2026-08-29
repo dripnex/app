@@ -91,7 +91,28 @@ export function UpdateBanner() {
   }, []);
 
   const handleInstall = useCallback(() => {
-    void window.dripnex.updates.installNow();
+    void window.dripnex.updates
+      .installNow()
+      .then(result => {
+        if (result && result.ok === false) {
+          setState(prev =>
+            prev.kind === 'hidden'
+              ? prev
+              : {
+                  kind: 'error',
+                  version: (prev as { version: string }).version,
+                  message: result.error,
+                }
+          );
+        }
+      })
+      .catch(() => {
+        setState(prev =>
+          prev.kind === 'hidden'
+            ? prev
+            : { kind: 'error', version: (prev as { version: string }).version }
+        );
+      });
   }, []);
 
   if (state.kind === 'hidden' || dismissed) return null;

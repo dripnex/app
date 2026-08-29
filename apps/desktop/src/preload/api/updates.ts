@@ -3,7 +3,7 @@ import { ipcRenderer } from 'electron';
 export interface UpdatesAPI {
   checkNow: () => Promise<{ available: boolean; version?: string }>;
   startDownload: () => Promise<{ ok: boolean; error?: string }>;
-  installNow: () => Promise<void>;
+  installNow: () => Promise<{ ok: boolean; error?: string }>;
   onAvailable: (cb: (info: { version: string }) => void) => () => void;
   onDownloadProgress: (
     cb: (p: { percent: number; bytesPerSecond: number; transferred: number; total: number }) => void

@@ -97,14 +97,20 @@ export function UpdatesSection() {
     });
     const result = await window.dripnex.updates.startDownload();
     if (!result.ok) {
-      setState({ status: 'error', message: 'Failed to start download' });
+      setState({ status: 'error', message: result.error ?? 'Failed to start download' });
     }
   }, [state]);
 
   const handleInstall = useCallback(async () => {
     setState({ status: 'installing' });
     try {
-      await window.dripnex.updates.installNow();
+      const result = await window.dripnex.updates.installNow();
+      if (result && result.ok === false) {
+        setState({
+          status: 'error',
+          message: result.error ?? 'Failed to install update. Please try again.',
+        });
+      }
     } catch {
       setState({ status: 'error', message: 'Failed to install update. Please try again.' });
     }

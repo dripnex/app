@@ -49,7 +49,11 @@ import { registerNoteHandlers } from './handlers/noteHandlers.js';
 import { registerNotebookHandlers } from './handlers/notebookHandlers.js';
 import { registerDataHandlers } from './handlers/dataHandlers.js';
 import { registerLogHandlers } from './handlers/logHandlers.js';
-import { registerUpdateHandlers, initAutoUpdater } from './handlers/updateHandlers.js';
+import {
+  registerUpdateHandlers,
+  initAutoUpdater,
+  isInstallingUpdate,
+} from './handlers/updateHandlers.js';
 import { registerAuthSyncHandlers } from './handlers/authSyncHandlers.js';
 import { registerGitHandlers } from './handlers/gitHandlers.js';
 import { registerPluginHandlers } from './handlers/pluginHandlers.js';
@@ -599,6 +603,7 @@ app.on('window-all-closed', () => {
 
 let isQuitting = false;
 app.on('before-quit', async event => {
+  if (isInstallingUpdate()) return;
   if (isQuitting) return;
   isQuitting = true;
   event.preventDefault();
