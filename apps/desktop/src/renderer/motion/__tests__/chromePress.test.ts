@@ -39,8 +39,8 @@ describe('chromePressPhase', () => {
   it('targets data-chrome-press so CSS modules do not hide rows', () => {
     expect(CHROME_PRESS_ATTR).toBe('data-chrome-press');
     expect(CHROME_PRESS_SELECTOR).toBe('[data-chrome-press]');
-    expect(CHROME_HOVER_PX).toBe(6);
-    expect(CHROME_PRESS_PX).toBe(8);
+    expect(CHROME_HOVER_PX).toBe(2);
+    expect(CHROME_PRESS_PX).toBe(3);
   });
 });
 
@@ -50,7 +50,7 @@ describe('chrome-press runtime', () => {
     setPerformanceLow(false);
   });
 
-  it('hovers 6px and presses 8px in 120–140ms', () => {
+  it('hovers 2px and presses 3px in 120–140ms', () => {
     const row = { opacity: 1, x: 0, y: 0, scale: 1 };
     const target = row as unknown as Element;
 
