@@ -77,12 +77,12 @@ describe('gsapRuntime', () => {
 
     const hover = playMotion('chrome-hover', target);
     expect(hover?.vars.duration).toBeCloseTo(0.14);
-    expect(hover?.vars.x).toBe(6);
+    expect(hover?.vars.x).toBe(2);
     gsap.killTweensOf(row);
 
     const press = playMotion('chrome-press', target);
     expect(press?.vars.duration).toBeCloseTo(0.12);
-    expect(press?.vars.x).toBe(8);
+    expect(press?.vars.x).toBe(3);
     gsap.killTweensOf(row);
   });
 

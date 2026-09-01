@@ -4,8 +4,8 @@ import { playMotion, type MotionEventName } from './gsapRuntime';
 export const CHROME_PRESS_ATTR = 'data-chrome-press';
 export const CHROME_PRESS_SELECTOR = `[${CHROME_PRESS_ATTR}]`;
 
-export const CHROME_HOVER_PX = 6;
-export const CHROME_PRESS_PX = 8;
+export const CHROME_HOVER_PX = 2;
+export const CHROME_PRESS_PX = 3;
 
 export type ChromePressPhase = 'hover' | 'press' | 'rest';
 
