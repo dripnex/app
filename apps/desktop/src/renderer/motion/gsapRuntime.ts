@@ -185,7 +185,7 @@ export function playMotion(
   }
   if (name === 'chrome-hover') {
     return gsap.to(target, {
-      x: 6,
+      x: 2,
       y: 0,
       duration: scaledDuration(140),
       ease,
@@ -194,7 +194,7 @@ export function playMotion(
   }
   if (name === 'chrome-press') {
     return gsap.to(target, {
-      x: 8,
+      x: 3,
       y: 0,
       duration: scaledDuration(120),
       ease,

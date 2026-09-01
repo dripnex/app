@@ -423,7 +423,7 @@
 }
 
 .sidebar-new-note-btn:hover {
-  background: var(--bg-elevated);
+  background: var(--bg-hover);
   border-color: var(--border-strong);
   color: var(--text-primary);
 }
@@ -626,6 +626,10 @@
     color 140ms ease;
 }
 
+.sidebar-row:hover:not(.selected) {
+  background: var(--bg-hover);
+}
+
 /* Notebook List */
 .notebook-list {
   padding: 0;
@@ -685,6 +689,10 @@
   border-radius: 0;
   cursor: pointer;
   transition: background var(--transition-fast);
+}
+
+.notebook-item-row:hover:not(.selected) {
+  background: var(--bg-hover);
 }
 
 .notebook-item-row:focus,
@@ -858,9 +866,9 @@
 
 .notebook-item-detail:hover,
 .sidebar-row-detail:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg-base);
+  background: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 
 .notebook-item-detail:hover .notebook-item-detail-chevron,
