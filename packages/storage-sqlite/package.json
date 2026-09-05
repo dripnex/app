@@ -28,8 +28,8 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "better-sqlite3": "^12.10.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "license": "MIT"
 }
