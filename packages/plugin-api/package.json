@@ -34,8 +34,8 @@
     "@types/react-dom": "^19.2.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
     "zustand": "^5.0.14"
   },
   "license": "MIT"
