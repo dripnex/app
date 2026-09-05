@@ -23,12 +23,12 @@
   "dependencies": {
     "@dripnex/core": "workspace:*",
     "@dripnex/storage-core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^4.4.3"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.13",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   }
