@@ -90,3 +90,14 @@ simple = { limit = 60, period = 60 }
 # GITHUB_TOKEN - GitHub token for first-party Browse discovery (theme-*/plugin-*).
 #   Used for GraphQL org listing (one query) and REST fallback. Without it,
 #   unauthenticated public requests still work but are easier to rate-limit.
+#   A 401 (expired token) retries once without the token.
+# CATALOG_KV - Optional Workers KV for the last successful public catalog
+#   (7-day TTL), preferred over FIRST_PARTY_PACKAGES when GitHub is down.
+#   The binding is intentionally omitted until the namespace exists: a
+#   placeholder id fails `wrangler deploy`. From packages/api:
+#     npx wrangler kv namespace create CATALOG_KV --env production
+#   Then add the printed id:
+#     [[env.production.kv_namespaces]]
+#     binding = "CATALOG_KV"
+#     id = "<id>"
+#   A missing binding does not crash the Worker.
