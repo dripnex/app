@@ -50,8 +50,8 @@
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
     "react-email": "^6.9.2",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
     "wrangler": "^4.98.0"
   }
 }
