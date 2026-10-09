@@ -12,10 +12,12 @@ import {
   discoverDripnexPacks,
   fallbackSlug,
   GITHUB_PACKS_FAILURE_TTL_MS,
+  GITHUB_PACKS_KV_TTL_SECONDS,
   GITHUB_PACKS_TTL_MS,
   isFirstPartyRepoName,
   pickPackedTarball,
   resetGithubPacksCache,
+  type CatalogKv,
   type PacksCacheStore,
 } from '../src/services/githubPacks.js';
 import {
@@ -152,6 +154,21 @@ function graphqlPackedNode(name: string) {
           },
         ],
       },
+    },
+  };
+}
+
+function createMemoryKv(): CatalogKv & { values: Map<string, { body: string; ttl?: number }> } {
+  const values = new Map<string, { body: string; ttl?: number }>();
+  return {
+    values,
+    async get(key, type) {
+      const hit = values.get(key);
+      if (!hit) return null;
+      return type === 'json' ? (JSON.parse(hit.body) as unknown) : hit.body;
+    },
+    async put(key, value, options) {
+      values.set(key, { body: value, ttl: options?.expirationTtl });
     },
   };
 }
@@ -525,6 +542,163 @@ describe('discoverDripnexPacks cache', () => {
     const result = await discoverDripnexPacks({ fetchImpl, now: 1 });
     expect(result).toBeNull();
   });
+
+  it('retries a 401 without the token instead of failing the scan', async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const authed = Boolean(new Headers(init?.headers).get('Authorization'));
+      if (authed) return jsonResponse(401, { message: 'Bad credentials' });
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone'), graphqlPackedNode('theme-walnut')],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const sourceOut = { source: 'fallback' as const };
+    const packs = await discoverDripnexPacks({
+      fetchImpl,
+      token: 'expired-token',
+      now: 9,
+      cacheStore: null,
+      sourceOut,
+    });
+    expect(packs?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+    expect(sourceOut.source).toBe('live');
+    const calls = fetchImpl.mock.calls;
+    expect(calls.some(c => new Headers(c[1]?.headers).get('Authorization'))).toBe(true);
+    expect(
+      calls.some(
+        c => String(c[0]).includes('/graphql') && !new Headers(c[1]?.headers).get('Authorization')
+      )
+    ).toBe(true);
+    expect(calls.some(c => String(c[0]).includes('/orgs/dripnex/repos'))).toBe(false);
+  });
+
+  it('does not retry when an unauthenticated lookup is already 401', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(401, { message: 'Bad credentials' }));
+    const result = await discoverDripnexPacks({ fetchImpl, now: 10, cacheStore: null });
+    expect(result).toBeNull();
+    // GraphQL 401, then one REST org page. No second pass.
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a KV last-good list for 7 days and prefers the Cache API over it', async () => {
+    const t0 = 8_000_000;
+    const shared = createMemoryPacksCache();
+    const kv = createMemoryKv();
+    const fullFetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone'), graphqlPackedNode('theme-walnut')],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+
+    const first = await discoverDripnexPacks({
+      fetchImpl: fullFetch,
+      now: t0,
+      cacheStore: shared,
+      kv,
+    });
+    expect(first?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+    expect([...kv.values.values()][0]?.ttl).toBe(GITHUB_PACKS_KV_TTL_SECONDS);
+
+    kv.values.clear();
+    kv.values.set('github-packs:last-good', {
+      body: JSON.stringify([
+        {
+          repoName: 'theme-from-kv-only',
+          htmlUrl: 'https://github.com/dripnex/theme-from-kv-only',
+          description: 'kv',
+          defaultBranch: 'main',
+          createdAt: '2026-08-25T00:00:00.000Z',
+          updatedAt: '2026-08-25T00:00:00.000Z',
+          version: '0.1.0',
+          bundleUrl:
+            'https://github.com/dripnex/theme-from-kv-only/releases/download/v0.1.0/theme-from-kv-only-0.1.0.tar.gz',
+          kind: 'theme',
+        },
+      ]),
+    });
+
+    resetGithubPacksCache();
+    const down = vi.fn(async () => jsonResponse(503, { message: 'down' }));
+    const fromCache = await discoverDripnexPacks({
+      fetchImpl: down,
+      now: t0 + GITHUB_PACKS_TTL_MS + 1,
+      cacheStore: shared,
+      kv,
+    });
+    expect(fromCache?.map(p => p.repoName).sort()).toEqual(['theme-limestone', 'theme-walnut']);
+
+    resetGithubPacksCache();
+    const fromKv = await discoverDripnexPacks({
+      fetchImpl: down,
+      now: t0 + GITHUB_PACKS_TTL_MS + 2,
+      cacheStore: null,
+      kv,
+    });
+    expect(fromKv?.map(p => p.repoName)).toEqual(['theme-from-kv-only']);
+  });
+
+  it('ignores a missing or throwing KV binding', async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone')],
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse(500, { message: 'REST should not run' });
+    });
+    const kv: CatalogKv = {
+      async get() {
+        throw new Error('binding missing');
+      },
+      async put() {
+        throw new Error('binding missing');
+      },
+    };
+    const packs = await discoverDripnexPacks({ fetchImpl, now: 11, cacheStore: null, kv });
+    expect(packs?.map(p => p.repoName)).toEqual(['theme-limestone']);
+
+    resetGithubPacksCache();
+    const down = vi.fn(async () => {
+      throw new Error('network');
+    });
+    const cold = await discoverDripnexPacks({
+      fetchImpl: down,
+      now: 11 + GITHUB_PACKS_TTL_MS + 1,
+      cacheStore: null,
+      kv,
+    });
+    expect(cold).toBeNull();
+  });
 });
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -571,6 +745,7 @@ describe('plugin registry', () => {
   it('lists first-party packages when the catalog is empty', async () => {
     const res = await app.request('/plugins', {}, env);
     expect(res.status).toBe(200);
+    expect(res.headers.get('X-Catalog-Source')).toBe('fallback');
     const body = (await res.json()) as {
       plugins: Array<{ slug: string; bundleUrl: string; repositoryUrl: string | null }>;
     };
@@ -666,9 +841,14 @@ describe('plugin registry', () => {
   it('returns stamp by slug from the first-party fallback', async () => {
     const res = await app.request('/plugins/stamp', {}, env);
     expect(res.status).toBe(200);
+    expect(res.headers.get('X-Catalog-Source')).toBe('fallback');
     const body = (await res.json()) as { slug: string; bundleUrl: string };
     expect(body.slug).toBe('stamp');
     expect(body.bundleUrl).toContain('.tar.gz');
+
+    const download = await app.request('/plugins/stamp/download', {}, env);
+    expect(download.status).toBe(302);
+    expect(download.headers.get('X-Catalog-Source')).toBe('fallback');
   });
 
   it('rejects publish without a token', async () => {
@@ -1241,6 +1421,7 @@ describe('plugin registry', () => {
     const res = await app.request('/plugins', {}, env);
     expect(res.status).toBe(200);
     expect(res.headers.get('Cache-Control')).toContain('no-store');
+    expect(res.headers.get('X-Catalog-Source')).toBe('live');
     const body = (await res.json()) as { plugins: Array<{ slug: string }>; total: number };
     const slugs = body.plugins.map(p => p.slug);
     expect(slugs).toEqual(
@@ -1252,6 +1433,75 @@ describe('plugin registry', () => {
     expect(fetched.some(u => u.includes('/graphql'))).toBe(true);
     expect(fetched.some(u => u.includes('/orgs/dripnex/repos'))).toBe(false);
     expect(fetched.some(u => u.includes('/releases/latest'))).toBe(false);
+  });
+
+  it('lists live extras when GITHUB_TOKEN is rejected with 401', async () => {
+    const authed = { ...env, GITHUB_TOKEN: 'expired-token' };
+    stubGithub((url, init) => {
+      if (new Headers(init?.headers).get('Authorization')) {
+        return jsonResponse(401, { message: 'Bad credentials' });
+      }
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone'), graphqlPackedNode('theme-walnut')],
+              },
+            },
+          },
+        });
+      }
+      return null;
+    });
+
+    const res = await app.request('/plugins', {}, authed);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('X-Catalog-Source')).toBe('live');
+    const body = (await res.json()) as { plugins: Array<{ slug: string }> };
+    expect(body.plugins.map(p => p.slug)).toEqual(
+      expect.arrayContaining(['theme-limestone', 'theme-walnut', 'dripnex-vim-mode'])
+    );
+  });
+
+  it('serves CATALOG_KV ahead of the seed when GitHub is down', async () => {
+    const kv = createMemoryKv();
+    const liveEnv = { ...env, CATALOG_KV: kv };
+    stubGithub(url => {
+      if (url.includes('/graphql')) {
+        return jsonResponse(200, {
+          data: {
+            organization: {
+              repositories: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [graphqlPackedNode('theme-limestone'), graphqlPackedNode('theme-walnut')],
+              },
+            },
+          },
+        });
+      }
+      return null;
+    });
+
+    const live = await app.request('/plugins', {}, liveEnv);
+    expect(live.status).toBe(200);
+    expect(live.headers.get('X-Catalog-Source')).toBe('live');
+    expect(kv.values.size).toBe(1);
+
+    resetGithubPacksCache();
+    stubGithub(() => jsonResponse(500, { message: 'unavailable' }));
+    const cached = await app.request('/plugins', {}, liveEnv);
+    expect(cached.status).toBe(200);
+    expect(cached.headers.get('X-Catalog-Source')).toBe('cached');
+    const body = (await cached.json()) as { plugins: Array<{ slug: string }>; total: number };
+    const slugs = body.plugins.map(p => p.slug);
+    expect(slugs).toEqual(expect.arrayContaining(['theme-limestone', 'theme-walnut', 'stamp']));
+    expect(body.total).toBeGreaterThan(21);
+
+    const detail = await app.request('/plugins/theme-limestone', {}, liveEnv);
+    expect(detail.status).toBe(200);
+    expect(detail.headers.get('X-Catalog-Source')).toBe('cached');
   });
 
   it('does not let a community row claim a stripped plugin-* discovery slug', async () => {
@@ -1318,6 +1568,7 @@ describe('plugin registry', () => {
 
     const detail = await app.request('/plugins/calendar', {}, env);
     expect(detail.status).toBe(200);
+    expect(detail.headers.get('X-Catalog-Source')).toBe('live');
     const detailBody = (await detail.json()) as { bundleUrl: string; name: string };
     expect(detailBody.bundleUrl).toBe(official);
     expect(detailBody.name).not.toContain('hijack');

@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ForceGraph2D from 'react-force-graph-2d';
-import { X } from 'lucide';
+import { Search, X } from 'lucide';
 import { Icon } from '../ui/icons/Icon';
 import { useGraphData } from '../hooks/useLinks';
 import { noteKeys } from '../hooks/useNotes';
@@ -21,6 +21,13 @@ import {
   type NoteKind,
 } from '../lib/knowledge';
 import { GraphInspector, type GraphActivityEvent, type GraphRelation } from './GraphInspector';
+import {
+  GRAPH_EMPTY_HINT,
+  GRAPH_EMPTY_TITLE,
+  GRAPH_ERROR_HINT,
+  GRAPH_ERROR_TITLE,
+  graphFilterEmpty,
+} from './graphCopy';
 import styles from './GraphView.module.css';
 
 interface GraphViewProps {
@@ -449,8 +456,8 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
   if (error) {
     return stage(
       <div className={`${styles.center} ${styles.centerError}`}>
-        Failed to load graph
-        <p className={styles.centerHint}>Wikilinks will appear here once notes are indexed.</p>
+        {GRAPH_ERROR_TITLE}
+        <p className={styles.centerHint}>{GRAPH_ERROR_HINT}</p>
       </div>
     );
   }
@@ -458,11 +465,13 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
   if (graphData.nodes.length === 0) {
     return stage(
       <div className={styles.center}>
-        No notes to map
-        <p className={styles.centerHint}>Create notes and connect them with [[wikilinks]].</p>
+        {GRAPH_EMPTY_TITLE}
+        <p className={styles.centerHint}>{GRAPH_EMPTY_HINT}</p>
       </div>
     );
   }
+
+  const filterEmpty = graphFilterEmpty(query, matchIds ? matchIds.size : null);
 
   return (
     <div className={styles.graph}>
@@ -501,6 +510,15 @@ export function GraphView({ selectedNoteId, onOpenNote, onAskNote, onClose }: Gr
         </div>
 
         <div ref={setCanvasHost} className={styles.canvasHost}>
+          {filterEmpty ? (
+            <div className={styles.filterEmpty} role="status" aria-live="polite">
+              <span className={styles.filterEmptyIcon} aria-hidden="true">
+                <Icon icon={Search} size={28} />
+              </span>
+              <p className={styles.filterEmptyTitle}>{filterEmpty.title}</p>
+              <p className={styles.filterEmptyHint}>{filterEmpty.hint}</p>
+            </div>
+          ) : null}
           {canvasSize.width > 0 && canvasSize.height > 0 ? (
             <ForceGraph2D
               ref={graphRef}

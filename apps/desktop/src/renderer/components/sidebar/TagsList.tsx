@@ -164,6 +164,7 @@ export function TagsList({ selectedTag, onSelectTag, counts, filterQuery = '' }:
               <button
                 type="button"
                 className={sc('sidebar-row', 'tags-list-item', tag === selectedTag && 'selected')}
+                data-chrome-press=""
                 onClick={() => handleTagClick(tag)}
               >
                 <span

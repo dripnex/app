@@ -52,12 +52,17 @@ export interface GitHubPullResult {
   errors: string[];
 }
 
+export type GitHubPasteResult =
+  | { success: true; markdown: string; kind: 'embed' | 'link' }
+  | { success: false; error: string; connectRequired?: boolean };
+
 export interface GitHubAPI {
   status: () => Promise<GitHubStatus>;
   connect: (
     token?: string | null
   ) => Promise<{ success: true; login: string } | { success: false; error: string }>;
   disconnect: () => Promise<{ success: true }>;
+  resolvePaste: (url: string) => Promise<GitHubPasteResult>;
   importIssue: (
     url: string
   ) => Promise<
@@ -92,6 +97,7 @@ export function createIntegrationsApi(): IntegrationsAPI {
       status: () => ipcRenderer.invoke('integrations:github:status'),
       connect: token => ipcRenderer.invoke('integrations:github:connect', token ?? null),
       disconnect: () => ipcRenderer.invoke('integrations:github:disconnect'),
+      resolvePaste: url => ipcRenderer.invoke('integrations:github:resolvePaste', url),
       importIssue: url => ipcRenderer.invoke('integrations:github:importIssue', url),
       listWatchers: () => ipcRenderer.invoke('integrations:github:listWatchers'),
       addWatcher: spec => ipcRenderer.invoke('integrations:github:addWatcher', spec),

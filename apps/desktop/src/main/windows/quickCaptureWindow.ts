@@ -1,7 +1,7 @@
 import { BrowserWindow, screen } from 'electron';
 import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
-import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
+import { rendererHtmlPath, rendererWebPreferences } from './paths.js';
 import { forgetClosable, trackClosable } from './closable.js';
 import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
@@ -32,12 +32,7 @@ export function createQuickCaptureWindow(): BrowserWindow {
     show: false,
     icon: resolveAppIconPath(),
     ...frostedWindowOptions(),
-    webPreferences: {
-      preload: rendererPreloadPath(),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
+    webPreferences: rendererWebPreferences(),
   });
 
   wireFrosted(quickCaptureWindow);

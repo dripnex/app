@@ -2,7 +2,7 @@
  * Runtime store for plugin-registered AI commands.
  *
  * Plugins call `ctx.registerAiCommand(def)` which writes to this store.
- * The AI panel and command palette read from it to discover custom commands.
+ * The Edit with AI selection menu and command palette read from it to discover custom commands.
  */
 
 import { createStore } from 'zustand/vanilla';

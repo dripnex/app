@@ -20,15 +20,10 @@ interface TagsInputProps {
  * TagsInput - Editable display of note tags
  *
  * - Shows all tags (content-extracted + manual)
- * - Only manual tags are removable (show × button)
+ * - Every chip has a remove control (content tags are stripped from source)
  * - Inline input to add new manual tags
  */
-export const TagsInput = memo(function TagsInput({
-  tags,
-  manualTags,
-  onAddTag,
-  onRemoveTag,
-}: TagsInputProps) {
+export const TagsInput = memo(function TagsInput({ tags, onAddTag, onRemoveTag }: TagsInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [isInputVisible, setIsInputVisible] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -178,8 +173,6 @@ export const TagsInput = memo(function TagsInput({
     setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
 
-  const isManualTag = useCallback((tag: string) => manualTags.includes(tag), [manualTags]);
-
   if (tags.length === 0 && !isInputVisible) {
     return (
       <div className={sc('tags-display')} onClick={showInput} role="button" tabIndex={0}>
@@ -220,19 +213,17 @@ export const TagsInput = memo(function TagsInput({
             >
               <span className={sc('tag-hash')}>#</span>
               {tag}
-              {isManualTag(tag) && (
-                <button
-                  type="button"
-                  className={sc('tag-chip-remove')}
-                  onClick={e => {
-                    e.stopPropagation();
-                    onRemoveTag(tag);
-                  }}
-                  aria-label={`Remove tag ${tag}`}
-                >
-                  <Icon icon={X} size={12} />
-                </button>
-              )}
+              <button
+                type="button"
+                className={sc('tag-chip-remove')}
+                onClick={e => {
+                  e.stopPropagation();
+                  onRemoveTag(tag);
+                }}
+                aria-label={`Remove tag ${tag}`}
+              >
+                <Icon icon={X} size={12} />
+              </button>
             </span>
           );
         })}

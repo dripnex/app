@@ -1,19 +1,25 @@
 /**
- * First-run shell. Auth is optional (sync), never a hard gate on the editor.
+ * Launch shell. AuthGate is the first window.
+ * Playwright may set isE2E so automated tests skip the gate — not a production bypass.
  */
 
-export type AppShell = 'welcome' | 'workspace';
+export type AppShell = 'auth' | 'welcome' | 'workspace';
 
 export interface AppShellInput {
   onboardingComplete: boolean;
-  /** Ignored. Missing session must not change the shell. */
   isAuthenticated?: boolean;
   sessionHydrated?: boolean;
+  /** Playwright-only. Must never be true in a production build. */
+  isE2E?: boolean;
 }
 
 /**
- * Welcome on first launch, then the workspace. Sign-in is Settings / Enable Sync.
+ * No session → AuthGate. After account: Welcome (first run) or workspace.
  */
 export function resolveAppShell(input: AppShellInput): AppShell {
+  const skipAuth = input.isE2E === true;
+  if (!skipAuth && (!input.sessionHydrated || !input.isAuthenticated)) {
+    return 'auth';
+  }
   return input.onboardingComplete ? 'workspace' : 'welcome';
 }

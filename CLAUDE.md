@@ -1,6 +1,6 @@
 # Dripnex
 
-> Markdown-first, offline-forever desktop note app.
+> The hackable AI note taker. Local SQLite. Markdown is export.
 
 ## Stack
 
@@ -45,7 +45,8 @@ pnpm format                     # Format with Prettier
 - **Markdown is sacred:** Never auto-modify user's markdown text
 - **AST is ephemeral:** Parse for features, never persist as authority
 - **Core is pure:** No Electron/React deps in packages/core
-- **Offline-first:** No features require internet connection
+- **AuthGate first:** Account is required to open the workspace. Sync is optional E2E after that.
+- **Offline after login:** The workspace works without internet. Sync is a feature, not a requirement.
 - **Test first:** Core domain changes require tests
 
 ## Native Dependencies (Critical)
@@ -54,7 +55,7 @@ Native modules like `better-sqlite3` require special handling in Electron + pnpm
 
 - **Native deps only in `apps/desktop`**: Never add native dependencies directly to workspace packages
 - **Workspace packages = pure TypeScript**: Use `peerDependencies` for native modules
-- **electron-builder owns the rebuild**: Let `postinstall: electron-builder install-app-deps` handle native module compilation
+- **electron-builder owns the rebuild:** Let `postinstall: electron-builder install-app-deps` handle native module compilation
 - **No manual rebuilds**: Never add `@electron/rebuild` scripts or workarounds
 
 Pattern for workspace packages with native deps:

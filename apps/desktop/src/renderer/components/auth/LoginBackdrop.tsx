@@ -1,61 +1,115 @@
-import { useEffect, useState } from 'react';
-import { MeshGradient } from '@paper-design/shaders-react';
+import { useEffect, useRef } from 'react';
+import { LOGIN_BACKDROP_Z_INDEX } from './authGateStacking';
+import {
+  ACCENT_FALLBACK,
+  GLITCH_SPEED_MS,
+  createLetterGrid,
+  glitchColorsFromAccent,
+  paintLetterGlitch,
+  startLetterGlitchLoop,
+  stepSmoothColors,
+  updateLetters,
+  type LetterGrid,
+} from './letterGlitch';
 import styles from './LoginBackdrop.module.css';
-
-const DARK_FALLBACK = ['#0a0b0d', '#111214', '#18191c', '#1c1c1c'] as const;
-const LIGHT_FALLBACK = ['#f3f2ee', '#e7e5df', '#fffcf7', '#eceae4'] as const;
 
 function readToken(name: string, fallback: string): string {
   if (typeof document === 'undefined') return fallback;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
 
-function isLightScheme(): boolean {
+function prefersReducedMotion(): boolean {
   return (
-    typeof document !== 'undefined' &&
-    document.documentElement.getAttribute('data-color-scheme') === 'light'
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
 }
 
-function meshColors(light: boolean): string[] {
-  const fallbacks = light ? LIGHT_FALLBACK : DARK_FALLBACK;
-  return [
-    readToken('--bg-base', fallbacks[0]),
-    readToken('--bg-surface', fallbacks[1]),
-    readToken('--bg-elevated', fallbacks[2]),
-    readToken('--bg-inset', fallbacks[3]),
-  ];
+function readGlitchColors() {
+  return glitchColorsFromAccent(readToken('--accent', ACCENT_FALLBACK));
 }
 
 /**
- * Quiet wash behind AuthGate. Colors follow the active palette tokens
- * so light/dark (and named themes) stay aligned. Motion is decorative
- * only — prefers-reduced-motion freezes it.
+ * Matrix-style letter grid behind AuthGate.
+ * Adapted from React Bits Letter Glitch (DavidHDev/react-bits).
+ * Frozen to one frame when the user prefers reduced motion.
  */
 export function LoginBackdrop() {
-  const [colors, setColors] = useState(() => meshColors(isLightScheme()));
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const root = document.documentElement;
-    const sync = () => setColors(meshColors(isLightScheme()));
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(root, { attributes: true, attributeFilter: ['data-color-scheme'] });
-    return () => observer.disconnect();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    const reduceMotion = prefersReducedMotion();
+    let grid: LetterGrid = createLetterGrid(1, 1, readGlitchColors());
+    let lastGlitch = Date.now();
+
+    const paint = () => {
+      paintLetterGlitch(ctx, grid, canvas.clientWidth, canvas.clientHeight);
+    };
+
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, canvas.clientWidth);
+      const h = Math.max(1, canvas.clientHeight);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      grid = createLetterGrid(w, h, readGlitchColors());
+      paint();
+    };
+
+    resize();
+
+    const loop = startLetterGlitchLoop({
+      reduceMotion,
+      requestAnimationFrame: cb => window.requestAnimationFrame(cb),
+      cancelAnimationFrame: id => window.cancelAnimationFrame(id),
+      onFrame: () => {
+        const now = Date.now();
+        if (now - lastGlitch >= GLITCH_SPEED_MS) {
+          updateLetters(grid);
+          paint();
+          lastGlitch = now;
+        } else if (stepSmoothColors(grid)) {
+          paint();
+        }
+      },
+    });
+
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(resize, 100);
+    };
+    window.addEventListener('resize', handleResize);
+
+    const observer = new MutationObserver(() => {
+      grid.colors = readGlitchColors();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-color-scheme'],
+    });
+
+    return () => {
+      loop.stop();
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+    };
   }, []);
 
-  const reduceMotion =
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   return (
-    <div aria-hidden="true" className={styles.layer}>
-      <MeshGradient
-        colors={colors}
-        distortion={0.42}
-        swirl={0.18}
-        speed={reduceMotion ? 0 : 0.08}
-        style={{ width: '100%', height: '100%' }}
-      />
+    <div
+      aria-hidden="true"
+      className={styles.layer}
+      style={{ zIndex: LOGIN_BACKDROP_Z_INDEX }}
+      data-auth-gate="backdrop"
+    >
+      <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.veil} />
     </div>
   );

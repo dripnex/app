@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send } from 'lucide';
 import type { ChatMessage, NoteContext, AiPanelMode } from '@dripnex/ai-core';
-import { Icon } from '../../ui/icons/Icon';
 import { useSettingsStore, selectAi } from '../../stores/settings';
+import { Icon } from '../../ui/icons/Icon';
 import { AiMessage } from './AiMessage';
 import { AiPanelHeader } from './AiPanelHeader';
 import { ToolCallBlock } from './ToolCallBlock';

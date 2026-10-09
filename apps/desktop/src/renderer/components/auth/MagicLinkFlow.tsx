@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef, FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Mail, CheckCircle, AlertCircle, X, RefreshCw } from 'lucide';
 import { Icon } from '../../ui/icons/Icon';
 import { useAuthStore, selectIsAuthenticated, selectError } from '../../stores/authStore';
@@ -119,8 +120,8 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
     }
   }, [email, requestMagicLink, resendCooldown, isResending, startCooldown]);
 
-  return (
-    <div className={styles.overlay} onClick={handleCancel}>
+  return createPortal(
+    <div className={styles.overlay} onClick={handleCancel} data-auth-gate="magic-link">
       <div className={styles.dialog} onClick={e => e.stopPropagation()}>
         <button type="button" className={styles.closeButton} onClick={handleCancel}>
           <Icon icon={X} size={20} />
@@ -139,7 +140,11 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
               </div>
 
               <form onSubmit={handleSubmitEmail} className={styles.form}>
+                <label className={styles.label} htmlFor="settings-auth-email">
+                  Email
+                </label>
                 <input
+                  id="settings-auth-email"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -244,6 +249,7 @@ export function MagicLinkFlow({ onSuccess, onCancel }: MagicLinkFlowProps) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

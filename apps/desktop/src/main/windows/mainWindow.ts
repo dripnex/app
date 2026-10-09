@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 import { loadWindowState, saveWindowState } from '../services/windowState.js';
 import { loadDevRenderer, rendererDevBase } from '../devRenderer.js';
 import { resolveAppIconPath } from './icons.js';
-import { rendererHtmlPath, rendererPreloadPath } from './paths.js';
+import { rendererHtmlPath, rendererWebPreferences } from './paths.js';
 import { flushPendingAuthToken } from './authDeepLink.js';
 import { frostedWindowOptions, wireFrosted } from './vibrancy.js';
 
@@ -21,12 +21,7 @@ export function createMainWindow(): BrowserWindow {
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 8, y: 8 },
     ...frostedWindowOptions(),
-    webPreferences: {
-      preload: rendererPreloadPath(),
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false,
-    },
+    webPreferences: rendererWebPreferences(),
   });
 
   wireFrosted(mainWindow);

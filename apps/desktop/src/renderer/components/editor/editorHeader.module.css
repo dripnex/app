@@ -9,8 +9,8 @@
 
 .editor-header {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 2px;
   min-height: 26px;
   padding: 0 16px 6px;
@@ -169,12 +169,13 @@
 
 .tags-display {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   min-width: 0;
-  flex: 1;
-  height: 22px;
+  flex: 1 1 160px;
+  min-height: 22px;
+  height: auto;
   padding: 0 6px;
   border-radius: var(--radius-sm);
 }
@@ -242,14 +243,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 16px;
+  height: 16px;
   padding: 0;
   margin-left: 2px;
+  flex-shrink: 0;
   background: none;
   border: none;
-  color: var(--text-faint);
+  color: var(--text-muted);
   cursor: pointer;
   border-radius: 2px;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
 .tag-chip-remove:hover {

@@ -19,6 +19,8 @@
  * repositories, or official release tarball URLs. GET /plugins stays
  * `Cache-Control: private, no-store` so a colo/isolate cannot serve a
  * stale 21-row seed while live discovery has 30 (QA isolate flicker).
+ * `X-Catalog-Source` is `live` (fresh GitHub scan), `cached` (last-good
+ * from memory, the Cache API, or `CATALOG_KV`), or `fallback` (the seed).
  *
  * Keep slug / URL / bundle rules in sync with apps/desktop/src/shared/firstPartyPacks.ts.
  */
@@ -35,6 +37,7 @@ import {
   humanizeRepoName,
   normalizeGithubRepoUrl,
   resolveDiscoveredSlug,
+  type CatalogSource,
   type DiscoveredPack,
 } from '../services/githubPacks.js';
 
@@ -594,15 +597,25 @@ function mergeBySlug(primary: ListedPlugin[], extras: ListedPlugin[]): ListedPlu
 
 /**
  * Live first-party list: GitHub discovery with seed overrides, or the static
- * seed alone when GitHub is down / the scan was incomplete. Seed rows still
+ * seed alone when GitHub is down and no last-good list exists. Seed rows still
  * fill gaps (vim, parchment, dune/noir/sakura) if a matching repo was skipped.
+ * `CATALOG_KV` (7 days) is preferred over the seed when the Cache API missed.
  */
-async function firstPartyCatalog(env: Env): Promise<ListedPlugin[]> {
+async function firstPartyCatalog(env: Env): Promise<{
+  plugins: ListedPlugin[];
+  source: CatalogSource;
+}> {
   const seed = FIRST_PARTY_PACKAGES.map(listedFromSeed);
-  const discovered = await discoverDripnexPacks({ token: env.GITHUB_TOKEN, fetchImpl: fetch });
-  if (!discovered) return seed;
+  const sourceOut: { source: CatalogSource } = { source: 'fallback' };
+  const discovered = await discoverDripnexPacks({
+    token: env.GITHUB_TOKEN,
+    fetchImpl: fetch,
+    kv: env.CATALOG_KV,
+    sourceOut,
+  });
+  if (!discovered || discovered.length === 0) return { plugins: seed, source: 'fallback' };
   const live = await Promise.all(discovered.map(pack => listedFromDiscovered(pack, fetch)));
-  return mergeBySlug(live, seed);
+  return { plugins: mergeBySlug(live, seed), source: sourceOut.source };
 }
 
 plugins.get('/', zValidator('query', listQuerySchema), async c => {
@@ -660,7 +673,7 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
     rows = [];
   }
 
-  const firstParty = await firstPartyCatalog(c.env);
+  const { plugins: firstParty, source } = await firstPartyCatalog(c.env);
   const firstPartySlugs = new Set(firstParty.map(row => row.slug));
   const community = rows.filter(
     row =>
@@ -684,14 +697,15 @@ plugins.get('/', zValidator('query', listQuerySchema), async c => {
 
   return c.json({ plugins: pluginsOut, total: pluginsOut.length }, 200, {
     'Cache-Control': 'private, no-store',
+    'X-Catalog-Source': source,
   });
 });
 
 plugins.get('/:slug/download', async c => {
   const slug = c.req.param('slug');
-  const listed = await resolveSlug(c.env, slug);
+  const { listed, source } = await resolveSlug(c.env, slug);
   if (!listed?.bundleUrl) {
-    return c.json({ error: 'Plugin not found' }, 404);
+    return c.json({ error: 'Plugin not found' }, 404, { 'X-Catalog-Source': source });
   }
   try {
     const db = createDb(c.env);
@@ -709,16 +723,18 @@ plugins.get('/:slug/download', async c => {
   } catch {
     // first-party fallback has no row
   }
-  return c.redirect(listed.bundleUrl, 302);
+  const res = c.redirect(listed.bundleUrl, 302);
+  res.headers.set('X-Catalog-Source', source);
+  return res;
 });
 
 plugins.get('/:slug', async c => {
   const slug = c.req.param('slug');
-  const listed = await resolveSlug(c.env, slug);
+  const { listed, source } = await resolveSlug(c.env, slug);
   if (!listed) {
-    return c.json({ error: 'Plugin not found' }, 404);
+    return c.json({ error: 'Plugin not found' }, 404, { 'X-Catalog-Source': source });
   }
-  return c.json(listed);
+  return c.json(listed, 200, { 'X-Catalog-Source': source });
 });
 
 plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => {
@@ -726,7 +742,7 @@ plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => 
   if (isReservedFirstPartySlug(body.slug)) {
     return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
   }
-  const firstParty = await firstPartyCatalog(c.env);
+  const { plugins: firstParty } = await firstPartyCatalog(c.env);
   if (firstParty.some(p => p.slug === body.slug)) {
     return c.json({ error: 'That package name is reserved for official Dripnex packs.' }, 403);
   }
@@ -820,11 +836,14 @@ plugins.post('/', authMiddleware, zValidator('json', publishSchema), async c => 
   return c.json({ slug: body.slug, version: body.version, created: true }, 201);
 });
 
-async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null> {
-  const catalog = await firstPartyCatalog(env);
+async function resolveSlug(
+  env: Env,
+  slug: string
+): Promise<{ listed: ListedPlugin | null; source: CatalogSource }> {
+  const { plugins: catalog, source } = await firstPartyCatalog(env);
   const official = catalog.find(p => p.slug === slug);
-  if (official) return official;
-  if (isReservedFirstPartySlug(slug)) return null;
+  if (official) return { listed: official, source };
+  if (isReservedFirstPartySlug(slug)) return { listed: null, source };
 
   try {
     const db = createDb(env);
@@ -850,13 +869,13 @@ async function resolveSlug(env: Env, slug: string): Promise<ListedPlugin | null>
         createdAt: plugin.createdAt,
         updatedAt: plugin.updatedAt,
       };
-      if (impersonatesOfficialPack(listed)) return null;
-      return listed;
+      if (impersonatesOfficialPack(listed)) return { listed: null, source };
+      return { listed, source };
     }
   } catch {
     // table missing — fall through
   }
-  return null;
+  return { listed: null, source };
 }
 
 export { plugins };

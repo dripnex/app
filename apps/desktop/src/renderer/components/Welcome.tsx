@@ -1,41 +1,45 @@
 /**
- * Welcome — First-run onboarding screen
+ * Welcome — First-run onboarding after AuthGate.
  *
  * Shown once on first launch. Offers to create the user's first note
- * or skip straight into the app.
+ * or skip straight into the app. Never a guest path around the account.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Button } from '../ui/primitives';
+import { playMotion } from '../motion/gsapRuntime';
 import logo from '../assets/logo.png';
+import { modAccel } from '../utils/modAccel';
 import styles from './Welcome.module.css';
+import {
+  WELCOME_CREATE,
+  WELCOME_FEATURES,
+  WELCOME_HEADLINE,
+  WELCOME_LEDE,
+  WELCOME_SKIP,
+} from './welcomeCopy';
+
+export {
+  WELCOME_CREATE,
+  WELCOME_FEATURES,
+  WELCOME_HEADLINE,
+  WELCOME_LEDE,
+  WELCOME_SKIP,
+  welcomeHint,
+} from './welcomeCopy';
 
 interface WelcomeProps {
   /** Called when user finishes onboarding. `createNote` is true when they click the CTA. */
   onComplete: (createNote: boolean) => void;
 }
 
-const features = [
-  {
-    title: 'Local-First',
-    desc: 'Works fully offline. Optional end-to-end encrypted sync.',
-  },
-  {
-    title: 'Pure Markdown',
-    desc: 'Standard .md under the hood. No lock-in.',
-  },
-  {
-    title: 'Extensible',
-    desc: 'Plugins, themes, and AI built in.',
-  },
-  {
-    title: 'Import Your Notes',
-    desc: 'Import from Obsidian, Markdown folders, or other apps.',
-  },
-] as const;
-
 export function Welcome({ onComplete }: WelcomeProps) {
   const primaryRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    playMotion('welcome-in', panelRef.current);
+  }, []);
 
   useEffect(() => {
     primaryRef.current?.focus();
@@ -62,18 +66,20 @@ export function Welcome({ onComplete }: WelcomeProps) {
       aria-modal="true"
       aria-labelledby="welcome-heading"
     >
-      <div className={styles.container}>
+      <div ref={panelRef} className={styles.container}>
         <div className={styles.brandRow}>
           <img src={logo} alt="" className={styles.logo} width={72} height={72} />
           <span className={styles.brand}>Dripnex</span>
         </div>
 
         <h1 id="welcome-heading" className={styles.headline}>
-          Your Markdown. Your Machine. Your&nbsp;Rules.
+          {WELCOME_HEADLINE}
         </h1>
 
+        <p className={styles.lede}>{WELCOME_LEDE}</p>
+
         <div className={styles.cards}>
-          {features.map(f => (
+          {WELCOME_FEATURES.map(f => (
             <div key={f.title} className={styles.card}>
               <p className={styles.cardTitle}>{f.title}</p>
               <p className={styles.cardDesc}>{f.desc}</p>
@@ -83,15 +89,15 @@ export function Welcome({ onComplete }: WelcomeProps) {
 
         <div className={styles.actions}>
           <Button ref={primaryRef} variant="primary" onClick={() => onComplete(true)}>
-            Create Your First Note
+            {WELCOME_CREATE}
           </Button>
           <Button variant="ghost" onClick={() => onComplete(false)}>
-            I'll explore on my own
+            {WELCOME_SKIP}
           </Button>
         </div>
 
         <p className={styles.hint}>
-          Pro tip: Press <kbd className={styles.kbd}>Cmd+K</kbd> to open the command palette
+          Press <kbd className={styles.kbd}>{modAccel('K')}</kbd> to open the command palette
         </p>
       </div>
     </div>

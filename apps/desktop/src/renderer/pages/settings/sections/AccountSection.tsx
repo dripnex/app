@@ -20,7 +20,6 @@ import {
   useAuthStore,
   selectUser,
   selectIsAuthenticated,
-  selectIsLoading,
   selectError,
 } from '../../../stores/authStore';
 import {
@@ -53,7 +52,6 @@ function formatBytes(bytes: number): string {
 export function AccountSection() {
   const user = useAuthStore(selectUser);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
-  const isLoading = useAuthStore(selectIsLoading);
   const authError = useAuthStore(selectError);
   const logout = useAuthStore(state => state.logout);
   const loadSession = useAuthStore(state => state.loadSession);
@@ -118,7 +116,6 @@ export function AccountSection() {
     setMessage(null);
     try {
       await logout();
-      setMessage('Signed out successfully');
     } catch (error) {
       setMessage(`Sign out failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -249,8 +246,7 @@ export function AccountSection() {
                 variant="danger"
                 size="sm"
                 icon={<Icon icon={LogOut} size={14} />}
-                onClick={handleSignOut}
-                disabled={isLoading}
+                onClick={() => void handleSignOut()}
               >
                 Sign Out
               </Button>
