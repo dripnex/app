@@ -237,7 +237,7 @@ export interface PluginContext {
   ): () => void;
   /**
    * Register a custom AI command.
-   * The command will appear in the AI panel's command list and in the command palette.
+   * The command appears in the Edit with AI selection menu and in the command palette.
    * Template placeholders ({{selection}}, {{note}}, {{title}}) are resolved at execution time.
    * Returns an unregister function.
    */

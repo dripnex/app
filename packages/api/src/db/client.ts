@@ -14,6 +14,12 @@ export interface RateLimitBinding {
   limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
+/** Optional Workers KV binding for the last-good plugin catalog. */
+export interface CatalogKvBinding {
+  get(key: string, type: 'json'): Promise<unknown>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
 export type Env = {
   TURSO_DATABASE_URL: string;
   TURSO_AUTH_TOKEN: string;
@@ -27,6 +33,11 @@ export type Env = {
   ADMIN_TOKEN?: string;
   /** Optional. Raises GitHub REST rate limits for first-party Browse discovery. */
   GITHUB_TOKEN?: string;
+  /**
+   * Optional last-good plugin catalog (7-day TTL). Unbound in wrangler until
+   * the namespace is created; a missing binding must not crash discovery.
+   */
+  CATALOG_KV?: CatalogKvBinding;
   ENVIRONMENT: string;
   // Rate limiting bindings (optional so unit tests / local runs without the
   // binding fail open rather than crash — see middleware/rateLimit.ts).

@@ -1,4 +1,5 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
+import { setMotionScale } from '../motion/gsapRuntime';
 
 /**
  * Motion — duration and easing live on CSS tokens.
@@ -25,7 +26,7 @@ export const motionPlugin: PluginManifest = {
   id: 'dripnex-motion',
   name: 'Motion',
   version: '1.0.0',
-  description: 'Scales UI transition tokens. Custom animations go in styles.css.',
+  description: 'Scales CSS transitions and GSAP event motion. 0 = instant.',
 
   configSchema: {
     scale: {
@@ -36,13 +37,18 @@ export const motionPlugin: PluginManifest = {
   },
 
   activate(context) {
-    applyScale(context.config.get<number>('scale') ?? 1);
+    const apply = (value: number) => {
+      applyScale(value);
+      setMotionScale(value);
+    };
+    apply(context.config.get<number>('scale') ?? 1);
     const unobserve = context.config.observe<number>('scale', value => {
-      applyScale(Number(value));
+      apply(Number(value));
     });
     return {
       dispose() {
         unobserve();
+        setMotionScale(1);
         document.getElementById(STYLE_ID)?.remove();
       },
     };

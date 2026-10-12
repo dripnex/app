@@ -7,15 +7,15 @@ export const PLANS = {
   free: {
     id: 'free' as const,
     name: 'Free',
-    description: 'Perfect for personal note-taking',
+    description: 'Local SQLite notes after AuthGate',
     features: [
       'Unlimited local notes',
       'Full markdown editor',
       'Export to markdown',
       'Import from folder',
       'Basic search',
-      '100% offline',
-      'No account required',
+      'Offline after login',
+      'Account required (AuthGate)',
     ],
   },
   pro: {
@@ -41,7 +41,7 @@ export const GUARANTEES = {
     description: '14-day money-back guarantee, no questions asked',
   },
   noLockIn: {
-    description: 'Export anytime. Your notes are standard Markdown.',
+    description: 'Export to Markdown anytime. SQLite is the store.',
   },
   freeTierForever: {
     description: 'Free tier works forever. No tricks, no time limits.',

@@ -23,11 +23,17 @@
  * REST `GET /orgs/dripnex/repos` + `releases/latest` still work. Incomplete
  * GraphQL must not skip REST and must never overwrite last-good.
  *
- * Complete lists are stored in-process (~12 min) and in the Cloudflare
- * Cache API (shared across isolates in a colo). In-memory alone is why
- * one isolate can serve 30 packs while another falls back to the 21-row
- * seed. Incomplete scans never overwrite a complete list; they reuse
- * last-good (Cache API, then memory) or return null for the seed.
+ * Complete lists are stored in-process (~12 min), in the Cloudflare Cache
+ * API (24h, shared across isolates in a colo), and, when bound, in the
+ * `CATALOG_KV` Workers KV namespace (7 days). In-memory alone is why one
+ * isolate can serve 30 packs while another falls back to the 21-row seed.
+ * Incomplete scans never overwrite a complete list; they reuse last-good
+ * (memory, then Cache API, then KV) or return null so the route can use
+ * the seed. A missing or throwing KV binding is ignored.
+ *
+ * A GitHub 401 (expired or revoked `GITHUB_TOKEN`) retries the lookup once
+ * without the token. Unauthenticated REST is 60 requests/hour per IP, so
+ * the retry is a single best-effort pass and still prefers GraphQL.
  */
 
 const ORG = 'dripnex';
@@ -43,9 +49,15 @@ export const GITHUB_PACKS_TTL_MS = 12 * 60 * 1000;
 export const GITHUB_PACKS_FAILURE_TTL_MS = 60 * 1000;
 /** Shared last-good list (Cache API) outlives a single isolate. */
 export const GITHUB_PACKS_LAST_GOOD_TTL_MS = 24 * 60 * 60 * 1000;
+/** Workers KV last-good list. Longer than the colo Cache API entry. */
+export const GITHUB_PACKS_KV_TTL_SECONDS = 7 * 24 * 60 * 60;
 const REPOS_PER_PAGE = 100;
 const MAX_PAGES = 5;
 const LAST_GOOD_CACHE_URL = 'https://api.dripnex.app/__internal/github-packs/last-good';
+const LAST_GOOD_KV_KEY = 'github-packs:last-good';
+
+/** Where a non-empty catalog list came from. `fallback` is the static seed. */
+export type CatalogSource = 'live' | 'cached' | 'fallback';
 
 const GRAPHQL_ORG_REPOS = /* GraphQL */ `
   query DripnexPackRepos($org: String!, $perPage: Int!, $cursor: String) {
@@ -87,6 +99,15 @@ export type PacksCacheStore = {
   put(request: string | URL | Request, response: Response): Promise<void>;
 };
 
+/**
+ * Minimal Workers KV subset. The real `CATALOG_KV` binding satisfies this.
+ * Callers must tolerate a missing binding and a throw from either method.
+ */
+export type CatalogKv = {
+  get(key: string, type: 'json'): Promise<unknown>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+};
+
 export type DiscoveredPack = {
   repoName: string;
   htmlUrl: string;
@@ -118,7 +139,18 @@ type GhRelease = {
   assets?: Array<{ name?: string; browser_download_url?: string }>;
 };
 
-type CacheEntry = { until: number; packs: DiscoveredPack[] | null };
+type CacheEntry = {
+  until: number;
+  packs: DiscoveredPack[] | null;
+  source: 'live' | 'cached';
+};
+
+class GithubUnauthorized extends Error {
+  constructor() {
+    super('GitHub 401');
+    this.name = 'GithubUnauthorized';
+  }
+}
 
 let cache: CacheEntry | null = null;
 /** Last complete org scan. Partial / rate-limited results never overwrite this. */
@@ -167,7 +199,16 @@ function parseCachedPacks(body: unknown): DiscoveredPack[] | null {
   return packs;
 }
 
-async function readLastGood(store: PacksCacheStore | null): Promise<DiscoveredPack[] | null> {
+function setSource(
+  sourceOut: { source: CatalogSource } | undefined,
+  source: 'live' | 'cached',
+  packs: DiscoveredPack[] | null
+): void {
+  if (!sourceOut) return;
+  sourceOut.source = packs && packs.length > 0 ? source : 'fallback';
+}
+
+async function readCacheApi(store: PacksCacheStore | null): Promise<DiscoveredPack[] | null> {
   if (!store) return null;
   try {
     const hit = await store.match(LAST_GOOD_CACHE_URL);
@@ -178,7 +219,26 @@ async function readLastGood(store: PacksCacheStore | null): Promise<DiscoveredPa
   }
 }
 
-async function writeLastGood(
+async function readKv(kv: CatalogKv | null | undefined): Promise<DiscoveredPack[] | null> {
+  if (!kv) return null;
+  try {
+    return parseCachedPacks(await kv.get(LAST_GOOD_KV_KEY, 'json'));
+  } catch {
+    return null;
+  }
+}
+
+/** Cache API first (fresher, colo-local), then KV (7 days, global). */
+async function readLastGood(
+  store: PacksCacheStore | null,
+  kv: CatalogKv | null | undefined
+): Promise<DiscoveredPack[] | null> {
+  const fromCache = await readCacheApi(store);
+  if (fromCache) return fromCache;
+  return readKv(kv);
+}
+
+async function writeCacheApi(
   store: PacksCacheStore | null,
   packs: DiscoveredPack[]
 ): Promise<void> {
@@ -199,28 +259,60 @@ async function writeLastGood(
   }
 }
 
+async function writeKv(kv: CatalogKv | null | undefined, packs: DiscoveredPack[]): Promise<void> {
+  if (!kv || packs.length === 0) return;
+  try {
+    await kv.put(LAST_GOOD_KV_KEY, JSON.stringify(packs), {
+      expirationTtl: GITHUB_PACKS_KV_TTL_SECONDS,
+    });
+  } catch {
+    // A missing or failing binding must not fail a successful scan.
+  }
+}
+
+async function writeLastGood(
+  store: PacksCacheStore | null,
+  kv: CatalogKv | null | undefined,
+  packs: DiscoveredPack[]
+): Promise<void> {
+  await writeCacheApi(store, packs);
+  await writeKv(kv, packs);
+}
+
 async function rememberFailure(
   now: number,
-  store: PacksCacheStore | null
+  store: PacksCacheStore | null,
+  kv: CatalogKv | null | undefined,
+  sourceOut?: { source: CatalogSource }
 ): Promise<DiscoveredPack[] | null> {
-  if (!lastGoodFull) lastGoodFull = await readLastGood(store);
-  cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: lastGoodFull };
+  if (!lastGoodFull) lastGoodFull = await readLastGood(store, kv);
+  cache = { until: now + GITHUB_PACKS_FAILURE_TTL_MS, packs: lastGoodFull, source: 'cached' };
+  setSource(sourceOut, 'cached', lastGoodFull);
   return lastGoodFull;
 }
 
 async function rememberSuccess(
   now: number,
   packs: DiscoveredPack[],
-  store: PacksCacheStore | null
+  store: PacksCacheStore | null,
+  kv: CatalogKv | null | undefined,
+  sourceOut?: { source: CatalogSource }
 ): Promise<DiscoveredPack[]> {
   if (packs.length === 0) {
-    if (!lastGoodFull) lastGoodFull = await readLastGood(store);
-    cache = { until: now + GITHUB_PACKS_TTL_MS, packs: lastGoodFull ?? packs };
-    return lastGoodFull ?? packs;
+    if (!lastGoodFull) lastGoodFull = await readLastGood(store, kv);
+    const resolved = lastGoodFull ?? packs;
+    cache = {
+      until: now + GITHUB_PACKS_TTL_MS,
+      packs: resolved,
+      source: lastGoodFull ? 'cached' : 'live',
+    };
+    setSource(sourceOut, lastGoodFull ? 'cached' : 'live', resolved);
+    return resolved;
   }
   lastGoodFull = packs;
-  cache = { until: now + GITHUB_PACKS_TTL_MS, packs };
-  await writeLastGood(store, packs);
+  cache = { until: now + GITHUB_PACKS_TTL_MS, packs, source: 'live' };
+  await writeLastGood(store, kv, packs);
+  setSource(sourceOut, 'live', packs);
   return packs;
 }
 
@@ -309,7 +401,7 @@ function isPackCandidate(repo: GhRepo): repo is GhRepo & { name: string; html_ur
 async function listOrgPackRepos(
   fetchImpl: typeof fetch,
   token?: string
-): Promise<{ repos: GhRepo[]; truncated: boolean } | null> {
+): Promise<{ repos: GhRepo[]; truncated: boolean } | 'unauthorized' | null> {
   const repos: GhRepo[] = [];
   let truncated = false;
   for (let page = 1; page <= MAX_PAGES; page++) {
@@ -318,6 +410,7 @@ async function listOrgPackRepos(
       fetchImpl,
       token
     );
+    if (res.status === 401) return 'unauthorized';
     if (!res.ok) return null;
     const pageRepos = (await res.json()) as unknown;
     if (!Array.isArray(pageRepos)) return null;
@@ -338,6 +431,7 @@ async function latestPackedRelease(
 ): Promise<{ version: string; bundleUrl: string; publishedAt: string } | null> {
   const res = await githubGet(`/repos/${ORG}/${repoName}/releases/latest`, fetchImpl, token);
   if (res.status === 404) return null;
+  if (res.status === 401) throw new GithubUnauthorized();
   if (res.status === 403 || res.status === 429) {
     throw new Error(`GitHub rate limited (${res.status})`);
   }
@@ -378,7 +472,8 @@ type GraphqlNode = {
 type ScanResult =
   | { status: 'ok'; packs: DiscoveredPack[] }
   | { status: 'incomplete' }
-  | { status: 'unavailable' };
+  | { status: 'unavailable' }
+  | { status: 'unauthorized' };
 
 function packFromGraphqlNode(node: GraphqlNode): DiscoveredPack | null {
   const name = node.name ?? '';
@@ -433,7 +528,8 @@ async function discoverViaGraphql(fetchImpl: typeof fetch, token?: string): Prom
     } catch {
       return { status: 'unavailable' };
     }
-    if (res.status === 401 || res.status === 404) return { status: 'unavailable' };
+    if (res.status === 401) return { status: 'unauthorized' };
+    if (res.status === 404) return { status: 'unavailable' };
     if (res.status === 403 || res.status === 429) return { status: 'incomplete' };
     if (!res.ok) return { status: 'unavailable' };
     const body = (await res.json()) as {
@@ -464,6 +560,7 @@ async function discoverViaGraphql(fetchImpl: typeof fetch, token?: string): Prom
 
 async function discoverViaRest(fetchImpl: typeof fetch, token?: string): Promise<ScanResult> {
   const listed = await listOrgPackRepos(fetchImpl, token);
+  if (listed === 'unauthorized') return { status: 'unauthorized' };
   if (!listed) return { status: 'unavailable' };
 
   const { repos, truncated } = listed;
@@ -488,43 +585,70 @@ async function discoverViaRest(fetchImpl: typeof fetch, token?: string): Promise
   );
 
   let rejected = false;
+  let unauthorized = false;
   for (const result of results) {
     if (result.status === 'fulfilled' && result.value) {
       packs.push(result.value);
     } else if (result.status === 'rejected') {
-      rejected = true;
+      if (result.reason instanceof GithubUnauthorized) unauthorized = true;
+      else rejected = true;
     }
   }
 
+  if (unauthorized) return { status: 'unauthorized' };
   if (rejected || truncated) return { status: 'incomplete' };
   return { status: 'ok', packs };
 }
 
 /**
- * @returns discovered packs, the last complete list when a scan is incomplete,
- * or `null` when GitHub is unreachable / rate limited with no last-good list
- * so the caller can fall back to the static seed.
+ * GraphQL, then REST. A 401 while a token is set aborts this pass so the
+ * caller can retry once with no token instead of walking the org unauthenticated
+ * on top of a dead credential (unauthenticated REST is 60 req/hour per IP).
+ */
+async function scanPacks(fetchImpl: typeof fetch, token?: string): Promise<ScanResult> {
+  const graphql = await discoverViaGraphql(fetchImpl, token);
+  if (graphql.status === 'ok') return graphql;
+  if (graphql.status === 'unauthorized' && token) return graphql;
+  return discoverViaRest(fetchImpl, token);
+}
+
+/**
+ * @returns discovered packs, the last complete list when a scan is incomplete
+ * (memory, then Cache API, then `CATALOG_KV`), or `null` when GitHub is
+ * unreachable / rate limited with no last-good list so the caller can fall
+ * back to the static seed. `sourceOut.source` is `live`, `cached`, or
+ * `fallback` (empty / null).
  */
 export async function discoverDripnexPacks(options: {
   token?: string;
   fetchImpl?: typeof fetch;
   now?: number;
   cacheStore?: PacksCacheStore | null;
+  /** Optional. Missing or throwing bindings are ignored. */
+  kv?: CatalogKv | null;
+  /** Set when the caller needs `X-Catalog-Source`. */
+  sourceOut?: { source: CatalogSource };
 }): Promise<DiscoveredPack[] | null> {
   const now = options.now ?? Date.now();
-  if (cache && now < cache.until) return cache.packs;
+  if (cache && now < cache.until) {
+    setSource(options.sourceOut, cache.source, cache.packs);
+    return cache.packs;
+  }
 
   const fetchImpl = options.fetchImpl ?? fetch;
   const store = options.cacheStore === undefined ? defaultCacheStore() : options.cacheStore;
+  const kv = options.kv ?? null;
   try {
-    const graphql = await discoverViaGraphql(fetchImpl, options.token);
-    if (graphql.status === 'ok') return rememberSuccess(now, graphql.packs, store);
-
-    const rest = await discoverViaRest(fetchImpl, options.token);
-    if (rest.status === 'ok') return rememberSuccess(now, rest.packs, store);
-    return rememberFailure(now, store);
+    let scan = await scanPacks(fetchImpl, options.token);
+    if (scan.status === 'unauthorized' && options.token) {
+      scan = await scanPacks(fetchImpl, undefined);
+    }
+    if (scan.status === 'ok') {
+      return rememberSuccess(now, scan.packs, store, kv, options.sourceOut);
+    }
+    return rememberFailure(now, store, kv, options.sourceOut);
   } catch {
-    return rememberFailure(now, store);
+    return rememberFailure(now, store, kv, options.sourceOut);
   }
 }
 

@@ -5,7 +5,8 @@
  * Place <Toaster /> once in your app root.
  */
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useLayoutEffect, useRef } from 'react';
+import { playMotion } from '../../motion/gsapRuntime';
 import { useToastStore, type ToastItem } from './toastStore';
 import styles from './Toast.module.css';
 
@@ -15,13 +16,18 @@ import styles from './Toast.module.css';
 
 function ToastNotification({ item }: { item: ToastItem }) {
   const dismissToast = useToastStore(s => s.dismissToast);
-  const [exiting, setExiting] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const leaving = useRef(false);
 
   const dismiss = useCallback(() => {
-    setExiting(true);
-    // Wait for exit animation before removing from store
-    setTimeout(() => dismissToast(item.id), 150);
+    if (leaving.current) return;
+    leaving.current = true;
+    playMotion('toast-out', ref.current, { onComplete: () => dismissToast(item.id) });
   }, [item.id, dismissToast]);
+
+  useLayoutEffect(() => {
+    playMotion('toast-in', ref.current);
+  }, []);
 
   useEffect(() => {
     if (item.duration <= 0) return;
@@ -29,12 +35,11 @@ function ToastNotification({ item }: { item: ToastItem }) {
     return () => clearTimeout(timer);
   }, [item.duration, dismiss]);
 
-  const cls = [styles.toast, styles[item.type], exiting ? styles.exiting : '']
-    .filter(Boolean)
-    .join(' ');
+  const cls = [styles.toast, styles[item.type]].filter(Boolean).join(' ');
 
   return (
     <div
+      ref={ref}
       className={cls}
       role={item.type === 'error' ? 'alert' : 'status'}
       aria-live={item.type === 'error' ? 'assertive' : 'polite'}

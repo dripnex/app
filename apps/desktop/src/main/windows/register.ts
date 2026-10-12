@@ -4,7 +4,7 @@ import { isClosable } from './closable.js';
 import { createMainWindow } from './mainWindow.js';
 import { createNoteWindow } from './noteWindow.js';
 import { createQuickCaptureWindow } from './quickCaptureWindow.js';
-import { createSettingsWindow } from './settingsWindow.js';
+import { createSettingsWindow, closeSettingsWindow } from './settingsWindow.js';
 import { applyFrosted, rememberFrosted } from './vibrancy.js';
 
 export function registerWindowHandlers(): void {
@@ -66,4 +66,10 @@ export function registerQuickCaptureShortcut(): void {
   }
 }
 
-export { createMainWindow, createNoteWindow, createQuickCaptureWindow, createSettingsWindow };
+export {
+  createMainWindow,
+  createNoteWindow,
+  createQuickCaptureWindow,
+  createSettingsWindow,
+  closeSettingsWindow,
+};

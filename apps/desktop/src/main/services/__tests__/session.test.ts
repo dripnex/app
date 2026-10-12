@@ -30,7 +30,6 @@ describe('resolveSession', () => {
       getCurrentUser: async () => user,
       getAccessToken: async () => jwt({ sub: user.id, email: user.email }),
       clearTokens: vi.fn(),
-      readLocal: async () => null,
     });
     expect(session).toEqual({ user });
   });
@@ -44,7 +43,6 @@ describe('resolveSession', () => {
       },
       getAccessToken: async () => jwt({ sub: user.id, email: user.email }),
       clearTokens,
-      readLocal: async () => null,
     });
     expect(session).toEqual({ user });
     expect(clearTokens).not.toHaveBeenCalled();
@@ -59,21 +57,18 @@ describe('resolveSession', () => {
       },
       getAccessToken: async () => jwt({ sub: user.id, email: user.email }),
       clearTokens,
-      readLocal: async () => null,
     });
     expect(session).toBeNull();
     expect(clearTokens).toHaveBeenCalledOnce();
   });
 
-  it('falls back to local identity when there are no tokens', async () => {
-    const local = { id: 'local', email: 'me@local' };
+  it('does not treat leftover local identity as a session', async () => {
     const session = await resolveSession({
       hasTokens: async () => false,
       getCurrentUser: async () => user,
       getAccessToken: async () => null,
       clearTokens: vi.fn(),
-      readLocal: async () => local,
     });
-    expect(session).toEqual({ user: local });
+    expect(session).toBeNull();
   });
 });

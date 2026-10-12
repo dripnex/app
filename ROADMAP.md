@@ -8,9 +8,9 @@
 
 ## Vision
 
-Dripnex is a **Markdown-first thinking workspace for builders**. Raycast meets Obsidian meets lightweight IDE for ideas.
+Dripnex is the **hackable AI note taker**. Messy input becomes a document a person will send. SQLite is the store. `.md` is export.
 
-Your notes survive the app. Your thinking stays yours. AI augments, never replaces.
+AuthGate is the first window. Hack via `init.js` / `styles.css` / satellite packs.
 
 ---
 
@@ -18,8 +18,8 @@ Your notes survive the app. Your thinking stays yours. AI augments, never replac
 
 | #   | Principle                | What it means                                                                    |
 | --- | ------------------------ | -------------------------------------------------------------------------------- |
-| 1   | **Markdown-first**       | Users own their data. Plain `.md` files, git-friendly, export = exact copy.      |
-| 2   | **Local-first**          | Fast, offline, no cloud dependency. Sync is optional, never required.            |
+| 1   | **SQLite is the store**  | Notes live in local SQLite. Markdown is export, not how you open the app.        |
+| 2   | **Offline after login**  | Fast local workspace after AuthGate. Sync is optional E2E, never required.       |
 | 3   | **Command-driven UX**    | Raycast-like Cmd+K, keyboard-first. Every action is a command.                   |
 | 4   | **AI as augmentation**   | AI operates ON notes --- summarize, expand, extract. It never replaces thinking. |
 | 5   | **Speed and minimalism** | Developer-grade ergonomics. Start fast, stay fast, no bloat.                     |
@@ -242,7 +242,7 @@ System prompt
 
 | Step | What happens                                                  | Time |
 | ---- | ------------------------------------------------------------- | ---- |
-| 1    | Welcome screen: "Your thinking workspace"                     | 10s  |
+| 1    | AuthGate, then Welcome: "The hackable AI note taker"          | 10s  |
 | 2    | Create first note (pre-filled template with instructions)     | 30s  |
 | 3    | Command palette tutorial (Cmd+K highlight)                    | 20s  |
 | 4    | First AI action: summarize or generate tweet from sample note | 30s  |
@@ -251,7 +251,7 @@ System prompt
 
 **Principles:**
 
-- No account required to start
+- AuthGate is required (account first, then Welcome)
 - No configuration required to start
 - AI features work with a single API key entry
 - Every step is skippable

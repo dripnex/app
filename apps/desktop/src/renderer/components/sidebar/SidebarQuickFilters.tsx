@@ -30,6 +30,7 @@ const QuickFilterItem = memo(function QuickFilterItem({
     <button
       type="button"
       className={sc('sidebar-row', isSelected && 'selected')}
+      data-chrome-press=""
       onClick={onClick}
       aria-pressed={isSelected}
     >

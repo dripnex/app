@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import githubLogo from '@lobehub/icons-static-svg/icons/github.svg';
-import { Button, Field, Input } from '../../../ui/primitives';
+import { Button, Field, Input, toast } from '../../../ui/primitives';
 import { SettingsCard } from '../components/SettingsCard';
 import { getGitHubApi } from '../../../integrations/host';
 import type { GitHubWatcher } from '../../../../preload/api/integrations';
+import {
+  GITHUB_CONNECT_BUTTON,
+  GITHUB_DISCONNECT_BUTTON,
+  GITHUB_WATCHERS_EMPTY,
+  githubBadgeText,
+  githubConnectUiState,
+  githubImportedMessage,
+  githubPulledLabel,
+  githubPulledMessage,
+  githubWatchingMessage,
+} from './githubCardCopy';
 import styles from './IntegrationsSection.module.css';
 
 export function GitHubCard() {
@@ -36,20 +47,23 @@ export function GitHubCard() {
     setError(null);
     setMessage(null);
     const result = await api.connect(token.trim() || null);
+    const next = githubConnectUiState(result);
     setBusy(false);
-    if (result.success) {
-      setLogin(result.login);
-      setToken('');
-      setMessage(`Connected as @${result.login}`);
+    if (next.ok) {
+      setLogin(next.login);
+      setToken(next.token);
+      setMessage(`Connected as @${next.login}`);
+      toast.success(`Connected as @${next.login}`);
       return;
     }
-    setError(result.error);
+    setError(next.error);
   };
 
   const disconnect = async () => {
     if (!api) return;
     await api.disconnect();
     setLogin(null);
+    setToken('');
     setMessage(null);
   };
 
@@ -74,7 +88,8 @@ export function GitHubCard() {
       return;
     }
     setIssueUrl('');
-    setMessage(`Imported “${fetched.title}” into Inbox.`);
+    setMessage(githubImportedMessage(fetched.title));
+    toast.success(githubImportedMessage(fetched.title));
   };
 
   const addWatcher = async () => {
@@ -90,7 +105,9 @@ export function GitHubCard() {
     }
     setWatchSpec('');
     await refreshWatchers();
-    setMessage(`Watching ${added.watcher.label}.`);
+    const watching = githubWatchingMessage(added.watcher.label);
+    setMessage(watching);
+    toast.success(watching);
   };
 
   const pullWatchers = async (watcherId?: string) => {
@@ -105,9 +122,9 @@ export function GitHubCard() {
       return;
     }
     await refreshWatchers();
-    const bits = [`${pulled.created} new`, `${pulled.updated} updated`];
-    if (pulled.skipped) bits.push(`${pulled.skipped} unchanged`);
-    setMessage(`Pulled ${bits.join(', ')}.`);
+    const pulledCopy = githubPulledMessage(pulled);
+    setMessage(pulledCopy);
+    toast.success(pulledCopy);
     if (pulled.errors.length > 0) setError(pulled.errors.join(' · '));
   };
 
@@ -129,14 +146,28 @@ export function GitHubCard() {
           <div className={styles.cardNameRow}>
             <h3 className={styles.cardName}>GitHub</h3>
             <span className={styles.badge} data-tone={connected ? 'ok' : 'idle'}>
-              {connected ? `@${login}` : 'Not connected'}
+              {githubBadgeText(login)}
             </span>
           </div>
           <p className={styles.cardDesc}>
-            Connect, import one issue, or watch a repo. Pull writes notes to Inbox and refreshes
-            them from GitHub.
+            {connected
+              ? 'Paste a blob URL in a note to embed the selected lines. Import or watch issues below.'
+              : 'Paste a GitHub blob URL in a note to embed selected lines. Connect for private repos.'}
           </p>
         </div>
+        {api && connected ? (
+          <div className={styles.cardAction}>
+            <Button variant="ghost" size="sm" onClick={() => void disconnect()}>
+              {GITHUB_DISCONNECT_BUTTON}
+            </Button>
+          </div>
+        ) : api ? (
+          <div className={styles.cardAction}>
+            <Button variant="primary" size="sm" loading={busy} onClick={() => void connect()}>
+              {GITHUB_CONNECT_BUTTON}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {!api ? (
@@ -150,6 +181,9 @@ export function GitHubCard() {
               id="gh-issue"
               value={issueUrl}
               onChange={event => setIssueUrl(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' && issueUrl.trim()) void importIssue();
+              }}
               placeholder="https://github.com/org/repo/issues/12"
             />
           </Field>
@@ -163,15 +197,15 @@ export function GitHubCard() {
             >
               Import to Inbox
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => void disconnect()}>
-              Disconnect
-            </Button>
           </div>
           <Field label="Watch" htmlFor="gh-watch">
             <Input
               id="gh-watch"
               value={watchSpec}
               onChange={event => setWatchSpec(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' && watchSpec.trim()) void addWatcher();
+              }}
               placeholder="owner/repo or repo:org/name is:open"
             />
           </Field>
@@ -204,9 +238,7 @@ export function GitHubCard() {
                     <span className={styles.watchMeta}>
                       {watcher.lastError
                         ? watcher.lastError
-                        : watcher.lastPulledAt
-                          ? `Pulled ${watcher.lastPulledAt.slice(0, 16).replace('T', ' ')}`
-                          : 'Not pulled yet'}
+                        : githubPulledLabel(watcher.lastPulledAt)}
                     </span>
                   </div>
                   <div className={styles.actions}>
@@ -229,7 +261,9 @@ export function GitHubCard() {
                 </li>
               ))}
             </ul>
-          ) : null}
+          ) : (
+            <p className={styles.fieldHint}>{GITHUB_WATCHERS_EMPTY}</p>
+          )}
         </div>
       ) : (
         <div className={styles.body}>
@@ -248,19 +282,14 @@ export function GitHubCard() {
               autoComplete="off"
             />
           </Field>
-          <div className={styles.actions}>
-            <Button variant="primary" size="sm" loading={busy} onClick={() => void connect()}>
-              Connect GitHub
-            </Button>
-            <a
-              className={styles.docLink}
-              href="https://github.com/settings/tokens"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Create a token
-            </a>
-          </div>
+          <a
+            className={styles.docLink}
+            href="https://github.com/settings/tokens"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Create a token
+          </a>
         </div>
       )}
 

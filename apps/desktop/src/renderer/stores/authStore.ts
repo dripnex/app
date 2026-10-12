@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { clearRendererAuthTokens } from './authTokenKeys';
 
 // ============================================================================
 // Types
@@ -32,6 +33,21 @@ interface AuthState {
   logout: () => Promise<void>;
   loadSession: () => Promise<void>;
   clearError: () => void;
+}
+
+// ============================================================================
+// Signed-out reset
+// ============================================================================
+
+/** Bumped on Sign Out so in-flight loadSession / verifyToken / continueLocally cannot restore the shell. */
+let sessionEpoch = 0;
+
+function rendererStorage(): Storage | null {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null;
+  } catch {
+    return null;
+  }
 }
 
 // ============================================================================
@@ -84,9 +100,11 @@ export const useAuthStore = create<AuthState>()(set => ({
    * Create a local-only identity when the cloud API is unreachable.
    */
   continueLocally: async (email: string) => {
+    const epoch = sessionEpoch;
     set({ isLoading: true, error: null });
     try {
       const result = await window.dripnex.auth.continueLocally(email);
+      if (epoch !== sessionEpoch) return;
       if (!result.success || !result.user) {
         throw new Error(result.error || 'Failed to continue locally');
       }
@@ -96,6 +114,7 @@ export const useAuthStore = create<AuthState>()(set => ({
         isLoading: false,
       });
     } catch (error) {
+      if (epoch !== sessionEpoch) return;
       set({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to continue locally',
@@ -108,9 +127,11 @@ export const useAuthStore = create<AuthState>()(set => ({
    * Verify magic link token and authenticate
    */
   verifyToken: async (token: string) => {
+    const epoch = sessionEpoch;
     set({ isLoading: true, error: null });
     try {
       const result = await window.dripnex.auth.verifyToken(token);
+      if (epoch !== sessionEpoch) return;
       if (result.success && result.user) {
         set({
           user: result.user,
@@ -123,6 +144,7 @@ export const useAuthStore = create<AuthState>()(set => ({
         throw new Error(result.error || 'Verification failed');
       }
     } catch (error) {
+      if (epoch !== sessionEpoch) return;
       let errorMessage = 'Failed to verify token';
 
       if (error instanceof Error) {
@@ -146,22 +168,24 @@ export const useAuthStore = create<AuthState>()(set => ({
   },
 
   /**
-   * Logout and clear tokens
+   * Logout and clear tokens. Clears this window immediately so AuthGate
+   * remounts even if Settings is a separate renderer from the main shell.
    */
   logout: async () => {
-    set({ isLoading: true, error: null });
+    applySignedOut();
     try {
-      // Stop auto-sync before logout
-      await window.dripnex.sync.stopAutoSync();
+      try {
+        await window.dripnex.sync.stopAutoSync();
+      } catch {
+        // Sync may already be stopped; tokens still need to be cleared.
+      }
 
-      await window.dripnex.auth.logout();
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
+      const result = await window.dripnex.auth.logout();
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to logout');
+      }
     } catch (error) {
-      set({
+      useAuthStore.setState({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to logout',
       });
@@ -173,9 +197,11 @@ export const useAuthStore = create<AuthState>()(set => ({
    * Load existing session on app start
    */
   loadSession: async () => {
+    const epoch = sessionEpoch;
     set({ isLoading: true, error: null });
     try {
       const session = await window.dripnex.auth.getSession();
+      if (epoch !== sessionEpoch) return;
       if (session) {
         set({
           user: session.user,
@@ -186,9 +212,15 @@ export const useAuthStore = create<AuthState>()(set => ({
 
         await startCloudSyncIfReady();
       } else {
-        set({ isLoading: false, sessionHydrated: true });
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          sessionHydrated: true,
+        });
       }
     } catch (error) {
+      if (epoch !== sessionEpoch) return;
       set({
         isLoading: false,
         sessionHydrated: true,
@@ -202,6 +234,23 @@ export const useAuthStore = create<AuthState>()(set => ({
    */
   clearError: () => set({ error: null }),
 }));
+
+/**
+ * Drop renderer session state and leftover token keys.
+ * Main-process JWTs are cleared by `auth:logout`. Other windows hear `auth:signed-out`.
+ */
+export function applySignedOut(): void {
+  sessionEpoch += 1;
+  const storage = rendererStorage();
+  if (storage) clearRendererAuthTokens(storage);
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+    sessionHydrated: true,
+  });
+}
 
 // ============================================================================
 // Selectors

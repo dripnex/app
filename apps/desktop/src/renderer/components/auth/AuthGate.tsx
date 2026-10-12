@@ -1,23 +1,28 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { useAuthStore, selectError } from '../../stores/authStore';
+import { playMotion } from '../../motion/gsapRuntime';
 import logo from '../../assets/logo.png';
 import { LoginBackdrop } from './LoginBackdrop';
+import { AUTH_GATE_FORM_Z_INDEX } from './authGateStacking';
 import styles from './AuthGate.module.css';
 
 /**
- * Magic-link card for optional sync. Must not be used as a hard launch gate —
- * local notes, Settings, and plugins work without an account.
+ * Full-window sign-in. AuthGate is the first window.
+ * Account is required. There is no guest path and no continue-locally skip.
  */
 export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
   const requestMagicLink = useAuthStore(state => state.requestMagicLink);
-  const continueLocally = useAuthStore(state => state.continueLocally);
   const authError = useAuthStore(selectError);
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [offerLocal, setOfferLocal] = useState(false);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    playMotion('gate-in', cardRef.current);
+  }, []);
 
   useEffect(() => {
     if (authError) setLocalError(authError);
@@ -31,10 +36,8 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
       try {
         await requestMagicLink(email.trim());
         setSent(true);
-        setOfferLocal(false);
       } catch {
         setSent(false);
-        setOfferLocal(true);
       } finally {
         setPending(false);
       }
@@ -42,23 +45,17 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
     [email, requestMagicLink]
   );
 
-  const goLocal = useCallback(async () => {
-    setLocalError(null);
-    setPending(true);
-    try {
-      await continueLocally(email.trim());
-    } catch {
-      setOfferLocal(true);
-    } finally {
-      setPending(false);
-    }
-  }, [email, continueLocally]);
-
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-auth-gate="screen">
       <LoginBackdrop />
-      <div className={styles.card}>
+      <div
+        ref={cardRef}
+        className={styles.card}
+        style={{ zIndex: AUTH_GATE_FORM_Z_INDEX }}
+        data-auth-gate="form"
+      >
         <img src={logo} alt="" width={40} height={40} className={styles.logo} />
+        <p className={styles.kicker}>The hackable AI note taker</p>
         <div className={styles.tabs} role="tablist">
           <button
             type="button"
@@ -88,8 +85,8 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
           <>
             <p className={styles.copy}>
               {mode === 'signup'
-                ? 'We’ll email you a link. No password.'
-                : 'We’ll email you a one-time link. Leave this window open.'}
+                ? 'Messy input becomes a document you send. Hack via init.js and styles.css. We’ll email a link — no password.'
+                : 'Messy input becomes a document you send. Hack via init.js and styles.css. We’ll email a one-time link. Leave this window open.'}
             </p>
 
             {sent ? (
@@ -132,16 +129,6 @@ export function AuthGate({ hydrating = false }: { hydrating?: boolean }) {
                 <button className={styles.submit} type="submit" disabled={pending}>
                   {pending ? 'Sending…' : mode === 'signup' ? 'Create account' : 'Email me a link'}
                 </button>
-                {offerLocal ? (
-                  <button
-                    className={styles.local}
-                    type="button"
-                    disabled={pending || !email.trim()}
-                    onClick={() => void goLocal()}
-                  >
-                    Continue locally
-                  </button>
-                ) : null}
               </form>
             )}
           </>

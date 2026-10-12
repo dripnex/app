@@ -174,6 +174,39 @@
   color: var(--danger);
 }
 
+.filterEmpty {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-6);
+  pointer-events: none;
+  text-align: center;
+}
+
+.filterEmptyIcon {
+  color: var(--text-faint);
+}
+
+.filterEmptyTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+.filterEmptyHint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 /* ── Inspector ──────────────────────────────────────────────────────────── */
 
 .inspector {

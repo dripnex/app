@@ -27,6 +27,11 @@
   gap: var(--space-3);
 }
 
+.cardAction {
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .cardCopy {
   min-width: 0;
   flex: 1;
@@ -89,6 +94,13 @@
   line-height: 1.45;
   background: var(--warning-muted);
   color: var(--text-primary);
+}
+
+.statusHint {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
 }
 
 .body {
@@ -295,5 +307,3 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
-
-

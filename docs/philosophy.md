@@ -1,92 +1,35 @@
-# Why Dripnex chooses to stay small
+# Why Dripnex is the hackable AI note taker
+
+Dripnex is not a files-first Markdown editor.
+
+It is an AI note taker you can hack. Messy input becomes a document a person will send — not a model dump.
 
 ---
 
-## The pattern
+## The store
 
-Every successful note app follows the same arc.
+Notes live in local SQLite. That is the product identity.
 
-It starts simple. Then it adds sync. Then plugins. Then AI. Then teams. Then it becomes a platform.
-
-Somewhere along the way, exports break. Incentives shift. Trust erodes. The app you loved starts optimizing for growth instead of you.
-
-We didn't want to repeat that cycle.
+Plain files are easy to romanticize. `.md` is export. It is not how the app works, and it is not how you open Dripnex.
 
 ---
 
-## Growth changes incentives
+## The hack
 
-Growth demands features.
-Features demand infrastructure.
-Infrastructure demands revenue.
-Revenue demands lock-in.
-
-This isn't malice. It's gravity.
-
-The only way to escape it is to stop optimizing for growth.
+Hackability is `init.js`, `styles.css`, and satellite packs. Official themes stay empty (`OFFICIAL_THEMES = []`). There is no public marketplace.
 
 ---
 
-## Our constraint
+## The gate
 
-Dripnex is constrained by design.
+AuthGate is the first window. An account is required. Sync is optional and end-to-end after that. Encryption and passphrase flows stay.
 
-- No servers to maintain
-- No ecosystem to defend
-- No dependency graph outside your disk
-
-The app works entirely offline. Your files are standard Markdown. If we disappear tomorrow, your notes don't.
-
-This isn't a feature. It's a structural decision that permanently limits what we can become.
-
-It refuses to outgrow its purpose.
+Never offer a guest workspace. AuthGate is required.
 
 ---
 
-## What this costs us
+## What that is not
 
-This decision costs us:
+This is not a manifesto about reducing the ship rate, or about notes living on disk as files.
 
-- Faster growth
-- More revenue
-- Trend alignment
-- The ability to pivot to enterprise
-
-We're okay with that.
-
----
-
-## What you get instead
-
-- Predictable behavior
-- Boring reliability
-- An app that works the same way in 10 years
-- Files that survive the app
-
----
-
-## The trade
-
-Dripnex is not ambitious software.
-It's careful software.
-
-We optimize for decades, not quarters.
-We ship less, not more.
-We say no by default — on purpose.
-
-If that feels limiting, it probably is.
-If it feels relieving, you understand the goal.
-
----
-
-## One more thing
-
-We're not against features. We're against features that create dependencies.
-
-Backlinks? Fine. They're computed from your files.
-Search? Fine. It's an index we rebuild from your files.
-Graph view? Fine. It's visualization, not storage.
-
-The rule is simple: if deleting our database doesn't lose your data, the feature is allowed.
-
-Everything else is a trap we refuse to build — no matter how popular it is.
+Those lines are dead. The product is the hackable AI note taker.

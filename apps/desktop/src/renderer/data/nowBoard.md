@@ -4,11 +4,13 @@ Living board. Seeded as note `dripnex-now` so MCP agents can search `NOW`.
 
 #now #roadmap #debt
 
-Updated: 2026-08-17. Version in tree: 0.15.2.
+Updated: 2026-08-26. Version in tree: 0.15.2. Identity: hackable AI note taker.
 
 ## Now (true today)
 
-- Desktop is the product. No account to open a file. Sync is optional E2E.
+- Desktop is the product. The hackable AI note taker. AuthGate is the first window. Sync is optional E2E after account.
+- Store is local SQLite. `.md` is export only. Plain files are easy to romanticize.
+- Hackable via `init.js` / `styles.css` / satellite packs. `OFFICIAL_THEMES` stays []. No public marketplace.
 - Magic link + React Email. API on Cloudflare (`api.dripnex.app`).
 - AI on notes (local providers). Ask-notes and `search_notes` share one hybrid retriever.
 - Dripnex AI is hosted Claude (product key). Dev builds show “Not in this build”.
@@ -20,7 +22,7 @@ Updated: 2026-08-17. Version in tree: 0.15.2.
 - Mermaid, Vim, KaTeX. Living board is this note (`dripnex-now`).
 - Sync passphrase: generated six words, Emergency Kit, 1Password save (SDK + CSV).
 - Search operators: `tag:` `#` `status:` `notebook:` `is:pinned` `is:trash`.
-- Brand: quiet, no SaaS blue, no “AI-powered” marketing.
+- Brand: quiet. Identity is the hackable AI note taker, not an “AI-powered” badge.
 
 ## Next
 
@@ -59,7 +61,7 @@ Shipped this week:
 - Graph is a knowledge map (kinds, inferred edges, inspector).
 - GitHub connect + import an issue into Inbox.
 - Ask Notes can search/read GitHub issues when connected.
-- Settings → Plugins opens `init.js` and `styles.css` (Inkdrop-style hackability).
+- Settings → Plugins opens `init.js` and `styles.css`.
 - Settings → General → Development Mode: Inspect Element + Toggle DevTools.
 - `dripnex.menu.add` lands items in the Plugins application menu.
 - Built-in **Paste as Link** (selection + clipboard URL, Mod+Shift+K).
@@ -71,7 +73,7 @@ Shipped this week:
 - Paste a URL: wrap the selection, or pick Title / Link / `<url>`.
 - `dripnex-plugin install owner/repo[@tag]` — community plugins are their own repos.
 - Settings → Plugins → Connect: paste `owner/repo[@tag]`. No fake marketplace.
-- Official palettes: Parchment, Wave, Night. Themes are token layers; community themes are repos.
+- Official themes stay empty (`OFFICIAL_THEMES = []`). Satellite packs only. No public marketplace.
 - Note templates: Meeting, Decision, Daily, Weekly, Reading, Issue (notebook `templates`).
 - What’s New is authored (`docs/releases/`). Promotion PRs: `chore(release): promote X.Y.Z`.
 - Workspace view: click a notebook to focus the sidebar on that tree. Escape or the breadcrumb home returns to All Notes.
