@@ -76,7 +76,9 @@
   "packageManager": "pnpm@9.15.1",
   "pnpm": {
     "overrides": {
-      "@lezer/common": "1.5.2"
+      "@lezer/common": "1.5.2",
+      "next": ">=16.3.8 <16.4.0",
+      "sharp": ">=0.35.5"
     }
   },
   "engines": {
