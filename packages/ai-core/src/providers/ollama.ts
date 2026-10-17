@@ -1,6 +1,7 @@
 // packages/ai-core/src/providers/ollama.ts
 import type { LLMProvider, ProviderConfig, ModelInfo, FetchFn } from '../provider.js';
 import type { LLMEvent, ChatOptions, MessageContent, ContentPart } from '../types.js';
+import { classifyHttpStatus } from './http-status.js';
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
 
@@ -47,17 +48,6 @@ function buildToolResultMessages(
     }
   }
   return results;
-}
-
-function classifyHttpStatus(status: number): {
-  code: Extract<LLMEvent, { type: 'error' }>['code'];
-  retryable: boolean;
-} {
-  if (status === 429) return { code: 'rate_limit', retryable: true };
-  if (status === 404) return { code: 'model_not_found', retryable: false };
-  if (status === 400) return { code: 'invalid_request', retryable: false };
-  if (status >= 500) return { code: 'provider_error', retryable: true };
-  return { code: 'provider_error', retryable: false };
 }
 
 export class OllamaProvider implements LLMProvider {
