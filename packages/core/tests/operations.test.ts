@@ -217,7 +217,7 @@ describe('Operations', () => {
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.type).toBe('VALIDATION_ERROR');
+        expect(result.error.type).toBe('CONFLICT');
       }
     });
   });
@@ -258,7 +258,7 @@ describe('Operations', () => {
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error.type).toBe('VALIDATION_ERROR');
+        expect(result.error.type).toBe('CONFLICT');
       }
     });
   });
