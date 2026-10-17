@@ -17,6 +17,12 @@ export type LLMErrorCode =
   | 'cancelled'
   | 'timeout';
 
+/** Mirrors the ToolCall shape from tool-loop.ts; duplicated here (not imported) to
+ * avoid a circular dependency, since tool-loop.ts imports from this file. */
+type ToolCallShape = { id: string; name: string; args: Record<string, unknown> };
+/** Mirrors ToolResult from tool-registry.ts; see ToolCallShape for why it's inlined. */
+type ToolResultShape = { ok: boolean; content: string; error?: string };
+
 export type LLMEvent =
   | ({ type: 'start'; model: string; requestId: string; provider: string } & BaseEvent)
   | ({ type: 'text'; delta: string } & BaseEvent)
@@ -25,7 +31,14 @@ export type LLMEvent =
   | ({ type: 'usage'; inputTokens: number; outputTokens: number } & BaseEvent)
   | ({ type: 'error'; code: LLMErrorCode; error: string; retryable: boolean } & BaseEvent)
   | ({ type: 'done'; durationMs: number; cancelled?: boolean } & BaseEvent)
-  | ({ type: 'stop'; reason: 'end_turn' | 'tool_use' | 'max_tokens' } & BaseEvent);
+  | ({ type: 'stop'; reason: 'end_turn' | 'tool_use' | 'max_tokens' } & BaseEvent)
+  /** Emitted by the IPC bridge (not the provider stream) while it awaits user
+   * approval for a tool call that requires confirmation. */
+  | ({ type: 'tool_confirm_needed'; callId: string } & BaseEvent)
+  /** Emitted by the tool loop right before executing an approved tool call. */
+  | ({ type: 'tool_executing'; call: ToolCallShape } & BaseEvent)
+  /** Emitted by the tool loop once a tool call has finished executing. */
+  | ({ type: 'tool_complete'; call: ToolCallShape; result: ToolResultShape } & BaseEvent);
 
 // ─── Chat Types ─────────────────────────────────────────────
 
