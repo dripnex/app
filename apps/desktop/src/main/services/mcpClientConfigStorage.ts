@@ -52,6 +52,10 @@ export class McpClientConfigDecryptionError extends Error {
 
 export class McpClientConfigStorage {
   private readonly filePath: string;
+  /** Chains save/remove so two overlapping IPC calls (two quick "Add server"
+   * clicks, a save racing a remove) can't both read-modify-write off the same
+   * stale snapshot and silently drop each other's change. */
+  private queue: Promise<unknown> = Promise.resolve();
 
   /**
    * @param dataDir - User data directory path (e.g. `app.getPath('userData')`)
@@ -71,21 +75,33 @@ export class McpClientConfigStorage {
   }
 
   async save(config: McpServerConfig): Promise<void> {
-    const configs = await this.readConfigs();
-    configs[config.id] = config;
-    await this.writeConfigs(configs);
+    return this.serialize(async () => {
+      const configs = await this.readConfigs();
+      configs[config.id] = config;
+      await this.writeConfigs(configs);
+    });
   }
 
   async remove(id: string): Promise<void> {
-    const configs = await this.readConfigs();
-    delete configs[id];
+    return this.serialize(async () => {
+      const configs = await this.readConfigs();
+      delete configs[id];
 
-    if (Object.keys(configs).length === 0) {
-      await this.unlinkFile();
-      return;
-    }
+      if (Object.keys(configs).length === 0) {
+        await this.unlinkFile();
+        return;
+      }
 
-    await this.writeConfigs(configs);
+      await this.writeConfigs(configs);
+    });
+  }
+
+  /** Runs `op` only after every previously-queued mutation has settled
+   * (success or failure), so writes never interleave. */
+  private serialize<T>(op: () => Promise<T>): Promise<T> {
+    const next = this.queue.then(op, op);
+    this.queue = next.catch(() => undefined);
+    return next;
   }
 
   private async readConfigs(): Promise<ConfigMap> {
@@ -133,7 +149,12 @@ export class McpClientConfigStorage {
 
     const plaintext = JSON.stringify(configs);
     const encrypted = safeStorage.encryptString(plaintext);
-    await fs.writeFile(this.filePath, encrypted);
+    // Write-then-rename instead of writing the real path directly: fs.writeFile
+    // isn't atomic, so a crash mid-write would otherwise truncate the file and
+    // make every future readConfigs() throw until it's deleted by hand.
+    const tmpPath = `${this.filePath}.tmp`;
+    await fs.writeFile(tmpPath, encrypted);
+    await fs.rename(tmpPath, this.filePath);
   }
 
   private async unlinkFile(): Promise<void> {
