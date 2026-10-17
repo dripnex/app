@@ -28,15 +28,15 @@ import {
 import { resolveMcpLaunch } from '../services/mcpLaunch.js';
 import { writeMcpWritesConfig } from '../services/mcpWrites.js';
 import { defineIpcHandler } from '../ipc/registry.js';
-import type { SQLiteNoteRepository, SQLiteNotebookRepository, DataPaths } from './types.js';
+import type { NoteRepositoryPort, NotebookRepositoryPort, DataPaths } from './types.js';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface LocalServerHandlerDeps {
-  noteRepository: SQLiteNoteRepository;
-  notebookRepository: SQLiteNotebookRepository;
+  noteRepository: NoteRepositoryPort;
+  notebookRepository: NotebookRepositoryPort;
   dataPaths: DataPaths;
   noteToSnapshot: (note: {
     id: string;

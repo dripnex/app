@@ -27,10 +27,10 @@ import {
 } from '@dripnex/core';
 import { createNoteId, createNotebookId, createTag } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
-import type { SQLiteNoteRepository, DataPaths, NoteToSnapshotFn } from './types.js';
+import type { NoteRepositoryPort, DataPaths, NoteToSnapshotFn } from './types.js';
 
 export interface NoteHandlerDeps {
-  noteRepository: SQLiteNoteRepository;
+  noteRepository: NoteRepositoryPort;
   dataPaths: DataPaths;
   noteToSnapshot: NoteToSnapshotFn;
   onNotesChanged?: () => void;

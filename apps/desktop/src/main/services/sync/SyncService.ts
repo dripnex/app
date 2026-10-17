@@ -8,7 +8,6 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@dripnex/storage-sqlite';
 import {
   createNoteId,
   createNotebookId,
@@ -18,6 +17,10 @@ import {
   extractTasks,
 } from '@dripnex/core';
 import type { LocalNotePush } from '@dripnex/sync-core';
+import type {
+  SyncCapableNoteRepository,
+  SyncCapableNotebookRepository,
+} from '../../handlers/types.js';
 import type {
   ApiClient,
   SyncChange,
@@ -44,8 +47,8 @@ import { chosenConflictContent, needsLocalRestore } from './resolveNoteConflict.
 export class SyncService {
   private apiClient: ApiClient;
   private encryptionService: EncryptionService;
-  private noteRepository: SQLiteNoteRepository;
-  private notebookRepository: SQLiteNotebookRepository;
+  private noteRepository: SyncCapableNoteRepository;
+  private notebookRepository: SyncCapableNotebookRepository;
   private state: SyncState;
   private autoSyncTimer: NodeJS.Timeout | null = null;
   private autoSyncInterval: number = 5 * 60 * 1000; // 5 minutes
@@ -58,8 +61,8 @@ export class SyncService {
   constructor(
     apiClient: ApiClient,
     encryptionService: EncryptionService,
-    noteRepository: SQLiteNoteRepository,
-    notebookRepository: SQLiteNotebookRepository,
+    noteRepository: SyncCapableNoteRepository,
+    notebookRepository: SyncCapableNotebookRepository,
     initialCursor = 0
   ) {
     this.apiClient = apiClient;

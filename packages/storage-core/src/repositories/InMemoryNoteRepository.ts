@@ -5,7 +5,7 @@
  * No persistence - data is lost when the repository is garbage collected.
  */
 
-import type { Note, NoteId, NoteStatus, Tag } from '@dripnex/core';
+import { createTag, type Note, type NoteId, type NoteStatus, type Tag } from '@dripnex/core';
 import type { ExtendedNoteRepository } from '../interfaces/ExtendedNoteRepository.js';
 import type { ListNotesOptions } from '../types/ListNotesOptions.js';
 import type { ArchivedFilter } from '../types/ArchivedFilter.js';
@@ -26,6 +26,7 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
   private manualTags = new Map<NoteId, Tag[]>();
   /** sourceId → outgoing refs (titles). In-memory graph is title-resolved. */
   private links = new Map<NoteId, string[]>();
+  private tagColors = new Map<string, string | null>();
 
   /** Get a note by ID */
   async get(id: NoteId): Promise<Note | null> {
@@ -225,6 +226,14 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
     return this.notes.size;
   }
 
+  /** Re-derive outgoing wikilink refs for a note from its content. */
+  syncLinks(noteId: NoteId, content: string): void {
+    const refs = Array.from(content.matchAll(/\[\[([^\]|#]+)/g), m => (m[1] ?? '').trim()).filter(
+      Boolean
+    );
+    this.links.set(noteId, refs);
+  }
+
   /** Test helper: record a wikilink from source to a title. */
   addLink(sourceId: NoteId, targetRef: string): void {
     const existing = this.links.get(sourceId) ?? [];
@@ -268,6 +277,88 @@ export class InMemoryNoteRepository implements ExtendedNoteRepository {
     }
 
     return Array.from(tagSet).sort();
+  }
+
+  deleteTag(tagName: string): void {
+    const normalized = tagName.trim().toLowerCase();
+    this.tagColors.delete(normalized);
+    for (const [noteId, tags] of this.manualTags) {
+      this.manualTags.set(
+        noteId,
+        tags.filter(t => t.toLowerCase() !== normalized)
+      );
+    }
+  }
+
+  getAllTagsWithColors(): Array<{ name: string; color: string | null }> {
+    return this.listTags();
+  }
+
+  listTags(
+    query: {
+      filter?: string;
+      limit?: number;
+      offset?: number;
+      includeCount?: boolean;
+    } = {}
+  ): Array<{ name: string; color: string | null; count?: number }> {
+    const filter = query.filter?.trim().toLowerCase() ?? '';
+    const counts = new Map<string, number>();
+    for (const note of this.notes.values()) {
+      for (const tag of note.metadata.tags) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+    const names = new Set<string>([...counts.keys(), ...this.tagColors.keys()]);
+    const tags = Array.from(names)
+      .filter(name => !filter || name.toLowerCase().includes(filter))
+      .sort()
+      .map(name => ({
+        name,
+        color: this.tagColors.get(name) ?? null,
+        ...(query.includeCount ? { count: counts.get(name) ?? 0 } : {}),
+      }));
+    const offset = Math.max(0, query.offset ?? 0);
+    const limit = query.limit ?? tags.length;
+    return tags.slice(offset, offset + limit);
+  }
+
+  setTagColor(tagName: string, color: string | null): void {
+    const normalized = tagName.trim().toLowerCase();
+    if (!normalized) return;
+    this.tagColors.set(normalized, color);
+  }
+
+  renameTag(oldName: string, newName: string): { ok: boolean; error?: string } {
+    const normalizedOld = oldName.trim().toLowerCase();
+    const normalizedNew = newName.trim().toLowerCase();
+    if (!normalizedNew) {
+      return { ok: false, error: 'New tag name cannot be empty' };
+    }
+    if (normalizedOld === normalizedNew) {
+      return { ok: true };
+    }
+
+    let found = false;
+    for (const [noteId, tags] of this.manualTags) {
+      if (tags.some(t => t.toLowerCase() === normalizedOld)) {
+        found = true;
+        this.manualTags.set(
+          noteId,
+          tags.map(t => (t.toLowerCase() === normalizedOld ? createTag(newName.trim()) : t))
+        );
+      }
+    }
+    if (this.tagColors.has(normalizedOld)) {
+      found = true;
+      const color = this.tagColors.get(normalizedOld) ?? null;
+      this.tagColors.delete(normalizedOld);
+      if (!this.tagColors.has(normalizedNew)) this.tagColors.set(normalizedNew, color);
+    }
+    if (!found) {
+      return { ok: false, error: 'Tag not found' };
+    }
+    return { ok: true };
   }
 
   // Test helpers
