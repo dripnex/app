@@ -9,6 +9,7 @@ import { SettingsPage } from '../components/SettingsPage';
 import { GitHubCard } from './GitHubCard';
 import { LocalHttpCard } from './LocalHttpCard';
 import { McpCard } from './McpCard';
+import { McpClientsCard } from './McpClientsCard';
 import styles from './IntegrationsSection.module.css';
 
 interface IntegrationsSectionProps {
@@ -76,6 +77,8 @@ export function IntegrationsSection({ onOpenEncryption }: IntegrationsSectionPro
       <LocalHttpCard />
 
       <McpCard />
+
+      <McpClientsCard />
 
       <GitHubCard />
 
