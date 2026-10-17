@@ -61,6 +61,14 @@ export type {
 
 export { createLocalServerApi } from './localServer';
 export type { LocalServerAPI, LocalServerConnectionInfo } from './localServer';
+export { createMcpClientApi } from './mcpClient';
+export type {
+  McpClientAPI,
+  McpServerConfig,
+  McpConnectionStatus,
+  McpConnectionState,
+  McpServerEntry,
+} from './mcpClient';
 
 export { createIntegrationsApi } from './integrations';
 export type {
