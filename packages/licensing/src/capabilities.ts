@@ -30,7 +30,12 @@ export const FREE_CAPABILITIES: readonly Capability[] = [
 ] as const;
 
 /**
- * Capabilities available during trial (all Pro features)
+ * Capabilities available during trial (all Pro features).
+ *
+ * Intentionally identical to PRO_CAPABILITIES today (full access during
+ * trial). If trial-only gating is ever needed, give this its own value —
+ * don't assume it stays in sync with PRO_CAPABILITIES just because both
+ * happen to equal ALL_CAPABILITIES right now.
  */
 export const TRIAL_CAPABILITIES: readonly Capability[] = ALL_CAPABILITIES;
 

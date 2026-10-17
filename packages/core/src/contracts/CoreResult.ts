@@ -11,6 +11,7 @@ export type CoreError =
   | { type: 'VALIDATION_ERROR'; error: ValidationError }
   | { type: 'NOT_FOUND'; id: string }
   | { type: 'ALREADY_EXISTS'; id: string }
+  | { type: 'CONFLICT'; id: string; reason: string }
   | { type: 'STORAGE_ERROR'; message: string };
 
 /** A successful result containing data */
@@ -51,6 +52,11 @@ export function notFound(id: string): Failure {
 /** Creates an already exists failure */
 export function alreadyExists(id: string): Failure {
   return failure({ type: 'ALREADY_EXISTS', id });
+}
+
+/** Creates a state-conflict failure (entity exists but is in the wrong state for this operation) */
+export function conflict(id: string, reason: string): Failure {
+  return failure({ type: 'CONFLICT', id, reason });
 }
 
 /** Creates a storage error failure */

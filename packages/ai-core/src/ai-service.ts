@@ -1,6 +1,6 @@
 // packages/ai-core/src/ai-service.ts
-import type { LLMEvent, ChatOptions, ChatMessage, ToolDefinition } from './types.js';
-import type { ProviderConfig, ModelInfo } from './provider.js';
+import type { LLMEvent, ChatMessage, ToolDefinition } from './types.js';
+import type { LLMProvider, ProviderConfig, ModelInfo } from './provider.js';
 import { ProviderRegistry } from './provider-registry.js';
 import { buildContext, SYSTEM_PROMPT, ASK_NOTES_SYSTEM_PROMPT } from './context-builder.js';
 import type { NoteContext } from './context-builder.js';
@@ -104,11 +104,25 @@ export class AIServiceImpl implements AIService {
     this.activeRequests.clear();
   }
 
-  private async *executeChatWithTools(
+  /**
+   * Shared plumbing for both chat modes: resolve the provider, build the
+   * trimmed context/messages, emit `start`, drain whatever stream `getStream`
+   * produces, and always emit `done`. `executeChat`/`executeChatWithTools`
+   * differ only in how that final stream is produced (plain retrying
+   * provider.chat vs. a tool-calling loop), so that's the only thing they
+   * pass in.
+   */
+  private async *executeCommon<T>(
     requestId: string,
-    request: ToolChatRequest,
-    signal: AbortSignal
-  ): AsyncIterable<LLMEvent | ToolLoopEvent> {
+    request: ChatRequest,
+    signal: AbortSignal,
+    getStream: (ctx: {
+      provider: LLMProvider;
+      messages: ChatMessage[];
+      system: string;
+      maxResponseTokens: number;
+    }) => AsyncIterable<T>
+  ): AsyncIterable<T | LLMEvent> {
     const startTime = Date.now();
 
     try {
@@ -143,23 +157,9 @@ export class AIServiceImpl implements AIService {
         provider: provider.id,
       };
 
-      const toolLoop = runToolLoop({
-        provider,
-        providerConfig: request.providerConfig,
-        chatOptions: {
-          model: request.model,
-          system: context.system,
-          messages,
-          maxTokens: maxResponseTokens,
-          signal,
-          tools: request.tools,
-        },
-        maxRoundTrips: request.maxRoundTrips ?? 5,
-        signal,
-        executeTool: request.executeTool,
-      });
+      const stream = getStream({ provider, messages, system: context.system, maxResponseTokens });
 
-      for await (const event of toolLoop) {
+      for await (const event of stream) {
         if (signal.aborted) break;
         yield event;
       }
@@ -182,77 +182,52 @@ export class AIServiceImpl implements AIService {
     }
   }
 
-  private async *executeChat(
+  private executeChatWithTools(
+    requestId: string,
+    request: ToolChatRequest,
+    signal: AbortSignal
+  ): AsyncIterable<LLMEvent | ToolLoopEvent> {
+    return this.executeCommon(
+      requestId,
+      request,
+      signal,
+      ({ provider, messages, system, maxResponseTokens }) =>
+        runToolLoop({
+          provider,
+          providerConfig: request.providerConfig,
+          chatOptions: {
+            model: request.model,
+            system,
+            messages,
+            maxTokens: maxResponseTokens,
+            signal,
+            tools: request.tools,
+          },
+          maxRoundTrips: request.maxRoundTrips ?? 5,
+          signal,
+          executeTool: request.executeTool,
+        })
+    );
+  }
+
+  private executeChat(
     requestId: string,
     request: ChatRequest,
     signal: AbortSignal
   ): AsyncIterable<LLMEvent> {
-    const startTime = Date.now();
-
-    try {
-      const provider = this.registry.get(request.provider);
-      const maxResponseTokens = request.maxResponseTokens ?? DEFAULT_MAX_RESPONSE_TOKENS;
-
-      const models = await provider.listModels(request.providerConfig);
-      const modelInfo = models.find(m => m.id === request.model);
-      const contextWindow = modelInfo?.contextWindow ?? FALLBACK_CONTEXT_WINDOW;
-
-      const systemPrompt = request.mode === 'ask-notes' ? ASK_NOTES_SYSTEM_PROMPT : SYSTEM_PROMPT;
-      const context = buildContext(
-        {
-          systemPrompt,
-          currentNote: request.currentNote,
-          history: request.history,
-          relevantNotes: request.relevantNotes,
-          query: request.query,
-        },
-        { maxContextTokens: contextWindow, maxResponseTokens }
-      );
-
-      const messages: ChatMessage[] = [
-        ...context.messages,
-        { role: 'user', content: request.query },
-      ];
-
-      const chatOptions: ChatOptions = {
-        model: request.model,
-        system: context.system,
-        messages,
-        maxTokens: maxResponseTokens,
-        signal,
-      };
-
-      yield {
-        type: 'start',
-        model: request.model,
-        requestId,
-        provider: provider.id,
-      };
-
-      const stream = withRetry(() => provider.chat(chatOptions, request.providerConfig), {
-        maxRetries: 3,
-      });
-
-      for await (const event of stream) {
-        if (signal.aborted) break;
-        yield event;
-      }
-    } catch (err) {
-      if (!signal.aborted) {
-        yield {
-          type: 'error',
-          code: 'provider_error',
-          error: err instanceof Error ? err.message : String(err),
-          retryable: false,
-        };
-      }
-    } finally {
-      this.activeRequests.delete(requestId);
-      yield {
-        type: 'done',
-        durationMs: Date.now() - startTime,
-        cancelled: signal.aborted ? true : undefined,
-      };
-    }
+    return this.executeCommon(
+      requestId,
+      request,
+      signal,
+      ({ provider, messages, system, maxResponseTokens }) =>
+        withRetry(
+          () =>
+            provider.chat(
+              { model: request.model, system, messages, maxTokens: maxResponseTokens, signal },
+              request.providerConfig
+            ),
+          { maxRetries: 3 }
+        )
+    );
   }
 }

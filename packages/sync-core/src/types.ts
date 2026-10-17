@@ -225,6 +225,16 @@ export const NotePullResponseSchema = z.object({
   hasMore: z.boolean(),
 });
 
+/** Notebook tree change payload, as pushed to validateNotebookTree. */
+export const NotebookTreeChangeDataSchema = z.object({
+  name: z.string(),
+  parentId: z.string().nullable(),
+  depth: z.number().int().nonnegative(),
+  order: z.number(),
+});
+
+export type NotebookTreeChangeData = z.infer<typeof NotebookTreeChangeDataSchema>;
+
 export type LocalNotePush = z.infer<typeof LocalNotePushSchema>;
 export type EncryptedNotePush = z.infer<typeof EncryptedNotePushSchema>;
 export type EncryptedNotePushRequest = z.infer<typeof EncryptedNotePushRequestSchema>;

@@ -2,10 +2,13 @@
  * Notebook tree validation for sync.
  *
  * Validates that pushed notebook changes maintain tree integrity:
- * - depth <= 2
+ * - depth <= MAX_NOTEBOOK_DEPTH
  * - parentId references existing notebook
  * - No circular references
  */
+
+import { MAX_NOTEBOOK_DEPTH } from '@dripnex/core';
+import { NotebookTreeChangeDataSchema } from './types.js';
 
 export interface TreeNode {
   parentId: string | null;
@@ -30,17 +33,31 @@ export function validateNotebookTree(
 
     if (!change.data) continue;
 
-    const parsed = JSON.parse(change.data) as {
-      name: string;
-      parentId: string | null;
-      depth: number;
-      order: number;
-    };
-
-    if (parsed.depth > 2) {
+    let rawParsed: unknown;
+    try {
+      rawParsed = JSON.parse(change.data);
+    } catch {
       return {
         valid: false,
-        error: `depth exceeds max (2), got ${parsed.depth}`,
+        error: 'malformed change data: not valid JSON',
+        notebookId: change.notebookId,
+      };
+    }
+
+    const result = NotebookTreeChangeDataSchema.safeParse(rawParsed);
+    if (!result.success) {
+      return {
+        valid: false,
+        error: `malformed change data: ${result.error.message}`,
+        notebookId: change.notebookId,
+      };
+    }
+    const parsed = result.data;
+
+    if (parsed.depth > MAX_NOTEBOOK_DEPTH) {
+      return {
+        valid: false,
+        error: `depth exceeds max (${MAX_NOTEBOOK_DEPTH}), got ${parsed.depth}`,
         notebookId: change.notebookId,
       };
     }

@@ -19,18 +19,6 @@ export {
 /** @deprecated Use getProductConfig().plans instead */
 export { PLANS, GUARANTEES } from './plans';
 
-/** @deprecated Use getProductConfig() instead */
-export { PRICING } from './pricing';
-
-/** @deprecated Use getProductConfig().trialDays instead */
-export { TRIAL } from './trial';
-
-/** @deprecated Use types from facade.js */
-export type { PricingConfig } from './pricing';
-
-/** @deprecated Use types from facade.js */
-export type { TrialConfig } from './trial';
-
 /** @deprecated Use types from facade.js */
 export type { PlansConfig, GuaranteesConfig } from './plans';
 

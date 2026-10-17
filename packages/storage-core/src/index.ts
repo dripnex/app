@@ -16,6 +16,21 @@ export type { Migration, MigrationRecord } from './interfaces/Migration.js';
 
 export type { ExtendedNoteRepository } from './interfaces/ExtendedNoteRepository.js';
 export type { ChunkRepository, ChunkWrite, StoredChunk } from './interfaces/ChunkRepository.js';
+export type {
+  NoteSyncTrackingRepository,
+  SyncHistoryEntry,
+  SyncHistoryMetrics,
+  PendingNoteChange,
+  PendingTagChange,
+} from './interfaces/NoteSyncTrackingRepository.js';
+export type {
+  NotebookSyncTrackingRepository,
+  PendingNotebookChange,
+} from './interfaces/NotebookSyncTrackingRepository.js';
+export type {
+  NotebookGitSettingsRepository,
+  NotebookGitSettings,
+} from './interfaces/NotebookGitSettingsRepository.js';
 
 // Types
 export type { ArchivedFilter } from './types/ArchivedFilter.js';

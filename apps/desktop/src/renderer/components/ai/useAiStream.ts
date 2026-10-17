@@ -85,15 +85,14 @@ export function useAiStream({
           });
           break;
 
-        case 'error': {
-          const errorEvent = event as LLMEvent & { type: 'error'; retryable?: boolean };
+        case 'error':
+          // There's no retry UI/path downstream of this hook yet, so a
+          // retryable error still has to end the request like any other —
+          // otherwise `loading` is left stuck forever with no way to clear it.
           setError(humanizeAiError(event.code, event.error));
-          if (!errorEvent.retryable) {
-            setLoading(false);
-            activeRequestRef.current = null;
-          }
+          setLoading(false);
+          activeRequestRef.current = null;
           break;
-        }
 
         case 'done':
           setLoading(false);
@@ -103,62 +102,52 @@ export function useAiStream({
         case 'tool_call':
           setToolCalls(prev => {
             const next = new Map(prev);
-            const e = event as LLMEvent & {
-              type: 'tool_call';
-              id: string;
-              name: string;
-              args: unknown;
-            };
-            next.set(e.id, {
-              name: e.name,
-              args: (e.args as Record<string, unknown>) ?? {},
+            next.set(event.id, {
+              name: event.name,
+              args: (event.args as Record<string, unknown>) ?? {},
               status: 'executing',
             });
             return next;
           });
           break;
 
-        case 'tool_confirm_needed' as string:
+        case 'tool_confirm_needed':
           setToolCalls(prev => {
             const next = new Map(prev);
-            const e = event as unknown as { callId: string };
-            const existing = next.get(e.callId);
+            const existing = next.get(event.callId);
             if (existing) {
-              next.set(e.callId, { ...existing, status: 'pending_confirmation' });
+              next.set(event.callId, { ...existing, status: 'pending_confirmation' });
             }
             return next;
           });
           break;
 
-        case 'tool_executing' as string:
+        case 'tool_executing':
           setToolCalls(prev => {
             const next = new Map(prev);
-            const e = event as unknown as {
-              call: { id: string; name: string; args: Record<string, unknown> };
-            };
-            const existing = next.get(e.call.id);
+            const existing = next.get(event.call.id);
             if (existing) {
-              next.set(e.call.id, { ...existing, status: 'executing' });
+              next.set(event.call.id, { ...existing, status: 'executing' });
             } else {
-              next.set(e.call.id, { name: e.call.name, args: e.call.args, status: 'executing' });
+              next.set(event.call.id, {
+                name: event.call.name,
+                args: event.call.args,
+                status: 'executing',
+              });
             }
             return next;
           });
           break;
 
-        case 'tool_complete' as string:
+        case 'tool_complete':
           setToolCalls(prev => {
             const next = new Map(prev);
-            const e = event as unknown as {
-              call: { id: string };
-              result: { ok: boolean; content: string; error?: string };
-            };
-            const existing = next.get(e.call.id);
+            const existing = next.get(event.call.id);
             if (existing) {
-              next.set(e.call.id, {
+              next.set(event.call.id, {
                 ...existing,
-                status: e.result.ok ? 'complete' : 'error',
-                result: e.result,
+                status: event.result.ok ? 'complete' : 'error',
+                result: event.result,
               });
             }
             return next;
