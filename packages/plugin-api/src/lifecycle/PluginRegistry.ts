@@ -222,88 +222,78 @@ export class PluginRegistry {
     // Wrap editor and app APIs with auto-tracking for event subscriptions.
     // Any on*() listener the plugin registers is tracked; if the plugin forgets
     // to unsubscribe in dispose(), deactivate() cleans up automatically.
+    const trackDisposable = (unsub: () => void): (() => void) => {
+      const tracked = () => {
+        unsub();
+        entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
+      };
+      entry.eventUnsubscribers.push(tracked);
+      return tracked;
+    };
+
     const trackedEditor: EditorAPI = {
       ...editorAPI,
       onDocChanged(callback) {
-        const unsub = editorAPI.onDocChanged(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(editorAPI.onDocChanged(callback));
       },
       onSelectionChanged(callback) {
-        const unsub = editorAPI.onSelectionChanged(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(editorAPI.onSelectionChanged(callback));
       },
     };
 
     const trackedApp: AppAPI = {
       ...appAPI,
       onNoteSelected(callback) {
-        const unsub = appAPI.onNoteSelected(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(appAPI.onNoteSelected(callback));
       },
       onNoteCreated(callback) {
-        const unsub = appAPI.onNoteCreated(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(appAPI.onNoteCreated(callback));
       },
       onNoteDeleted(callback) {
-        const unsub = appAPI.onNoteDeleted(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(appAPI.onNoteDeleted(callback));
       },
     };
 
     const trackedData: DataAPI = {
       ...dataAPI,
       onNotesChanged(callback) {
-        const unsub = dataAPI.onNotesChanged(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(dataAPI.onNotesChanged(callback));
       },
       onNotebooksChanged(callback) {
-        const unsub = dataAPI.onNotebooksChanged(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(dataAPI.onNotebooksChanged(callback));
       },
       onTagsChanged(callback) {
-        const unsub = dataAPI.onTagsChanged(callback);
-        const tracked = () => {
-          unsub();
-          entry.eventUnsubscribers = entry.eventUnsubscribers.filter(u => u !== tracked);
-        };
-        entry.eventUnsubscribers.push(tracked);
-        return tracked;
+        return trackDisposable(dataAPI.onTagsChanged(callback));
       },
+    };
+
+    // Shared by menu.add/contextMenu.add: derive the plugin-prefixed command id from an
+    // explicit `command` or a slugified label, then (optionally) wire it to registerCommand.
+    const deriveMenuCommandId = (prefix: string, item: { label: string; command?: string }) => {
+      const localId =
+        item.command ?? `${prefix}-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
+      return { localId, commandId };
+    };
+
+    const registerMenuClickCommand = (
+      localId: string,
+      label: string,
+      click:
+        | ((payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>)
+        | undefined,
+      options: { keybinding?: PluginCommandOptions['keybinding']; showInPalette: boolean }
+    ): void => {
+      if (!click) return;
+      registerCommand(
+        {
+          id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
+          name: label,
+          keybinding: options.keybinding,
+          showInPalette: options.showInPalette,
+        },
+        click
+      );
     };
 
     const menu = {
@@ -313,20 +303,11 @@ export class PluginRegistry {
         command?: string;
         click?: () => boolean | void | Promise<boolean | void>;
       }): () => void {
-        const localId =
-          item.command ?? `menu-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-        const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
-        if (item.click) {
-          registerCommand(
-            {
-              id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
-              name: item.label,
-              keybinding: parseAccelerator(item.accelerator),
-              showInPalette: true,
-            },
-            item.click
-          );
-        }
+        const { localId, commandId } = deriveMenuCommandId('menu', item);
+        registerMenuClickCommand(localId, item.label, item.click, {
+          keybinding: parseAccelerator(item.accelerator),
+          showInPalette: true,
+        });
         pluginMenuStore.getState().add({
           pluginId: id,
           label: item.label,
@@ -361,19 +342,8 @@ export class PluginRegistry {
           click?: (payload?: Record<string, unknown>) => boolean | void | Promise<boolean | void>;
         }
       ): () => void {
-        const localId =
-          item.command ?? `ctx-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-        const commandId = localId.startsWith('plugin:') ? localId : `plugin:${id}:${localId}`;
-        if (item.click) {
-          registerCommand(
-            {
-              id: localId.startsWith('plugin:') ? localId.slice(`plugin:${id}:`.length) : localId,
-              name: item.label,
-              showInPalette: false,
-            },
-            item.click
-          );
-        }
+        const { localId, commandId } = deriveMenuCommandId('ctx', item);
+        registerMenuClickCommand(localId, item.label, item.click, { showInPalette: false });
         pluginContextMenuStore.getState().add({
           pluginId: id,
           target,
@@ -540,20 +510,7 @@ export class PluginRegistry {
       entry.state = 'error';
 
       // Cleanup any partial registrations the plugin may have made before crashing
-      editorPluginStore.getState().unregisterAll(id);
-      remarkPluginStore.getState().unregisterAll(id);
-      rehypePluginStore.getState().unregisterAll(id);
-      previewComponentStore.getState().unregisterAll(id);
-      codeBlockStore.getState().unregisterAll(id);
-      cssVariableStore.getState().unregisterAll(id);
-      pluginStyleStore.getState().unregisterAll(id);
-      themeRegistryStore.getState().unregisterAll(id);
-      aiCommandStore.getState().unregisterAll(id);
-      pluginMenuStore.getState().removeAll(id);
-      pluginContextMenuStore.getState().removeAll(id);
-      previewEventStore.getState().removeAll(id);
-      const layoutManager = createLayoutManager(id);
-      layoutManager.removeAllForPlugin(id);
+      this.cleanupAllStoresFor(id);
       for (const unregister of entry.commandUnregisters) {
         unregister();
       }
@@ -585,29 +542,7 @@ export class PluginRegistry {
       console.error(`[plugin:${id}] deactivate() threw:`, error);
     }
 
-    // Cleanup layout entries
-    const layoutManager = createLayoutManager(id);
-    layoutManager.removeAllForPlugin(id);
-
-    // Cleanup editor extensions
-    editorPluginStore.getState().unregisterAll(id);
-
-    // Cleanup preview stores
-    remarkPluginStore.getState().unregisterAll(id);
-    rehypePluginStore.getState().unregisterAll(id);
-    previewComponentStore.getState().unregisterAll(id);
-    codeBlockStore.getState().unregisterAll(id);
-
-    // Cleanup theme stores
-    cssVariableStore.getState().unregisterAll(id);
-    pluginStyleStore.getState().unregisterAll(id);
-    themeRegistryStore.getState().unregisterAll(id);
-
-    // Cleanup AI command registrations
-    aiCommandStore.getState().unregisterAll(id);
-    pluginMenuStore.getState().removeAll(id);
-    pluginContextMenuStore.getState().removeAll(id);
-    previewEventStore.getState().removeAll(id);
+    this.cleanupAllStoresFor(id);
 
     // Safety net: unregister any remaining plugin commands
     for (const unregister of entry.commandUnregisters) {
@@ -624,6 +559,27 @@ export class PluginRegistry {
     entry.state = 'deactivated';
     entry.disposable = undefined;
     clearPluginConfig(id);
+  }
+
+  /**
+   * Unregister a plugin from every per-plugin-scoped store. Shared by the crash-recovery
+   * path in activate() and by deactivate() so a new store only needs to be added here once.
+   */
+  private cleanupAllStoresFor(id: string): void {
+    const layoutManager = createLayoutManager(id);
+    layoutManager.removeAllForPlugin(id);
+    editorPluginStore.getState().unregisterAll(id);
+    remarkPluginStore.getState().unregisterAll(id);
+    rehypePluginStore.getState().unregisterAll(id);
+    previewComponentStore.getState().unregisterAll(id);
+    codeBlockStore.getState().unregisterAll(id);
+    cssVariableStore.getState().unregisterAll(id);
+    pluginStyleStore.getState().unregisterAll(id);
+    themeRegistryStore.getState().unregisterAll(id);
+    aiCommandStore.getState().unregisterAll(id);
+    pluginMenuStore.getState().removeAll(id);
+    pluginContextMenuStore.getState().removeAll(id);
+    previewEventStore.getState().removeAll(id);
   }
 
   /** Unload a plugin completely */
