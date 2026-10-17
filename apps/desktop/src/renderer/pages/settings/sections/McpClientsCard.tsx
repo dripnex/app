@@ -14,6 +14,15 @@ function randomId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
+/** Splits on whitespace, keeping "double" or 'single' quoted text together -
+ * a plain `.split(/\s+/)` breaks a path like `/Users/me/Application
+ * Support/srv/index.js`, which is common on macOS and Windows. */
+function parseArgs(value: string): string[] {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  return Array.from(trimmed.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g), m => m[1] ?? m[2] ?? m[3]!);
+}
+
 function statusBadge(state: McpConnectionState): { label: string; tone: 'ok' | 'warn' | 'idle' } {
   switch (state.status) {
     case 'connected':
@@ -58,7 +67,7 @@ export function McpClientsCard() {
       id: randomId(),
       name: trimmedName,
       command: trimmedCommand,
-      args: args.trim() ? args.trim().split(/\s+/) : [],
+      args: parseArgs(args),
       enabled: true,
     };
     try {
@@ -87,8 +96,15 @@ export function McpClientsCard() {
     try {
       if (entry.state.status === 'connected' || entry.state.status === 'connecting') {
         await api.disconnect(entry.config.id);
-      } else {
+      } else if (entry.config.enabled) {
+        // Still enabled (e.g. retrying after a transient error) - reconnect
+        // directly, no re-approval needed since nothing changed.
         await api.connect(entry.config.id);
+      } else {
+        // Disconnecting always disables the config, so turning it back on
+        // goes through save() - that's the only path that re-confirms the
+        // launch command with the user.
+        await api.save({ ...entry.config, enabled: true });
       }
       await refresh();
     } catch (error) {
@@ -173,7 +189,11 @@ export function McpClientsCard() {
               autoComplete="off"
             />
           </Field>
-          <Field label="Args" htmlFor="mcp-client-args" hint="Space-separated">
+          <Field
+            label="Args"
+            htmlFor="mcp-client-args"
+            hint="Space-separated; quote values that contain spaces"
+          >
             <Input
               id="mcp-client-args"
               value={args}
