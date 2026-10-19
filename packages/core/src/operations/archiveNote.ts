@@ -6,7 +6,7 @@
 
 import { archiveNote as archiveNoteFn, isArchived } from '../domain/note.js';
 import type { NoteId } from '../domain/types.js';
-import { success, notFound, type Result, failure } from '../contracts/CoreResult.js';
+import { success, notFound, conflict, type Result } from '../contracts/CoreResult.js';
 import { toSnapshot, type NoteSnapshot } from '../contracts/NoteSnapshot.js';
 import type { NoteRepository } from '../repositories/NoteRepository.js';
 
@@ -28,10 +28,7 @@ export async function archiveNoteOperation(
 
   // Check if already archived
   if (isArchived(existing)) {
-    return failure({
-      type: 'VALIDATION_ERROR',
-      error: { type: 'INVALID_CONTENT', reason: 'Note is already archived' },
-    });
+    return conflict(input.id, 'Note is already archived');
   }
 
   // Archive the note

@@ -11,6 +11,8 @@ import type {
   ListNotesOptions,
   NoteCountScoped,
   NoteCountSummary,
+  NoteSyncTrackingRepository,
+  SyncHistoryEntry,
 } from '@dripnex/storage-core';
 import {
   type Note,
@@ -33,7 +35,7 @@ import { indexNoteChunks } from './indexNoteChunks.js';
 
 // Re-export public types so external imports (e.g. desktop's handlers/types.ts)
 // keep working unchanged.
-export type { BacklinkInfo, NoteCountSummary, NoteCountScoped };
+export type { BacklinkInfo, NoteCountSummary, NoteCountScoped, SyncHistoryEntry };
 
 function emptyByStatus(): Record<NoteStatus, number> {
   return { active: 0, on_hold: 0, completed: 0, dropped: 0 };
@@ -118,26 +120,8 @@ export function noteFilterSql(
   return { sql: parts.filter(Boolean).join(' '), params };
 }
 
-/** Sync history entry returned by getSyncHistory */
-export interface SyncHistoryEntry {
-  id: string;
-  startedAt: string;
-  completedAt: string | null;
-  status: 'running' | 'success' | 'partial' | 'error';
-  notesPulled: number;
-  notesPushed: number;
-  notebooksPulled: number;
-  notebooksPushed: number;
-  tagsPulled: number;
-  tagsPushed: number;
-  conflicts: number;
-  bytesSent: number;
-  bytesReceived: number;
-  errorMessage: string | null;
-}
-
-/** SQLite implementation of ExtendedNoteRepository */
-export class SQLiteNoteRepository implements ExtendedNoteRepository {
+/** SQLite implementation of ExtendedNoteRepository + sync bookkeeping */
+export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTrackingRepository {
   constructor(private readonly db: DatabaseConnection) {}
 
   /** Get a note by ID (includes archived notes) */
@@ -647,52 +631,51 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository {
       return { ok: true }; // No change needed
     }
 
-    try {
-      this.db.transaction(() => {
-        // Check if new tag already exists
-        const existingStmt = this.db.prepare('SELECT id, color FROM tags WHERE name = ?');
-        const existingNew = existingStmt.get(normalizedNew) as
-          | { id: number; color: string | null }
-          | undefined;
-        const existingOld = existingStmt.get(normalizedOld) as
-          | { id: number; color: string | null }
-          | undefined;
+    // Domain condition ("tag not found") is a return value, not a thrown
+    // error, so it can't be confused with a genuine infra failure (which
+    // propagates like every other method in this class, uncaught).
+    return this.db.transaction((): { ok: boolean; error?: string } => {
+      // Check if new tag already exists
+      const existingStmt = this.db.prepare('SELECT id, color FROM tags WHERE name = ?');
+      const existingNew = existingStmt.get(normalizedNew) as
+        | { id: number; color: string | null }
+        | undefined;
+      const existingOld = existingStmt.get(normalizedOld) as
+        | { id: number; color: string | null }
+        | undefined;
 
-        if (!existingOld) {
-          throw new Error('Tag not found');
+      if (!existingOld) {
+        return { ok: false, error: 'Tag not found' };
+      }
+
+      if (existingNew) {
+        // Merge: move all note_tags from old to new, then delete old tag
+        const updateNoteTagsStmt = this.db.prepare(`
+          UPDATE OR IGNORE note_tags SET tag_id = ? WHERE tag_id = ?
+        `);
+        updateNoteTagsStmt.run(existingNew.id, existingOld.id);
+
+        // Delete orphaned note_tags (duplicates that couldn't be updated)
+        const deleteOrphanedStmt = this.db.prepare('DELETE FROM note_tags WHERE tag_id = ?');
+        deleteOrphanedStmt.run(existingOld.id);
+
+        // Delete old tag
+        const deleteOldTagStmt = this.db.prepare('DELETE FROM tags WHERE id = ?');
+        deleteOldTagStmt.run(existingOld.id);
+
+        // Preserve color from old tag if new tag has no color
+        if (!existingNew.color && existingOld.color) {
+          const updateColorStmt = this.db.prepare('UPDATE tags SET color = ? WHERE id = ?');
+          updateColorStmt.run(existingOld.color, existingNew.id);
         }
-
-        if (existingNew) {
-          // Merge: move all note_tags from old to new, then delete old tag
-          const updateNoteTagsStmt = this.db.prepare(`
-            UPDATE OR IGNORE note_tags SET tag_id = ? WHERE tag_id = ?
-          `);
-          updateNoteTagsStmt.run(existingNew.id, existingOld.id);
-
-          // Delete orphaned note_tags (duplicates that couldn't be updated)
-          const deleteOrphanedStmt = this.db.prepare('DELETE FROM note_tags WHERE tag_id = ?');
-          deleteOrphanedStmt.run(existingOld.id);
-
-          // Delete old tag
-          const deleteOldTagStmt = this.db.prepare('DELETE FROM tags WHERE id = ?');
-          deleteOldTagStmt.run(existingOld.id);
-
-          // Preserve color from old tag if new tag has no color
-          if (!existingNew.color && existingOld.color) {
-            const updateColorStmt = this.db.prepare('UPDATE tags SET color = ? WHERE id = ?');
-            updateColorStmt.run(existingOld.color, existingNew.id);
-          }
-        } else {
-          // Simple rename: just update the tag name
-          const renameStmt = this.db.prepare('UPDATE tags SET name = ? WHERE name = ?');
-          renameStmt.run(normalizedNew, normalizedOld);
-        }
-      });
+      } else {
+        // Simple rename: just update the tag name
+        const renameStmt = this.db.prepare('UPDATE tags SET name = ? WHERE name = ?');
+        renameStmt.run(normalizedNew, normalizedOld);
+      }
 
       return { ok: true };
-    } catch (error) {
-      return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
+    });
   }
 
   // rowToNote moved to noteMapping.ts

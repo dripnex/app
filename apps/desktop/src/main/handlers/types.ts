@@ -2,8 +2,14 @@
  * Shared dependency types for IPC handler modules.
  */
 
-import type { DataPaths } from '@dripnex/storage-core';
-import type { SQLiteNoteRepository, SQLiteNotebookRepository } from '@dripnex/storage-sqlite';
+import type {
+  DataPaths,
+  ExtendedNoteRepository,
+  NoteSyncTrackingRepository,
+  NotebookGitSettingsRepository,
+  NotebookSyncTrackingRepository,
+} from '@dripnex/storage-core';
+import type { NotebookRepository } from '@dripnex/core';
 import type { ApiClient } from '../services/apiClient.js';
 import type { EncryptionService } from '../services/encryptionService.js';
 import type { SyncService } from '../services/syncService.js';
@@ -15,6 +21,17 @@ import type { McpClientManager } from '../ai/mcpClientManager.js';
 
 /** Database instance type (better-sqlite3) */
 export type Database = ReturnType<typeof import('@dripnex/storage-sqlite').createDatabase>;
+
+/**
+ * Storage ports consumed by IPC handlers. These are interfaces from
+ * @dripnex/storage-core (or @dripnex/core), never the concrete SQLite
+ * classes — only main/index.ts (the composition root) should know about
+ * @dripnex/storage-sqlite's concrete repository classes.
+ */
+export type NoteRepositoryPort = ExtendedNoteRepository;
+export type NotebookRepositoryPort = NotebookRepository & NotebookGitSettingsRepository;
+export type SyncCapableNoteRepository = ExtendedNoteRepository & NoteSyncTrackingRepository;
+export type SyncCapableNotebookRepository = NotebookRepository & NotebookSyncTrackingRepository;
 
 /** Broadcast helper signature */
 export type BroadcastFn = (channel: string, ...args: unknown[]) => void;
@@ -53,8 +70,6 @@ export type NoteToSnapshotFn = (note: {
 
 export type {
   DataPaths,
-  SQLiteNoteRepository,
-  SQLiteNotebookRepository,
   ApiClient,
   EncryptionService,
   SyncService,

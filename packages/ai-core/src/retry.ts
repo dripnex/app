@@ -9,12 +9,20 @@ export interface RetryOptions {
   retryableCodes: LLMErrorCode[];
 }
 
+/** Codes the provider retry loop treats as worth retrying. `timeout` is
+ * intentionally absent: a thrown timeout is terminal, not retried. */
+export const DEFAULT_RETRYABLE_CODES: readonly LLMErrorCode[] = [
+  'rate_limit',
+  'network',
+  'provider_error',
+];
+
 const DEFAULT_RETRY: RetryOptions = {
   maxRetries: 3,
   baseDelay: 1000,
   maxDelay: 30_000,
   jitter: true,
-  retryableCodes: ['rate_limit', 'network', 'provider_error'],
+  retryableCodes: [...DEFAULT_RETRYABLE_CODES],
 };
 
 function sleep(ms: number): Promise<void> {

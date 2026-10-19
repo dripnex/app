@@ -30,7 +30,7 @@ import {
 } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import { htmlToPdfBuffer, printHtml } from '../services/printNote.js';
-import type { SQLiteNoteRepository, Database } from './types.js';
+import type { NoteRepositoryPort, Database } from './types.js';
 
 function safeExportName(suggestedName: string): string {
   let safeName =
@@ -47,7 +47,7 @@ function safeExportName(suggestedName: string): string {
 
 export interface DataHandlerDeps {
   dataPaths: DataPaths;
-  noteRepository: SQLiteNoteRepository;
+  noteRepository: NoteRepositoryPort;
   /** Returns the current db reference (may change after restore) */
   getDb: () => Database;
   /** Called after restore to update the db reference */

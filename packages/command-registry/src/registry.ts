@@ -76,7 +76,13 @@ export class CommandRegistry {
     try {
       const result = await cmd.execute(payload);
       return result !== false;
-    } catch {
+    } catch (error) {
+      // No `console` ambient type here (this package stays dom/node-lib free); reach it via
+      // globalThis so a thrown command error is still visible instead of vanishing silently.
+      (globalThis as { console?: { error: (...args: unknown[]) => void } }).console?.error(
+        `[command:${id}] execute() threw:`,
+        error
+      );
       return false;
     }
   }

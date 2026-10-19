@@ -16,10 +16,10 @@ import {
   TEMPLATES_NOTEBOOK_ID,
 } from '@dripnex/core';
 import { defineIpcHandler } from '../ipc/registry.js';
-import type { SQLiteNotebookRepository } from './types.js';
+import type { NotebookRepositoryPort } from './types.js';
 
 export interface NotebookHandlerDeps {
-  notebookRepository: SQLiteNotebookRepository;
+  notebookRepository: NotebookRepositoryPort;
 }
 
 const IdSchema = z.string().min(1).max(128);
