@@ -86,9 +86,9 @@ export function useAiStream({
           break;
 
         case 'error':
-          // There's no retry UI/path downstream of this hook yet, so a
-          // retryable error still has to end the request like any other —
-          // otherwise `loading` is left stuck forever with no way to clear it.
+          // withRetry yields this while the same request continues. Clearing
+          // the active request here drops the reply that arrives after the retry.
+          if (event.retryable && typeof event.metadata?.retryAttempt === 'number') break;
           setError(humanizeAiError(event.code, event.error));
           setLoading(false);
           activeRequestRef.current = null;
