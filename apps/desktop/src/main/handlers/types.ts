@@ -16,6 +16,8 @@ import type { SyncService } from '../services/syncService.js';
 import type { GitService } from '../services/gitService.js';
 import type { TokenStorage } from '../services/tokenStorage.js';
 import type { AiKeyStorage } from '../services/aiKeyStorage.js';
+import type { McpClientConfigStorage } from '../services/mcpClientConfigStorage.js';
+import type { McpClientManager } from '../ai/mcpClientManager.js';
 
 /** Database instance type (better-sqlite3) */
 export type Database = ReturnType<typeof import('@dripnex/storage-sqlite').createDatabase>;
@@ -74,4 +76,6 @@ export type {
   GitService,
   TokenStorage,
   AiKeyStorage,
+  McpClientConfigStorage,
+  McpClientManager,
 };

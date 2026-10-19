@@ -34,6 +34,7 @@ import {
   createClipboardApi,
   createLocalServerApi,
   createIntegrationsApi,
+  createMcpClientApi,
 } from './api';
 import type {
   NotesAPI,
@@ -63,6 +64,7 @@ import type {
   ClipboardAPI,
   LocalServerAPI,
   IntegrationsAPI,
+  McpClientAPI,
 } from './api';
 
 // Re-export all types so the renderer can still import from '../preload/index'
@@ -133,6 +135,7 @@ export interface DripnexAPI {
   clipboard: ClipboardAPI;
   localServer: LocalServerAPI;
   integrations: IntegrationsAPI;
+  mcpClient: McpClientAPI;
 }
 
 // Compose and expose the API
@@ -164,6 +167,7 @@ const api: DripnexAPI = {
   clipboard: createClipboardApi(),
   localServer: createLocalServerApi(),
   integrations: createIntegrationsApi(),
+  mcpClient: createMcpClientApi(),
 };
 
 contextBridge.exposeInMainWorld('dripnex', api);

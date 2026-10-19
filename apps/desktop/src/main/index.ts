@@ -60,6 +60,9 @@ import { registerPluginHandlers } from './handlers/pluginHandlers.js';
 import { registerClipboardHandlers } from './handlers/clipboardHandlers.js';
 import { registerEditorHandlers } from './handlers/editorHandlers.js';
 import { registerAiKeyHandlers } from './handlers/aiKeyHandlers.js';
+import { registerMcpClientHandlers } from './handlers/mcpClientHandlers.js';
+import { McpClientConfigStorage } from './services/mcpClientConfigStorage.js';
+import { McpClientManager } from './ai/mcpClientManager.js';
 import { noteToSnapshot } from './handlers/noteSnapshot.js';
 import { startPluginWatcher, startUserFileWatcher, stopPluginWatcher } from './pluginWatcher.js';
 import { ensureUserHackFiles } from './userHackFiles.js';
@@ -434,6 +437,29 @@ app
       if (process.env.NODE_ENV === 'development') {
         startPluginWatcher(dataPaths.plugins);
       }
+
+      const mcpClientConfigStorage = new McpClientConfigStorage(dataPaths.root);
+      const mcpClientManager = new McpClientManager();
+      registerMcpClientHandlers({
+        configStorage: mcpClientConfigStorage,
+        manager: mcpClientManager,
+        toolRegistry: getToolRegistry(),
+      });
+      mcpClientConfigStorage
+        .list()
+        .then(configs => {
+          for (const config of configs) {
+            if (config.enabled) {
+              void mcpClientManager.connect(config, getToolRegistry());
+            }
+          }
+        })
+        .catch(error => {
+          getLogger().error({ error }, 'Failed to load configured MCP servers at startup');
+        });
+      app.on('before-quit', () => {
+        void mcpClientManager.disconnectAll();
+      });
     }
 
     registerDataHandlers({
