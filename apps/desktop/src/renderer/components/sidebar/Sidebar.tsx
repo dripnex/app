@@ -21,6 +21,7 @@ import {
 } from '../../hooks/useNavigation';
 import { EnableSyncModal } from '../sync';
 import { useSyncOnboarding } from '../../hooks/useSyncOnboarding';
+import { bindChromePress } from '../../motion/chromePress';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarBreadcrumb } from './SidebarBreadcrumb';
 import { SidebarQuickFilters } from './SidebarQuickFilters';
@@ -216,6 +217,9 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [inWorkspace, exitWorkspace]);
 
+  const sidebarRef = useRef<HTMLElement>(null);
+  useEffect(() => bindChromePress(sidebarRef.current), []);
+
   const prevNotebookId = useRef<string | null>(selectedNotebookId);
   const [paneDirection, setPaneDirection] = useState<'in' | 'out'>('in');
   useEffect(() => {
@@ -233,7 +237,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
   }, [selectedNotebookId, notebookContext.path]);
 
   return (
-    <aside className={sc('sidebar')} aria-label="Main sidebar">
+    <aside ref={sidebarRef} className={sc('sidebar')} aria-label="Main sidebar">
       <SidebarHeader
         onSettingsClick={() => window.dripnex.windows.openSettings()}
         onOpenGraph={onOpenGraph}
@@ -259,7 +263,10 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
 
         {!isNotebookContext && (
           <div className={sc('sidebar-templates')}>
-            <div className={sc('sidebar-row', selectedNotebookId === 'templates' && 'selected')}>
+            <div
+              className={sc('sidebar-row', selectedNotebookId === 'templates' && 'selected')}
+              data-chrome-press=""
+            >
               <button
                 type="button"
                 className={sc('sidebar-row-main')}
@@ -344,6 +351,7 @@ export function Sidebar({ onOpenGraph }: SidebarProps) {
           <button
             type="button"
             className={sc('sidebar-row', 'sidebar-trash', globalFilter === 'trash' && 'selected')}
+            data-chrome-press=""
             onClick={goToTrash}
             aria-pressed={globalFilter === 'trash'}
           >

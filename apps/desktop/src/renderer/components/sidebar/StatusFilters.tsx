@@ -30,6 +30,7 @@ export const StatusFilters = memo(function StatusFilters({
           key={status}
           type="button"
           className={sc('sidebar-row', selectedStatus === status && 'selected')}
+          data-chrome-press=""
           onClick={() => onSelectStatus(selectedStatus === status ? null : status)}
           aria-pressed={selectedStatus === status}
           data-status={status}

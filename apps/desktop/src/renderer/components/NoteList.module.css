@@ -211,7 +211,7 @@
 }
 
 .note-list-item:hover {
-  background: var(--bg-surface);
+  background: var(--bg-hover);
 }
 
 .note-list-item.selected {

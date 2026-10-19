@@ -1,5 +1,5 @@
 import type { PluginManifest } from '@dripnex/plugin-api';
-import { maskInlineCode, offsetInFence } from './sourceScan';
+import { maskInlineCode, offsetInFence, walkSourceLines } from './sourceScan';
 
 const TAG = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 const NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
@@ -56,6 +56,38 @@ export function unwrapTagPlan(
     return { from: hitFrom, to: hitTo, text: name, cursor: hitFrom + name.length };
   }
   return null;
+}
+
+/** Drop every `#tag` in source (fences and inline code skipped). Chip remove uses this. */
+export function stripHashTag(content: string, tag: string): string {
+  const needle = tag.trim().toLowerCase().replace(/^#/, '');
+  if (!needle) return content;
+
+  const cuts: Array<{ from: number; to: number }> = [];
+  for (const row of walkSourceLines(content)) {
+    if (row.inFence) continue;
+    const masked = maskInlineCode(row.line);
+    TAG.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = TAG.exec(masked)) !== null) {
+      const name = match[1];
+      if (!name || name.toLowerCase() !== needle) continue;
+      const hash = match[0].indexOf('#');
+      if (hash < 0) continue;
+      const from = row.from + match.index + hash;
+      let to = from + 1 + name.length;
+      if (content[to] === ' ' || content[to] === '\t') to += 1;
+      cuts.push({ from, to });
+    }
+  }
+
+  let result = content;
+  for (let i = cuts.length - 1; i >= 0; i--) {
+    const cut = cuts[i];
+    if (!cut) continue;
+    result = result.slice(0, cut.from) + result.slice(cut.to);
+  }
+  return result;
 }
 
 export const wrapTagPlugin: PluginManifest = {

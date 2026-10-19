@@ -15,7 +15,10 @@ export type MotionEventName =
   | 'list-select'
   | 'welcome-in'
   | 'gate-in'
-  | 'sidebar-in';
+  | 'sidebar-in'
+  | 'chrome-hover'
+  | 'chrome-press'
+  | 'chrome-rest';
 
 export interface MotionPlayOptions {
   onComplete?: () => void;
@@ -166,6 +169,46 @@ export function playMotion(
         onComplete: options.onComplete,
       }
     );
+  }
+  if (name === 'panel-in') {
+    return gsap.fromTo(
+      target,
+      { opacity: 0, x: 8 },
+      {
+        opacity: 1,
+        x: 0,
+        duration: scaledDuration(180),
+        ease,
+        onComplete: options.onComplete,
+      }
+    );
+  }
+  if (name === 'chrome-hover') {
+    return gsap.to(target, {
+      x: 2,
+      y: 0,
+      duration: scaledDuration(140),
+      ease,
+      onComplete: options.onComplete,
+    });
+  }
+  if (name === 'chrome-press') {
+    return gsap.to(target, {
+      x: 3,
+      y: 0,
+      duration: scaledDuration(120),
+      ease,
+      onComplete: options.onComplete,
+    });
+  }
+  if (name === 'chrome-rest') {
+    return gsap.to(target, {
+      x: 0,
+      y: 0,
+      duration: scaledDuration(140),
+      ease,
+      onComplete: options.onComplete,
+    });
   }
   if (name === 'welcome-in' || name === 'gate-in') {
     return gsap.fromTo(

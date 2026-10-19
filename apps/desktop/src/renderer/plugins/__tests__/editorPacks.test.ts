@@ -28,7 +28,7 @@ import { unwrapWikilinkPlan, wrapWikilinkPlan } from '../wrapWikilink';
 import { unwrapEmbedPlan, wrapEmbedPlan } from '../wrapEmbed';
 import { nextEmbedRange, previousEmbedRange } from '../jumpEmbed';
 import { nextTagRange, previousTagRange } from '../jumpTag';
-import { unwrapTagPlan, wrapTagPlan } from '../wrapTag';
+import { stripHashTag, unwrapTagPlan, wrapTagPlan } from '../wrapTag';
 import { unwrapMathPlan, wrapMathPlan } from '../wrapMath';
 import { nextMathRange, previousMathRange } from '../jumpMath';
 import { unwrapImagePlan, wrapImagePlan } from '../wrapImage';
@@ -718,6 +718,14 @@ describe('wrapTag', () => {
     expect(
       unwrapTagPlan(fenced, fenced.indexOf('#inbox') + 2, fenced.indexOf('#inbox') + 2)
     ).toBeNull();
+  });
+
+  it('strips #tag from source and leaves fences and inline code', () => {
+    expect(stripHashTag('See #inbox today', 'inbox')).toBe('See today');
+    expect(stripHashTag('#inbox\n#inbox two', 'inbox')).toBe('\ntwo');
+    const fenced = 'para\n```\n#inbox\n```\n#inbox';
+    expect(stripHashTag(fenced, 'inbox')).toBe('para\n```\n#inbox\n```\n');
+    expect(stripHashTag('See `#code` and #code', 'code')).toBe('See `#code` and ');
   });
 });
 

@@ -121,9 +121,10 @@ html[data-frosted='true'] .app {
 
 .app__ai-panel {
   flex-shrink: 0;
+  min-height: 0;
   width: 360px;
   border-left: 1px solid var(--border);
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }

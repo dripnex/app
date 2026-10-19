@@ -63,6 +63,7 @@ import { useEditorBufferStore, selectContentForNote } from './stores/editorBuffe
 import { useHeadingJumpStore } from './stores/headingJumpStore';
 import { initGsapRuntime, playMotion, setPerformanceLow } from './motion/gsapRuntime';
 import { shouldPlaySidebarIn } from './motion/sidebarIn';
+import { shouldPlayPanelIn } from './motion/panelIn';
 import { usePerformanceStore } from './stores/performanceStore';
 
 function NotesApp() {
@@ -148,6 +149,8 @@ function SignedInApp({
   const hideNoteList = distractionFree;
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarWasHiddenRef = useRef(hideSidebar);
+  const aiPanelRef = useRef<HTMLElement>(null);
+  const aiPanelWasOpenRef = useRef(false);
 
   useLayoutEffect(() => {
     if (shouldPlaySidebarIn(sidebarWasHiddenRef.current, hideSidebar)) {
@@ -408,6 +411,13 @@ function SignedInApp({
     },
   });
 
+  useLayoutEffect(() => {
+    if (shouldPlayPanelIn(aiPanelWasOpenRef.current, isAiPanelOpen)) {
+      playMotion('panel-in', aiPanelRef.current);
+    }
+    aiPanelWasOpenRef.current = isAiPanelOpen;
+  }, [isAiPanelOpen]);
+
   const selectedQuickFilter = navigation.kind === 'global' ? navigation.filter : null;
   const aiConfigCache = useRef<Record<string, unknown>>({});
 
@@ -581,7 +591,7 @@ function SignedInApp({
             </main>
 
             {isAiPanelOpen && (
-              <aside className="app__ai-panel">
+              <aside ref={aiPanelRef} className="app__ai-panel">
                 <AiPanel
                   onClose={closeAiPanel}
                   getCurrentNote={aiGetCurrentNote}
