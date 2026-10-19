@@ -2,13 +2,31 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { ipcMain, app, dialog } from 'electron';
 import { z } from 'zod';
-import type { AIService, ChatHandle, ToolChatHandle, ToolCall } from '@dripnex/ai-core';
-import { DEFAULT_MODEL } from '@dripnex/ai-core';
+import type {
+  AIService,
+  ChatHandle,
+  ToolChatHandle,
+  ToolCall,
+  LLMEvent,
+  LLMErrorCode,
+  ToolLoopEvent,
+} from '@dripnex/ai-core';
+import {
+  DEFAULT_MODEL,
+  DEFAULT_RETRYABLE_CODES,
+  classifyError,
+  DripnexProvider,
+} from '@dripnex/ai-core';
 import type { ToolRegistry } from '@dripnex/ai-core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import { getLogger } from '../logger.js';
 
 const BATCH_INTERVAL_MS = 50;
+
+/** Everything that can legally flow over the `ai:event` IPC channel. */
+type AiWireEvent = LLMEvent | ToolLoopEvent;
+
+const RETRYABLE_ERROR_CODES = new Set<LLMErrorCode>(DEFAULT_RETRYABLE_CODES);
 
 function firstPartyAiKey(): string {
   return process.env.DRIPNEX_AI_KEY || process.env.ANTHROPIC_API_KEY || '';
@@ -17,7 +35,11 @@ function firstPartyAiKey(): string {
 function applyFirstPartyAi<
   T extends { provider: string; providerConfig: { apiKey?: string; baseUrl?: string } },
 >(request: T): T {
-  if (request.provider !== 'dripnex') return request;
+  // Host-level key sourcing (env vars) for the first-party provider — this is
+  // desktop-specific config plumbing, not provider behavior, so it stays here
+  // rather than in DripnexProvider. Only the provider id itself is shared,
+  // via DripnexProvider.ID, so the two can't silently drift apart.
+  if (request.provider !== DripnexProvider.ID) return request;
   return {
     ...request,
     providerConfig: {
@@ -102,6 +124,11 @@ export function safeSend(
   }
 }
 
+/** Typed `ai:event` send — keeps every payload on the wire aligned with AiWireEvent. */
+function sendAiEvent(sender: Electron.WebContents, requestId: string, event: AiWireEvent): boolean {
+  return safeSend(sender, 'ai:event', requestId, event);
+}
+
 function warnDropped(channel: string): void {
   try {
     getLogger().warn({ channel }, DROPPED_SEND);
@@ -168,7 +195,7 @@ export function registerAIHandlers(
     },
     allowRendererFallback: boolean
   ): Promise<typeof request> {
-    if (request.provider === 'ollama' || request.provider === 'dripnex') {
+    if (request.provider === 'ollama' || request.provider === DripnexProvider.ID) {
       return request;
     }
     const stored = await deps?.resolveApiKey?.(request.provider);
@@ -257,10 +284,7 @@ export function registerAIHandlers(
 
         if (tool.requiresConfirmation) {
           if (
-            !safeSend(event.sender, 'ai:event', requestId, {
-              type: 'tool_confirm_needed',
-              callId: call.id,
-            })
+            !sendAiEvent(event.sender, requestId, { type: 'tool_confirm_needed', callId: call.id })
           ) {
             return { ok: false, content: 'Renderer gone', error: 'destroyed' };
           }
@@ -316,7 +340,7 @@ export function registerAIHandlers(
       try {
         const bound = await bindStoredKey(
           {
-            provider: config.provider ?? 'dripnex',
+            provider: config.provider ?? DripnexProvider.ID,
             providerConfig: { apiKey: config.apiKey, baseUrl: config.baseUrl },
           },
           true
@@ -334,14 +358,10 @@ export function registerAIHandlers(
         });
         // Consume stream to actually trigger the provider call
         for await (const event of handle.events) {
-          if (event.type === 'error') {
+          const outcome = evaluateValidationEvent(event);
+          if (outcome) {
             handle.abort();
-            return { ok: false, error: `${event.code}: ${event.error}` };
-          }
-          // Got any successful event — provider is reachable
-          if (event.type === 'text' || event.type === 'done') {
-            handle.abort();
-            return { ok: true };
+            return outcome;
           }
         }
         return { ok: true };
@@ -523,6 +543,19 @@ export function executeToolInRenderer(
   });
 }
 
+// ─── Validation event classifier ─────────────────────────
+
+/**
+ * Classifies a single event during `ai:validate`'s connectivity probe.
+ * Kept as one named function — rather than inline checks at the call site —
+ * so a newly added LLMEvent variant only needs a decision made here.
+ */
+function evaluateValidationEvent(event: LLMEvent): { ok: boolean; error?: string } | null {
+  if (event.type === 'error') return { ok: false, error: `${event.code}: ${event.error}` };
+  if (event.type === 'text' || event.type === 'done') return { ok: true };
+  return null;
+}
+
 // ─── Stream consumer with batching ────────────────────────
 
 export async function consumeStream(
@@ -534,10 +567,7 @@ export async function consumeStream(
 
   const flush = (): boolean => {
     if (textBuffer) {
-      const ok = safeSend(sender, 'ai:event', handle.requestId, {
-        type: 'text',
-        delta: textBuffer,
-      });
+      const ok = sendAiEvent(sender, handle.requestId, { type: 'text', delta: textBuffer });
       textBuffer = '';
       flushTimer = null;
       return ok;
@@ -565,7 +595,7 @@ export async function consumeStream(
           flushTimer = null;
         }
         flush();
-        if (!safeSend(sender, 'ai:event', handle.requestId, event)) {
+        if (!sendAiEvent(sender, handle.requestId, event)) {
           handle.abort();
           break;
         }
@@ -580,11 +610,12 @@ export async function consumeStream(
     flush();
   } catch (err) {
     flush();
-    safeSend(sender, 'ai:event', handle.requestId, {
+    const code = classifyError(err);
+    sendAiEvent(sender, handle.requestId, {
       type: 'error',
-      code: 'provider_error',
+      code,
       error: err instanceof Error ? err.message : String(err),
-      retryable: false,
+      retryable: RETRYABLE_ERROR_CODES.has(code),
     });
   } finally {
     untrackHandle(handle);

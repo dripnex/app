@@ -2,6 +2,7 @@
 import type { LLMProvider, ProviderConfig, ModelInfo, FetchFn } from '../provider.js';
 import type { LLMEvent, ChatOptions, ContentPart } from '../types.js';
 import { parseSSEStream } from './sse-parser.js';
+import { classifyHttpStatus } from './http-status.js';
 
 const API_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -48,18 +49,7 @@ const STATIC_MODELS: ModelInfo[] = [
   },
 ];
 
-function classifyHttpStatus(status: number): {
-  code: Extract<LLMEvent, { type: 'error' }>['code'];
-  retryable: boolean;
-} {
-  if (status === 429) return { code: 'rate_limit', retryable: true };
-  if (status === 401) return { code: 'auth_failed', retryable: false };
-  if (status === 404) return { code: 'model_not_found', retryable: false };
-  if (status === 400) return { code: 'invalid_request', retryable: false };
-  if (status === 413) return { code: 'context_overflow', retryable: false };
-  if (status >= 500) return { code: 'provider_error', retryable: true };
-  return { code: 'provider_error', retryable: false };
-}
+const STATUS_OVERRIDES = { 413: { code: 'context_overflow', retryable: false } } as const;
 
 /**
  * Convert our generic messages to OpenAI chat format.
@@ -203,7 +193,7 @@ export class OpenAIProvider implements LLMProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      const { code, retryable } = classifyHttpStatus(response.status);
+      const { code, retryable } = classifyHttpStatus(response.status, STATUS_OVERRIDES);
       yield {
         type: 'error',
         code,

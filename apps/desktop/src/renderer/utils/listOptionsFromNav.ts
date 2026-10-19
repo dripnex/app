@@ -1,10 +1,11 @@
 import type { ListOptions } from '../../preload/index';
-import type {
-  NavigationState,
-  StatusFilter,
-  TagFilter,
-  SortBy,
-  SortOrder,
+import {
+  resolveSelectedTag,
+  type NavigationState,
+  type StatusFilter,
+  type TagFilter,
+  type SortBy,
+  type SortOrder,
 } from '../stores/navigationStore';
 
 const LIST_LIMIT = 10000;
@@ -32,7 +33,7 @@ export function listOptionsFromNav(input: {
     options.status = input.statusFilter;
   }
 
-  const tag = resolveTag(input.navigation, input.tagFilter);
+  const tag = resolveSelectedTag(input.navigation, input.tagFilter);
   if (tag) {
     options.tag = tag;
   }
@@ -115,9 +116,4 @@ function globalAllOptions(): ListOptions {
     isDeleted: false,
     excludeNotebookIds: [TEMPLATES_NOTEBOOK_ID],
   };
-}
-
-function resolveTag(navigation: NavigationState, tagFilter: TagFilter): string | null {
-  if (tagFilter) return tagFilter;
-  return navigation.kind === 'tag' ? navigation.name : null;
 }

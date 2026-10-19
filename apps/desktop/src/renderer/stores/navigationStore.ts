@@ -25,6 +25,21 @@ export type StatusFilter = NoteStatus | null;
 export type TagFilter = string | null;
 
 /**
+ * Single source of truth for "which tag is selected": the orthogonal
+ * `tagFilter` wins when set, otherwise falls back to a `kind: 'tag'`
+ * navigation state. Shared by the store's own selectors and by
+ * `listOptionsFromNav` so the merge logic isn't reimplemented twice.
+ */
+export function resolveSelectedTag(
+  navigation: NavigationState,
+  tagFilter: TagFilter
+): string | null {
+  // Empty string is not a selected tag. The list helper this replaced
+  // used a truthy check; `??` would keep `''` and hide the navigation tag.
+  return tagFilter || (navigation.kind === 'tag' ? navigation.name : null);
+}
+
+/**
  * Sort options for note list
  */
 export type SortBy = 'title' | 'createdAt' | 'updatedAt';
@@ -152,8 +167,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
     }),
   goToTag: name => {
     const { tagFilter, navigation } = get();
-    const next =
-      tagFilter === name || (navigation.kind === 'tag' && navigation.name === name) ? null : name;
+    const next = resolveSelectedTag(navigation, tagFilter) === name ? null : name;
     if (navigation.kind === 'tag') {
       set({
         navigation: { kind: 'global', filter: 'all' },
@@ -214,7 +228,7 @@ export const selectGlobalFilter = (state: NavigationStore) =>
   state.navigation.kind === 'global' ? state.navigation.filter : null;
 
 export const selectSelectedTag = (state: NavigationStore) =>
-  state.tagFilter ?? (state.navigation.kind === 'tag' ? state.navigation.name : null);
+  resolveSelectedTag(state.navigation, state.tagFilter);
 
 export const selectSortBy = (state: NavigationStore) => state.sortBy;
 export const selectSortOrder = (state: NavigationStore) => state.sortOrder;

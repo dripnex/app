@@ -14,7 +14,12 @@ import {
   createNotebookId,
   buildNotebookTree,
   INBOX_NOTEBOOK_ID,
+  MAX_NOTEBOOK_DEPTH,
 } from '@dripnex/core';
+import type {
+  NotebookGitSettingsRepository,
+  NotebookSyncTrackingRepository,
+} from '@dripnex/storage-core';
 import type { DatabaseConnection } from '../database.js';
 
 /** Row type from SQLite */
@@ -38,8 +43,10 @@ interface NotebookMetadataRow extends NotebookRow {
   child_count: number;
 }
 
-/** SQLite implementation of NotebookRepository */
-export class SQLiteNotebookRepository implements NotebookRepository {
+/** SQLite implementation of NotebookRepository + sync bookkeeping + git settings */
+export class SQLiteNotebookRepository
+  implements NotebookRepository, NotebookSyncTrackingRepository, NotebookGitSettingsRepository
+{
   constructor(private readonly db: DatabaseConnection) {}
 
   /** Get a notebook by ID */
@@ -408,7 +415,8 @@ export class SQLiteNotebookRepository implements NotebookRepository {
     `);
     const row = stmt.get(notebookId) as NotebookRow | undefined;
     if (!row) return { valid: false, error: 'Notebook not found' };
-    if (row.depth > 2) return { valid: false, error: `Depth ${row.depth} exceeds max (2)` };
+    if (row.depth > MAX_NOTEBOOK_DEPTH)
+      return { valid: false, error: `Depth ${row.depth} exceeds max (${MAX_NOTEBOOK_DEPTH})` };
     if (row.parent_id) {
       const parent = this.db.prepare('SELECT id FROM notebooks WHERE id = ?').get(row.parent_id);
       if (!parent) return { valid: false, error: `Parent notebook '${row.parent_id}' not found` };

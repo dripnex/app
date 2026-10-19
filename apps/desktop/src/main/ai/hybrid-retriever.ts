@@ -8,14 +8,14 @@ import {
 } from '@dripnex/ai-core';
 import type { StoredChunk } from '@dripnex/storage-core';
 import { createNoteId } from '@dripnex/core';
-import type { SQLiteNoteRepository } from '../handlers/types.js';
+import type { NoteRepositoryPort } from '../handlers/types.js';
 import { headingFrom, pickPassages } from './passages.js';
 
 function snippetFrom(content: string, max = 200): string {
   return content.replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-export function createSqliteRetriever(repo: SQLiteNoteRepository) {
+export function createSqliteRetriever(repo: NoteRepositoryPort) {
   return createKeywordRetriever(async (query, limit) => {
     const notes = await repo.search(query, limit);
     return notes.map(note => ({
@@ -75,7 +75,7 @@ export function createChunkSemanticRetriever(deps: {
 }
 
 export async function retrieveAskNotes(
-  repo: SQLiteNoteRepository,
+  repo: NoteRepositoryPort,
   input: {
     query: string;
     relatedQuery?: string | null;

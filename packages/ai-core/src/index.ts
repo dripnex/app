@@ -51,7 +51,7 @@ export type {
   ContextBuildResult,
 } from './context-builder.js';
 
-export { withRetry, classifyError } from './retry.js';
+export { withRetry, classifyError, DEFAULT_RETRYABLE_CODES } from './retry.js';
 export type { RetryOptions } from './retry.js';
 
 export { AnthropicProvider } from './providers/anthropic.js';

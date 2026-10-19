@@ -14,8 +14,5 @@ export * from './contracts/index.js';
 // Operations
 export * from './operations/index.js';
 
-// Validation
-export * from './validation/index.js';
-
 // Repositories (interfaces)
 export * from './repositories/index.js';

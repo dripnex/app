@@ -43,4 +43,16 @@ export interface ExtendedNoteRepository extends NoteRepository {
   getOutgoingLinks(noteId: NoteId): OutgoingLinkInfo[];
   rebuildAllLinks(): number;
   getGraphData(): GraphData;
+  syncLinks(noteId: NoteId, content: string): void;
+
+  deleteTag(tagName: string): void;
+  getAllTagsWithColors(): Array<{ name: string; color: string | null }>;
+  listTags(query?: {
+    filter?: string;
+    limit?: number;
+    offset?: number;
+    includeCount?: boolean;
+  }): Array<{ name: string; color: string | null; count?: number }>;
+  setTagColor(tagName: string, color: string | null): void;
+  renameTag(oldName: string, newName: string): { ok: boolean; error?: string };
 }

@@ -8,7 +8,8 @@ import { AnthropicProvider } from './anthropic.js';
  * paste one. Dev / unsigned builds usually have no key — that is expected.
  */
 export class DripnexProvider implements LLMProvider {
-  readonly id = 'dripnex';
+  static readonly ID = 'dripnex' as const;
+  readonly id = DripnexProvider.ID;
   readonly displayName = 'Dripnex AI';
   private readonly inner: AnthropicProvider;
 

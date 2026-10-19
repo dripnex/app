@@ -19,11 +19,9 @@ export type {
   PublicKeyConfig,
 } from './types.js';
 
-// Validation (legacy - kept for backwards compatibility)
-export { validateLicense, parseLicenseFile, signLicense, generateKeyPair } from './validator.js';
-
 // Subscription verification
 export {
+  generateKeyPair,
   isSubscriptionActive,
   isCachedSubscriptionValid,
   createStoredSubscription,
