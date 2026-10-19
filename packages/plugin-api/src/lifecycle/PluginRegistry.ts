@@ -14,7 +14,7 @@ import type {
   PluginHookOptions,
 } from '../types';
 import type { DataAPI } from '../data/createDataAPI';
-import { createLayoutManager } from '../layout/layoutStore';
+import { createLayoutManager, layoutStore } from '../layout/layoutStore';
 import { editorPluginStore } from '../editor/editorPluginStore';
 import { createDecorationAPI } from '../editor/decorationAPI';
 import { validateManifest } from '../validation';
@@ -566,8 +566,7 @@ export class PluginRegistry {
    * path in activate() and by deactivate() so a new store only needs to be added here once.
    */
   private cleanupAllStoresFor(id: string): void {
-    const layoutManager = createLayoutManager(id);
-    layoutManager.removeAllForPlugin(id);
+    layoutStore.getState().removeAllForPlugin(id);
     editorPluginStore.getState().unregisterAll(id);
     remarkPluginStore.getState().unregisterAll(id);
     rehypePluginStore.getState().unregisterAll(id);

@@ -11,7 +11,12 @@ import type {
   LLMErrorCode,
   ToolLoopEvent,
 } from '@dripnex/ai-core';
-import { DEFAULT_MODEL, classifyError, DripnexProvider } from '@dripnex/ai-core';
+import {
+  DEFAULT_MODEL,
+  DEFAULT_RETRYABLE_CODES,
+  classifyError,
+  DripnexProvider,
+} from '@dripnex/ai-core';
 import type { ToolRegistry } from '@dripnex/ai-core';
 import { defineIpcHandler } from '../ipc/registry.js';
 import { getLogger } from '../logger.js';
@@ -21,9 +26,7 @@ const BATCH_INTERVAL_MS = 50;
 /** Everything that can legally flow over the `ai:event` IPC channel. */
 type AiWireEvent = LLMEvent | ToolLoopEvent;
 
-/** Mirrors ai-core/retry.ts's DEFAULT_RETRY.retryableCodes — these are the
- * codes the provider-level retry loop itself treats as worth retrying. */
-const RETRYABLE_ERROR_CODES = new Set<LLMErrorCode>(['rate_limit', 'network', 'provider_error']);
+const RETRYABLE_ERROR_CODES = new Set<LLMErrorCode>(DEFAULT_RETRYABLE_CODES);
 
 function firstPartyAiKey(): string {
   return process.env.DRIPNEX_AI_KEY || process.env.ANTHROPIC_API_KEY || '';

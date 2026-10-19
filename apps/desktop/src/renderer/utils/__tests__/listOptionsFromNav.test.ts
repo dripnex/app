@@ -240,6 +240,16 @@ describe('listOptionsFromNav', () => {
       ).toBe('work');
     });
 
+    it('falls back to the navigation tag when tagFilter is empty', () => {
+      expect(
+        listOptionsFromNav({
+          navigation: TAG,
+          statusFilter: null,
+          tagFilter: '',
+        }).tag
+      ).toBe('work');
+    });
+
     it('applies status and tag overlays together', () => {
       expect(
         listOptionsFromNav({

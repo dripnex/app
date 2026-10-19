@@ -34,7 +34,9 @@ export function resolveSelectedTag(
   navigation: NavigationState,
   tagFilter: TagFilter
 ): string | null {
-  return tagFilter ?? (navigation.kind === 'tag' ? navigation.name : null);
+  // Empty string is not a selected tag. The list helper this replaced
+  // used a truthy check; `??` would keep `''` and hide the navigation tag.
+  return tagFilter || (navigation.kind === 'tag' ? navigation.name : null);
 }
 
 /**
