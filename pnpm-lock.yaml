@@ -320,7 +320,7 @@ importers:
         version: link:../sync-core
       '@hono/zod-validator':
         specifier: ^0.8.0
-        version: 0.8.0(hono@4.13.7)(zod@4.4.3)
+        version: 0.8.0(hono@4.13.13)(zod@4.4.3)
       '@libsql/client':
         specifier: ^0.17.3
         version: 0.17.3
@@ -334,8 +334,8 @@ importers:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@4.20260608.1)(@libsql/client@0.17.3)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.10.0)(gel@2.2.0)(sql.js@1.14.1)
       hono:
-        specifier: ^4.13.5
-        version: 4.13.7
+        specifier: ^4.13.11
+        version: 4.13.13
       jose:
         specifier: ^6.2.3
         version: 6.2.3
@@ -1190,11 +1190,11 @@ packages:
 
   '@esbuild-kit/core-utils@3.3.2':
     resolution: {integrity: sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ==}
-    deprecated: 'Merged into tsx: https://tsx.is'
+    deprecated: 'Merged into tsx: https://tsx.hirok.io'
 
   '@esbuild-kit/esm-loader@2.6.5':
     resolution: {integrity: sha512-FxEMIkJKnodyA1OaCUoEvbYRkoZlLZ4d/eXFu9Fh8CbBBgP5EmZxrfTRyN0qpXZ4vOvqnE5YdRdcrmUUXuU+dA==}
-    deprecated: 'Merged into tsx: https://tsx.is'
+    deprecated: 'Merged into tsx: https://tsx.hirok.io'
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -2688,6 +2688,7 @@ packages:
   '@opentelemetry/sdk-trace-base@2.7.1':
     resolution: {integrity: sha512-NAYIlsF8MPUsKqJMiDQJTMPOmlbawC1Iz/omMLygZ1C9am8fTKYjTaI+OZM+WTY3t3Glo0wnOg/6/pac6RGPPw==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
@@ -5575,10 +5576,6 @@ packages:
     resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
     engines: {node: '>=16.9.0'}
 
-  hono@4.13.7:
-    resolution: {integrity: sha512-c8/gF9ac8Y78/agExVocyLevgR+JlpNB444Py0FSX8pJoPdYUfUzRcXtYEYGwt6l19qIlVZPN5Mfsw9jFShmQQ==}
-    engines: {node: '>=16.9.0'}
-
   hook-std@4.0.0:
     resolution: {integrity: sha512-IHI4bEVOt3vRUDJ+bFA9VUJlo7SzvFARPNLw75pqSmAOP2HmTWfFJtPvLBrDrlgjEYXY9zs7SFdHPQaJShkSCQ==}
     engines: {node: '>=20'}
@@ -5767,6 +5764,10 @@ packages:
 
   ip-address@10.7.3:
     resolution: {integrity: sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==}
+    engines: {node: '>= 12'}
+
+  ip-address@10.7.4:
+    resolution: {integrity: sha512-DWBMKyeM25D70nrIiTkgQth59/G+naKOTep6huF9j+GmeK3DMD60Zvxg5d5qQnz+38AHgou6ean2LECX+lrKDg==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -6119,6 +6120,7 @@ packages:
 
   libsql@0.5.29:
     resolution: {integrity: sha512-8lMP8iMgiBzzoNbAPQ59qdVcj6UaE/Vnm+fiwX4doX4Narook0a4GPKWBEv+CR8a1OwbfkgL18uBfBjWdF0Fzg==}
+    cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
   lie@3.3.0:
@@ -6745,8 +6747,8 @@ packages:
     resolution: {integrity: sha512-KdHvFWZjEKDf0cakgFjebl371GPsISX2oZHcuyKqM7DtogIsHrqKeLTo8wBHxaXRAQlY2PsPlZmfo+9ZCxEREQ==}
     engines: {node: '>=10'}
 
-  node-abi@3.98.0:
-    resolution: {integrity: sha512-Llh8noNw7s15m+rmIrZnZQbe4gLyasL9loT74rC92PkmwWKeEedKvc7o6pjp8B3MhrYT/Cl846NOYZbz1wmddw==}
+  node-abi@3.99.0:
+    resolution: {integrity: sha512-lLdwkeg2XUVPTHqWjPltTxH81zbQNbUWC+AEb9ni50KjxkUzAAx1HGtMT21sbntzfUGfIphhcklvs3imJeqDXw==}
     engines: {node: '>=10'}
 
   node-abi@4.31.0:
@@ -9524,7 +9526,7 @@ snapshots:
       detect-libc: 2.1.2
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.98.0
+      node-abi: 3.99.0
       node-api-version: 0.2.1
       ora: 5.4.1
       read-binary-file-arch: 1.0.6
@@ -10056,9 +10058,9 @@ snapshots:
     dependencies:
       hono: 4.13.13
 
-  '@hono/zod-validator@0.8.0(hono@4.13.7)(zod@4.4.3)':
+  '@hono/zod-validator@0.8.0(hono@4.13.13)(zod@4.4.3)':
     dependencies:
-      hono: 4.13.7
+      hono: 4.13.13
       zod: 4.4.3
 
   '@humanfs/core@0.19.2':
@@ -14101,8 +14103,6 @@ snapshots:
 
   hono@4.13.13: {}
 
-  hono@4.13.7: {}
-
   hook-std@4.0.0: {}
 
   hosted-git-info@4.1.0:
@@ -14293,6 +14293,8 @@ snapshots:
   internmap@2.0.3: {}
 
   ip-address@10.7.3: {}
+
+  ip-address@10.7.4: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -15447,7 +15449,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-abi@3.98.0:
+  node-abi@3.99.0:
     dependencies:
       semver: 7.8.5
 
@@ -16636,7 +16638,7 @@ snapshots:
 
   socks@2.8.10:
     dependencies:
-      ip-address: 10.7.3
+      ip-address: 10.7.4
       smart-buffer: 4.2.0
 
   sonic-boom@4.2.1:
