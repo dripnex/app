@@ -53,7 +53,7 @@
     "diff": "^9.0.0",
     "electron-updater": "^6.8.9",
     "gsap": "^3.15.0",
-    "isomorphic-git": "^1.38.4",
+    "isomorphic-git": "^1.38.6",
     "katex": "^0.18.4",
     "lucide": "^1.17.0",
     "lucide-react": "^1.17.0",
