@@ -320,7 +320,7 @@ importers:
         version: link:../sync-core
       '@hono/zod-validator':
         specifier: ^0.8.0
-        version: 0.8.0(hono@4.13.13)(zod@4.4.3)
+        version: 0.8.0(hono@4.13.16)(zod@4.4.3)
       '@libsql/client':
         specifier: ^0.17.3
         version: 0.17.3
@@ -334,8 +334,8 @@ importers:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@4.20260608.1)(@libsql/client@0.17.3)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.10.0)(gel@2.2.0)(sql.js@1.14.1)
       hono:
-        specifier: ^4.13.11
-        version: 4.13.13
+        specifier: ^4.13.16
+        version: 4.13.16
       jose:
         specifier: ^6.2.3
         version: 6.2.3
@@ -4060,8 +4060,8 @@ packages:
   brace-expansion@2.1.1:
     resolution: {integrity: sha512-WR1cURNjuvBLMZBMbqM0UoE+WAfdUcEV1ccD8PVBVOI+Z3ND4+SZbN8RsfT2bMuG1qwz5RFvPukSZm5fF2D5eA==}
 
-  brace-expansion@5.0.12:
-    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
+  brace-expansion@5.0.13:
+    resolution: {integrity: sha512-Vh3dmFbc4wZeox7M9I/0L9GfFd83Su4+yCck/OF9Gi/P/dAHn0RT7X4K9R7gMNMhDck3DvhR6QXsnQdjjgwNvQ==}
     engines: {node: 20 || >=22}
 
   brace-expansion@5.0.6:
@@ -5509,6 +5509,9 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
+  graceful-fs@4.2.12:
+    resolution: {integrity: sha512-iuyGF2E4oafQfPsRrG2wtY2ILupMhvtdrhzrxB+0VcjsPpSPttpfYdjnGFGsTi5MaJFjI1jOKHPQ6UTbTj9TAw==}
+
   gsap@3.15.0:
     resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
@@ -5591,6 +5594,10 @@ packages:
 
   hono@4.13.13:
     resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
+    engines: {node: '>=16.9.0'}
+
+  hono@4.13.16:
+    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
     engines: {node: '>=16.9.0'}
 
   hook-std@4.0.0:
@@ -9504,7 +9511,7 @@ snapshots:
       env-paths: 2.2.1
       exponential-backoff: 3.1.3
       glob: 8.1.0
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       make-fetch-happen: 10.2.1
       nopt: 6.0.0
       proc-log: 2.0.1
@@ -10097,9 +10104,9 @@ snapshots:
     dependencies:
       hono: 4.13.13
 
-  '@hono/zod-validator@0.8.0(hono@4.13.13)(zod@4.4.3)':
+  '@hono/zod-validator@0.8.0(hono@4.13.16)(zod@4.4.3)':
     dependencies:
-      hono: 4.13.13
+      hono: 4.13.16
       zod: 4.4.3
 
   '@humanfs/core@0.19.2':
@@ -12271,7 +12278,7 @@ snapshots:
     dependencies:
       balanced-match: 1.0.2
 
-  brace-expansion@5.0.12:
+  brace-expansion@5.0.13:
     dependencies:
       balanced-match: 4.0.4
 
@@ -13805,7 +13812,7 @@ snapshots:
 
   fs-extra@11.4.1:
     dependencies:
-      graceful-fs: 4.2.11
+      graceful-fs: 4.2.12
       jsonfile: 6.2.1
       universalify: 2.0.1
 
@@ -14005,6 +14012,8 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
+  graceful-fs@4.2.12: {}
+
   gsap@3.15.0: {}
 
   hachure-fill@0.5.2: {}
@@ -14153,6 +14162,8 @@ snapshots:
   highlight.js@11.11.1: {}
 
   hono@4.13.13: {}
+
+  hono@4.13.16: {}
 
   hook-std@4.0.0: {}
 
@@ -15362,7 +15373,7 @@ snapshots:
 
   minimatch@10.2.6:
     dependencies:
-      brace-expansion: 5.0.12
+      brace-expansion: 5.0.13
 
   minimatch@3.1.5:
     dependencies:
