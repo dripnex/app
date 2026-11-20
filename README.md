@@ -9,7 +9,7 @@ The hackable AI note taker. Local SQLite. Markdown is export.
 
 This repository contains the **open-source core** of Dripnex. Core packages are licensed under MIT for community use and contributions. The desktop application and some commercial features remain proprietary.
 
-Dripnex is an AI note taker you can hack (`init.js` / `styles.css` / satellite packs). AuthGate is the first window. Sync is optional and end-to-end after account. Official themes stay empty. There is no public marketplace.
+Dripnex is an AI note taker you can hack (`init.js` / `styles.css` / satellite packs). The workspace opens without an account. Sign-in is only for optional end-to-end sync. Official themes stay empty. There is no public marketplace.
 
 ## Quick Start
 

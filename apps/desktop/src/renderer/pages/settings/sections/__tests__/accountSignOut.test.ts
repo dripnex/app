@@ -20,7 +20,7 @@ describe('Settings → Account Sign Out', () => {
     expect(account).not.toMatch(/disabled=\{isLoading\}/);
   });
 
-  it('main and settings windows listen for auth:signed-out so AuthGate remounts', () => {
+  it('main and settings windows listen for auth:signed-out and clear the session', () => {
     expect(app).toContain('useAuthSessionEvents({ consumeMagicLink: true })');
     expect(settingsApp).toContain('useAuthSessionEvents()');
     expect(handlers).toContain("broadcastToWindows('auth:signed-out')");

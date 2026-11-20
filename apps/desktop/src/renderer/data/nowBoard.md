@@ -4,11 +4,11 @@ Living board. Seeded as note `dripnex-now` so MCP agents can search `NOW`.
 
 #now #roadmap #debt
 
-Updated: 2026-08-26. Version in tree: 0.15.2. Identity: hackable AI note taker.
+Updated: 2026-11-19. Version in tree: 0.15.2. Identity: hackable AI note taker.
 
 ## Now (true today)
 
-- Desktop is the product. The hackable AI note taker. AuthGate is the first window. Sync is optional E2E after account.
+- Desktop is the product. The hackable AI note taker. The workspace opens without an account. Sign-in is only for optional E2E sync.
 - Store is local SQLite. `.md` is export only. Plain files are easy to romanticize.
 - Hackable via `init.js` / `styles.css` / satellite packs. `OFFICIAL_THEMES` stays []. No public marketplace.
 - Magic link + React Email. API on Cloudflare (`api.dripnex.app`).

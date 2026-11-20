@@ -50,3 +50,5 @@ export {
   type TreeNode,
   type TreeValidationResult,
 } from './treeValidation.js';
+
+export { pushBaseVersion } from './pushBaseVersion.js';

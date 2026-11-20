@@ -152,6 +152,6 @@ Before any design or copy decision, ask:
 2. Does this grab attention?
 3. Could this appear in a pitch deck?
 4. Does this communicate energy or ambition?
-5. Does this treat notes as files, or claim the app opens without an account?
+5. Does this treat notes as files, or invent a guest account?
 
 If yes to any → don't do it.

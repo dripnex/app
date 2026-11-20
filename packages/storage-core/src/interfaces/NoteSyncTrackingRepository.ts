@@ -41,25 +41,35 @@ export interface SyncHistoryMetrics {
 
 export interface PendingNoteChange {
   note: Note;
+  /** Local edit counter. Not the server sync-log version. */
   localVersion: number;
+  /** Last sync-log version applied for this note. Zero means none recorded. */
+  syncVersion: number;
   lastSyncedAt: string | null;
 }
 
 export interface PendingTagChange {
   tag: { id: number; uuid: string; name: string; color: string | null };
   localVersion: number;
+  /** Last sync-log version applied for this tag. Zero means none recorded. */
+  syncVersion: number;
 }
 
 export interface NoteSyncTrackingRepository {
   getPendingChanges(limit?: number): PendingNoteChange[];
-  markAsSynced(noteId: NoteId): void;
-  markMultipleAsSynced(noteIds: NoteId[]): void;
+  markAsSynced(noteId: NoteId, serverVersion?: number): void;
+  markMultipleAsSynced(noteIds: NoteId[], serverVersions?: Record<string, number>): void;
   hasPendingEdits(noteId: NoteId): boolean;
   resetSyncTracking(noteId: NoteId): void;
 
   getTagsPendingSync(limit: number): PendingTagChange[];
-  markMultipleTagsAsSynced(tagUuids: string[]): void;
-  upsertTagFromRemote(uuid: string, name: string, color: string | null): number;
+  markMultipleTagsAsSynced(tagUuids: string[], serverVersions?: Record<string, number>): void;
+  upsertTagFromRemote(
+    uuid: string,
+    name: string,
+    color: string | null,
+    serverVersion?: number
+  ): number;
   deleteTagByUuid(uuid: string): void;
 
   createSyncHistoryEntry(id: string): void;

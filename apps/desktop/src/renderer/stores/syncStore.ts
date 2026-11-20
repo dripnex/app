@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { hasNewConflict, mergeConflicts } from '../utils/conflictCopy';
+import { manualSyncPresentation } from './syncFailure';
 
 // ============================================================================
 // Types
@@ -99,7 +100,9 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
       const syncResult = await window.dripnex.sync.syncNow();
 
       if (!syncResult.success) {
-        throw new Error(syncResult.error || 'Sync failed');
+        const presented = manualSyncPresentation(syncResult.failure, syncResult.error);
+        set({ status: presented.status, error: presented.error });
+        throw new Error(presented.error);
       }
 
       // Get updated status from server
@@ -116,33 +119,11 @@ export const useSyncStore = create<SyncState>()((set, get) => ({
         lastSyncAt: Date.now(),
       }));
     } catch (error) {
-      let errorMessage = 'Sync failed';
-      let status: SyncStatus = 'error';
-
-      if (error instanceof Error) {
-        const msg = error.message.toLowerCase();
-        if (msg.includes('network') || msg.includes('fetch') || msg.includes('enotfound')) {
-          errorMessage = 'No internet connection. Sync will resume when online.';
-          status = 'offline';
-        } else if (msg.includes('timeout')) {
-          errorMessage = 'Connection timeout. Please try again.';
-        } else if (msg.includes('unauthorized') || msg.includes('401')) {
-          errorMessage = 'Session expired. Please sign in again.';
-        } else if (msg.includes('encryption') || msg.includes('passphrase')) {
-          errorMessage = error.message;
-          status = 'needs-setup';
-        } else if (msg.includes('forbidden') || msg.includes('403')) {
-          errorMessage = 'Sync requires Pro subscription.';
-        } else if (msg.includes('rate limit') || msg.includes('429')) {
-          errorMessage = 'Too many requests. Please wait a moment.';
-        } else if (msg.includes('500') || msg.includes('server')) {
-          errorMessage = 'Server error. Please try again later.';
-        } else {
-          errorMessage = error.message;
-        }
+      if (get().status === 'syncing') {
+        const message = error instanceof Error ? error.message : 'Sync failed';
+        const presented = manualSyncPresentation(undefined, message);
+        set({ status: presented.status, error: presented.error });
       }
-
-      set({ status, error: errorMessage });
       throw error;
     }
   },
