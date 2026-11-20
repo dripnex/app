@@ -2,37 +2,37 @@ import { describe, expect, it } from 'vitest';
 import { resolveAppShell } from '../appShell';
 
 describe('resolveAppShell', () => {
-  it('shows AuthGate on first run without an account', () => {
+  it('shows Welcome on first run without an account', () => {
     expect(
       resolveAppShell({
         onboardingComplete: false,
         isAuthenticated: false,
         sessionHydrated: true,
       })
-    ).toBe('auth');
+    ).toBe('welcome');
   });
 
-  it('shows AuthGate for a returning unsigned user', () => {
+  it('opens the workspace for a returning unsigned user', () => {
     expect(
       resolveAppShell({
         onboardingComplete: true,
         isAuthenticated: false,
         sessionHydrated: true,
       })
-    ).toBe('auth');
+    ).toBe('workspace');
   });
 
-  it('waits on AuthGate until the session hydrates', () => {
+  it('does not wait on session hydration to open the workspace', () => {
     expect(
       resolveAppShell({
         onboardingComplete: true,
         isAuthenticated: false,
         sessionHydrated: false,
       })
-    ).toBe('auth');
+    ).toBe('workspace');
   });
 
-  it('shows Welcome after account on first run', () => {
+  it('shows Welcome on first run even when a session exists', () => {
     expect(
       resolveAppShell({
         onboardingComplete: false,
@@ -52,7 +52,7 @@ describe('resolveAppShell', () => {
     ).toBe('workspace');
   });
 
-  it('lets Playwright skip AuthGate without becoming a production bypass', () => {
+  it('opens the same shell in Playwright as in production', () => {
     expect(
       resolveAppShell({
         onboardingComplete: false,

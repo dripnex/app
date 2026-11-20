@@ -20,11 +20,11 @@ Hackability is `init.js`, `styles.css`, and satellite packs. Official themes sta
 
 ---
 
-## The gate
+## Opening the workspace
 
-AuthGate is the first window. An account is required. Sync is optional and end-to-end after that. Encryption and passphrase flows stay.
+The workspace opens without an account. Sign-in is only for cloud sync (ADR 007). Sync stays optional and end-to-end. Encryption and passphrase flows stay.
 
-Never offer a guest workspace. AuthGate is required.
+There is no guest identity and no continue-locally path.
 
 ---
 

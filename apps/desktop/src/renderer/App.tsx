@@ -15,8 +15,7 @@ import { LicenseProvider } from './contexts/LicenseContext';
 import { ToastProvider } from './components/Toast';
 import { Toaster } from './ui/primitives';
 import { Welcome } from './components/Welcome';
-import { AuthGate } from './components/auth/AuthGate';
-import { useAuthStore, selectIsAuthenticated, selectSessionHydrated } from './stores/authStore';
+import { useAuthStore } from './stores/authStore';
 import { resolveAppShell } from './utils/appShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
@@ -89,9 +88,6 @@ function NotesApp() {
   const [showWelcome, setShowWelcome] = useState(
     () => !localStorage.getItem('dripnex-onboarding-done')
   );
-  const sessionHydrated = useAuthStore(selectSessionHydrated);
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
-  const isE2E = window.dripnex?.app?.isE2E?.() === true;
 
   useAuthSessionEvents({ consumeMagicLink: true });
 
@@ -101,19 +97,7 @@ function NotesApp() {
 
   const shell = resolveAppShell({
     onboardingComplete: !showWelcome,
-    isAuthenticated,
-    sessionHydrated,
-    isE2E,
   });
-
-  if (shell === 'auth') {
-    return (
-      <ToastProvider>
-        <AuthGate hydrating={!sessionHydrated} />
-        <Toaster />
-      </ToastProvider>
-    );
-  }
 
   return (
     <SignedInApp

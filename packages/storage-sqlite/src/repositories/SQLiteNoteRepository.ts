@@ -902,6 +902,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
   getPendingChanges(limit = 50): Array<{
     note: Note;
     localVersion: number;
+    syncVersion: number;
     lastSyncedAt: string | null;
   }> {
     const stmt = this.db.prepare<{
@@ -917,6 +918,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
       is_deleted: number;
       status: string;
       local_version: number;
+      sync_version: number;
       last_synced_at: string | null;
     }>(`
       SELECT *
@@ -939,6 +941,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
       is_deleted: number;
       status: string;
       local_version: number;
+      sync_version: number;
       last_synced_at: string | null;
     }>;
 
@@ -947,6 +950,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
       return {
         note: rowToNote(row, tags),
         localVersion: row.local_version,
+        syncVersion: row.sync_version ?? 0,
         lastSyncedAt: row.last_synced_at,
       };
     });
@@ -958,17 +962,18 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
    *
    * @param noteId - The note ID to mark as synced
    */
-  markAsSynced(noteId: NoteId): void {
+  markAsSynced(noteId: NoteId, serverVersion = 0): void {
     const stmt = this.db.prepare(`
       UPDATE notes
       SET
         needs_sync = 0,
-        last_synced_at = ?
+        last_synced_at = ?,
+        sync_version = CASE WHEN ? > 0 THEN ? ELSE sync_version END
       WHERE id = ?
     `);
 
     const now = new Date().toISOString();
-    stmt.run(now, noteId);
+    stmt.run(now, serverVersion, serverVersion, noteId);
   }
 
   /**
@@ -977,7 +982,7 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
    *
    * @param noteIds - Array of note IDs to mark as synced
    */
-  markMultipleAsSynced(noteIds: NoteId[]): void {
+  markMultipleAsSynced(noteIds: NoteId[], serverVersions: Record<string, number> = {}): void {
     if (noteIds.length === 0) return;
 
     this.db.transaction(() => {
@@ -985,13 +990,15 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
         UPDATE notes
         SET
           needs_sync = 0,
-          last_synced_at = ?
+          last_synced_at = ?,
+          sync_version = CASE WHEN ? > 0 THEN ? ELSE sync_version END
         WHERE id = ?
       `);
 
       const now = new Date().toISOString();
       for (const id of noteIds) {
-        stmt.run(now, id);
+        const version = serverVersions[id] ?? 0;
+        stmt.run(now, version, version, id);
       }
     });
   }
@@ -1075,9 +1082,10 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
   getTagsPendingSync(limit: number): Array<{
     tag: { id: number; uuid: string; name: string; color: string | null };
     localVersion: number;
+    syncVersion: number;
   }> {
     const stmt = this.db.prepare(`
-      SELECT id, uuid, name, color, local_version
+      SELECT id, uuid, name, color, local_version, sync_version
       FROM tags
       WHERE needs_sync = 1 AND uuid IS NOT NULL
       LIMIT ?
@@ -1088,10 +1096,12 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
       name: string;
       color: string | null;
       local_version: number;
+      sync_version: number;
     }>;
     return rows.map(row => ({
       tag: { id: row.id, uuid: row.uuid, name: row.name, color: row.color },
       localVersion: row.local_version,
+      syncVersion: row.sync_version ?? 0,
     }));
   }
 
@@ -1108,14 +1118,20 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
   /**
    * Mark multiple tags as synced
    */
-  markMultipleTagsAsSynced(tagUuids: string[]): void {
+  markMultipleTagsAsSynced(tagUuids: string[], serverVersions: Record<string, number> = {}): void {
     this.db.transaction(() => {
       const now = new Date().toISOString();
       const stmt = this.db.prepare(`
-        UPDATE tags SET needs_sync = 0, last_synced_at = ? WHERE uuid = ?
+        UPDATE tags
+        SET
+          needs_sync = 0,
+          last_synced_at = ?,
+          sync_version = CASE WHEN ? > 0 THEN ? ELSE sync_version END
+        WHERE uuid = ?
       `);
       for (const uuid of tagUuids) {
-        stmt.run(now, uuid);
+        const version = serverVersions[uuid] ?? 0;
+        stmt.run(now, version, version, uuid);
       }
     });
   }
@@ -1124,9 +1140,20 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
    * Upsert a tag from remote sync (dedup by name)
    * Returns the local tag id.
    */
-  upsertTagFromRemote(uuid: string, name: string, color: string | null): number {
+  upsertTagFromRemote(uuid: string, name: string, color: string | null, serverVersion = 0): number {
     return this.db.transaction(() => {
       const normalized = name.trim().toLowerCase();
+      const rememberRemote = () => {
+        this.db
+          .prepare(
+            `UPDATE tags
+             SET needs_sync = 0,
+                 last_synced_at = ?,
+                 sync_version = CASE WHEN ? > 0 THEN ? ELSE sync_version END
+             WHERE uuid = ?`
+          )
+          .run(new Date().toISOString(), serverVersion, serverVersion, uuid);
+      };
 
       // Check if tag exists by UUID first
       const byUuid = this.db
@@ -1134,12 +1161,13 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
         .get(uuid) as { id: number; name: string; color: string | null } | undefined;
 
       if (byUuid) {
-        // Update existing tag
+        // Update existing tag. The name/color trigger may mark it dirty again.
         this.db
           .prepare(
             'UPDATE tags SET name = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE uuid = ?'
           )
           .run(normalized, color, new Date().toISOString(), uuid);
+        rememberRemote();
         return byUuid.id;
       }
 
@@ -1155,15 +1183,17 @@ export class SQLiteNoteRepository implements ExtendedNoteRepository, NoteSyncTra
             'UPDATE tags SET uuid = ?, color = ?, needs_sync = 0, last_synced_at = ? WHERE id = ?'
           )
           .run(uuid, color, new Date().toISOString(), byName.id);
+        rememberRemote();
         return byName.id;
       }
 
-      // Create new tag
+      // Create new tag. The insert trigger marks it dirty; the follow-up clears that.
       const result = this.db
         .prepare(
           'INSERT INTO tags (name, color, uuid, needs_sync, last_synced_at) VALUES (?, ?, ?, 0, ?)'
         )
         .run(normalized, color, uuid, new Date().toISOString());
+      rememberRemote();
       return Number(result.lastInsertRowid);
     });
   }

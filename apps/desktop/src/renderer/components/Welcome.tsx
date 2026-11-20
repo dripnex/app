@@ -1,8 +1,8 @@
 /**
- * Welcome — First-run onboarding after AuthGate.
+ * Welcome — First-run onboarding.
  *
- * Shown once on first launch. Offers to create the user's first note
- * or skip straight into the app. Never a guest path around the account.
+ * Shown once on first launch, before or without an account. Offers to
+ * create the user's first note or skip straight into the workspace.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
@@ -97,7 +97,7 @@ export function Welcome({ onComplete }: WelcomeProps) {
         </div>
 
         <p className={styles.hint}>
-          Press <kbd className={styles.kbd}>{modAccel('K')}</kbd> to open the command palette
+          Press <kbd className={styles.kbd}>{modAccel('P')}</kbd> to open the command palette
         </p>
       </div>
     </div>

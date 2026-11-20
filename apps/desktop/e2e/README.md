@@ -29,13 +29,13 @@ npx playwright install --with-deps
 
 Set `DRIPNEX_E2E_KEEP_USERDATA=1` to keep the temp dir on failure for post-mortem inspection.
 
-`openFirstNote()` clicks **Create Your First Note** and waits for `.cm-content`. Isolated e2e sets `DRIPNEX_E2E=1` so Playwright can skip AuthGate. That flag is test-only, not a production bypass. Human QA blocked by AuthGate is accepted.
+`openFirstNote()` clicks **Create Your First Note** and waits for `.cm-content`. Unsigned launch opens Welcome, then the workspace. Sign-in is in Settings → Account and on Enable Sync.
 
 ## What we test
 
 | Spec               | What it covers                                                                                                                                                                                                                   |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `authgate.spec.ts` | Unsigned launch (no `DRIPNEX_E2E`) shows AuthGate: magic-link Sign in, no Welcome, no continue-locally.                                                                                                                          |
+| `authgate.spec.ts` | Unsigned launch shows Welcome and Create a note. Settings → Account still sends a magic link. There is no continue-locally control.                                                                                              |
 | `smoke.spec.ts`    | App launches, main window renders, IPC bridge present, no uncaught console errors during initial mount. Opening a note loads CodeMirror without `[CodeMirror] plugin error` (regression for #311).                               |
 | `notes.spec.ts`    | Notes IPC contract — create / list / get roundtrip, FTS5 search returns freshly-created notes. Driven through the **preload bridge** (`window.dripnex.notes.*`), not the editor UI, so the contract survives renderer refactors. |
 | `editor.spec.ts`   | Types into `.cm-content` after creating a note, and Enter on a bullet list (continue-markup). Clicks the last `.cm-line` / uses `keyboard.type` — not `fill()`, which CodeMirror's contenteditable does not accept.              |

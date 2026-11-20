@@ -42,6 +42,7 @@ export interface SyncAPI {
       timestamp: string;
     }>;
     error?: string;
+    failure?: 'needs-setup' | 'auth-expired' | 'offline' | 'error';
   }>;
   status: () => Promise<{
     success: boolean;

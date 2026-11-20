@@ -1,19 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { launchApp } from './fixtures.js';
 
-test.describe('AuthGate is the first window', () => {
-  test('unsigned launch shows magic-link Sign in, not Welcome or workspace', async () => {
+test.describe('Workspace opens without an account', () => {
+  test('unsigned launch shows Welcome, and sign-in stays in Settings', async () => {
     const { app, window: page, cleanup } = await launchApp({ skipAuthGate: false });
     try {
-      await expect(page.getByRole('tab', { name: 'Sign in' })).toBeVisible({
+      await expect(page.getByRole('dialog', { name: 'The hackable AI note taker' })).toBeVisible({
         timeout: 15_000,
       });
-      await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
-      await expect(page.getByText('The hackable AI note taker')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Email me a link' })).toBeVisible();
-      await expect(page.locator('canvas')).toHaveCount(1);
-
-      await expect(page.getByRole('button', { name: 'Create a note' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Create a note' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Welcome back' })).toHaveCount(0);
       await expect(page.getByRole('button', { name: /continue locally/i })).toHaveCount(0);
 
       const [settings] = await Promise.all([

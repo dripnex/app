@@ -8,7 +8,7 @@ export const WELCOME_CREATE = 'Create a note';
 export const WELCOME_SKIP = 'Skip';
 
 export function welcomeHint(): string {
-  return `Press ${modAccel('K')} to open the command palette`;
+  return `Press ${modAccel('P')} to open the command palette`;
 }
 
 export const WELCOME_FEATURES = [
@@ -21,8 +21,8 @@ export const WELCOME_FEATURES = [
     desc: 'init.js, styles.css, and satellite packs. Official themes stay empty.',
   },
   {
-    title: 'Account first',
-    desc: 'AuthGate is the first window. Sync is optional and end-to-end after you sign in.',
+    title: 'Sign in only to sync',
+    desc: 'Notes open without an account. Sign in when you want end-to-end sync across devices.',
   },
   {
     title: 'Sendable, not a dump',
