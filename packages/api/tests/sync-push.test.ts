@@ -217,6 +217,53 @@ describe('POST /sync — push changes', () => {
     expect(body.results[0].status).toBe('applied');
   });
 
+  it('applies a push that cites the note server version after the global counter moves', async () => {
+    const userId = randomUUID();
+    const email = `pro-base-${userId}@test.com`;
+    await seedProUser(env, userId, email);
+    const tokenA = await createAccessToken(userId, email, deviceA);
+    const tokenB = await createAccessToken(userId, email, deviceB);
+
+    const otherId = randomUUID();
+    const noteId = randomUUID();
+
+    const other = await pushChanges(
+      tokenA,
+      [{ noteId: otherId, operation: 'create', encryptedData: 'other' }],
+      deviceA
+    );
+    expect(other.status).toBe(200);
+
+    const created = await pushChanges(
+      tokenA,
+      [{ noteId, operation: 'create', encryptedData: 'note-v1' }],
+      deviceA
+    );
+    expect(created.status).toBe(200);
+    const createdBody = await created.json();
+    const noteVersion = createdBody.results[0].version as number;
+    expect(noteVersion).toBeGreaterThan(1);
+    expect(createdBody.results[0].status).toBe('applied');
+
+    const current = await pushChanges(
+      tokenB,
+      [{ noteId, operation: 'update', encryptedData: 'note-v2', localVersion: noteVersion }],
+      deviceB
+    );
+    expect(current.status).toBe(200);
+    const currentBody = await current.json();
+    expect(currentBody.results[0].status).toBe('applied');
+
+    const stale = await pushChanges(
+      tokenA,
+      [{ noteId, operation: 'update', encryptedData: 'note-stale', localVersion: 1 }],
+      deviceA
+    );
+    expect(stale.status).toBe(200);
+    const staleBody = await stale.json();
+    expect(staleBody.results[0].status).toBe('conflict');
+  });
+
   it('validates schema - rejects empty changes array', async () => {
     const res = await app.request(
       '/sync',

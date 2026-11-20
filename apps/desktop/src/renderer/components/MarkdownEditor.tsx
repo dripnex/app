@@ -34,20 +34,6 @@ import {
   codeFolding,
 } from '@codemirror/language';
 import {
-  toggleBold,
-  toggleItalic,
-  toggleStrikethrough,
-  toggleInlineCode,
-  insertLink,
-  insertHeading,
-  insertUnorderedList,
-  insertOrderedList,
-  insertCheckbox,
-  insertQuote,
-  insertCodeBlock,
-  insertHorizontalRule,
-  undoChange,
-  redoChange,
   isBareHttpUrl,
   isInsideMarkdownLink,
   wrapSelectionWithUrl,
@@ -118,25 +104,12 @@ interface MarkdownEditorProps {
   knownWikilinkTitles?: WikilinkTitleResolution;
 }
 
-/** Imperative handle exposed via ref */
+/**
+ * Imperative handle for focus, scroll sync, and line jumps.
+ * Formatting goes through the command registry and the EditorView it already holds.
+ */
 export interface MarkdownEditorHandle {
   focus: () => void;
-  // Formatting commands
-  toggleBold: () => void;
-  toggleItalic: () => void;
-  toggleStrikethrough: () => void;
-  toggleInlineCode: () => void;
-  insertLink: () => void;
-  insertHeading: (level?: 1 | 2 | 3 | 4 | 5 | 6) => void;
-  insertUnorderedList: () => void;
-  insertOrderedList: () => void;
-  insertCheckbox: () => void;
-  insertQuote: () => void;
-  insertCodeBlock: () => void;
-  insertHorizontalRule: () => void;
-  undo: () => void;
-  redo: () => void;
-  // Scroll sync
   getScrollFraction: () => number;
   setScrollFraction: (fraction: number) => void;
   onScroll: (callback: (fraction: number) => void) => () => void;
@@ -219,48 +192,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     useImperativeHandle(ref, () => ({
       focus: () => {
         viewRef.current?.focus();
-      },
-      toggleBold: () => {
-        if (viewRef.current) toggleBold(viewRef.current);
-      },
-      toggleItalic: () => {
-        if (viewRef.current) toggleItalic(viewRef.current);
-      },
-      toggleStrikethrough: () => {
-        if (viewRef.current) toggleStrikethrough(viewRef.current);
-      },
-      toggleInlineCode: () => {
-        if (viewRef.current) toggleInlineCode(viewRef.current);
-      },
-      insertLink: () => {
-        if (viewRef.current) insertLink(viewRef.current);
-      },
-      insertHeading: (level: 1 | 2 | 3 | 4 | 5 | 6 = 2) => {
-        if (viewRef.current) insertHeading(viewRef.current, level);
-      },
-      insertUnorderedList: () => {
-        if (viewRef.current) insertUnorderedList(viewRef.current);
-      },
-      insertOrderedList: () => {
-        if (viewRef.current) insertOrderedList(viewRef.current);
-      },
-      insertCheckbox: () => {
-        if (viewRef.current) insertCheckbox(viewRef.current);
-      },
-      insertQuote: () => {
-        if (viewRef.current) insertQuote(viewRef.current);
-      },
-      insertCodeBlock: () => {
-        if (viewRef.current) insertCodeBlock(viewRef.current);
-      },
-      insertHorizontalRule: () => {
-        if (viewRef.current) insertHorizontalRule(viewRef.current);
-      },
-      undo: () => {
-        if (viewRef.current) undoChange(viewRef.current);
-      },
-      redo: () => {
-        if (viewRef.current) redoChange(viewRef.current);
       },
       getScrollFraction: () => {
         const view = viewRef.current;

@@ -29,7 +29,7 @@ export function ValuePropStep({ onStart }: { onStart: () => void }) {
         <li>Access notes on all your devices</li>
         <li>End-to-end encrypted — only you can read them</li>
         <li>Works offline, syncs when connected</li>
-        <li>Account required — sync stays optional and encrypted</li>
+        <li>Sign in only to turn sync on. Notes stay on this machine either way.</li>
       </ul>
       <button type="button" className={styles.button} onClick={onStart}>
         Get Started

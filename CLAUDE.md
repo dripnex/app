@@ -45,8 +45,8 @@ pnpm format                     # Format with Prettier
 - **Markdown is sacred:** Never auto-modify user's markdown text
 - **AST is ephemeral:** Parse for features, never persist as authority
 - **Core is pure:** No Electron/React deps in packages/core
-- **AuthGate first:** Account is required to open the workspace. Sync is optional E2E after that.
-- **Offline after login:** The workspace works without internet. Sync is a feature, not a requirement.
+- **Local first:** The workspace opens without an account. Sign-in is only for cloud sync (ADR 007).
+- **Offline:** The workspace works without internet. Sync is optional E2E after sign-in.
 - **Test first:** Core domain changes require tests
 
 ## Native Dependencies (Critical)

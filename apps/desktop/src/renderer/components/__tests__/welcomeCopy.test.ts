@@ -38,7 +38,7 @@ describe('welcome copy', () => {
     expect(WELCOME_LEDE.toLowerCase()).toContain('messy input');
     expect(blob).toMatch(/SQLite/);
     expect(blob).toMatch(/init\.js/);
-    expect(blob).toMatch(/AuthGate/);
+    expect(blob).toMatch(/without an account/);
   });
 
   it('does not use killed files-first manifesto lines', () => {
@@ -50,7 +50,7 @@ describe('welcome copy', () => {
   it('keeps the CTA dry and uses a real accelerator', () => {
     expect(WELCOME_CREATE.toLowerCase()).not.toMatch(/first/);
     expect(WELCOME_SKIP).toBe('Skip');
-    expect(welcomeHint()).toMatch(/⌘K|Ctrl\+K/);
+    expect(welcomeHint()).toMatch(/⌘P|Ctrl\+P/);
     expect(welcomeHint().toLowerCase()).not.toContain('pro tip');
   });
 

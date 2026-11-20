@@ -13,12 +13,16 @@ export interface SyncConflict {
   localCopyId?: string;
 }
 
+export type SyncFailureKind = 'needs-setup' | 'auth-expired' | 'offline' | 'error';
+
 export interface SyncResult {
   success: boolean;
   changesApplied: number;
   changesPushed: number;
   conflicts: SyncConflict[];
   error?: string;
+  /** Set by SyncService. The renderer must not reclassify this from error text. */
+  failure?: SyncFailureKind;
 }
 
 export interface SyncState {

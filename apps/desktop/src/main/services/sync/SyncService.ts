@@ -16,7 +16,7 @@ import {
   createTimestamp,
   extractTasks,
 } from '@dripnex/core';
-import type { LocalNotePush } from '@dripnex/sync-core';
+import { pushBaseVersion, type LocalNotePush } from '@dripnex/sync-core';
 import type {
   SyncCapableNoteRepository,
   SyncCapableNotebookRepository,
@@ -39,6 +39,19 @@ import { MAX_BACKOFF_MS, isNetworkError, isAuthError } from './helpers.js';
 import { parseSyncedNote, serializeSyncedNote } from './envelope.js';
 import type { SyncCursorStore } from './cursorStore.js';
 import { chosenConflictContent, needsLocalRestore } from './resolveNoteConflict.js';
+
+function appliedServerVersions<T extends { status: string; version: number }>(
+  rows: T[],
+  idOf: (row: T) => string
+): Record<string, number> {
+  const versions: Record<string, number> = {};
+  for (const row of rows) {
+    if (row.status === 'applied' && row.version > 0) {
+      versions[idOf(row)] = row.version;
+    }
+  }
+  return versions;
+}
 
 // ============================================================================
 // SyncService Class
@@ -259,7 +272,7 @@ export class SyncService {
         return { success: true, results: [] };
       }
 
-      const changesToPush = validChanges.map(({ notebook, localVersion }) => ({
+      const changesToPush = validChanges.map(({ notebook, syncVersion }) => ({
         notebookId: notebook.id,
         operation: 'update' as const,
         data: JSON.stringify({
@@ -270,16 +283,16 @@ export class SyncService {
           createdAt: notebook.createdAt,
           updatedAt: notebook.updatedAt,
         }),
-        localVersion,
+        localVersion: pushBaseVersion(syncVersion),
       }));
 
       const result = await this.apiClient.pushNotebookChanges(changesToPush);
 
-      const successfulIds = result.results
-        .filter(r => r.status === 'applied')
-        .map(r => createNotebookId(r.notebookId));
-
-      this.notebookRepository.markMultipleAsSynced(successfulIds);
+      const applied = result.results.filter(r => r.status === 'applied');
+      this.notebookRepository.markMultipleAsSynced(
+        applied.map(r => createNotebookId(r.notebookId)),
+        appliedServerVersions(applied, row => row.notebookId)
+      );
 
       return { success: true, results: result.results };
     } catch (error) {
@@ -298,6 +311,7 @@ export class SyncService {
     success: boolean;
     results: Array<{
       noteId: string;
+      version: number;
       status: 'applied' | 'conflict';
       serverVersion?: number;
     }>;
@@ -357,7 +371,8 @@ export class SyncService {
             this.noteRepository.upsertTagFromRemote(
               change.tagId,
               parsed.name,
-              parsed.color ?? null
+              parsed.color ?? null,
+              change.version
             );
           }
           applied++;
@@ -395,22 +410,24 @@ export class SyncService {
         return { success: true, pushed: 0 };
       }
 
-      const changes = pending.map(({ tag, localVersion }) => ({
+      const changes = pending.map(({ tag, syncVersion }) => ({
         tagId: tag.uuid,
         operation: 'update' as const,
         data: JSON.stringify({ name: tag.name, color: tag.color }),
-        localVersion,
+        localVersion: pushBaseVersion(syncVersion),
       }));
 
       const result = await this.apiClient.pushTagChanges(changes);
 
-      const successIds = result.results.filter(r => r.status === 'applied').map(r => r.tagId);
-
-      this.noteRepository.markMultipleTagsAsSynced(successIds);
+      const applied = result.results.filter(r => r.status === 'applied');
+      this.noteRepository.markMultipleTagsAsSynced(
+        applied.map(r => r.tagId),
+        appliedServerVersions(applied, row => row.tagId)
+      );
       this.state.tagCursor = result.cursor;
       this.persistCursors();
 
-      return { success: true, pushed: successIds.length };
+      return { success: true, pushed: applied.length };
     } catch (error) {
       return {
         success: false,
@@ -440,6 +457,7 @@ export class SyncService {
         changesPushed: 0,
         conflicts: [],
         error: 'Sync already in progress',
+        failure: 'error',
       };
     }
 
@@ -457,6 +475,7 @@ export class SyncService {
         changesPushed: 0,
         conflicts: [],
         error: 'Encryption not ready — set up sync passphrase first',
+        failure: 'needs-setup',
       };
     }
 
@@ -517,6 +536,7 @@ export class SyncService {
           changesPushed: 0,
           conflicts: [],
           error: pullResult.error,
+          failure: 'error',
         };
       }
       notesPulled = pullResult.changes.length;
@@ -528,7 +548,7 @@ export class SyncService {
       const pendingChanges = this.noteRepository.getPendingChanges(50);
 
       if (pendingChanges.length > 0) {
-        const changesToPush = pendingChanges.map(({ note, localVersion }) => ({
+        const changesToPush = pendingChanges.map(({ note, syncVersion }) => ({
           noteId: note.id,
           operation: (note.isDeleted ? 'delete' : 'update') as 'create' | 'update' | 'delete',
           content: !note.isDeleted
@@ -541,18 +561,18 @@ export class SyncService {
                 tags: [...note.metadata.tags],
               })
             : undefined,
-          localVersion,
+          localVersion: pushBaseVersion(syncVersion),
         }));
 
         const pushResult = await this.push(changesToPush);
 
         if (pushResult.success) {
-          const successfulNoteIds = pushResult.results
-            .filter(r => r.status === 'applied')
-            .map(r => createNoteId(r.noteId));
-
-          this.noteRepository.markMultipleAsSynced(successfulNoteIds);
-          changesPushed = successfulNoteIds.length;
+          const applied = pushResult.results.filter(r => r.status === 'applied');
+          this.noteRepository.markMultipleAsSynced(
+            applied.map(r => createNoteId(r.noteId)),
+            appliedServerVersions(applied, row => row.noteId)
+          );
+          changesPushed = applied.length;
 
           const pushConflicts = pushResult.results.filter(r => r.status === 'conflict');
           if (pushConflicts.length > 0) {
@@ -649,6 +669,7 @@ export class SyncService {
           changesPushed: 0,
           conflicts: [],
           error: 'Sync aborted',
+          failure: 'error',
         };
       }
 
@@ -680,6 +701,7 @@ export class SyncService {
           changesPushed: 0,
           conflicts: [],
           error: errorMsg,
+          failure: 'auth-expired',
         };
       }
 
@@ -705,6 +727,7 @@ export class SyncService {
         changesPushed: 0,
         conflicts: [],
         error: errorMsg,
+        failure: isTransient ? 'offline' : 'error',
       };
     } finally {
       this.state.isSyncing = false;
@@ -948,6 +971,8 @@ export class SyncService {
                 updatedAt: createTimestamp(new Date()),
               },
             });
+            // The insert trigger marks the stash dirty. It is a local copy, not a server note.
+            this.noteRepository.markAsSynced(createNoteId(localCopyId));
           }
 
           await this.noteRepository.save({
@@ -966,7 +991,7 @@ export class SyncService {
             },
           });
 
-          this.noteRepository.markAsSynced(noteId);
+          this.noteRepository.markAsSynced(noteId, change.version);
         } else {
           const tasks = extractTasks(payload.content);
           await this.noteRepository.save({
@@ -989,7 +1014,7 @@ export class SyncService {
             },
           });
 
-          this.noteRepository.markAsSynced(noteId);
+          this.noteRepository.markAsSynced(noteId, change.version);
         }
         break;
       }
@@ -1001,7 +1026,7 @@ export class SyncService {
             ...existingNote,
             isDeleted: true,
           });
-          this.noteRepository.markAsSynced(noteId);
+          this.noteRepository.markAsSynced(noteId, change.version);
         }
         break;
       }
@@ -1061,7 +1086,7 @@ export class SyncService {
         }
 
         // Mark as synced to avoid re-pushing
-        this.notebookRepository.markAsSynced(notebookId);
+        this.notebookRepository.markAsSynced(notebookId, change.version);
         break;
       }
 

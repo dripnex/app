@@ -324,42 +324,51 @@ export class SQLiteNotebookRepository
   getPendingChanges(limit = 50): Array<{
     notebook: Notebook;
     localVersion: number;
+    syncVersion: number;
   }> {
     const stmt = this.db.prepare(`
       SELECT id, name, parent_id, depth, "order", created_at, updated_at,
              git_enabled, git_auto_commit, git_initialized_at, icon,
-             local_version
+             local_version, sync_version
       FROM notebooks
       WHERE needs_sync = 1
       ORDER BY updated_at ASC
       LIMIT ?
     `);
 
-    const rows = stmt.all(limit) as (NotebookRow & { local_version: number })[];
+    const rows = stmt.all(limit) as (NotebookRow & {
+      local_version: number;
+      sync_version: number;
+    })[];
     return rows.map(row => ({
       notebook: this.rowToNotebook(row),
       localVersion: row.local_version,
+      syncVersion: row.sync_version ?? 0,
     }));
   }
 
   /**
    * Mark a notebook as synced (no pending changes).
    */
-  markAsSynced(notebookId: NotebookId): void {
+  markAsSynced(notebookId: NotebookId, serverVersion = 0): void {
     const stmt = this.db.prepare(`
       UPDATE notebooks
       SET
         needs_sync = 0,
-        last_synced_at = ?
+        last_synced_at = ?,
+        sync_version = CASE WHEN ? > 0 THEN ? ELSE sync_version END
       WHERE id = ?
     `);
-    stmt.run(new Date().toISOString(), notebookId);
+    stmt.run(new Date().toISOString(), serverVersion, serverVersion, notebookId);
   }
 
   /**
    * Mark multiple notebooks as synced in a transaction.
    */
-  markMultipleAsSynced(notebookIds: NotebookId[]): void {
+  markMultipleAsSynced(
+    notebookIds: NotebookId[],
+    serverVersions: Record<string, number> = {}
+  ): void {
     if (notebookIds.length === 0) return;
 
     this.db.transaction(() => {
@@ -367,13 +376,15 @@ export class SQLiteNotebookRepository
         UPDATE notebooks
         SET
           needs_sync = 0,
-          last_synced_at = ?
+          last_synced_at = ?,
+          sync_version = CASE WHEN ? > 0 THEN ? ELSE sync_version END
         WHERE id = ?
       `);
 
       const now = new Date().toISOString();
       for (const id of notebookIds) {
-        stmt.run(now, id);
+        const version = serverVersions[id] ?? 0;
+        stmt.run(now, version, version, id);
       }
     });
   }

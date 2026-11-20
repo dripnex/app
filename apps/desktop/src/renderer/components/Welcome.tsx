@@ -1,8 +1,8 @@
 /**
- * Welcome — First-run onboarding after AuthGate.
+ * Welcome — First-run onboarding.
  *
- * Shown once on first launch. Offers to create the user's first note
- * or skip straight into the app. Never a guest path around the account.
+ * Shown once on first launch, before or without an account. Offers to
+ * create the user's first note or skip straight into the workspace.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
