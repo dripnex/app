@@ -51,6 +51,8 @@ describe('welcome copy', () => {
     expect(WELCOME_CREATE.toLowerCase()).not.toMatch(/first/);
     expect(WELCOME_SKIP).toBe('Skip');
     expect(welcomeHint()).toMatch(/⌘P|Ctrl\+P/);
+    expect(welcomeSrc).toContain("modAccel('P')");
+    expect(welcomeSrc).not.toContain("modAccel('K')");
     expect(welcomeHint().toLowerCase()).not.toContain('pro tip');
   });
 

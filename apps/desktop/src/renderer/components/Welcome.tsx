@@ -97,7 +97,7 @@ export function Welcome({ onComplete }: WelcomeProps) {
         </div>
 
         <p className={styles.hint}>
-          Press <kbd className={styles.kbd}>{modAccel('K')}</kbd> to open the command palette
+          Press <kbd className={styles.kbd}>{modAccel('P')}</kbd> to open the command palette
         </p>
       </div>
     </div>

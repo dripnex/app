@@ -4,18 +4,22 @@
  * The server compares this with the sync-log version of the same row.
  * That number is a per-user counter, not the local edit counter.
  * `storedServerVersion` is the sync-log version last applied for this row.
- * Zero means this install has not recorded one yet, so omit the field and
- * let the server apply the push. The next success stores the real version.
+ * When that is missing, `seenCursor` is the highest version this device
+ * has pulled. It uses the same counter, so a row edited past the cursor
+ * still conflicts. Zero for both means omit the field.
  */
 export function pushBaseVersion(
-  storedServerVersion: number | null | undefined
+  storedServerVersion: number | null | undefined,
+  seenCursor = 0
 ): number | undefined {
-  if (
-    typeof storedServerVersion !== 'number' ||
-    !Number.isFinite(storedServerVersion) ||
-    storedServerVersion <= 0
-  ) {
+  const stored = positiveVersion(storedServerVersion);
+  if (stored !== undefined) return stored;
+  return positiveVersion(seenCursor);
+}
+
+function positiveVersion(value: number | null | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
-  return Math.trunc(storedServerVersion);
+  return Math.trunc(value);
 }

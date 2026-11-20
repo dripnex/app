@@ -30,6 +30,7 @@ import type {
 import type { EncryptionService } from '../encryptionService.js';
 import type {
   SyncConflict,
+  SyncFailureKind,
   SyncResult,
   SyncState,
   SyncStatusEvent,
@@ -145,6 +146,7 @@ export class SyncService {
     cursor: number;
     hasMore: boolean;
     error?: string;
+    failure?: SyncFailureKind;
   }> {
     try {
       // Pull changes from server
@@ -190,6 +192,7 @@ export class SyncService {
         cursor: this.state.cursor,
         hasMore: false,
         error: error instanceof Error ? error.message : 'Failed to pull changes',
+        failure: this.failureKind(error),
       };
     }
   }
@@ -283,7 +286,7 @@ export class SyncService {
           createdAt: notebook.createdAt,
           updatedAt: notebook.updatedAt,
         }),
-        localVersion: pushBaseVersion(syncVersion),
+        localVersion: pushBaseVersion(syncVersion, this.state.notebookCursor),
       }));
 
       const result = await this.apiClient.pushNotebookChanges(changesToPush);
@@ -334,9 +337,8 @@ export class SyncService {
       // Push to server
       const result = await this.apiClient.pushChanges(encryptedChanges);
 
-      this.state.cursor = result.cursor;
-      this.persistCursors();
-
+      // The push cursor is the user's latest sync-log version. It can
+      // include rows this device has not pulled, so the pull cursor stays.
       return {
         success: true,
         results: result.results,
@@ -414,7 +416,7 @@ export class SyncService {
         tagId: tag.uuid,
         operation: 'update' as const,
         data: JSON.stringify({ name: tag.name, color: tag.color }),
-        localVersion: pushBaseVersion(syncVersion),
+        localVersion: pushBaseVersion(syncVersion, this.state.tagCursor),
       }));
 
       const result = await this.apiClient.pushTagChanges(changes);
@@ -424,8 +426,6 @@ export class SyncService {
         applied.map(r => r.tagId),
         appliedServerVersions(applied, row => row.tagId)
       );
-      this.state.tagCursor = result.cursor;
-      this.persistCursors();
 
       return { success: true, pushed: applied.length };
     } catch (error) {
@@ -435,6 +435,15 @@ export class SyncService {
         error: error instanceof Error ? error.message : 'Failed to push tags',
       };
     }
+  }
+
+  /**
+   * Classify a thrown sync error before it is reduced to message text.
+   */
+  private failureKind(error: unknown): SyncFailureKind {
+    if (isAuthError(error)) return 'auth-expired';
+    if (isNetworkError(error)) return 'offline';
+    return 'error';
   }
 
   /**
@@ -530,13 +539,30 @@ export class SyncService {
           bytesReceived: bandwidth.bytesReceived,
           errorMessage: pullResult.error,
         });
+        const failure = pullResult.failure ?? 'error';
+        const errorMsg = pullResult.error ?? 'Failed to pull changes';
+        this.state.lastError = errorMsg;
+        this.state.consecutiveFailures++;
+        if (failure === 'auth-expired') {
+          this.stopAutoSync();
+          this.emitStatus({ type: 'auth-expired' });
+        } else {
+          const offline = failure === 'offline';
+          if (offline && this.autoSyncTimer) this.applyBackoff();
+          this.emitStatus({
+            type: 'sync-error',
+            error: errorMsg,
+            isNetworkError: offline,
+            consecutiveFailures: this.state.consecutiveFailures,
+          });
+        }
         return {
           success: false,
           changesApplied: 0,
           changesPushed: 0,
           conflicts: [],
-          error: pullResult.error,
-          failure: 'error',
+          error: errorMsg,
+          failure,
         };
       }
       notesPulled = pullResult.changes.length;
@@ -561,7 +587,7 @@ export class SyncService {
                 tags: [...note.metadata.tags],
               })
             : undefined,
-          localVersion: pushBaseVersion(syncVersion),
+          localVersion: pushBaseVersion(syncVersion, this.state.cursor),
         }));
 
         const pushResult = await this.push(changesToPush);
@@ -576,10 +602,12 @@ export class SyncService {
 
           const pushConflicts = pushResult.results.filter(r => r.status === 'conflict');
           if (pushConflicts.length > 0) {
-            console.warn(
-              `Push conflicts detected for ${pushConflicts.length} notes:`,
-              pushConflicts
-            );
+            const again = await this.pull();
+            if (again.success) {
+              notesPulled += again.changes.length;
+              totalConflicts += again.conflicts.length;
+              pullResult.conflicts.push(...again.conflicts);
+            }
           }
         } else {
           console.error('Failed to push changes:', pushResult.error);
