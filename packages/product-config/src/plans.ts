@@ -7,15 +7,15 @@ export const PLANS = {
   free: {
     id: 'free' as const,
     name: 'Free',
-    description: 'Local SQLite notes after AuthGate',
+    description: 'Local SQLite notes. No account required.',
     features: [
       'Unlimited local notes',
       'Full markdown editor',
       'Export to markdown',
       'Import from folder',
       'Basic search',
-      'Offline after login',
-      'Account required (AuthGate)',
+      'Works offline',
+      'Account only for cloud sync',
     ],
   },
   pro: {

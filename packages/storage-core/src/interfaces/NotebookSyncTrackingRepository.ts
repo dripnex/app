@@ -10,13 +10,16 @@ import type { Notebook, NotebookId } from '@dripnex/core';
 
 export interface PendingNotebookChange {
   notebook: Notebook;
+  /** Local edit counter. Not the server sync-log version. */
   localVersion: number;
+  /** Last sync-log version applied for this notebook. Zero means none recorded. */
+  syncVersion: number;
 }
 
 export interface NotebookSyncTrackingRepository {
   getPendingChanges(limit?: number): PendingNotebookChange[];
-  markAsSynced(notebookId: NotebookId): void;
-  markMultipleAsSynced(notebookIds: NotebookId[]): void;
+  markAsSynced(notebookId: NotebookId, serverVersion?: number): void;
+  markMultipleAsSynced(notebookIds: NotebookId[], serverVersions?: Record<string, number>): void;
   hasPendingEdits(notebookId: NotebookId): boolean;
   resetSyncTracking(notebookId: NotebookId): void;
   validateForSync(notebookId: NotebookId): { valid: boolean; error?: string };

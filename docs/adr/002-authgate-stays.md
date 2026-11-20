@@ -1,6 +1,6 @@
 # ADR 002: AuthGate is the first window
 
-**Status:** Accepted (supersedes the 2026-08-25 “auth is optional” revision)
+**Status:** Superseded by ADR 007 (2026-11-19). The workspace opens without an account. Sign-in is only for cloud sync.
 **Date:** 2026-08-26
 **Deciders:** Tomás (product identity)
 

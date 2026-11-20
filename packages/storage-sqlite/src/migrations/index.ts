@@ -24,6 +24,7 @@ import { ftsIncludeDeleted } from './018_fts_include_deleted.js';
 import { embeddings } from './019_embeddings.js';
 import { notebookIcons } from './020_notebook_icons.js';
 import { noteTasks } from './021_note_tasks.js';
+import { syncDeleteAndBase } from './022_sync_delete_and_base.js';
 
 /** Fail fast if two files share a version (the runner keys on version). */
 export function assertMigrationVersionsUnique(migrations: Migration[]): void {
@@ -59,6 +60,7 @@ export const allMigrations: Migration[] = [
   embeddings,
   notebookIcons,
   noteTasks,
+  syncDeleteAndBase,
 ];
 
 assertMigrationVersionsUnique(allMigrations);
@@ -85,4 +87,5 @@ export {
   embeddings,
   notebookIcons,
   noteTasks,
+  syncDeleteAndBase,
 };

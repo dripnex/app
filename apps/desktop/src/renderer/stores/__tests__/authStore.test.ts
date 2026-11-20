@@ -103,7 +103,7 @@ describe('authStore sign-out and magic-link request', () => {
     expect(state.sessionHydrated).toBe(true);
     expect(leftoverAuthKeys(storage)).toEqual([]);
     expect(auth.logout).toHaveBeenCalledOnce();
-    expect(signedInShell(state.isAuthenticated, state.sessionHydrated)).toBe('auth');
+    expect(signedInShell(state.isAuthenticated, state.sessionHydrated)).toBe('workspace');
   });
 
   it('applySignedOut from another window also empties leftover token keys', () => {
@@ -121,7 +121,7 @@ describe('authStore sign-out and magic-link request', () => {
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(leftoverAuthKeys(storage)).toEqual([]);
-    expect(signedInShell(false)).toBe('auth');
+    expect(signedInShell(false)).toBe('workspace');
   });
 
   it('requesting a magic link does not set authenticated', async () => {
@@ -132,7 +132,7 @@ describe('authStore sign-out and magic-link request', () => {
     expect(state.isAuthenticated).toBe(false);
     expect(state.user).toBeNull();
     expect(leftoverAuthKeys(storage)).toEqual([]);
-    expect(signedInShell(state.isAuthenticated, true)).toBe('auth');
+    expect(signedInShell(state.isAuthenticated, true)).toBe('workspace');
   });
 
   it('does not restore a session from an in-flight getSession after sign-out', async () => {
@@ -156,7 +156,7 @@ describe('authStore sign-out and magic-link request', () => {
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().user).toBeNull();
-    expect(signedInShell(false)).toBe('auth');
+    expect(signedInShell(false)).toBe('workspace');
   });
 
   it('does not restore a session from an in-flight verifyToken after sign-out', async () => {
@@ -183,6 +183,6 @@ describe('authStore sign-out and magic-link request', () => {
     expect(state.isAuthenticated).toBe(false);
     expect(state.user).toBeNull();
     expect(leftoverAuthKeys(storage)).toEqual([]);
-    expect(signedInShell(state.isAuthenticated, state.sessionHydrated)).toBe('auth');
+    expect(signedInShell(state.isAuthenticated, state.sessionHydrated)).toBe('workspace');
   });
 });

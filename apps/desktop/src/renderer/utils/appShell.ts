@@ -1,25 +1,23 @@
 /**
- * Launch shell. AuthGate is the first window.
- * Playwright may set isE2E so automated tests skip the gate — not a production bypass.
+ * Launch shell. The workspace opens without an account.
+ * Sign-in is only for cloud sync. Session hydration must not block local notes.
  */
 
 export type AppShell = 'auth' | 'welcome' | 'workspace';
 
 export interface AppShellInput {
   onboardingComplete: boolean;
+  /** Ignored. A session does not choose the shell. */
   isAuthenticated?: boolean;
+  /** Ignored. Hydration must not block the workspace. */
   sessionHydrated?: boolean;
-  /** Playwright-only. Must never be true in a production build. */
+  /** Ignored. Playwright no longer needs a bypass to open the workspace. */
   isE2E?: boolean;
 }
 
 /**
- * No session → AuthGate. After account: Welcome (first run) or workspace.
+ * First run → Welcome. After that → workspace, signed in or not.
  */
 export function resolveAppShell(input: AppShellInput): AppShell {
-  const skipAuth = input.isE2E === true;
-  if (!skipAuth && (!input.sessionHydrated || !input.isAuthenticated)) {
-    return 'auth';
-  }
   return input.onboardingComplete ? 'workspace' : 'welcome';
 }
