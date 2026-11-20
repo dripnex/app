@@ -134,8 +134,8 @@ importers:
         specifier: ^5.101.0
         version: 5.101.0(react@19.2.7)
       better-sqlite3:
-        specifier: ^12.10.0
-        version: 12.10.0
+        specifier: ^12.11.1
+        version: 12.11.1
       cross-fetch:
         specifier: ^4.1.0
         version: 4.1.0(encoding@0.1.14)
@@ -332,7 +332,7 @@ importers:
         version: 2.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       drizzle-orm:
         specifier: ^0.45.2
-        version: 0.45.2(@cloudflare/workers-types@4.20260608.1)(@libsql/client@0.17.3)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.10.0)(gel@2.2.0)(sql.js@1.14.1)
+        version: 0.45.2(@cloudflare/workers-types@4.20260608.1)(@libsql/client@0.17.3)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.11.1)(gel@2.2.0)(sql.js@1.14.1)
       hono:
         specifier: ^4.13.16
         version: 4.13.16
@@ -611,8 +611,8 @@ importers:
         specifier: ^7.6.12
         version: 7.6.13
       better-sqlite3:
-        specifier: ^12.10.0
-        version: 12.10.0
+        specifier: ^12.11.1
+        version: 12.11.1
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -4024,8 +4024,8 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  better-sqlite3@12.10.0:
-    resolution: {integrity: sha512-CyzaZRQKyHkB2ZInfTTl2nvT33EbDpjkLEbE8/Zck3Ll6O0qqvuGdrJ45HgtH+HykRg88ITY3AdreBGN70aBSQ==}
+  better-sqlite3@12.11.1:
+    resolution: {integrity: sha512-dq9AtApgg5PGFtBzPFSBl3HZQjHok5gaQCM6zh2Yk0aSmDCs1CbnVI8/HgASQkNKsWFpseIO9beg5xxpYhbIfA==}
     engines: {node: 20.x || 22.x || 23.x || 24.x || 25.x || 26.x}
 
   bezier-js@6.1.4:
@@ -6144,7 +6144,6 @@ packages:
 
   libsql@0.5.29:
     resolution: {integrity: sha512-8lMP8iMgiBzzoNbAPQ59qdVcj6UaE/Vnm+fiwX4doX4Narook0a4GPKWBEv+CR8a1OwbfkgL18uBfBjWdF0Fzg==}
-    cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
   lie@3.3.0:
@@ -6764,10 +6763,6 @@ packages:
 
   node-abi@3.101.0:
     resolution: {integrity: sha512-bkb/RkuWCE64eWu1PCh3Fu2pGc9mKRs+kOE+FU2bGHRYlQa86/D321DSATV54AsCQMKz3/xSt9sRgraZTpqdhQ==}
-    engines: {node: '>=10'}
-
-  node-abi@3.92.0:
-    resolution: {integrity: sha512-KdHvFWZjEKDf0cakgFjebl371GPsISX2oZHcuyKqM7DtogIsHrqKeLTo8wBHxaXRAQlY2PsPlZmfo+9ZCxEREQ==}
     engines: {node: '>=10'}
 
   node-abi@4.31.0:
@@ -9499,7 +9494,7 @@ snapshots:
       env-paths: 3.0.0
       graceful-fs: 4.2.11
       progress: 2.0.3
-      semver: 7.8.5
+      semver: 7.8.6
       sumchecker: 3.0.1
     optionalDependencies:
       undici: 7.30.1
@@ -12229,7 +12224,7 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  better-sqlite3@12.10.0:
+  better-sqlite3@12.11.1:
     dependencies:
       bindings: 1.5.0
       prebuild-install: 7.1.3
@@ -13064,7 +13059,7 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.22.4
 
-  drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260608.1)(@libsql/client@0.17.3)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.10.0)(gel@2.2.0)(sql.js@1.14.1):
+  drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260608.1)(@libsql/client@0.17.3)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.11.1)(gel@2.2.0)(sql.js@1.14.1):
     optionalDependencies:
       '@cloudflare/workers-types': 4.20260608.1
       '@libsql/client': 0.17.3
@@ -13072,7 +13067,7 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       '@types/better-sqlite3': 7.6.13
       '@types/pg': 8.15.6
-      better-sqlite3: 12.10.0
+      better-sqlite3: 12.11.1
       gel: 2.2.0
       sql.js: 1.14.1
 
@@ -15509,10 +15504,6 @@ snapshots:
     dependencies:
       semver: 7.8.6
 
-  node-abi@3.92.0:
-    dependencies:
-      semver: 7.8.5
-
   node-abi@4.31.0:
     dependencies:
       semver: 7.8.5
@@ -15988,7 +15979,7 @@ snapshots:
       minimist: 1.2.8
       mkdirp-classic: 0.5.3
       napi-build-utils: 2.0.0
-      node-abi: 3.92.0
+      node-abi: 3.101.0
       pump: 3.0.4
       rc: 1.2.8
       simple-get: 4.0.1
