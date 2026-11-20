@@ -15,10 +15,10 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
+import { getProductConfig } from '@dripnex/product-config';
 import { createDb, type Env } from '../db/client.js';
 import { subscriptions, users, stripeEvents } from '../db/schema.js';
 import { authMiddleware, type AuthUser } from '../middleware/auth.js';
-import { getProductConfig } from '@dripnex/product-config';
 import { verifyStripeSignature } from '../services/stripe.js';
 
 const subscription = new Hono<{
@@ -291,17 +291,14 @@ subscription.post('/checkout', zValidator('json', checkoutSchema), async c => {
   }
 
   try {
-    const stripe = new Stripe(stripeSecretKey, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      apiVersion: '2025-01-27.acacia' as any,
-    });
+    const stripe = new Stripe(stripeSecretKey);
 
     const priceId = plan === 'monthly' ? priceMonthly : priceAnnual;
 
     const session = await stripe.checkout.sessions.create({
       customer_email: email,
       mode: 'subscription',
-      payment_method_types: ['card'],
+      allowed_payment_method_types: ['card'],
       line_items: [
         {
           price: priceId,
@@ -358,17 +355,14 @@ subscription.post('/checkout/public', zValidator('json', publicCheckoutSchema), 
   }
 
   try {
-    const stripe = new Stripe(stripeSecretKey, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      apiVersion: '2025-01-27.acacia' as any,
-    });
+    const stripe = new Stripe(stripeSecretKey);
 
     const priceId = plan === 'monthly' ? priceMonthly : priceAnnual;
 
     const session = await stripe.checkout.sessions.create({
       customer_email: email,
       mode: 'subscription',
-      payment_method_types: ['card'],
+      allowed_payment_method_types: ['card'],
       line_items: [
         {
           price: priceId,
@@ -426,10 +420,7 @@ subscription.post('/portal', zValidator('json', portalSchema), async c => {
   }
 
   try {
-    const stripe = new Stripe(stripeSecretKey, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      apiVersion: '2025-01-27.acacia' as any,
-    });
+    const stripe = new Stripe(stripeSecretKey);
 
     const session = await stripe.billingPortal.sessions.create({
       customer: sub.stripeCustomerId,
